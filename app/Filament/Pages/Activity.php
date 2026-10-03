@@ -577,7 +577,7 @@ final class Activity extends Page
         return AdminDialog::viewer(
             Action::make('activityDetails')
                 ->label('Details')
-                ->modalHeading(fn (array $arguments): string => (string) ($this->activityDetails($arguments)['action'] ?? 'Activity details'))
+                ->modalHeading(fn (array $arguments): string => (string) ($this->activityDetails($arguments)['change'] ?? 'Activity details'))
                 ->modalContent(fn (array $arguments): View => view(
                     'filament.pages.partials.activity-details-dialog',
                     ['event' => $this->activityDetails($arguments)],

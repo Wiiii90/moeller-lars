@@ -58,8 +58,11 @@
             <div class="activity-commit-dialog__activities">
                 @foreach ($commit['activities'] as $activity)
                     <article>
-                        <strong>{{ $activity['action'] }}</strong>
-                        <span>{{ $activity['area'] }} · {{ $activity['target'] }}</span>
+                        <strong>{{ $activity['change'] }}</strong>
+                        <span>{{ $activity['area'] }} · {{ $activity['type'] }} · {{ $activity['target'] }}</span>
+                        @if ($activity['details'])
+                            <span>{{ $activity['details'] }}</span>
+                        @endif
                         <small>
                             {{ $activity['actor'] }} · {{ $activity['timestamp'] }}
                             @if (($activity['ordering_projection']['event_count'] ?? 1) > 1)

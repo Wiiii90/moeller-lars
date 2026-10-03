@@ -478,7 +478,7 @@
                     <tbody>
                         @forelse ($activity as $event)
                             <tr class="{{ in_array((int) $event['id'], $selectedActivityIds, true) ? 'is-selected' : '' }}">
-                                <td class="activity-change-cell" title="{{ $event['action'] }}"><strong>{{ $event['action'] }}</strong></td>
+                                <td class="activity-change-cell" title="{{ $event['change'] }}{{ $event['details'] ? ': '.$event['details'] : '' }}"><strong>{{ $event['change'] }}</strong></td>
                                 <td class="activity-who-cell" title="{{ $event['actor'] }}"><strong>{{ $event['actor'] }}</strong></td>
                                 <td class="activity-when-cell">
                                     <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
@@ -486,7 +486,7 @@
                                 </td>
                                 <td class="activity-target-cell" title="{{ $event['target'] }}"><strong>{{ $event['target'] }}</strong></td>
                                 <td class="activity-area-cell"><span>{{ $event['area'] }}</span></td>
-                                <td class="activity-type-cell"><span>{{ $familyOptions[$event['family']] ?? ucfirst($event['family']) }}</span></td>
+                                <td class="activity-type-cell"><span>{{ $event['type'] }}</span></td>
                                 <td class="activity-publication-cell">
                                     @if ($event['publication_status'] === 'committed')
                                         <div class="activity-publication-cell__stack" title="Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}{{ $event['checkpoint_message'] ? ' · '.$event['checkpoint_message'] : '' }}">

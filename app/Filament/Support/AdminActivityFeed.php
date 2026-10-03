@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminActionReceiptService;
+use App\Domain\Admin\AdminActivityPresentation;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\SitePages;
@@ -41,6 +42,7 @@ final class AdminActivityFeed
 
     public function __construct(
         private readonly AdminActionReceiptService $receipts,
+        private readonly AdminActivityPresentation $presentation,
         private readonly PublicationService $publication,
     ) {}
 
@@ -490,25 +492,41 @@ final class AdminActivityFeed
             $changeSummary = $orderingProjectionState instanceof AdminActivityOrderingProjection
                 ? null
                 : $this->changeSummary($metadata['change_summary'] ?? null);
-            $actionLabel = $orderingProjectionState instanceof AdminActivityOrderingProjection
-                ? $definition['label']
-                : $this->activityLabel($actionKey, $definition, $changeSummary);
+            $orderingPresentation = $orderingProjectionState instanceof AdminActivityOrderingProjection
+                ? [
+                    'scope' => (string) $orderingProjectionState->getAttribute('scope'),
+                    'before_state' => $orderingProjectionState->beforeState(),
+                    'after_state' => $orderingProjectionState->afterState(),
+                    'event_count' => $orderingCount,
+                    'item_count' => (int) $orderingProjectionState->getAttribute('item_count'),
+                ]
+                : null;
+            $presentation = $this->presentation->present(
+                $actionKey,
+                $target,
+                $changeSummary,
+                $orderingPresentation,
+            );
+            $change = $presentation['change'];
+            $details = $presentation['details'];
 
             if (is_array($receipt)) {
                 $inverseLabel = (string) $receipt['inverse_label'];
                 $undo = [
                     'id' => (int) $receipt['id'],
                     'inverse_label' => $inverseLabel,
-                    'confirmation' => $this->undoConfirmation($actionLabel, $target, $inverseLabel, $changeSummary),
+                    'confirmation' => $this->undoConfirmation($change, $target, $inverseLabel, $changeSummary),
                 ];
             }
 
             return [
                 'id' => (int) $event->getKey(),
                 'action_key' => $actionKey,
-                'action' => $actionLabel,
+                'change' => $change,
+                'details' => $details,
                 'area' => $definition['area'],
                 'family' => $definition['family'],
+                'type' => AdminActionCatalog::familyOptions()[$definition['family']] ?? ucfirst($definition['family']),
                 'entity_type' => $entityType,
                 'entity_id' => $entityId,
                 'target' => $target,
@@ -520,8 +538,7 @@ final class AdminActivityFeed
                 'change_summary' => $changeSummary,
                 'ordering_projection' => $orderingProjectionState instanceof AdminActivityOrderingProjection
                     ? [
-                        'event_count' => $orderingCount,
-                        'item_count' => (int) $orderingProjectionState->getAttribute('item_count'),
+                        ...$orderingPresentation,
                         'is_identity' => $orderingProjectionState->isIdentity(),
                         'started_at' => $orderingProjectionState->getAttribute('started_at')?->format('Y-m-d H:i'),
                         'ended_at' => $orderingProjectionState->getAttribute('ended_at')?->format('Y-m-d H:i'),
@@ -535,48 +552,6 @@ final class AdminActivityFeed
                 'undo' => $undo,
             ];
         })->values()->all();
-    }
-
-    /**
-     * @param  array{label:string,area:string,family:string}  $definition
-     * @param  array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null  $summary
-     */
-    private function activityLabel(string $actionKey, array $definition, ?array $summary): string
-    {
-        if ($summary === null || $summary['items'] === []) {
-            return $definition['label'];
-        }
-
-        $items = collect($summary['items'])
-            ->filter(static fn (mixed $item): bool => is_array($item)
-                && is_string($item['label'] ?? null)
-                && trim($item['label']) !== '')
-            ->take(2)
-            ->values();
-
-        if ($items->isEmpty()) {
-            return $definition['label'];
-        }
-
-        $shown = $items
-            ->map(static fn (array $item): string => $item['label'].': '.$item['before'].' → '.$item['after'])
-            ->implode('; ');
-        $remaining = max(0, $summary['count'] - $items->count());
-        $suffix = $remaining > 0 ? ' +'.$remaining.' more' : '';
-
-        if ($actionKey === 'admin.undo_applied') {
-            return 'Restored '.$shown.$suffix;
-        }
-
-        if (in_array($definition['family'], ['edit', 'settings'], true)) {
-            return 'Changed '.$shown.$suffix;
-        }
-
-        if (in_array($definition['family'], ['publish', 'media', 'ordering'], true)) {
-            return $definition['label'].' · '.$shown.$suffix;
-        }
-
-        return $definition['label'];
     }
 
     /**

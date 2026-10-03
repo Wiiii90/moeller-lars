@@ -39,11 +39,20 @@ The grouping is state-continuous and publication-bounded, never timer-, debounce
 
 The projection never rewrites or deletes `audit_events`; it only controls how multiple raw ordering mutations are represented as one visible Activity.
 
-Activity uses the shared `AdminActivityFeed` read model. The current Activity table exposes:
+Activity uses the shared `AdminActivityFeed` read model. Its visible projection has four explicit semantic fields before the ordinary actor/time/publication context:
+
+- **Area** — the admin domain in which the change happened;
+- **Type** — the stable action family such as Ordering, Edited, Media or Publication;
+- **Change** — the concise canonical action sentence, for example `Ordered artworks in Galleries`;
+- **Details** — target/value/order specifics derived from the recorded mutation evidence, for example which two artworks swapped positions.
+
+The table keeps Details out of the Change cell so scanning stays stable:
 
 ```text
 Change | Who | When | Target | Area | Type | Publication | Actions
 ```
+
+Details remain available in the Activity viewer and Commit details. Immediate header feedback may compose the same semantics as `Change: Details`; it must not invent a second wording system.
 
 `Details` is the stable first row action. When `AdminActionReceiptService` exposes a currently valid actor-scoped receipt for an uncommitted Activity, `Undo` appears immediately after Details. A Commit is a hard Undo boundary: once an Activity belongs to a Commit, that Activity is inspectable through the Commit but is no longer individually reversible.
 

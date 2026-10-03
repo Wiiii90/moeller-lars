@@ -17,8 +17,8 @@
             <dd>{{ $event['area'] }}</dd>
         </div>
         <div>
-            <dt>Change type</dt>
-            <dd>{{ $event['family'] }}</dd>
+            <dt>Type</dt>
+            <dd>{{ $event['type'] }}</dd>
         </div>
         <div>
             <dt>Actor</dt>
@@ -28,7 +28,12 @@
 
     <div class="admin-detail-dialog__field">
         <span>Change</span>
-        <p>{{ $event['action'] }}</p>
+        <p>{{ $event['change'] }}</p>
+    </div>
+
+    <div class="admin-detail-dialog__field">
+        <span>Details</span>
+        <p>{{ $event['details'] ?? '—' }}</p>
     </div>
 
     <div class="admin-detail-dialog__field">
