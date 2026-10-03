@@ -322,6 +322,14 @@
         table-layout: fixed;
     }
 
+    .admin-dashboard__feed-table .admin-dashboard__col-position {
+        width: 3rem !important;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__col-drag {
+        width: 2rem !important;
+    }
+
     .admin-dashboard__feed-table col:nth-last-child(2) {
         width: 6.5rem !important;
     }
