@@ -161,7 +161,7 @@
                             <col class="admin-table__col-one-half-units journal-col--identity">
                             <col class="admin-table__col-half-unit journal-col--timing">
                             <col class="admin-table__col-one-half-units journal-col--schedule">
-                            <col class="admin-table__col-two-units-minus-selection">
+                            <col class="admin-table__col-two-units-minus-selection journal-table__actions--exhibitions">
                         @endif
                         <col class="admin-table__selection-col">
                     </colgroup>
