@@ -666,7 +666,11 @@
     display: grid;
     width: 100%;
     max-width: 22rem;
-    grid-template-columns: 2rem 2rem minmax(3.5rem, 1fr) minmax(4rem, 1fr);
+    grid-template-columns:
+        minmax(4.5rem, 1fr)
+        minmax(5rem, 1fr)
+        minmax(3.5rem, .8fr)
+        minmax(4rem, .9fr);
     gap: .25rem;
     align-items: center;
     justify-content: start;
@@ -678,8 +682,9 @@
 }
 
 .general-social-table__actions .admin-order-action {
-    width: 2rem;
-    padding-inline: 0;
+    width: 100%;
+    min-width: 0;
+    padding-inline: .2rem;
 }
 
 .general-social-table + .admin-add-row {
