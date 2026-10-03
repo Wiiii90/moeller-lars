@@ -367,45 +367,45 @@
                         </tr>
                     </thead>
                     <tbody @if ($reorderEnabled) wire:sort="sortComponent" @endif>
-                        @forelse ($components as $component)
-                            <tr wire:key="home-component-{{ $template }}-{{ $component['target'] }}" @if ($reorderEnabled) wire:sort:item="{{ $component['target'] }}" @endif>
-                                <td class="admin-table__position"><span class="admin-position">{{ str_pad((string) $component['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
+                        @forelse ($components as $homeComponent)
+                            <tr wire:key="home-component-{{ $template }}-{{ $homeComponent['target'] }}" @if ($reorderEnabled) wire:sort:item="{{ $homeComponent['target'] }}" @endif>
+                                <td class="admin-table__position"><span class="admin-position">{{ str_pad((string) $homeComponent['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
                                 <td class="admin-table__drag">
-                                    <button class="admin-drag-handle" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $component['type_label'] }}">⋮⋮</button>
+                                    <button class="admin-drag-handle" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $homeComponent['type_label'] }}">⋮⋮</button>
                                 </td>
-                                <td class="home-components-table__type">{{ $component['type_label'] }}</td>
+                                <td class="home-components-table__type">{{ $homeComponent['type_label'] }}</td>
                                 <td class="admin-table__identity">
-                                    <strong>{{ $component['content']['primary'] }}</strong>
-                                    <small class="admin-responsive-meta">{{ $component['type_label'] }}</small>
-                                    @if ($component['content']['secondary'] !== '')<small>{{ $component['content']['secondary'] }}</small>@endif
+                                    <strong>{{ $homeComponent['content']['primary'] }}</strong>
+                                    <small class="admin-responsive-meta">{{ $homeComponent['type_label'] }}</small>
+                                    @if ($homeComponent['content']['secondary'] !== '')<small>{{ $homeComponent['content']['secondary'] }}</small>@endif
                                 </td>
                                 <td class="admin-table__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
                                         <x-admin.row-action
                                             :action="\App\Filament\Support\AdminRowAction::MoveUp"
-                                            wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')"
-                                            :disabled="! $reorderEnabled || ! $component['can_move_up']"
-                                            aria-label="Move {{ $component['type_label'] }} up"
+                                            wire:click="moveComponent({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', 'up')"
+                                            :disabled="! $reorderEnabled || ! $homeComponent['can_move_up']"
+                                            aria-label="Move {{ $homeComponent['type_label'] }} up"
                                         />
                                         <x-admin.row-action
                                             :action="\App\Filament\Support\AdminRowAction::MoveDown"
-                                            wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')"
-                                            :disabled="! $reorderEnabled || ! $component['can_move_down']"
-                                            aria-label="Move {{ $component['type_label'] }} down"
+                                            wire:click="moveComponent({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', 'down')"
+                                            :disabled="! $reorderEnabled || ! $homeComponent['can_move_down']"
+                                            aria-label="Move {{ $homeComponent['type_label'] }} down"
                                         />
                                         <x-admin.row-action
                                             :action="\App\Filament\Support\AdminRowAction::Edit"
-                                            wire:click="mountAction('editComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })"
-                                            :disabled="! $component['editable']"
+                                            wire:click="mountAction('editComponent', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}' })"
+                                            :disabled="! $homeComponent['editable']"
                                         />
                                         <x-admin.row-action
                                             :action="\App\Filament\Support\AdminRowAction::Delete"
-                                            wire:click="mountAction('removeComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })"
+                                            wire:click="mountAction('removeComponent', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}' })"
                                         />
                                     </div>
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
-                                    <input type="checkbox" value="{{ $component['target'] }}" wire:model.live="selectedComponentTargets" aria-label="Select {{ $component['type_label'] }}">
+                                    <input type="checkbox" value="{{ $homeComponent['target'] }}" wire:model.live="selectedComponentTargets" aria-label="Select {{ $homeComponent['type_label'] }}">
                                 </td>
                             </tr>
                         @empty
