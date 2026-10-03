@@ -18,6 +18,7 @@ it('keeps admin responsiveness container-driven and table overflow-free', functi
         ->toContain('@container admin-workspace (min-width: 54.01rem) and (max-width: 68rem)')
         ->toContain('@container admin-workspace (max-width: 54rem)')
         ->toContain('@container admin-workspace (max-width: 38rem)')
+        ->toContain('@container admin-workspace (max-width: 30rem)')
         ->toContain('@container admin-table (max-width: 62rem)')
         ->toContain('@container admin-table (max-width: 50rem)')
         ->toContain('@container admin-table (max-width: 38rem)')
@@ -36,7 +37,9 @@ it('keeps admin responsiveness container-driven and table overflow-free', functi
     expect($controls)
         ->toContain('admin-data-controls__utility--has-reset')
         ->toContain('admin-data-controls__utility--has-actions')
-        ->toContain('admin-data-controls__utility--has-selection');
+        ->toContain('admin-data-controls__utility--has-selection')
+        ->toContain('admin-data-controls__filter-trigger')
+        ->toContain('admin-data-controls__filters');
 });
 
 it('keeps selection terminal while responsive tables remove supportive data first', function (): void {
