@@ -530,6 +530,12 @@ function mountElement(element) {
     instances.set(element, entry);
 }
 
+export function disposeStorageVisualizations() {
+    for (const element of Array.from(instances.keys())) {
+        disposeElement(element);
+    }
+}
+
 export function refreshStorageVisualizations() {
     for (const element of Array.from(instances.keys())) {
         if (! element.isConnected) disposeElement(element);
@@ -537,3 +543,5 @@ export function refreshStorageVisualizations() {
 
     document.querySelectorAll('[data-admin-viz="storage-capacity"]').forEach(mountElement);
 }
+
+document.addEventListener('livewire:navigating', disposeStorageVisualizations);

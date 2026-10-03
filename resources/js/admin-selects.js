@@ -40,6 +40,44 @@ function closeActive(except = null) {
     }
 }
 
+function cleanupOrphanedGeneratedUi() {
+    const knownRoots = new Set(Array.from(controllers.values(), (controller) => controller.root));
+    const knownMenus = new Set(Array.from(controllers.values(), (controller) => controller.menu));
+
+    document.querySelectorAll('[data-admin-select]').forEach((root) => {
+        if (! knownRoots.has(root)) root.remove();
+    });
+
+    document.querySelectorAll('.admin-select__menu[id^="admin-select-menu-"]').forEach((menu) => {
+        if (! knownMenus.has(menu)) menu.remove();
+    });
+
+    document.querySelectorAll(`${workspaceSelectSelector}.admin-controlled-select__native`).forEach((select) => {
+        if (controllers.has(select)) return;
+
+        select.classList.remove('admin-controlled-select__native');
+        if (select.getAttribute('tabindex') === '-1') select.removeAttribute('tabindex');
+        if (select.getAttribute('aria-hidden') === 'true') select.removeAttribute('aria-hidden');
+    });
+}
+
+function teardownWorkspaceSelects() {
+    if (enhanceFrame !== null) {
+        window.cancelAnimationFrame(enhanceFrame);
+        enhanceFrame = null;
+    }
+
+    activeController?.close();
+
+    for (const controller of controllers.values()) {
+        controller.destroy();
+    }
+
+    controllers.clear();
+    activeController = null;
+    cleanupOrphanedGeneratedUi();
+}
+
 function createController(select) {
     const id = ++selectId;
     const root = document.createElement('span');
@@ -310,7 +348,7 @@ function createController(select) {
     select.addEventListener('change', sync);
     select.addEventListener('input', sync);
 
-    const controller = { close, destroy, root, select, sync };
+    const controller = { close, destroy, menu, root, select, sync };
     rebuildOptions();
     sync();
 
@@ -326,6 +364,8 @@ function enhanceWorkspaceSelects() {
             controllers.delete(select);
         }
     }
+
+    cleanupOrphanedGeneratedUi();
 
     for (const select of document.querySelectorAll(workspaceSelectSelector)) {
         const existing = controllers.get(select);
@@ -366,7 +406,5 @@ document.addEventListener('pointerdown', (event) => {
 scheduleEnhancement();
 registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
-document.addEventListener('livewire:navigated', () => {
-    activeController?.close();
-    scheduleEnhancement();
-});
+document.addEventListener('livewire:navigating', teardownWorkspaceSelects);
+document.addEventListener('livewire:navigated', scheduleEnhancement);

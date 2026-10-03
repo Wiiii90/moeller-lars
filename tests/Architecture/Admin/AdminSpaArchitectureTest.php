@@ -4,6 +4,7 @@ it('uses one framework-native SPA navigation and runtime lifecycle', function ()
     $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
     $viz = file_get_contents(resource_path('js/admin-viz.js'));
     $selects = file_get_contents(resource_path('js/admin-selects.js'));
+    $storageViz = file_get_contents(resource_path('js/admin-storage-viz.js'));
     $vizHook = file_get_contents(resource_path('views/filament/partials/admin-viz.blade.php'));
     $publicationControl = file_get_contents(app_path('Livewire/Admin/PublicationStateControl.php'));
 
@@ -24,8 +25,13 @@ it('uses one framework-native SPA navigation and runtime lifecycle', function ()
         ->not->toContain('DOMContentLoaded')
         ->not->toContain("alpine:navigate")
         ->and($selects)
-        ->toContain("document.addEventListener('livewire:navigated'")
+        ->toContain("document.addEventListener('livewire:navigating', teardownWorkspaceSelects)")
+        ->toContain("document.addEventListener('livewire:navigated', scheduleEnhancement)")
+        ->toContain('cleanupOrphanedGeneratedUi()')
         ->not->toContain('DOMContentLoaded')
+        ->and($storageViz)
+        ->toContain("document.addEventListener('livewire:navigating', disposeStorageVisualizations)")
+        ->toContain('export function disposeStorageVisualizations()')
         ->and($publicationControl)
         ->toContain('final class PublicationStateControl')
         ->toContain("view('livewire.admin.publication-state-control')")
