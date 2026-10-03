@@ -48,7 +48,6 @@
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    table-layout: fixed;
 }
 
 .admin-table th,
@@ -326,6 +325,10 @@
 /* Compact tables keep their structure but reduce action chrome before any data
  * column has to become unreadable. */
 @container admin-table (max-width: 62rem) {
+    .admin-table > table {
+        table-layout: fixed;
+    }
+
     .admin-row-actions .admin-action__label,
     .media-workspace__row-actions .admin-action__label,
     .journal-row-actions .admin-action__label,
@@ -677,29 +680,38 @@
         display: none !important;
     }
 
-    /* Analytics and Home keep their primary visual surface only. */
+    /* Analytics keeps the map. Home keeps its functional Hero rail and drops
+     * the parallel artwork preview, so narrow mode never removes editing. */
     .analytics-visual-stage,
     .home-hero-surface {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
-    .analytics-visual-stage > .analytics-world,
-    .home-hero-surface > .home-hero-surface__visual {
+    .analytics-visual-stage > .analytics-world {
         display: block !important;
+        grid-column: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+    }
+
+    .analytics-stage-rail,
+    .home-hero-surface > .home-hero-surface__visual {
+        display: none !important;
+    }
+
+    .home-hero-rail {
+        display: flex !important;
         grid-column: 1 !important;
         width: 100% !important;
         height: 100% !important;
         padding: 0 !important;
     }
 
-    .analytics-stage-rail,
-    .home-hero-rail {
-        display: none !important;
-    }
-
-    .analytics-visual-stage > .analytics-world {
-        min-height: 0 !important;
+    .custom-page-component-sequence .admin-responsive-meta {
+        display: block;
     }
 
     .general-live-preview__preset {
@@ -875,6 +887,39 @@
     .general-social-table__actions .admin-toolbar {
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         max-width: none;
+    }
+
+    .home-source-table .home-source-table__candidates,
+    .home-source-table .home-source-table__artworks,
+    .home-source-table .home-source-table__year {
+        display: none;
+    }
+
+    .home-source-table .admin-row-actions {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr);
+        gap: .12rem;
+    }
+
+    .home-source-table .admin-action {
+        width: 100%;
+        min-width: 0;
+        padding-inline: .2rem;
+        white-space: normal;
+    }
+
+    .home-components-table .home-components-table__type {
+        display: none;
+    }
+
+    .home-components-table .admin-responsive-meta {
+        display: block;
+    }
+
+    .home-components-table .admin-row-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .12rem;
     }
 }
 
@@ -1073,6 +1118,25 @@
     .admin-dashboard__feed-actions,
     .admin-pages__row-actions {
         grid-auto-flow: row;
+    }
+
+    .home-source-table .home-source-table__status,
+    .home-source-table .home-source-table__source {
+        display: none;
+    }
+
+    .home-source-table .admin-responsive-meta {
+        display: block;
+    }
+
+    .general-social-table .general-social-table__col-url,
+    .general-social-table .general-social-table__url-head,
+    .general-social-table .general-social-table__url {
+        display: none;
+    }
+
+    .general-social-table .admin-responsive-meta {
+        display: block;
     }
 }
 
