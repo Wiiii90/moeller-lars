@@ -261,7 +261,9 @@ it('keeps General responsive state monotonic and its social table aligned', func
     expect($generalCss)
         ->toContain('min-height: 5.9rem')
         ->toContain('height: 4.5rem !important')
-        ->toContain('width: calc(33.333333% - 5rem) !important');
+        ->not->toContain('width: calc(33.333333% - 5rem) !important')
+        ->toContain('minmax(4.5rem, 1fr)')
+        ->toContain('minmax(5rem, 1fr)');
 
     expect($social)
         ->toContain('admin-table__col-position')
@@ -346,4 +348,57 @@ it('locks every two-metric Minimal strip to exact halves', function (): void {
     expect($general)
         ->not->toContain('width: calc(33.333333% - 5rem) !important')
         ->not->toContain(".general-social-table__col-url,\n.general-social-table__col-actions {\n    width: 33.333333% !important;");
+});
+
+
+it('covers Analytics Storage and Activity in the responsive contract', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+    $analytics = file_get_contents($root.'/resources/views/filament/pages/analytics.blade.php');
+    $storage = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/storage-overview.blade.php');
+    $activity = file_get_contents($root.'/resources/views/filament/pages/activity.blade.php');
+
+    expect($analytics)
+        ->toContain('analytics-status-metrics')
+        ->toContain("'nb_visits' => 'visits'")
+        ->toContain("'nb_uniq_visitors' => 'unique'")
+        ->toContain("'nb_actions' => 'actions'");
+
+    expect($storage)
+        ->toContain('storage-status-metrics')
+        ->toContain('storage-metric--used')
+        ->toContain('storage-metric--remaining')
+        ->toContain('admin-storage__capacity-label--short');
+
+    expect($activity)
+        ->toContain('activity-status-metrics')
+        ->toContain("'Changes' => 'changes'")
+        ->toContain("'Pending' => 'pending'")
+        ->toContain('AdminIcon::Clear->mini()')
+        ->toContain('AdminIcon::Activity->mini()')
+        ->toContain('AdminIcon::Commit->mini()');
+
+    expect($responsive)
+        ->toContain('Analytics / Storage / Activity responsive authority')
+        ->toContain('Analytics/Storage/Activity burger-shell monotonicity')
+        ->toContain('.analytics-visual-stage > .analytics-stage-rail')
+        ->toContain('.admin-storage__distribution')
+        ->toContain('.activity-atlas__view.activity-clock')
+        ->toContain('.media-workspace__usage-cell')
+        ->toContain('.activity-events-table .activity-col--publication');
+});
+
+it('locks Analytics Storage and Activity Minimal metrics to exact halves', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+
+    expect($responsive)
+        ->toContain('.analytics-status-metrics > .analytics-metric--visits')
+        ->toContain('.analytics-status-metrics > .analytics-metric--unique')
+        ->toContain('.storage-status-metrics > .storage-metric--used')
+        ->toContain('.storage-status-metrics > .storage-metric--remaining')
+        ->toContain('.activity-status-metrics > .activity-metric--changes')
+        ->toContain('.activity-status-metrics > .activity-metric--pending')
+        ->toContain('grid-column: 1 !important')
+        ->toContain('grid-column: 2 !important');
 });
