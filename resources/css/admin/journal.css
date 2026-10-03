@@ -1,11 +1,12 @@
 /* Journal-specific content presentation only. Generic workspace/table/action/control geometry lives in shared admin modules. */
 
-/* Journal keeps the complete icon + label action vocabulary visible. Both
- * variants keep the shared desktop floor; the Blog rail now uses its available
- * two-unit width instead of pushing the trailing actions off-canvas. */
+/* Journal keeps the complete semantic action vocabulary while the canonical
+ * responsive layer progressively removes labels/supportive columns as width
+ * decreases. The table itself never owns a fixed minimum-width floor. */
 .journal-table--blog,
 .journal-table--exhibitions {
-    min-width: 76rem !important;
+    min-width: 0 !important;
+    max-width: 100%;
 }
 
 /* Blog needs a wider action rail than Exhibitions: content ends on the 3/6
@@ -41,7 +42,7 @@
  * keeps its intrinsic label width while the spare rail space is distributed
  * evenly, so no action paints into the next slot. */
 .journal-row-actions--blog {
-    grid-template-columns: repeat(7, minmax(max-content, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: .28rem !important;
     justify-content: stretch;
 }
@@ -61,7 +62,7 @@
     min-width: 0;
     padding-inline: .08rem;
     justify-content: flex-start !important;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .journal-row-actions .admin-action--with-icon {
@@ -74,6 +75,8 @@
 
 .journal-row-actions .admin-action__label {
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
