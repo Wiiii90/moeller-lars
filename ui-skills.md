@@ -549,6 +549,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Tables may enter a narrower state earlier than metrics or stages because each component responds to its own available width.
 - **Metric separators are the preferred soft alignment grid.** On a page with a six-cell metric strip, toolbar regions and major table-column boundaries should align to the same 1/6 separators whenever semantics and fit allow. Deviate only when content needs it; do not invent arbitrary tracks while a clean metric boundary is available.
 - For Dashboard, the feed table still follows the six-cell ruler (cell 1 = Position/Drag/Type, cell 2 = Date, cells 3–4 = Title, cell 5 = Sender, cell 6 = Actions + terminal Selection). The toolbar is intentionally more elastic: Type, Clear, Dashboard actions and Selection stay intrinsically compact on the right; Search owns all remaining width and may shrink only as far as one metric cell. Right-side controls therefore consume space from Search only when they actually need it.
+- Dashboard table priority is fixed for narrow widths: Sender yields first; **Type and Date remain standalone columns through Minimal**; Actions compacts to the icon rail before either of those columns may disappear.
 - While the surface remains tabular, toolbar Selected-count, header select-all and row checkboxes share one terminal Selection rail at every responsive state.
 - Preserve table semantics where practical; do not default narrow tables to card stacks.
 - Do not reduce shared semantic font sizes merely to recover width.
@@ -563,6 +564,7 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - A narrow stage may become one focused surface and may use a small local presentation-only selector when equivalent views still need to be reachable.
 - General may omit parallel Live Preview; Storage may replace desktop Capacity/Distribution visuals with one functional compact surface.
 - **Dashboard keeps Storage | Activity | Analytics as three simultaneous stage cells through Wide, Compact and Narrow. Only Minimal may switch to the local Storage / Activity / Analytics selector and show one stage cell at a time.** Burger/sidebar collapse alone must not trigger the one-cell Dashboard stage.
+- Dashboard stage captions/facts remain visible and one-line through Narrow. The Dashboard stage owns a smooth container-relative height; footer wrapping must never change graphic vertical position.
 - Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
 
 Browser review must continuously resize through transition regions, not only check named device presets.
