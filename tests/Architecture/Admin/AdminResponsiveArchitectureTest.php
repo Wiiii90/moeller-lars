@@ -27,7 +27,7 @@ it('keeps admin responsiveness container-driven and table overflow-free', functi
         ->toContain('overflow-x: clip !important')
         ->toContain('.general-appearance-stage__preview')
         ->toContain('.admin-storage__distribution')
-        ->toContain('.admin-dashboard__overview-column:nth-child(n + 2)')
+        ->toContain('.admin-dashboard__overview-switcher')
         ->toContain('.custom-page-component-sequence .admin-responsive-meta')
         ->not->toContain('admin-visual-stage--stackable');
 
