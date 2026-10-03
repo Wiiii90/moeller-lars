@@ -12,14 +12,14 @@ use LogicException;
 
 final class SiteNodePresentation
 {
-    public function icon(SiteSectionType $type): AdminIcon
+    public function icon(SiteSectionType $type): string
     {
         return match ($type) {
-            SiteSectionType::Home => AdminIcon::Home,
-            SiteSectionType::Gallery => AdminIcon::Gallery,
-            SiteSectionType::Journal => AdminIcon::Journal,
-            SiteSectionType::CustomPage => AdminIcon::CustomPage,
-            SiteSectionType::NavigationNode => AdminIcon::NavigationNode,
+            SiteSectionType::Home => AdminIcon::Home->value,
+            SiteSectionType::Gallery => AdminIcon::Gallery->value,
+            SiteSectionType::Journal => AdminIcon::Journal->value,
+            SiteSectionType::CustomPage => AdminIcon::CustomPage->value,
+            SiteSectionType::NavigationNode => AdminIcon::NavigationNode->value,
         };
     }
 
