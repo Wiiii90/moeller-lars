@@ -118,3 +118,21 @@ it('keeps Dashboard responsive state monotonic across sidebar collapse', functio
         ->toContain('@media (max-width: 1023px)')
         ->toContain('padding-top: var(--admin-shell-content-inset) !important');
 });
+
+
+it('aligns the Dashboard action heading with the row action rail', function (): void {
+    $root = dirname(__DIR__, 3);
+    $feedCss = file_get_contents($root.'/resources/css/admin/dashboard-feed.css');
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+
+    expect($feedCss)
+        ->toContain('.admin-dashboard__feed-table thead .admin-table__actions')
+        ->toContain('text-align: right !important');
+
+    expect($responsive)
+        ->toContain('Dashboard responsive authority')
+        ->toContain('grid-template-columns: repeat(3, minmax(0, 1fr)) !important')
+        ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important')
+        ->toContain('grid-column: 1 / -1 !important')
+        ->toContain('border: 0 !important');
+});
