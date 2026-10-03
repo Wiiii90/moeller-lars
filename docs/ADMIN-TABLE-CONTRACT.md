@@ -138,6 +138,8 @@ Selection is invariant while the surface remains a table: the toolbar count/trig
 
 Responsive reduction must preserve semantic DOM/action order. Do not visually reorder cells with CSS while leaving keyboard/screen-reader order behind, and do not reduce shared semantic font sizes as a fitting technique.
 
+Toolbars are the exception to structural row reflow: the canonical toolbar remains exactly one row at every responsive state. Width pressure is handled by track redistribution, filter compaction and complete-label → icon-only/overflow action transitions, never by creating a second toolbar row or by clipping labels into fragments.
+
 Metrics, tables, toolbars and stages may transition at different widths because each responds to its own available container width.
 
 ## Implementation authority
