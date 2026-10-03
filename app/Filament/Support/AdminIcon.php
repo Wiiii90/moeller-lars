@@ -34,6 +34,8 @@ enum AdminIcon: string
     case Account = 'heroicon-o-user-circle';
     case GeneratePassword = 'heroicon-o-sparkles';
     case Copy = 'heroicon-o-clipboard-document';
+    case Clear = 'heroicon-o-backspace';
+    case Selection = 'heroicon-o-queue-list';
 
     case Back = 'heroicon-o-arrow-left';
     case Previous = 'heroicon-o-chevron-left';
