@@ -117,3 +117,62 @@ it('uses one shared read-only live-search transport and keeps persistence event-
     sort($remoteSearchViolations);
     expect($remoteSearchViolations)->toBe([]);
 });
+
+it('does not make text-like Filament controls live per keystroke', function (): void {
+    $root = dirname(__DIR__, 3);
+    $constructors = [
+        'TextInput::make(' => true,
+        'Textarea::make(' => true,
+        'MarkdownEditor::make(' => true,
+        'Select::make(' => false,
+        'Toggle::make(' => false,
+        'Checkbox::make(' => false,
+        'DatePicker::make(' => false,
+        'DateTimePicker::make(' => false,
+        'FileUpload::make(' => false,
+        'MediaAssetSelect::make(' => false,
+        'MediaAssetSelect::makeId(' => false,
+        'AdminColorControl::make(' => true,
+    ];
+    $violations = [];
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($root.'/app/Filament', FilesystemIterator::SKIP_DOTS),
+    );
+
+    foreach ($files as $file) {
+        if (! $file->isFile() || $file->getExtension() !== 'php') {
+            continue;
+        }
+
+        $source = file_get_contents($file->getPathname());
+        if ($source === false) {
+            continue;
+        }
+
+        $offset = 0;
+        while (($liveOffset = strpos($source, '->live()', $offset)) !== false) {
+            $prefix = substr($source, 0, $liveOffset);
+            $nearestConstructor = null;
+            $nearestOffset = -1;
+
+            foreach ($constructors as $constructor => $textLike) {
+                $candidateOffset = strrpos($prefix, $constructor);
+                if ($candidateOffset !== false && $candidateOffset > $nearestOffset) {
+                    $nearestConstructor = $constructor;
+                    $nearestOffset = $candidateOffset;
+                }
+            }
+
+            if ($nearestConstructor !== null && $constructors[$nearestConstructor]) {
+                $violations[] = str_replace($root.DIRECTORY_SEPARATOR, '', $file->getPathname())
+                    .' -> '.$nearestConstructor.'->live()';
+            }
+
+            $offset = $liveOffset + strlen('->live()');
+        }
+    }
+
+    sort($violations);
+    expect($violations)->toBe([]);
+});
