@@ -331,6 +331,7 @@ Responsive behavior is content-driven, not device-name driven. Issue #15 owns th
 - ordinary admin tables must fit without horizontal scrolling or reserved horizontal-scrollbar space; reduce supportive/optional columns and compact actions instead;
 - metrics reduce deliberately by feature semantics; for Dashboard specifically the contract is 6 / 6 / 3 / 2 across Wide / Compact / Narrow / Minimal, retaining Visits + Published Artworks + Recent Changes at Narrow and Visits + Published Artworks at Minimal; other metric strips may use their documented feature-specific reductions but never a one-column list;
 - shared Visual Stage desktop geometry does not imply generic mobile stacking. Each stage defines a task-specific Narrow/Minimal composition that preserves required operations and may remove redundant visualization/parallel preview;
+- Dashboard specifically keeps all three stage panes (Storage | Activity | Analytics) visible through Wide, Compact and Narrow; only Minimal may use the local selector and show one stage pane at a time; burger/sidebar collapse alone is not a Dashboard stage breakpoint;
 - responsive action density may progress from label+icon to icon-only to essential icons plus an overflow menu, while preserving accessible labels and semantic order;
 - legacy public breakpoint values are historical evidence only, not target layout authorities;
 - browser review must sweep continuously through transition widths, including sidebar-expanded/constrained desktop states, to catch broken intermediate compositions.
