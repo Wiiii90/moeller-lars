@@ -119,7 +119,7 @@
                     <span class="gallery-workspace__control-label">Gallery</span>
                     <div class="gallery-workspace__gallery-actions">
                         <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('gallerySettings')" aria-label="Gallery settings">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
                             <span class="admin-action__label">Settings</span>
                         </button>
                         <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addArtwork')" aria-label="Add artwork">
@@ -127,7 +127,7 @@
                             <span class="admin-action__label">Add artwork</span>
                         </button>
                         <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('materialPresets')" aria-label="Materials">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Materials->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Gallery->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
                             <span class="admin-action__label">Materials</span>
                         </button>
                         @if ($galleryContext['public_url'])
