@@ -2738,6 +2738,26 @@
     gap: .18rem !important;
 }
 
+.gallery-workspace__selection-anchor {
+    width: 100%;
+    min-width: 0;
+}
+
+.gallery-workspace__selection-trigger {
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0 !important;
+    padding-right: 0 !important;
+    justify-content: stretch !important;
+}
+
+.gallery-workspace__selection-count {
+    margin-left: 0 !important;
+    justify-self: center;
+}
+
 @container admin-workspace (max-width: 54rem) {
     .admin-gallery-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
