@@ -13,7 +13,8 @@
 .admin-dashboard__overview-column {
     display: grid;
     min-width: 0;
-    grid-template-rows: auto var(--admin-visual-stage-height) auto;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     padding: 1.2rem 1rem 1.25rem 0;
 }
 
@@ -121,26 +122,29 @@
 }
 
 
-/* Storage mirrors Activity's caption geometry: the visual owns the flexible
- * center and the facts occupy one fixed caption reserve below it. */
-.admin-dashboard__overview-column:first-child > .admin-dashboard__facts {
+/* Storage mirrors Activity exactly: one internal visual/caption unit. The
+ * caption is constrained to the orbit width and centered beneath the donut. */
+.admin-dashboard__storage-stage > .admin-dashboard__facts {
     box-sizing: border-box;
-    width: 100%;
+    width: min(100%, var(--admin-stage-orbit-size));
+    min-width: 0;
     min-height: var(--admin-stage-orbit-caption-reserve);
     height: var(--admin-stage-orbit-caption-reserve);
+    grid-row: 2;
     margin: 0;
     align-items: center;
+    justify-self: center;
     justify-content: center;
     text-align: center;
 }
 
-.admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual {
+.admin-dashboard__storage-stage > .admin-dashboard__storage-visual {
     align-self: stretch;
     justify-self: stretch;
     place-items: center;
 }
 
-.admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual > .admin-storage-capacity {
+.admin-dashboard__storage-stage > .admin-dashboard__storage-visual > .admin-storage-capacity {
     align-self: center;
     justify-self: center;
 }
