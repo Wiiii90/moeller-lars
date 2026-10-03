@@ -200,3 +200,15 @@
 }
 
 
+
+
+/* Compact row-action rail: preserve data width before action whitespace. */
+@container admin-table (max-width: 50rem) {
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions {
+        gap: .12rem;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
+        padding-inline: .1rem;
+    }
+}
