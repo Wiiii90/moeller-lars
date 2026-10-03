@@ -6,8 +6,9 @@
 ])
 
 @php
-    $detectedFilterCount = isset($filters) ? substr_count($filters->toHtml(), '<select') : 0;
-    $normalizedFilterCount = max((int) ($filterCount ?? $detectedFilterCount), 0);
+    $detectedFilterCount = isset($filters) ? substr_count($filters->toHtml(), '<label') : 0;
+    $actualFilterCount = max((int) ($filterCount ?? $detectedFilterCount), 0);
+    $normalizedFilterCount = min($actualFilterCount, 4);
     $normalizedSearchSpan = $searchSpan === null
         ? null
         : min(max((int) $searchSpan, 1), 6);
@@ -24,13 +25,36 @@
         'admin-data-controls--six-cell-search-'.$normalizedSearchSpan => $metricGrid && $normalizedSearchSpan !== null,
     ]) }}
     @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
+    @isset($filters)
+        x-data="{ adminFiltersOpen: false }"
+        x-on:keydown.escape.window="adminFiltersOpen = false"
+        x-on:click.outside="adminFiltersOpen = false"
+    @endisset
 >
     @isset($search)
         {{ $search }}
     @endisset
 
     @isset($filters)
-        {{ $filters }}
+        <button
+            class="admin-data-controls__filter-trigger"
+            type="button"
+            x-on:click="adminFiltersOpen = ! adminFiltersOpen"
+            x-bind:aria-expanded="adminFiltersOpen.toString()"
+            aria-haspopup="true"
+            aria-label="Toggle filters"
+        >
+            <span>Filters</span>
+            <span class="admin-data-controls__filter-trigger-count">{{ $actualFilterCount }}</span>
+        </button>
+        <div
+            class="admin-data-controls__filters"
+            x-bind:class="{ 'is-open': adminFiltersOpen }"
+            role="group"
+            aria-label="Filters"
+        >
+            {{ $filters }}
+        </div>
     @endisset
 
     @if ($hasUtility)
