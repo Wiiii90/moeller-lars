@@ -4086,3 +4086,374 @@
         display: none !important;
     }
 }
+
+
+/* Final metric geometry + Activity publication priority authority.
+ * Explicit slot ownership prevents source-order/grid-span leakage from
+ * producing 1/3–2/3 Minimal metrics, disappearing dividers or half-used cells. */
+
+/* Narrow: exact thirds, full cell usage, both dividers present. */
+@container admin-workspace (min-width: 38.01rem) and (max-width: 54rem) {
+    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics) {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric,
+        .storage-status-metrics > .storage-metric,
+        .activity-status-metrics > .activity-metric
+    ) {
+        display: none !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--visits,
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes {
+        display: block !important;
+        grid-column: 1 !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--unique,
+    .storage-status-metrics > .storage-metric--remaining,
+    .activity-status-metrics > .activity-metric--pending {
+        display: block !important;
+        grid-column: 2 !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--actions,
+    .storage-status-metrics > .storage-metric--files,
+    .activity-status-metrics > .activity-metric--commits {
+        display: block !important;
+        grid-column: 3 !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric--visits,
+        .analytics-status-metrics > .analytics-metric--unique,
+        .analytics-status-metrics > .analytics-metric--actions,
+        .storage-status-metrics > .storage-metric--used,
+        .storage-status-metrics > .storage-metric--remaining,
+        .storage-status-metrics > .storage-metric--files,
+        .activity-status-metrics > .activity-metric--changes,
+        .activity-status-metrics > .activity-metric--pending,
+        .activity-status-metrics > .activity-metric--commits
+    ) {
+        box-sizing: border-box;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        justify-self: stretch !important;
+        align-self: stretch !important;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric--actions,
+        .storage-status-metrics > .storage-metric--files,
+        .activity-status-metrics > .activity-metric--commits
+    ) {
+        border-right: 0 !important;
+    }
+}
+
+/* Burger shell uses the same exact-thirds state and never promotes it. */
+@media (min-width: 38.01rem) and (max-width: 63.99rem) {
+    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics) {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--visits,
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes {
+        display: block !important;
+        grid-column: 1 !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--unique,
+    .storage-status-metrics > .storage-metric--remaining,
+    .activity-status-metrics > .activity-metric--pending {
+        display: block !important;
+        grid-column: 2 !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--actions,
+    .storage-status-metrics > .storage-metric--files,
+    .activity-status-metrics > .activity-metric--commits {
+        display: block !important;
+        grid-column: 3 !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric--visits,
+        .analytics-status-metrics > .analytics-metric--unique,
+        .analytics-status-metrics > .analytics-metric--actions,
+        .storage-status-metrics > .storage-metric--used,
+        .storage-status-metrics > .storage-metric--remaining,
+        .storage-status-metrics > .storage-metric--files,
+        .activity-status-metrics > .activity-metric--changes,
+        .activity-status-metrics > .activity-metric--pending,
+        .activity-status-metrics > .activity-metric--commits
+    ) {
+        box-sizing: border-box;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        justify-self: stretch !important;
+        align-self: stretch !important;
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric--actions,
+        .storage-status-metrics > .storage-metric--files,
+        .activity-status-metrics > .activity-metric--commits
+    ) {
+        border-right: 0 !important;
+    }
+}
+
+/* Minimal: exact halves, explicit source items, full-width cells and one
+ * centered divider. */
+@container admin-workspace (max-width: 38rem) {
+    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics) {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-auto-columns: minmax(0, 1fr) !important;
+        grid-auto-flow: row !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric,
+        .storage-status-metrics > .storage-metric,
+        .activity-status-metrics > .activity-metric
+    ) {
+        display: none !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--visits,
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes {
+        display: block !important;
+        grid-column: 1 !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--unique,
+    .storage-status-metrics > .storage-metric--remaining,
+    .activity-status-metrics > .activity-metric--pending {
+        display: block !important;
+        grid-column: 2 !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric--visits,
+        .analytics-status-metrics > .analytics-metric--unique,
+        .storage-status-metrics > .storage-metric--used,
+        .storage-status-metrics > .storage-metric--remaining,
+        .activity-status-metrics > .activity-metric--changes,
+        .activity-status-metrics > .activity-metric--pending
+    ) {
+        box-sizing: border-box;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        justify-self: stretch !important;
+        align-self: stretch !important;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric--visits,
+        .storage-status-metrics > .storage-metric--used,
+        .activity-status-metrics > .activity-metric--changes
+    ) {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    :is(
+        .analytics-status-metrics > .analytics-metric--unique,
+        .storage-status-metrics > .storage-metric--remaining,
+        .activity-status-metrics > .activity-metric--pending
+    ) {
+        border-right: 0 !important;
+    }
+}
+
+@media (max-width: 38rem) {
+    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics) {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--visits,
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes {
+        grid-column: 1 !important;
+        width: 100% !important;
+    }
+
+    .analytics-status-metrics > .analytics-metric--unique,
+    .storage-status-metrics > .storage-metric--remaining,
+    .activity-status-metrics > .activity-metric--pending {
+        grid-column: 2 !important;
+        width: 100% !important;
+    }
+}
+
+/* Activity priority: once Narrow, Next Publication owns the stage. Calendar
+ * and Clock are supportive visualizations and yield before publication state
+ * or its Review / Reset / Commit actions. */
+@container admin-workspace (max-width: 54rem) {
+    .activity-atlas__grid {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) !important;
+        height: var(--admin-visual-stage-height) !important;
+    }
+
+    .activity-atlas__visual {
+        display: none !important;
+    }
+
+    .activity-publication {
+        display: grid !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
+        gap: 0 !important;
+        padding: var(--admin-stage-divider-inset) 0 !important;
+        align-content: stretch !important;
+        overflow: hidden !important;
+        border: 0 !important;
+    }
+
+    .activity-publication__header {
+        display: flex !important;
+    }
+
+    .activity-publication__staged,
+    .activity-publication__readiness,
+    .activity-publication__latest {
+        display: grid !important;
+    }
+
+    .activity-publication__latest {
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .activity-publication__actions {
+        display: block !important;
+        margin-top: 0 !important;
+        padding: .7rem 0 0 !important;
+        align-self: end !important;
+    }
+
+    .activity-publication__actions .admin-toolbar {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: .3rem !important;
+        justify-content: flex-end !important;
+    }
+
+    .activity-publication__actions .admin-action__label {
+        display: inline !important;
+    }
+
+    .activity-publication__actions .admin-action {
+        width: auto !important;
+        min-width: 0 !important;
+        padding-inline: .45rem !important;
+    }
+}
+
+@media (min-width: 38.01rem) and (max-width: 63.99rem) {
+    .activity-atlas__grid {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) !important;
+    }
+
+    .activity-atlas__visual {
+        display: none !important;
+    }
+
+    .activity-publication {
+        display: grid !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
+        padding: var(--admin-stage-divider-inset) 0 !important;
+    }
+
+    .activity-publication__header,
+    .activity-publication__staged,
+    .activity-publication__readiness,
+    .activity-publication__latest {
+        display: grid !important;
+    }
+
+    .activity-publication__header {
+        display: flex !important;
+    }
+
+    .activity-publication__actions .admin-action__label {
+        display: inline !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .activity-atlas__grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) !important;
+    }
+
+    .activity-publication {
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        height: 100% !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
+        padding: var(--admin-stage-divider-inset) 0 !important;
+        border-top: 0 !important;
+    }
+
+    .activity-publication__staged,
+    .activity-publication__readiness {
+        display: grid !important;
+        gap: .2rem !important;
+        padding: .6rem 0 !important;
+    }
+
+    .activity-publication__staged > span,
+    .activity-publication__readiness > span {
+        display: block !important;
+    }
+
+    .activity-publication__actions {
+        display: block !important;
+        margin: 0 !important;
+        padding: .7rem 0 0 !important;
+        justify-self: stretch !important;
+    }
+
+    .activity-publication__actions .admin-toolbar {
+        width: 100% !important;
+        justify-content: flex-end !important;
+    }
+
+    .activity-publication__actions .admin-action__label {
+        display: inline !important;
+    }
+}
