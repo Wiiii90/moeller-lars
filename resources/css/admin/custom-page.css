@@ -28,9 +28,9 @@
     white-space: nowrap;
 }
 
-/* The hierarchy remains the scrollport and never grows beyond the workspace.
- * Its inner tracks keep a desktop floor large enough for the full icon + label
- * action vocabulary; narrower viewports scroll inside this surface. */
+/* The hierarchy always fits its workspace. Responsive column/action reduction
+ * is owned by the canonical responsive layer; no inner horizontal scrollport or
+ * desktop minimum-width floor is permitted. */
 .custom-page-component-sequence {
     width: 100%;
     min-width: 0;
@@ -40,7 +40,8 @@
 .custom-page-component-sequence__header,
 .custom-page-component-sequence__rows {
     width: 100%;
-    min-width: 76rem;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .custom-page-component-sequence__header > span:not(:first-child),
@@ -82,7 +83,7 @@
     min-width: 0;
     padding-inline: .08rem;
     justify-content: flex-start !important;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .custom-page-component-sequence .custom-page-row-actions .admin-action--with-icon {
@@ -95,6 +96,8 @@
 
 .custom-page-row-actions .admin-action__label {
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
