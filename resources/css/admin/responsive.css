@@ -1163,6 +1163,23 @@
 }
 
 
+/* Form internals are workspace components too; their reductions follow
+ * available content width rather than the browser viewport. */
+@container admin-workspace (max-width: 46rem) {
+    .admin-component-image-preview,
+    .admin-favicon-preview {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-rich-text-image-insert {
+        width: 100%;
+    }
+
+    .admin-rich-text-image-insert__external-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 /* Dialogs live outside the workspace container. Their responsive geometry is
  * therefore correctly viewport-based rather than tied to an admin component. */
 @media (max-width: 46rem) {
