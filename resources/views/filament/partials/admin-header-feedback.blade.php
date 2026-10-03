@@ -287,19 +287,19 @@
 >
     <span class="admin-header-feedback__icon" aria-hidden="true">
         <x-filament::icon
-            :icon="\App\Filament\Support\AdminIcon::FeedbackSuccess->mini()"
+            :icon="\App\Filament\Support\AdminIcon::NotificationSuccess->mini()"
             x-show="current?.status === 'success'"
         />
         <x-filament::icon
-            :icon="\App\Filament\Support\AdminIcon::FeedbackWarning->mini()"
+            :icon="\App\Filament\Support\AdminIcon::NotificationWarning->mini()"
             x-show="current?.status === 'warning'"
         />
         <x-filament::icon
-            :icon="\App\Filament\Support\AdminIcon::FeedbackDanger->mini()"
+            :icon="\App\Filament\Support\AdminIcon::NotificationDanger->mini()"
             x-show="current?.status === 'danger'"
         />
         <x-filament::icon
-            :icon="\App\Filament\Support\AdminIcon::FeedbackInfo->mini()"
+            :icon="\App\Filament\Support\AdminIcon::NotificationInfo->mini()"
             x-show="! ['success', 'warning', 'danger'].includes(current?.status ?? '')"
         />
     </span>
