@@ -2,8 +2,14 @@
 
 .admin-dashboard__feed-controls {
     display: grid;
-    grid-template-columns: repeat(24, minmax(0, 1fr));
-    gap: 0;
+    grid-template-columns:
+        minmax(16.666667%, 1fr)
+        max-content
+        max-content
+        max-content
+        8.5rem;
+    column-gap: .65rem;
+    row-gap: 0;
     padding: 0 0 .85rem;
     align-items: end;
 }
@@ -11,8 +17,7 @@
 .admin-dashboard__feed-controls > :first-child {
     min-width: 0 !important;
     width: 100%;
-    grid-column: span 8;
-    padding-right: .7rem;
+    padding-right: 0;
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__filters,
@@ -20,31 +25,43 @@
     display: contents;
 }
 
-.admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
+.admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
+    width: 6.5rem !important;
+    min-width: 6.5rem !important;
+}
+
 .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-    box-sizing: border-box;
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+    width: max-content !important;
     min-width: 0 !important;
-    width: 100%;
-    grid-column: span 4;
-    padding-inline: .35rem;
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-    padding-right: 0;
+    width: 8.5rem !important;
+    min-width: 8.5rem !important;
+    margin-left: 0 !important;
 }
 
 .admin-dashboard__feed-controls .admin-data-control-group,
-.admin-dashboard__feed-controls .admin-selection__anchor,
-.admin-dashboard__feed-controls .admin-data-control-group > .admin-action,
-.admin-dashboard__feed-controls .admin-selection__trigger {
-    width: 100%;
+.admin-dashboard__feed-controls .admin-selection__anchor {
+    width: auto;
+    min-width: 0;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child,
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child .admin-selection__anchor,
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child .admin-selection__trigger {
+    width: 8.5rem !important;
+}
+
+.admin-dashboard__feed-controls .admin-data-control-group > .admin-action {
+    width: auto;
     min-width: 0;
 }
 
 .admin-dashboard__feed-controls .admin-selection__trigger {
     display: grid;
+    min-width: 0;
     grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
     gap: 0;
     padding-right: 0;
