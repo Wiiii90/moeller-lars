@@ -231,7 +231,7 @@ final class General extends Page
                     ])
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
-                            'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--stackable',
+                            'class' => 'general-appearance-stage admin-visual-stage',
                             'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
                             'aria-label' => 'General settings and live public preview',
                         ])
