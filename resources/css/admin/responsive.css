@@ -70,6 +70,10 @@
     white-space: nowrap;
 }
 
+.admin-storage__compact-capacity {
+    display: none;
+}
+
 /* Wide/Compact: preserve the accepted one-row toolbar grammar even when the
  * browser viewport happens to trigger an older feature media query. */
 @container admin-workspace (min-width: 54.01rem) {
@@ -624,6 +628,38 @@
         display: none !important;
     }
 
+    .admin-storage__compact-capacity {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .55rem;
+        padding: .45rem 0;
+        border-top: 1px solid var(--admin-line);
+    }
+
+    .admin-storage__compact-capacity > span {
+        display: grid;
+        min-width: 0;
+        gap: .08rem;
+    }
+
+    .admin-storage__compact-capacity small {
+        overflow: hidden;
+        color: var(--admin-muted);
+        font-size: var(--admin-font-size-table-meta);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .admin-storage__compact-capacity strong {
+        overflow: hidden;
+        color: var(--admin-text);
+        font-size: var(--admin-font-size-table-support);
+        font-weight: 620;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
     .admin-storage__capacity-actions {
         min-height: 2.75rem;
         padding-top: .35rem;
@@ -671,6 +707,7 @@
     .activity-atlas__grid {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) auto !important;
     }
 
     .activity-atlas__visual {
@@ -691,9 +728,58 @@
     }
 
     .activity-atlas__view.activity-clock,
-    .activity-atlas__view.activity-clock[style*="display: none"],
-    .activity-publication {
+    .activity-atlas__view.activity-clock[style*="display: none"] {
         display: none !important;
+    }
+
+    .activity-publication {
+        display: grid !important;
+        min-height: 0 !important;
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: .75rem;
+        padding: .45rem 0 0 !important;
+        align-items: center;
+        border-top: 1px solid var(--admin-line);
+        border-left: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .activity-publication__header,
+    .activity-publication__recent,
+    .activity-publication__latest {
+        display: none !important;
+    }
+
+    .activity-publication__staged,
+    .activity-publication__readiness {
+        display: flex !important;
+        min-width: 0;
+        gap: .35rem;
+        padding: 0 !important;
+        align-items: baseline;
+        border: 0 !important;
+    }
+
+    .activity-publication__staged > strong {
+        font-size: .84rem !important;
+    }
+
+    .activity-publication__staged > small,
+    .activity-publication__readiness > small {
+        display: none !important;
+    }
+
+    .activity-publication__actions {
+        margin: 0 !important;
+        padding: 0 !important;
+        justify-self: end;
+    }
+
+    .activity-publication__actions .admin-toolbar {
+        gap: .2rem;
+        justify-content: flex-end;
     }
 
     /* Analytics keeps the map. Home keeps its functional Hero rail and drops
@@ -1030,6 +1116,25 @@
     .activity-calendar__cells,
     .activity-calendar__weekdays {
         gap: .07rem;
+    }
+
+    .activity-publication {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: .4rem;
+    }
+
+    .activity-publication__staged > span,
+    .activity-publication__readiness > span {
+        display: none;
+    }
+
+    .activity-publication__actions .admin-action__label {
+        display: none;
+    }
+
+    .activity-publication__actions .admin-action {
+        justify-content: center;
+        padding-inline: .3rem;
     }
 
     .home-workspace__skip-row {
