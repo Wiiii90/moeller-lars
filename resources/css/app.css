@@ -279,7 +279,7 @@ body.public-site #content {
     clip-path: inset(50%) !important;
 }
 
-@media (max-width: 550px) {
+@media (max-width: 40rem) {
     .artwork-viewer__topbar {
         top: max(.65rem, env(safe-area-inset-top));
         right: max(.65rem, env(safe-area-inset-right));
