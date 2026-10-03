@@ -55,7 +55,8 @@ it('keeps selection terminal while responsive tables remove supportive data firs
     expect($dashboardCss)
         ->toContain('Dashboard row actions have two states only')
         ->toContain('width: 18rem')
-        ->not->toContain('text-overflow: ellipsis');
+        ->toContain('.admin-dashboard__feed-actions .admin-action__label')
+        ->toContain('text-overflow: clip');
 
     expect($dashboard)
         ->toContain('admin-table__selection admin-table__selection--trailing')
