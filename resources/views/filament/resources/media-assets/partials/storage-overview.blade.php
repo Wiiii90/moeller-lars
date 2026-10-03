@@ -197,9 +197,21 @@
         />
 
         <div class="admin-storage__compact-capacity" aria-label="Storage capacity summary">
-            <span><small>Used</small><strong>{{ $capacity['authoritative'] ?? '—' }}</strong></span>
-            <span><small>Remaining</small><strong>{{ $capacity['remaining'] ?? '—' }}</strong></span>
-            <span><small>Allowance</small><strong>{{ $capacity['allowance'] ?? '—' }}</strong></span>
+            <span aria-label="Used {{ $capacity['authoritative'] ?? '—' }}">
+                <small class="admin-storage__capacity-label admin-storage__capacity-label--long" aria-hidden="true">Used</small>
+                <small class="admin-storage__capacity-label admin-storage__capacity-label--short" aria-hidden="true">U:</small>
+                <strong>{{ $capacity['authoritative'] ?? '—' }}</strong>
+            </span>
+            <span aria-label="Remaining {{ $capacity['remaining'] ?? '—' }}">
+                <small class="admin-storage__capacity-label admin-storage__capacity-label--long" aria-hidden="true">Remaining</small>
+                <small class="admin-storage__capacity-label admin-storage__capacity-label--short" aria-hidden="true">R:</small>
+                <strong>{{ $capacity['remaining'] ?? '—' }}</strong>
+            </span>
+            <span aria-label="Allowance {{ $capacity['allowance'] ?? '—' }}">
+                <small class="admin-storage__capacity-label admin-storage__capacity-label--long" aria-hidden="true">Allowance</small>
+                <small class="admin-storage__capacity-label admin-storage__capacity-label--short" aria-hidden="true">A:</small>
+                <strong>{{ $capacity['allowance'] ?? '—' }}</strong>
+            </span>
         </div>
 
         <div class="admin-storage__capacity-actions" aria-label="Storage capacity actions">
