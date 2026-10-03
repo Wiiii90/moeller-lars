@@ -142,7 +142,7 @@
                 <x-slot:reset>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">Filter</span>
-                        <button class="admin-action" type="button" wire:click="resetSourceFilters" @disabled(! $sourceFiltersActive)>Reset</button>
+                        <x-admin.clear-filters wire:click="resetSourceFilters" :disabled="! $sourceFiltersActive" />
                     </div>
                 </x-slot:reset>
 
@@ -168,7 +168,7 @@
                         <span class="admin-data-control-label">Selection</span>
                         <div class="admin-selection__anchor">
                             <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedSourceIds === [])>
-                                Selected Galleries <span class="admin-selection__count">{{ count($selectedSourceIds) }}</span>
+                                <x-admin.selection-trigger-label>Selected Galleries</x-admin.selection-trigger-label> <span class="admin-selection__count">{{ count($selectedSourceIds) }}</span>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">Enable preference</button>
@@ -308,7 +308,7 @@
                 <x-slot:reset>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">Filter</span>
-                        <button class="admin-action" type="button" wire:click="resetComponentFilters" @disabled(! $componentFiltersActive)>Reset</button>
+                        <x-admin.clear-filters wire:click="resetComponentFilters" :disabled="! $componentFiltersActive" />
                     </div>
                 </x-slot:reset>
 
@@ -328,7 +328,7 @@
                         <span class="admin-data-control-label">Selection</span>
                         <div class="admin-selection__anchor">
                             <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedComponentTargets === [])>
-                                Selected components <span class="admin-selection__count">{{ count($selectedComponentTargets) }}</span>
+                                <x-admin.selection-trigger-label>Selected components</x-admin.selection-trigger-label> <span class="admin-selection__count">{{ count($selectedComponentTargets) }}</span>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected up</button>
