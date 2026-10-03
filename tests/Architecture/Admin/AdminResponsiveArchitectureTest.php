@@ -186,8 +186,8 @@ it('preserves Dashboard stage captions and Type Date through Minimal', function 
         ->toContain('white-space: nowrap');
 
     expect($stage)
-        ->toContain('--admin-dashboard-stage-height: clamp(20rem, 30cqw, 23.5rem)')
-        ->toContain('height: var(--admin-dashboard-stage-height)')
+        ->not->toContain('--admin-dashboard-stage-height')
+        ->toContain('height: var(--admin-visual-stage-height)')
         ->not->toContain('admin-dashboard__overview-column + .admin-dashboard__overview-column {\n    padding-left: 1rem;\n    border-left');
 
     expect($responsive)
@@ -195,4 +195,25 @@ it('preserves Dashboard stage captions and Type Date through Minimal', function 
         ->toContain('display: table-cell !important')
         ->toContain('col.admin-dashboard__col-type')
         ->toContain('col.admin-dashboard__col-date');
+});
+
+
+it('keeps the shared Visual Stage height fixed across responsive widths', function (): void {
+    $root = dirname(__DIR__, 3);
+    $admin = file_get_contents($root.'/resources/css/admin.css');
+    $stage = file_get_contents($root.'/resources/css/admin/stage.css');
+    $dashboard = file_get_contents($root.'/resources/css/admin/dashboard.css');
+
+    expect($admin)
+        ->toContain('--admin-visual-stage-height: 23.5rem;')
+        ->not->toContain('--admin-visual-stage-height: min(');
+
+    expect($stage)
+        ->toContain('height: var(--admin-visual-stage-height)')
+        ->not->toContain('--admin-dashboard-stage-height');
+
+    expect($dashboard)
+        ->toContain('height: var(--admin-stage-orbit-caption-reserve)')
+        ->toContain('justify-content: center')
+        ->toContain('text-align: center');
 });
