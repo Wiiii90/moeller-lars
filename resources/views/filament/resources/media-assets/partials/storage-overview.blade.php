@@ -40,13 +40,13 @@
     }, $storageTargets);
 @endphp
 
-<x-admin.metrics :columns="6" aria-label="Storage statistics">
-    <x-admin.metric label="Files" :value="number_format($libraryFiles)">Available</x-admin.metric>
-    <x-admin.metric label="Images" :value="number_format($libraryImages)">Available images</x-admin.metric>
-    <x-admin.metric label="Unreferenced" :value="number_format($libraryUnreferenced)">No canonical consumer</x-admin.metric>
-    <x-admin.metric label="Original storage" :value="$capacity['authoritative'] ?? '—'">Counts against allowance</x-admin.metric>
-    <x-admin.metric label="Generated" :value="$capacity['generated'] ?? '—'">Rebuildable derivatives</x-admin.metric>
-    <x-admin.metric label="Remaining" :value="$capacity['remaining'] ?? '—'">{{ $capacity['remaining_detail'] ?? 'Storage allowance' }}</x-admin.metric>
+<x-admin.metrics :columns="6" class="storage-status-metrics" aria-label="Storage statistics">
+    <x-admin.metric class="storage-metric storage-metric--files" label="Files" :value="number_format($libraryFiles)">Available</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--images" label="Images" :value="number_format($libraryImages)">Available images</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--unreferenced" label="Unreferenced" :value="number_format($libraryUnreferenced)">No canonical consumer</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--used" label="Original storage" :value="$capacity['authoritative'] ?? '—'">Counts against allowance</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--generated" label="Generated" :value="$capacity['generated'] ?? '—'">Rebuildable derivatives</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--remaining" label="Remaining" :value="$capacity['remaining'] ?? '—'">{{ $capacity['remaining_detail'] ?? 'Storage allowance' }}</x-admin.metric>
 </x-admin.metrics>
 
 <section
