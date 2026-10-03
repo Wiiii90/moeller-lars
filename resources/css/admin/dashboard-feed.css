@@ -11,7 +11,7 @@
 .admin-dashboard__feed-controls > :first-child {
     min-width: 0 !important;
     width: 100%;
-    grid-column: span 12;
+    grid-column: span 8;
     padding-right: .7rem;
 }
 
@@ -27,7 +27,7 @@
     box-sizing: border-box;
     min-width: 0 !important;
     width: 100%;
-    grid-column: span 3;
+    grid-column: span 4;
     padding-inline: .35rem;
 }
 
@@ -66,10 +66,6 @@
 .admin-dashboard .admin-data-row { cursor: default; }
 .admin-dashboard__feed-table { overflow-x: hidden; }
 .admin-dashboard__feed-table > table { min-width: 0; table-layout: fixed; }
-
-.admin-dashboard__feed-table thead .admin-table__actions {
-    text-align: right !important;
-}
 
 .admin-dashboard__feed-table .admin-data-title,
 .admin-dashboard__feed-table .admin-data-sender {
@@ -159,7 +155,7 @@
     width: 100%;
     gap: .22rem;
     align-items: center;
-    justify-content: flex-end !important;
+    justify-content: flex-start !important;
     flex-wrap: nowrap;
 }
 
