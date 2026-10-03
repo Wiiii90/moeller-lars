@@ -91,7 +91,30 @@ it('keeps selection terminal while responsive tables remove supportive data firs
         ->toContain('.admin-dashboard__feed-table .admin-dashboard__col-sender')
         ->toContain('.admin-dashboard__feed-controls')
         ->toContain('.admin-dashboard .admin-dashboard__metric--changes')
+        ->toContain('@media (max-width: 63.99rem)')
+        ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important')
         ->toContain('.media-workspace__table-wrap .media-workspace__usage-cell')
         ->toContain('.home-source-table .home-source-table__candidates')
         ->toContain('.general-social-table .general-social-table__url');
+});
+
+
+it('keeps Dashboard responsive state monotonic across sidebar collapse', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+    $row = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-row.blade.php');
+    $layouts = file_get_contents($root.'/resources/css/admin/layouts.css');
+
+    expect($responsive)
+        ->toContain('@media (max-width: 63.99rem)')
+        ->toContain('.admin-dashboard__overview-switcher')
+        ->toContain('.admin-dashboard__metric--changes')
+        ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important');
+
+    expect($row)
+        ->not->toContain('admin-dashboard__action-placeholder');
+
+    expect($layouts)
+        ->toContain('@media (max-width: 1023px)')
+        ->toContain('padding-top: var(--admin-shell-content-inset) !important');
 });
