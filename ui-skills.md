@@ -524,6 +524,7 @@ Responsive behavior is content-driven and follows semantic width states rather t
 - Compact reduces non-essential detail before changing the grid.
 - Six-metric strips normally move to a three-column intermediate grid before the smallest retained two-column grid.
 - **Dashboard is an explicit exception:** Wide and Compact keep all six metrics; Narrow keeps exactly three semantic metrics (Visits, Published Artworks, Recent Changes); Minimal keeps exactly two (Visits, Published Artworks).
+- **General uses 6 / 6 / 3 / 2** across Wide / Compact / Narrow / Minimal. Narrow retains Public email + Contact delivery + Legal; Minimal retains Public email + Contact delivery.
 - Dashboard uses four effective presentation states only: Wide, Compact, Narrow and Minimal. The burger/mobile shell is not an additional Dashboard state; shell collapse may force Narrow but must never create a parallel responsive composition.
 - Never reduce a metric strip to a one-column list.
 - Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/2 rule.
@@ -548,6 +549,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Fit tables by semantic column priority: essential, supportive, optional. Merge supportive information into a primary cell/second line or remove optional columns before the table would overflow.
 - Tables may enter a narrower state earlier than metrics or stages because each component responds to its own available width.
 - **Metric separators are the preferred soft alignment grid.** On a page with a six-cell metric strip, toolbar regions and major table-column boundaries should align to the same 1/6 separators whenever semantics and fit allow. Deviate only when content needs it; do not invent arbitrary tracks while a clean metric boundary is available.
+- General Social Media uses the same six-cell ruler at Wide/Compact: Position + Drag + Platform end on 2/6, Profile URL ends on 4/6, Actions owns the final two cells. At narrower table widths Position/Drag become shared fixed rails, action labels collapse first, and Profile URL folds into Platform only at Minimal.
 - For Dashboard, the feed table still follows the six-cell ruler (cell 1 = Position/Drag/Type, cell 2 = Date, cells 3–4 = Title, cell 5 = Sender, cell 6 = Actions + terminal Selection). The toolbar is intentionally more elastic: Type, Clear, Dashboard actions and Selection stay intrinsically compact on the right; Search owns all remaining width and may shrink only as far as one metric cell. Right-side controls therefore consume space from Search only when they actually need it.
 - Dashboard table priority is fixed for narrow widths: Sender yields first; **Type and Date remain standalone columns through Minimal**; Actions compacts to the icon rail before either of those columns may disappear.
 - While the surface remains tabular, toolbar Selected-count, header select-all and row checkboxes share one terminal Selection rail at every responsive state.
@@ -562,7 +564,9 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - Every stage defines an intentional Narrow/Minimal composition for its own task.
 - Preserve required operations and domain state; optional/redundant charts, distribution visuals and parallel previews may disappear.
 - A narrow stage may become one focused surface and may use a small local presentation-only selector when equivalent views still need to be reachable.
-- General may omit parallel Live Preview; Storage may replace desktop Capacity/Distribution visuals with one functional compact surface.
+- General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand Appearance controls + geometry across the full stage; burger/sidebar collapse may force that Narrow composition and must never make the preview reappear.
+- General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
+- Storage may replace desktop Capacity/Distribution visuals with one functional compact surface.
 - **Dashboard keeps Storage | Activity | Analytics as three simultaneous stage cells through Wide, Compact and Narrow. Only Minimal may switch to the local Storage / Activity / Analytics selector and show one stage cell at a time.** Burger/sidebar collapse alone must not trigger the one-cell Dashboard stage.
 - Dashboard stage captions/facts remain visible and one-line through Narrow. The Dashboard stage owns a smooth container-relative height; footer wrapping must never change graphic vertical position.
 - Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
