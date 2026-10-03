@@ -362,9 +362,8 @@
     }
 }
 
-/* Narrow workspace: toolbar is exactly two semantic rows.
- * Row 1 = Query/Filter + Reset. Row 2 = Task actions + terminal Selection.
- * 24 tracks make 0-4 filters deterministic without fractional grid tracks. */
+/* Narrow workspace: toolbar remains exactly one row. Metrics and feature
+ * stages may recompose here, but control bars never wrap into another row. */
 @container admin-workspace (max-width: 54rem) {
     .admin-metrics:has(> .admin-metric:nth-child(6)) {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
