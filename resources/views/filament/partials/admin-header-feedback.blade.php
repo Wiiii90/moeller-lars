@@ -263,8 +263,10 @@
         },
 
         init() {
-            this.syncFromRuntime()
-            @js($initialFeedback).forEach((notification) => this.accept(notification))
+            this.syncFromRuntime();
+
+            const initialFeedback = @js($initialFeedback);
+            initialFeedback.forEach((notification) => this.accept(notification))
         },
 
         destroy() {
