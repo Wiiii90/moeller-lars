@@ -524,6 +524,7 @@ Responsive behavior is content-driven and follows semantic width states rather t
 - Compact reduces non-essential detail before changing the grid.
 - Six-metric strips normally move to a three-column intermediate grid before the smallest retained two-column grid.
 - **Dashboard is an explicit exception:** Wide and Compact keep all six metrics; Narrow keeps exactly three semantic metrics (Visits, Published Artworks, Recent Changes); Minimal keeps exactly two (Visits, Published Artworks).
+- Dashboard uses four effective presentation states only: Wide, Compact, Narrow and Minimal. The burger/mobile shell is not an additional Dashboard state; shell collapse may force Narrow but must never create a parallel responsive composition.
 - Never reduce a metric strip to a one-column list.
 - Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/3 rule.
 - Metric importance is semantic; do not hide arbitrary nth children merely to fit.
