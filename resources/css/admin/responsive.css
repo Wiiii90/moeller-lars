@@ -339,23 +339,28 @@
         min-width: 0 !important;
     }
 
-    /* Reset belongs to the query/filter row. */
+    /* Reset belongs to the query/filter row. Slot-state classes come from
+     * x-admin.controls, so two-slot toolbars do not have to infer semantics
+     * from child position. */
     :is(
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > .admin-data-controls__utility > :first-child {
+    ) > .admin-data-controls__utility--has-reset > :first-child {
         grid-row: 1;
         grid-column: span 4;
     }
 
-    /* Normal three-part utility: actions occupy row 2, Selection owns the
-     * terminal eight tracks so its count rail ends on the table checkbox axis. */
     :is(
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > .admin-data-controls__utility:has(> :nth-child(3)) > :nth-child(2) {
+    ) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child {
         grid-row: 2;
         grid-column: 1 / span 16;
     }
@@ -364,28 +369,19 @@
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > .admin-data-controls__utility:has(> :nth-child(3)) > :last-child {
+    ) > .admin-data-controls__utility--has-selection > :last-child {
         grid-row: 2;
         grid-column: 17 / -1;
     }
 
-    /* Two-part utility groups stay on the second and final row. */
+    /* A reset-only utility stays on row 1; an actions-only utility uses row 2.
+     * This preserves the two-row ceiling without changing slot meaning. */
     :is(
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > .admin-data-controls__utility:not(:has(> :nth-child(3))) > :first-child {
-        grid-row: 2;
-        grid-column: 1 / span 16;
-    }
-
-    :is(
-        .admin-data-controls,
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility:not(:has(> :nth-child(3))) > :last-child:not(:first-child) {
-        grid-row: 2;
-        grid-column: 17 / -1;
+    ) > .admin-data-controls__utility--has-reset:not(.admin-data-controls__utility--has-actions):not(.admin-data-controls__utility--has-selection) > :first-child {
+        grid-row: 1;
     }
 
     .admin-data-controls__utility .admin-control-group__actions,
@@ -618,9 +614,7 @@
 /* Table-specific Narrow reduction. */
 @container admin-table (max-width: 50rem) {
     /* Dashboard: Sender is optional in collection view. */
-    .admin-dashboard__feed-table col:nth-child(6),
-    .admin-dashboard__feed-table th:nth-child(6),
-    .admin-dashboard__feed-table td:nth-child(6) {
+    .admin-dashboard__feed-table .admin-dashboard__col-sender {
         display: none;
     }
 
@@ -647,15 +641,9 @@
         display: none;
     }
 
-    .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-usage,
-    .media-workspace__table-wrap:not(.is-dense) th:nth-child(5),
-    .media-workspace__table-wrap:not(.is-dense) td:nth-child(5) {
-        display: none;
-    }
-
-    .media-workspace__table-wrap.is-dense .media-workspace__col-usage,
-    .media-workspace__table-wrap.is-dense th:nth-child(4),
-    .media-workspace__table-wrap.is-dense td:nth-child(4) {
+    .media-workspace__table-wrap .media-workspace__col-usage,
+    .media-workspace__table-wrap .media-workspace__usage-head,
+    .media-workspace__table-wrap .media-workspace__usage-cell {
         display: none;
     }
 
@@ -730,7 +718,12 @@
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > .admin-data-controls__utility:has(> :nth-child(3)) > :nth-child(2) {
+    ) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child {
         grid-column: 1 / span 14;
     }
 
@@ -738,7 +731,7 @@
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > .admin-data-controls__utility:has(> :nth-child(3)) > :last-child {
+    ) > .admin-data-controls__utility--has-selection > :last-child {
         grid-column: 15 / -1;
     }
 
@@ -776,12 +769,8 @@
 
 @container admin-table (max-width: 38rem) {
     /* Dashboard supportive Type/Date columns fold into Title metadata. */
-    .admin-dashboard__feed-table col:nth-child(3),
-    .admin-dashboard__feed-table col:nth-child(4),
-    .admin-dashboard__feed-table th:nth-child(2),
-    .admin-dashboard__feed-table th:nth-child(3),
-    .admin-dashboard__feed-table td:nth-child(3),
-    .admin-dashboard__feed-table td:nth-child(4) {
+    .admin-dashboard__feed-table .admin-dashboard__col-type,
+    .admin-dashboard__feed-table .admin-dashboard__col-date {
         display: none;
     }
 
@@ -791,18 +780,12 @@
 
     /* Storage keeps Media | Status | Actions | Selection. Type/size are folded
      * into Media metadata by the Blade row. */
-    .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-type,
-    .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-size,
-    .media-workspace__table-wrap:not(.is-dense) th:nth-child(3),
-    .media-workspace__table-wrap:not(.is-dense) th:nth-child(4),
-    .media-workspace__table-wrap:not(.is-dense) td:nth-child(3),
-    .media-workspace__table-wrap:not(.is-dense) td:nth-child(4),
-    .media-workspace__table-wrap.is-dense .media-workspace__col-type,
-    .media-workspace__table-wrap.is-dense .media-workspace__col-size,
-    .media-workspace__table-wrap.is-dense th:nth-child(2),
-    .media-workspace__table-wrap.is-dense th:nth-child(3),
-    .media-workspace__table-wrap.is-dense td:nth-child(2),
-    .media-workspace__table-wrap.is-dense td:nth-child(3) {
+    .media-workspace__table-wrap .media-workspace__col-type,
+    .media-workspace__table-wrap .media-workspace__col-size,
+    .media-workspace__table-wrap .media-workspace__type-head,
+    .media-workspace__table-wrap .media-workspace__size-head,
+    .media-workspace__table-wrap .media-workspace__type-cell,
+    .media-workspace__table-wrap .media-workspace__size-cell {
         display: none;
     }
 
