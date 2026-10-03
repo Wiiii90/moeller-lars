@@ -2,7 +2,19 @@
     <x-admin.workspace title="Dashboard" class="admin-dashboard">
         <x-admin.metrics :columns="6" aria-label="Dashboard summary">
             @foreach ($metrics as $metric)
-                <x-admin.metric :label="$metric['label']" :value="$metric['value']">{{ $metric['detail'] }}</x-admin.metric>
+                @php
+                    $metricRole = match (strtolower((string) $metric['label'])) {
+                        'visits' => 'traffic',
+                        'published artworks' => 'artworks',
+                        'recent changes' => 'changes',
+                        default => 'supportive',
+                    };
+                @endphp
+                <x-admin.metric
+                    :label="$metric['label']"
+                    :value="$metric['value']"
+                    class="admin-dashboard__metric admin-dashboard__metric--{{ $metricRole }}"
+                >{{ $metric['detail'] }}</x-admin.metric>
             @endforeach
         </x-admin.metrics>
 
