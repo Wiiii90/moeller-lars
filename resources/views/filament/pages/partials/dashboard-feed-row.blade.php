@@ -87,9 +87,6 @@
                         title="Delete"
                     />
                 @endif
-            @else
-                <span class="admin-dashboard__action-placeholder" aria-hidden="true"></span>
-                <span class="admin-dashboard__action-placeholder" aria-hidden="true"></span>
             @endif
         </x-admin.toolbar>
     </td>
