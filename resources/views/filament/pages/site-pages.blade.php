@@ -56,7 +56,7 @@
                     <div class="admin-task-control-group">
                         <span class="admin-task-control-label">FILTER</span>
                         <div class="admin-task-control-actions">
-                            <button class="admin-action" type="button" wire:click="resetFilters" @disabled(! $filtersActive)>Reset</button>
+                            <x-admin.clear-filters wire:click="resetFilters" :disabled="! $filtersActive" />
                         </div>
                     </div>
                 </x-slot:reset>
@@ -84,7 +84,7 @@
                                 aria-label="Selected pages: {{ $selectedCount }}"
                                 @disabled($selectedCount === 0)
                             >
-                                <span>Selected</span>
+                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                                 <span class="admin-selection__count">{{ $selectedCount }}</span>
                             </button>
                             <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
