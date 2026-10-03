@@ -118,13 +118,28 @@
                 <div class="gallery-workspace__control-group gallery-workspace__gallery">
                     <span class="gallery-workspace__control-label">Gallery</span>
                     <div class="gallery-workspace__gallery-actions">
-                        <button class="admin-action" type="button" wire:click="mountAction('gallerySettings')">Settings</button>
-                        <button class="admin-action" type="button" wire:click="mountAction('addArtwork')">Add artwork</button>
-                        <button class="admin-action" type="button" wire:click="mountAction('materialPresets')">Materials</button>
+                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('gallerySettings')" aria-label="Gallery settings">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
+                            <span class="admin-action__label">Settings</span>
+                        </button>
+                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addArtwork')" aria-label="Add artwork">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Artwork->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
+                            <span class="admin-action__label">Add artwork</span>
+                        </button>
+                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('materialPresets')" aria-label="Materials">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Materials->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
+                            <span class="admin-action__label">Materials</span>
+                        </button>
                         @if ($galleryContext['public_url'])
-                            <a class="admin-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">Preview</a>
+                            <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
+                                <span class="admin-action__label">Preview</span>
+                            </a>
                         @else
-                            <button class="admin-action" type="button" disabled title="Publish the Gallery to open its public URL">Preview</button>
+                            <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish the Gallery to open its public URL" aria-label="Preview Gallery">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
+                                <span class="admin-action__label">Preview</span>
+                            </button>
                         @endif
                     </div>
                 </div>
