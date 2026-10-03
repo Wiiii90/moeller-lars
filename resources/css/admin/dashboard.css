@@ -119,3 +119,28 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+
+/* Storage mirrors Activity's caption geometry: the visual owns the flexible
+ * center and the facts occupy one fixed caption reserve below it. */
+.admin-dashboard__overview-column:first-child > .admin-dashboard__facts {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--admin-stage-orbit-caption-reserve);
+    height: var(--admin-stage-orbit-caption-reserve);
+    margin: 0;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual {
+    align-self: stretch;
+    justify-self: stretch;
+    place-items: center;
+}
+
+.admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual > .admin-storage-capacity {
+    align-self: center;
+    justify-self: center;
+}
