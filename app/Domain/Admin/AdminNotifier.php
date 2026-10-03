@@ -31,26 +31,51 @@ final class AdminNotifier
         string $title,
         ?string $body = null,
         string $status = 'info',
+        User|int|null $user = null,
+        ?string $sourceId = null,
+        array $context = [],
     ): void {
         [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
+        $recipientId = $this->recipientId($user);
 
         if ($status === 'success') {
             $activityMessages = $this->notificationContext->consumeRecorded();
 
             if ($activityMessages !== []) {
                 foreach ($activityMessages as $activityMessage) {
-                    $this->deliverNotification(
-                        (string) $activityMessage['change'],
-                        $activityMessage['details'] ?? null,
-                        'success',
+                    $auditEventId = (int) ($activityMessage['audit_event_id'] ?? 0);
+                    $activityType = is_string($context['type'] ?? null) && trim((string) $context['type']) !== ''
+                        ? trim((string) $context['type'])
+                        : 'activity';
+
+                    $this->recordAndSurface(
+                        recipientId: $recipientId,
+                        sourceId: $auditEventId > 0 ? 'activity:'.$auditEventId : null,
+                        title: (string) $activityMessage['change'],
+                        body: $activityMessage['details'] ?? null,
+                        status: 'success',
+                        context: [
+                            ...$context,
+                            'type' => $activityType,
+                            'audit_event_id' => $auditEventId > 0 ? $auditEventId : ($context['audit_event_id'] ?? null),
+                        ],
                     );
                 }
 
                 return;
             }
+        } else {
+            $this->notificationContext->discard();
         }
 
-        $this->deliverNotification($title, $body, $status);
+        $this->recordAndSurface(
+            recipientId: $recipientId,
+            sourceId: $sourceId,
+            title: $title,
+            body: $body,
+            status: $status,
+            context: $context,
+        );
     }
 
     /**
@@ -74,83 +99,68 @@ final class AdminNotifier
     }
 
     /**
-     * Persist information that deserves later attention.
-     *
-     * Supported context keys:
-     * type, action_url, action_label, entity_type, entity_id,
-     * audit_event_id, publication_checkpoint_id, metadata.
+     * Persist one canonical Notification and project a newly created record into
+     * the current admin shell when the recipient is the authenticated actor.
      *
      * @param  array<string, mixed>  $context
      */
-    public function inbox(
-        User|int $user,
-        string $sourceId,
+    private function recordAndSurface(
+        ?int $recipientId,
+        ?string $sourceId,
         string $title,
-        ?string $body = null,
-        string $status = 'info',
+        ?string $body,
+        string $status,
         array $context = [],
-    ): AdminNotification {
-        $userId = $user instanceof User ? (int) $user->getKey() : $user;
-        if ($userId <= 0) {
-            throw new InvalidArgumentException('A valid admin notification recipient is required.');
-        }
+    ): void {
+        [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
 
-        $sourceId = trim($sourceId);
+        $messageUuid = (string) Str::orderedUuid();
+        $sourceId = trim((string) $sourceId);
         if ($sourceId === '') {
-            throw new InvalidArgumentException('A persistent admin notification requires a source id.');
+            $sourceId = 'notification:'.$messageUuid;
         }
 
-        [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
-        $attributes = $this->normalizeContext($context);
+        $notification = null;
 
-        return AdminNotification::query()->firstOrCreate(
-            [
-                'user_id' => $userId,
-                'source_id' => Str::limit($sourceId, 96, ''),
-            ],
-            [
-                'status' => $status,
-                'title' => $title,
-                'body' => $body,
-                ...$attributes,
-            ],
-        );
-    }
+        if ($recipientId !== null) {
+            $notification = AdminNotification::query()->firstOrCreate(
+                [
+                    'user_id' => $recipientId,
+                    'source_id' => Str::limit($sourceId, 96, ''),
+                ],
+                [
+                    'status' => $status,
+                    'title' => $title,
+                    'body' => $body,
+                    ...$this->normalizeContext($context),
+                ],
+            );
 
-    /**
-     * Persist the condition and surface the same message immediately.
-     *
-     * @param  array<string, mixed>  $context
-     */
-    public function both(
-        User|int $user,
-        string $sourceId,
-        string $title,
-        ?string $body = null,
-        string $status = 'info',
-        array $context = [],
-    ): AdminNotification {
-        $notification = $this->inbox($user, $sourceId, $title, $body, $status, $context);
-        $this->notificationContext->discard();
-        $this->deliverNotification($title, $body, $status);
-
-        return $notification;
-    }
-
-    private function deliverNotification(string $title, ?string $body, string $status): void
-    {
-        [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
-
-        if ($status !== 'success') {
-            $this->notificationContext->discard();
+            if (! $notification->wasRecentlyCreated) {
+                return;
+            }
         }
 
         $message = [
-            'id' => (string) Str::orderedUuid(),
+            'id' => $notification instanceof AdminNotification
+                ? 'notification:'.$notification->getKey()
+                : $messageUuid,
             'title' => $title,
             'body' => $body,
             'status' => $status,
         ];
+
+        $this->surfaceNotification($recipientId, $message);
+    }
+
+    /**
+     * @param  array{id:string,title:string,body:?string,status:string}  $message
+     */
+    private function surfaceNotification(?int $recipientId, array $message): void
+    {
+        if ($recipientId !== null && (int) (auth()->id() ?? 0) !== $recipientId) {
+            return;
+        }
 
         if (Livewire::isLivewireRequest()) {
             $component = app(LivewireManager::class)->current();
@@ -163,6 +173,28 @@ final class AdminNotifier
         }
 
         $this->storePendingNotification($message);
+    }
+
+    private function recipientId(User|int|null $user): ?int
+    {
+        if ($user instanceof User) {
+            $userId = (int) $user->getKey();
+
+            return $userId > 0 ? $userId : null;
+        }
+
+        if (is_int($user)) {
+            return $user > 0 ? $user : null;
+        }
+
+        $authenticated = auth()->user();
+        if (! $authenticated instanceof User) {
+            return null;
+        }
+
+        $userId = (int) $authenticated->getKey();
+
+        return $userId > 0 ? $userId : null;
     }
 
     /**

@@ -27,7 +27,7 @@ final class PublicationStateControl extends Component
             $checkpoint = $publication->commit($actor);
         } catch (\Throwable $exception) {
             try {
-                app(AdminNotifier::class)->both(
+                app(AdminNotifier::class)->notification(
                     user: $actor,
                     sourceId: 'publication-failed:'.Str::uuid(),
                     title: 'Publication failed',

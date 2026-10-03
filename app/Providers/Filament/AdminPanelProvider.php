@@ -94,7 +94,7 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('filament.partials.admin-theme')->render(),
             )
             ->renderHook(
-                PanelsRenderHook::TOPBAR_START,
+                PanelsRenderHook::BODY_START,
                 fn (): string => view('filament.partials.admin-header-notification')->render(),
             )
             ->renderHook(

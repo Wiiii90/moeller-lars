@@ -22,9 +22,9 @@ final class AdminHeaderNotificationProbe extends Component
         );
     }
 
-    public function emitBoth(int $userId): void
+    public function emitIdempotent(int $userId): void
     {
-        app(AdminNotifier::class)->both(
+        app(AdminNotifier::class)->notification(
             user: $userId,
             sourceId: 'media-cleanup:asset-72',
             title: 'File cleanup failed',
@@ -44,7 +44,7 @@ final class AdminHeaderNotificationProbe extends Component
     }
 }
 
-it('keeps immediate header Notification ephemeral', function (): void {
+it('persists an authenticated admin Notification and projects it into the header', function (): void {
     $user = User::factory()->admin()->create();
     $this->actingAs($user);
 
@@ -54,18 +54,24 @@ it('keeps immediate header Notification ephemeral', function (): void {
             $message = $params['notification'] ?? [];
 
             return $event === 'admin-header-notification'
+                && str_starts_with((string) ($message['id'] ?? ''), 'notification:')
                 && ($message['title'] ?? null) === 'Changes saved'
                 && ($message['body'] ?? null) === 'Background gradient updated.'
                 && ($message['status'] ?? null) === 'success';
         });
 
-    expect(AdminNotification::query()->count())->toBe(0);
+    $notification = AdminNotification::query()->where('user_id', $user->getKey())->sole();
+
+    expect($notification->getAttribute('title'))->toBe('Changes saved')
+        ->and($notification->getAttribute('body'))->toBe('Background gradient updated.')
+        ->and($notification->getAttribute('status'))->toBe('success')
+        ->and((string) $notification->getAttribute('source_id'))->toStartWith('notification:');
 });
 
-it('persists structured inbox notifications without rendered browser markup', function (): void {
+it('persists structured Notifications without requiring a browser session', function (): void {
     $user = User::factory()->admin()->create();
 
-    $notification = app(AdminNotifier::class)->inbox(
+    app(AdminNotifier::class)->notification(
         user: $user,
         sourceId: 'media-processing:asset-72:job-938',
         title: '<strong>Media processing failed</strong>',
@@ -81,9 +87,12 @@ it('persists structured inbox notifications without rendered browser markup', fu
         ],
     );
 
-    expect($notification->getAttribute('user_id'))->toBe($user->getKey())
-        ->and($notification->getAttribute('source_id'))->toBe('media-processing:asset-72:job-938')
-        ->and($notification->getAttribute('type'))->toBe('media.processing_failure')
+    $notification = AdminNotification::query()
+        ->where('user_id', $user->getKey())
+        ->where('source_id', 'media-processing:asset-72:job-938')
+        ->sole();
+
+    expect($notification->getAttribute('type'))->toBe('media.processing_failure')
         ->and($notification->getAttribute('status'))->toBe('danger')
         ->and($notification->getAttribute('title'))->toBe('Media processing failed')
         ->and($notification->getAttribute('body'))->toBe('The preview could not be generated.')
@@ -94,69 +103,52 @@ it('persists structured inbox notifications without rendered browser markup', fu
         ->and($notification->getAttribute('metadata'))->toBe(['variant' => 'preview']);
 });
 
-it('delivers persistent conditions to both inbox and header Notification', function (): void {
-    $user = User::factory()->admin()->create();
-    $this->actingAs($user);
-
-    Livewire::test(AdminHeaderNotificationProbe::class)
-        ->call('emitBoth', (int) $user->getKey())
-        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
-            $message = $params['notification'] ?? [];
-
-            return $event === 'admin-header-notification'
-                && ($message['title'] ?? null) === 'File cleanup failed'
-                && ($message['status'] ?? null) === 'danger';
-        });
-
-    expect(AdminNotification::query()
-        ->where('user_id', $user->getKey())
-        ->where('source_id', 'media-cleanup:asset-72')
-        ->exists())->toBeTrue();
-});
-
-it('deduplicates persistent notifications by recipient and source id', function (): void {
+it('deduplicates an explicit Notification source for one recipient', function (): void {
     $user = User::factory()->admin()->create();
     $notifier = app(AdminNotifier::class);
 
-    $first = $notifier->inbox(
+    $notifier->notification(
         user: $user,
         sourceId: 'storage-capacity:critical:2026-09-14',
         title: 'Storage capacity critical',
         status: 'warning',
     );
-    $second = $notifier->inbox(
+    $notifier->notification(
         user: $user,
         sourceId: 'storage-capacity:critical:2026-09-14',
         title: 'This duplicate must not create another row',
         status: 'danger',
     );
 
-    expect($second->getKey())->toBe($first->getKey())
-        ->and(AdminNotification::query()->where('user_id', $user->getKey())->count())->toBe(1)
-        ->and($second->getAttribute('title'))->toBe('Storage capacity critical')
-        ->and($second->getAttribute('status'))->toBe('warning');
+    $notification = AdminNotification::query()->where('user_id', $user->getKey())->sole();
+
+    expect($notification->getAttribute('title'))->toBe('Storage capacity critical')
+        ->and($notification->getAttribute('status'))->toBe('warning');
 });
 
-it('keeps the same source id independent between recipients', function (): void {
+it('keeps the same Notification source independent between recipients', function (): void {
     $firstUser = User::factory()->admin()->create();
     $secondUser = User::factory()->admin()->create();
     $notifier = app(AdminNotifier::class);
 
-    $notifier->inbox($firstUser, 'system:shared-condition', 'First recipient');
-    $notifier->inbox($secondUser, 'system:shared-condition', 'Second recipient');
+    $notifier->notification(user: $firstUser, sourceId: 'system:shared-condition', title: 'First recipient');
+    $notifier->notification(user: $secondUser, sourceId: 'system:shared-condition', title: 'Second recipient');
 
     expect(AdminNotification::query()->count())->toBe(2)
         ->and(AdminNotification::query()->where('user_id', $firstUser->getKey())->value('title'))->toBe('First recipient')
         ->and(AdminNotification::query()->where('user_id', $secondUser->getKey())->value('title'))->toBe('Second recipient');
 });
 
-it('keeps dashboard notification reads isolated to the authenticated user', function (): void {
+it('keeps Dashboard Notification reads isolated to the authenticated user', function (): void {
     $firstUser = User::factory()->admin()->create();
     $secondUser = User::factory()->admin()->create();
     $notifier = app(AdminNotifier::class);
 
-    $first = $notifier->inbox($firstUser, 'system:first', 'First notification');
-    $second = $notifier->inbox($secondUser, 'system:second', 'Second notification');
+    $notifier->notification(user: $firstUser, sourceId: 'system:first', title: 'First notification');
+    $notifier->notification(user: $secondUser, sourceId: 'system:second', title: 'Second notification');
+
+    $first = AdminNotification::query()->where('user_id', $firstUser->getKey())->sole();
+    $second = AdminNotification::query()->where('user_id', $secondUser->getKey())->sole();
 
     $this->actingAs($firstUser);
     $page = app(DashboardFeed::class)->paginate('', 'notification');
@@ -166,15 +158,18 @@ it('keeps dashboard notification reads isolated to the authenticated user', func
         ->and(app(DashboardFeed::class)->entry('notification:'.$second->getKey()))->toBeNull();
 });
 
-it('owns immediate Notification without constructing framework notifications', function (): void {
+it('owns Notification delivery without framework notification objects or parallel notifier APIs', function (): void {
     $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
     $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
 
     expect($provider)
-        ->toContain('PanelsRenderHook::TOPBAR_START')
+        ->toContain('PanelsRenderHook::BODY_START')
+        ->not->toContain('PanelsRenderHook::TOPBAR_START')
         ->and($notifier)
         ->toContain("dispatch('admin-header-notification'")
-        ->not->toContain('Filament\\Notifications');
+        ->not->toContain('Filament\\Notifications')
+        ->not->toContain('public function inbox(')
+        ->not->toContain('public function both(');
 
     foreach (File::allFiles(app_path()) as $file) {
         $source = file_get_contents($file->getRealPath());

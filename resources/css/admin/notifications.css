@@ -1,17 +1,14 @@
-/* Central ephemeral feedback surface inside Filament's persistent topbar. */
-
-.fi-topbar {
-    position: relative;
-}
+/* Persistent-shell Notification surface, visually aligned with Filament's topbar. */
 
 .admin-header-notification {
     --admin-header-notification-flare: var(--admin-accent);
 
-    position: absolute;
-    inset-block: 0;
+    position: fixed;
+    inset-block-start: calc((var(--admin-topbar-height) - var(--admin-header-control-size)) / 2);
+    inset-block-end: auto;
     inset-inline-start: calc(1rem + var(--admin-header-control-size) + var(--admin-header-notification-edge-gap));
     inset-inline-end: calc(1rem + var(--admin-header-control-size) + var(--admin-header-notification-edge-gap));
-    z-index: 1;
+    z-index: 35;
     box-sizing: border-box;
     display: grid;
     height: var(--admin-header-control-size);
@@ -415,9 +412,6 @@
      * change when a page gains or loses a document scrollbar.
      */
     .admin-header-notification {
-        position: fixed;
-        inset-block-start: calc((var(--admin-topbar-height) - var(--admin-header-control-size)) / 2);
-        inset-block-end: auto;
         width: var(--admin-workspace-content-width);
         max-width: none;
         inset-inline-start: var(--admin-workspace-content-inline-start);

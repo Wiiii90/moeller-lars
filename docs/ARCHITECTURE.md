@@ -191,24 +191,21 @@ Self-hosted Matomo Community/Core is the canonical human-analytics source. The a
 
 See [ANALYTICS.md](ANALYTICS.md).
 
-## Admin notifications, Activity and Publication
+## Admin Notifications, Activity and Publication
 
-Administrative status has four separate meanings and persistence contracts:
+Administrative state has three distinct owners:
 
-- **Header Notification** — ephemeral immediate status for an action the current user just performed; this is part of the persistent SPA shell;
-- **Inbox Notification** — persistent user-scoped information that deserves later attention in the Dashboard feed;
+- **Notification** — one durable user-scoped `AdminNotification` record, projected immediately into the persistent header shell when its recipient is the current browser actor;
 - **Activity** — append-only factual history of successful administrative changes;
 - **Publication** — Working/LIVE/version state and publication operations.
 
-`App\Domain\Admin\AdminNotifier` is the server-side authority for Notification delivery. Callers explicitly choose a transient header Notification, persistent inbox delivery, or both. Header Notifications use the project-owned `admin-header-notification` event/session channel and never a framework notification renderer. `AdminActivityNotificationContext` reuses canonical Activity presentation for successful transient Notifications without creating a second mutation history.
+`App\Domain\Admin\AdminNotifier::notification()` is the single Notification write API. It persists the Dashboard mailbox record first and uses the project-owned `admin-header-notification` event/session channel only as the immediate presentation projection. There is no separate header-only, inbox-only or `both()` application API. `AdminActivityNotificationContext` reuses canonical Activity presentation and audit identity for successful mutation Notifications.
 
-The authenticated Filament admin uses the framework-native SPA mode. The sticky shell and header Notification surface persist across normal admin navigation, while page workspaces are replaced through Livewire navigation. Public-site destinations, downloads and separate application surfaces such as Pulse remain document boundaries.
+The authenticated Filament admin uses the framework-native SPA mode. The header Notification surface is rendered through the layout-level `BODY_START` hook, outside Livewire page/topbar components, and is persisted with Livewire `@persist`. Page workspaces are replaced through Livewire navigation. Public-site destinations, downloads and separate application surfaces such as Pulse remain document boundaries.
 
-`AdminNotification` stores persistent inbox entries and remains integrated into `DashboardFeed`, retention, pins and read/unread state. Persistent inbox Notifications use origin-generated `source_id` values with `(user_id, source_id)` idempotency and may carry bounded action/entity/audit/publication context.
+`AdminNotification` remains integrated into `DashboardFeed`, retention, pins and read/unread state. Stable `source_id` values provide `(user_id, source_id)` idempotency and Notifications may carry bounded action/entity/audit/publication context. Background jobs use the same notifier with an explicit recipient; without a matching browser actor they create only the durable mailbox projection.
 
-DOM observation, Filament CSS-class parsing and browser round-tripping are not part of the Notification architecture. Background jobs and other server-side processes may create persistent inbox Notifications directly for an explicit recipient without an open browser.
-
-Notification retention/deletion never deletes or rewrites Activity/audit history or Publication history. Routine successful editorial actions normally need a header Notification plus Activity, not a duplicate persistent inbox entry.
+DOM observation, framework notification markup and browser round-tripping are not persistence sources. Notification retention/deletion never deletes or rewrites Activity/audit history or Publication history.
 
 See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
 

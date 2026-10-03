@@ -2,14 +2,14 @@
 
 use Illuminate\Support\Facades\File;
 
-it('keeps the admin header Notification centralized bounded and SPA-persistent', function (): void {
+it('keeps the admin Notification shell centralized bounded and SPA-persistent', function (): void {
     $view = file_get_contents(resource_path('views/filament/partials/admin-header-notification.blade.php'));
     $styles = file_get_contents(resource_path('css/admin/notifications.css'));
     $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
     $icons = file_get_contents(app_path('Filament/Support/AdminIcon.php'));
 
     expect($provider)
-        ->toContain('PanelsRenderHook::TOPBAR_START')
+        ->toContain('PanelsRenderHook::BODY_START')
         ->toContain("view('filament.partials.admin-header-notification')")
         ->toContain('->spa()')
         ->toContain('->spaUrlExceptions')
@@ -25,7 +25,7 @@ it('keeps the admin header Notification centralized bounded and SPA-persistent',
         ->toContain('window.setTimeout')
         ->toContain('window.clearTimeout')
         ->toContain("secondsRemaining + 's'")
-        ->toContain("x-text="'+' + pendingCount"")
+        ->toContain("x-text=\"'+' + pendingCount\"")
         ->toContain('AdminIcon::NotificationSuccess->mini()')
         ->toContain('AdminIcon::NotificationWarning->mini()')
         ->toContain('AdminIcon::NotificationDanger->mini()')
@@ -72,7 +72,7 @@ it('keeps the admin header Notification centralized bounded and SPA-persistent',
     expect($renderOccurrences)->toBe(1);
 });
 
-it('reuses Activity change and details for successful transient Notifications', function (): void {
+it('reuses Activity change and details for successful persistent Notifications', function (): void {
     $audit = file_get_contents(app_path('Domain/Admin/AdminAuditService.php'));
     $context = file_get_contents(app_path('Domain/Admin/AdminActivityNotificationContext.php'));
     $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
@@ -91,7 +91,10 @@ it('reuses Activity change and details for successful transient Notifications', 
         ->toContain('$this->notificationContext->consumeRecorded()')
         ->toContain("(string) \$activityMessage['change']")
         ->toContain("\$activityMessage['details'] ?? null")
+        ->toContain("sourceId: $auditEventId > 0 ? 'activity:'.$auditEventId : null")
         ->toContain("dispatch('admin-header-notification'")
+        ->not->toContain('public function inbox(')
+        ->not->toContain('public function both(')
         ->not->toContain('Filament\\Notifications')
         ->not->toContain('function feedback(');
 });
