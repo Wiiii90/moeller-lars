@@ -697,3 +697,5 @@ If a browser pass shows one stage or separator at a different vertical position,
 Shared admin navigation/action semantics use `App\Filament\Support\AdminIcon`. Prefer semantic catalog entries over scattered Heroicon literals for meanings already represented by the catalog, and keep distinct meanings visually distinguishable rather than reusing one glyph for unrelated concepts.
 
 See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliation loop around these contracts.
+
+- **Minimal:** retain exactly two semantic metrics. The split is exact 50/50: each retained metric owns one explicit grid column; hidden source siblings or original DOM position must never create a 1/3–2/3 layout.
