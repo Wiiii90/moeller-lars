@@ -112,3 +112,16 @@ it('keeps Gallery icon action geometry and reorder semantics on shared contracts
         ->not->toContain('>↑</button>')
         ->not->toContain('>↓</button>');
 });
+
+
+it('uses notification-specific icons in the admin header feedback surface', function (): void {
+    $root = dirname(__DIR__, 3);
+    $feedback = file_get_contents($root.'/resources/views/filament/partials/admin-header-feedback.blade.php');
+
+    expect($feedback)
+        ->toContain('AdminIcon::NotificationSuccess')
+        ->toContain('AdminIcon::NotificationInfo')
+        ->toContain('AdminIcon::NotificationWarning')
+        ->toContain('AdminIcon::NotificationDanger')
+        ->not->toContain('AdminIcon::Feedback');
+});
