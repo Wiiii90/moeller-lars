@@ -150,7 +150,7 @@
 /* Dashboard row actions have two states only: full icon+label while they fit,
  * then icon-only at the shared compact-table threshold. Never abbreviate a
  * label to fragments such as "O…" or "P…". */
-.admin-dashboard__feed-actions {
+.admin-dashboard__feed-table .admin-dashboard__feed-actions {
     display: flex !important;
     width: 100%;
     gap: .22rem;
@@ -159,7 +159,7 @@
     flex-wrap: nowrap;
 }
 
-.admin-dashboard__feed-actions .admin-action {
+.admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
     width: auto;
     min-width: 0;
     padding-inline: .35rem;
@@ -168,11 +168,11 @@
     flex: 0 0 auto;
 }
 
-.admin-dashboard__feed-actions .admin-action__icon {
+.admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__icon {
     flex: 0 0 .9rem;
 }
 
-.admin-dashboard__feed-actions .admin-action__label {
+.admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__label {
     overflow: visible;
     text-overflow: clip;
     white-space: nowrap;
