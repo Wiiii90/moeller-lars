@@ -7,7 +7,7 @@ use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Filament\Support\AdminActivityFeed;
 use App\Http\Middleware\ProtectArtistPreview;
-use App\Livewire\Admin\PublicationStateBridge;
+use App\Livewire\Admin\PublicationStateControl;
 use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -167,7 +167,7 @@ it('commits current Pending state in one component action and repeated clicks st
     ]);
 
     $initialCheckpointCount = PublicationCheckpoint::query()->count();
-    $control = Livewire::test(PublicationStateBridge::class)
+    $control = Livewire::test(PublicationStateControl::class)
         ->call('commitPublication');
 
     expect(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1)

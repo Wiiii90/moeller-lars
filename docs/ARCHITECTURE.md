@@ -191,22 +191,24 @@ Self-hosted Matomo Community/Core is the canonical human-analytics source. The a
 
 See [ANALYTICS.md](ANALYTICS.md).
 
-## Admin feedback and notifications
+## Admin notifications, Activity and Publication
 
-Administrative feedback has four separate meanings and persistence contracts:
+Administrative status has four separate meanings and persistence contracts:
 
-- **Ticker feedback** — ephemeral immediate feedback for an action the current user just performed;
-- **Notification** — persistent user-scoped information that deserves later attention in the Dashboard feed;
+- **Header Notification** — ephemeral immediate status for an action the current user just performed; this is part of the persistent SPA shell;
+- **Inbox Notification** — persistent user-scoped information that deserves later attention in the Dashboard feed;
 - **Activity** — append-only factual history of successful administrative changes;
-- **Publication** — working/live/version state and publication operations.
+- **Publication** — Working/LIVE/version state and publication operations.
 
-`App\Domain\Admin\AdminNotifier` is the server-side authority for admin feedback delivery. Callers explicitly choose ticker feedback, persistent inbox, or both. Immediate feedback uses the project-owned ticker event/session channel and never a framework notification renderer.
+`App\Domain\Admin\AdminNotifier` is the server-side authority for Notification delivery. Callers explicitly choose a transient header Notification, persistent inbox delivery, or both. Header Notifications use the project-owned `admin-header-notification` event/session channel and never a framework notification renderer. `AdminActivityNotificationContext` reuses canonical Activity presentation for successful transient Notifications without creating a second mutation history.
 
-`AdminNotification` stores persistent inbox entries and remains integrated into `DashboardFeed`, retention, pins and read/unread state. Persistent notifications use origin-generated `source_id` values with `(user_id, source_id)` idempotency and may carry bounded action/entity/audit/publication context.
+The authenticated Filament admin uses the framework-native SPA mode. The sticky shell and header Notification surface persist across normal admin navigation, while page workspaces are replaced through Livewire navigation. Public-site destinations, downloads and separate application surfaces such as Pulse remain document boundaries.
 
-DOM observation, Filament CSS-class parsing and browser round-tripping are not part of the notification architecture. Background jobs and other server-side processes may create persistent notifications directly for an explicit recipient without an open browser.
+`AdminNotification` stores persistent inbox entries and remains integrated into `DashboardFeed`, retention, pins and read/unread state. Persistent inbox Notifications use origin-generated `source_id` values with `(user_id, source_id)` idempotency and may carry bounded action/entity/audit/publication context.
 
-Notification retention/deletion never deletes or rewrites Activity/audit history or Publication history. Routine successful editorial actions normally need ticker feedback plus Activity, not a duplicate persistent inbox entry.
+DOM observation, Filament CSS-class parsing and browser round-tripping are not part of the Notification architecture. Background jobs and other server-side processes may create persistent inbox Notifications directly for an explicit recipient without an open browser.
+
+Notification retention/deletion never deletes or rewrites Activity/audit history or Publication history. Routine successful editorial actions normally need a header Notification plus Activity, not a duplicate persistent inbox entry.
 
 See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
 

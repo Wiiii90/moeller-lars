@@ -11,8 +11,8 @@ Keep application-level dialog terminology separate from Filament's native modal 
 - shared dialog infrastructure lives under `app/Filament/Support/Dialogs`;
 - page and resource code consumes that shared infrastructure instead of creating local modal families;
 - concerns whose primary responsibility is exposing dialog actions use the `...Dialogs` suffix; `...Modals` is legacy application terminology and must not be introduced;
-- `PublicationStateBridge` is Livewire state/event infrastructure, not a dialog, and therefore lives under `app/Livewire/Admin`;
-- its Filament `BODY_END` mount wrapper is `resources/views/filament/partials/publication-state-bridge-hook.blade.php`, while the Livewire component view remains `resources/views/livewire/admin/publication-state-bridge.blade.php`.
+- `PublicationStateControl` is Livewire state/event infrastructure, not a dialog, and therefore lives under `app/Livewire/Admin`;
+- its Filament `BODY_END` mount wrapper is `resources/views/filament/partials/publication-state-control-hook.blade.php`, while the Livewire component view remains `resources/views/livewire/admin/publication-state-control.blade.php`.
 
 References to Filament's own `modal*` methods or native modal behavior are expected where the framework API requires them. Application-level semantic names use dialog terminology.
 

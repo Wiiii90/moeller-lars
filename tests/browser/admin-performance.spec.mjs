@@ -9,8 +9,8 @@ const KiB = 1024;
 const structuralBudgets = Object.freeze({
   warmed_navigation_dashboard_to_pages: {
     completed_on_first_click: true,
-    full_navigation_count: 1,
-    max_xhr_fetch_count: 0,
+    full_navigation_count: 0,
+    max_xhr_fetch_count: 1,
   },
   pages_add_page_dialog: {
     completed_on_first_click: true,
@@ -37,8 +37,8 @@ const structuralBudgets = Object.freeze({
   },
   activity_filter_area: {
     completed_on_first_click: true,
-    full_navigation_count: 1,
-    max_xhr_fetch_count: 0,
+    full_navigation_count: 0,
+    max_xhr_fetch_count: 1,
   },
   activity_idle_window: {
     completed_on_first_click: true,

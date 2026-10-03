@@ -2,38 +2,38 @@
 
 ## Scope
 
-This document defines the durable contract for administrative feedback, persistent notifications and their relationship to Activity and Publication.
+This document defines the durable contract for transient header Notifications, persistent inbox Notifications and their relationship to Activity and Publication.
 
 The admin has four separate concepts. They must not be collapsed into one another:
 
 | Concept | Purpose | Persistence |
 | --- | --- | --- |
-| Header feedback | Immediate feedback for the action the current user just performed | Ephemeral |
-| Notification | Information that deserves later attention in the admin inbox/feed | Persistent, retention-managed |
+| Header Notification | Immediate status for the action the current user just performed | Ephemeral, SPA-shell state |
+| Inbox Notification | Information that deserves later attention in the admin inbox/feed | Persistent, retention-managed |
 | Activity | Immutable factual history of successful administrative changes | Append-only |
 | Publication | Working/live/version state and publication operations | Domain state/history |
 
-A successful edit may create header feedback and an Activity event without creating a persistent notification. A publication or processing failure may create both header feedback and a persistent notification without inventing an Activity event for a change that did not succeed.
+A successful edit may create a header Notification and an Activity event without creating a persistent notification. A publication or processing failure may create both a header Notification and a persistent inbox Notification without inventing an Activity event for a change that did not succeed.
 
 ## Central notification authority
 
-Administrative feedback and persistent notifications originate from structured server-side application state through `AdminNotifier`.
+Transient header Notifications and persistent inbox Notifications originate from structured server-side application state through `AdminNotifier`.
 
 The notifier owns three explicit delivery intents:
 
-- **feedback** — immediate ephemeral feedback for the project-owned header feedback surface only;
-- **inbox** — persistent `AdminNotification` only;
-- **both** — immediate header feedback plus a persistent `AdminNotification`.
+- **notification** — immediate ephemeral Notification for the project-owned header Notification surface only;
+- **inbox** — persistent inbox `AdminNotification` only;
+- **both** — immediate header Notification plus a persistent `AdminNotification`.
 
-Immediate feedback does **not** use Filament notification objects as transport. During a Livewire request, `AdminNotifier::feedback()` dispatches the project-owned `admin-header-feedback` event directly from the active component. Outside a Livewire request it places bounded messages in the session queue for the next admin render. When a successful mutation produced Activity in the same request, `AdminAuditService` exposes that Activity's canonical `Change` / `Details` presentation through bounded request-local context and `AdminNotifier::feedback()` uses it instead of a second hand-written success sentence. Warning/error feedback and persistent inbox delivery do not consume that success context.
+Immediate Notification does **not** use Filament notification objects as transport. During a Livewire request, `AdminNotifier::notification()` dispatches the project-owned `admin-header-notification` event directly from the active component. Outside a Livewire request it places bounded messages in the session queue for the next admin render. When a successful mutation produced Activity in the same request, `AdminAuditService` exposes that Activity's canonical `Change` / `Details` presentation through bounded request-local context and `AdminNotifier::notification()` uses it instead of a second hand-written success sentence. Warning/error Notifications and persistent inbox delivery do not consume that success context.
 
-Persistent notifications are written directly to `AdminNotification`. They do not depend on browser markup, a rendered framework notification, DOM inspection or the header feedback being visible.
+Persistent notifications are written directly to `AdminNotification`. They do not depend on browser markup, a rendered framework notification, DOM inspection or the header Notification being visible.
 
-Application code must not construct or send framework notifications for normal admin feedback. Filament resource hooks that require a nullable notification return type may be overridden only to return `null` after project feedback has been emitted.
+Application code must not construct or send framework notifications for normal admin Notifications. Filament resource hooks that require a nullable notification return type may be overridden only to return `null` after project Notification has been emitted.
 
 ## What belongs in each channel
 
-Header-feedback examples include successful save/reorder/upload operations, mark read/unread confirmations, successful Undo, successful staged-state reset, successful version restore and successful publication.
+Header Notification examples include successful save/reorder/upload operations, mark read/unread confirmations, successful Undo, successful staged-state reset, successful version restore and successful publication.
 
 Persistent notification examples include publication/preflight failures, background-job failures, media-processing failures, incomplete cleanup, meaningful storage-capacity warnings and other system conditions that remain relevant after the initiating request ends.
 
@@ -47,7 +47,7 @@ Do not use the inbox as a duplicate Activity feed. Routine successful editorial 
 
 `AdminNotification` is the persistent inbox/history record. It remains user-scoped and retention-managed.
 
-Every persistent notification has an origin-generated `source_id`. The database uniqueness contract `(user_id, source_id)` provides idempotency. `source_id` identifies the source event or condition rather than an ephemeral header-feedback message.
+Every persistent notification has an origin-generated `source_id`. The database uniqueness contract `(user_id, source_id)` provides idempotency. `source_id` identifies the source event or condition rather than an ephemeral header Notification message.
 
 Examples:
 
@@ -90,9 +90,9 @@ A notification may link to Activity or Publication, but those references do not 
 
 ## Transaction semantics
 
-Success feedback that depends on a database mutation must not be emitted as durable truth before that mutation is committed. No-op saves must emit neither mutation Activity nor success header feedback.
+Success Notification that depends on a database mutation must not be emitted as durable truth before that mutation is committed. No-op saves must emit neither mutation Activity nor success header Notification.
 
-When a transaction can still roll back, success feedback or persistent notifications must be dispatched only after successful commit or from a point where the domain service has established success. A failed operation must not leave behind a persistent notification claiming that it succeeded.
+When a transaction can still roll back, success Notification or persistent notifications must be dispatched only after successful commit or from a point where the domain service has established success. A failed operation must not leave behind a persistent notification claiming that it succeeded.
 
 Failure notifications may be emitted from the failure path when their underlying failure fact is itself valid to retain.
 
@@ -100,7 +100,7 @@ Failure notifications may be emitted from the failure path when their underlying
 
 Activity answers **what successful administrative change happened**. Notifications answer **what still deserves the user's attention**.
 
-For routine successful mutations, immediate header feedback reuses Activity presentation semantics: the title is the canonical `Change`, and the body is `Details` when details exist. The header may render these as `Change: Details`. This is presentation reuse only; Activity remains append-only evidence and header feedback remains ephemeral.
+For routine successful mutations, immediate header Notification reuses Activity presentation semantics: the title is the canonical `Change`, and the body is `Details` when details exist. The header may render these as `Change: Details`. This is presentation reuse only; Activity remains append-only evidence and header Notification remains ephemeral.
 
 Where useful, a persistent notification may carry a nullable relation/reference to the related audit event and offer `Open activity` or equivalent context. The relationship is navigational/contextual only:
 
@@ -110,7 +110,7 @@ Where useful, a persistent notification may carry a nullable relation/reference 
 
 ## Publication relationship
 
-Publication success normally needs only immediate feedback because the durable publication/checkpoint/version state and Activity history already record the operation.
+Publication success normally needs only immediate Notification because the durable publication/checkpoint/version state and Activity history already record the operation.
 
 Publication failures, blockers or degraded cleanup may deserve persistent notification. Such notifications should link to the canonical publication review/preflight surface rather than duplicating its entire state in notification text.
 
@@ -122,53 +122,53 @@ The existing `DashboardFeed` remains the canonical mixed dashboard inbox/feed pr
 
 Notification-specific persistence remains in `AdminNotification`, while common feed behavior such as search, filtering, pagination, read/unread handling and pinning continues through the dashboard feed contract.
 
-## Header feedback runtime
+## Header Notification runtime
 
-Transient feedback is rendered only in the project-owned feedback surface inside the persistent sticky admin header.
+Transient Notifications are rendered only in the project-owned Notification surface inside the persistent sticky admin header.
 
 The runtime path is:
 
 ```text
 Admin mutation
-  -> AdminNotifier::feedback()
-  -> project-owned Livewire event or bounded session feedback
-  -> admin-header-feedback
+  -> AdminNotifier::notification()
+  -> project-owned Livewire event or bounded session Notification queue
+  -> admin-header-notification
 ```
 
-The header feedback surface is mounted once through the panel-level `TOPBAR_START` hook and is not rendered or positioned by individual pages. Its Alpine state is owned by that central surface; there is no page-navigation initializer, DOM measurement, resize observer or long-running feedback-specific animation loop.
+The header Notification surface is mounted once through the panel-level `TOPBAR_START` hook and is not rendered or positioned by individual pages. Its Alpine state is owned by that central surface; there is no page-navigation initializer, DOM measurement, resize observer or long-running Notification-specific animation loop.
 
-The surface follows the same shell geometry as the canonical desktop `.fi-main` content axis: Filament sidebar width, bounded workspace width, shared workspace gutter and the existing workspace visual shift. It is visually idle when no current feedback exists. Distinct feedback events are presented FIFO through one bounded in-browser queue; the current message is the only message surface, while a compact `+N` field reports waiting messages. The visible message has a bounded readable hold and a visible local countdown. Entry and exit use a presentation-only materialize/dematerialize effect with a pronounced light sweep that visibly erases the outgoing message before the next queued message is painted in; reduced-motion preferences suppress that motion. Local `setTimeout` callbacks may drive the current lifecycle and countdown only while feedback is active. The runtime must not use polling, intervals, requestAnimationFrame loops, observers, periodic Livewire requests or persistence timers, and it must not move neighboring header controls. The queue and duplicate-id memory are bounded so repeated feedback cannot grow browser state without limit. On narrow screens the Details body may be suppressed before header controls become inaccessible.
+The surface follows the same shell geometry as the canonical desktop `.fi-main` content axis: Filament sidebar width, bounded workspace width, shared workspace gutter and the existing workspace visual shift. It is visually idle when no current Notification exists. Distinct Notification events are presented FIFO through one bounded in-browser queue; the current message is the only message surface, while a compact `+N` field reports waiting messages. The visible message has a bounded readable hold and a visible local countdown. Entry and exit use a presentation-only materialize/dematerialize effect with a pronounced light sweep that visibly erases the outgoing message before the next queued message is painted in; reduced-motion preferences suppress that motion. Local `setTimeout` callbacks may drive the current lifecycle and countdown only while a Notification is active. The runtime must not use polling, intervals, requestAnimationFrame loops, observers, periodic Livewire requests or persistence timers, and it must not move neighboring header controls. The queue and duplicate-id memory are bounded so repeated Notifications cannot grow browser state without limit. On narrow screens the Details body may be suppressed before header controls become inaccessible.
 
 Persistent-notification details use the shared admin dialog/viewer primitives. Context actions such as `Open record`, `Open activity`, `Review staged changes` or `Mark unread` appear only when they are semantically available.
 
-Notification status/severity is factual state, not decorative styling. Header feedback uses status-specific semantic icons from `AdminIcon`: success uses the green exclamation-circle treatment, warning an amber warning mark, danger a red X-circle, and info an information-circle treatment. Do not add page-local dialog, badge or action systems when shared admin primitives already own those roles.
+Notification status/severity is factual state, not decorative styling. Header Notifications use status-specific semantic icons from `AdminIcon`: success uses the green check-badge treatment, warning an amber warning mark, danger a red X-circle, and info an information-circle treatment. Do not add page-local dialog, badge or action systems when shared admin primitives already own those roles.
 
-## Forbidden parallel feedback paths
+## Forbidden parallel Notification paths
 
-The project must not maintain a second transient-feedback renderer alongside the header feedback surface.
+The project must not maintain a second transient Notification renderer alongside the header Notification surface.
 
 Forbidden paths include:
 
-- constructing or sending Filament notification objects for normal admin feedback;
+- constructing or sending Filament notification objects for normal admin Notifications;
 - rendering stacked floating framework notification cards;
 - intercepting framework notification markup and translating it afterward;
 - observing the DOM to discover administrative events;
-- keeping a compatibility bridge that can produce duplicate header feedback + framework feedback.
+- keeping a compatibility bridge that can produce duplicate header Notification + framework notification.
 
-The header-feedback event/session channel and `AdminNotification` persistence are the two intentional notification mechanisms.
+The header-Notification event/session channel and `AdminNotification` persistence are the two intentional notification mechanisms.
 
 ## Verification
 
 Durable coverage should prove at least:
 
-- header feedback does not create `AdminNotification` rows;
+- header Notifications do not create `AdminNotification` rows;
 - inbox delivery works without a browser session;
-- `both` persists and sends immediate header feedback;
+- `both` persists and sends immediate header Notification;
 - `(user_id, source_id)` remains idempotent;
 - notification reads/mutations remain user-scoped;
 - retention and pin protection remain correct;
 - structured action/context projection remains bounded and safe;
-- framework notification construction is absent from normal admin feedback;
+- framework notification construction is absent from normal admin Notifications;
 - the DOM/markup capture path is absent;
 - dashboard notification filtering reflects the current feed sources.
 

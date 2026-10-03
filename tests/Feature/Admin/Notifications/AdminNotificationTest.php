@@ -11,11 +11,11 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-final class AdminHeaderFeedbackProbe extends Component
+final class AdminHeaderNotificationProbe extends Component
 {
-    public function emitFeedback(): void
+    public function emitNotification(): void
     {
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Changes saved',
             body: 'Background gradient updated.',
             status: 'success',
@@ -44,16 +44,16 @@ final class AdminHeaderFeedbackProbe extends Component
     }
 }
 
-it('keeps immediate header feedback ephemeral', function (): void {
+it('keeps immediate header Notification ephemeral', function (): void {
     $user = User::factory()->admin()->create();
     $this->actingAs($user);
 
-    Livewire::test(AdminHeaderFeedbackProbe::class)
-        ->call('emitFeedback')
-        ->assertDispatched('admin-header-feedback', function (string $event, array $params): bool {
+    Livewire::test(AdminHeaderNotificationProbe::class)
+        ->call('emitNotification')
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             $message = $params['notification'] ?? [];
 
-            return $event === 'admin-header-feedback'
+            return $event === 'admin-header-notification'
                 && ($message['title'] ?? null) === 'Changes saved'
                 && ($message['body'] ?? null) === 'Background gradient updated.'
                 && ($message['status'] ?? null) === 'success';
@@ -94,16 +94,16 @@ it('persists structured inbox notifications without rendered browser markup', fu
         ->and($notification->getAttribute('metadata'))->toBe(['variant' => 'preview']);
 });
 
-it('delivers persistent conditions to both inbox and header feedback', function (): void {
+it('delivers persistent conditions to both inbox and header Notification', function (): void {
     $user = User::factory()->admin()->create();
     $this->actingAs($user);
 
-    Livewire::test(AdminHeaderFeedbackProbe::class)
+    Livewire::test(AdminHeaderNotificationProbe::class)
         ->call('emitBoth', (int) $user->getKey())
-        ->assertDispatched('admin-header-feedback', function (string $event, array $params): bool {
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             $message = $params['notification'] ?? [];
 
-            return $event === 'admin-header-feedback'
+            return $event === 'admin-header-notification'
                 && ($message['title'] ?? null) === 'File cleanup failed'
                 && ($message['status'] ?? null) === 'danger';
         });
@@ -166,14 +166,14 @@ it('keeps dashboard notification reads isolated to the authenticated user', func
         ->and(app(DashboardFeed::class)->entry('notification:'.$second->getKey()))->toBeNull();
 });
 
-it('owns immediate feedback without constructing framework notifications', function (): void {
+it('owns immediate Notification without constructing framework notifications', function (): void {
     $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
     $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
 
     expect($provider)
         ->toContain('PanelsRenderHook::TOPBAR_START')
         ->and($notifier)
-        ->toContain("dispatch('admin-header-feedback'")
+        ->toContain("dispatch('admin-header-notification'")
         ->not->toContain('Filament\\Notifications');
 
     foreach (File::allFiles(app_path()) as $file) {

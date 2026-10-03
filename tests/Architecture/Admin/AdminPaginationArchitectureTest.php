@@ -18,4 +18,13 @@ it('keeps admin table pagination on the shared pager primitive', function (): vo
         ->not->toContain('admin-pager__meta');
 
     expect($views[3])->not->toContain('media-workspace__pager');
+
+    $picker = file_get_contents($root.'/resources/views/components/admin/page-size-picker.blade.php');
+    $pager = file_get_contents($root.'/resources/views/components/admin/pager.blade.php');
+
+    expect($picker)
+        ->toContain('Alpine.navigate(url)')
+        ->not->toContain('window.location.assign')
+        ->and($pager)
+        ->toContain('wire:navigate');
 });

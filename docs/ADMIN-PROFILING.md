@@ -66,7 +66,7 @@ The representative flows cover:
 - creation of one synthetic Custom Page through the real Filament action;
 - Home → Settings dialog;
 - Activity → Commits local view switching;
-- Activity editorial-area filtering through its normal GET navigation;
+- Activity editorial-area filtering through SPA navigation;
 - an idle Activity observation window that detects unexplained polling/request loops.
 
 ### Blocking CI structural budgets
@@ -75,12 +75,12 @@ The browser suite stores the applicable budget beside each measured flow in `art
 
 | Flow | Full navigation | Fetch/XHR | Response payload |
 | --- | ---: | ---: | ---: |
-| warmed Dashboard → Pages | exactly 1 | exactly 0 | report only |
+| warmed Dashboard → Pages | exactly 0 | at most 1 | report only |
 | Pages → Add page | exactly 0 | at most 2 | at most 44 KiB |
 | create synthetic Custom Page | exactly 0 | at most 2 | report only |
 | Home → Settings | exactly 0 | at most 2 | at most 76 KiB |
 | Activity → Commits | exactly 0 | at most 2 | at most 640 KiB |
-| Activity editorial-area filter | exactly 1 | exactly 0 | report only |
+| Activity editorial-area filter | exactly 0 | at most 1 | report only |
 | Activity idle window | exactly 0 | exactly 0 | exactly 0 B |
 
 Every protected deliberate interaction must also complete from the first action and produce zero browser console/page errors. The local-action request-count ceiling deliberately allows a future reduction from two requests to one while still rejecting renewed request cascades.
@@ -177,7 +177,7 @@ The application-owned Pulse configuration intentionally records only signals rel
 
 Broad cache-key and per-user request/job recorders are disabled by default. Pulse storage and ingest retention default to three days. Slow outgoing requests are grouped to the dependency hostname so full URLs, query parameters and API tokens are not stored as grouping keys.
 
-The `/pulse` dashboard is protected by the `viewPulse` authorization gate and is accessible only to authenticated administrator accounts. Do not replace that with environment-only authorization.
+The `/pulse` dashboard is protected by the `viewPulse` authorization gate and is accessible only to authenticated administrator accounts. Do not replace that with environment-only authorization. It is an explicit Filament-SPA URL exception: entering Pulse is a normal document navigation into Pulse's own Livewire application rather than navigation inside the admin shell.
 
 The application repository owns Pulse dependency/configuration, schema and authorization. Long-running `pulse:check`, process supervision, runtime environment values and deployment topology remain platform-owned. Enable Pulse first on Validation, inspect overhead/data quality, then decide the Production runtime setting. Do not claim that a Pulse aggregate identifies the root cause of one slow browser action; reproduce that action through Playwright/DevTools/Debugbar when exact attribution is required.
 
