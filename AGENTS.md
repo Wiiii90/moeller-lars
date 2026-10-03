@@ -326,6 +326,8 @@ Responsive behavior is content-driven, not device-name driven. Issue #15 owns th
 - width pressure is solved within that one row by redistributing width, collapsing lower-priority filters behind a local Filters overlay when necessary, and switching actions from complete labels to icon-only/overflow states; never show clipped pseudo-labels such as `O…` or `P…`;
 - any filter overlay state is presentation-only client state and must not introduce resize-driven Livewire traffic;
 - Selection remains the terminal table utility and its selected-count, select-all and row checkboxes stay on one rail while the surface remains tabular;
+- Metric separators are the preferred soft alignment grid for toolbar regions and major table columns; align to the page's six-cell metric boundaries when semantics and fit allow;
+- filter-reset UI is named Clear, not Reset, and uses the shared Clear action/icon; Selection triggers use the shared multi-selection icon;
 - ordinary admin tables must fit without horizontal scrolling or reserved horizontal-scrollbar space; reduce supportive/optional columns and compact actions instead;
 - metrics reduce deliberately by feature semantics; for Dashboard specifically the contract is 6 / 6 / 3 / 2 across Wide / Compact / Narrow / Minimal, retaining Visits + Published Artworks + Recent Changes at Narrow and Visits + Published Artworks at Minimal; other metric strips may use their documented feature-specific reductions but never a one-column list;
 - shared Visual Stage desktop geometry does not imply generic mobile stacking. Each stage defines a task-specific Narrow/Minimal composition that preserves required operations and may remove redundant visualization/parallel preview;
