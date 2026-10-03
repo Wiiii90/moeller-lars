@@ -68,7 +68,7 @@
                     <div class="admin-control-group">
                         <span class="admin-control-group__label">Filter</span>
                         <div class="admin-control-group__actions">
-                            <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
+                            <x-admin.clear-filters wire:click="resetFilters" />
                         </div>
                     </div>
                 </x-slot:reset>
