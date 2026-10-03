@@ -59,32 +59,34 @@
                     <a class="admin-action" href="{{ $storage['url'] }}">Open</a>
                 </header>
 
-                <div class="admin-dashboard__storage-visual" aria-label="Storage capacity preview">
-                    <x-admin.storage-capacity-visual
-                        :capacity="$storage"
-                        :breakdown="$storage['breakdown']"
-                        :segments="$storage['segments']"
-                    />
+                <div class="admin-dashboard__storage-stage">
+                    <div class="admin-dashboard__storage-visual" aria-label="Storage capacity preview">
+                        <x-admin.storage-capacity-visual
+                            :capacity="$storage"
+                            :breakdown="$storage['breakdown']"
+                            :segments="$storage['segments']"
+                        />
+                    </div>
+                    <p class="admin-dashboard__facts">
+                        <span aria-label="Used {{ $storage['authoritative'] }}">
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Used</span>
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">U:</span>
+                            <strong>{{ $storage['authoritative'] }}</strong>
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span aria-label="Remaining {{ $storage['remaining'] }}">
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Remaining</span>
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">R:</span>
+                            <strong>{{ $storage['remaining'] }}</strong>
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span aria-label="Allowance {{ $storage['allowance'] }}">
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Allowance</span>
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">A:</span>
+                            <strong>{{ $storage['allowance'] }}</strong>
+                        </span>
+                    </p>
                 </div>
-                <p class="admin-dashboard__facts">
-                    <span aria-label="Used {{ $storage['authoritative'] }}">
-                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Used</span>
-                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">U:</span>
-                        <strong>{{ $storage['authoritative'] }}</strong>
-                    </span>
-                    <span aria-hidden="true">·</span>
-                    <span aria-label="Remaining {{ $storage['remaining'] }}">
-                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Remaining</span>
-                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">R:</span>
-                        <strong>{{ $storage['remaining'] }}</strong>
-                    </span>
-                    <span aria-hidden="true">·</span>
-                    <span aria-label="Allowance {{ $storage['allowance'] }}">
-                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Allowance</span>
-                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">A:</span>
-                        <strong>{{ $storage['allowance'] }}</strong>
-                    </span>
-                </p>
             </article>
 
             <article
