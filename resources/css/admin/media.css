@@ -157,7 +157,7 @@
 }
 
 .media-workspace__identity {
-    min-width: 15rem;
+    min-width: 0;
     max-width: 25rem;
 }
 
@@ -188,7 +188,7 @@
 
 .media-workspace__references {
     display: grid;
-    min-width: 12rem;
+    min-width: 0;
     max-width: 22rem;
     gap: .28rem;
 }
