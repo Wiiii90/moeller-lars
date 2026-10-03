@@ -536,6 +536,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Search, filters and Reset stay in the Query/Filter region; Reset is not a task action.
 - Selection stays the terminal, visually distinct bulk-action region.
 - Compact actions deliberately from label+icon to icon-only and finally to essential icons plus an overflow action when necessary.
+- At ultra-narrow widths, filter fields may collapse behind one local **Filters** trigger/overlay so the toolbar still obeys the two-row ceiling; the underlying Livewire filter fields remain the same controls and resize state is not sent to the server.
 - Icon-only actions keep accessible labels/tooltips and semantic DOM order.
 - Do not rely on uncontrolled flex wrapping to invent intermediate layouts.
 
