@@ -126,8 +126,7 @@ it('aligns the Dashboard action heading with the row action rail', function (): 
     $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
 
     expect($feedCss)
-        ->toContain('.admin-dashboard__feed-table thead .admin-table__actions')
-        ->toContain('text-align: right !important');
+        ->not->toContain('.admin-dashboard__feed-table thead .admin-table__actions');
 
     expect($responsive)
         ->toContain('Dashboard responsive authority')
@@ -135,4 +134,27 @@ it('aligns the Dashboard action heading with the row action rail', function (): 
         ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important')
         ->toContain('grid-column: 1 / -1 !important')
         ->toContain('border: 0 !important');
+});
+
+
+it('aligns the wide Dashboard feed and toolbar to the six-cell metric grid', function (): void {
+    $root = dirname(__DIR__, 3);
+    $feed = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed.blade.php');
+    $feedCss = file_get_contents($root.'/resources/css/admin/dashboard-feed.css');
+    $tableContract = file_get_contents($root.'/resources/css/admin/table-contract.css');
+
+    expect($feed)
+        ->toContain('admin-table__col-half-unit admin-dashboard__col-type')
+        ->toContain('admin-table__col-one-unit admin-dashboard__col-date')
+        ->toContain('admin-table__col-two-units admin-dashboard__col-title')
+        ->toContain('admin-table__col-one-unit admin-dashboard__col-sender')
+        ->toContain('admin-table__col-one-unit-minus-selection');
+
+    expect($feedCss)
+        ->toContain('grid-column: span 8')
+        ->toContain('grid-column: span 4')
+        ->toContain('justify-content: flex-start !important');
+
+    expect($tableContract)
+        ->toContain('.admin-table__col-one-unit-minus-selection');
 });
