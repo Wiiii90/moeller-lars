@@ -1,0 +1,859 @@
+/* Canonical content-driven responsive layer.
+ *
+ * Loaded after all feature modules so old viewport repair rules cannot reintroduce
+ * wrapping, horizontal table scrollports or generic Visual Stage stacking.
+ * Width states are based on actual workspace/table containers:
+ *   Wide/Compact > 54rem
+ *   Narrow       <= 54rem
+ *   Minimal      <= 38rem
+ * An extreme <= 20rem state may omit metric strips entirely.
+ */
+
+.admin-workspace {
+    container-name: admin-workspace;
+    container-type: inline-size;
+}
+
+.admin-table {
+    container-name: admin-table;
+    container-type: inline-size;
+}
+
+/* Ordinary tables are responsive layouts, never horizontal scrollports. */
+.admin-table,
+.admin-data-table,
+.admin-table--data,
+.media-workspace__table-wrap,
+.admin-hierarchy--pages {
+    max-width: 100%;
+    overflow-x: clip !important;
+    scrollbar-gutter: auto !important;
+    scrollbar-width: none !important;
+}
+
+:is(.admin-table, .admin-data-table, .admin-table--data, .media-workspace__table-wrap)::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.admin-data-table > table,
+.admin-table--data table,
+.media-workspace__table,
+.activity-events-table table,
+.activity-commits-table table,
+.journal-table--blog,
+.journal-table--exhibitions,
+.general-social-table > table {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed;
+}
+
+.admin-table th,
+.admin-table td {
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Presentation-only responsive metadata is exposed only after its dedicated
+ * standalone columns have been removed. */
+.admin-responsive-meta {
+    display: none;
+    margin-top: .15rem;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-meta);
+    font-weight: 400;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Wide/Compact: preserve the accepted one-row toolbar grammar even when the
+ * browser viewport happens to trigger an older feature media query. */
+@container admin-workspace (min-width: 54.01rem) {
+    .admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-dashboard__feed-controls):not(.media-workspace__controls):not(.activity-workspace__controls),
+    .admin-control-bar {
+        flex-wrap: nowrap !important;
+    }
+
+    :is(
+        .admin-data-controls--six-cell,
+        .custom-page-workspace__controls,
+        .journal-workspace__entries > .admin-data-controls
+    ) {
+        display: grid !important;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        gap: 0 !important;
+        align-items: end;
+    }
+
+    :is(
+        .admin-data-controls--six-cell,
+        .custom-page-workspace__controls,
+        .journal-workspace__entries > .admin-data-controls
+    ) > :not(.admin-data-controls__utility) {
+        box-sizing: border-box;
+        width: 100% !important;
+        min-width: 0 !important;
+        padding-right: .7rem;
+        flex: none !important;
+    }
+
+    :is(
+        .admin-data-controls--six-cell,
+        .custom-page-workspace__controls,
+        .journal-workspace__entries > .admin-data-controls
+    ) > .admin-data-controls__utility {
+        display: grid !important;
+        min-width: 0;
+        grid-column: span 2;
+        grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;
+        gap: .2rem;
+        align-items: end;
+    }
+
+    .admin-task-controls--pages {
+        display: grid !important;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        gap: 0 !important;
+        align-items: end;
+    }
+
+    .admin-task-controls--pages > * {
+        width: 100% !important;
+        min-width: 0 !important;
+        padding-right: .45rem;
+    }
+
+    .admin-task-controls--pages > :first-child { grid-column: span 2; }
+    .admin-task-controls--pages > .admin-task-field:not(:first-child) { grid-column: span 1; }
+
+    .admin-task-controls--pages > .admin-data-controls__utility {
+        display: grid !important;
+        grid-column: span 2;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+        padding-right: 0;
+    }
+
+    .admin-dashboard__feed-controls {
+        display: grid !important;
+        grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+        gap: .85rem !important;
+        align-items: end;
+    }
+
+    .admin-dashboard__feed-controls > :first-child {
+        grid-column: span 8;
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: none !important;
+    }
+
+    .admin-dashboard__feed-controls > :nth-child(2) {
+        grid-column: span 1;
+        width: 100% !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility {
+        display: grid !important;
+        grid-column: span 3;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .35rem;
+        align-items: end;
+    }
+
+    .admin-dashboard__feed-controls .admin-data-control-group,
+    .admin-dashboard__feed-controls .admin-selection__anchor,
+    .admin-dashboard__feed-controls .admin-data-control-group > .admin-action,
+    .admin-dashboard__feed-controls .admin-selection__trigger {
+        width: 100% !important;
+        min-width: 0;
+    }
+
+    .admin-storage .media-workspace__controls {
+        display: grid !important;
+        grid-template-columns: repeat(72, minmax(0, 1fr)) !important;
+        gap: .35rem !important;
+        align-items: end;
+    }
+
+    .admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 24; }
+    .admin-storage .media-workspace__controls > :nth-child(2) { grid-column: span 7; }
+    .admin-storage .media-workspace__controls > :nth-child(3) { grid-column: span 6; }
+    .admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 7; }
+    .admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 9; }
+
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility {
+        display: grid !important;
+        min-width: 0;
+        grid-column: span 19;
+        grid-template-columns: 5fr 8fr 6fr;
+        gap: .2rem;
+        align-items: end;
+    }
+
+    .activity-workspace__controls {
+        display: grid !important;
+        grid-template-columns:
+            minmax(0, 33.3333%)
+            minmax(0, .85fr)
+            minmax(0, 1fr)
+            minmax(0, .95fr)
+            minmax(0, 1.2fr)
+            minmax(20.75rem, auto) !important;
+        gap: 0 !important;
+        align-items: end;
+    }
+
+    .activity-workspace__controls > :not(.admin-data-controls__utility) {
+        box-sizing: border-box;
+        width: 100% !important;
+        min-width: 0 !important;
+        padding-right: .7rem;
+        flex: none !important;
+    }
+
+    .activity-workspace__controls > .admin-data-controls__utility {
+        display: grid !important;
+        min-width: 0;
+        grid-template-columns: 4rem 8.25rem 8.5rem;
+        gap: .2rem;
+        align-items: end;
+    }
+
+    .gallery-workspace__controls {
+        grid-auto-flow: column;
+        align-items: end;
+    }
+}
+
+/* Compact tables keep their structure but reduce action chrome before any data
+ * column has to become unreadable. */
+@container admin-table (max-width: 62rem) {
+    .admin-row-actions .admin-action__label,
+    .media-workspace__row-actions .admin-action__label,
+    .journal-row-actions .admin-action__label,
+    .admin-pages__row-actions .admin-action__label,
+    .general-social-table__actions .admin-action__label {
+        display: none !important;
+    }
+
+    .admin-row-actions .admin-action,
+    .media-workspace__row-actions .admin-action,
+    .journal-row-actions .admin-action,
+    .admin-pages__row-actions .admin-action,
+    .general-social-table__actions .admin-action {
+        justify-content: center !important;
+        padding-inline: .2rem !important;
+    }
+
+    .journal-row-actions--blog,
+    .journal-row-actions--exhibitions {
+        grid-template-columns: repeat(var(--admin-responsive-action-count, 7), minmax(0, 1fr)) !important;
+        gap: .08rem !important;
+    }
+
+    .journal-row-actions--exhibitions {
+        --admin-responsive-action-count: 5;
+    }
+}
+
+/* Narrow workspace: toolbar is exactly two semantic rows.
+ * Row 1 = Query/Filter + Reset. Row 2 = Task actions + terminal Selection.
+ * 24 tracks make 0-4 filters deterministic without fractional grid tracks. */
+@container admin-workspace (max-width: 54rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+        border-right: 1px solid var(--admin-line);
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(3n) {
+        border-right: 0;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(n + 4) {
+        border-top: 1px solid var(--admin-line);
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(3n + 1) {
+        padding-left: 0;
+    }
+
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) {
+        display: grid !important;
+        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
+        gap: .55rem !important;
+        align-items: end !important;
+        flex-wrap: nowrap !important;
+    }
+
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > :not(.admin-data-controls__utility) {
+        box-sizing: border-box;
+        width: 100% !important;
+        min-width: 0 !important;
+        padding-right: 0 !important;
+        flex: none !important;
+        grid-row: 1;
+    }
+
+    .admin-data-controls--filters-0 > :first-child { grid-column: span 20; }
+    .admin-data-controls--filters-1 > :first-child { grid-column: span 16; }
+    .admin-data-controls--filters-2 > :first-child { grid-column: span 12; }
+    .admin-data-controls--filters-3 > :first-child { grid-column: span 8; }
+    .admin-data-controls--filters-4 > :first-child { grid-column: span 8; }
+
+    .admin-data-controls--filters-1 > :not(:first-child):not(.admin-data-controls__utility) { grid-column: span 4; }
+    .admin-data-controls--filters-2 > :not(:first-child):not(.admin-data-controls__utility) { grid-column: span 4; }
+    .admin-data-controls--filters-3 > :not(:first-child):not(.admin-data-controls__utility) { grid-column: span 4; }
+    .admin-data-controls--filters-4 > :not(:first-child):not(.admin-data-controls__utility) { grid-column: span 3; }
+
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility {
+        display: contents !important;
+    }
+
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility > * {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* Reset belongs to the query/filter row. */
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility > :first-child {
+        grid-row: 1;
+        grid-column: span 4;
+    }
+
+    /* Normal three-part utility: actions occupy row 2, Selection owns the
+     * terminal eight tracks so its count rail ends on the table checkbox axis. */
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility:has(> :nth-child(3)) > :nth-child(2) {
+        grid-row: 2;
+        grid-column: 1 / span 16;
+    }
+
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility:has(> :nth-child(3)) > :last-child {
+        grid-row: 2;
+        grid-column: 17 / -1;
+    }
+
+    /* Two-part utility groups stay on the second and final row. */
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility:not(:has(> :nth-child(3))) > :first-child {
+        grid-row: 2;
+        grid-column: 1 / span 16;
+    }
+
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility:not(:has(> :nth-child(3))) > :last-child:not(:first-child) {
+        grid-row: 2;
+        grid-column: 17 / -1;
+    }
+
+    .admin-data-controls__utility .admin-control-group__actions,
+    .admin-data-controls__utility .admin-task-control-actions,
+    .admin-data-controls__utility .admin-toolbar {
+        flex-wrap: nowrap !important;
+    }
+
+    .admin-data-controls__utility .admin-action__label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Gallery follows the same two-row semantic split without changing its
+     * accepted contact-sheet task model. */
+    .gallery-workspace__controls {
+        display: grid !important;
+        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
+        gap: .55rem !important;
+        align-items: end;
+    }
+
+    .gallery-workspace__search { grid-column: span 12; }
+    .gallery-workspace__controls > .gallery-workspace__field:not(.gallery-workspace__search) { grid-column: span 4; }
+    .gallery-workspace__controls > .gallery-workspace__control-group:not(.gallery-workspace__gallery):not(.gallery-workspace__selection) {
+        grid-column: span 4;
+    }
+    .gallery-workspace__gallery {
+        grid-column: 1 / span 16;
+        grid-row: 2;
+    }
+    .gallery-workspace__selection {
+        grid-column: 17 / -1;
+        grid-row: 2;
+    }
+    .gallery-workspace__gallery-actions {
+        flex-wrap: nowrap !important;
+    }
+
+    /* Feature-specific focused Visual Stages. No desktop pane is generically
+     * stacked below another pane. */
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .general-appearance-stage,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    ) {
+        height: var(--admin-visual-stage-height) !important;
+        overflow: hidden !important;
+    }
+
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    )::before,
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    )::after {
+        display: none !important;
+    }
+
+    /* Dashboard: Storage is the narrow summary surface. Activity/Analytics
+     * remain fully available from their Open destinations instead of becoming
+     * three vertically stacked dashboard stages. */
+    .admin-dashboard__overview {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .admin-dashboard__overview-column:first-child {
+        display: grid !important;
+        grid-column: 1;
+        width: 100%;
+        padding: 0 !important;
+    }
+
+    .admin-dashboard__overview-column:nth-child(n + 2) {
+        display: none !important;
+    }
+
+    .admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual {
+        right: 0 !important;
+    }
+
+    /* Storage: one functional compact surface. Upload remains the main pane;
+     * Capacity contributes only its management actions; Distribution and the
+     * donut visualization are non-essential at this width. */
+    .admin-storage__visual-stage {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) auto !important;
+    }
+
+    .admin-storage__upload {
+        display: grid !important;
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        height: auto !important;
+        padding: var(--admin-stage-divider-inset) 0 0 !important;
+    }
+
+    .admin-storage__capacity-group {
+        display: block !important;
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        height: auto !important;
+        padding: 0 !important;
+    }
+
+    .admin-storage__capacity-group > .admin-storage__visual-heading,
+    .admin-storage__capacity-group > .admin-storage-capacity,
+    .admin-storage__distribution {
+        display: none !important;
+    }
+
+    .admin-storage__capacity-actions {
+        min-height: 2.75rem;
+        padding-top: .35rem;
+        justify-content: flex-start;
+        border-top: 1px solid var(--admin-line);
+    }
+
+    /* General: controls + geometry become the one functional surface; the
+     * parallel live preview is deliberately omitted. */
+    .general-appearance-stage {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) auto !important;
+    }
+
+    .general-appearance-stage__controls {
+        display: block !important;
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        width: 100%;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .general-appearance-stage__geometry {
+        display: grid !important;
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        width: 100%;
+        height: auto !important;
+        margin: .75rem 0 0 !important;
+        padding: 0 !important;
+    }
+
+    .general-appearance-stage__preview {
+        display: none !important;
+    }
+
+    /* Activity: Calendar is the narrow timeline surface. Clock/publication are
+     * redundant summaries and remain available through the full Activity view
+     * at wider widths. */
+    .activity-atlas__grid {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .activity-atlas__visual {
+        display: grid !important;
+        grid-column: 1 !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        width: 100%;
+        height: 100% !important;
+    }
+
+    .activity-atlas__view.activity-calendar,
+    .activity-atlas__view.activity-calendar[style*="display: none"] {
+        display: grid !important;
+        grid-column: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding: var(--admin-stage-divider-inset) 0 !important;
+    }
+
+    .activity-atlas__view.activity-clock,
+    .activity-atlas__view.activity-clock[style*="display: none"],
+    .activity-publication {
+        display: none !important;
+    }
+
+    /* Analytics and Home keep their primary visual surface only. */
+    .analytics-visual-stage,
+    .home-hero-surface {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .analytics-visual-stage > .analytics-world,
+    .home-hero-surface > .home-hero-surface__visual {
+        display: block !important;
+        grid-column: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 !important;
+    }
+
+    .analytics-stage-rail,
+    .home-hero-rail {
+        display: none !important;
+    }
+
+    .analytics-visual-stage > .analytics-world {
+        min-height: 0 !important;
+    }
+}
+
+/* Table-specific Narrow reduction. */
+@container admin-table (max-width: 50rem) {
+    /* Dashboard: Sender is optional in collection view. */
+    .admin-dashboard__feed-table col:nth-child(6),
+    .admin-dashboard__feed-table th:nth-child(6),
+    .admin-dashboard__feed-table td:nth-child(6) {
+        display: none;
+    }
+
+    /* Blog image and publication / Exhibition schedule are supportive. */
+    .journal-table--blog col:nth-child(3),
+    .journal-table--blog th:nth-child(2),
+    .journal-table--blog td:nth-child(3),
+    .journal-table--blog col:nth-child(6),
+    .journal-table--blog th:nth-child(5),
+    .journal-table--blog td:nth-child(6) {
+        display: none;
+    }
+
+    .journal-table--exhibitions col:nth-child(5),
+    .journal-table--exhibitions th:nth-child(4),
+    .journal-table--exhibitions td:nth-child(5) {
+        display: none;
+    }
+
+    /* Storage: preview and detailed reference column yield first. */
+    .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
+    .media-workspace__table-wrap:not(.is-dense) th:nth-child(1),
+    .media-workspace__table-wrap:not(.is-dense) td:nth-child(1) {
+        display: none;
+    }
+
+    .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-usage,
+    .media-workspace__table-wrap:not(.is-dense) th:nth-child(5),
+    .media-workspace__table-wrap:not(.is-dense) td:nth-child(5) {
+        display: none;
+    }
+
+    .media-workspace__table-wrap.is-dense .media-workspace__col-usage,
+    .media-workspace__table-wrap.is-dense th:nth-child(4),
+    .media-workspace__table-wrap.is-dense td:nth-child(4) {
+        display: none;
+    }
+
+    /* Pages: Template is supportive. */
+    .admin-hierarchy--pages .admin-pages__template {
+        display: none !important;
+    }
+
+    .admin-hierarchy--pages .admin-pages__header,
+    .admin-hierarchy--pages .admin-pages__row {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    }
+
+    /* Activity: publication and actor are contextual rather than primary. */
+    .activity-events-table col.activity-col--publication,
+    .activity-events-table col.activity-col--who,
+    .activity-events-table th:nth-child(2),
+    .activity-events-table td:nth-child(2),
+    .activity-events-table th:nth-child(7),
+    .activity-events-table td:nth-child(7) {
+        display: none;
+    }
+
+    .activity-commits-table col.activity-commit-col--publication,
+    .activity-commits-table col.activity-commit-col--who,
+    .activity-commits-table th:nth-child(2),
+    .activity-commits-table td:nth-child(2),
+    .activity-commits-table th:nth-child(5),
+    .activity-commits-table td:nth-child(5) {
+        display: none;
+    }
+
+    .general-social-table__actions .admin-toolbar {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        max-width: none;
+    }
+}
+
+/* Minimal: two-column metrics, a more aggressively prioritized table, and no
+ * third toolbar row. */
+@container admin-workspace (max-width: 38rem) {
+    .admin-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .admin-metrics > .admin-metric {
+        border-right: 1px solid var(--admin-line) !important;
+        border-top: 1px solid var(--admin-line);
+    }
+
+    .admin-metrics > .admin-metric:nth-child(-n + 2) {
+        border-top: 0;
+    }
+
+    .admin-metrics > .admin-metric:nth-child(2n) {
+        border-right: 0 !important;
+    }
+
+    .admin-metrics > .admin-metric:nth-child(2n + 1) {
+        padding-left: 0;
+    }
+
+    .admin-data-controls,
+    .admin-task-controls--pages,
+    .custom-page-workspace__controls {
+        gap: .45rem !important;
+    }
+
+    /* Keep the two toolbar rows but give Selection a larger stable terminal
+     * region and compact task-action labels where necessary. */
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility:has(> :nth-child(3)) > :nth-child(2) {
+        grid-column: 1 / span 14;
+    }
+
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility:has(> :nth-child(3)) > :last-child {
+        grid-column: 15 / -1;
+    }
+
+    .admin-data-controls__utility .admin-control-group__actions > .admin-action .admin-action__label,
+    .admin-data-controls__utility .admin-task-control-actions > .admin-action .admin-action__label {
+        display: none;
+    }
+
+    .gallery-workspace__gallery {
+        grid-column: 1 / span 14;
+    }
+
+    .gallery-workspace__selection {
+        grid-column: 15 / -1;
+    }
+
+    .admin-gallery-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .general-background-row > .fi-sc,
+    .general-layout-controls__fields,
+    .general-two-column-settings > .fi-sc {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .general-layout-field:first-child,
+    .general-layout-field + .general-layout-field,
+    .general-two-column-settings > .fi-sc > :first-child,
+    .general-two-column-settings > .fi-sc > :last-child {
+        padding-right: .35rem;
+        padding-left: .35rem;
+    }
+}
+
+@container admin-table (max-width: 38rem) {
+    /* Dashboard supportive Type/Date columns fold into Title metadata. */
+    .admin-dashboard__feed-table col:nth-child(3),
+    .admin-dashboard__feed-table col:nth-child(4),
+    .admin-dashboard__feed-table th:nth-child(2),
+    .admin-dashboard__feed-table th:nth-child(3),
+    .admin-dashboard__feed-table td:nth-child(3),
+    .admin-dashboard__feed-table td:nth-child(4) {
+        display: none;
+    }
+
+    .admin-dashboard__feed-table .admin-responsive-meta {
+        display: block;
+    }
+
+    /* Storage keeps Media | Status | Actions | Selection. Type/size are folded
+     * into Media metadata by the Blade row. */
+    .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-type,
+    .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-size,
+    .media-workspace__table-wrap:not(.is-dense) th:nth-child(3),
+    .media-workspace__table-wrap:not(.is-dense) th:nth-child(4),
+    .media-workspace__table-wrap:not(.is-dense) td:nth-child(3),
+    .media-workspace__table-wrap:not(.is-dense) td:nth-child(4),
+    .media-workspace__table-wrap.is-dense .media-workspace__col-type,
+    .media-workspace__table-wrap.is-dense .media-workspace__col-size,
+    .media-workspace__table-wrap.is-dense th:nth-child(2),
+    .media-workspace__table-wrap.is-dense th:nth-child(3),
+    .media-workspace__table-wrap.is-dense td:nth-child(2),
+    .media-workspace__table-wrap.is-dense td:nth-child(3) {
+        display: none;
+    }
+
+    .media-workspace__identity .admin-responsive-meta {
+        display: block;
+    }
+
+    /* Activity retains change/target/time/actions/selection in the smallest
+     * table state. */
+    .activity-events-table col.activity-col--area,
+    .activity-events-table col.activity-col--type,
+    .activity-events-table th:nth-child(5),
+    .activity-events-table td:nth-child(5),
+    .activity-events-table th:nth-child(6),
+    .activity-events-table td:nth-child(6) {
+        display: none;
+    }
+
+    /* Pages keeps Position/Name + actions + Selection. */
+    .admin-hierarchy--pages .admin-pages__type {
+        display: none !important;
+    }
+
+    .admin-hierarchy--pages .admin-pages__header,
+    .admin-hierarchy--pages .admin-pages__row {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+
+    /* Seven Blog actions stay reachable without horizontal table overflow.
+     * Two compact icon rows are preferable to a scrollport; future product
+     * review may promote lower-priority actions into an overflow menu. */
+    .journal-row-actions--blog {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        grid-auto-rows: minmax(1.8rem, auto);
+    }
+
+    .journal-row-actions--exhibitions {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-rows: minmax(1.8rem, auto);
+    }
+
+    .media-workspace__row-actions,
+    .admin-dashboard__feed-actions,
+    .admin-pages__row-actions {
+        grid-auto-flow: row;
+    }
+}
+
+/* Extreme widths: the task surface wins over summary statistics. */
+@container admin-workspace (max-width: 20rem) {
+    .admin-metrics {
+        display: none !important;
+    }
+}
