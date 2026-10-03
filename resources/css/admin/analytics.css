@@ -397,46 +397,6 @@
     text-align: left;
 }
 
-@media (max-width: 1050px) {
-    .analytics-stage-rail {
-        padding-left: 1.25rem;
-    }
-
-    .analytics-stage-ranking__head,
-    .analytics-country-rank {
-        grid-template-columns: minmax(6rem, 1fr) 3.35rem 3.35rem;
-        gap: .4rem;
-    }
-}
-
-@media (max-width: 760px) {
-    .analytics-visual-stage {
-        grid-template-columns: 1fr;
-        overflow: visible;
-    }
-
-    .analytics-visual-stage > .analytics-world,
-    .analytics-stage-rail {
-        grid-column: 1;
-    }
-
-    .analytics-visual-stage > .analytics-world {
-        min-height: 22rem;
-    }
-
-    .analytics-stage-rail {
-        height: auto;
-        padding: var(--admin-section-gap) 0 0;
-        grid-template-rows: auto auto auto;
-        border-top: 1px solid var(--admin-line);
-        border-left: 0;
-        overflow: visible;
-    }
-
-    .analytics-stage-ranking__scroll {
-        max-height: 14rem;
-    }
-}
 
 @media (prefers-reduced-motion: reduce) {
     .analytics-world__marker,
