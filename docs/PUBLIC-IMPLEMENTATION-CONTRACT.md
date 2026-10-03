@@ -167,9 +167,18 @@ No form content, visitor email/name, admin IDs or secret values are emitted as a
 
 ## Responsive/artistic presentation
 
-The public site preserves Lars Möller's established visual identity: artwork-first presentation, typography, spacing and restrained header/navigation/content treatment.
+The public site preserves the currently accepted Lars Möller visual character: artwork-first presentation, typography, spacing and restrained header/navigation/content treatment. Legacy breakpoint values are historical evidence only and are not target layout authorities.
 
-Reliability/accessibility/responsive improvements are allowed but must not silently replace artistic composition with generic portfolio/card templates.
+Responsive behavior is content-driven across **Wide**, **Compact**, **Narrow** and **Minimal** states. Exact thresholds are chosen where the current composition would otherwise stop fitting cleanly rather than from named device classes.
+
+- preserve the accepted wide/desktop composition unless current browser feedback requires a presentation change;
+- keep navigation usable by pointer, touch and keyboard through narrow phones;
+- keep artwork media and authored metadata legible without horizontal page overflow;
+- prefer progressive composition changes over shrinking typography or reproducing legacy breakpoint mechanics;
+- feature-specific Journal, Custom Page, Contact and Exhibition content follows the same responsive system while preserving its own semantics;
+- browser acceptance includes continuous resizing through intermediate widths, not only fixed desktop/tablet/mobile presets.
+
+Reliability/accessibility/responsive improvements must not replace the artist-specific composition with generic portfolio/card templates.
 
 ## Deliberately not preserved
 
