@@ -827,18 +827,9 @@
     }
 
     /* Blog image and publication / Exhibition schedule are supportive. */
-    .journal-table--blog col:nth-child(3),
-    .journal-table--blog th:nth-child(2),
-    .journal-table--blog td:nth-child(3),
-    .journal-table--blog col:nth-child(6),
-    .journal-table--blog th:nth-child(5),
-    .journal-table--blog td:nth-child(6) {
-        display: none;
-    }
-
-    .journal-table--exhibitions col:nth-child(5),
-    .journal-table--exhibitions th:nth-child(4),
-    .journal-table--exhibitions td:nth-child(5) {
+    .journal-table--blog .journal-col--visual,
+    .journal-table--blog .journal-col--publication,
+    .journal-table--exhibitions .journal-col--schedule {
         display: none;
     }
 
@@ -866,21 +857,10 @@
     }
 
     /* Activity: publication and actor are contextual rather than primary. */
-    .activity-events-table col.activity-col--publication,
-    .activity-events-table col.activity-col--who,
-    .activity-events-table th:nth-child(2),
-    .activity-events-table td:nth-child(2),
-    .activity-events-table th:nth-child(7),
-    .activity-events-table td:nth-child(7) {
-        display: none;
-    }
-
-    .activity-commits-table col.activity-commit-col--publication,
-    .activity-commits-table col.activity-commit-col--who,
-    .activity-commits-table th:nth-child(2),
-    .activity-commits-table td:nth-child(2),
-    .activity-commits-table th:nth-child(5),
-    .activity-commits-table td:nth-child(5) {
+    .activity-events-table .activity-col--publication,
+    .activity-events-table .activity-col--who,
+    .activity-commits-table .activity-commit-col--publication,
+    .activity-commits-table .activity-commit-col--who {
         display: none;
     }
 
@@ -1082,12 +1062,8 @@
 
     /* Activity retains change/target/time/actions/selection in the smallest
      * table state. */
-    .activity-events-table col.activity-col--area,
-    .activity-events-table col.activity-col--type,
-    .activity-events-table th:nth-child(5),
-    .activity-events-table td:nth-child(5),
-    .activity-events-table th:nth-child(6),
-    .activity-events-table td:nth-child(6) {
+    .activity-events-table .activity-col--area,
+    .activity-events-table .activity-col--type {
         display: none;
     }
 
