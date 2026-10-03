@@ -21,7 +21,7 @@
             <x-slot:reset>
                 <div class="admin-data-control-group">
                     <span class="admin-data-control-label">Filter</span>
-                    <button class="admin-action" type="button" wire:click="resetComponentFilters">Reset</button>
+                    <x-admin.clear-filters wire:click="resetComponentFilters" />
                 </div>
             </x-slot:reset>
 
@@ -57,7 +57,7 @@
                             aria-haspopup="menu"
                             @disabled($selectedItemCount === 0)
                         >
-                            <span class="admin-action__label">Selected</span>
+                            <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                             <span class="admin-selection__count">{{ $selectedItemCount }}</span>
                         </button>
                         <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
