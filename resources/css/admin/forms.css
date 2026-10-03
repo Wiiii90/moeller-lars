@@ -571,17 +571,3 @@
     margin: 0 !important;
 }
 
-@media (max-width: 760px) {
-    .admin-component-image-preview,
-    .admin-favicon-preview {
-        grid-template-columns: 1fr;
-    }
-
-    .admin-rich-text-image-insert {
-        width: 100%;
-    }
-
-    .admin-rich-text-image-insert__external-row {
-        grid-template-columns: 1fr;
-    }
-}
