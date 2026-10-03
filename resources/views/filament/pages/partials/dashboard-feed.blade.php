@@ -80,20 +80,20 @@
             <colgroup>
                 <col class="admin-table__col-quarter-unit">
                 <col class="admin-table__col-quarter-unit">
-                <col class="admin-table__col-three-quarter-unit">
-                <col class="admin-table__col-three-quarter-unit">
-                <col class="admin-table__col-one-half-units">
-                <col class="admin-table__col-half-unit">
+                <col class="admin-table__col-three-quarter-unit admin-dashboard__col-type">
+                <col class="admin-table__col-three-quarter-unit admin-dashboard__col-date">
+                <col class="admin-table__col-one-half-units admin-dashboard__col-title">
+                <col class="admin-table__col-half-unit admin-dashboard__col-sender">
                 <col class="admin-table__col-two-units-minus-selection">
                 <col class="admin-table__selection-col">
             </colgroup>
             <thead>
                 <tr>
                     <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Date</th>
-                    <th scope="col">Title</th>
-                    <th scope="col">Sender</th>
+                    <th scope="col" class="admin-dashboard__col-type">Type</th>
+                    <th scope="col" class="admin-dashboard__col-date">Date</th>
+                    <th scope="col" class="admin-dashboard__col-title">Title</th>
+                    <th scope="col" class="admin-dashboard__col-sender">Sender</th>
                     <th scope="col" class="admin-table__actions">Actions</th>
                     <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                         <input
