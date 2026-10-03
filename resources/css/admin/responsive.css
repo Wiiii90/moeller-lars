@@ -2004,3 +2004,66 @@
         display: none !important;
     }
 }
+
+
+/* Dashboard toolbar width authority.
+ * Right-side controls consume only their intrinsic width. Search owns all
+ * remaining space but never shrinks below one sixth of the toolbar. */
+.admin-dashboard__feed-controls {
+    display: grid !important;
+    grid-template-columns:
+        minmax(16.666667%, 1fr)
+        max-content
+        max-content
+        max-content
+        8.5rem !important;
+    column-gap: .65rem !important;
+    row-gap: 0 !important;
+    align-items: end !important;
+}
+
+.admin-dashboard__feed-controls > :first-child {
+    grid-column: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__filters,
+.admin-dashboard__feed-controls > .admin-data-controls__utility {
+    display: contents !important;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
+    grid-column: auto !important;
+    width: 6.5rem !important;
+    min-width: 6.5rem !important;
+    padding-inline: 0 !important;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+    grid-column: auto !important;
+    width: max-content !important;
+    min-width: 0 !important;
+    padding-inline: 0 !important;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+    grid-column: auto !important;
+    width: 8.5rem !important;
+    min-width: 8.5rem !important;
+    margin-left: 0 !important;
+    padding-inline: 0 !important;
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-dashboard__feed-controls {
+        column-gap: .35rem !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
+        width: 5.25rem !important;
+        min-width: 5.25rem !important;
+    }
+}
