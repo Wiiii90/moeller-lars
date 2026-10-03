@@ -253,23 +253,9 @@
     }
 }
 
-/* Compact workspace: keep one toolbar row, but redistribute task controls
- * before Narrow introduces the intentional second row. */
+/* Compact workspace: redistribute controls while preserving the global
+ * one-row toolbar invariant. */
 @container admin-workspace (min-width: 54.01rem) and (max-width: 68rem) {
-    .admin-dashboard__feed-controls {
-        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
-        gap: .45rem !important;
-    }
-
-    .admin-dashboard__feed-controls > :first-child { grid-column: span 12 !important; }
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child { grid-column: span 3 !important; }
-    .admin-dashboard__feed-controls > .admin-data-controls__utility {
-        display: grid !important;
-        grid-column: span 9 !important;
-        grid-template-columns: 2fr 3fr 4fr;
-        gap: .2rem;
-    }
-
     .admin-storage .media-workspace__controls {
         grid-template-columns: repeat(36, minmax(0, 1fr)) !important;
         gap: .3rem !important;
@@ -340,6 +326,10 @@
 @container admin-table (max-width: 62rem) {
     .admin-table > table {
         table-layout: fixed;
+    }
+
+    .admin-dashboard__feed-table col:nth-last-child(2) {
+        width: 7rem !important;
     }
 
     .admin-row-actions .admin-action__label,
@@ -423,14 +413,17 @@
         padding-left: 0;
     }
 
+    /* Toolbar is always exactly one row. Query/filter controls shrink first,
+     * action labels may disappear, and Selection remains the terminal fixed
+     * rail. Wrapping into a second toolbar row is not a supported state. */
     :is(
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) {
-        display: grid !important;
-        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
-        gap: .55rem !important;
+        display: flex !important;
+        min-width: 0;
+        gap: .35rem !important;
         align-items: end !important;
         flex-wrap: nowrap !important;
     }
@@ -439,31 +432,18 @@
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > :first-child,
+    ) > :first-child {
+        width: auto !important;
+        min-width: 0 !important;
+        padding-right: 0 !important;
+        flex: 1 1 12rem !important;
+    }
+
     :is(
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > .admin-data-controls__filters > * {
-        box-sizing: border-box;
-        width: 100% !important;
-        min-width: 0 !important;
-        padding-right: 0 !important;
-        flex: none !important;
-        grid-row: 1;
-    }
-
-    .admin-data-controls--filters-0 > :first-child { grid-column: span 20 !important; }
-    .admin-data-controls--filters-1 > :first-child { grid-column: span 16 !important; }
-    .admin-data-controls--filters-2 > :first-child { grid-column: span 12 !important; }
-    .admin-data-controls--filters-3 > :first-child { grid-column: span 8 !important; }
-    .admin-data-controls--filters-4 > :first-child { grid-column: span 8 !important; }
-
-    .admin-data-controls--filters-1 > .admin-data-controls__filters > * { grid-column: span 4 !important; }
-    .admin-data-controls--filters-2 > .admin-data-controls__filters > * { grid-column: span 4 !important; }
-    .admin-data-controls--filters-3 > .admin-data-controls__filters > * { grid-column: span 4 !important; }
-    .admin-data-controls--filters-4 > .admin-data-controls__filters > * { grid-column: span 3 !important; }
-
+    ) > .admin-data-controls__filters,
     :is(
         .admin-data-controls,
         .admin-task-controls--pages,
@@ -476,21 +456,21 @@
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > .admin-data-controls__utility > * {
-        width: 100% !important;
-        min-width: 0 !important;
+    ) > .admin-data-controls__filters > * {
+        width: auto !important;
+        min-width: 4.5rem !important;
+        padding-right: 0 !important;
+        flex: 0 1 7rem !important;
     }
 
-    /* Reset belongs to the query/filter row. Slot-state classes come from
-     * x-admin.controls, so two-slot toolbars do not have to infer semantics
-     * from child position. */
     :is(
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__utility--has-reset > :first-child {
-        grid-row: 1;
-        grid-column: span 4 !important;
+        width: auto !important;
+        min-width: 3.5rem !important;
+        flex: 0 1 4.5rem !important;
     }
 
     :is(
@@ -503,8 +483,9 @@
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child {
-        grid-row: 2;
-        grid-column: 1 / span 16 !important;
+        width: auto !important;
+        min-width: 3.5rem !important;
+        flex: 0 1 7rem !important;
     }
 
     :is(
@@ -512,18 +493,10 @@
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__utility--has-selection > :last-child {
-        grid-row: 2;
-        grid-column: 17 / -1 !important;
-    }
-
-    /* A reset-only utility stays on row 1; an actions-only utility uses row 2.
-     * This preserves the two-row ceiling without changing slot meaning. */
-    :is(
-        .admin-data-controls,
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-reset:not(.admin-data-controls__utility--has-actions):not(.admin-data-controls__utility--has-selection) > :first-child {
-        grid-row: 1;
+        width: 8.5rem !important;
+        min-width: 8.5rem !important;
+        flex: 0 0 8.5rem !important;
+        margin-left: auto;
     }
 
     .admin-data-controls__utility .admin-control-group__actions,
@@ -532,102 +505,42 @@
         flex-wrap: nowrap !important;
     }
 
-    .admin-data-controls__utility .admin-action__label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* Dashboard is simple enough to remain a single toolbar row at Narrow.
-     * Search/Type/Reset/Dashboard/Selection each own one explicit region and
-     * Selection keeps the terminal 2.5rem count rail aligned to the table. */
-    .admin-dashboard__feed-controls {
-        display: grid !important;
-        grid-template-columns:
-            minmax(10rem, 1fr)
-            minmax(4.5rem, .34fr)
-            minmax(3.5rem, .24fr)
-            minmax(4.5rem, .3fr)
-            minmax(6.5rem, .42fr) !important;
-        gap: .35rem !important;
-        align-items: end !important;
-    }
-
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: 1 !important;
-        grid-row: 1 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters {
-        display: contents !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
-        grid-column: 2 !important;
-        grid-row: 1 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility {
-        display: contents !important;
-    }
-
-    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-reset > :first-child {
-        grid-column: 3 !important;
-        grid-row: 1 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-actions > :nth-child(2) {
-        grid-column: 4 !important;
-        grid-row: 1 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-selection > :last-child {
-        grid-column: 5 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-
-    .admin-dashboard__feed-controls .admin-selection__anchor,
-    .admin-dashboard__feed-controls .admin-selection__trigger {
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-
-    .admin-dashboard__feed-controls .admin-selection__trigger {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
-        gap: 0 !important;
-        padding-right: 0 !important;
-    }
-
-    .admin-dashboard__feed-controls .admin-selection__count {
-        margin-left: 0;
-        justify-self: center;
-    }
-
-    /* Gallery follows the same two-row semantic split without changing its
-     * accepted contact-sheet task model. */
+    /* Gallery obeys the same one-row toolbar invariant. */
     .gallery-workspace__controls {
-        display: grid !important;
-        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
-        gap: .55rem !important;
+        display: flex !important;
+        min-width: 0;
+        gap: .35rem !important;
         align-items: end;
+        flex-wrap: nowrap !important;
     }
 
-    .gallery-workspace__search { grid-column: span 12 !important; }
-    .gallery-workspace__controls > .gallery-workspace__field:not(.gallery-workspace__search) { grid-column: span 4 !important; }
+    .gallery-workspace__search {
+        min-width: 0 !important;
+        flex: 1 1 12rem;
+    }
+
+    .gallery-workspace__controls > .gallery-workspace__field:not(.gallery-workspace__search) {
+        min-width: 4.5rem;
+        flex: 0 1 6.5rem;
+    }
+
     .gallery-workspace__controls > .gallery-workspace__control-group:not(.gallery-workspace__gallery):not(.gallery-workspace__selection) {
-        grid-column: span 4 !important;
+        min-width: 3.5rem;
+        flex: 0 1 4.5rem;
     }
+
     .gallery-workspace__gallery {
-        grid-column: 1 / span 16 !important;
-        grid-row: 2;
+        min-width: 8rem;
+        flex: 0 1 14rem;
     }
+
     .gallery-workspace__selection {
-        grid-column: 17 / -1 !important;
-        grid-row: 2;
+        width: 8.5rem;
+        min-width: 8.5rem;
+        flex: 0 0 8.5rem;
+        margin-left: auto;
     }
+
     .gallery-workspace__gallery-actions {
         display: grid !important;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1154,26 +1067,34 @@
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: none;
+    .admin-dashboard .admin-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
-    .admin-dashboard .admin-metrics > .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-metrics > .admin-dashboard__metric--artworks {
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks,
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: block;
         border-top: 0 !important;
     }
 
-    .admin-dashboard .admin-metrics > .admin-dashboard__metric--artworks {
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--changes {
         border-right: 0 !important;
     }
 
     .admin-dashboard__feed-controls {
         grid-template-columns:
-            minmax(8rem, 1fr)
-            minmax(4rem, .34fr)
-            minmax(3.25rem, .24fr)
-            minmax(4.25rem, .3fr)
-            minmax(5.5rem, .42fr) !important;
+            minmax(6rem, 1fr)
+            5rem
+            3.75rem
+            4.5rem
+            8.5rem !important;
         gap: .2rem !important;
     }
 
@@ -1200,55 +1121,11 @@
         gap: .45rem !important;
     }
 
-    /* Keep the two toolbar rows but give Selection a larger stable terminal
-     * region and compact task-action labels where necessary. */
-    :is(
-        .admin-data-controls,
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
-    :is(
-        .admin-data-controls,
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child {
-        grid-column: 1 / span 14 !important;
-    }
-
-    :is(
-        .admin-data-controls,
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-selection > :last-child {
-        grid-column: 15 / -1 !important;
-    }
-
+    /* At Minimal, task-action labels may collapse to icons, but the toolbar
+     * itself remains one row. */
     .admin-data-controls__utility .admin-control-group__actions > .admin-action .admin-action__label,
     .admin-data-controls__utility .admin-task-control-actions > .admin-action .admin-action__label {
         display: none;
-    }
-
-    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-reset > :first-child {
-        grid-column: 3 !important;
-        grid-row: 1 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-actions > :nth-child(2) {
-        grid-column: 4 !important;
-        grid-row: 1 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-selection > :last-child {
-        grid-column: 5 !important;
-        grid-row: 1 !important;
-    }
-
-    .gallery-workspace__gallery {
-        grid-column: 1 / span 14 !important;
-    }
-
-    .gallery-workspace__selection {
-        grid-column: 15 / -1 !important;
     }
 
     .gallery-workspace__responsive-action-icon {
@@ -1442,9 +1319,8 @@
     }
 }
 
-/* Ultra-narrow toolbars keep the two-row ceiling by collapsing the filter
- * fields into one local presentation-only overlay. Search + Filters + Reset
- * remain row 1; task actions + Selection remain row 2. */
+/* Ultra-narrow toolbars remain one row. Filter fields may collapse behind one
+ * local presentation-only trigger to free horizontal space. */
 @container admin-workspace (max-width: 30rem) {
     .admin-data-controls:has(> .admin-data-controls__filters) {
         position: relative;
@@ -1466,13 +1342,24 @@
         box-shadow: none !important;
     }
 
+    .admin-dashboard__feed-controls {
+        grid-template-columns:
+            minmax(4.5rem, 1fr)
+            4.25rem
+            3.5rem
+            4rem
+            8.5rem !important;
+        gap: .15rem !important;
+    }
+
     .admin-data-controls__filter-trigger {
         display: flex;
         min-width: 0;
         min-height: var(--admin-control-height);
-        grid-row: 1;
-        grid-column: 17 / span 4 !important;
+        width: auto;
+        min-width: 4.25rem;
         gap: .35rem;
+        flex: 0 0 4.75rem;
         padding: 0 .45rem;
         align-items: center;
         justify-content: center;
@@ -1526,26 +1413,17 @@
         padding-right: 0 !important;
     }
 
-    .admin-data-controls--filters-1 > :first-child,
-    .admin-data-controls--filters-2 > :first-child,
-    .admin-data-controls--filters-3 > :first-child,
-    .admin-data-controls--filters-4 > :first-child {
-        grid-column: 1 / span 16 !important;
-    }
-
-    :is(
-        .admin-data-controls,
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-reset > :first-child {
-        grid-column: 21 / -1 !important;
-    }
 }
 
 /* Extreme widths: the task surface wins over summary statistics. */
 @container admin-workspace (max-width: 20rem) {
     .admin-metrics {
         display: none !important;
+    }
+
+    .admin-dashboard .admin-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
     .admin-pager {
