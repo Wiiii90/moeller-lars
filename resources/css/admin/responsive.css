@@ -571,17 +571,17 @@
         display: contents !important;
     }
 
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-reset > :first-child {
         grid-column: 3 !important;
         grid-row: 1 !important;
     }
 
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-actions > :nth-child(2) {
         grid-column: 4 !important;
         grid-row: 1 !important;
     }
 
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-selection > :last-child {
         grid-column: 5 !important;
         grid-row: 1 !important;
         width: 100% !important;
@@ -1158,7 +1158,12 @@
         display: none;
     }
 
-    .admin-dashboard .admin-dashboard__metric--artworks {
+    .admin-dashboard .admin-metrics > .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-metrics > .admin-dashboard__metric--artworks {
+        border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-metrics > .admin-dashboard__metric--artworks {
         border-right: 0 !important;
     }
 
@@ -1221,6 +1226,21 @@
     .admin-data-controls__utility .admin-control-group__actions > .admin-action .admin-action__label,
     .admin-data-controls__utility .admin-task-control-actions > .admin-action .admin-action__label {
         display: none;
+    }
+
+    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-reset > :first-child {
+        grid-column: 3 !important;
+        grid-row: 1 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-actions > :nth-child(2) {
+        grid-column: 4 !important;
+        grid-row: 1 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__feed-controls > .admin-data-controls__utility.admin-data-controls__utility--has-selection > :last-child {
+        grid-column: 5 !important;
+        grid-row: 1 !important;
     }
 
     .gallery-workspace__gallery {
