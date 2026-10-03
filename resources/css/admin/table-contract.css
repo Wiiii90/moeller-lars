@@ -429,19 +429,4 @@
     );
 }
 
-@media (max-width: 1180px) {
-    .admin-pages__primary-grid {
-        grid-template-columns: 3.1rem 1.8rem minmax(0, 1fr);
-        gap: .3rem;
-    }
 
-    .admin-pages__row-actions .admin-action {
-        padding-inline: 0;
-    }
-}
-
-@media (max-width: 900px) {
-    .admin-task-form--pages {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
