@@ -74,6 +74,14 @@
     display: none;
 }
 
+.admin-data-controls__filter-trigger {
+    display: none;
+}
+
+.admin-data-controls__filters {
+    display: contents;
+}
+
 /* Wide/Compact: preserve the accepted one-row toolbar grammar even when the
  * browser viewport happens to trigger an older feature media query. */
 @container admin-workspace (min-width: 54.01rem) {
@@ -97,7 +105,12 @@
         .admin-data-controls--six-cell,
         .custom-page-workspace__controls,
         .journal-workspace__entries > .admin-data-controls
-    ) > :not(.admin-data-controls__utility) {
+    ) > :first-child,
+    :is(
+        .admin-data-controls--six-cell,
+        .custom-page-workspace__controls,
+        .journal-workspace__entries > .admin-data-controls
+    ) > .admin-data-controls__filters > * {
         box-sizing: border-box;
         width: 100% !important;
         min-width: 0 !important;
@@ -125,14 +138,15 @@
         align-items: end;
     }
 
-    .admin-task-controls--pages > * {
+    .admin-task-controls--pages > :first-child,
+    .admin-task-controls--pages > .admin-data-controls__filters > * {
         width: 100% !important;
         min-width: 0 !important;
         padding-right: .45rem;
     }
 
     .admin-task-controls--pages > :first-child { grid-column: span 2; }
-    .admin-task-controls--pages > .admin-task-field:not(:first-child) { grid-column: span 1; }
+    .admin-task-controls--pages > .admin-data-controls__filters > .admin-task-field { grid-column: span 1; }
 
     .admin-task-controls--pages > .admin-data-controls__utility {
         display: grid !important;
@@ -156,7 +170,7 @@
         flex: none !important;
     }
 
-    .admin-dashboard__feed-controls > :nth-child(2) {
+    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
         grid-column: span 1;
         width: 100% !important;
     }
@@ -184,11 +198,11 @@
         align-items: end;
     }
 
-    .admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 24; }
-    .admin-storage .media-workspace__controls > :nth-child(2) { grid-column: span 7; }
-    .admin-storage .media-workspace__controls > :nth-child(3) { grid-column: span 6; }
-    .admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 7; }
-    .admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 9; }
+    .admin-storage .media-workspace__controls > :first-child { grid-column: span 24; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(1) { grid-column: span 7; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(2) { grid-column: span 6; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(3) { grid-column: span 7; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(4) { grid-column: span 9; }
 
     .admin-storage .media-workspace__controls > .admin-data-controls__utility {
         display: grid !important;
@@ -212,7 +226,8 @@
         align-items: end;
     }
 
-    .activity-workspace__controls > :not(.admin-data-controls__utility) {
+    .activity-workspace__controls > :first-child,
+    .activity-workspace__controls > .admin-data-controls__filters > * {
         box-sizing: border-box;
         width: 100% !important;
         min-width: 0 !important;
@@ -247,7 +262,7 @@
     }
 
     .admin-dashboard__feed-controls > :first-child { grid-column: span 12 !important; }
-    .admin-dashboard__feed-controls > :nth-child(2) { grid-column: span 3 !important; }
+    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child { grid-column: span 3 !important; }
     .admin-dashboard__feed-controls > .admin-data-controls__utility {
         display: grid !important;
         grid-column: span 9 !important;
@@ -260,11 +275,8 @@
         gap: .3rem !important;
     }
 
-    .admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 10 !important; }
-    .admin-storage .media-workspace__controls > :nth-child(2),
-    .admin-storage .media-workspace__controls > :nth-child(3),
-    .admin-storage .media-workspace__controls > :nth-child(4),
-    .admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 4 !important; }
+    .admin-storage .media-workspace__controls > :first-child { grid-column: span 10 !important; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > * { grid-column: span 4 !important; }
     .admin-storage .media-workspace__controls > .admin-data-controls__utility {
         display: grid !important;
         grid-column: span 10 !important;
@@ -277,11 +289,8 @@
         gap: .3rem !important;
     }
 
-    .activity-workspace__controls > :nth-child(1) { grid-column: span 10 !important; }
-    .activity-workspace__controls > :nth-child(2),
-    .activity-workspace__controls > :nth-child(3),
-    .activity-workspace__controls > :nth-child(4),
-    .activity-workspace__controls > :nth-child(5) { grid-column: span 4 !important; }
+    .activity-workspace__controls > :first-child { grid-column: span 10 !important; }
+    .activity-workspace__controls > .admin-data-controls__filters > * { grid-column: span 4 !important; }
     .activity-workspace__controls > .admin-data-controls__utility {
         display: grid !important;
         grid-column: span 10 !important;
@@ -403,7 +412,12 @@
         .admin-data-controls,
         .admin-task-controls--pages,
         .custom-page-workspace__controls
-    ) > :not(.admin-data-controls__utility) {
+    ) > :first-child,
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__filters > * {
         box-sizing: border-box;
         width: 100% !important;
         min-width: 0 !important;
@@ -418,10 +432,10 @@
     .admin-data-controls--filters-3 > :first-child { grid-column: span 8 !important; }
     .admin-data-controls--filters-4 > :first-child { grid-column: span 8 !important; }
 
-    .admin-data-controls--filters-1 > :not(:first-child):not(.admin-data-controls__utility) { grid-column: span 4 !important; }
-    .admin-data-controls--filters-2 > :not(:first-child):not(.admin-data-controls__utility) { grid-column: span 4 !important; }
-    .admin-data-controls--filters-3 > :not(:first-child):not(.admin-data-controls__utility) { grid-column: span 4 !important; }
-    .admin-data-controls--filters-4 > :not(:first-child):not(.admin-data-controls__utility) { grid-column: span 3 !important; }
+    .admin-data-controls--filters-1 > .admin-data-controls__filters > * { grid-column: span 4 !important; }
+    .admin-data-controls--filters-2 > .admin-data-controls__filters > * { grid-column: span 4 !important; }
+    .admin-data-controls--filters-3 > .admin-data-controls__filters > * { grid-column: span 4 !important; }
+    .admin-data-controls--filters-4 > .admin-data-controls__filters > * { grid-column: span 3 !important; }
 
     :is(
         .admin-data-controls,
@@ -1253,6 +1267,90 @@
 
     .general-social-table .admin-responsive-meta {
         display: block;
+    }
+}
+
+/* Ultra-narrow toolbars keep the two-row ceiling by collapsing the filter
+ * fields into one local presentation-only overlay. Search + Filters + Reset
+ * remain row 1; task actions + Selection remain row 2. */
+@container admin-workspace (max-width: 30rem) {
+    .admin-data-controls:has(> .admin-data-controls__filters) {
+        position: relative;
+    }
+
+    .admin-data-controls__filter-trigger {
+        display: flex;
+        min-width: 0;
+        min-height: var(--admin-control-height);
+        grid-row: 1;
+        grid-column: 17 / span 4 !important;
+        gap: .35rem;
+        padding: 0 .45rem;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-bottom: 1px solid var(--admin-line);
+        background: transparent;
+        color: var(--admin-text);
+        font: inherit;
+        font-size: var(--admin-font-size-table-support);
+        cursor: pointer;
+    }
+
+    .admin-data-controls__filter-trigger-count {
+        display: inline-grid;
+        min-width: 1.2rem;
+        height: 1.2rem;
+        padding-inline: .2rem;
+        place-items: center;
+        border: 1px solid var(--admin-line-strong);
+        border-radius: 999px;
+        color: var(--admin-muted);
+        font-size: var(--admin-font-size-selection-count);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .admin-data-controls__filters {
+        position: absolute;
+        z-index: 60;
+        top: calc(100% + .35rem);
+        right: 0;
+        display: none !important;
+        width: min(20rem, 100%);
+        max-height: min(70dvh, 28rem);
+        gap: .65rem;
+        padding: .75rem;
+        overflow-y: auto;
+        border: 1px solid var(--admin-line-strong);
+        background: var(--admin-surface);
+        box-shadow: 0 .55rem 1.4rem rgb(0 0 0 / .14);
+    }
+
+    .admin-data-controls__filters.is-open {
+        display: grid !important;
+    }
+
+    .admin-data-controls__filters > * {
+        width: 100% !important;
+        min-width: 0 !important;
+        grid-column: 1 !important;
+        grid-row: auto !important;
+        padding-right: 0 !important;
+    }
+
+    .admin-data-controls--filters-1 > :first-child,
+    .admin-data-controls--filters-2 > :first-child,
+    .admin-data-controls--filters-3 > :first-child,
+    .admin-data-controls--filters-4 > :first-child {
+        grid-column: 1 / span 16 !important;
+    }
+
+    :is(
+        .admin-data-controls,
+        .admin-task-controls--pages,
+        .custom-page-workspace__controls
+    ) > .admin-data-controls__utility--has-reset > :first-child {
+        grid-column: 21 / -1 !important;
     }
 }
 
