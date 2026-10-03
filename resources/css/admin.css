@@ -515,7 +515,9 @@
 
 .admin-table {
     width: 100%;
-    overflow-x: auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
 }
 
 .admin-table table {
@@ -607,11 +609,6 @@
         grid-template-columns: 1fr;
         gap: 1rem;
         align-items: start;
-    }
-
-    .admin-workspace__summary,
-    .admin-metrics {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .admin-toolbar {
