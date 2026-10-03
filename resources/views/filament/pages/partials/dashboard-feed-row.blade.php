@@ -36,7 +36,7 @@
     <td class="admin-data-nowrap admin-dashboard__col-type">{{ $item['type_label'] }}</td>
     <td class="admin-data-nowrap admin-dashboard__col-date"><time datetime="{{ $item['date'] }}">{{ $item['date_display'] }}</time></td>
     <td class="admin-data-title admin-dashboard__col-title">
-        <strong>{{ $item['title'] }}</strong>
+        <span class="admin-dashboard__feed-title">{{ $item['title'] }}</span>
         <small class="admin-responsive-meta">{{ $item['type_label'] }} · {{ $item['date_display'] }}</small>
     </td>
     <td class="admin-data-sender admin-dashboard__col-sender">
