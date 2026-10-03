@@ -10,13 +10,13 @@
 
 <x-filament-panels::page>
     <x-admin.workspace title="Pages">
-        <x-admin.metrics :columns="6">
-            <x-admin.metric label="Total pages" :value="$metrics['total']">All site sections</x-admin.metric>
-            <x-admin.metric label="Published" :value="$metrics['published']">Public now</x-admin.metric>
-            <x-admin.metric label="Unpublished" :value="$metrics['unpublished']">Not public</x-admin.metric>
-            <x-admin.metric label="Top level" :value="$metrics['top_level']">Root pages</x-admin.metric>
-            <x-admin.metric label="Child pages" :value="$metrics['children']">Nested pages</x-admin.metric>
-            <x-admin.metric label="In navigation" :value="$metrics['navigation']">Menu visible</x-admin.metric>
+        <x-admin.metrics :columns="6" class="pages-status-metrics">
+            <x-admin.metric class="pages-metric pages-metric--total" label="Total pages" :value="$metrics['total']">All site sections</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--published" label="Published" :value="$metrics['published']">Public now</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--unpublished" label="Unpublished" :value="$metrics['unpublished']">Not public</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--top-level" label="Top level" :value="$metrics['top_level']">Root pages</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--children" label="Child pages" :value="$metrics['children']">Nested pages</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--navigation" label="In navigation" :value="$metrics['navigation']">Menu visible</x-admin.metric>
         </x-admin.metrics>
 
         <section aria-label="Pages editor">
@@ -65,8 +65,14 @@
                     <div class="admin-task-control-group">
                         <span class="admin-task-control-label">PAGES</span>
                         <div class="admin-task-control-actions">
-                            <button class="admin-action" type="button" wire:click="mountAction('pagesSettings')">Settings</button>
-                            <button class="admin-action" type="button" wire:click="mountAction('addPage')">Add page</button>
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('pagesSettings')" aria-label="Page settings">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Settings</span>
+                            </button>
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addPage')" aria-label="Add page">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Pages->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Add page</span>
+                            </button>
                         </div>
                     </div>
                 </x-slot:actions>
