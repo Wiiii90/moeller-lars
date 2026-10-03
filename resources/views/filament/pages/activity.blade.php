@@ -87,9 +87,20 @@
             $selectedCommitCanRevert = is_array($selectedCommit) && ($selectedCommit['can_revert'] ?? false) === true;
         @endphp
 
-        <x-admin.metrics :columns="6" aria-label="Activity statistics">
+        <x-admin.metrics :columns="6" class="activity-status-metrics" aria-label="Activity statistics">
             @foreach ($workspaceMetrics as $metric)
-                <x-admin.metric :label="$metric['label']" :value="$metric['value']" :description="$metric['description']" />
+                @php
+                    $metricRole = match ($metric['label']) {
+                        'Changes' => 'changes',
+                        'Commits' => 'commits',
+                        'Committed changes' => 'committed',
+                        'Active days' => 'active-days',
+                        'Pending' => 'pending',
+                        'Latest' => 'latest',
+                        default => 'secondary',
+                    };
+                @endphp
+                <x-admin.metric class="activity-metric activity-metric--{{ $metricRole }}" :label="$metric['label']" :value="$metric['value']" :description="$metric['description']" />
             @endforeach
         </x-admin.metrics>
 
@@ -342,7 +353,10 @@
                     <x-slot:reset>
                         <div class="admin-data-control-group activity-control--reset">
                             <span class="admin-data-control-label">Filter</span>
-                            <a class="admin-action" href="{{ $resetUrl }}">Reset</a>
+                            <a class="admin-action admin-action--with-icon" href="{{ $resetUrl }}" aria-label="Clear activity filters">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Clear</span>
+                            </a>
                         </div>
                     </x-slot:reset>
 
@@ -351,21 +365,29 @@
                             <span class="admin-data-control-label">View</span>
                             <div class="admin-toolbar" role="group" aria-label="Activity table view">
                                 <button
-                                    class="admin-action {{ $viewMode === 'activity' ? 'is-primary' : '' }}"
+                                    class="admin-action admin-action--with-icon {{ $viewMode === 'activity' ? 'is-primary' : '' }}"
                                     type="button"
                                     wire:click="setViewMode('activity')"
                                     wire:loading.attr="disabled"
                                     wire:target="setViewMode"
+                                    aria-label="Activity events"
                                     aria-pressed="{{ $viewMode === 'activity' ? 'true' : 'false' }}"
-                                >Activity</button>
+                                >
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Activity->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Activity</span>
+                                </button>
                                 <button
-                                    class="admin-action {{ $viewMode === 'commits' ? 'is-primary' : '' }}"
+                                    class="admin-action admin-action--with-icon {{ $viewMode === 'commits' ? 'is-primary' : '' }}"
                                     type="button"
                                     wire:click="setViewMode('commits')"
                                     wire:loading.attr="disabled"
                                     wire:target="setViewMode"
+                                    aria-label="Commits"
                                     aria-pressed="{{ $viewMode === 'commits' ? 'true' : 'false' }}"
-                                >Commits</button>
+                                >
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Commit->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Commits</span>
+                                </button>
                             </div>
                         </div>
                     </x-slot:actions>
