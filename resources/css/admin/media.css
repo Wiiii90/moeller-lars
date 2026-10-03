@@ -556,97 +556,6 @@
     white-space: nowrap;
 }
 
-@media (max-width: 1180px) {
-    .media-workspace__controls {
-        grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(8rem, 1fr));
-    }
-
-    .media-workspace__view-group,
-    .media-workspace__multi-action {
-        justify-self: start;
-    }
-
-    .media-workspace__grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 760px) {
-    .media-workspace__dropzone,
-    .media-workspace__controls {
-        grid-template-columns: 1fr;
-    }
-
-    .media-workspace__multi-action-anchor,
-    .media-workspace__view-group .admin-toolbar {
-        width: 100%;
-    }
-
-    .media-workspace__multi-action-anchor > .admin-action {
-        width: 100%;
-    }
-
-    .media-workspace__view-group .admin-toolbar .admin-action {
-        flex: 1 1 0;
-    }
-
-    .media-workspace__multi-action-menu {
-        right: auto;
-        left: 0;
-        width: 100%;
-    }
-
-    .media-workspace__grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .media-file-dialog {
-        width: calc(100vw - 1rem) !important;
-        max-width: none !important;
-        max-height: calc(100dvh - 1rem);
-    }
-
-    .media-file-dialog__preview {
-        min-height: min(48vh, 24rem);
-        max-height: 52vh;
-    }
-
-    .media-file-dialog__preview img,
-    .media-file-dialog__preview video {
-        max-height: 52vh;
-    }
-
-    .media-file-dialog__details {
-        grid-template-columns: 1fr;
-    }
-
-    .media-file-dialog__details > section,
-    .media-file-dialog__details > section + section {
-        padding-inline: 0;
-    }
-
-    .media-file-dialog__details > section + section {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--admin-line);
-        border-left: 0;
-    }
-
-    .media-file-dialog__sequence {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .media-file-dialog__sequence > span {
-        grid-column: 1 / -1;
-        grid-row: 1;
-    }
-}
-
-@media (max-width: 520px) {
-    .media-workspace__grid {
-        grid-template-columns: 1fr;
-    }
-}
 
 /* Storage keeps selection placement; dimensions come from the shared selection authority. */
 .media-workspace__selection-head,
@@ -942,9 +851,4 @@
     color: var(--admin-muted);
 }
 
-@media (max-width: 760px) {
-    .media-delete-dialog__references > div {
-        grid-template-columns: minmax(0, 1fr);
-        gap: .2rem;
-    }
-}
+
