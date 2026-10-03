@@ -67,11 +67,23 @@
                     />
                 </div>
                 <p class="admin-dashboard__facts">
-                    <span>Used <strong>{{ $storage['authoritative'] }}</strong></span>
+                    <span aria-label="Used {{ $storage['authoritative'] }}">
+                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Used</span>
+                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">U:</span>
+                        <strong>{{ $storage['authoritative'] }}</strong>
+                    </span>
                     <span aria-hidden="true">·</span>
-                    <span>Remaining <strong>{{ $storage['remaining'] }}</strong></span>
+                    <span aria-label="Remaining {{ $storage['remaining'] }}">
+                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Remaining</span>
+                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">R:</span>
+                        <strong>{{ $storage['remaining'] }}</strong>
+                    </span>
                     <span aria-hidden="true">·</span>
-                    <span>Allowance <strong>{{ $storage['allowance'] }}</strong></span>
+                    <span aria-label="Allowance {{ $storage['allowance'] }}">
+                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Allowance</span>
+                        <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">A:</span>
+                        <strong>{{ $storage['allowance'] }}</strong>
+                    </span>
                 </p>
             </article>
 
