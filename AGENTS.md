@@ -320,13 +320,14 @@ Responsive behavior is content-driven, not device-name driven. Issue #15 owns th
 - preserve accepted wide/desktop presentation unless current browser feedback changes it;
 - use semantic width states (Wide, Compact, Narrow, Minimal) as behavior states, not fixed device classes;
 - admin shell-level changes may follow viewport width, but task components should prefer their actually available container/workspace width;
+- shell changes must be monotonic: collapsing the desktop sidebar into the burger/mobile shell must never promote a task component back into a wider responsive state merely because the content area became wider;
 - do not track browser width through Livewire/Laravel or persist resize state;
 - admin toolbars are exactly one row at every supported responsive state, with canonical order Query/Filter -> Task actions -> Selection; two-row toolbars are forbidden;
 - width pressure is solved within that one row by redistributing width, collapsing lower-priority filters behind a local Filters overlay when necessary, and switching actions from complete labels to icon-only/overflow states; never show clipped pseudo-labels such as `O…` or `P…`;
 - any filter overlay state is presentation-only client state and must not introduce resize-driven Livewire traffic;
 - Selection remains the terminal table utility and its selected-count, select-all and row checkboxes stay on one rail while the surface remains tabular;
 - ordinary admin tables must fit without horizontal scrolling or reserved horizontal-scrollbar space; reduce supportive/optional columns and compact actions instead;
-- metrics reduce deliberately by feature semantics; for Dashboard specifically Wide/Compact keep all six metrics and Narrow/Minimal keep exactly three, never two; other metric strips may use their documented feature-specific reductions but never a one-column list;
+- metrics reduce deliberately by feature semantics; for Dashboard specifically the contract is 6 / 6 / 3 / 2 across Wide / Compact / Narrow / Minimal, retaining Visits + Published Artworks + Recent Changes at Narrow and Visits + Published Artworks at Minimal; other metric strips may use their documented feature-specific reductions but never a one-column list;
 - shared Visual Stage desktop geometry does not imply generic mobile stacking. Each stage defines a task-specific Narrow/Minimal composition that preserves required operations and may remove redundant visualization/parallel preview;
 - responsive action density may progress from label+icon to icon-only to essential icons plus an overflow menu, while preserving accessible labels and semantic order;
 - legacy public breakpoint values are historical evidence only, not target layout authorities;
