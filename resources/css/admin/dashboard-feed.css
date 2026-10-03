@@ -67,6 +67,10 @@
 .admin-dashboard__feed-table { overflow-x: hidden; }
 .admin-dashboard__feed-table > table { min-width: 0; table-layout: fixed; }
 
+.admin-dashboard__feed-table thead .admin-table__actions {
+    text-align: right !important;
+}
+
 .admin-dashboard__feed-table .admin-data-title,
 .admin-dashboard__feed-table .admin-data-sender {
     min-width: 0;
