@@ -33,10 +33,13 @@
             >⋮⋮</button>
         @endif
     </td>
-    <td class="admin-data-nowrap">{{ $item['type_label'] }}</td>
-    <td class="admin-data-nowrap"><time datetime="{{ $item['date'] }}">{{ $item['date_display'] }}</time></td>
-    <td class="admin-data-title">{{ $item['title'] }}</td>
-    <td class="admin-data-sender">
+    <td class="admin-data-nowrap admin-dashboard__col-type">{{ $item['type_label'] }}</td>
+    <td class="admin-data-nowrap admin-dashboard__col-date"><time datetime="{{ $item['date'] }}">{{ $item['date_display'] }}</time></td>
+    <td class="admin-data-title admin-dashboard__col-title">
+        <strong>{{ $item['title'] }}</strong>
+        <small class="admin-responsive-meta">{{ $item['type_label'] }} · {{ $item['date_display'] }}</small>
+    </td>
+    <td class="admin-data-sender admin-dashboard__col-sender">
         @if ($item['type'] === 'contact')
             <strong>{{ $item['sender_name'] }}</strong>
             <small>{{ $item['sender_email'] }}</small>
