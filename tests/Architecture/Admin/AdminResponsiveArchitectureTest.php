@@ -325,3 +325,25 @@ it('covers Pages Gallery Custom Page and Journal in the shared responsive pass',
         ->toContain('.journal-table--blog .journal-col--publication')
         ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important');
 });
+
+
+it('locks every two-metric Minimal strip to exact halves', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+    $general = file_get_contents($root.'/resources/css/admin/general.css');
+
+    expect($responsive)
+        ->toContain('Exact two-metric Minimal geometry')
+        ->toContain('.admin-general .general-metric--public-email')
+        ->toContain('.pages-status-metrics > .pages-metric--published')
+        ->toContain('.gallery-status-metrics > .gallery-metric--artworks')
+        ->toContain('.custom-page-status-metrics > .custom-page-metric--components')
+        ->toContain('.journal-status-metrics--blog > .journal-metric--published')
+        ->toContain('.journal-status-metrics--exhibitions > .journal-metric--current')
+        ->toContain('grid-column: 1 !important')
+        ->toContain('grid-column: 2 !important');
+
+    expect($general)
+        ->not->toContain('width: calc(33.333333% - 5rem) !important')
+        ->not->toContain(".general-social-table__col-url,\n.general-social-table__col-actions {\n    width: 33.333333% !important;");
+});
