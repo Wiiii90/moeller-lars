@@ -123,7 +123,7 @@ html {
     }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 46rem) {
     .fi-modal-window {
         max-height: calc(100dvh - 1rem);
     }
@@ -451,7 +451,7 @@ html {
     line-height: 1.5;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 46rem) {
     :root {
         --admin-dialog-viewport-gutter: 1rem;
         --admin-dialog-header-action-inset: .75rem;
@@ -479,7 +479,7 @@ html {
 }
 
 
-@media (max-width: 520px) {
+@media (max-width: 34rem) {
     .admin-detail-dialog__meta {
         grid-template-columns: 1fr;
     }
