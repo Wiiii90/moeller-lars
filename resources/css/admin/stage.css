@@ -170,10 +170,9 @@
 
 /* Dashboard is the canonical visible three-pane special case. */
 .admin-dashboard__overview {
-    --admin-dashboard-stage-height: clamp(20rem, 30cqw, 23.5rem);
     --admin-stage-orbit-size: clamp(10rem, 20cqw, 17.5rem);
     display: grid;
-    height: var(--admin-dashboard-stage-height);
+    height: var(--admin-visual-stage-height);
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: stretch;
     border-bottom: 0 !important;
