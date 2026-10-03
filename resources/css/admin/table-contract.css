@@ -79,6 +79,11 @@
 .admin-table__col-one-unit-minus-selection { width: calc(var(--admin-table-one-unit) - var(--admin-table-selection-width)); }
 .admin-table__selection-col { width: var(--admin-table-selection-width); }
 
+/* Shared ordering rails. Pages may use feature-specific hierarchy geometry,
+ * while ordinary ranked tables can opt into these semantic columns. */
+.admin-table__col-position { width: 3rem; }
+.admin-table__col-drag { width: 2rem; }
+
 .admin-action--with-icon {
     gap: .3rem;
 }
