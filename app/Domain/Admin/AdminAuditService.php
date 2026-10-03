@@ -22,6 +22,8 @@ class AdminAuditService
         private readonly AdminActionReceiptService $receipts,
         private readonly AdminMutationSnapshotBuffer $mutationSnapshots,
         private readonly AdminChangeSummary $changeSummary,
+        private readonly AdminActivityPresentation $activityPresentation,
+        private readonly AdminFeedbackContext $feedbackContext,
         private readonly AdminUndoContext $undoContext,
         private readonly AdminActivityOrderingProjector $orderingProjector,
     ) {}
@@ -86,6 +88,20 @@ class AdminAuditService
             if (! $this->undoContext->receiptsSuppressed()) {
                 $this->receipts->recordOrderingProjection($event, $actor, $projection);
             }
+
+            $presentation = $this->activityPresentation->present(
+                $action,
+                trim((string) ($projection->getAttribute('target_label') ?? $ordering['target_label'] ?? '')),
+                null,
+                [
+                    'scope' => (string) $projection->getAttribute('scope'),
+                    'before_state' => $projection->beforeState(),
+                    'after_state' => $projection->afterState(),
+                    'event_count' => (int) $projection->getAttribute('event_count'),
+                    'item_count' => (int) $projection->getAttribute('item_count'),
+                ],
+            );
+            $this->feedbackContext->push((int) $event->getKey(), $presentation);
 
             return $event;
         });
@@ -156,6 +172,15 @@ class AdminAuditService
             $this->receipts->discardPendingSnapshotForEvent($event);
         } else {
             $this->receipts->recordForAuditEvent($event, $actor);
+        }
+
+        if (! isset($metadata['ordering'])) {
+            $presentation = $this->activityPresentation->present(
+                $action,
+                $targetLabel ?? '',
+                $summary,
+            );
+            $this->feedbackContext->push((int) $event->getKey(), $presentation);
         }
 
         return $event;

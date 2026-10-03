@@ -6,23 +6,40 @@
     class="admin-header-feedback"
     x-data="{
         current: null,
-        dismissTimer: null,
-        displayDurationMs: 4000,
+        pendingCount: 0,
+        secondsRemaining: 0,
+        phase: 'idle',
+        displayDurationMs: 8000,
+        exitDurationMs: 520,
+        queueLimit: 8,
+        seenLimit: 48,
+        lifecycleTimer: null,
+        countdownTimer: null,
 
         runtime() {
             const runtime = window.__adminHeaderFeedbackRuntime ??= {
                 current: null,
+                queue: [],
                 expiresAt: null,
-                seen: {},
+                seen: [],
+            }
+
+            if (! Array.isArray(runtime.queue)) {
+                runtime.queue = []
+            }
+
+            if (! Array.isArray(runtime.seen)) {
+                runtime.seen = []
             }
 
             runtime.expiresAt ??= null
-            runtime.seen ??= {}
 
             return runtime
         },
 
-        sync() {
+        syncFromRuntime() {
+            this.cancelTimers()
+
             const runtime = this.runtime()
 
             if (
@@ -35,7 +52,22 @@
             }
 
             this.current = runtime.current
-            this.armDismissal()
+            this.pendingCount = runtime.queue.length
+
+            if (runtime.current === null) {
+                if (runtime.queue.length > 0) {
+                    this.promoteNext()
+                } else {
+                    this.phase = 'idle'
+                    this.secondsRemaining = 0
+                }
+
+                return
+            }
+
+            this.phase = 'visible'
+            this.armLifecycle()
+            this.updateCountdown()
         },
 
         accept(notification) {
@@ -44,24 +76,70 @@
             const runtime = this.runtime()
             const id = String(notification.id ?? '')
 
-            if (id !== '' && runtime.seen[id]) {
-                this.sync()
+            if (id !== '' && runtime.seen.includes(id)) {
+                this.syncFromRuntime()
 
                 return
             }
 
             if (id !== '') {
-                runtime.seen[id] = true
+                runtime.seen.push(id)
+
+                if (runtime.seen.length > this.seenLimit) {
+                    runtime.seen = runtime.seen.slice(-this.seenLimit)
+                }
             }
+
+            if (runtime.current === null) {
+                this.startNotification(notification)
+
+                return
+            }
+
+            if (runtime.queue.length >= this.queueLimit) {
+                runtime.queue.shift()
+            }
+
+            runtime.queue.push(notification)
+            this.pendingCount = runtime.queue.length
+        },
+
+        startNotification(notification) {
+            const runtime = this.runtime()
 
             runtime.current = notification
             runtime.expiresAt = Date.now() + this.displayDurationMs
+
             this.current = notification
-            this.armDismissal()
+            this.pendingCount = runtime.queue.length
+            this.secondsRemaining = Math.ceil(this.displayDurationMs / 1000)
+            this.phase = 'entering'
+
+            this.armLifecycle()
+            this.updateCountdown()
         },
 
-        armDismissal() {
-            this.cancelDismissal()
+        promoteNext() {
+            const runtime = this.runtime()
+            const next = runtime.queue.shift() ?? null
+
+            this.pendingCount = runtime.queue.length
+
+            if (next === null) {
+                runtime.current = null
+                runtime.expiresAt = null
+                this.current = null
+                this.phase = 'idle'
+                this.secondsRemaining = 0
+
+                return
+            }
+
+            this.startNotification(next)
+        },
+
+        armLifecycle() {
+            this.cancelLifecycle()
 
             const runtime = this.runtime()
 
@@ -73,29 +151,52 @@
             const remainingMs = runtime.expiresAt - Date.now()
 
             if (remainingMs <= 0) {
-                this.dismissCurrent(currentId)
+                this.beginLeave(currentId)
 
                 return
             }
 
-            this.dismissTimer = window.setTimeout(
-                () => this.dismissCurrent(currentId),
+            this.lifecycleTimer = window.setTimeout(
+                () => this.beginLeave(currentId),
                 remainingMs,
             )
         },
 
-        dismissCurrent(expectedId) {
+        beginLeave(expectedId) {
             const runtime = this.runtime()
 
-            if (runtime.current === null) {
-                this.current = null
-                this.cancelDismissal()
+            if (
+                runtime.current === null
+                || String(runtime.current?.id ?? '') !== expectedId
+            ) {
+                this.syncFromRuntime()
 
                 return
             }
 
-            if (String(runtime.current?.id ?? '') !== expectedId) {
-                this.sync()
+            this.cancelCountdown()
+            this.cancelLifecycle()
+            this.secondsRemaining = 0
+            this.phase = 'leaving'
+
+            const exitDelay = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 0
+                : this.exitDurationMs
+
+            this.lifecycleTimer = window.setTimeout(
+                () => this.finishCurrent(expectedId),
+                exitDelay,
+            )
+        },
+
+        finishCurrent(expectedId) {
+            const runtime = this.runtime()
+
+            if (
+                runtime.current !== null
+                && String(runtime.current?.id ?? '') !== expectedId
+            ) {
+                this.syncFromRuntime()
 
                 return
             }
@@ -103,42 +204,87 @@
             runtime.current = null
             runtime.expiresAt = null
             this.current = null
-            this.cancelDismissal()
+            this.pendingCount = runtime.queue.length
+            this.cancelTimers()
+
+            if (runtime.queue.length > 0) {
+                this.promoteNext()
+            } else {
+                this.phase = 'idle'
+                this.secondsRemaining = 0
+            }
         },
 
-        cancelDismissal() {
-            if (this.dismissTimer === null) {
+        updateCountdown() {
+            this.cancelCountdown()
+
+            const runtime = this.runtime()
+
+            if (runtime.current === null || runtime.expiresAt === null) {
+                this.secondsRemaining = 0
+
                 return
             }
 
-            window.clearTimeout(this.dismissTimer)
-            this.dismissTimer = null
+            const remainingMs = Math.max(0, runtime.expiresAt - Date.now())
+            this.secondsRemaining = Math.ceil(remainingMs / 1000)
+
+            if (remainingMs <= 0) {
+                return
+            }
+
+            this.countdownTimer = window.setTimeout(
+                () => this.updateCountdown(),
+                Math.min(250, remainingMs),
+            )
+        },
+
+        cancelLifecycle() {
+            if (this.lifecycleTimer === null) {
+                return
+            }
+
+            window.clearTimeout(this.lifecycleTimer)
+            this.lifecycleTimer = null
+        },
+
+        cancelCountdown() {
+            if (this.countdownTimer === null) {
+                return
+            }
+
+            window.clearTimeout(this.countdownTimer)
+            this.countdownTimer = null
+        },
+
+        cancelTimers() {
+            this.cancelLifecycle()
+            this.cancelCountdown()
         },
 
         init() {
+            this.syncFromRuntime()
             @js($initialFeedback).forEach((notification) => this.accept(notification))
-            this.sync()
         },
 
         destroy() {
-            this.cancelDismissal()
+            this.cancelTimers()
         },
     }"
     x-on:admin-header-feedback.window="accept($event.detail?.notification ?? $event.detail)"
     x-bind:data-status="current?.status ?? 'info'"
+    x-bind:data-phase="phase"
     x-cloak
     x-show="current !== null"
-    x-transition:enter="admin-header-feedback-transition"
-    x-transition:enter-start="admin-header-feedback-transition--hidden"
-    x-transition:enter-end="admin-header-feedback-transition--shown"
-    x-transition:leave="admin-header-feedback-transition"
-    x-transition:leave-start="admin-header-feedback-transition--shown"
-    x-transition:leave-end="admin-header-feedback-transition--hidden"
     role="status"
     aria-live="polite"
     aria-atomic="true"
     aria-relevant="additions text"
 >
+    <span class="admin-header-feedback__icon" aria-hidden="true">
+        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Feedback->mini()" />
+    </span>
+
     <div class="admin-header-feedback__content">
         <strong
             class="admin-header-feedback__title"
@@ -146,10 +292,31 @@
         ></strong>
 
         <span
+            class="admin-header-feedback__separator"
+            x-cloak
+            x-show="Boolean(current?.body)"
+            aria-hidden="true"
+        >:</span>
+
+        <span
             class="admin-header-feedback__body"
             x-cloak
             x-show="Boolean(current?.body)"
             x-text="current?.body ?? ''"
+        ></span>
+    </div>
+
+    <div class="admin-header-feedback__meta" aria-hidden="true">
+        <span
+            class="admin-header-feedback__timer"
+            x-text="secondsRemaining + 's'"
+        ></span>
+
+        <span
+            class="admin-header-feedback__counter"
+            x-cloak
+            x-show="pendingCount > 0"
+            x-text="'+' + pendingCount"
         ></span>
     </div>
 </div>

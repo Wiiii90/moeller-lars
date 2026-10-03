@@ -25,7 +25,7 @@ The notifier owns three explicit delivery intents:
 - **inbox** — persistent `AdminNotification` only;
 - **both** — immediate header feedback plus a persistent `AdminNotification`.
 
-Immediate feedback does **not** use Filament notification objects as transport. During a Livewire request, `AdminNotifier::feedback()` dispatches the project-owned `admin-header-feedback` event directly from the active component. Outside a Livewire request it places a bounded message in the session queue for the next admin render.
+Immediate feedback does **not** use Filament notification objects as transport. During a Livewire request, `AdminNotifier::feedback()` dispatches the project-owned `admin-header-feedback` event directly from the active component. Outside a Livewire request it places bounded messages in the session queue for the next admin render. When a successful mutation produced Activity in the same request, `AdminAuditService` exposes that Activity's canonical `Change` / `Details` presentation through bounded request-local context and `AdminNotifier::feedback()` uses it instead of a second hand-written success sentence. Warning/error feedback and persistent inbox delivery do not consume that success context.
 
 Persistent notifications are written directly to `AdminNotification`. They do not depend on browser markup, a rendered framework notification, DOM inspection or the header feedback being visible.
 
@@ -100,6 +100,8 @@ Failure notifications may be emitted from the failure path when their underlying
 
 Activity answers **what successful administrative change happened**. Notifications answer **what still deserves the user's attention**.
 
+For routine successful mutations, immediate header feedback reuses Activity presentation semantics: the title is the canonical `Change`, and the body is `Details` when details exist. The header may render these as `Change: Details`. This is presentation reuse only; Activity remains append-only evidence and header feedback remains ephemeral.
+
 Where useful, a persistent notification may carry a nullable relation/reference to the related audit event and offer `Open activity` or equivalent context. The relationship is navigational/contextual only:
 
 - deleting a notification never deletes Activity;
@@ -135,7 +137,7 @@ Admin mutation
 
 The header feedback surface is mounted once through the panel-level `TOPBAR_START` hook and is not rendered or positioned by individual pages. Its Alpine state is owned by that central surface; there is no page-navigation initializer, DOM measurement, resize observer or long-running feedback-specific animation loop.
 
-The surface follows the same shell geometry as the canonical desktop `.fi-main` content axis: Filament sidebar width, bounded workspace width, shared workspace gutter and the existing workspace visual shift. It is visually idle when no current feedback exists. A new feedback event shows the newest message, restarts one bounded presentation lifecycle and then returns the surface to the empty state; a newer event replaces the current message instead of building a playback queue. Entry/exit motion is a lightweight local CSS transition, respects reduced-motion preferences and may use one local timeout solely to end the current presentation. The runtime must not use polling, intervals, animation loops, observers, periodic Livewire requests or persistence timers, and it must not move neighboring header controls. On narrow screens the body text may be suppressed before header controls become inaccessible.
+The surface follows the same shell geometry as the canonical desktop `.fi-main` content axis: Filament sidebar width, bounded workspace width, shared workspace gutter and the existing workspace visual shift. It is visually idle when no current feedback exists. Distinct feedback events are presented FIFO through one bounded in-browser queue; the current message is the only message surface, while a compact `+N` field reports waiting messages. The visible message has a bounded readable hold and a visible local countdown. Entry and exit use a presentation-only materialize/dematerialize effect with a short light sweep; reduced-motion preferences suppress that motion. Local `setTimeout` callbacks may drive the current lifecycle and countdown only while feedback is active. The runtime must not use polling, intervals, requestAnimationFrame loops, observers, periodic Livewire requests or persistence timers, and it must not move neighboring header controls. The queue and duplicate-id memory are bounded so repeated feedback cannot grow browser state without limit. On narrow screens the Details body may be suppressed before header controls become inaccessible.
 
 Persistent-notification details use the shared admin dialog/viewer primitives. Context actions such as `Open record`, `Open activity`, `Review staged changes` or `Mark unread` appear only when they are semantically available.
 

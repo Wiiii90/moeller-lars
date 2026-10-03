@@ -17,7 +17,9 @@ final class AdminNotifier
 
     private const FEEDBACK_SESSION_KEY = 'admin.header.feedback';
 
-    private const MAX_PENDING_FEEDBACK = 20;
+    private const MAX_PENDING_FEEDBACK = 9;
+
+    public function __construct(private readonly AdminFeedbackContext $feedbackContext) {}
 
     /**
      * Immediate feedback for the current admin action.
@@ -32,24 +34,23 @@ final class AdminNotifier
     ): void {
         [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
 
-        $message = [
-            'id' => (string) Str::orderedUuid(),
-            'title' => $title,
-            'body' => $body,
-            'status' => $status,
-        ];
+        if ($status === 'success') {
+            $activityMessages = $this->feedbackContext->consumeRecorded();
 
-        if (Livewire::isLivewireRequest()) {
-            $component = app(LivewireManager::class)->current();
-
-            if ($component instanceof Component) {
-                $component->dispatch('admin-header-feedback', notification: $message);
+            if ($activityMessages !== []) {
+                foreach ($activityMessages as $activityMessage) {
+                    $this->deliverFeedback(
+                        (string) $activityMessage['change'],
+                        $activityMessage['details'] ?? null,
+                        'success',
+                    );
+                }
 
                 return;
             }
         }
 
-        $this->storePendingFeedback($message);
+        $this->deliverFeedback($title, $body, $status);
     }
 
     /**
@@ -130,9 +131,38 @@ final class AdminNotifier
         array $context = [],
     ): AdminNotification {
         $notification = $this->inbox($user, $sourceId, $title, $body, $status, $context);
-        $this->feedback($title, $body, $status);
+        $this->feedbackContext->discard();
+        $this->deliverFeedback($title, $body, $status);
 
         return $notification;
+    }
+
+    private function deliverFeedback(string $title, ?string $body, string $status): void
+    {
+        [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
+
+        if ($status !== 'success') {
+            $this->feedbackContext->discard();
+        }
+
+        $message = [
+            'id' => (string) Str::orderedUuid(),
+            'title' => $title,
+            'body' => $body,
+            'status' => $status,
+        ];
+
+        if (Livewire::isLivewireRequest()) {
+            $component = app(LivewireManager::class)->current();
+
+            if ($component instanceof Component) {
+                $component->dispatch('admin-header-feedback', notification: $message);
+
+                return;
+            }
+        }
+
+        $this->storePendingFeedback($message);
     }
 
     /**
