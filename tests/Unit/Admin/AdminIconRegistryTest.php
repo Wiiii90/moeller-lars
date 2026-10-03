@@ -62,11 +62,11 @@ it('keeps static admin navigation icons in the central registry', function (): v
 it('keeps dynamic site node icons in the central registry', function (): void {
     $presentation = new SiteNodePresentation;
     $icons = [
-        SiteSectionType::Home->value => AdminIcon::Home,
-        SiteSectionType::Gallery->value => AdminIcon::Gallery,
-        SiteSectionType::Journal->value => AdminIcon::Journal,
-        SiteSectionType::CustomPage->value => AdminIcon::CustomPage,
-        SiteSectionType::NavigationNode->value => AdminIcon::NavigationNode,
+        SiteSectionType::Home->value => AdminIcon::Home->value,
+        SiteSectionType::Gallery->value => AdminIcon::Gallery->value,
+        SiteSectionType::Journal->value => AdminIcon::Journal->value,
+        SiteSectionType::CustomPage->value => AdminIcon::CustomPage->value,
+        SiteSectionType::NavigationNode->value => AdminIcon::NavigationNode->value,
     ];
 
     foreach (SiteSectionType::cases() as $type) {
