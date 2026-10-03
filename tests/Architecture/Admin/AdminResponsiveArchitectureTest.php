@@ -20,6 +20,8 @@ it('keeps admin responsiveness container-driven and table overflow-free', functi
         ->toContain('@container admin-workspace (max-width: 38rem)')
         ->toContain('@container admin-workspace (max-width: 30rem)')
         ->toContain('Toolbar is always exactly one row')
+        ->not->toContain('toolbar is exactly two semantic rows')
+        ->not->toContain('Row 2 = Task actions')
         ->toContain('grid-template-columns: repeat(3, minmax(0, 1fr)) !important')
         ->toContain('@container admin-table (max-width: 62rem)')
         ->toContain('@container admin-table (max-width: 50rem)')
