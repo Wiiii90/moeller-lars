@@ -442,3 +442,21 @@ it('centralizes responsive metric geometry for every six-metric strip', function
         ->toContain('grid-column: auto !important')
         ->toContain('gap: 0 !important');
 });
+
+
+it('delays Analytics Storage Activity stage collapse until Minimal', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+
+    expect($responsive)
+        ->toContain('Canonical stage transition authority for Analytics / Storage / Activity')
+        ->toContain('@container admin-workspace (min-width: 38.01rem) and (max-width: 54rem)')
+        ->toContain('.analytics-visual-stage > .analytics-stage-rail')
+        ->toContain('.admin-storage__distribution')
+        ->toContain('.activity-atlas__view.activity-clock')
+        ->toContain('grid-template-columns: repeat(3, minmax(0, 1fr)) !important')
+        ->toContain('@container admin-workspace (max-width: 38rem)')
+        ->toContain('grid-template-columns: minmax(0, 1fr) !important')
+        ->toContain('height: var(--admin-visual-stage-height) !important')
+        ->toContain('Activity Minimal: Next Publication owns the entire fixed-height stage');
+});
