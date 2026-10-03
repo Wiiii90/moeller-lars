@@ -168,6 +168,10 @@
     flex: 0 0 auto;
 }
 
+.admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action:first-child {
+    padding-left: 0;
+}
+
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__icon {
     flex: 0 0 .9rem;
 }
