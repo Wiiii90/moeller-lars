@@ -150,6 +150,4 @@
     margin-inline-start: auto;
 }
 
-@media (max-width: 820px) {
-    .custom-page-workspace__page-actions { flex-wrap: wrap; }
-}
+
