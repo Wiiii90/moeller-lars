@@ -139,28 +139,6 @@ html.fi .admin-workspace-status.is-neutral::before { animation: none; }
 }
 
 /* At the two-column responsive metrics breakpoint, follow its last column too. */
-@media (max-width: 900px) {
-    html.fi .admin-workspace__header {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        column-gap: 0;
-        align-items: end;
-    }
-
-    html.fi .admin-workspace__heading {
-        grid-column: 1;
-    }
-
-    html.fi .admin-workspace__status {
-        grid-column: 2;
-        justify-self: stretch;
-        padding-left: 1rem;
-    }
-
-    html.fi .admin-workspace-status {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-}
 
 @media (prefers-reduced-motion: reduce) {
     html.fi .admin-workspace-status::before {
