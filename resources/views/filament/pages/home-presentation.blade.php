@@ -179,16 +179,16 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-data-table">
+            <x-admin.table class="admin-data-table home-source-table">
                 <table>
                     <thead>
                         <tr>
                             <th scope="col">Gallery</th>
-                            <th scope="col">Candidates</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Source</th>
-                            <th scope="col">Artworks</th>
-                            <th scope="col">Newest Year</th>
+                            <th scope="col" class="home-source-table__candidates">Candidates</th>
+                            <th scope="col" class="home-source-table__status">Status</th>
+                            <th scope="col" class="home-source-table__source">Source</th>
+                            <th scope="col" class="home-source-table__artworks">Artworks</th>
+                            <th scope="col" class="home-source-table__year">Newest Year</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -214,8 +214,11 @@
                                 $selected = in_array($gallery['id'], array_map('intval', $selectedSourceIds), true);
                             @endphp
                             <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
-                                <td class="admin-table__identity"><strong>{{ $gallery['name'] }}</strong></td>
-                                <td>
+                                <td class="admin-table__identity">
+                                    <strong>{{ $gallery['name'] }}</strong>
+                                    <small class="admin-responsive-meta">{{ $gallery['status_label'] }} · {{ $gallery['source_label'] }} · {{ number_format($gallery['published_artworks']) }} artworks · {{ $gallery['newest_year'] ?: '—' }}</small>
+                                </td>
+                                <td class="home-source-table__candidates">
                                     <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
                                         @forelse ($gallery['candidates'] as $candidate)
                                             <a href="{{ $candidate['edit_url'] }}" title="{{ $candidate['title'] }} · {{ $candidate['year'] ?: '—' }}" aria-label="Edit {{ $candidate['title'] }}">
@@ -230,10 +233,10 @@
                                         @endforelse
                                     </div>
                                 </td>
-                                <td><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
-                                <td><span class="admin-status {{ $gallery['effective_enabled'] ? 'is-published' : '' }}">{{ $gallery['source_label'] }}</span></td>
-                                <td>{{ number_format($gallery['published_artworks']) }}</td>
-                                <td>{{ $gallery['newest_year'] ?: '—' }}</td>
+                                <td class="home-source-table__status"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
+                                <td class="home-source-table__source"><span class="admin-status {{ $gallery['effective_enabled'] ? 'is-published' : '' }}">{{ $gallery['source_label'] }}</span></td>
+                                <td class="home-source-table__artworks">{{ number_format($gallery['published_artworks']) }}</td>
+                                <td class="home-source-table__year">{{ $gallery['newest_year'] ?: '—' }}</td>
                                 <td class="admin-table__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
                                         <button class="admin-action admin-action--state" type="button" wire:click="toggleGalleryEligibility({{ $gallery['id'] }})">{{ $gallery['preference_enabled'] ? 'Disable preference' : 'Enable preference' }}</button>
@@ -337,12 +340,12 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-data-table admin-table--ranked">
+            <x-admin.table class="admin-data-table admin-table--ranked home-components-table">
                 <table>
                     <thead>
                         <tr>
                             <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
-                            <th scope="col">Component</th>
+                            <th scope="col" class="home-components-table__type">Component</th>
                             <th scope="col">Content</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
@@ -370,9 +373,10 @@
                                 <td class="admin-table__drag">
                                     <button class="admin-drag-handle" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $component['type_label'] }}">⋮⋮</button>
                                 </td>
-                                <td>{{ $component['type_label'] }}</td>
+                                <td class="home-components-table__type">{{ $component['type_label'] }}</td>
                                 <td class="admin-table__identity">
                                     <strong>{{ $component['content']['primary'] }}</strong>
+                                    <small class="admin-responsive-meta">{{ $component['type_label'] }}</small>
                                     @if ($component['content']['secondary'] !== '')<small>{{ $component['content']['secondary'] }}</small>@endif
                                 </td>
                                 <td class="admin-table__actions">
