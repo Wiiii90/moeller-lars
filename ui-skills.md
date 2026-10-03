@@ -531,6 +531,9 @@ Responsive behavior is content-driven and follows semantic width states rather t
   - Custom Page: Components + Visits + Views -> Components + Visits.
   - Blog: Published + Scheduled + Draft -> Published + Draft.
   - Exhibitions: Published + Current + Upcoming -> Current + Upcoming.
+  - Analytics: Visits + Unique visitors + Tracked actions -> Visits + Unique visitors.
+  - Storage: Original storage + Remaining + Files -> Original storage + Remaining.
+  - Activity: Changes + Pending + Commits -> Changes + Pending.
 - Dashboard uses four effective presentation states only: Wide, Compact, Narrow and Minimal. The burger/mobile shell is not an additional Dashboard state; shell collapse may force Narrow but must never create a parallel responsive composition.
 - Never reduce a metric strip to a one-column list.
 - Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/2 rule.
@@ -550,6 +553,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Do not rely on uncontrolled flex wrapping to invent intermediate layouts.
 - Pages, Custom Page and Journal use elastic one-row toolbars: Search absorbs spare width down to one metric cell; filters and right-side utility controls consume only the width they need, with action labels collapsing to icons before data/filter controls are removed.
 - Gallery uses the same one-row principle in its custom toolbar; its Selection trigger still terminates on the shared Selection rail.
+- Analytics, Storage and Activity follow the same one-row rule. Analytics has Search + Report + Range; Storage and Activity keep all four filter controls, then compact Clear/View/Selection on the right. Their action labels collapse to icons before the row may wrap.
 
 ### Tables and Selection
 
@@ -563,6 +567,9 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Pages/Custom Page hierarchies protect Position + Drag geometry centrally; their square position badges must never be clipped. Pages drops Template before Page type; Custom Page folds Component kind into Content before sacrificing identity.
 - Journal drops supportive media/publication/schedule columns before Status/Timing. Blog and Exhibitions keep their action rail icon-only before removing operational state.
 - Gallery remains a contact sheet rather than becoming a table; it moves 3 -> 2 -> 1 cards while its control bar stays one row.
+- Storage table drops Preview + Used in first; Type + Size fold into Media only at Minimal. Status, Actions and Selection remain explicit.
+- Activity event/commit tables drop Who + Publication first. Minimal event view then folds Area + Type into Change metadata while retaining Change + When + Target + Actions + Selection; commit view retains Commit + When + Summary + Actions + Selection.
+- Analytics detail tables remain fixed-layout/no-scroll and keep their report-specific six-cell distribution; identity cells absorb text pressure before numeric columns are removed.
 - While the surface remains tabular, toolbar Selected-count, header select-all and row checkboxes share one terminal Selection rail at every responsive state.
 - Preserve table semantics where practical; do not default narrow tables to card stacks.
 - Do not reduce shared semantic font sizes merely to recover width.
@@ -576,9 +583,12 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - Preserve required operations and domain state; optional/redundant charts, distribution visuals and parallel previews may disappear.
 - A narrow stage may become one focused surface and may use a small local presentation-only selector when equivalent views still need to be reachable.
 - Sidebar/burger collapse is monotonic for Pages, Gallery, Custom Page and Journal too: removing the sidebar must never make metrics, columns, labels or Gallery card density jump back to a wider state.
+- Analytics/Storage/Activity burger/sidebar collapse is monotonic as well: it must not reintroduce Geography, the Storage triptych, Activity Clock, wider table columns or denser Storage cards.
 - General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand Appearance controls + geometry across the full stage; burger/sidebar collapse may force that Narrow composition and must never make the preview reappear.
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
-- Storage may replace desktop Capacity/Distribution visuals with one functional compact surface.
+- Analytics Narrow/Minimal keeps the world map as the focused surface and removes the parallel Geography rail.
+- Storage Narrow/Minimal becomes one functional compact surface: Upload remains the main area; a compact Used/Remaining/Allowance strip plus Refresh/Reclaim stays available; the donut and Distribution visualization disappear.
+- Activity Narrow keeps Calendar + a compact Publication rail and removes Clock. Minimal keeps Calendar + a compact Publication footer; Review/Reset/Commit operations remain reachable.
 - **Dashboard keeps Storage | Activity | Analytics as three simultaneous stage cells through Wide, Compact and Narrow. Only Minimal may switch to the local Storage / Activity / Analytics selector and show one stage cell at a time.** Burger/sidebar collapse alone must not trigger the one-cell Dashboard stage.
 - Dashboard stage captions/facts remain visible and one-line through Narrow. The Dashboard stage owns a smooth container-relative height; footer wrapping must never change graphic vertical position.
 - Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
