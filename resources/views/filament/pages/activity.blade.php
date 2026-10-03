@@ -478,7 +478,11 @@
                     <tbody>
                         @forelse ($activity as $event)
                             <tr class="{{ in_array((int) $event['id'], $selectedActivityIds, true) ? 'is-selected' : '' }}">
-                                <td class="activity-change-cell" title="{{ $event['change'] }}{{ $event['details'] ? ': '.$event['details'] : '' }}"><strong>{{ $event['change'] }}</strong></td>
+                                <td class="activity-change-cell" title="{{ $event['change'] }}{{ $event['details'] ? ': '.$event['details'] : '' }}">
+                                    <strong>{{ $event['change'] }}</strong>
+                                    <small class="admin-responsive-meta">{{ $event['actor'] }} · {{ ucfirst($event['publication_status']) }}</small>
+                                    <small class="admin-responsive-meta admin-responsive-meta--minimal">{{ $event['area'] }} · {{ $event['type'] }}</small>
+                                </td>
                                 <td class="activity-who-cell activity-col--who" title="{{ $event['actor'] }}"><strong>{{ $event['actor'] }}</strong></td>
                                 <td class="activity-when-cell activity-col--when">
                                     <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
@@ -500,7 +504,7 @@
                                     @endif
                                 </td>
                                 <td class="admin-table__actions activity-actions-cell">
-                                    <x-admin.toolbar>
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical activity-row-actions">
                                         <button class="admin-action" type="button" wire:click="mountAction('activityDetails', { id: {{ $event['id'] }} })">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
                                             <span class="admin-action__label">Details</span>
@@ -617,6 +621,9 @@
                                         {{ $commit['operation_label'] }}
                                         @if ($commit['parent_short_hash']) · parent {{ $commit['parent_short_hash'] }} @endif
                                     </small>
+                                    <small class="admin-responsive-meta">
+                                        {{ $commit['actor'] }} · {{ $commit['restorable'] ? 'Restorable' : ($commit['legacy'] ? 'Metadata only' : 'Schema changed') }}
+                                    </small>
                                 </td>
                                 <td class="activity-publication-cell activity-commit-col--publication">
                                     <span class="admin-status {{ $commit['restorable'] ? 'is-published' : '' }}">
@@ -625,7 +632,7 @@
                                     <small>{{ number_format($commit['change_count']) }} changes · {{ number_format($commit['activity_count']) }} activities</small>
                                 </td>
                                 <td class="admin-table__actions activity-actions-cell">
-                                    <x-admin.toolbar>
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical activity-row-actions">
                                         <button class="admin-action" type="button" wire:click="openCommitDetails({{ $commit['id'] }})">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
                                             <span class="admin-action__label">Details</span>
@@ -635,14 +642,20 @@
                                                 class="admin-action"
                                                 type="button"
                                                 wire:click="mountAction('restoreVersion', { id: {{ $commit['id'] }} })"
-                                            >Restore</button>
+                                            >
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Restore</span>
+                                            </button>
                                         @endif
                                         @if ($commit['can_revert'])
                                             <button
                                                 class="admin-action"
                                                 type="button"
                                                 wire:click="mountAction('revertCurrentCommit', { id: {{ $commit['id'] }} })"
-                                            >Revert</button>
+                                            >
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Revert</span>
+                                            </button>
                                         @endif
                                     </x-admin.toolbar>
                                 </td>
