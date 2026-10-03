@@ -282,12 +282,12 @@
                             @if ($viewMode === 'list')
                                 <th scope="col" class="media-workspace__thumb-head">Preview</th>
                             @endif
-                            <th scope="col">Media</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Size</th>
-                            <th scope="col">Used in</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Actions</th>
+                            <th scope="col" class="media-workspace__media-head">Media</th>
+                            <th scope="col" class="media-workspace__type-head">Type</th>
+                            <th scope="col" class="media-workspace__size-head">Size</th>
+                            <th scope="col" class="media-workspace__usage-head">Used in</th>
+                            <th scope="col" class="media-workspace__status-head">Status</th>
+                            <th scope="col" class="media-workspace__actions-head">Actions</th>
                             <th scope="col" class="media-workspace__selection-head media-workspace__selection-head--trailing">
                                 <input
                                     type="checkbox"
@@ -330,7 +330,7 @@
                                         </button>
                                     </td>
                                 @endif
-                                <td class="media-workspace__identity">
+                                <td class="media-workspace__identity media-workspace__media-cell">
                                     <button
                                         class="media-workspace__filename-button"
                                         type="button"
@@ -342,13 +342,14 @@
                                         {{ $asset['created'] }}
                                         @if ($asset['alt_missing']) · ALT missing @endif
                                     </small>
+                                    <small class="admin-responsive-meta">{{ $asset['type_label'] }} · {{ $asset['size'] }}</small>
                                 </td>
-                                <td>
+                                <td class="media-workspace__type-cell">
                                     <strong class="media-workspace__type">{{ $asset['type_label'] }}</strong>
                                     @if ($asset['dimensions'])<small>{{ $asset['dimensions'] }}</small>@endif
                                 </td>
-                                <td class="media-workspace__size">{{ $asset['size'] }}</td>
-                                <td>
+                                <td class="media-workspace__size media-workspace__size-cell">{{ $asset['size'] }}</td>
+                                <td class="media-workspace__usage-cell">
                                     @if ($asset['references'] === [])
                                         <span class="media-workspace__unreferenced">Unreferenced</span>
                                     @else
@@ -365,7 +366,7 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="media-workspace__status-cell">
                                     <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
                                 </td>
                                 <td class="media-workspace__actions">
