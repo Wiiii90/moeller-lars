@@ -14,6 +14,8 @@ it('keeps shared admin action icons on the semantic icon catalog', function (): 
         ->toContain("case NotificationInfo = 'heroicon-o-information-circle';")
         ->toContain("case NotificationWarning = 'heroicon-o-exclamation-triangle';")
         ->toContain("case NotificationDanger = 'heroicon-o-x-circle';")
+        ->toContain("case Clear = 'heroicon-o-backspace';")
+        ->toContain("case Selection = 'heroicon-o-queue-list';")
         ->toContain("case Previous = 'heroicon-o-chevron-left';")
         ->toContain("case Next = 'heroicon-o-chevron-right';")
         ->toContain("case Undo = 'heroicon-o-arrow-uturn-left';")
