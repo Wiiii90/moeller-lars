@@ -526,7 +526,7 @@ Responsive behavior is content-driven and follows semantic width states rather t
 - **Dashboard is an explicit exception:** Wide and Compact keep all six metrics; Narrow keeps exactly three semantic metrics (Visits, Published Artworks, Recent Changes); Minimal keeps exactly two (Visits, Published Artworks).
 - Dashboard uses four effective presentation states only: Wide, Compact, Narrow and Minimal. The burger/mobile shell is not an additional Dashboard state; shell collapse may force Narrow but must never create a parallel responsive composition.
 - Never reduce a metric strip to a one-column list.
-- Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/3 rule.
+- Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/2 rule.
 - Metric importance is semantic; do not hide arbitrary nth children merely to fit.
 
 ### Toolbars
@@ -534,8 +534,8 @@ Responsive behavior is content-driven and follows semantic width states rather t
 The canonical order is always **Query / Filter -> Task actions -> Selection**.
 
 - **Every toolbar is exactly one row at every supported responsive state. Two-row toolbars are not allowed.**
-- Search, filters and Reset stay in the Query/Filter region; Reset is not a task action.
-- Selection stays the terminal, visually distinct bulk-action region.
+- Search, filters and **Clear** stay in the Query/Filter region; Clear is not a task action. Filter-reset UI is always named **Clear**, never Reset, and uses the shared Clear icon/action primitive.
+- Selection stays the terminal, visually distinct bulk-action region. Selection triggers use the shared multi-selection icon before the Selected label.
 - Width pressure is solved inside that one row: redistribute tracks, collapse lower-priority filters behind a local **Filters** trigger when necessary, and compact actions from full icon+label directly to icon-only or an explicit overflow action.
 - Never abbreviate action labels into fragments such as `O…`, `P…` or other clipped pseudo-labels. A visible label is complete; otherwise it is hidden and the accessible icon action remains.
 - The underlying Livewire filter fields remain the authoritative controls; presentation-only compaction must not send resize state to the server.
@@ -547,6 +547,8 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Ordinary admin tables do **not** use horizontal scrolling as a responsive strategy. Do not reserve horizontal-scrollbar space and do not merely hide a scrollbar over overflowing content.
 - Fit tables by semantic column priority: essential, supportive, optional. Merge supportive information into a primary cell/second line or remove optional columns before the table would overflow.
 - Tables may enter a narrower state earlier than metrics or stages because each component responds to its own available width.
+- **Metric separators are the preferred soft alignment grid.** On a page with a six-cell metric strip, toolbar regions and major table-column boundaries should align to the same 1/6 separators whenever semantics and fit allow. Deviate only when content needs it; do not invent arbitrary tracks while a clean metric boundary is available.
+- For Dashboard Wide/Compact specifically, Search owns two metric cells; Type, Filter/Clear, Dashboard actions and Selection own one cell each. The feed uses cell 1 for Position/Drag/Type, cell 2 for Date, cells 3–4 for Title, cell 5 for Sender and cell 6 for Actions + terminal Selection.
 - While the surface remains tabular, toolbar Selected-count, header select-all and row checkboxes share one terminal Selection rail at every responsive state.
 - Preserve table semantics where practical; do not default narrow tables to card stacks.
 - Do not reduce shared semantic font sizes merely to recover width.
