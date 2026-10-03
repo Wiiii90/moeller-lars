@@ -50,7 +50,7 @@
 </x-admin.metrics>
 
 <section
-    class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-visual-stage--stackable"
+    class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych"
     aria-label="Storage upload, total capacity and media distribution"
     x-data="{
         selectedTarget: null,
