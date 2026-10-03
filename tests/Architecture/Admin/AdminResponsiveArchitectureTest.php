@@ -158,3 +158,16 @@ it('aligns the wide Dashboard feed and toolbar to the six-cell metric grid', fun
     expect($tableContract)
         ->toContain('.admin-table__col-one-unit-minus-selection');
 });
+
+
+it('keeps all three Dashboard stage panes through Narrow and switches only at Minimal', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+
+    expect($responsive)
+        ->toContain('Narrow:        three metrics + three simultaneous overview panes.')
+        ->toContain('@container admin-workspace (max-width: 54rem)')
+        ->toContain('@media (max-width: 63.99rem)')
+        ->toContain('@container admin-workspace (max-width: 38rem)')
+        ->toContain('.admin-dashboard__overview-column.is-compact-active');
+});
