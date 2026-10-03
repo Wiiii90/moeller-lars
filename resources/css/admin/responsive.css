@@ -4007,3 +4007,82 @@
         width: 5.75rem !important;
     }
 }
+
+
+/* Analytics/Storage/Activity burger-shell monotonicity.
+ * Sidebar collapse must not promote Storage density or Activity/Storage table
+ * columns back to a wider state. Minimal remains owned by container rules. */
+@media (min-width: 38.01rem) and (max-width: 63.99rem) {
+    .admin-storage .media-workspace__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
+    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
+    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
+    .admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
+    .admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
+    .admin-storage .media-workspace__table-wrap .media-workspace__usage-cell {
+        display: none !important;
+    }
+
+    .admin-storage .media-workspace__col-media {
+        width: auto !important;
+    }
+
+    .admin-storage .media-workspace__col-type {
+        width: 6rem !important;
+    }
+
+    .admin-storage .media-workspace__col-size {
+        width: 5rem !important;
+    }
+
+    .admin-storage .media-workspace__col-status {
+        width: 5.5rem !important;
+    }
+
+    .admin-storage .media-workspace__col-actions {
+        width: 7rem !important;
+    }
+
+    .activity-events-table .activity-col--who,
+    .activity-events-table .activity-col--publication,
+    .activity-commits-table .activity-commit-col--who,
+    .activity-commits-table .activity-commit-col--publication {
+        display: none !important;
+    }
+
+    .activity-events-table .activity-col--change {
+        width: 20% !important;
+    }
+
+    .activity-events-table .activity-col--when,
+    .activity-commits-table .activity-commit-col--when {
+        width: 7rem !important;
+    }
+
+    .activity-events-table .activity-col--target,
+    .activity-commits-table .activity-commit-col--summary {
+        width: auto !important;
+    }
+
+    .activity-events-table .activity-col--area,
+    .activity-events-table .activity-col--type {
+        width: 7rem !important;
+    }
+
+    .activity-events-table .activity-col--actions,
+    .activity-commits-table .activity-commit-col--actions {
+        width: 6.5rem !important;
+    }
+
+    .activity-commits-table .activity-commit-col--commit {
+        width: 8rem !important;
+    }
+
+    .activity-row-actions .admin-action__label,
+    .admin-storage .media-workspace__row-actions .admin-action__label {
+        display: none !important;
+    }
+}
