@@ -140,6 +140,8 @@
 .admin-data-controls > :last-child .admin-selection__trigger,
 .admin-data-controls > :last-child .media-workspace__selection-trigger {
     display: grid;
+    width: 100%;
+    min-width: 0;
     grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
     gap: 0;
     padding-right: 0;
