@@ -980,6 +980,8 @@ body {
     line-height: 1.35;
 }
 
+/* Compact: preserve the desktop composition but simplify title geometry before
+ * the content shell itself needs to recompose. */
 @media (max-width: 64rem) {
     .site-title {
         right: 0;
@@ -999,6 +1001,8 @@ body {
     }
 }
 
+/* Narrow: the shell uses the full useful width, navigation remains a horizontal
+ * touch/keyboard surface, and feature layouts deliberately reduce columns. */
 @media (max-width: 46rem) {
     :root {
         --public-gutter: .65rem;
@@ -1078,6 +1082,8 @@ body {
     }
 }
 
+/* Minimal: artwork/supporting content becomes single-surface where necessary;
+ * do not shrink typography merely to preserve wider compositions. */
 @media (max-width: 34rem) {
     .site-navigation__submenu {
         padding: .25rem 0 .45rem;
@@ -1207,6 +1213,8 @@ html:has(.artwork-viewer[open]) {
     outline-offset: -1px;
 }
 
+/* Viewer controls have their own content-fit threshold because the fullscreen
+ * surface is viewport-owned rather than constrained by the public content shell. */
 @media (max-width: 40rem) {
     .artwork-viewer__stage {
         inset: 3.8rem .55rem 4.25rem;
