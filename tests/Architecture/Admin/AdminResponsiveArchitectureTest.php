@@ -235,3 +235,40 @@ it('uses the shared orbit size for Dashboard Storage and Activity', function ():
     expect($dashboard)
         ->toContain('class="admin-dashboard__storage-stage"');
 });
+
+
+it('keeps General responsive state monotonic and its social table aligned', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+    $generalCss = file_get_contents($root.'/resources/css/admin/general.css');
+    $metrics = file_get_contents($root.'/resources/views/filament/schemas/components/general-status-metrics.blade.php');
+    $social = file_get_contents($root.'/resources/views/filament/schemas/components/general-social-links.blade.php');
+    $tableContract = file_get_contents($root.'/resources/css/admin/table-contract.css');
+
+    expect($metrics)
+        ->toContain('general-metric--public-email')
+        ->toContain('general-metric--contact-delivery')
+        ->toContain('general-metric--legal');
+
+    expect($responsive)
+        ->toContain('General responsive authority')
+        ->toContain('@media (max-width: 63.99rem)')
+        ->toContain('.general-appearance-stage__preview')
+        ->toContain('display: none !important')
+        ->toContain('grid-template-columns: repeat(3, minmax(0, 1fr)) !important')
+        ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important');
+
+    expect($generalCss)
+        ->toContain('min-height: 5.9rem')
+        ->toContain('height: 4.5rem !important')
+        ->toContain('width: calc(33.333333% - 5rem) !important');
+
+    expect($social)
+        ->toContain('admin-table__col-position')
+        ->toContain('admin-table__col-drag')
+        ->toContain('general-social-table__actions');
+
+    expect($tableContract)
+        ->toContain('.admin-table__col-position { width: 3rem; }')
+        ->toContain('.admin-table__col-drag { width: 2rem; }');
+});
