@@ -1653,7 +1653,7 @@
  * -------------------------------------------------------------------------
  * Dashboard has four effective presentation states:
  *   Wide / Compact: six metrics + three simultaneous overview panes.
- *   Narrow:        three metrics + one selected overview pane.
+ *   Narrow:        three metrics + three simultaneous overview panes.
  *   Minimal:       two metrics + one selected overview pane.
  *
  * The mobile Filament shell is not a fifth presentation state. When the
@@ -1699,54 +1699,43 @@
 
     .admin-dashboard__overview {
         display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-template-rows: none !important;
         overflow: hidden !important;
         background: none !important;
     }
 
     .admin-dashboard__overview::before,
     .admin-dashboard__overview::after {
-        display: none !important;
+        display: block !important;
     }
 
     .admin-dashboard__overview-switcher {
-        display: grid !important;
-        grid-row: 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .2rem;
-        padding-bottom: .45rem;
-        border-bottom: 1px solid var(--admin-line);
-    }
-
-    .admin-dashboard__overview-switcher .admin-action {
-        width: 100%;
-        min-width: 0;
-        justify-content: center;
-    }
-
-    .admin-dashboard__overview-switcher .admin-action.is-active {
-        border-color: var(--admin-accent);
-        color: var(--admin-accent-strong);
+        display: none !important;
     }
 
     .admin-dashboard__overview-column,
     .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-        display: none !important;
+        display: grid !important;
         min-width: 0;
         min-height: 0;
-        width: 100%;
-        height: 100%;
-        grid-column: 1 / -1 !important;
-        grid-row: 2 !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        padding: .45rem 0 0 !important;
+        width: auto;
+        height: auto;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        grid-template-rows: auto var(--admin-visual-stage-height) auto !important;
+        padding: 1.2rem 1rem 1.25rem 0 !important;
         border: 0 !important;
         box-shadow: none !important;
     }
 
-    .admin-dashboard__overview-column.is-compact-active {
-        display: grid !important;
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        padding-left: 1rem !important;
+        border-left: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard__overview-column:last-child {
+        padding-right: 1rem !important;
     }
 
     .admin-dashboard__feed-controls {
@@ -1818,48 +1807,43 @@
 
     .admin-dashboard__overview {
         display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-template-rows: none !important;
         overflow: hidden !important;
         background: none !important;
     }
 
     .admin-dashboard__overview::before,
     .admin-dashboard__overview::after {
-        display: none !important;
+        display: block !important;
     }
 
     .admin-dashboard__overview-switcher {
-        display: grid !important;
-        grid-row: 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .2rem;
-        padding-bottom: .45rem;
-        border-bottom: 1px solid var(--admin-line);
-    }
-
-    .admin-dashboard__overview-switcher .admin-action.is-active {
-        border-color: var(--admin-accent);
-        color: var(--admin-accent-strong);
+        display: none !important;
     }
 
     .admin-dashboard__overview-column,
     .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-        display: none !important;
+        display: grid !important;
         min-width: 0;
         min-height: 0;
-        width: 100%;
-        height: 100%;
-        grid-column: 1 / -1 !important;
-        grid-row: 2 !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        padding: .45rem 0 0 !important;
+        width: auto;
+        height: auto;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        grid-template-rows: auto var(--admin-visual-stage-height) auto !important;
+        padding: 1.2rem 1rem 1.25rem 0 !important;
         border: 0 !important;
         box-shadow: none !important;
     }
 
-    .admin-dashboard__overview-column.is-compact-active {
-        display: grid !important;
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        padding-left: 1rem !important;
+        border-left: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard__overview-column:last-child {
+        padding-right: 1rem !important;
     }
 
     .admin-dashboard__feed-controls {
@@ -1897,6 +1881,58 @@
 }
 
 @container admin-workspace (max-width: 38rem) {
+    .admin-dashboard__overview {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto minmax(0, 1fr) !important;
+        overflow: hidden !important;
+        background: none !important;
+    }
+
+    .admin-dashboard__overview::before,
+    .admin-dashboard__overview::after {
+        display: none !important;
+    }
+
+    .admin-dashboard__overview-switcher {
+        display: grid !important;
+        grid-row: 1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .2rem;
+        padding-bottom: .45rem;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-dashboard__overview-switcher .admin-action {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    .admin-dashboard__overview-switcher .admin-action.is-active {
+        border-color: var(--admin-accent);
+        color: var(--admin-accent-strong);
+    }
+
+    .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        display: none !important;
+        min-width: 0;
+        min-height: 0;
+        width: 100%;
+        height: 100%;
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+        padding: .45rem 0 0 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .admin-dashboard__overview-column.is-compact-active {
+        display: grid !important;
+    }
+
     .admin-dashboard .admin-metric {
         display: none !important;
     }
