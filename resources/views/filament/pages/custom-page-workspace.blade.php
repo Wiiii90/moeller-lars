@@ -1,8 +1,19 @@
 <x-filament-panels::page>
     <x-admin.workspace :title="$pageTitle" class="custom-page-workspace">
-        <x-admin.metrics :columns="6" aria-label="Custom page overview">
+        <x-admin.metrics :columns="6" class="custom-page-status-metrics" aria-label="Custom page overview">
             @foreach ($metrics as $metric)
-                <x-admin.metric :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
+                @php
+                    $metricRole = match ($metric['label']) {
+                        'Components' => 'components',
+                        'Entries' => 'entries',
+                        'Images' => 'images',
+                        'Visits' => 'visits',
+                        'Views' => 'views',
+                        'Contact messages' => 'contact',
+                        default => 'secondary',
+                    };
+                @endphp
+                <x-admin.metric class="custom-page-metric custom-page-metric--{{ $metricRole }}" :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
             @endforeach
         </x-admin.metrics>
 
