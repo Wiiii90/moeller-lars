@@ -545,7 +545,8 @@ a.activity-calendar__day:focus-visible {
 }
 
 .activity-events-table table {
-    min-width: 72rem;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .activity-events-table .activity-col--change,
@@ -719,7 +720,8 @@ a.activity-calendar__day:focus-visible {
 }
 
 .activity-commits-table table {
-    min-width: 66rem;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .activity-commits-table .activity-commit-col--commit,
