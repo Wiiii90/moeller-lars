@@ -2381,6 +2381,10 @@
         width: 9rem !important;
     }
 
+    .general-social-table .general-social-table__col-url {
+        width: auto !important;
+    }
+
     .general-social-table .general-social-table__col-actions {
         width: 7rem !important;
     }
