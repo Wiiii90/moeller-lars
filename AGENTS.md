@@ -313,6 +313,23 @@ The admin is still under browser acceptance. Existing work is a starting point, 
 - consult `ui-skills.md` before changing admin workspace geometry;
 - when the user explicitly rejects the current presentation or asks for a reset, do not preserve that rejected structure merely to minimize the diff.
 
+## Responsive system
+
+Responsive behavior is content-driven, not device-name driven. Issue #15 owns the current public/admin responsive contract.
+
+- preserve accepted wide/desktop presentation unless current browser feedback changes it;
+- use semantic width states (Wide, Compact, Narrow, Minimal) as behavior states, not fixed device classes;
+- admin shell-level changes may follow viewport width, but task components should prefer their actually available container/workspace width;
+- do not track browser width through Livewire/Laravel or persist resize state;
+- Wide/Compact admin toolbars remain one row; Narrow/Minimal may use at most two rows, with canonical order Query/Filter -> Task actions -> Selection;
+- Selection remains the terminal table utility and its selected-count, select-all and row checkboxes stay on one rail while the surface remains tabular;
+- ordinary admin tables must fit without horizontal scrolling or reserved horizontal-scrollbar space; reduce supportive/optional columns and compact actions instead;
+- metrics reduce deliberately from the wide row through multi-row grids to a two-column minimum; never turn a metric strip into a one-column list, and the strip may disappear entirely at the smallest state when it becomes non-essential;
+- shared Visual Stage desktop geometry does not imply generic mobile stacking. Each stage defines a task-specific Narrow/Minimal composition that preserves required operations and may remove redundant visualization/parallel preview;
+- responsive action density may progress from label+icon to icon-only to essential icons plus an overflow menu, while preserving accessible labels and semantic order;
+- legacy public breakpoint values are historical evidence only, not target layout authorities;
+- browser review must sweep continuously through transition widths, including sidebar-expanded/constrained desktop states, to catch broken intermediate compositions.
+
 ## Central technology rules
 
 ### Rich Text
