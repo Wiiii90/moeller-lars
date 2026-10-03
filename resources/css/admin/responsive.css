@@ -168,7 +168,7 @@
     }
 
     .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 12 !important;
+        grid-column: span 8 !important;
         width: 100% !important;
         min-width: 0 !important;
         padding-right: .7rem;
@@ -184,7 +184,7 @@
     .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
     .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
     .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 3 !important;
+        grid-column: span 4 !important;
         width: 100% !important;
         min-width: 0 !important;
     }
@@ -1905,9 +1905,16 @@
     .admin-dashboard .admin-dashboard__metric--artworks {
         display: block !important;
         min-width: 0;
-        grid-column: auto !important;
         padding: 1.05rem 1rem !important;
         border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic {
+        grid-column: 1 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        grid-column: 2 !important;
     }
 
     .admin-dashboard .admin-dashboard__metric--changes {
