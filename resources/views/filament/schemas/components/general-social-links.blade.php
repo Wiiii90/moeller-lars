@@ -10,15 +10,15 @@
     <x-admin.table class="admin-table--data admin-table--ranked general-social-table" aria-label="Social media profiles">
         <table class="admin-table--six-grid">
             <colgroup>
-                <col class="admin-table__col-quarter-unit">
-                <col class="admin-table__col-quarter-unit">
+                <col class="admin-table__col-quarter-unit admin-table__col-position">
+                <col class="admin-table__col-quarter-unit admin-table__col-drag">
                 <col class="admin-table__col-one-half-units general-social-table__col-platform">
                 <col class="admin-table__col-two-units general-social-table__col-url">
                 <col class="admin-table__col-two-units general-social-table__col-actions">
             </colgroup>
             <thead>
                 <tr>
-                    <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
+                    <th scope="colgroup" colspan="2" class="admin-table__ordering-heading general-social-table__position-head">Position</th>
                     <th scope="col" class="general-social-table__platform-head">Platform</th>
                     <th scope="col" class="general-social-table__url-head">Profile URL</th>
                     <th scope="col" class="admin-table__actions">Actions</th>
@@ -39,10 +39,10 @@
                         wire:key="general-social-link-{{ $index }}"
                         wire:sort:item="{{ $index }}"
                     >
-                        <td class="admin-table__position">
+                        <td class="admin-table__position general-social-table__position-cell">
                             <span class="admin-position">{{ $index + 1 }}</span>
                         </td>
-                        <td class="admin-table__drag">
+                        <td class="admin-table__drag general-social-table__drag-cell">
                             <button
                                 class="admin-drag-handle"
                                 type="button"
@@ -58,7 +58,7 @@
                         <td class="general-social-table__url" title="{{ $url }}">
                             {{ $url }}
                         </td>
-                        <td class="admin-table__actions">
+                        <td class="admin-table__actions general-social-table__actions">
                             <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--four">
                                 <button
                                     class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled"
