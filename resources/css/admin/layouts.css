@@ -256,12 +256,6 @@ html.fi select option:disabled {
     color: var(--admin-sidebar-selected-ink) !important;
 }
 
-@media (max-width: 1023px) {
-    .fi-main {
-        padding-top: var(--admin-shell-content-inset) !important;
-    }
-}
-
 @media (min-width: 1024px) {
     /*
      * Keep the desktop shell on one horizontal coordinate system regardless of
@@ -283,10 +277,22 @@ html.fi select option:disabled {
     .fi-main {
         width: min(100%, var(--admin-workspace-outer-max-width));
         max-width: var(--admin-workspace-outer-max-width) !important;
-        padding-top: var(--admin-shell-content-inset) !important;
     }
 
     .fi-sidebar-nav {
         padding-top: var(--admin-shell-content-inset) !important;
     }
+}
+
+/* Workspace top spacing belongs to the page, not to Filament's shell wrapper.
+ * Desktop sidebar and mobile/burger shells can use different .fi-main geometry
+ * (and display scaling can change which shell is active), but every workspace
+ * therefore receives the exact same vertical inset below the topbar. */
+.fi-main:has(.admin-workspace) {
+    padding-top: 0 !important;
+}
+
+.fi-page:has(.admin-workspace) {
+    box-sizing: border-box;
+    padding-top: var(--admin-shell-content-inset) !important;
 }
