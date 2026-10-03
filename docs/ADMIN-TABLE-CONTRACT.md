@@ -125,17 +125,20 @@ At an intentional responsive breakpoint where controls or the table stack/reflow
 
 ## Responsive direction
 
-The contract is deliberately prepared for progressive reduction rather than horizontal chaos.
+Tables use the shared semantic width states **Wide**, **Compact**, **Narrow** and **Minimal**, but transition according to the table container's actual available width rather than a device label or a metric breakpoint.
 
-Target behavior for later responsive work:
+- Wide: full important data and action labels.
+- Compact: supportive data may merge into primary cells; actions may become icon-only.
+- Narrow: optional columns disappear; identity, essential state/actions and Selection remain.
+- Minimal: retain the smallest semantically complete table; lower-priority actions may move into a `…` overflow action.
 
-- wide: six-unit composition, full important data and action labels;
-- medium: four-unit composition, secondary/nonessential data may be removed, actions can become icon-only;
-- narrow/phone: two-unit composition, identity and essential state/actions only, with editing delegated to the Edit dialog where appropriate.
+Ordinary tables must fit without horizontal scrolling. Do not reserve horizontal-scrollbar space and do not hide scrollbars while leaving overflow underneath. If a table would overflow, reduce supportive/optional columns or action chrome before that point.
 
-Responsive reduction must preserve semantic DOM/action order. Do not visually reorder cells with CSS while leaving keyboard/screen-reader order behind.
+Selection is invariant while the surface remains a table: the toolbar count/trigger, select-all checkbox and row checkboxes stay on the same terminal rail at every state. Other content yields before that rail drifts.
 
-Metrics and table geometry may respond at related breakpoints, but neither is implementation-dependent on the other.
+Responsive reduction must preserve semantic DOM/action order. Do not visually reorder cells with CSS while leaving keyboard/screen-reader order behind, and do not reduce shared semantic font sizes as a fitting technique.
+
+Metrics, tables, toolbars and stages may transition at different widths because each responds to its own available container width.
 
 ## Implementation authority
 
