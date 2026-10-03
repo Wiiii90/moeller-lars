@@ -30,6 +30,34 @@
 .admin-dashboard__feed-table { overflow-x: hidden; }
 .admin-dashboard__feed-table > table { min-width: 0; table-layout: fixed; }
 
+.admin-dashboard__feed-table .admin-dashboard__col-position {
+    width: 3rem;
+}
+
+.admin-dashboard__feed-table .admin-dashboard__col-drag {
+    width: 2rem;
+}
+
+.admin-dashboard__feed-table .admin-dashboard__col-type {
+    width: 6.5rem;
+}
+
+.admin-dashboard__feed-table .admin-dashboard__col-date {
+    width: 8rem;
+}
+
+.admin-dashboard__feed-table .admin-dashboard__col-sender {
+    width: 7rem;
+}
+
+.admin-dashboard__feed-table col:nth-last-child(2) {
+    width: 7rem;
+}
+
+.admin-dashboard__feed-table .admin-table__selection-col {
+    width: var(--admin-table-selection-width);
+}
+
 .admin-dashboard__feed-table .admin-data-title,
 .admin-dashboard__feed-table .admin-data-sender {
     min-width: 0;
@@ -48,7 +76,16 @@
 
 .admin-dashboard__feed-table .admin-data-title {
     color: var(--admin-text) !important;
-    font-weight: 600;
+    font-weight: 400;
+}
+
+.admin-dashboard__feed-title {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .admin-dashboard__feed-table .admin-data-sender strong,
