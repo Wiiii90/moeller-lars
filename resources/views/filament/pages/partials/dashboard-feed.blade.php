@@ -78,8 +78,8 @@
     <x-admin.table class="admin-data-table admin-table--ranked admin-dashboard__feed-table">
         <table class="admin-table--six-grid">
             <colgroup>
-                <col class="admin-table__col-quarter-unit">
-                <col class="admin-table__col-quarter-unit">
+                <col class="admin-table__col-quarter-unit admin-dashboard__col-position">
+                <col class="admin-table__col-quarter-unit admin-dashboard__col-drag">
                 <col class="admin-table__col-three-quarter-unit admin-dashboard__col-type">
                 <col class="admin-table__col-three-quarter-unit admin-dashboard__col-date">
                 <col class="admin-table__col-one-half-units admin-dashboard__col-title">
