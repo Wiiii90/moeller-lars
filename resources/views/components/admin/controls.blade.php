@@ -34,7 +34,12 @@
     @endisset
 
     @if ($hasUtility)
-        <div class="admin-data-controls__utility">
+        <div @class([
+            'admin-data-controls__utility',
+            'admin-data-controls__utility--has-reset' => isset($reset),
+            'admin-data-controls__utility--has-actions' => isset($actions),
+            'admin-data-controls__utility--has-selection' => isset($selection),
+        ])>
             @isset($reset)
                 {{ $reset }}
             @endisset
