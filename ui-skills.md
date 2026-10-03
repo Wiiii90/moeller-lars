@@ -586,9 +586,9 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - Analytics/Storage/Activity burger/sidebar collapse is monotonic as well: it must not reintroduce Geography, the Storage triptych, Activity Clock, wider table columns or denser Storage cards.
 - General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand Appearance controls + geometry across the full stage; burger/sidebar collapse may force that Narrow composition and must never make the preview reappear.
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
-- Analytics Narrow/Minimal keeps the world map as the focused surface and removes the parallel Geography rail.
-- Storage Narrow/Minimal becomes one functional compact surface: Upload remains the main area; a compact Used/Remaining/Allowance strip plus Refresh/Reclaim stays available; the donut and Distribution visualization disappear.
-- Activity is publication-first below Compact: Narrow and Minimal give **Next Publication the full shared stage** and remove Calendar + Clock. Pending state, Preflight/current-live context and Review/Reset/Commit remain visible/reachable; supportive calendar visualization yields before publication operations.
+- Analytics preserves its desktop Map (2 cells) + Geography (1 cell) composition through Narrow. Only Minimal removes Geography and lets Map occupy the full shared stage.
+- Storage preserves Upload + Capacity + Distribution as three equal stage cells through Narrow. Only Minimal becomes the compact full-width Upload + Used/Remaining/Allowance + Refresh/Reclaim composition; donut and Distribution disappear there.
+- Activity preserves Calendar + Clock + Next Publication as three stage cells through Narrow. Only Minimal becomes publication-first: Next Publication owns the full shared stage while Calendar + Clock yield; Pending/Preflight/current-live context and Review/Reset/Commit remain visible/reachable.
 - **Dashboard keeps Storage | Activity | Analytics as three simultaneous stage cells through Wide, Compact and Narrow. Only Minimal may switch to the local Storage / Activity / Analytics selector and show one stage cell at a time.** Burger/sidebar collapse alone must not trigger the one-cell Dashboard stage.
 - Dashboard stage captions/facts remain visible and one-line through Narrow. The Dashboard stage owns a smooth container-relative height; footer wrapping must never change graphic vertical position.
 - Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
@@ -711,3 +711,5 @@ See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliatio
 - **Minimal:** retain exactly two semantic metrics. The split is exact 50/50; hidden source siblings or original DOM position must never create a 1/3–2/3 layout.
 - Metric geometry is owned centrally by the shared `.admin-metrics` primitive: Narrow uses three equal tracks and container-owned dividers at 1/3 + 2/3; Minimal uses two equal tracks and one divider at 1/2. Feature CSS chooses which metrics remain visible but must not assign responsive `grid-column` spans or draw its own vertical metric dividers.
 - Analytics/Storage/Activity metric cells explicitly own their Narrow/Minimal columns and stretch to the full cell. Narrow is exact thirds with two dividers; Minimal is exact halves with one centered divider.
+
+- Stage collapse for Analytics/Storage/Activity happens only at Minimal (<= 38rem workspace, with the matching shell fallback). Wide/Compact/Narrow retain their multi-cell stage axes and the shared fixed `--admin-visual-stage-height`; switching state must not introduce extra divider axes.
