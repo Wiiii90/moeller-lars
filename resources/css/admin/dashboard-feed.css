@@ -84,9 +84,35 @@
 
 .admin-dashboard__pin-action.is-active { color: color-mix(in srgb, #9a6800 82%, var(--admin-text)); }
 
-/* Wide rows reserve the final two sixths for Actions + Selection so the
- * maximal Notification action set (Open, Pin, Read/Unread, Delete) remains
- * complete. Compact rows switch the same four semantic slots to icons only. */
+/* Wide keeps the six-cell ruler but stops donating a third of the table to
+ * Actions. Identity receives seven quarter-cells; labelled Actions receive six;
+ * Selection remains the fixed terminal rail. */
+.admin-dashboard__feed-table col.admin-dashboard__col-type {
+    width: 8.333333%;
+}
+
+.admin-dashboard__feed-table col.admin-dashboard__col-date {
+    width: 12.5%;
+}
+
+.admin-dashboard__feed-table col.admin-dashboard__col-time {
+    width: 8.333333%;
+}
+
+.admin-dashboard__feed-table col.admin-dashboard__col-title {
+    width: 29.166667%;
+}
+
+.admin-dashboard__feed-table col.admin-dashboard__col-sender {
+    width: 8.333333%;
+}
+
+.admin-dashboard__feed-table col.admin-dashboard__col-actions {
+    width: calc(25% - var(--admin-table-selection-width));
+}
+
+/* Dashboard row actions have two states only: full labels while they fit
+ * without stealing identity space, then one stable four-icon rail. */
 .admin-dashboard__feed-table .admin-dashboard__feed-actions {
     display: grid !important;
     width: 100%;
@@ -99,7 +125,7 @@
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
     width: 100%;
     min-width: 0;
-    padding-inline: .25rem;
+    padding-inline: .22rem;
     justify-content: flex-start !important;
     overflow: hidden;
 }
@@ -119,11 +145,9 @@
     white-space: nowrap;
 }
 
-/* Dashboard feed responsive table authority.
- * Wide keeps labels. Compact turns the action rail icon-only. Narrow removes
- * Sender. The table then folds Type/Date/Time into Title metadata at its own
- * 44rem container threshold, before those columns become visibly unreadable. */
-@container admin-table (max-width: 62rem) {
+/* Action labels yield before Title starts paying for them. Supporting columns
+ * become content-sized rails and Title receives the full remainder. */
+@container admin-table (max-width: 68rem) {
     .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
         min-height: 2rem;
         padding-inline: 0 !important;
@@ -136,23 +160,19 @@
 
     .admin-dashboard__feed-table .admin-dashboard__col-position { width: 3rem !important; }
     .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 2rem !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-type { width: var(--admin-table-three-quarter-unit) !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-date { width: var(--admin-table-three-quarter-unit) !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-time { width: var(--admin-table-half-unit) !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: calc(41.666667% - 5rem) !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-sender { width: var(--admin-table-half-unit) !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: calc(var(--admin-table-one-unit) - var(--admin-table-selection-width)) !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-type { width: 7rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-date { width: 7rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-time { width: 5rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-sender { width: 5.5rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 6.5rem !important; }
 }
 
-@container admin-table (max-width: 50rem) {
+@container admin-table (max-width: 54rem) {
     .admin-dashboard__feed-table col.admin-dashboard__col-sender,
     .admin-dashboard__feed-table th.admin-dashboard__col-sender,
     .admin-dashboard__feed-table td.admin-dashboard__col-sender {
         display: none !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-title {
-        width: calc(50% - 5rem) !important;
     }
 }
 
@@ -160,7 +180,9 @@
     display: none;
 }
 
-@container admin-table (max-width: 44rem) {
+/* Fold support metadata as one semantic step before any value becomes a text
+ * fragment. Whole Type/Date/Time values may wrap as units below Title. */
+@container admin-table (max-width: 48rem) {
     .admin-dashboard__feed-table col.admin-dashboard__col-type,
     .admin-dashboard__feed-table th.admin-dashboard__col-type,
     .admin-dashboard__feed-table td.admin-dashboard__col-type,
@@ -177,8 +199,8 @@
     }
 
     .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: calc(100% - 12.5rem) !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 5.25rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 6.5rem !important; }
 
     .admin-dashboard__feed-meta {
         display: flex;
@@ -199,14 +221,58 @@
         text-overflow: clip;
         white-space: nowrap;
     }
+}
 
-    .admin-dashboard__feed-table .admin-dashboard__feed-actions {
-        grid-template-columns: repeat(4, minmax(1.15rem, 1fr));
-        gap: .05rem !important;
+/* Burger-shell monotonicity. The sidebar disappearing may give Title breathing
+ * room, but never resurrects Sender or already-folded metadata columns. */
+@media (max-width: 63.99rem) {
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
+        min-height: 2rem;
+        padding-inline: 0 !important;
+        justify-content: center !important;
     }
 
-    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
-        min-width: 1.15rem;
-        min-height: 2rem;
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__label {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-table col.admin-dashboard__col-type,
+    .admin-dashboard__feed-table th.admin-dashboard__col-type,
+    .admin-dashboard__feed-table td.admin-dashboard__col-type,
+    .admin-dashboard__feed-table col.admin-dashboard__col-date,
+    .admin-dashboard__feed-table th.admin-dashboard__col-date,
+    .admin-dashboard__feed-table td.admin-dashboard__col-date,
+    .admin-dashboard__feed-table col.admin-dashboard__col-time,
+    .admin-dashboard__feed-table th.admin-dashboard__col-time,
+    .admin-dashboard__feed-table td.admin-dashboard__col-time,
+    .admin-dashboard__feed-table col.admin-dashboard__col-sender,
+    .admin-dashboard__feed-table th.admin-dashboard__col-sender,
+    .admin-dashboard__feed-table td.admin-dashboard__col-sender {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__col-position { width: 3rem !important; }
+    .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 6.5rem !important; }
+
+    .admin-dashboard__feed-meta {
+        display: flex;
+        min-width: 0;
+        gap: .08rem .42rem;
+        margin-top: .16rem;
+        align-items: baseline;
+        flex-wrap: wrap;
+        color: var(--admin-muted);
+        font-size: var(--admin-font-size-table-meta);
+        line-height: 1.25;
+    }
+
+    .admin-dashboard__feed-meta > * {
+        min-width: 0;
+        flex: 0 0 auto;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: nowrap;
     }
 }
