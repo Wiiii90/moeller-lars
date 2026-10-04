@@ -939,30 +939,32 @@
     }
 }
 
-@container admin-workspace (max-width: 38rem){
-    .admin-general .general-status-metrics{
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
+@media (max-width: 63.99rem){
+    @container admin-workspace (max-width: 38rem){
+        .admin-general .general-status-metrics{
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
 
-    .admin-general .general-status-metrics > .general-metric{
-        display: none !important;
-    }
+        .admin-general .general-status-metrics > .general-metric{
+            display: none !important;
+        }
 
-    .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery){
-        display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
+        .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery){
+            display: block !important;
+            min-width: 0;
+            padding: 1.05rem 1rem !important;
+            border-top: 0 !important;
+        }
 
-    .admin-general .general-metric--public-email{
-        padding-left: 0 !important;
-        border-right: 1px solid var(--admin-line) !important;
-    }
+        .admin-general .general-metric--public-email{
+            padding-left: 0 !important;
+            border-right: 1px solid var(--admin-line) !important;
+        }
 
-    .admin-general .general-metric--contact-delivery{
-        border-right: 0 !important;
+        .admin-general .general-metric--contact-delivery{
+            border-right: 0 !important;
+        }
     }
 }
 
@@ -2175,7 +2177,7 @@
  * HOW the visible metrics occupy space. No child keeps a source-position span.
  */
 @container admin-workspace (max-width: 54rem){
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6)){
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6)){
         --admin-metric-columns: 3 !important;
         position: relative;
         display: grid !important;
@@ -2184,7 +2186,7 @@
         gap: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         box-sizing: border-box;
         grid-column: auto !important;
         grid-row: auto !important;
@@ -2198,8 +2200,8 @@
         border-right: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6))::before,
-.admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::before,
+.admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -2210,11 +2212,11 @@
         pointer-events: none;
     }
 
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
         left: 33.333333%;
     }
 
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         left: 66.666667%;
     }
 }
@@ -2222,7 +2224,7 @@
 /* Minimal is always exact 50/50. The second column can never inherit a
  * two-track span from its original six-cell source position. */
 @container admin-workspace (max-width: 38rem){
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6)){
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6)){
         --admin-metric-columns: 2 !important;
         position: relative;
         display: grid !important;
@@ -2231,7 +2233,7 @@
         gap: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         grid-column: auto !important;
         grid-row: auto !important;
         width: 100% !important;
@@ -2244,7 +2246,7 @@
         border-right: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -2256,9 +2258,48 @@
         pointer-events: none;
     }
 
-    .admin-workspace:not(.admin-dashboard) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         display: none !important;
         content: none !important;
+    }
+}
+
+@media (max-width: 63.99rem){
+    @container admin-workspace (max-width: 38rem){
+        .admin-general .general-status-metrics{
+            --admin-metric-columns: 2 !important;
+            position: relative;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 0 !important;
+        }
+
+        .admin-general .general-status-metrics > .general-metric{
+            grid-column: auto !important;
+            grid-row: auto !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            justify-self: stretch !important;
+            align-self: stretch !important;
+            border-right: 0 !important;
+        }
+
+        .admin-general .general-status-metrics::before{
+            position: absolute;
+            z-index: 1;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 1px;
+            background: var(--admin-line);
+            content: "";
+            pointer-events: none;
+        }
+
+        .admin-general .general-status-metrics::after{
+            display: none !important;
+            content: none !important;
+        }
     }
 }
 
