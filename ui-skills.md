@@ -531,6 +531,14 @@ If the empty state is caused by active filters, distinguish it from a genuinely 
 
 Responsive behavior is content-driven and follows semantic width states rather than device labels: **Wide**, **Compact**, **Narrow** and **Minimal**. Exact thresholds come from browser fit/acceptance; admin task components should prefer available container/workspace width, while shell-level sidebar/topbar changes may remain viewport-driven.
 
+### Shell/header geometry
+
+- Header controls use one shared equation: **1rem outer edge + 2rem circular control + 1rem separation to header content = 4rem control rail**.
+- In the desktop/sidebar shell, the User badge is vertically centered in the 4rem topbar and explicitly 1rem from the viewport right edge. Therefore its top, right and bottom gaps are all 1rem, and the workspace/Notification boundary stays one further 1rem gap to its left.
+- In the burger shell, that 4rem rail is reserved only inside the topbar. Page content below the topbar reclaims the rail and uses only the canonical 1rem shell inset on both left and right; do not carry Burger/User width down the whole page as empty padding.
+- Header Notification remains between the Burger/User control rails and may therefore use different horizontal insets from page content below it.
+
+
 ### Metrics
 
 - Wide keeps the accepted single-row strip where it fits cleanly.

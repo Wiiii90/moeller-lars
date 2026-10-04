@@ -25,12 +25,16 @@
     --admin-section-gap: 1rem;
     --admin-section-space: 2rem;
     --admin-shell-content-inset: 1.5rem;
+    /* Header geometry is one equation:
+     * 1rem edge gap + 2rem circular control + 1rem content/notification gap.
+     * The full 4rem rail belongs to header controls only; burger-mode page
+     * content uses the 1rem shell edge gap instead of reserving that rail. */
     --admin-topbar-height: 4rem;
     --admin-header-control-size: 2rem;
     --admin-header-control-edge-gap: 1rem;
     --admin-header-control-rail: calc(
-        var(--admin-header-control-size)
-        + var(--admin-header-control-edge-gap)
+        var(--admin-header-control-edge-gap)
+        + var(--admin-header-control-size)
         + var(--admin-header-control-edge-gap)
     );
     --admin-workspace-max-width: 80rem;

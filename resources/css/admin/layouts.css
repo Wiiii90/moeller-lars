@@ -48,7 +48,20 @@ html.fi,
 }
 
 .fi-topbar {
+    position: relative;
     min-height: var(--admin-topbar-height);
+}
+
+/* The user rail is viewport/header geometry, not page geometry.
+ * A 2rem control inside a 4rem topbar leaves the same 1rem on top and bottom;
+ * the explicit inline-end inset makes the right gap the same 1rem as well. */
+html.fi .fi-topbar .fi-topbar-end {
+    position: absolute;
+    z-index: 40;
+    inset-block: 0;
+    inset-inline-end: var(--admin-header-control-edge-gap);
+    display: flex;
+    align-items: center;
 }
 
 /* Native select controls inherit the active browser color scheme. */
@@ -284,9 +297,8 @@ html.fi select option:disabled {
 }
 
 /* Workspace top spacing belongs to the page, not to Filament's shell wrapper.
- * Desktop sidebar and mobile/burger shells can use different .fi-main geometry
- * (and display scaling can change which shell is active), but every workspace
- * therefore receives the exact same vertical inset below the topbar. */
+ * In the desktop/sidebar shell the right edge reserves the full 4rem user rail:
+ * 1rem content-to-badge gap + 2rem badge + 1rem viewport edge gap. */
 .fi-main:has(.admin-workspace) {
     padding-top: 0 !important;
     padding-right: var(--admin-header-control-rail) !important;
@@ -306,14 +318,15 @@ html.fi select option:disabled {
 }
 
 @media (max-width: 63.99rem) {
-    /* The content boundary is exactly one full control rail inside each viewport
-     * edge: 1rem edge gap + 2rem control + 1rem content gap. Filament's topbar
-     * already places Burger/User at the outer 1rem edge; matching .fi-main
-     * padding therefore guarantees those controls sit outside, never over,
-     * the workspace/Notification width. */
+    /* Burger shell: header controls occupy the topbar only. Once page content
+     * starts below it, reclaim the control rails and use only the canonical
+     * 1rem shell edge on both sides. This is intentionally different from the
+     * Notification surface, which still lives between Burger and User. */
     html.fi .fi-main:has(.admin-workspace) {
         box-sizing: border-box;
-        padding-left: var(--admin-header-control-rail) !important;
+        width: 100%;
+        max-width: none !important;
+        padding-inline: var(--admin-header-control-edge-gap) !important;
     }
 
     /* Filament normally swaps the Burger for an X in the same topbar slot.
