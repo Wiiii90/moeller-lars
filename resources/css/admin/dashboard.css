@@ -251,12 +251,12 @@
     text-align: center;
 }
 
-@container admin-workspace (max-width: 68rem) {
+@container admin-workspace (max-width: 64rem) {
     .admin-dashboard__fact-label--long { display: none; }
     .admin-dashboard__fact-label--short { display: inline; }
 }
 
-@container admin-workspace (max-width: 62rem) {
+@container admin-workspace (max-width: 64rem) {
     .admin-dashboard__analytics-caption--long,
     .admin-dashboard__analytics-fact-label--long {
         display: none;

@@ -291,9 +291,10 @@
     padding-right: 0;
 }
 
-/* Narrow Dashboard density. Utility controls contract in place; there is no
- * spacer track and no redistribution of Search width to empty regions. */
-@container admin-workspace (max-width: 54rem) {
+/* Narrow Dashboard density begins with the same semantic transition as the
+ * three-metric strip. Utility controls contract in place; there is no spacer
+ * track and no redistribution of Search width to empty regions. */
+@container admin-workspace (max-width: 64rem) {
     .admin-dashboard__feed-controls {
         --dashboard-feed-action-track: calc(var(--admin-control-height) + .55rem);
         --dashboard-feed-action-group-width: 100%;
