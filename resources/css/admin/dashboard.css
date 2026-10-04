@@ -278,8 +278,9 @@
     padding-left: 0 !important;
 }
 
-/* The longest six-metric detail is the real content minimum; yield before it truncates. */
-@container admin-workspace (max-width: 70rem) {
+/* The longest six-metric detail is the real content minimum; yield before the
+ * constrained desktop state can truncate it, while retaining a clean Compact strip. */
+@container admin-workspace (max-width: 66rem) {
     .admin-dashboard .admin-metrics { --admin-metric-columns: 3 !important; }
     .admin-dashboard .admin-dashboard__metric--supportive { display: none !important; }
 
