@@ -108,25 +108,24 @@
 }
 
 .admin-dashboard__feed-table col.admin-dashboard__col-actions {
-    width: 18rem;
+    width: 16.5rem;
 }
 
-/* Dashboard row actions use intrinsic controls with one shared gap. Labels are
- * never clipped into fragments and icon spacing is identical for all four
- * actions. Burger switches the same rail to four equally spaced icon slots. */
+/* Four semantic slots are fixed across rows so icon columns never move when
+ * labels change between Pin/Unpin or Read/Unread. Labels remain complete. */
 .admin-dashboard__feed-table .admin-dashboard__feed-actions {
-    display: inline-grid !important;
-    width: max-content;
+    display: grid !important;
+    width: 16.5rem;
     max-width: 100%;
     min-width: 0;
-    grid-template-columns: repeat(4, max-content);
-    gap: .7rem !important;
+    grid-template-columns: 3.25rem 3.75rem 4.25rem 3.75rem;
+    gap: .5rem !important;
     align-items: center;
     justify-content: start;
 }
 
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
-    width: max-content;
+    width: 100%;
     min-width: 0;
     padding-inline: 0;
     justify-content: flex-start !important;
@@ -155,7 +154,7 @@
     .admin-dashboard__feed-table col.admin-dashboard__col-time { width: 4.5rem !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-sender { width: 5rem !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 18rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 16.5rem !important; }
 }
 
 @container admin-table (max-width: 60rem) {
@@ -190,7 +189,7 @@
 
     .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 18rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 16.5rem !important; }
 
     .admin-dashboard__feed-meta {
         display: flex;
@@ -217,7 +216,7 @@
  * room, but never resurrects Sender or already-folded metadata columns. */
 @media (max-width: 63.99rem) {
     .admin-dashboard__feed-table .admin-dashboard__feed-actions {
-        width: max-content;
+        width: 6.75rem;
         grid-template-columns: repeat(4, 1.35rem);
         gap: .45rem !important;
     }

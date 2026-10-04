@@ -291,11 +291,6 @@ html.fi .fi-page:has(.admin-workspace) {
 }
 
 @media (min-width: 1024px) {
-    /*
-     * Desktop uses the document scrollport as the single horizontal coordinate
-     * system. Do not use 100vw here: classic scrollbars make 100vw wider than
-     * fixed header surfaces and recreate the content/Notification drift.
-     */
     html.fi,
     body.fi-body {
         overflow-x: clip;
@@ -305,54 +300,11 @@ html.fi .fi-page:has(.admin-workspace) {
         width: 100%;
     }
 
-    /*
-     * Desktop workspace is centered on the viewport, not on the residual area
-     * to the right of the sidebar. The live width shrinks only when necessary
-     * to keep the same global left/right margin outside the sidebar. This gives
-     * true viewport centering without ever entering the navigation or User rail.
-     *
-     * .fi-main already excludes --sidebar-width, so:
-     * viewport = 100% + sidebar
-     * centered safe width = viewport - 2 * (sidebar + gutter)
-     */
+    /* Keep the already-accepted shell owner: Filament centers the page frame;
+     * this layer only reserves the fixed User rail. */
     html.fi .fi-main:has(.admin-workspace) {
-        box-sizing: border-box;
-        width: 100%;
-        max-width: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    html.fi .fi-page:has(.admin-workspace) {
-        box-sizing: border-box;
-        width: 100%;
-        max-width: none !important;
-        padding: var(--admin-shell-content-inset) 0 0 !important;
-    }
-
-    html.fi .fi-main:has(.admin-workspace) .admin-workspace {
-        box-sizing: border-box;
-        width: min(
-            var(--admin-workspace-max-width),
-            calc(
-                100%
-                - var(--sidebar-width)
-                - var(--admin-workspace-gutter)
-                - var(--admin-workspace-gutter)
-            )
-        );
-        max-width: var(--admin-workspace-max-width);
-        margin-inline-start: max(
-            var(--admin-workspace-gutter),
-            calc(
-                (
-                    100%
-                    - var(--sidebar-width)
-                    - var(--admin-workspace-max-width)
-                ) / 2
-            )
-        );
-        margin-inline-end: auto;
+        padding-top: 0 !important;
+        padding-right: var(--admin-header-control-rail) !important;
     }
 
     .fi-sidebar-nav {

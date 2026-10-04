@@ -26,18 +26,48 @@
         + var(--admin-header-control-size)
         + var(--admin-header-control-edge-gap)
     );
-    /* Desktop workspace frame:
-     * - visible content may grow to 80rem;
-     * - the frame keeps symmetric 2rem gutters while space allows;
-     * - surplus width is shared left/right so the page remains centered.
-     * The fixed User rail belongs to header geometry only and must never push
-     * the page frame sideways. */
+    /* Canonical desktop workspace geometry. These tokens intentionally match
+     * the previously accepted shell: center toward the whole viewport while
+     * clamping only as the sidebar would otherwise collide with the workspace. */
     --admin-workspace-max-width: 80rem;
     --admin-workspace-gutter: 2rem;
     --admin-workspace-outer-max-width: calc(
         var(--admin-workspace-max-width)
         + var(--admin-workspace-gutter)
-        + var(--admin-header-control-rail)
+        + var(--admin-workspace-gutter)
+    );
+    --admin-workspace-main-extra-space: max(
+        0rem,
+        calc(
+            (
+                100vw
+                - var(--sidebar-width)
+                - var(--admin-workspace-outer-max-width)
+            ) / 2
+        )
+    );
+    --admin-workspace-visual-shift: min(
+        var(--admin-workspace-main-extra-space),
+        calc(var(--sidebar-width) / 2)
+    );
+    --admin-workspace-content-inline-start: calc(
+        var(--sidebar-width)
+        + var(--admin-workspace-main-extra-space)
+        + var(--admin-workspace-gutter)
+        - var(--admin-workspace-visual-shift)
+    );
+    --admin-workspace-content-inline-end: max(
+        var(--admin-header-control-rail),
+        calc(
+            var(--admin-workspace-main-extra-space)
+            + var(--admin-workspace-gutter)
+            + var(--admin-workspace-visual-shift)
+        )
+    );
+    --admin-workspace-content-width: calc(
+        100vw
+        - var(--admin-workspace-content-inline-start)
+        - var(--admin-workspace-content-inline-end)
     );
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
