@@ -20,33 +20,30 @@
     border-bottom: 0 !important;
 }
 
-.admin-dashboard__overview-column,
-.admin-dashboard__overview-column + .admin-dashboard__overview-column,
-.admin-dashboard__overview-column:last-child {
+.admin-dashboard__overview-column {
     display: grid;
     min-width: 0;
     min-height: 0;
     grid-template-rows: auto minmax(0, 1fr) auto;
-    padding-top: 0 !important;
-    padding-bottom: var(--admin-stage-divider-inset) !important;
+    padding: 0 0 var(--admin-stage-divider-inset) !important;
     border: 0 !important;
 }
 
-.admin-dashboard__overview-column:first-child {
-    position: relative;
-    padding-right: var(--admin-stage-pane-space) !important;
-    padding-left: 0 !important;
+/* Pane breathing belongs to textual header chrome, not to the pane box.
+ * Keeping the article itself full-width preserves exact visual centering on
+ * the three stage thirds. The hidden switcher precedes the articles, so pane
+ * identity must use type position rather than child position. */
+.admin-dashboard__overview-column:first-of-type > .admin-dashboard__overview-head {
+    padding-inline: 0;
 }
 
-.admin-dashboard__overview-column:nth-child(2) {
-    position: relative;
-    padding-right: var(--admin-stage-pane-space) !important;
-    padding-left: var(--admin-stage-pane-space) !important;
+.admin-dashboard__overview-column:nth-of-type(2) > .admin-dashboard__overview-head {
+    padding-inline: var(--admin-stage-pane-space);
 }
 
-.admin-dashboard__overview-column:last-child {
-    padding-right: 0 !important;
-    padding-left: var(--admin-stage-pane-space) !important;
+.admin-dashboard__overview-column:last-of-type > .admin-dashboard__overview-head {
+    padding-left: var(--admin-stage-pane-space);
+    padding-right: 0;
 }
 
 .admin-dashboard__overview-head {
@@ -71,8 +68,8 @@
     flex: 0 0 auto;
 }
 
-.admin-dashboard__overview-column:first-child > :is(.admin-dashboard__overview-head, .admin-dashboard__storage-stage),
-.admin-dashboard__overview-column:nth-child(2) > :is(.admin-dashboard__overview-head, .admin-dashboard__facts) {
+.admin-dashboard__overview-column:first-of-type > :is(.admin-dashboard__overview-head, .admin-dashboard__storage-stage),
+.admin-dashboard__overview-column:nth-of-type(2) > :is(.admin-dashboard__overview-head, .admin-dashboard__facts) {
     position: relative;
     z-index: 2;
 }

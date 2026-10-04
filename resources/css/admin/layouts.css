@@ -284,6 +284,12 @@ html.fi select option:disabled {
     color: var(--admin-sidebar-selected-ink) !important;
 }
 
+/* Workspace top spacing is shell-independent. Burger/sidebar transitions may
+ * change horizontal framing, never the title's vertical distance from header. */
+html.fi .fi-page:has(.admin-workspace) {
+    padding-top: var(--admin-shell-content-inset) !important;
+}
+
 @media (min-width: 1024px) {
     /*
      * Desktop uses the document scrollport as the single horizontal coordinate
