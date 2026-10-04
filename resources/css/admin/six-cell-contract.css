@@ -277,7 +277,7 @@
     justify-self: center;
 }
 
-@container admin-workspace (max-width: 64rem) {
+@media (max-width: 63.99rem) {
     .admin-dashboard__settings-trigger {
         width: var(--admin-control-height);
         min-width: var(--admin-control-height);

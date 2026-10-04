@@ -237,40 +237,80 @@
     }
 }
 
-/* Compact tables keep their structure but reduce action chrome before any data
- * column has to become unreadable. */
+/* Fixed layout may start earlier, but icon-only density must not. Labels are
+ * removed only with the Burger transition, and their rails compact in the same
+ * rule so no invisible label leaves dead space behind. */
 @container admin-table (max-width: 62rem){
     .admin-table > table{
         table-layout: fixed;
     }
+}
 
-    .admin-row-actions .admin-action__label,
-.activity-actions-cell .admin-action__label,
-.media-workspace__row-actions .admin-action__label,
-.journal-row-actions .admin-action__label,
-.admin-pages__row-actions .admin-action__label,
-.general-social-table__actions .admin-action__label{
+@media (max-width: 63.99rem){
+    :is(
+        .admin-row-actions,
+        .activity-actions-cell .admin-toolbar,
+        .media-workspace__row-actions,
+        .journal-row-actions,
+        .admin-pages__row-actions,
+        .custom-page-row-actions,
+        .general-social-table__actions .admin-toolbar
+    ) .admin-action__label{
         display: none !important;
     }
 
-    .admin-row-actions .admin-action,
-.activity-actions-cell .admin-action,
-.media-workspace__row-actions .admin-action,
-.journal-row-actions .admin-action,
-.admin-pages__row-actions .admin-action,
-.general-social-table__actions .admin-action{
+    :is(
+        .admin-row-actions,
+        .activity-actions-cell .admin-toolbar,
+        .media-workspace__row-actions,
+        .journal-row-actions,
+        .admin-pages__row-actions,
+        .custom-page-row-actions,
+        .general-social-table__actions .admin-toolbar
+    ) .admin-action{
         justify-content: center !important;
-        padding-inline: .2rem !important;
+        padding-inline: 0 !important;
     }
 
-    .journal-row-actions--blog,
-.journal-row-actions--exhibitions{
-        grid-template-columns: repeat(var(--admin-responsive-action-count, 7), minmax(0, 1fr)) !important;
-        gap: .08rem !important;
+    .admin-row-actions--three{ --admin-responsive-action-count: 3; }
+    .admin-row-actions--four,
+    .media-workspace__row-actions,
+    .general-social-table__actions .admin-toolbar{ --admin-responsive-action-count: 4; }
+    .admin-pages__row-actions{ --admin-responsive-action-count: 5; }
+    .custom-page-row-actions{ --admin-responsive-action-count: 4; }
+    .journal-row-actions--blog{ --admin-responsive-action-count: 7; }
+    .journal-row-actions--exhibitions{ --admin-responsive-action-count: 5; }
+
+    :is(
+        .admin-row-actions--three,
+        .admin-row-actions--four,
+        .media-workspace__row-actions,
+        .journal-row-actions--blog,
+        .journal-row-actions--exhibitions,
+        .admin-pages__row-actions,
+        .custom-page-row-actions,
+        .general-social-table__actions .admin-toolbar
+    ){
+        width: max-content !important;
+        max-width: 100%;
+        grid-template-columns: repeat(var(--admin-responsive-action-count), 1.35rem) !important;
+        gap: .45rem !important;
+        justify-content: start !important;
     }
 
-    .journal-row-actions--exhibitions{
-        --admin-responsive-action-count: 5;
+    :is(
+        .admin-row-actions--three,
+        .admin-row-actions--four,
+        .media-workspace__row-actions,
+        .journal-row-actions--blog,
+        .journal-row-actions--exhibitions,
+        .admin-pages__row-actions,
+        .custom-page-row-actions,
+        .general-social-table__actions .admin-toolbar
+    ) .admin-action{
+        box-sizing: border-box;
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
     }
 }
 
@@ -598,6 +638,33 @@
     .admin-data-controls__utility .admin-control-group__actions > .admin-action .admin-action__label,
 .admin-data-controls__utility .admin-task-control-actions > .admin-action .admin-action__label{
         display: none;
+    }
+
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls)
+    > .admin-data-controls__utility--has-actions
+    > :is(:first-child, :nth-child(2)){
+        width: auto !important;
+        min-width: var(--admin-control-height) !important;
+        flex: 0 0 auto !important;
+    }
+
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls)
+    > .admin-data-controls__utility--has-actions
+    :is(.admin-control-group__actions, .admin-task-control-actions)
+    > .admin-action{
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls)
+    > .admin-data-controls__utility--has-selection
+    > :last-child{
+        width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
+        min-width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
+        flex: 0 0 calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
+        margin-left: 0 !important;
     }
 
     .gallery-workspace__responsive-action-icon{
@@ -1693,14 +1760,16 @@
     }
 }
 
-@container admin-workspace (max-width: 62rem){
+@media (max-width: 63.99rem){
     .admin-home-workspace .home-workspace-actions .admin-action__label{
         display: none !important;
     }
 
     .admin-home-workspace .home-workspace-actions .admin-action{
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
         justify-content: center !important;
-        padding-inline: .3rem !important;
+        padding-inline: 0 !important;
     }
 }
 
