@@ -208,11 +208,13 @@
 }
 
 .admin-dashboard__feed-controls.admin-data-controls--six-cell > :first-child {
+    min-width: 0 !important;
     grid-column: 1;
     padding-right: 0;
 }
 
 .admin-dashboard__feed-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
+    min-width: 0 !important;
     grid-column: 2;
     padding-right: 0;
 }
