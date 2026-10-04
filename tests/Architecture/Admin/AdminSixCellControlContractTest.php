@@ -49,6 +49,9 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('grid-column: 2 / span 2;')
         ->toContain('justify-self: end;')
         ->toContain('padding-right: .25rem;')
+        ->toContain('grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);')
+        ->toContain("> :last-child > .admin-data-control-label")
+        ->toContain('grid-column: 1 / -1;')
         ->toContain(".admin-data-controls__utility .admin-action {\n    white-space: nowrap;")
         ->toContain('var(--admin-table-selection-width)')
         ->toContain('justify-self: center;');

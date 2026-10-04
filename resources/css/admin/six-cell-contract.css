@@ -226,6 +226,25 @@
     justify-self: stretch;
 }
 
+/* Selection heading uses the same content/count split as the trigger below.
+ * This keeps the heading over Selected while the fixed count rail stays on the
+ * terminal table-checkbox axis. */
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    column-gap: 0;
+}
+
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child > .admin-data-control-label {
+    grid-column: 1;
+    justify-self: end;
+    padding-right: .25rem;
+}
+
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child > .admin-selection__anchor {
+    grid-column: 1 / -1;
+}
+
 :is(
     .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
@@ -308,6 +327,11 @@
 
     .admin-data-controls--six-cell > .admin-data-controls__utility .admin-selection__trigger-label {
         justify-content: center;
+    }
+
+    .admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child > .admin-data-control-label {
+        justify-self: center;
+        padding-right: 0;
     }
 }
 
