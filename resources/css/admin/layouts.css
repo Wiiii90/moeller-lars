@@ -300,14 +300,16 @@ html.fi select option:disabled {
     }
 
     /*
-     * Filament's main/page wrappers no longer own workspace centering or a fake
-     * User padding rail. The visible .admin-workspace is the frame owner.
+     * Desktop page geometry is centered independently of the fixed User rail.
+     * .fi-main owns one centered outer frame; the visible workspace sits inside
+     * that frame with symmetric 2rem gutters and a hard 80rem content maximum.
+     * Header controls may never right-anchor or visually shift page content.
      */
     html.fi .fi-main:has(.admin-workspace) {
         box-sizing: border-box;
-        width: 100%;
-        max-width: none !important;
-        margin: 0 !important;
+        width: min(100%, var(--admin-workspace-outer-max-width));
+        max-width: var(--admin-workspace-outer-max-width) !important;
+        margin-inline: auto !important;
         padding: 0 !important;
     }
 
@@ -318,21 +320,15 @@ html.fi select option:disabled {
         padding: var(--admin-shell-content-inset) 0 0 !important;
     }
 
-    /*
-     * The workspace is right-anchored immediately before the User rail.
-     * At constrained desktop widths the remaining left space is exactly the
-     * canonical 2rem sidebar/content gutter. At larger widths the workspace
-     * stops at 80rem and surplus space accumulates only on the left.
-     */
     html.fi .fi-main:has(.admin-workspace) .admin-workspace {
         box-sizing: border-box;
-        width: min(
-            var(--admin-workspace-max-width),
-            calc(100% - var(--admin-workspace-gutter) - var(--admin-header-control-rail))
+        width: calc(
+            100%
+            - var(--admin-workspace-gutter)
+            - var(--admin-workspace-gutter)
         );
         max-width: var(--admin-workspace-max-width);
-        margin-inline-start: auto;
-        margin-inline-end: var(--admin-header-control-rail);
+        margin-inline: auto;
     }
 
     .fi-sidebar-nav {

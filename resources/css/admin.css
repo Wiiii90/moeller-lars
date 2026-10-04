@@ -37,14 +37,19 @@
         + var(--admin-header-control-size)
         + var(--admin-header-control-edge-gap)
     );
-    /* Desktop workspace/header frame:
-     * - content may grow to 80rem;
-     * - at constrained widths it keeps a 2rem gap from the sidebar;
-     * - its right edge is always the start of the 4rem User rail.
-     * Notification uses this same width equation instead of reconstructing
-     * independent viewport insets. */
+    /* Desktop workspace frame:
+     * - visible content may grow to 80rem;
+     * - the frame keeps symmetric 2rem gutters while space allows;
+     * - surplus width is shared left/right so the page remains centered.
+     * The fixed User rail belongs to header geometry only and must never push
+     * the page frame sideways. */
     --admin-workspace-max-width: 80rem;
     --admin-workspace-gutter: 2rem;
+    --admin-workspace-outer-max-width: calc(
+        var(--admin-workspace-max-width)
+        + var(--admin-workspace-gutter)
+        + var(--admin-workspace-gutter)
+    );
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
     --admin-status-warning: var(--admin-accent);

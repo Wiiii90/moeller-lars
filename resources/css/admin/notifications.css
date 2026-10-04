@@ -409,23 +409,28 @@
 
 @media (min-width: 1024px) {
     /*
-     * Desktop Notification mirrors the exact .admin-workspace width equation
-     * and shares its right edge at the start of the User rail. There is no
-     * separate left/right inset reconstruction and therefore no scrollbar-width
-     * drift between page content and the fixed header surface.
+     * Desktop Notification starts on the centered workspace's left edge but
+     * remains a header surface: its right edge extends to the fixed User rail.
+     * Thus the badge keeps its 1rem separation without forcing the page itself
+     * off-center. The left-edge equation is the centered outer frame + gutter.
      */
     .admin-header-notification {
-        width: min(
-            var(--admin-workspace-max-width),
-            calc(
-                100%
-                - var(--sidebar-width)
-                - var(--admin-workspace-gutter)
-                - var(--admin-header-control-rail)
+        width: auto;
+        max-width: none;
+        inset-inline-start: calc(
+            var(--sidebar-width)
+            + var(--admin-workspace-gutter)
+            + max(
+                0rem,
+                calc(
+                    (
+                        100%
+                        - var(--sidebar-width)
+                        - var(--admin-workspace-outer-max-width)
+                    ) / 2
+                )
             )
         );
-        max-width: var(--admin-workspace-max-width);
-        inset-inline-start: auto;
         inset-inline-end: var(--admin-header-control-rail);
         margin-block: 0;
     }

@@ -279,6 +279,16 @@
     padding-right: .25rem;
 }
 
+/* Dashboard keeps Settings + Selection as one visual utility cluster. The
+ * selected-count badge remains terminal on the table checkbox axis, while the
+ * Selection label/icon itself hugs the Settings control instead of floating
+ * toward that terminal count rail. */
+.admin-dashboard__feed-controls .admin-selection__trigger-label {
+    justify-self: start;
+    justify-content: flex-start;
+    padding-right: 0;
+}
+
 .admin-data-controls--six-cell > .admin-data-controls__utility--has-selection .admin-selection__count {
     margin-left: 0;
     justify-self: center;
@@ -320,8 +330,8 @@
 
     .admin-dashboard__feed-controls .admin-selection__trigger-label {
         padding-right: 0;
-        justify-self: center;
-        justify-content: center;
+        justify-self: start;
+        justify-content: flex-start;
     }
 }
 
