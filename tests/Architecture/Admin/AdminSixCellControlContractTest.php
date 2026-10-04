@@ -81,7 +81,8 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
     expect($dashboardLayoutCss)
         ->toContain('/* Dashboard layout owner.')
         ->toContain('@container admin-workspace (max-width: 54rem)')
-        ->toContain('@container admin-workspace (max-width: 38rem)')
+        ->toContain('/* Burger-shell Narrow fallback.')
+        ->toContain("@media (max-width: 63.99rem) {\n    @container admin-workspace (max-width: 38rem) {")
         ->toContain('gap: .25rem;')
         ->toContain('padding: .25rem 0;');
 
@@ -98,7 +99,9 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->not->toContain('.admin-dashboard__col-')
         ->not->toContain('admin-data-controls__filter-trigger')
         ->not->toContain('adminFiltersOpen')
-        ->not->toContain("grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;");
+        ->not->toContain("grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;")
+        ->not->toContain('Feature-specific focused Visual Stages. No desktop pane is generically')
+        ->not->toContain('Viewport fallback for the Filament burger shell. It also owns semantic');
 
     expect($storage)
         ->toContain('media-workspace__controls')

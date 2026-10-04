@@ -273,16 +273,23 @@
     }
 }
 
-/* Minimal: two metric halves and exactly one overview pane selected by the
- * three equal tab cells. Tab chrome uses one shared .25rem spacing value on
- * top, bottom and between neighbors. */
-@container admin-workspace (max-width: 38rem) {
+/* Burger-shell Narrow fallback.
+ * Geometry and semantic visibility switch together. The shell transition may
+ * force Narrow, but it can never expose six metrics in a three-track grid. */
+@media (max-width: 63.99rem) {
+    .admin-dashboard .admin-metric {
+        display: none !important;
+    }
+
     .admin-dashboard .admin-metrics {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
     }
 
     .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
+    .admin-dashboard .admin-dashboard__metric--artworks,
+    .admin-dashboard .admin-dashboard__metric--changes {
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -291,73 +298,136 @@
 
     .admin-dashboard .admin-dashboard__metric--traffic {
         padding-left: 0 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
         border-right: 1px solid var(--admin-line) !important;
     }
 
-    .admin-dashboard .admin-dashboard__metric--artworks {
+    .admin-dashboard .admin-dashboard__metric--changes {
         border-right: 0 !important;
     }
 
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: none !important;
-    }
-
     .admin-dashboard__overview {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
-        height: var(--admin-visual-stage-height) !important;
-        overflow: hidden !important;
-        background: none !important;
-    }
-
-    .admin-dashboard__overview::before,
-    .admin-dashboard__overview::after {
-        display: none !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
     .admin-dashboard__overview-switcher {
-        display: grid !important;
-        grid-row: 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .25rem;
-        padding: .25rem 0;
-        border-bottom: 1px solid var(--admin-line);
-    }
-
-    .admin-dashboard__overview-switcher .admin-action {
-        box-sizing: border-box;
-        width: 100%;
-        min-width: 0;
-        min-height: 2rem;
-        padding: .38rem .5rem;
-        justify-content: center;
-        border: 1px solid transparent;
-        border-radius: .2rem;
-    }
-
-    .admin-dashboard__overview-switcher .admin-action.is-active {
-        border-color: var(--admin-accent);
-        background: transparent;
-        color: var(--admin-accent-strong);
+        display: none !important;
     }
 
     .admin-dashboard__overview-column,
     .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-        display: none !important;
+        display: grid !important;
         min-width: 0;
         min-height: 0;
-        width: 100%;
-        height: 100%;
-        grid-column: 1 / -1 !important;
-        grid-row: 2 !important;
+        width: auto;
+        height: auto;
+        grid-column: auto !important;
+        grid-row: auto !important;
         grid-template-rows: auto minmax(0, 1fr) auto !important;
-        padding: .75rem 0 0 !important;
+        padding: 1.2rem 1rem 1.25rem 0 !important;
         border: 0 !important;
         box-shadow: none !important;
     }
 
-    .admin-dashboard__overview-column.is-compact-active {
-        display: grid !important;
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        padding-left: 1rem !important;
+    }
+
+    .admin-dashboard__overview-column:last-child {
+        padding-right: 1rem !important;
+    }
+}
+
+/* Minimal: two metric halves and exactly one overview pane selected by the
+ * three equal tab cells. Tab chrome uses one shared .25rem spacing value on
+ * top, bottom and between neighbors. */
+@media (max-width: 63.99rem) {
+    @container admin-workspace (max-width: 38rem) {
+        .admin-dashboard .admin-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+    
+        .admin-dashboard .admin-dashboard__metric--traffic,
+        .admin-dashboard .admin-dashboard__metric--artworks {
+            display: block !important;
+            min-width: 0;
+            padding: 1.05rem 1rem !important;
+            border-top: 0 !important;
+        }
+    
+        .admin-dashboard .admin-dashboard__metric--traffic {
+            padding-left: 0 !important;
+            border-right: 1px solid var(--admin-line) !important;
+        }
+    
+        .admin-dashboard .admin-dashboard__metric--artworks {
+            border-right: 0 !important;
+        }
+    
+        .admin-dashboard .admin-dashboard__metric--changes {
+            display: none !important;
+        }
+    
+        .admin-dashboard__overview {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            grid-template-rows: auto minmax(0, 1fr) !important;
+            height: var(--admin-visual-stage-height) !important;
+            overflow: hidden !important;
+            background: none !important;
+        }
+    
+        .admin-dashboard__overview::before,
+        .admin-dashboard__overview::after {
+            display: none !important;
+        }
+    
+        .admin-dashboard__overview-switcher {
+            display: grid !important;
+            grid-row: 1;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: .25rem;
+            padding: .25rem 0;
+            border-bottom: 1px solid var(--admin-line);
+        }
+    
+        .admin-dashboard__overview-switcher .admin-action {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            min-height: 2rem;
+            padding: .38rem .5rem;
+            justify-content: center;
+            border: 1px solid transparent;
+            border-radius: .2rem;
+        }
+    
+        .admin-dashboard__overview-switcher .admin-action.is-active {
+            border-color: var(--admin-accent);
+            background: transparent;
+            color: var(--admin-accent-strong);
+        }
+    
+        .admin-dashboard__overview-column,
+        .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+            display: none !important;
+            min-width: 0;
+            min-height: 0;
+            width: 100%;
+            height: 100%;
+            grid-column: 1 / -1 !important;
+            grid-row: 2 !important;
+            grid-template-rows: auto minmax(0, 1fr) auto !important;
+            padding: .75rem 0 0 !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+    
+        .admin-dashboard__overview-column.is-compact-active {
+            display: grid !important;
+        }
     }
 }
