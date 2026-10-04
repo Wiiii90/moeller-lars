@@ -447,7 +447,7 @@
                                     @if ($homeComponent['content']['secondary'] !== '')<small>{{ $homeComponent['content']['secondary'] }}</small>@endif
                                 </td>
                                 <td class="admin-table__actions">
-                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--four admin-toolbar">
                                         <x-admin.row-action
                                             :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                             wire:click="moveComponent({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', 'up')"

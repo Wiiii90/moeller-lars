@@ -284,7 +284,7 @@ Rules:
 Home component templates currently use:
 
 ```text
-[Drag] [Component] [Content] [Actions] [Selection]
+[Position] [Drag] [Component] [Content] [Actions] [Selection]
 ```
 
 There is no artificial Status column because Home components do not have an independent publish lifecycle.
@@ -304,7 +304,7 @@ Types:
 - Rich Text;
 - Divider.
 
-DnD is enabled only in neutral filter state. Bottom full-width `+ Add component` remains a valid add affordance even when the top action group also has Add component.
+DnD is enabled only in neutral filter state. Bottom full-width `+ Add component` remains a valid add affordance even when the top action group also has Add component. Under Construction and Custom share this exact responsive table: Component yields before Content; Move up / Move down / Edit / Delete stay readable until the shared four-action rail reaches genuine Minimal table pressure. Hero Artwork's source table instead drops Candidates / Artworks / Newest Year first, then Status at Minimal, while its two row actions remain explicit.
 
 ## 12. Journal table references
 
@@ -548,7 +548,7 @@ Responsive behavior is content-driven and follows semantic width states rather t
 - Compact reduces non-essential detail before changing the grid.
 - Six-metric strips normally move to a three-column intermediate grid before the smallest retained two-column grid. Track count and semantic visibility switch atomically; six visible metrics in a three-column 3+3 intermediate state is invalid.
 - **Dashboard is an explicit exception:** Wide and Compact keep all six metrics; Narrow keeps exactly three semantic metrics (Visits, Published Artworks, Recent Changes); Minimal keeps exactly two (Visits, Published Artworks).
-- **General uses 6 / 6 / 3 / 2** across Wide / Compact / Narrow / Minimal. Narrow retains Public email + Contact delivery + Legal; Minimal retains Public email + Contact delivery.
+- **General uses 6 / 6 / 3 / 2** across Wide / Compact / Narrow / Minimal. Narrow retains Public email + Contact delivery + Legal; Minimal retains Public email + Contact delivery. The first visible metric is determined semantically, never from its original DOM nth-child position; only the actual left visual cell loses its leading inset.
 - **Pages, Gallery, Custom Page and Journal also use 6 / 6 / 3 / 2**, with semantic priorities:
   - Pages: Published + Unpublished + In navigation -> Published + Unpublished.
   - Gallery: Artworks + Published + Visits -> Artworks + Published.
@@ -558,6 +558,8 @@ Responsive behavior is content-driven and follows semantic width states rather t
   - Analytics: Visits + Unique visitors + Tracked actions -> Visits + Unique visitors.
   - Storage: Original storage + Remaining + Files -> Original storage + Remaining.
   - Activity: Changes + Pending + Commits -> Changes + Pending.
+  - Home Hero Artwork: Visits + Eligible Artworks + Candidate Group -> Visits + Eligible Artworks.
+  - Home Under Construction / Custom: Components + Images + Media References -> Components + Media References.
 - Dashboard uses four effective presentation states only: Wide, Compact, Narrow and Minimal. The burger/mobile shell is not an additional Dashboard state; shell collapse may force Narrow but must never create a parallel responsive composition.
 - Never reduce a metric strip to a one-column list.
 - Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/2 rule.
@@ -578,6 +580,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Pages, Custom Page and Journal use elastic one-row toolbars: Search absorbs spare width down to one metric cell; filters and right-side utility controls consume only the width they need, with action labels collapsing to icons before data/filter controls are removed.
 - Gallery uses the same one-row principle in its custom toolbar; its Selection trigger still terminates on the shared Selection rail.
 - Analytics, Storage and Activity follow the same one-row rule. Analytics has Search + Report + Range; Storage and Activity keep all four filter controls, then compact Clear/View/Selection on the right. Their action labels collapse to icons before the row may wrap.
+- Home Hero Artwork, Under Construction and Custom use the same one-row pressure model. Settings + Add artwork/component + Preview remain complete through Burger/Narrow when space permits and collapse together to three compact icon slots only at Minimal workspace pressure; hiding the labels may not leave their former action width behind.
 
 ### Tables and Selection
 
