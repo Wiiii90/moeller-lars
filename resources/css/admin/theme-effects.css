@@ -45,26 +45,48 @@ html.fi.dark {
     --admin-sidebar-selected-ink: #f4f4f2;
 }
 
-/* Header identity/navigation controls share one crisp badge treatment. */
+/* Header identity/navigation controls share one circular badge geometry.
+ * In light mode, navigation controls mirror the black initials badge rather
+ * than rendering as pale outlined circles. Dark mode retains the established
+ * transparent/gold treatment. */
 html.fi .fi-topbar .fi-user-menu-trigger .fi-user-avatar,
 html.fi .fi-topbar .fi-topbar-open-sidebar-btn,
 html.fi .admin-sidebar-close-button {
     border-radius: 9999px;
-    background: var(--admin-surface);
     box-shadow:
         0 0 0 1px var(--admin-user-badge-edge),
         0 0 0 2px var(--admin-user-badge-aura),
         inset 1px 1px 0 var(--admin-user-badge-inner),
         inset -1px -1px 0 var(--admin-user-badge-depth);
-    transition: box-shadow .18s ease, background-color .18s ease;
+    transition: box-shadow .18s ease, background-color .18s ease, color .18s ease;
+}
+
+html.fi:not(.dark) .fi-topbar .fi-topbar-open-sidebar-btn,
+html.fi:not(.dark) .admin-sidebar-close-button {
+    background: #080808;
+    color: #fff !important;
+}
+
+html.fi:not(.dark) .fi-topbar .fi-topbar-open-sidebar-btn:hover,
+html.fi:not(.dark) .fi-topbar .fi-topbar-open-sidebar-btn:focus-visible,
+html.fi:not(.dark) .admin-sidebar-close-button:hover,
+html.fi:not(.dark) .admin-sidebar-close-button:focus-visible {
+    background: #181818;
+    color: #fff !important;
+}
+
+html.fi.dark .fi-topbar .fi-topbar-open-sidebar-btn,
+html.fi.dark .admin-sidebar-close-button {
+    background: var(--admin-surface);
+    color: var(--admin-text) !important;
 }
 
 html.fi .fi-topbar .fi-user-menu-trigger:hover .fi-user-avatar,
 html.fi .fi-topbar .fi-user-menu-trigger:focus-visible .fi-user-avatar,
-html.fi .fi-topbar .fi-topbar-open-sidebar-btn:hover,
-html.fi .fi-topbar .fi-topbar-open-sidebar-btn:focus-visible,
-html.fi .admin-sidebar-close-button:hover,
-html.fi .admin-sidebar-close-button:focus-visible {
+html.fi.dark .fi-topbar .fi-topbar-open-sidebar-btn:hover,
+html.fi.dark .fi-topbar .fi-topbar-open-sidebar-btn:focus-visible,
+html.fi.dark .admin-sidebar-close-button:hover,
+html.fi.dark .admin-sidebar-close-button:focus-visible {
     background: var(--admin-subtle);
     box-shadow:
         0 0 0 1px color-mix(in srgb, var(--admin-user-badge-edge) 82%, var(--admin-text)),

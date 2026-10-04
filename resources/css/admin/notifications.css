@@ -19,13 +19,10 @@
     margin-block: auto;
     overflow: hidden;
     padding-inline: .7rem .55rem;
+    border: 1px solid var(--admin-line-strong);
     border-radius: .28rem;
     background: #fff;
-    box-shadow:
-        0 0 0 1px var(--admin-user-badge-edge),
-        0 0 0 2px var(--admin-user-badge-aura),
-        inset 1px 1px 0 var(--admin-user-badge-inner),
-        inset -1px -1px 0 color-mix(in srgb, var(--admin-user-badge-depth) 58%, transparent);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
     pointer-events: none;
     transform-origin: left center;
     isolation: isolate;
@@ -45,7 +42,13 @@
 }
 
 .dark .admin-header-notification {
+    border-color: transparent;
     background: rgba(20, 20, 20, .88);
+    box-shadow:
+        0 0 0 1px var(--admin-user-badge-edge),
+        0 0 0 2px var(--admin-user-badge-aura),
+        inset 1px 1px 0 var(--admin-user-badge-inner),
+        inset -1px -1px 0 color-mix(in srgb, var(--admin-user-badge-depth) 58%, transparent);
 }
 
 .admin-header-notification::before,
@@ -184,7 +187,7 @@
 
 .admin-header-notification__body {
     flex: 1 1 auto;
-    color: var(--admin-muted);
+    color: var(--admin-text);
     font-size: var(--admin-font-size-table-compact);
 }
 

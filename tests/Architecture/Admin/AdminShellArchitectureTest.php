@@ -31,11 +31,19 @@ it('keeps the mobile sidebar above header notifications with an explicit drawer 
     expect($notifications)
         ->toContain('inset-inline-start: var(--admin-header-control-rail);')
         ->toContain('inset-inline-end: var(--admin-header-control-rail);')
-        ->toContain('width: var(--admin-workspace-content-width);');
+        ->toContain('width: var(--admin-workspace-content-width);')
+        ->toContain('border: 1px solid var(--admin-line-strong);')
+        ->toContain('box-shadow: 0 1px 2px rgba(0, 0, 0, .06);')
+        ->toContain(".dark .admin-header-notification {")
+        ->toContain('0 0 0 2px var(--admin-user-badge-aura)');
 
     expect($theme)
         ->toContain('html.fi .fi-topbar .fi-topbar-open-sidebar-btn,')
         ->toContain('html.fi .admin-sidebar-close-button {')
+        ->toContain('html.fi:not(.dark) .fi-topbar .fi-topbar-open-sidebar-btn,')
+        ->toContain('background: #080808;')
+        ->toContain('color: #fff !important;')
+        ->toContain('html.fi.dark .fi-topbar .fi-topbar-open-sidebar-btn,')
         ->toContain('0 0 0 1px var(--admin-user-badge-edge)')
         ->toContain('0 0 0 2px var(--admin-user-badge-aura)');
 
