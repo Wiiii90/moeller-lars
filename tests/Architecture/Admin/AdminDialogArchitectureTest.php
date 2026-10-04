@@ -133,7 +133,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('app(ArtworkEditDialog::class)')
         ->toContain("Action::make('editArtwork')")
         ->toContain('use WithFileUploads;')
-        ->not->toContain("ArtworkResource::getUrl('edit'");
+        ->not->toContain("ArtworkResource::getUrl('edit'"));
 
     expect($homeView)
         ->toContain("mountAction('editArtwork', { artwork:")
