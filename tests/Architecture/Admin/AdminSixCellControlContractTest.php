@@ -39,6 +39,9 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
 
     expect($dashboard)
         ->toContain('admin-dashboard__feed-controls')
+        ->toContain('metric-grid')
+        ->toContain(':filter-count="1"')
+        ->toContain(':search-span="3"')
         ->toContain('admin-table__col-three-quarter-unit admin-dashboard__col-type')
         ->toContain('admin-table__col-three-quarter-unit admin-dashboard__col-date')
         ->toContain('admin-table__col-half-unit admin-dashboard__col-time')
@@ -51,19 +54,11 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->not->toContain(" · ");
 
     expect($dashboardCss)
-        ->toContain('--dashboard-toolbar-type-min: 8.5rem;')
-        ->toContain('--dashboard-toolbar-clear-min: 4.5rem;')
-        ->toContain('--dashboard-toolbar-settings-min: 6rem;')
-        ->toContain('--dashboard-toolbar-selection-min: 8rem;')
-        ->toContain('grid-column: span 11;')
-        ->toContain('grid-column: span 4;')
+        ->not->toContain('.admin-dashboard__feed-controls')
         ->toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
 
     expect($responsive)
-        ->toContain('>=54rem:  track >=2.25rem')
-        ->toContain('grid-column: span 7 !important;')
-        ->toContain('@container admin-workspace (max-width: 41rem)')
-        ->toContain('@container admin-workspace (max-width: 30rem)')
+        ->not->toContain('.admin-dashboard__feed-controls')
         ->toContain('col.admin-dashboard__col-actions')
         ->toContain('calc(var(--admin-table-one-unit) - var(--admin-table-selection-width))');
 

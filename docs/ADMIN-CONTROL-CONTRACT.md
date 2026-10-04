@@ -86,6 +86,24 @@ Rules:
 
 `MediaAssetSelect` and Hero Artwork search are the canonical remote-typeahead examples.
 
+## Toolbar geometry contract
+
+Standard search/filter/action/selection rows use `x-admin.controls`. Metric-backed toolbars use its shared six-unit ruler through `metric-grid`; feature CSS must not recreate that geometry with page-local `grid-template-columns`, arbitrary span profiles or a second Selection layout.
+
+Toolbar sizing is always **content minimum + shared ruler**:
+
+1. derive each non-search control's minimum from its longest legitimate visible value/label plus icon, gap, padding and native control affordance;
+2. round that minimum **up** to the smallest shared ruler subdivision that fits. The six-unit ruler may be subdivided into 12/24 equivalent tracks when finer placement is required, but the outer ruler remains divisible by both 2 and 3;
+3. keep Search at the far left and elastic. When another control genuinely needs more room, Search yields whole ruler subdivisions first;
+4. keep filter/action groups compact inside their assigned region. Spare width is not permission to stretch one or two buttons across arbitrary bandwidth;
+5. keep Selection terminal at the far right. Its selected-count circle reserves `--admin-table-selection-width` and stays on the exact same horizontal axis as the table select-all and row checkboxes;
+6. preserve full dropdown values and action labels whenever their calculated minimum fits. Ellipsis is an emergency fallback, not normal sizing;
+7. when full utility labels no longer fit, use the shared complete-label → icon-only/overflow transition before clipping, adding a second toolbar row or introducing horizontal scrolling.
+
+Responsive metric presentation does not replace the underlying ruler. A visible three- or two-metric state still uses a refinable ruler from which six-/three-/two-column alignment can be reconstructed.
+
+Before changing a toolbar, verify the longest content, its intrinsic minimum, the ruler subdivision chosen for it and the remaining Search allocation. Do not choose spans by screenshot appearance. If the shared primitive cannot represent the required composition, extend the shared primitive rather than bypassing it locally.
+
 ## Dialog ownership
 
 Dialog content uses the same controls as route-backed forms. Dialog width, header actions and lifecycle are owned by `ADMIN-DIALOG-CONTRACT.md`; controls do not implement their own dialog chrome.

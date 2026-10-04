@@ -11,7 +11,13 @@
         $regularFeed = collect($feed)->reject(fn (array $item): bool => ($item['pinned'] ?? false) === true)->values();
     @endphp
 
-    <x-admin.controls class="admin-dashboard__feed-controls" aria-label="Dashboard feed filters">
+    <x-admin.controls
+        class="admin-dashboard__feed-controls"
+        aria-label="Dashboard feed filters"
+        metric-grid
+        :filter-count="1"
+        :search-span="3"
+    >
         <x-slot:search>
             <label class="admin-data-field">
                 <span>Search</span>

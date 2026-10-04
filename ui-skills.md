@@ -113,6 +113,19 @@ This is an alignment rule, not a demand for six semantic columns everywhere:
 
 The point is stable shared geometry while allowing the table schema to follow the task.
 
+### Geometry gate: ruler + real content
+
+For standard toolbars, tables and shared Visual Stages, use the existing shared geometry owner before feature-local CSS.
+
+For toolbars, geometry is **real content minimum + ruler subdivision**: derive the longest legitimate control content including chrome, round that need up to the smallest shared six-unit subdivision that fits, keep Search elastic on the left, keep Actions compact, and keep Selection terminal on the shared checkbox axis. The ruler remains refinable when visible metrics collapse from six to three or two.
+
+For tables, preserve canonical role order and the terminal Selection rail; supportive columns and action labels yield before Selection drifts or horizontal scrolling appears.
+
+For Visual Stages, reuse the shared stage height, pane/divider geometry and semantic Wide/Narrow/Minimal composition before adding feature-local dimensions. A page must not recreate an already-owned stage axis or breakpoint.
+
+A screenshot-specific span, page-local Selection offset, page-local standard-toolbar grid or duplicate shared-stage geometry is a contract violation unless the shared primitive demonstrably cannot represent the task.
+
+
 Examples of useful facts:
 
 - counts by state/type;

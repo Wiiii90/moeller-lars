@@ -89,7 +89,7 @@
 /* Wide/Compact: preserve the accepted one-row toolbar grammar even when the
  * browser viewport happens to trigger an older feature media query. */
 @container admin-workspace (min-width: 54.01rem) {
-    .admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-dashboard__feed-controls):not(.media-workspace__controls):not(.activity-workspace__controls),
+    .admin-data-controls:not(.admin-data-controls--six-cell):not(.media-workspace__controls):not(.activity-workspace__controls),
     .admin-control-bar {
         flex-wrap: nowrap !important;
     }
@@ -158,35 +158,6 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0;
         padding-right: 0;
-    }
-
-    .admin-dashboard__feed-controls {
-        display: grid !important;
-        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
-        gap: 0 !important;
-        align-items: end;
-    }
-
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 8 !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        padding-right: .7rem;
-        flex: none !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility {
-        display: contents !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 4 !important;
-        width: 100% !important;
-        min-width: 0 !important;
     }
 
     .admin-storage .media-workspace__controls {
@@ -531,41 +502,6 @@
     .admin-data-controls__utility .admin-task-control-actions,
     .admin-data-controls__utility .admin-toolbar {
         flex-wrap: nowrap !important;
-    }
-
-    /* Dashboard toolbar stays one row without overlap. At Narrow, search
-     * yields width so Type / Filter / Dashboard / Selection each retain a
-     * complete readable region; Selection owns the wider terminal rail. */
-    .admin-dashboard__feed-controls {
-        display: grid !important;
-        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
-        gap: 0 !important;
-    }
-
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 7 !important;
-        padding-right: .45rem !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility {
-        display: contents !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-        grid-column: span 4 !important;
-        padding-inline: .3rem !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 5 !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        margin-left: 0 !important;
-        padding-left: .3rem !important;
-        padding-right: 0 !important;
     }
 
     /* Gallery obeys the same one-row toolbar invariant. */
@@ -1526,23 +1462,6 @@
         position: relative;
     }
 
-    .admin-dashboard__feed-controls > .admin-data-controls__filter-trigger {
-        display: none !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters {
-        position: static !important;
-        display: contents !important;
-        width: auto !important;
-        max-height: none !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        border: 0 !important;
-        background: transparent !important;
-        box-shadow: none !important;
-    }
-
-
     .admin-data-controls__filter-trigger {
         display: flex;
         min-width: 0;
@@ -1631,7 +1550,6 @@
     }
 }
 
-
 /* Form internals are workspace components too; their reductions follow
  * available content width rather than the browser viewport. */
 @container admin-workspace (max-width: 46rem) {
@@ -1698,8 +1616,6 @@
         gap: .2rem;
     }
 }
-
-
 
 /* -------------------------------------------------------------------------
  * Dashboard responsive authority
@@ -1790,43 +1706,6 @@
     .admin-dashboard__overview-column:last-child {
         padding-right: 1rem !important;
     }
-
-    .admin-dashboard__feed-controls {
-        display: grid !important;
-        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
-        gap: 0 !important;
-        align-items: end;
-    }
-
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 6 !important;
-        min-width: 0 !important;
-        padding-right: .45rem !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility {
-        display: contents !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-        grid-column: span 4 !important;
-        min-width: 0 !important;
-        padding-inline: .3rem !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 5 !important;
-        min-width: 0 !important;
-        padding-inline: .3rem !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        margin-left: 0 !important;
-        padding-right: 0 !important;
-    }
 }
 
 @media (max-width: 63.99rem) {
@@ -1897,39 +1776,6 @@
 
     .admin-dashboard__overview-column:last-child {
         padding-right: 1rem !important;
-    }
-
-    .admin-dashboard__feed-controls {
-        display: grid !important;
-        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
-        gap: 0 !important;
-    }
-
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 6 !important;
-        padding-right: .45rem !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility {
-        display: contents !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-        grid-column: span 4 !important;
-        padding-inline: .3rem !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 5 !important;
-        padding-inline: .3rem !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        margin-left: 0 !important;
-        padding-right: 0 !important;
     }
 }
 
@@ -2018,23 +1864,6 @@
     .admin-dashboard .admin-dashboard__metric--changes {
         display: none !important;
     }
-
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 5 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-        grid-column: span 4 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-        grid-column: span 5 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 6 !important;
-    }
 }
 
 @container admin-workspace (max-width: 20rem) {
@@ -2057,7 +1886,6 @@
         display: none !important;
     }
 }
-
 
 /* Dashboard stage footer authority: one-line captions never disappear or
  * participate in stage-height changes. Compact states abbreviate Storage only. */
@@ -2084,141 +1912,13 @@
     }
 }
 
-/* Dashboard feed responsive authority.
- * Every profile is derived from the control minima above and rounded UP to
- * complete 1/24 raster tracks at the profile's lower bound.
- *
- * >=54rem:  track >=2.25rem -> Search 11 | Type 4 | Clear 2 | Settings 3 | Selection 4
- * 41-54rem: track >=1.708rem -> Search 7 | Type 5 | Clear 3 | Settings 4 | Selection 5
- * 30-41rem: full utility text no longer fits without starving Search, so only
- *            Clear/Settings values collapse to icons:
- *            Search 6 | Type 7 | Clear 2 | Settings 2 | Selection 7
- * <=30rem: Selection text also collapses; count remains on the terminal rail:
- *            Search 8 | Type 8 | Clear 2 | Settings 2 | Selection 4
- */
-.admin-dashboard__feed-controls {
-    display: grid !important;
-    grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
-    gap: 0 !important;
-    align-items: end !important;
-}
-
-.admin-dashboard__feed-controls > :first-child {
-    grid-column: span 11 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    padding-right: .7rem !important;
-}
-
-.admin-dashboard__feed-controls > .admin-data-controls__filters,
-.admin-dashboard__feed-controls > .admin-data-controls__utility {
-    display: contents !important;
-}
-
-.admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
-    grid-column: span 4 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    padding-inline: 0 .7rem !important;
-}
-
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-    grid-column: span 2 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    padding-inline: 0 .7rem !important;
-}
-
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-    grid-column: span 3 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    padding-inline: 0 .7rem !important;
-}
-
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-    grid-column: span 4 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    margin-left: 0 !important;
-    padding-inline: 0 !important;
-}
-
 @container admin-workspace (max-width: 54rem) {
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 7 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
-        grid-column: span 5 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-        grid-column: span 3 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-        grid-column: span 4 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 5 !important;
-    }
 }
 
 @container admin-workspace (max-width: 41rem) {
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 6 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
-        grid-column: span 7 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-        grid-column: span 2 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 7 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child .admin-action__label,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action__label {
-        display: none !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child .admin-action,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action {
-        width: var(--admin-control-height);
-        min-width: var(--admin-control-height);
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
 }
 
 @container admin-workspace (max-width: 30rem) {
-    .admin-dashboard__feed-controls > :first-child {
-        grid-column: span 8 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
-        grid-column: span 8 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-        grid-column: span 2 !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-        grid-column: span 4 !important;
-    }
-
-    .admin-dashboard__feed-controls .admin-selection__trigger-text {
-        display: none !important;
-    }
 }
 
 @container admin-table (max-width: 62rem) {
@@ -2291,7 +1991,6 @@
         display: none !important;
     }
 }
-
 
 /* General responsive authority
  * Wide/Compact: all six metrics and the live preview remain available.
@@ -2542,7 +2241,6 @@
         overflow: visible !important;
     }
 }
-
 
 /* Pages / Gallery / Custom Page / Journal responsive authority
  * These workspaces share the same 6 / 6 / 3 / 2 metric grammar and one-row
@@ -3085,7 +2783,6 @@
     }
 }
 
-
 /* Cross-feature burger-shell monotonicity for the current responsive pass.
  * Filament removing the sidebar must not reintroduce columns/actions that had
  * already yielded immediately before shell collapse. */
@@ -3187,7 +2884,6 @@
         width: 5.75rem !important;
     }
 }
-
 
 /* Home responsive authority
  * All three current Home content templates share 6 / 6 / 3 / 2 metrics and
@@ -3882,7 +3578,6 @@
     }
 }
 
-
 /* Analytics/Storage/Activity burger-shell monotonicity.
  * Sidebar collapse must not promote Storage density or Activity/Storage table
  * columns back to a wider state. Minimal remains owned by container rules. */
@@ -3960,7 +3655,6 @@
         display: none !important;
     }
 }
-
 
 /* Canonical responsive metric geometry.
  * This is the single layout authority for every six-metric strip.
@@ -4161,7 +3855,6 @@
         display: block !important;
     }
 }
-
 
 /* Canonical stage transition authority for Analytics / Storage / Activity.
  * Wide + Compact + Narrow preserve the desktop multi-cell composition.

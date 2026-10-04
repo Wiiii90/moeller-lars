@@ -115,6 +115,7 @@ When bulk selection exists:
 - the control-bar multi-action trigger remains the corresponding bulk-action affordance;
 - the circular selected-count badge in that trigger is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it;
 - `x-admin.controls` keeps Selection as its terminal toolbar slot, and the shared table contract reserves `--admin-table-selection-width` at the end of the Selection trigger for the count badge; page/feature CSS must not recenter or offset that badge with local margin, padding or duplicate grid rules;
+- this is a hard cross-surface axis: while the surface remains a table, redistribution of Search, filters, data columns or Actions may never move the Selection centerline; the toolbar count circle, select-all checkbox and every row checkbox stay exactly aligned;
 - when sibling toolbar groups use visible role labels such as `TYPE`, `STATUS`, `FILTER` and `PAGES`, the bulk group uses the same `SELECTION` label so the toolbar hierarchy stays consistent;
 - the checkbox column itself does not receive redundant visible `Selection` text; an accessible label on the select-all checkbox is sufficient;
 - destructive bulk behavior retains the same domain safeguards as row actions.

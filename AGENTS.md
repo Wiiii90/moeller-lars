@@ -179,6 +179,17 @@ shared primitives, CSS ownership and visual review checklist. Read it before UI 
 Prompts must identify the exact reference files and workers must enumerate reused primitives
 and justify feature-local CSS. Review actual Blade/CSS changes for bypasses before reconciliation.
 
+For standard admin geometry, the durable contracts are an implementation gate. Before editing a toolbar, table or Visual Stage:
+
+- use the existing shared primitive/owner first;
+- derive toolbar widths from longest legitimate content **and** the shared ruler, never from guessed spans;
+- preserve the terminal Selection count/select-all/row-checkbox axis exactly;
+- do not add page-local standard-toolbar grids, Selection offsets or duplicate shared-stage geometry;
+- if the shared owner cannot represent the requested composition, stop and extend the shared owner deliberately instead of bypassing it locally;
+- where practical, architecture/source tests must reject new page-local ownership of these canonical geometries.
+
+A user restating an existing contract is not permission to invent a second implementation. Re-read the owning contract and repair the shared/consumer boundary.
+
 ## Verification discipline
 
 Run the narrowest checks that prove the changed behavior while iterating.
