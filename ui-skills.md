@@ -580,7 +580,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Pages, Custom Page and Journal use elastic one-row toolbars: Search absorbs spare width down to one metric cell; filters and right-side utility controls consume only the width they need, with action labels collapsing to icons before data/filter controls are removed.
 - Gallery uses the same one-row principle in its custom toolbar; its Selection trigger still terminates on the shared Selection rail.
 - Analytics, Storage and Activity follow the same one-row rule. Analytics has Search + Report + Range; Storage and Activity keep all four filter controls, then compact Clear/View/Selection on the right. Their action labels collapse to icons before the row may wrap.
-- Home Hero Artwork, Under Construction and Custom use the same one-row pressure model. Burger itself leaves Settings + Add artwork/component + Preview readable and reallocates three metric cells to the trailing Clear / task-actions / Selection cluster. At genuine toolbar pressure (about 50rem workspace) those three task actions collapse together to fixed icon slots; at Minimal, Selection also compacts to icon + count while preserving the terminal checkbox axis. Every collapse must release its old width immediately. Skip Home is not part of this three-action geometry and keeps its own two-action toolbar.
+- Home Hero Artwork, Under Construction and Custom use the same content-minimum one-row pressure model as Dashboard: Search is elastic, filter selects retain readable intrinsic widths, Clear is intrinsic, the active-template action group uses real content width, and Selection terminates on the checkbox axis. The redundant Filter and Selection headings are not rendered visually; the active template heading remains. Burger alone leaves Settings + Add artwork/component + Preview readable. At genuine toolbar pressure (about 50rem workspace) those three task actions collapse together to fixed icon slots; at Minimal, Selection compacts to icon + count and releases its former label width. Skip Home keeps its separate two-action toolbar.
 
 ### Tables and Selection
 
@@ -612,7 +612,7 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - A narrow stage may become one focused surface and may use a small local presentation-only selector when equivalent views still need to be reachable.
 - Sidebar/burger collapse is monotonic for Pages, Gallery, Custom Page and Journal too: removing the sidebar must never make metrics, columns, labels or Gallery card density jump back to a wider state.
 - Analytics/Storage/Activity burger/sidebar collapse is monotonic as well: it must not reintroduce Geography, the Storage triptych, Activity Clock, wider table columns or denser Storage cards.
-- General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand Appearance controls + geometry across the full stage; burger/sidebar collapse may force that Narrow composition and must never make the preview reappear.
+- General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand Appearance controls + geometry across the full stage. General has one container-owned Narrow composition (up to 64rem workspace) rather than a second viewport/Burger copy; the preview therefore cannot reappear or partially revert when the sidebar collapses. Live Preview fitting responds immediately to its ResizeObserver and must not animate width/height between observer ticks.
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
 - Analytics preserves its desktop Map (2 cells) + Geography (1 cell) composition through Narrow. Only Minimal removes Geography and lets Map occupy the full shared stage.
 - Storage preserves Upload + Capacity + Distribution as three equal stage cells through Narrow. Only Minimal becomes the compact full-width Upload + Used/Remaining/Allowance + Refresh/Reclaim composition; donut and Distribution disappear there.
@@ -720,7 +720,7 @@ Authorities:
 
 Rules:
 
-- there is one desktop stage-height authority; do not redeclare the token later in another module;
+- there is one desktop stage-height authority; do not redeclare the token later in another module; Stage visuals may have a fixed target size but must shrink from their own pane/container bounds, never continuously from viewport-width units such as vw;
 - do not make individual stages shorter or taller with page-local height overrides;
 - if the accepted global stage should change height, change the shared token once;
 - vertical divider top/bottom breathing uses the shared divider inset instead of page-local pixel tuning;

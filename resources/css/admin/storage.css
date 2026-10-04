@@ -385,7 +385,7 @@
     width: min(100%, var(--admin-stage-orbit-size));
     min-width: 0;
     min-height: 0;
-    height: var(--admin-stage-orbit-size);
+    height: auto;
     max-height: 100%;
     aspect-ratio: 1;
     margin: auto;

@@ -873,7 +873,7 @@
  * shell is mobile, the preview may not reappear merely because the workspace
  * gained horizontal room. */
 
-@container admin-workspace (max-width: 54rem){
+@container admin-workspace (max-width: 64rem){
     .admin-general .general-status-metrics > .general-metric{
         display: none !important;
     }
@@ -890,8 +890,12 @@
         border-top: 0 !important;
     }
 
-    .admin-general .general-metric--public-email,
-.admin-general .general-metric--contact-delivery{
+    .admin-general .general-metric--public-email{
+        padding-left: 0 !important;
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-general .general-metric--contact-delivery{
         border-right: 1px solid var(--admin-line) !important;
     }
 
@@ -937,55 +941,6 @@
     }
 }
 
-@media (max-width: 63.99rem){
-    .admin-general .general-status-metrics > .general-metric{
-        display: none !important;
-    }
-
-    .admin-general .general-status-metrics{
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
-
-    .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery, .general-metric--legal){
-        display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-    .admin-general .general-metric--public-email,
-.admin-general .general-metric--contact-delivery{
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-general .general-metric--legal{
-        border-right: 0 !important;
-    }
-
-    .general-appearance-stage{
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: minmax(0, 1fr) auto !important;
-    }
-
-    .general-appearance-stage::after{
-        display: none !important;
-    }
-
-    .general-appearance-stage__controls,
-.general-appearance-stage__geometry{
-        grid-column: 1 / -1 !important;
-        width: 100% !important;
-        padding-right: 0 !important;
-        padding-left: 0 !important;
-    }
-
-    .general-appearance-stage__preview{
-        display: none !important;
-    }
-}
-
 @container admin-workspace (max-width: 38rem){
     .admin-general .general-status-metrics{
         display: grid !important;
@@ -1004,6 +959,7 @@
     }
 
     .admin-general .general-metric--public-email{
+        padding-left: 0 !important;
         border-right: 1px solid var(--admin-line) !important;
     }
 
@@ -1012,30 +968,6 @@
     }
 }
 
-@media (max-width: 38rem){
-    .admin-general .general-status-metrics{
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .admin-general .general-status-metrics > .general-metric{
-        display: none !important;
-    }
-
-    .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery){
-        display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-    }
-
-    .admin-general .general-metric--public-email{
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-general .general-metric--contact-delivery{
-        border-right: 0 !important;
-    }
-}
 
 /* General Social Media table: preserve the shared Position/Drag rails, reduce
  * action chrome before data, and only fold Profile URL into Platform at the
@@ -1634,93 +1566,12 @@
  */
 
 @container admin-workspace (max-width: 54rem){
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls){
-        display: grid !important;
-        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-        gap: 0 !important;
-        align-items: end !important;
-    }
-
-    .admin-home-workspace .home-artwork-source-controls > :first-child{
-        grid-column: span 1 !important;
-    }
-
-    .admin-home-workspace .home-component-controls > :first-child{
-        grid-column: span 2 !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > :first-child{
-        width: 100% !important;
-        min-width: 0 !important;
-        padding-right: .45rem !important;
-        flex: none !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__filters{
-        display: contents !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__filters > *{
-        grid-column: span 1 !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        padding-right: .45rem !important;
-        flex: none !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility{
-        display: grid !important;
-        min-width: 0 !important;
-        grid-column: span 3 !important;
-        grid-template-columns: 3.25rem minmax(0, 1fr) 7rem !important;
-        gap: .12rem !important;
-        align-items: end !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > *{
-        width: 100% !important;
-        min-width: 0 !important;
-        margin-left: 0 !important;
-        padding-inline: 0 !important;
-        flex: none !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger{
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-}
-
-@container admin-workspace (max-width: 54rem){
     .admin-home-workspace .home-metric{
         display: none !important;
     }
 
     .admin-home-workspace :is(.home-metric--visits, .home-metric--eligible, .home-metric--candidates, .home-metric--components, .home-metric--images, .home-metric--media){
         display: block !important;
-    }
-}
-
-@container admin-workspace (max-width: 50rem){
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions{
-        display: grid !important;
-        width: max-content !important;
-        max-width: 100%;
-        grid-template-columns: repeat(3, var(--admin-control-height));
-        gap: .15rem !important;
-        justify-content: start !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action{
-        box-sizing: border-box;
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action__label{
-        display: none !important;
     }
 }
 
@@ -1733,25 +1584,6 @@
         display: block !important;
     }
 
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-text{
-        display: none !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility{
-        grid-template-columns:
-            3.25rem
-            max-content
-            calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :last-child{
-        width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
-        min-width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
-    }
-
-    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-label{
-        justify-content: center;
-    }
 }
 
 @media (min-width: 38.01rem) and (max-width: 63.99rem){

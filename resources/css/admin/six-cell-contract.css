@@ -193,6 +193,116 @@
     padding-inline: .2rem;
 }
 
+
+/* Home editable templates use the Dashboard pressure model rather than fixed
+ * six-cell quotas. Search absorbs spare width; filter selects stay readable;
+ * Clear is intrinsic; the active-template action group and terminal Selection
+ * consume only their real content minima. Filter/Selection headings are
+ * redundant and therefore never occupy a row/track. */
+:is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    column-gap: .65rem;
+    align-items: end;
+}
+
+.home-artwork-source-controls.admin-data-controls--six-cell {
+    grid-template-columns: minmax(5rem, 1fr) 7rem 8.5rem max-content;
+}
+
+.home-component-controls.admin-data-controls--six-cell {
+    grid-template-columns: minmax(5rem, 1fr) 7rem max-content;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell > :first-child {
+    min-width: 0 !important;
+    grid-column: 1;
+    padding-right: 0;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell > .admin-data-controls__filters {
+    display: contents;
+}
+
+.home-artwork-source-controls > .admin-data-controls__filters > :first-child {
+    grid-column: 2;
+    padding-right: 0;
+}
+
+.home-artwork-source-controls > .admin-data-controls__filters > :nth-child(2) {
+    grid-column: 3;
+    padding-right: 0;
+}
+
+.home-component-controls > .admin-data-controls__filters > :first-child {
+    grid-column: 2;
+    padding-right: 0;
+}
+
+.home-artwork-source-controls > .admin-data-controls__utility {
+    grid-column: 4;
+}
+
+.home-component-controls > .admin-data-controls__utility {
+    grid-column: 3;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility {
+    display: flex;
+    width: max-content;
+    min-width: 0;
+    gap: .15rem;
+    align-items: flex-end;
+    justify-self: end;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :first-child > .admin-data-control-label,
+:is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > .admin-selection > .admin-data-control-label {
+    display: none;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
+    gap: .15rem;
+}
+
+@container admin-workspace (max-width: 50rem) {
+    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
+        display: grid !important;
+        width: max-content !important;
+        grid-template-columns: repeat(3, var(--admin-control-height));
+        gap: .15rem !important;
+    }
+
+    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action {
+        box-sizing: border-box;
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action__label {
+        display: none !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__anchor,
+    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger {
+        width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
+        min-width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
+    }
+
+    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-label {
+        justify-content: center;
+    }
+}
+
 /* Dashboard feed toolbar: Search owns all spare width. Type is bounded by
  * readable content; Clear is intrinsic; Dashboard + Selection are one compact
  * terminal cluster. Dashboard keeps its heading; Filter/Selection headings stay
