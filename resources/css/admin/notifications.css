@@ -187,7 +187,7 @@
 
 .admin-header-notification__body {
     flex: 1 1 auto;
-    color: var(--admin-text);
+    color: var(--admin-muted);
     font-size: var(--admin-font-size-table-compact);
 }
 

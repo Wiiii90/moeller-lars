@@ -45,19 +45,25 @@ html.fi.dark {
     --admin-sidebar-selected-ink: #f4f4f2;
 }
 
-/* Header identity/navigation controls share one circular badge geometry.
- * In light mode, navigation controls mirror the black initials badge rather
- * than rendering as pale outlined circles. Dark mode retains the established
- * transparent/gold treatment. */
-html.fi .fi-topbar .fi-user-menu-trigger .fi-user-avatar,
-html.fi .fi-topbar .fi-topbar-open-sidebar-btn,
-html.fi .admin-sidebar-close-button {
+/* User identity keeps its accepted relief. Navigation controls reuse the same
+ * circular edge/aura language, but not the avatar's inset relief: inset shadows
+ * on a real button surface create a visible highlight blotch at the top-left. */
+html.fi .fi-topbar .fi-user-menu-trigger .fi-user-avatar {
     border-radius: 9999px;
     box-shadow:
         0 0 0 1px var(--admin-user-badge-edge),
         0 0 0 2px var(--admin-user-badge-aura),
         inset 1px 1px 0 var(--admin-user-badge-inner),
         inset -1px -1px 0 var(--admin-user-badge-depth);
+    transition: box-shadow .18s ease;
+}
+
+html.fi .fi-topbar .fi-topbar-open-sidebar-btn,
+html.fi .admin-sidebar-close-button {
+    border-radius: 9999px;
+    box-shadow:
+        0 0 0 1px var(--admin-user-badge-edge),
+        0 0 0 2px var(--admin-user-badge-aura);
     transition: box-shadow .18s ease, background-color .18s ease, color .18s ease;
 }
 
@@ -82,7 +88,14 @@ html.fi.dark .admin-sidebar-close-button {
 }
 
 html.fi .fi-topbar .fi-user-menu-trigger:hover .fi-user-avatar,
-html.fi .fi-topbar .fi-user-menu-trigger:focus-visible .fi-user-avatar,
+html.fi .fi-topbar .fi-user-menu-trigger:focus-visible .fi-user-avatar {
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--admin-user-badge-edge) 82%, var(--admin-text)),
+        0 0 0 2px color-mix(in srgb, var(--admin-user-badge-aura) 72%, var(--admin-user-badge-edge)),
+        inset 1px 1px 0 var(--admin-user-badge-inner),
+        inset -1px -1px 0 var(--admin-user-badge-depth);
+}
+
 html.fi.dark .fi-topbar .fi-topbar-open-sidebar-btn:hover,
 html.fi.dark .fi-topbar .fi-topbar-open-sidebar-btn:focus-visible,
 html.fi.dark .admin-sidebar-close-button:hover,
@@ -90,9 +103,7 @@ html.fi.dark .admin-sidebar-close-button:focus-visible {
     background: var(--admin-subtle);
     box-shadow:
         0 0 0 1px color-mix(in srgb, var(--admin-user-badge-edge) 82%, var(--admin-text)),
-        0 0 0 2px color-mix(in srgb, var(--admin-user-badge-aura) 72%, var(--admin-user-badge-edge)),
-        inset 1px 1px 0 var(--admin-user-badge-inner),
-        inset -1px -1px 0 var(--admin-user-badge-depth);
+        0 0 0 2px color-mix(in srgb, var(--admin-user-badge-aura) 72%, var(--admin-user-badge-edge));
 }
 
 /*

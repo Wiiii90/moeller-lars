@@ -38,14 +38,19 @@ it('keeps the mobile sidebar above header notifications with an explicit drawer 
         ->toContain('0 0 0 2px var(--admin-user-badge-aura)');
 
     expect($theme)
+        ->toContain('html.fi .fi-topbar .fi-user-menu-trigger .fi-user-avatar {')
         ->toContain('html.fi .fi-topbar .fi-topbar-open-sidebar-btn,')
         ->toContain('html.fi .admin-sidebar-close-button {')
         ->toContain('html.fi:not(.dark) .fi-topbar .fi-topbar-open-sidebar-btn,')
         ->toContain('background: #080808;')
         ->toContain('color: #fff !important;')
         ->toContain('html.fi.dark .fi-topbar .fi-topbar-open-sidebar-btn,')
+        ->toContain("html.fi.dark .admin-sidebar-close-button:focus-visible {\n    background: var(--admin-subtle);\n    box-shadow:\n        0 0 0 1px")
         ->toContain('0 0 0 1px var(--admin-user-badge-edge)')
         ->toContain('0 0 0 2px var(--admin-user-badge-aura)');
+
+    expect($notifications)
+        ->toContain(".admin-header-notification__body {\n    flex: 1 1 auto;\n    color: var(--admin-muted);");
 
     expect($layouts)
         ->toContain('html.fi .fi-topbar .fi-topbar-close-sidebar-btn')
