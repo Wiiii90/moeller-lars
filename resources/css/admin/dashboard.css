@@ -1,6 +1,15 @@
+/* Dashboard layout owner.
+ * Dashboard-specific metrics, overview stage and responsive composition live here only.
+ * The feed/table remains owned by dashboard-feed.css.
+ */
+
 .admin-dashboard .admin-workspace__body {
     display: grid;
     gap: 0;
+}
+
+.admin-dashboard__overview-switcher {
+    display: none;
 }
 
 .admin-dashboard__overview {
@@ -29,23 +38,31 @@
 .admin-dashboard__overview-head {
     display: flex;
     gap: 1rem;
+    margin-bottom: .45rem;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: .85rem;
 }
 
-.admin-dashboard__overview-head > span {
+.admin-dashboard__overview-head > .admin-section__kicker {
     display: block;
     min-width: 0;
-    color: var(--admin-muted);
-    font-size: .65rem;
-    font-weight: 700;
-    letter-spacing: .055em;
+    color: var(--admin-accent);
+    font-size: .66rem;
+    font-weight: 750;
+    letter-spacing: .12em;
     text-transform: uppercase;
 }
 
 .admin-dashboard__overview-head .admin-action {
     flex: 0 0 auto;
+}
+
+.admin-dashboard__storage-visual,
+.admin-dashboard__activity-visual {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
 }
 
 .admin-dashboard__analytics-visual {
@@ -57,21 +74,52 @@
     margin: 0;
 }
 
-.admin-dashboard__analytics-map {
+.admin-dashboard__analytics-map.analytics-visual-stage {
+    display: block !important;
     min-width: 0;
     min-height: 0;
+    width: 100%;
     height: 100%;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    overflow: hidden;
+    background: none;
+}
+
+.admin-dashboard__analytics-map.analytics-visual-stage::before,
+.admin-dashboard__analytics-map.analytics-visual-stage::after {
+    display: none !important;
+}
+
+.admin-dashboard__analytics-map.analytics-visual-stage > .analytics-world {
+    display: block !important;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    grid-column: auto !important;
+    margin: 0;
+    padding: .45rem .15rem !important;
+}
+
+.admin-dashboard__analytics-map .analytics-world__canvas,
+.admin-dashboard__analytics-map svg {
+    width: 100%;
+    height: 100%;
+}
+
+.admin-dashboard__analytics-map svg {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
 }
 
 .admin-dashboard__analytics-caption {
     min-height: 1.8em;
     padding-top: .28rem;
-    overflow: hidden;
     color: var(--admin-muted);
     font-size: .62rem;
     line-height: 1.35;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .admin-dashboard__facts {
@@ -81,6 +129,7 @@
     min-height: 1.45em;
     gap: .18rem .34rem;
     margin: .6rem 0 0;
+    align-content: end;
     align-items: baseline;
     flex-wrap: nowrap;
     overflow: hidden;
@@ -106,11 +155,6 @@
     font-variant-numeric: tabular-nums;
 }
 
-
-
-
-/* Dashboard captions/footer copy is one-line chrome. It must never alter the
- * visual row height or push the graphic vertically. */
 .admin-dashboard__activity-visual .activity-clock__caption,
 .admin-dashboard__activity-visual .activity-clock__caption strong,
 .admin-dashboard__activity-visual .activity-clock__caption span,
@@ -121,9 +165,6 @@
     white-space: nowrap;
 }
 
-
-/* Storage mirrors Activity exactly: one internal visual/caption unit. The
- * caption is constrained to the orbit width and centered beneath the donut. */
 .admin-dashboard__storage-stage > .admin-dashboard__facts {
     box-sizing: border-box;
     width: min(100%, var(--admin-stage-orbit-size));
@@ -147,4 +188,171 @@
 .admin-dashboard__storage-stage > .admin-dashboard__storage-visual > .admin-storage-capacity {
     align-self: center;
     justify-self: center;
+}
+
+@container admin-workspace (max-width: 68rem) {
+    .admin-dashboard__fact-label--long {
+        display: none;
+    }
+
+    .admin-dashboard__fact-label--short {
+        display: inline;
+    }
+}
+
+/* Narrow: three metric thirds, three overview thirds, no tab switcher. */
+@container admin-workspace (max-width: 54rem) {
+    .admin-dashboard .admin-metric {
+        display: none !important;
+    }
+
+    .admin-dashboard .admin-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks,
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: block !important;
+        min-width: 0;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--changes {
+        border-right: 0 !important;
+    }
+
+    .admin-dashboard .admin-metric__label,
+    .admin-dashboard .admin-metric__detail {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    .admin-dashboard__overview {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .admin-dashboard__overview-switcher {
+        display: none !important;
+    }
+
+    .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        display: grid !important;
+        min-width: 0;
+        min-height: 0;
+        width: auto;
+        height: auto;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+        padding: 1.2rem 1rem 1.25rem 0 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        padding-left: 1rem !important;
+    }
+
+    .admin-dashboard__overview-column:last-child {
+        padding-right: 1rem !important;
+    }
+}
+
+/* Minimal: two metric halves and exactly one overview pane selected by the
+ * three equal tab cells. Tab chrome uses one shared .25rem spacing value on
+ * top, bottom and between neighbors. */
+@container admin-workspace (max-width: 38rem) {
+    .admin-dashboard .admin-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        display: block !important;
+        min-width: 0;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        border-right: 0 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: none !important;
+    }
+
+    .admin-dashboard__overview {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto minmax(0, 1fr) !important;
+        height: var(--admin-visual-stage-height) !important;
+        overflow: hidden !important;
+        background: none !important;
+    }
+
+    .admin-dashboard__overview::before,
+    .admin-dashboard__overview::after {
+        display: none !important;
+    }
+
+    .admin-dashboard__overview-switcher {
+        display: grid !important;
+        grid-row: 1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .25rem;
+        padding: .25rem 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-dashboard__overview-switcher .admin-action {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        min-height: 2rem;
+        padding: .38rem .5rem;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: .2rem;
+    }
+
+    .admin-dashboard__overview-switcher .admin-action.is-active {
+        border-color: var(--admin-accent);
+        background: transparent;
+        color: var(--admin-accent-strong);
+    }
+
+    .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        display: none !important;
+        min-width: 0;
+        min-height: 0;
+        width: 100%;
+        height: 100%;
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+        padding: .75rem 0 0 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .admin-dashboard__overview-column.is-compact-active {
+        display: grid !important;
+    }
 }

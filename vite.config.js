@@ -11,7 +11,6 @@ export default defineConfig({
                 'resources/css/admin/dialog-contract.css',
                 'resources/css/admin/dialog-interactions.css',
                 'resources/css/admin/dashboard.css',
-                'resources/css/admin/dashboard-extras.css',
                 'resources/css/admin/gallery.css',
                 'resources/css/admin/journal.css',
                 'resources/css/admin/custom-page.css',

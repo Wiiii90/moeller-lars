@@ -8,6 +8,7 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
     $dashboard = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed.blade.php');
     $dashboardRow = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-row.blade.php');
     $dashboardCss = file_get_contents($root.'/resources/css/admin/dashboard-feed.css');
+    $dashboardLayoutCss = file_get_contents($root.'/resources/css/admin/dashboard.css');
     $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
     $storage = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/storage-library.blade.php');
     $theme = file_get_contents($root.'/resources/views/filament/partials/admin-theme.blade.php');
@@ -74,7 +75,15 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('@container admin-table (max-width: 50rem)')
         ->toContain('@container admin-table (max-width: 30rem)');
 
+    expect($dashboardLayoutCss)
+        ->toContain('/* Dashboard layout owner.')
+        ->toContain('@container admin-workspace (max-width: 54rem)')
+        ->toContain('@container admin-workspace (max-width: 38rem)')
+        ->toContain('gap: .25rem;')
+        ->toContain('padding: .25rem 0;');
+
     expect($responsive)
+        ->not->toContain('.admin-dashboard')
         ->not->toContain('.admin-dashboard__feed-controls')
         ->not->toContain('.admin-dashboard__feed-table')
         ->not->toContain('.admin-dashboard__col-')
@@ -87,6 +96,8 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->not->toContain('metric-grid');
 
     foreach ([$theme, $vite] as $loader) {
-        expect($loader)->toContain('resources/css/admin/six-cell-contract.css');
+        expect($loader)
+            ->toContain('resources/css/admin/six-cell-contract.css')
+            ->not->toContain('dashboard-extras.css');
     }
 });

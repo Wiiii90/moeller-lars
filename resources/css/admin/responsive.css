@@ -9,12 +9,12 @@
  * An extreme <= 20rem state may omit metric strips entirely.
  */
 
-.admin-workspace {
+.admin-workspace{
     container-name: admin-workspace;
     container-type: inline-size;
 }
 
-.admin-table {
+.admin-table{
     container-name: admin-table;
     container-type: inline-size;
 }
@@ -24,14 +24,14 @@
 .admin-data-table,
 .admin-table--data,
 .media-workspace__table-wrap,
-.admin-hierarchy--pages {
+.admin-hierarchy--pages{
     max-width: 100%;
     overflow-x: clip !important;
     scrollbar-gutter: auto !important;
     scrollbar-width: none !important;
 }
 
-:is(.admin-table, .admin-data-table, .admin-table--data, .media-workspace__table-wrap)::-webkit-scrollbar {
+:is(.admin-table, .admin-data-table, .admin-table--data, .media-workspace__table-wrap)::-webkit-scrollbar{
     display: none !important;
     width: 0 !important;
     height: 0 !important;
@@ -44,21 +44,21 @@
 .activity-commits-table table,
 .journal-table--blog,
 .journal-table--exhibitions,
-.general-social-table > table {
+.general-social-table > table{
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
 }
 
 .admin-table th,
-.admin-table td {
+.admin-table td{
     min-width: 0;
     overflow: hidden;
 }
 
 /* Presentation-only responsive metadata is exposed only after its dedicated
  * standalone columns have been removed. */
-.admin-responsive-meta {
+.admin-responsive-meta{
     display: none;
     margin-top: .15rem;
     overflow: hidden;
@@ -70,27 +70,23 @@
     white-space: nowrap;
 }
 
-.admin-storage__compact-capacity {
+.admin-storage__compact-capacity{
     display: none;
 }
 
-.admin-data-controls__filters {
+.admin-data-controls__filters{
     display: contents;
-}
-
-.admin-dashboard__overview-switcher {
-    display: none;
 }
 
 /* Wide/Compact: preserve one-row grammar for non-six-cell flex toolbars.
  * Six-cell geometry is owned exclusively by six-cell-contract.css. */
-@container admin-workspace (min-width: 54.01rem) {
+@container admin-workspace (min-width: 54.01rem){
     .admin-data-controls:not(.admin-data-controls--six-cell):not(.media-workspace__controls):not(.activity-workspace__controls),
-    .admin-control-bar {
+.admin-control-bar{
         flex-wrap: nowrap !important;
     }
 
-    .admin-task-controls--pages {
+    .admin-task-controls--pages{
         display: grid !important;
         grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
         gap: 0 !important;
@@ -98,16 +94,16 @@
     }
 
     .admin-task-controls--pages > :first-child,
-    .admin-task-controls--pages > .admin-data-controls__filters > * {
+.admin-task-controls--pages > .admin-data-controls__filters > *{
         width: 100% !important;
         min-width: 0 !important;
         padding-right: .45rem;
     }
 
-    .admin-task-controls--pages > :first-child { grid-column: span 2; }
-    .admin-task-controls--pages > .admin-data-controls__filters > .admin-task-field { grid-column: span 1; }
+    .admin-task-controls--pages > :first-child{ grid-column: span 2; }
+    .admin-task-controls--pages > .admin-data-controls__filters > .admin-task-field{ grid-column: span 1; }
 
-    .admin-task-controls--pages > .admin-data-controls__utility {
+    .admin-task-controls--pages > .admin-data-controls__utility{
         display: grid !important;
         grid-column: span 2;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -115,20 +111,20 @@
         padding-right: 0;
     }
 
-    .admin-storage .media-workspace__controls {
+    .admin-storage .media-workspace__controls{
         display: grid !important;
         grid-template-columns: repeat(72, minmax(0, 1fr)) !important;
         gap: .35rem !important;
         align-items: end;
     }
 
-    .admin-storage .media-workspace__controls > :first-child { grid-column: span 24; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(1) { grid-column: span 7; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(2) { grid-column: span 6; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(3) { grid-column: span 7; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(4) { grid-column: span 9; }
+    .admin-storage .media-workspace__controls > :first-child{ grid-column: span 24; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(1){ grid-column: span 7; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(2){ grid-column: span 6; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(3){ grid-column: span 7; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(4){ grid-column: span 9; }
 
-    .admin-storage .media-workspace__controls > .admin-data-controls__utility {
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility{
         display: grid !important;
         min-width: 0;
         grid-column: span 19;
@@ -137,7 +133,7 @@
         align-items: end;
     }
 
-    .activity-workspace__controls {
+    .activity-workspace__controls{
         display: grid !important;
         grid-template-columns:
             minmax(0, 33.3333%)
@@ -151,7 +147,7 @@
     }
 
     .activity-workspace__controls > :first-child,
-    .activity-workspace__controls > .admin-data-controls__filters > * {
+.activity-workspace__controls > .admin-data-controls__filters > *{
         box-sizing: border-box;
         width: 100% !important;
         min-width: 0 !important;
@@ -159,7 +155,7 @@
         flex: none !important;
     }
 
-    .activity-workspace__controls > .admin-data-controls__utility {
+    .activity-workspace__controls > .admin-data-controls__utility{
         display: grid !important;
         min-width: 0;
         grid-template-columns: 4rem 8.25rem 8.5rem;
@@ -167,7 +163,7 @@
         align-items: end;
     }
 
-    .gallery-workspace__controls {
+    .gallery-workspace__controls{
         grid-auto-flow: column;
         align-items: end;
     }
@@ -175,194 +171,136 @@
 
 /* Compact workspace: redistribute controls while preserving the global
  * one-row toolbar invariant. */
-@container admin-workspace (min-width: 54.01rem) and (max-width: 68rem) {
-    .admin-storage .media-workspace__controls {
+@container admin-workspace (min-width: 54.01rem) and (max-width: 68rem){
+    .admin-storage .media-workspace__controls{
         grid-template-columns: repeat(36, minmax(0, 1fr)) !important;
         gap: .3rem !important;
     }
 
-    .admin-storage .media-workspace__controls > :first-child { grid-column: span 10 !important; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > * { grid-column: span 4 !important; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__utility {
+    .admin-storage .media-workspace__controls > :first-child{ grid-column: span 10 !important; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__filters > *{ grid-column: span 4 !important; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility{
         display: grid !important;
         grid-column: span 10 !important;
         grid-template-columns: 2fr 4fr 4fr;
         gap: .2rem;
     }
 
-    .activity-workspace__controls {
+    .activity-workspace__controls{
         grid-template-columns: repeat(36, minmax(0, 1fr)) !important;
         gap: .3rem !important;
     }
 
-    .activity-workspace__controls > :first-child { grid-column: span 10 !important; }
-    .activity-workspace__controls > .admin-data-controls__filters > * { grid-column: span 4 !important; }
-    .activity-workspace__controls > .admin-data-controls__utility {
+    .activity-workspace__controls > :first-child{ grid-column: span 10 !important; }
+    .activity-workspace__controls > .admin-data-controls__filters > *{ grid-column: span 4 !important; }
+    .activity-workspace__controls > .admin-data-controls__utility{
         display: grid !important;
         grid-column: span 10 !important;
         grid-template-columns: 2fr 4fr 4fr;
         gap: .2rem;
     }
 
-    .gallery-workspace__controls {
+    .gallery-workspace__controls{
         grid-template-columns: minmax(10rem, 1.4fr) minmax(5.5rem, .6fr) minmax(6.5rem, .7fr) 4rem minmax(12rem, 1.2fr) 8.5rem !important;
         gap: .35rem !important;
         grid-auto-flow: row;
     }
 
-    .gallery-workspace__gallery-actions {
+    .gallery-workspace__gallery-actions{
         gap: .15rem;
     }
 
-    .gallery-workspace__gallery-actions .admin-action {
+    .gallery-workspace__gallery-actions .admin-action{
         min-width: 0;
         padding-inline: .32rem;
     }
 
-    .analytics-stage-rail {
+    .analytics-stage-rail{
         padding-left: 1.25rem;
     }
 
     .analytics-stage-ranking__head,
-    .analytics-country-rank {
+.analytics-country-rank{
         grid-template-columns: minmax(6rem, 1fr) 3.35rem 3.35rem;
         gap: .4rem;
     }
 
     .admin-storage__distribution-columns,
-    .admin-storage__target-row {
+.admin-storage__target-row{
         grid-template-columns: minmax(7rem, 1fr) 2.35rem minmax(3rem, .62fr) 4.2rem;
         gap: .4rem;
     }
 
     .admin-gallery-grid,
-    .media-workspace__grid {
+.media-workspace__grid{
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 /* Compact tables keep their structure but reduce action chrome before any data
  * column has to become unreadable. */
-@container admin-table (max-width: 62rem) {
-    .admin-table > table {
+@container admin-table (max-width: 62rem){
+    .admin-table > table{
         table-layout: fixed;
     }
 
     .admin-row-actions .admin-action__label,
-    .activity-actions-cell .admin-action__label,
-    .media-workspace__row-actions .admin-action__label,
-    .journal-row-actions .admin-action__label,
-    .admin-pages__row-actions .admin-action__label,
-    .general-social-table__actions .admin-action__label {
+.activity-actions-cell .admin-action__label,
+.media-workspace__row-actions .admin-action__label,
+.journal-row-actions .admin-action__label,
+.admin-pages__row-actions .admin-action__label,
+.general-social-table__actions .admin-action__label{
         display: none !important;
     }
 
     .admin-row-actions .admin-action,
-    .activity-actions-cell .admin-action,
-    .media-workspace__row-actions .admin-action,
-    .journal-row-actions .admin-action,
-    .admin-pages__row-actions .admin-action,
-    .general-social-table__actions .admin-action {
+.activity-actions-cell .admin-action,
+.media-workspace__row-actions .admin-action,
+.journal-row-actions .admin-action,
+.admin-pages__row-actions .admin-action,
+.general-social-table__actions .admin-action{
         justify-content: center !important;
         padding-inline: .2rem !important;
     }
 
     .journal-row-actions--blog,
-    .journal-row-actions--exhibitions {
+.journal-row-actions--exhibitions{
         grid-template-columns: repeat(var(--admin-responsive-action-count, 7), minmax(0, 1fr)) !important;
         gap: .08rem !important;
     }
 
-    .journal-row-actions--exhibitions {
+    .journal-row-actions--exhibitions{
         --admin-responsive-action-count: 5;
     }
 }
 
 /* Narrow workspace: toolbar remains exactly one row. Metrics and feature
  * stages may recompose here, but control bars never wrap into another row. */
-@container admin-workspace (max-width: 54rem) {
-    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+@container admin-workspace (max-width: 54rem){
+    .admin-metrics:has(> .admin-metric:nth-child(6)){
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
-    .admin-dashboard .admin-metric {
-        display: none;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks,
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: block;
-        border-top: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic {
-        padding-left: 0;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        border-right: 0 !important;
-    }
-
-    .admin-dashboard .admin-metric__label,
-    .admin-dashboard .admin-metric__detail {
-        display: block;
-        overflow: visible;
-        text-overflow: clip;
-        white-space: normal;
-    }
-
-    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         border-right: 1px solid var(--admin-line);
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(3n) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(3n){
         border-right: 0;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(n + 4) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(n + 4){
         border-top: 1px solid var(--admin-line);
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(3n + 1) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(3n + 1){
         padding-left: 0;
-    }
-
-    .admin-dashboard .admin-metrics {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks,
-    .admin-dashboard .admin-dashboard__metric--changes {
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        border-right: 0 !important;
-    }
-
-    .admin-dashboard .admin-metric__label,
-    .admin-dashboard .admin-metric__detail {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
     /* Toolbar is always exactly one row. Query/filter controls shrink first,
      * action labels may disappear, and Selection remains the terminal fixed
      * rail. Wrapping into a second toolbar row is not a supported state. */
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) {
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls){
         display: flex !important;
         min-width: 0;
         gap: .35rem !important;
@@ -370,71 +308,39 @@
         flex-wrap: nowrap !important;
     }
 
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > :first-child {
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls) > :first-child{
         width: auto !important;
         min-width: 0 !important;
         padding-right: 0 !important;
         flex: 1 1 12rem !important;
     }
 
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__filters,
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility {
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls) > .admin-data-controls__filters,
+:is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls) > .admin-data-controls__utility{
         display: contents !important;
     }
 
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__filters > * {
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls) > .admin-data-controls__filters > *{
         width: auto !important;
         min-width: 4.5rem !important;
         padding-right: 0 !important;
         flex: 0 1 7rem !important;
     }
 
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-reset > :first-child {
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls) > .admin-data-controls__utility--has-reset > :first-child{
         width: auto !important;
         min-width: 3.5rem !important;
         flex: 0 1 4.5rem !important;
     }
 
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child {
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
+:is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child{
         width: auto !important;
         min-width: 3.5rem !important;
         flex: 0 1 7rem !important;
     }
 
-    :is(
-        .admin-data-controls:not(.admin-data-controls--six-cell),
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls
-    ) > .admin-data-controls__utility--has-selection > :last-child {
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .admin-task-controls--pages, .custom-page-workspace__controls) > .admin-data-controls__utility--has-selection > :last-child{
         width: 8.5rem !important;
         min-width: 8.5rem !important;
         flex: 0 0 8.5rem !important;
@@ -442,13 +348,13 @@
     }
 
     .admin-data-controls__utility .admin-control-group__actions,
-    .admin-data-controls__utility .admin-task-control-actions,
-    .admin-data-controls__utility .admin-toolbar {
+.admin-data-controls__utility .admin-task-control-actions,
+.admin-data-controls__utility .admin-toolbar{
         flex-wrap: nowrap !important;
     }
 
     /* Gallery obeys the same one-row toolbar invariant. */
-    .gallery-workspace__controls {
+    .gallery-workspace__controls{
         display: flex !important;
         min-width: 0;
         gap: .35rem !important;
@@ -456,147 +362,73 @@
         flex-wrap: nowrap !important;
     }
 
-    .gallery-workspace__search {
+    .gallery-workspace__search{
         min-width: 0 !important;
         flex: 1 1 12rem;
     }
 
-    .gallery-workspace__controls > .gallery-workspace__field:not(.gallery-workspace__search) {
+    .gallery-workspace__controls > .gallery-workspace__field:not(.gallery-workspace__search){
         min-width: 4.5rem;
         flex: 0 1 6.5rem;
     }
 
-    .gallery-workspace__controls > .gallery-workspace__control-group:not(.gallery-workspace__gallery):not(.gallery-workspace__selection) {
+    .gallery-workspace__controls > .gallery-workspace__control-group:not(.gallery-workspace__gallery):not(.gallery-workspace__selection){
         min-width: 3.5rem;
         flex: 0 1 4.5rem;
     }
 
-    .gallery-workspace__gallery {
+    .gallery-workspace__gallery{
         min-width: 8rem;
         flex: 0 1 14rem;
     }
 
-    .gallery-workspace__selection {
+    .gallery-workspace__selection{
         width: 8.5rem;
         min-width: 8.5rem;
         flex: 0 0 8.5rem;
         margin-left: auto;
     }
 
-    .gallery-workspace__gallery-actions {
+    .gallery-workspace__gallery-actions{
         display: grid !important;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: .15rem !important;
         flex-wrap: nowrap !important;
     }
 
-    .gallery-workspace__gallery-actions .admin-action {
+    .gallery-workspace__gallery-actions .admin-action{
         width: 100%;
         min-width: 0;
         justify-content: center;
         overflow: hidden;
     }
 
-    .gallery-workspace__responsive-action-icon {
+    .gallery-workspace__responsive-action-icon{
         display: none;
     }
 
     /* Feature-specific focused Visual Stages. No desktop pane is generically
      * stacked below another pane. */
-    :is(
-        .admin-visual-stage--rail,
-        .admin-visual-stage--triptych,
-        .analytics-visual-stage,
-        .admin-storage__visual-stage,
-        .home-hero-surface,
-        .general-appearance-stage,
-        .activity-atlas__grid,
-        .admin-dashboard__overview
-    ) {
+    :is(.admin-visual-stage--rail, .admin-visual-stage--triptych, .analytics-visual-stage, .admin-storage__visual-stage, .home-hero-surface, .general-appearance-stage, .activity-atlas__grid){
         height: var(--admin-visual-stage-height) !important;
         overflow: hidden !important;
     }
 
-    :is(
-        .admin-visual-stage--rail,
-        .admin-visual-stage--triptych,
-        .analytics-visual-stage,
-        .admin-storage__visual-stage,
-        .home-hero-surface,
-        .activity-atlas__grid,
-        .admin-dashboard__overview
-    )::before,
-    :is(
-        .admin-visual-stage--rail,
-        .admin-visual-stage--triptych,
-        .analytics-visual-stage,
-        .admin-storage__visual-stage,
-        .home-hero-surface,
-        .activity-atlas__grid,
-        .admin-dashboard__overview
-    )::after {
+    :is(.admin-visual-stage--rail, .admin-visual-stage--triptych, .analytics-visual-stage, .admin-storage__visual-stage, .home-hero-surface, .activity-atlas__grid)::before,
+:is(.admin-visual-stage--rail, .admin-visual-stage--triptych, .analytics-visual-stage, .admin-storage__visual-stage, .home-hero-surface, .activity-atlas__grid)::after{
         display: none !important;
-    }
-
-    /* Dashboard: Storage is the narrow summary surface. Activity/Analytics
-     * remain fully available from their Open destinations instead of becoming
-     * three vertically stacked dashboard stages. */
-    .admin-dashboard__overview {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
-    }
-
-    .admin-dashboard__overview-switcher {
-        display: grid;
-        grid-row: 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .2rem;
-        padding-bottom: .45rem;
-        border-bottom: 1px solid var(--admin-line);
-    }
-
-    .admin-dashboard__overview-switcher .admin-action {
-        width: 100%;
-        min-width: 0;
-        justify-content: center;
-    }
-
-    .admin-dashboard__overview-switcher .admin-action.is-active {
-        border-color: var(--admin-accent);
-        color: var(--admin-accent-strong);
-    }
-
-    .admin-dashboard__overview-column {
-        display: none !important;
-        min-height: 0;
-        height: 100%;
-        grid-column: 1 !important;
-        grid-row: 2 !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        width: 100%;
-        padding: .45rem 0 0 !important;
-        border-left: 0 !important;
-    }
-
-    .admin-dashboard__overview-column.is-compact-active {
-        display: grid !important;
-    }
-
-    .admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual {
-        right: 0 !important;
     }
 
     /* Storage: one functional compact surface. Upload remains the main pane;
      * Capacity contributes only its management actions; Distribution and the
      * donut visualization are non-essential at this width. */
-    .admin-storage__visual-stage {
+    .admin-storage__visual-stage{
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
         grid-template-rows: minmax(0, 1fr) auto !important;
     }
 
-    .admin-storage__upload {
+    .admin-storage__upload{
         display: grid !important;
         grid-column: 1 !important;
         grid-row: 1 !important;
@@ -604,7 +436,7 @@
         padding: var(--admin-stage-divider-inset) 0 0 !important;
     }
 
-    .admin-storage__capacity-group {
+    .admin-storage__capacity-group{
         display: block !important;
         grid-column: 1 !important;
         grid-row: 2 !important;
@@ -613,12 +445,12 @@
     }
 
     .admin-storage__capacity-group > .admin-storage__visual-heading,
-    .admin-storage__capacity-group > .admin-storage-capacity,
-    .admin-storage__distribution {
+.admin-storage__capacity-group > .admin-storage-capacity,
+.admin-storage__distribution{
         display: none !important;
     }
 
-    .admin-storage__compact-capacity {
+    .admin-storage__compact-capacity{
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: .55rem;
@@ -626,13 +458,13 @@
         border-top: 1px solid var(--admin-line);
     }
 
-    .admin-storage__compact-capacity > span {
+    .admin-storage__compact-capacity > span{
         display: grid;
         min-width: 0;
         gap: .08rem;
     }
 
-    .admin-storage__compact-capacity small {
+    .admin-storage__compact-capacity small{
         overflow: hidden;
         color: var(--admin-muted);
         font-size: var(--admin-font-size-table-meta);
@@ -640,7 +472,7 @@
         white-space: nowrap;
     }
 
-    .admin-storage__compact-capacity strong {
+    .admin-storage__compact-capacity strong{
         overflow: hidden;
         color: var(--admin-text);
         font-size: var(--admin-font-size-table-support);
@@ -650,7 +482,7 @@
         font-variant-numeric: tabular-nums;
     }
 
-    .admin-storage__capacity-actions {
+    .admin-storage__capacity-actions{
         min-height: 2.75rem;
         padding-top: .35rem;
         justify-content: flex-start;
@@ -659,13 +491,13 @@
 
     /* General: controls + geometry become the one functional surface; the
      * parallel live preview is deliberately omitted. */
-    .general-appearance-stage {
+    .general-appearance-stage{
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
         grid-template-rows: minmax(0, 1fr) auto !important;
     }
 
-    .general-appearance-stage__controls {
+    .general-appearance-stage__controls{
         display: block !important;
         grid-column: 1 !important;
         grid-row: 1 !important;
@@ -677,7 +509,7 @@
         overflow-y: auto;
     }
 
-    .general-appearance-stage__geometry {
+    .general-appearance-stage__geometry{
         display: grid !important;
         grid-column: 1 !important;
         grid-row: 2 !important;
@@ -687,20 +519,20 @@
         padding: 0 !important;
     }
 
-    .general-appearance-stage__preview {
+    .general-appearance-stage__preview{
         display: none !important;
     }
 
     /* Activity: Calendar is the narrow timeline surface. Clock/publication are
      * redundant summaries and remain available through the full Activity view
      * at wider widths. */
-    .activity-atlas__grid {
+    .activity-atlas__grid{
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
         grid-template-rows: minmax(0, 1fr) auto !important;
     }
 
-    .activity-atlas__visual {
+    .activity-atlas__visual{
         display: grid !important;
         grid-column: 1 !important;
         grid-template-columns: minmax(0, 1fr) !important;
@@ -709,7 +541,7 @@
     }
 
     .activity-atlas__view.activity-calendar,
-    .activity-atlas__view.activity-calendar[style*="display: none"] {
+.activity-atlas__view.activity-calendar[style*="display: none"]{
         display: grid !important;
         grid-column: 1 !important;
         width: 100% !important;
@@ -718,11 +550,11 @@
     }
 
     .activity-atlas__view.activity-clock,
-    .activity-atlas__view.activity-clock[style*="display: none"] {
+.activity-atlas__view.activity-clock[style*="display: none"]{
         display: none !important;
     }
 
-    .activity-publication {
+    .activity-publication{
         display: grid !important;
         min-height: 0 !important;
         grid-column: 1 !important;
@@ -737,13 +569,13 @@
     }
 
     .activity-publication__header,
-    .activity-publication__recent,
-    .activity-publication__latest {
+.activity-publication__recent,
+.activity-publication__latest{
         display: none !important;
     }
 
     .activity-publication__staged,
-    .activity-publication__readiness {
+.activity-publication__readiness{
         display: flex !important;
         min-width: 0;
         gap: .35rem;
@@ -752,22 +584,22 @@
         border: 0 !important;
     }
 
-    .activity-publication__staged > strong {
+    .activity-publication__staged > strong{
         font-size: .84rem !important;
     }
 
     .activity-publication__staged > small,
-    .activity-publication__readiness > small {
+.activity-publication__readiness > small{
         display: none !important;
     }
 
-    .activity-publication__actions {
+    .activity-publication__actions{
         margin: 0 !important;
         padding: 0 !important;
         justify-self: end;
     }
 
-    .activity-publication__actions .admin-toolbar {
+    .activity-publication__actions .admin-toolbar{
         gap: .2rem;
         justify-content: flex-end;
     }
@@ -775,12 +607,12 @@
     /* Analytics keeps the map. Home reduces to the public-facing Hero preview;
      * the editing rail yields at Narrow instead of replacing the preview. */
     .analytics-visual-stage,
-    .home-hero-surface {
+.home-hero-surface{
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
-    .analytics-visual-stage > .analytics-world {
+    .analytics-visual-stage > .analytics-world{
         display: block !important;
         grid-column: 1 !important;
         width: 100% !important;
@@ -789,11 +621,11 @@
         padding: 0 !important;
     }
 
-    .analytics-stage-rail {
+    .analytics-stage-rail{
         display: none !important;
     }
 
-    .home-hero-surface > .home-hero-surface__visual {
+    .home-hero-surface > .home-hero-surface__visual{
         display: grid !important;
         grid-column: 1 / -1 !important;
         width: 100% !important;
@@ -803,91 +635,85 @@
         padding: var(--admin-stage-divider-inset) 0 !important;
     }
 
-    .home-hero-rail {
+    .home-hero-rail{
         display: none !important;
     }
 
-    .custom-page-component-sequence .admin-responsive-meta {
+    .custom-page-component-sequence .admin-responsive-meta{
         display: block;
     }
 
-    .general-live-preview__preset {
+    .general-live-preview__preset{
         display: none;
     }
 
-    .activity-calendar {
+    .activity-calendar{
         --activity-calendar-cell-size: .64rem;
     }
 
-    .home-workspace__skip-row {
+    .home-workspace__skip-row{
         grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .admin-dashboard__overview-column:first-child .admin-dashboard__overview-head,
-    .admin-dashboard__overview-column:nth-child(2) .admin-dashboard__overview-head,
-    .admin-dashboard__overview-column:last-child .admin-dashboard__overview-head {
-        margin-inline: 0 !important;
-    }
-
-    .admin-pager {
+    .admin-pager{
         grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .admin-pager__range {
+    .admin-pager__range{
         grid-column: 1 / -1;
         grid-row: 1;
     }
 
-    .admin-pager__size {
+    .admin-pager__size{
         grid-column: 1;
         grid-row: 2;
     }
 
-    .admin-pager__actions {
+    .admin-pager__actions{
         grid-column: 2;
         grid-row: 2;
         justify-content: flex-end;
     }
 
-    html.fi .admin-workspace__header {
+    html.fi .admin-workspace__header{
         grid-template-columns: repeat(2, minmax(0, 1fr));
         column-gap: 0;
         align-items: end;
     }
 
-    html.fi .admin-workspace__heading {
+    html.fi .admin-workspace__heading{
         grid-column: 1;
     }
 
-    html.fi .admin-workspace__status {
+    html.fi .admin-workspace__status{
         grid-column: 2;
         justify-self: stretch;
         padding-left: 1rem;
     }
 
-    html.fi .admin-workspace-status {
+    html.fi .admin-workspace-status{
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     .admin-gallery-grid,
-    .media-workspace__grid {
+.media-workspace__grid{
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .admin-gallery-upload__progress {
+    .admin-gallery-upload__progress{
         width: 100%;
     }
 
     .gallery-workspace__selection-menu,
-    .admin-selection__menu,
-    .media-workspace__multi-action-menu {
+.admin-selection__menu,
+.media-workspace__multi-action-menu{
         right: auto;
         left: 0;
     }
 
     /* Custom Page keeps one table-like hierarchy instead of becoming cards. */
-    .custom-page-component-sequence {
+    .custom-page-component-sequence{
         --admin-hierarchy-position-column: 2.5rem;
         --admin-hierarchy-drag-column: 2rem;
         --admin-hierarchy-actions-column: minmax(9rem, 34%);
@@ -901,97 +727,90 @@
     }
 
     .custom-page-component-sequence__header > :nth-child(2),
-    .custom-page-component__type,
-    .custom-page-child-row__kind {
+.custom-page-component__type,
+.custom-page-child-row__kind{
         display: none;
     }
 
-    .custom-page-row-actions .admin-action__label {
+    .custom-page-row-actions .admin-action__label{
         display: none;
     }
 
-    .custom-page-component-sequence .custom-page-row-actions .admin-action {
+    .custom-page-component-sequence .custom-page-row-actions .admin-action{
         justify-content: center !important;
         padding-inline: .2rem;
     }
 }
 
 /* Table-specific Narrow reduction. */
-@container admin-table (max-width: 50rem) {
+@container admin-table (max-width: 50rem){
 
     /* Blog image and publication / Exhibition schedule are supportive. */
     .journal-table--blog .journal-col--visual,
-    .journal-table--blog .journal-col--publication,
-    .journal-table--exhibitions .journal-col--schedule {
+.journal-table--blog .journal-col--publication,
+.journal-table--exhibitions .journal-col--schedule{
         display: none;
     }
 
     /* Storage: preview and detailed reference column yield first. */
     .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
-    .media-workspace__table-wrap:not(.is-dense) th:nth-child(1),
-    .media-workspace__table-wrap:not(.is-dense) td:nth-child(1) {
+.media-workspace__table-wrap:not(.is-dense) th:nth-child(1),
+.media-workspace__table-wrap:not(.is-dense) td:nth-child(1){
         display: none;
     }
 
     .media-workspace__table-wrap .media-workspace__col-usage,
-    .media-workspace__table-wrap .media-workspace__usage-head,
-    .media-workspace__table-wrap .media-workspace__usage-cell {
+.media-workspace__table-wrap .media-workspace__usage-head,
+.media-workspace__table-wrap .media-workspace__usage-cell{
         display: none;
     }
 
     /* Pages: Template is supportive. */
-    .admin-hierarchy--pages .admin-pages__template {
+    .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
 
     .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row {
+.admin-hierarchy--pages .admin-pages__row{
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     }
 
     /* Activity: publication and actor are contextual rather than primary. */
     .activity-events-table .activity-col--publication,
-    .activity-events-table .activity-col--who,
-    .activity-commits-table .activity-commit-col--publication,
-    .activity-commits-table .activity-commit-col--who {
+.activity-events-table .activity-col--who,
+.activity-commits-table .activity-commit-col--publication,
+.activity-commits-table .activity-commit-col--who{
         display: none;
     }
 
-    .general-social-table__actions .admin-toolbar {
+    .general-social-table__actions .admin-toolbar{
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         max-width: none;
     }
 
-    .home-source-table :is(
-        .home-source-table__candidates,
-        .home-source-table__artworks,
-        .home-source-table__year,
-        .home-source-table__col-candidates,
-        .home-source-table__col-artworks,
-        .home-source-table__col-year
-    ) {
+    .home-source-table :is(.home-source-table__candidates, .home-source-table__artworks, .home-source-table__year, .home-source-table__col-candidates, .home-source-table__col-artworks, .home-source-table__col-year){
         display: none;
     }
 
-    .home-source-table__col-gallery {
+    .home-source-table__col-gallery{
         width: 50% !important;
     }
 
-    .home-source-table__col-status {
+    .home-source-table__col-status{
         width: var(--admin-table-one-unit) !important;
     }
 
-    .home-source-table__col-actions {
+    .home-source-table__col-actions{
         width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)) !important;
     }
 
-    .home-source-table .admin-row-actions {
+    .home-source-table .admin-row-actions{
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: .08rem;
     }
 
-    .home-source-table .admin-action {
+    .home-source-table .admin-action{
         width: 100%;
         min-width: 0;
         padding-inline: .2rem;
@@ -999,38 +818,38 @@
     }
 
     .home-components-table .home-components-table__type,
-    .home-components-table .home-components-table__col-type {
+.home-components-table .home-components-table__col-type{
         display: none;
     }
 
-    .home-components-table__col-position {
+    .home-components-table__col-position{
         width: 3rem !important;
     }
 
-    .home-components-table__col-drag {
+    .home-components-table__col-drag{
         width: 2rem !important;
     }
 
-    .home-components-table__col-content {
+    .home-components-table__col-content{
         width: calc(66.666667% - 5rem) !important;
     }
 
-    .home-components-table__col-actions {
+    .home-components-table__col-actions{
         width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)) !important;
     }
 
     .home-components-table .admin-responsive-meta,
-    .journal-table .admin-responsive-meta,
-    .activity-events-table .admin-responsive-meta,
-    .activity-commits-table .admin-responsive-meta {
+.journal-table .admin-responsive-meta,
+.activity-events-table .admin-responsive-meta,
+.activity-commits-table .admin-responsive-meta{
         display: block;
     }
 
-    .admin-responsive-meta--minimal {
+    .admin-responsive-meta--minimal{
         display: none !important;
     }
 
-    .home-components-table .admin-row-actions {
+    .home-components-table .admin-row-actions{
         display: grid !important;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: .12rem;
@@ -1041,426 +860,300 @@
  * more horizontal room. That shell change must never promote Dashboard back
  * to a wider component state. Keep Dashboard in its Narrow composition while
  * the mobile/burger shell is active. */
-@media (max-width: 63.99rem) {
-    .admin-dashboard .admin-metric {
-        display: none;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks,
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: block;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-    .admin-dashboard .admin-metrics {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        border-right: 0 !important;
-    }
-
-    .admin-dashboard__overview {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
-        height: var(--admin-visual-stage-height) !important;
-        overflow: hidden !important;
-    }
-
-    .admin-dashboard__overview-switcher {
-        display: grid;
-        grid-row: 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .2rem;
-        padding-bottom: .45rem;
-        border-bottom: 1px solid var(--admin-line);
-    }
-
-    .admin-dashboard__overview-switcher .admin-action {
-        width: 100%;
-        min-width: 0;
-        justify-content: center;
-    }
-
-    .admin-dashboard__overview-column {
-        display: none !important;
-        min-height: 0;
-        height: 100%;
-        grid-column: 1 !important;
-        grid-row: 2 !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        width: 100%;
-        padding: .45rem 0 0 !important;
-        border-left: 0 !important;
-    }
-
-    .admin-dashboard__overview-column.is-compact-active {
-        display: grid !important;
-    }
-
-    .admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual {
-        right: 0 !important;
-    }
+@media (max-width: 63.99rem){
 }
 
 /* Minimal: feature-specific metric reduction, more aggressive table
  * prioritization, and the same mandatory one-row toolbar. */
-@container admin-workspace (max-width: 38rem) {
-    .admin-metrics {
+@container admin-workspace (max-width: 38rem){
+    .admin-metrics{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .admin-dashboard .admin-metrics {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        display: block;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic {
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        border-right: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: none !important;
-    }
-
-    .admin-metrics > .admin-metric {
+    .admin-metrics > .admin-metric{
         border-right: 1px solid var(--admin-line) !important;
         border-top: 1px solid var(--admin-line);
     }
 
-    .admin-metrics > .admin-metric:nth-child(-n + 2) {
+    .admin-metrics > .admin-metric:nth-child(-n + 2){
         border-top: 0;
     }
 
-    .admin-metrics > .admin-metric:nth-child(2n) {
+    .admin-metrics > .admin-metric:nth-child(2n){
         border-right: 0 !important;
     }
 
-    .admin-metrics > .admin-metric:nth-child(2n + 1) {
+    .admin-metrics > .admin-metric:nth-child(2n + 1){
         padding-left: 0;
     }
 
-    /* Dashboard overrides the generic two-column metric nth-child grammar:
-     * only Visits + Published Artworks remain, with stable inset and one
-     * separator between them. */
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic {
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        border-right: 0 !important;
-    }
-
     .admin-data-controls,
-    .admin-task-controls--pages,
-    .custom-page-workspace__controls {
+.admin-task-controls--pages,
+.custom-page-workspace__controls{
         gap: .45rem !important;
     }
 
     /* At Minimal, task-action labels may collapse to icons, but the toolbar
      * itself remains one row. */
     .admin-data-controls__utility .admin-control-group__actions > .admin-action .admin-action__label,
-    .admin-data-controls__utility .admin-task-control-actions > .admin-action .admin-action__label {
+.admin-data-controls__utility .admin-task-control-actions > .admin-action .admin-action__label{
         display: none;
     }
 
-    .gallery-workspace__responsive-action-icon {
+    .gallery-workspace__responsive-action-icon{
         display: inline-block;
     }
 
-    .gallery-workspace__gallery-actions .admin-action__label {
+    .gallery-workspace__gallery-actions .admin-action__label{
         display: none;
     }
 
-    .admin-gallery-grid {
+    .admin-gallery-grid{
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .general-background-row > .fi-sc,
-    .general-layout-controls__fields,
-    .general-two-column-settings > .fi-sc {
+.general-layout-controls__fields,
+.general-two-column-settings > .fi-sc{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
     .general-layout-field:first-child,
-    .general-layout-field + .general-layout-field,
-    .general-two-column-settings > .fi-sc > :first-child,
-    .general-two-column-settings > .fi-sc > :last-child {
+.general-layout-field + .general-layout-field,
+.general-two-column-settings > .fi-sc > :first-child,
+.general-two-column-settings > .fi-sc > :last-child{
         padding-right: .35rem;
         padding-left: .35rem;
     }
 
-    .activity-calendar {
+    .activity-calendar{
         --activity-calendar-cell-size: .56rem;
     }
 
-    .activity-calendar__band {
+    .activity-calendar__band{
         grid-template-columns: 1.75rem minmax(0, 1fr);
         gap: .1rem .35rem;
     }
 
     .activity-calendar__cells,
-    .activity-calendar__weekdays {
+.activity-calendar__weekdays{
         gap: .07rem;
     }
 
-    .activity-publication {
+    .activity-publication{
         grid-template-columns: minmax(0, 1fr) auto auto;
         gap: .4rem;
     }
 
     .activity-publication__staged > span,
-    .activity-publication__readiness > span {
+.activity-publication__readiness > span{
         display: none;
     }
 
-    .activity-publication__actions .admin-action__label {
+    .activity-publication__actions .admin-action__label{
         display: none;
     }
 
-    .activity-publication__actions .admin-action {
+    .activity-publication__actions .admin-action{
         justify-content: center;
         padding-inline: .3rem;
     }
 
-    .home-workspace__skip-row {
+    .home-workspace__skip-row{
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .admin-pager {
+    .admin-pager{
         grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .admin-pager__range {
+    .admin-pager__range{
         grid-column: 1 / -1;
         grid-row: 1;
     }
 
-    .admin-pager__size {
+    .admin-pager__size{
         grid-column: 1;
         grid-row: 2;
     }
 
-    .admin-pager__actions {
+    .admin-pager__actions{
         grid-column: 2;
         grid-row: 2;
     }
 
-    .custom-page-component-sequence {
+    .custom-page-component-sequence{
         --admin-hierarchy-actions-column: minmax(6.25rem, 34%);
     }
 
-    .custom-page-row-actions {
+    .custom-page-row-actions{
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-auto-rows: minmax(1.8rem, auto);
     }
 }
 
-@container admin-table (max-width: 38rem) {
+@container admin-table (max-width: 38rem){
     /* Storage keeps Media | Status | Actions | Selection. Type/size are folded
      * into Media metadata by the Blade row. */
     .media-workspace__table-wrap .media-workspace__col-type,
-    .media-workspace__table-wrap .media-workspace__col-size,
-    .media-workspace__table-wrap .media-workspace__type-head,
-    .media-workspace__table-wrap .media-workspace__size-head,
-    .media-workspace__table-wrap .media-workspace__type-cell,
-    .media-workspace__table-wrap .media-workspace__size-cell {
+.media-workspace__table-wrap .media-workspace__col-size,
+.media-workspace__table-wrap .media-workspace__type-head,
+.media-workspace__table-wrap .media-workspace__size-head,
+.media-workspace__table-wrap .media-workspace__type-cell,
+.media-workspace__table-wrap .media-workspace__size-cell{
         display: none;
     }
 
-    .media-workspace__identity .admin-responsive-meta {
+    .media-workspace__identity .admin-responsive-meta{
         display: block;
     }
 
     /* Activity retains change/target/time/actions/selection in the smallest
      * table state. */
     .activity-events-table .activity-col--area,
-    .activity-events-table .activity-col--type {
+.activity-events-table .activity-col--type{
         display: none;
     }
 
     /* Pages keeps Position/Name + actions + Selection. */
-    .admin-hierarchy--pages .admin-pages__type {
+    .admin-hierarchy--pages .admin-pages__type{
         display: none !important;
     }
 
     .admin-hierarchy--pages .admin-responsive-meta,
-    .activity-events-table .admin-responsive-meta--minimal {
+.activity-events-table .admin-responsive-meta--minimal{
         display: block !important;
     }
 
     .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row {
+.admin-hierarchy--pages .admin-pages__row{
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     }
 
     /* Narrow row actions remain a single icon rail; they do not grow table
      * rows just because labels disappeared. */
-    .journal-row-actions--blog {
+    .journal-row-actions--blog{
         grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
         grid-auto-rows: minmax(1.8rem, auto);
     }
 
-    .journal-row-actions--exhibitions {
+    .journal-row-actions--exhibitions{
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
         grid-auto-rows: minmax(1.8rem, auto);
     }
 
     .media-workspace__row-actions,
-    .admin-dashboard__feed-actions,
-    .admin-pages__row-actions {
+.admin-pages__row-actions{
         grid-auto-flow: row;
     }
 
-    .home-source-table :is(
-        .home-source-table__status,
-        .home-source-table__col-status
-    ) {
+    .home-source-table :is(.home-source-table__status, .home-source-table__col-status){
         display: none;
     }
 
-    .home-source-table__col-gallery {
+    .home-source-table__col-gallery{
         width: calc(var(--admin-table-two-units) + var(--admin-table-two-units)) !important;
     }
 
-    .home-source-table .admin-responsive-meta {
+    .home-source-table .admin-responsive-meta{
         display: block;
     }
 
-    .home-components-table__col-drag {
+    .home-components-table__col-drag{
         width: 1.75rem !important;
     }
 
-    .home-components-table__col-content {
+    .home-components-table__col-content{
         width: calc(66.666667% - 4.75rem) !important;
     }
 
     .general-social-table .general-social-table__col-url,
-    .general-social-table .general-social-table__url-head,
-    .general-social-table .general-social-table__url {
+.general-social-table .general-social-table__url-head,
+.general-social-table .general-social-table__url{
         display: none;
     }
 
-    .general-social-table .admin-responsive-meta {
+    .general-social-table .admin-responsive-meta{
         display: block;
     }
 }
 
-@container admin-table (max-width: 30rem) {
+@container admin-table (max-width: 30rem){
 }
 
 /* Extreme widths: the task surface wins over summary statistics. */
-@container admin-workspace (max-width: 20rem) {
-    .admin-metrics {
+@container admin-workspace (max-width: 20rem){
+    .admin-metrics{
         display: none !important;
     }
 
-    .admin-dashboard .admin-metrics {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        display: block !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: none !important;
-    }
-
-    .admin-pager {
+    .admin-pager{
         grid-template-columns: minmax(0, 1fr) auto;
     }
 }
 
 /* Form internals are workspace components too; their reductions follow
  * available content width rather than the browser viewport. */
-@container admin-workspace (max-width: 46rem) {
+@container admin-workspace (max-width: 46rem){
     .admin-component-image-preview,
-    .admin-favicon-preview {
+.admin-favicon-preview{
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .admin-rich-text-image-insert {
+    .admin-rich-text-image-insert{
         width: 100%;
     }
 
-    .admin-rich-text-image-insert__external-row {
+    .admin-rich-text-image-insert__external-row{
         grid-template-columns: minmax(0, 1fr);
     }
 }
 
 /* Dialogs live outside the workspace container. Their responsive geometry is
  * therefore correctly viewport-based rather than tied to an admin component. */
-@media (max-width: 46rem) {
-    .media-file-dialog {
+@media (max-width: 46rem){
+    .media-file-dialog{
         width: calc(100vw - 1rem) !important;
         max-width: none !important;
         max-height: calc(100dvh - 1rem);
     }
 
-    .media-file-dialog__preview {
+    .media-file-dialog__preview{
         min-height: min(48vh, 24rem);
         max-height: 52vh;
     }
 
     .media-file-dialog__preview img,
-    .media-file-dialog__preview video {
+.media-file-dialog__preview video{
         max-height: 52vh;
     }
 
-    .media-file-dialog__details {
+    .media-file-dialog__details{
         grid-template-columns: minmax(0, 1fr);
     }
 
     .media-file-dialog__details > section,
-    .media-file-dialog__details > section + section {
+.media-file-dialog__details > section + section{
         padding-inline: 0;
     }
 
-    .media-file-dialog__details > section + section {
+    .media-file-dialog__details > section + section{
         margin-top: 1rem;
         padding-top: 1rem;
         border-top: 1px solid var(--admin-line);
         border-left: 0;
     }
 
-    .media-file-dialog__sequence {
+    .media-file-dialog__sequence{
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .media-file-dialog__sequence > span {
+    .media-file-dialog__sequence > span{
         grid-column: 1 / -1;
         grid-row: 1;
     }
 
-    .media-delete-dialog__references > div {
+    .media-delete-dialog__references > div{
         grid-template-columns: minmax(0, 1fr);
         gap: .2rem;
     }
@@ -1479,304 +1172,42 @@
  * content width can never promote it back to the desktop composition.
  */
 
-@container admin-workspace (max-width: 54rem) {
-    .admin-dashboard .admin-metric {
-        display: none !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks,
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-    .admin-dashboard .admin-metrics {
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-auto-flow: row;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        border-right: 0 !important;
-    }
-
-    .admin-dashboard .admin-metric__label,
-    .admin-dashboard .admin-metric__detail {
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-    }
-
-    .admin-dashboard__overview {
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-template-rows: none !important;
-        overflow: hidden !important;
-        background: none !important;
-    }
-
-    .admin-dashboard__overview::before,
-    .admin-dashboard__overview::after {
-        display: block !important;
-    }
-
-    .admin-dashboard__overview-switcher {
-        display: none !important;
-    }
-
-    .admin-dashboard__overview-column,
-    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-        display: grid !important;
-        min-width: 0;
-        min-height: 0;
-        width: auto;
-        height: auto;
-        grid-column: auto !important;
-        grid-row: auto !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        padding: 1.2rem 1rem 1.25rem 0 !important;
-        border: 0 !important;
-        box-shadow: none !important;
-    }
-
-    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-        padding-left: 1rem !important;
-        border-left: 0 !important;
-    }
-
-    .admin-dashboard__overview-column:last-child {
-        padding-right: 1rem !important;
-    }
+@container admin-workspace (max-width: 54rem){
 }
 
-@media (max-width: 63.99rem) {
-    .admin-dashboard .admin-metric {
-        display: none !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks,
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-    .admin-dashboard .admin-metrics {
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-auto-flow: row;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        border-right: 0 !important;
-    }
-
-    .admin-dashboard__overview {
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-template-rows: none !important;
-        overflow: hidden !important;
-        background: none !important;
-    }
-
-    .admin-dashboard__overview::before,
-    .admin-dashboard__overview::after {
-        display: block !important;
-    }
-
-    .admin-dashboard__overview-switcher {
-        display: none !important;
-    }
-
-    .admin-dashboard__overview-column,
-    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-        display: grid !important;
-        min-width: 0;
-        min-height: 0;
-        width: auto;
-        height: auto;
-        grid-column: auto !important;
-        grid-row: auto !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        padding: 1.2rem 1rem 1.25rem 0 !important;
-        border: 0 !important;
-        box-shadow: none !important;
-    }
-
-    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-        padding-left: 1rem !important;
-        border-left: 0 !important;
-    }
-
-    .admin-dashboard__overview-column:last-child {
-        padding-right: 1rem !important;
-    }
+@media (max-width: 63.99rem){
 }
 
-@container admin-workspace (max-width: 38rem) {
-    .admin-dashboard__overview {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
-        overflow: hidden !important;
-        background: none !important;
-    }
-
-    .admin-dashboard__overview::before,
-    .admin-dashboard__overview::after {
-        display: none !important;
-    }
-
-    .admin-dashboard__overview-switcher {
-        display: grid !important;
-        grid-row: 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .2rem;
-        padding-bottom: .45rem;
-        border-bottom: 1px solid var(--admin-line);
-    }
-
-    .admin-dashboard__overview-switcher .admin-action {
-        width: 100%;
-        min-width: 0;
-        justify-content: center;
-    }
-
-    .admin-dashboard__overview-switcher .admin-action.is-active {
-        border-color: var(--admin-accent);
-        color: var(--admin-accent-strong);
-    }
-
-    .admin-dashboard__overview-column,
-    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-        display: none !important;
-        min-width: 0;
-        min-height: 0;
-        width: 100%;
-        height: 100%;
-        grid-column: 1 / -1 !important;
-        grid-row: 2 !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        padding: .45rem 0 0 !important;
-        border: 0 !important;
-        box-shadow: none !important;
-    }
-
-    .admin-dashboard__overview-column.is-compact-active {
-        display: grid !important;
-    }
-
-    .admin-dashboard .admin-metric {
-        display: none !important;
-    }
-
-    .admin-dashboard .admin-metrics {
-        display: flex !important;
-        gap: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        display: block !important;
-        box-sizing: border-box;
-        width: 50% !important;
-        min-width: 0;
-        max-width: 50% !important;
-        flex: 0 0 50% !important;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic {
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        border-right: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: none !important;
-    }
+@container admin-workspace (max-width: 38rem){
 }
 
-@container admin-workspace (max-width: 20rem) {
-    .admin-dashboard .admin-metrics {
-        display: flex !important;
-        gap: 0 !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--traffic,
-    .admin-dashboard .admin-dashboard__metric--artworks {
-        display: block !important;
-        box-sizing: border-box;
-        width: 50% !important;
-        max-width: 50% !important;
-        flex: 0 0 50% !important;
-        padding: 1.05rem 1rem !important;
-    }
-
-    .admin-dashboard .admin-dashboard__metric--changes {
-        display: none !important;
-    }
+@container admin-workspace (max-width: 20rem){
 }
 
 /* Dashboard stage footer authority: one-line captions never disappear or
  * participate in stage-height changes. Compact states abbreviate Storage only. */
-@container admin-workspace (max-width: 68rem) {
-    .admin-dashboard__fact-label--long {
-        display: none;
-    }
-
-    .admin-dashboard__fact-label--short {
-        display: inline;
-    }
+@container admin-workspace (max-width: 68rem){
 }
 
-@container admin-workspace (min-width: 38.01rem) {
-    .admin-dashboard__facts,
-    .admin-dashboard__analytics-caption,
-    .admin-dashboard__activity-visual .activity-clock__caption {
-        display: flex !important;
-        visibility: visible !important;
-    }
-
-    .admin-dashboard__activity-visual .activity-clock__caption {
-        flex-direction: column;
-    }
+@container admin-workspace (min-width: 38.01rem){
 }
 
-@container admin-workspace (max-width: 54rem) {
+@container admin-workspace (max-width: 54rem){
 }
 
-@container admin-workspace (max-width: 41rem) {
+@container admin-workspace (max-width: 41rem){
 }
 
-@container admin-workspace (max-width: 30rem) {
+@container admin-workspace (max-width: 30rem){
 }
 
-@container admin-table (max-width: 62rem) {
+@container admin-table (max-width: 62rem){
 }
 
-@container admin-table (max-width: 50rem) {
+@container admin-table (max-width: 50rem){
 }
 
-@container admin-table (max-width: 30rem) {
+@container admin-table (max-width: 30rem){
 }
 
 /* General responsive authority
@@ -1788,21 +1219,17 @@
  * shell is mobile, the preview may not reappear merely because the workspace
  * gained horizontal room. */
 
-@container admin-workspace (max-width: 54rem) {
-    .admin-general .general-status-metrics > .general-metric {
+@container admin-workspace (max-width: 54rem){
+    .admin-general .general-status-metrics > .general-metric{
         display: none !important;
     }
 
-    .admin-general .general-status-metrics {
+    .admin-general .general-status-metrics{
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
-    .admin-general .general-status-metrics > :is(
-        .general-metric--public-email,
-        .general-metric--contact-delivery,
-        .general-metric--legal
-    ) {
+    .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery, .general-metric--legal){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -1810,25 +1237,25 @@
     }
 
     .admin-general .general-metric--public-email,
-    .admin-general .general-metric--contact-delivery {
+.admin-general .general-metric--contact-delivery{
         border-right: 1px solid var(--admin-line) !important;
     }
 
-    .admin-general .general-metric--legal {
+    .admin-general .general-metric--legal{
         border-right: 0 !important;
     }
 
-    .general-appearance-stage {
+    .general-appearance-stage{
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
         grid-template-rows: minmax(0, 1fr) auto !important;
     }
 
-    .general-appearance-stage::after {
+    .general-appearance-stage::after{
         display: none !important;
     }
 
-    .general-appearance-stage__controls {
+    .general-appearance-stage__controls{
         display: block !important;
         grid-column: 1 / -1 !important;
         grid-row: 1 !important;
@@ -1841,7 +1268,7 @@
         overflow-y: auto;
     }
 
-    .general-appearance-stage__geometry {
+    .general-appearance-stage__geometry{
         display: grid !important;
         grid-column: 1 / -1 !important;
         grid-row: 2 !important;
@@ -1851,26 +1278,22 @@
         padding-left: 0 !important;
     }
 
-    .general-appearance-stage__preview {
+    .general-appearance-stage__preview{
         display: none !important;
     }
 }
 
-@media (max-width: 63.99rem) {
-    .admin-general .general-status-metrics > .general-metric {
+@media (max-width: 63.99rem){
+    .admin-general .general-status-metrics > .general-metric{
         display: none !important;
     }
 
-    .admin-general .general-status-metrics {
+    .admin-general .general-status-metrics{
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
-    .admin-general .general-status-metrics > :is(
-        .general-metric--public-email,
-        .general-metric--contact-delivery,
-        .general-metric--legal
-    ) {
+    .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery, .general-metric--legal){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -1878,90 +1301,84 @@
     }
 
     .admin-general .general-metric--public-email,
-    .admin-general .general-metric--contact-delivery {
+.admin-general .general-metric--contact-delivery{
         border-right: 1px solid var(--admin-line) !important;
     }
 
-    .admin-general .general-metric--legal {
+    .admin-general .general-metric--legal{
         border-right: 0 !important;
     }
 
-    .general-appearance-stage {
+    .general-appearance-stage{
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
         grid-template-rows: minmax(0, 1fr) auto !important;
     }
 
-    .general-appearance-stage::after {
+    .general-appearance-stage::after{
         display: none !important;
     }
 
     .general-appearance-stage__controls,
-    .general-appearance-stage__geometry {
+.general-appearance-stage__geometry{
         grid-column: 1 / -1 !important;
         width: 100% !important;
         padding-right: 0 !important;
         padding-left: 0 !important;
     }
 
-    .general-appearance-stage__preview {
+    .general-appearance-stage__preview{
         display: none !important;
     }
 }
 
-@container admin-workspace (max-width: 38rem) {
-    .admin-general .general-status-metrics {
+@container admin-workspace (max-width: 38rem){
+    .admin-general .general-status-metrics{
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .admin-general .general-status-metrics > .general-metric {
+    .admin-general .general-status-metrics > .general-metric{
         display: none !important;
     }
 
-    .admin-general .general-status-metrics > :is(
-        .general-metric--public-email,
-        .general-metric--contact-delivery
-    ) {
+    .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
         border-top: 0 !important;
     }
 
-    .admin-general .general-metric--public-email {
+    .admin-general .general-metric--public-email{
         border-right: 1px solid var(--admin-line) !important;
     }
 
-    .admin-general .general-metric--contact-delivery {
+    .admin-general .general-metric--contact-delivery{
         border-right: 0 !important;
     }
 }
 
-@media (max-width: 38rem) {
-    .admin-general .general-status-metrics {
+@media (max-width: 38rem){
+    .admin-general .general-status-metrics{
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .admin-general .general-status-metrics > .general-metric {
+    .admin-general .general-status-metrics > .general-metric{
         display: none !important;
     }
 
-    .admin-general .general-status-metrics > :is(
-        .general-metric--public-email,
-        .general-metric--contact-delivery
-    ) {
+    .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
     }
 
-    .admin-general .general-metric--public-email {
+    .admin-general .general-metric--public-email{
         border-right: 1px solid var(--admin-line) !important;
     }
 
-    .admin-general .general-metric--contact-delivery {
+    .admin-general .general-metric--contact-delivery{
         border-right: 0 !important;
     }
 }
@@ -1969,62 +1386,62 @@
 /* General Social Media table: preserve the shared Position/Drag rails, reduce
  * action chrome before data, and only fold Profile URL into Platform at the
  * smallest table state. */
-@container admin-table (max-width: 62rem) {
-    .general-social-table col.admin-table__col-position {
+@container admin-table (max-width: 62rem){
+    .general-social-table col.admin-table__col-position{
         width: 3rem !important;
     }
 
-    .general-social-table col.admin-table__col-drag {
+    .general-social-table col.admin-table__col-drag{
         width: 2rem !important;
     }
 
-    .general-social-table .general-social-table__col-platform {
+    .general-social-table .general-social-table__col-platform{
         width: 9rem !important;
     }
 
-    .general-social-table .general-social-table__col-url {
+    .general-social-table .general-social-table__col-url{
         width: auto !important;
     }
 
-    .general-social-table .general-social-table__col-actions {
+    .general-social-table .general-social-table__col-actions{
         width: 7rem !important;
     }
 
-    .general-social-table__actions .admin-toolbar {
+    .general-social-table__actions .admin-toolbar{
         display: grid !important;
         width: 100%;
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         gap: .08rem !important;
     }
 
-    .general-social-table__actions .admin-action {
+    .general-social-table__actions .admin-action{
         min-width: 0;
         padding-inline: .1rem !important;
         justify-content: center !important;
     }
 }
 
-@container admin-table (max-width: 38rem) {
+@container admin-table (max-width: 38rem){
     .general-social-table .general-social-table__col-url,
-    .general-social-table .general-social-table__url-head,
-    .general-social-table .general-social-table__url {
+.general-social-table .general-social-table__url-head,
+.general-social-table .general-social-table__url{
         display: none !important;
     }
 
-    .general-social-table .admin-responsive-meta {
+    .general-social-table .admin-responsive-meta{
         display: block !important;
     }
 
-    .general-social-table .general-social-table__col-platform {
+    .general-social-table .general-social-table__col-platform{
         width: auto !important;
     }
 
-    .general-social-table .general-social-table__col-actions {
+    .general-social-table .general-social-table__col-actions{
         width: 6.5rem !important;
     }
 
     .general-social-table .general-social-table__position-cell,
-    .general-social-table .general-social-table__drag-cell {
+.general-social-table .general-social-table__drag-cell{
         overflow: visible !important;
     }
 }
@@ -2034,31 +1451,21 @@
  * control discipline. Home has its own dedicated authority below. */
 
 /* ---------- semantic metrics ---------- */
-@container admin-workspace (max-width: 54rem) {
-    :is(
-        .pages-status-metrics,
-        .gallery-status-metrics,
-        .custom-page-status-metrics,
-        .journal-status-metrics
-    ) {
+@container admin-workspace (max-width: 54rem){
+    :is(.pages-status-metrics, .gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
-    :is(
-        .pages-status-metrics > .pages-metric,
-        .gallery-status-metrics > .gallery-metric,
-        .custom-page-status-metrics > .custom-page-metric,
-        .journal-status-metrics > .journal-metric
-    ) {
+    :is(.pages-status-metrics > .pages-metric, .gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
         display: none !important;
     }
 
     .pages-status-metrics > :is(.pages-metric--published, .pages-metric--unpublished, .pages-metric--navigation),
-    .gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published, .gallery-metric--visits),
-    .custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits, .custom-page-metric--views),
-    .journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--scheduled, .journal-metric--draft),
-    .journal-status-metrics--exhibitions > :is(.journal-metric--published, .journal-metric--current, .journal-metric--upcoming) {
+.gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published, .gallery-metric--visits),
+.custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits, .custom-page-metric--views),
+.journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--scheduled, .journal-metric--draft),
+.journal-status-metrics--exhibitions > :is(.journal-metric--published, .journal-metric--current, .journal-metric--upcoming){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -2067,41 +1474,31 @@
     }
 
     .pages-status-metrics > .pages-metric--navigation,
-    .gallery-status-metrics > .gallery-metric--visits,
-    .custom-page-status-metrics > .custom-page-metric--views,
-    .journal-status-metrics--blog > .journal-metric--draft,
-    .journal-status-metrics--exhibitions > .journal-metric--upcoming {
+.gallery-status-metrics > .gallery-metric--visits,
+.custom-page-status-metrics > .custom-page-metric--views,
+.journal-status-metrics--blog > .journal-metric--draft,
+.journal-status-metrics--exhibitions > .journal-metric--upcoming{
         border-right: 0 !important;
     }
 }
 
 /* Sidebar collapse is monotonic: it may force Narrow but never promote any of
  * these workspaces back to a six-metric state. */
-@media (max-width: 63.99rem) {
-    :is(
-        .pages-status-metrics,
-        .gallery-status-metrics,
-        .custom-page-status-metrics,
-        .journal-status-metrics
-    ) {
+@media (max-width: 63.99rem){
+    :is(.pages-status-metrics, .gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
-    :is(
-        .pages-status-metrics > .pages-metric,
-        .gallery-status-metrics > .gallery-metric,
-        .custom-page-status-metrics > .custom-page-metric,
-        .journal-status-metrics > .journal-metric
-    ) {
+    :is(.pages-status-metrics > .pages-metric, .gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
         display: none !important;
     }
 
     .pages-status-metrics > :is(.pages-metric--published, .pages-metric--unpublished, .pages-metric--navigation),
-    .gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published, .gallery-metric--visits),
-    .custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits, .custom-page-metric--views),
-    .journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--scheduled, .journal-metric--draft),
-    .journal-status-metrics--exhibitions > :is(.journal-metric--published, .journal-metric--current, .journal-metric--upcoming) {
+.gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published, .gallery-metric--visits),
+.custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits, .custom-page-metric--views),
+.journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--scheduled, .journal-metric--draft),
+.journal-status-metrics--exhibitions > :is(.journal-metric--published, .journal-metric--current, .journal-metric--upcoming){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -2110,39 +1507,29 @@
     }
 
     .pages-status-metrics > .pages-metric--navigation,
-    .gallery-status-metrics > .gallery-metric--visits,
-    .custom-page-status-metrics > .custom-page-metric--views,
-    .journal-status-metrics--blog > .journal-metric--draft,
-    .journal-status-metrics--exhibitions > .journal-metric--upcoming {
+.gallery-status-metrics > .gallery-metric--visits,
+.custom-page-status-metrics > .custom-page-metric--views,
+.journal-status-metrics--blog > .journal-metric--draft,
+.journal-status-metrics--exhibitions > .journal-metric--upcoming{
         border-right: 0 !important;
     }
 }
 
-@container admin-workspace (max-width: 38rem) {
-    :is(
-        .pages-status-metrics,
-        .gallery-status-metrics,
-        .custom-page-status-metrics,
-        .journal-status-metrics
-    ) {
+@container admin-workspace (max-width: 38rem){
+    :is(.pages-status-metrics, .gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    :is(
-        .pages-status-metrics > .pages-metric,
-        .gallery-status-metrics > .gallery-metric,
-        .custom-page-status-metrics > .custom-page-metric,
-        .journal-status-metrics > .journal-metric
-    ) {
+    :is(.pages-status-metrics > .pages-metric, .gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
         display: none !important;
     }
 
     .pages-status-metrics > :is(.pages-metric--published, .pages-metric--unpublished),
-    .gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
-    .custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
-    .journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
-    .journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming) {
+.gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
+.custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
+.journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
+.journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -2150,47 +1537,37 @@
     }
 
     .pages-status-metrics > :is(.pages-metric--published),
-    .gallery-status-metrics > :is(.gallery-metric--artworks),
-    .custom-page-status-metrics > :is(.custom-page-metric--components),
-    .journal-status-metrics--blog > :is(.journal-metric--published),
-    .journal-status-metrics--exhibitions > :is(.journal-metric--current) {
+.gallery-status-metrics > :is(.gallery-metric--artworks),
+.custom-page-status-metrics > :is(.custom-page-metric--components),
+.journal-status-metrics--blog > :is(.journal-metric--published),
+.journal-status-metrics--exhibitions > :is(.journal-metric--current){
         border-right: 1px solid var(--admin-line) !important;
     }
 
     .pages-status-metrics > .pages-metric--unpublished,
-    .gallery-status-metrics > .gallery-metric--published,
-    .custom-page-status-metrics > .custom-page-metric--visits,
-    .journal-status-metrics--blog > .journal-metric--draft,
-    .journal-status-metrics--exhibitions > .journal-metric--upcoming {
+.gallery-status-metrics > .gallery-metric--published,
+.custom-page-status-metrics > .custom-page-metric--visits,
+.journal-status-metrics--blog > .journal-metric--draft,
+.journal-status-metrics--exhibitions > .journal-metric--upcoming{
         border-right: 0 !important;
     }
 }
 
-@media (max-width: 38rem) {
-    :is(
-        .pages-status-metrics,
-        .gallery-status-metrics,
-        .custom-page-status-metrics,
-        .journal-status-metrics
-    ) {
+@media (max-width: 38rem){
+    :is(.pages-status-metrics, .gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    :is(
-        .pages-status-metrics > .pages-metric,
-        .gallery-status-metrics > .gallery-metric,
-        .custom-page-status-metrics > .custom-page-metric,
-        .journal-status-metrics > .journal-metric
-    ) {
+    :is(.pages-status-metrics > .pages-metric, .gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
         display: none !important;
     }
 
     .pages-status-metrics > :is(.pages-metric--published, .pages-metric--unpublished),
-    .gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
-    .custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
-    .journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
-    .journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming) {
+.gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
+.custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
+.journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
+.journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -2198,10 +1575,10 @@
 }
 
 /* ---------- one-row metric-backed toolbars ---------- */
-@container admin-workspace (min-width: 30.01rem) {
+@container admin-workspace (min-width: 30.01rem){
     .admin-task-controls--pages,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls {
+.custom-page-workspace__controls,
+.journal-workspace__entries > .admin-data-controls{
         display: grid !important;
         grid-template-columns:
             minmax(16.666667%, 1fr)
@@ -2213,78 +1590,50 @@
         align-items: end !important;
     }
 
-    .admin-task-controls--pages {
+    .admin-task-controls--pages{
         --admin-responsive-filter-count: 2;
     }
 
-    .custom-page-workspace__controls {
+    .custom-page-workspace__controls{
         --admin-responsive-filter-count: 1;
     }
 
-    .journal-workspace__entries > .admin-data-controls.admin-data-controls--filters-1 {
+    .journal-workspace__entries > .admin-data-controls.admin-data-controls--filters-1{
         --admin-responsive-filter-count: 1;
     }
 
-    .journal-workspace__entries > .admin-data-controls.admin-data-controls--filters-2 {
+    .journal-workspace__entries > .admin-data-controls.admin-data-controls--filters-2{
         --admin-responsive-filter-count: 2;
     }
 
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > :first-child {
+    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > :first-child{
         grid-column: auto !important;
         width: 100% !important;
         min-width: 0 !important;
         padding-right: 0 !important;
     }
 
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__filters,
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__utility {
+    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__filters,
+:is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__utility{
         display: contents !important;
     }
 
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__filters > * {
+    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__filters > *{
         grid-column: auto !important;
         width: 7rem !important;
         min-width: 0 !important;
         padding-inline: 0 !important;
     }
 
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__utility > :first-child,
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__utility > :nth-child(2) {
+    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__utility > :first-child,
+:is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__utility > :nth-child(2){
         grid-column: auto !important;
         width: max-content !important;
         min-width: 0 !important;
         padding-inline: 0 !important;
     }
 
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__utility > :last-child {
+    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__utility > :last-child{
         grid-column: auto !important;
         width: 8.5rem !important;
         min-width: 8.5rem !important;
@@ -2292,28 +1641,20 @@
     }
 }
 
-@container admin-workspace (max-width: 62rem) {
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) .admin-data-controls__utility .admin-action__label,
-    .gallery-workspace__gallery-actions .admin-action__label {
+@container admin-workspace (max-width: 62rem){
+    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) .admin-data-controls__utility .admin-action__label,
+.gallery-workspace__gallery-actions .admin-action__label{
         display: none !important;
     }
 
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) .admin-data-controls__utility .admin-action,
-    .gallery-workspace__gallery-actions .admin-action {
+    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) .admin-data-controls__utility .admin-action,
+.gallery-workspace__gallery-actions .admin-action{
         padding-inline: .18rem !important;
     }
 }
 
 /* ---------- Gallery toolbar/contact sheet ---------- */
-.gallery-workspace__controls {
+.gallery-workspace__controls{
     display: grid !important;
     grid-template-columns:
         minmax(16.666667%, 1fr)
@@ -2326,16 +1667,16 @@
     align-items: end !important;
 }
 
-.gallery-workspace__gallery-actions {
+.gallery-workspace__gallery-actions{
     gap: .18rem !important;
 }
 
-.gallery-workspace__selection-anchor {
+.gallery-workspace__selection-anchor{
     width: 100%;
     min-width: 0;
 }
 
-.gallery-workspace__selection-trigger {
+.gallery-workspace__selection-trigger{
     display: grid !important;
     width: 100% !important;
     min-width: 0 !important;
@@ -2345,17 +1686,17 @@
     justify-content: stretch !important;
 }
 
-.gallery-workspace__selection-count {
+.gallery-workspace__selection-count{
     margin-left: 0 !important;
     justify-self: center;
 }
 
-@container admin-workspace (max-width: 54rem) {
-    .admin-gallery-grid {
+@container admin-workspace (max-width: 54rem){
+    .admin-gallery-grid{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .gallery-workspace__controls {
+    .gallery-workspace__controls{
         grid-template-columns:
             minmax(16.666667%, 1fr)
             5.5rem
@@ -2367,12 +1708,12 @@
     }
 }
 
-@container admin-workspace (max-width: 38rem) {
-    .admin-gallery-grid {
+@container admin-workspace (max-width: 38rem){
+    .admin-gallery-grid{
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
-    .gallery-workspace__controls {
+    .gallery-workspace__controls{
         grid-template-columns:
             minmax(16.666667%, 1fr)
             4.75rem
@@ -2383,70 +1724,70 @@
         gap: .22rem !important;
     }
 
-    .gallery-workspace__selection-trigger {
+    .gallery-workspace__selection-trigger{
         min-width: 0 !important;
         width: 6.5rem !important;
     }
 }
 
 /* ---------- Pages hierarchy ---------- */
-@container admin-table (max-width: 50rem) {
-    .admin-hierarchy--pages .admin-pages__template {
+@container admin-table (max-width: 50rem){
+    .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
 
     .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row {
+.admin-hierarchy--pages .admin-pages__row{
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     }
 
-    .admin-pages__primary-grid {
+    .admin-pages__primary-grid{
         grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
         gap: .3rem !important;
     }
 
-    .admin-pages__row-actions .admin-action__label {
+    .admin-pages__row-actions .admin-action__label{
         display: none !important;
     }
 
-    .admin-pages__row-actions .admin-action {
+    .admin-pages__row-actions .admin-action{
         padding-inline: .08rem !important;
         justify-content: center !important;
     }
 }
 
-@container admin-table (max-width: 38rem) {
+@container admin-table (max-width: 38rem){
     .admin-hierarchy--pages .admin-pages__type,
-    .admin-hierarchy--pages .admin-pages__template {
+.admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
 
-    .admin-hierarchy--pages .admin-responsive-meta {
+    .admin-hierarchy--pages .admin-responsive-meta{
         display: block !important;
     }
 
     .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row {
+.admin-hierarchy--pages .admin-pages__row{
         grid-template-columns: minmax(0, 1fr) 9.5rem !important;
     }
 
     .admin-pages__primary-grid,
-    .admin-pages__utility-grid {
+.admin-pages__utility-grid{
         grid-column: auto !important;
     }
 
-    .admin-pages__utility-grid {
+    .admin-pages__utility-grid{
         grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width) !important;
     }
 
-    .admin-pages__primary-grid {
+    .admin-pages__primary-grid{
         grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
     }
 }
 
 /* ---------- Custom Page hierarchy ---------- */
-@container admin-table (max-width: 50rem) {
-    .custom-page-component-sequence {
+@container admin-table (max-width: 50rem){
+    .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
         --admin-hierarchy-actions-column: 9rem;
@@ -2459,32 +1800,32 @@
     }
 
     .custom-page-component-sequence__header > :nth-child(2),
-    .custom-page-component__type,
-    .custom-page-child-row__kind {
+.custom-page-component__type,
+.custom-page-child-row__kind{
         display: none !important;
     }
 
-    .custom-page-component-sequence .admin-responsive-meta {
+    .custom-page-component-sequence .admin-responsive-meta{
         display: block !important;
     }
 
-    .custom-page-row-actions .admin-action__label {
+    .custom-page-row-actions .admin-action__label{
         display: none !important;
     }
 
-    .custom-page-row-actions {
+    .custom-page-row-actions{
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
         gap: .06rem !important;
     }
 
-    .custom-page-component-sequence .custom-page-row-actions .admin-action {
+    .custom-page-component-sequence .custom-page-row-actions .admin-action{
         padding-inline: .08rem !important;
         justify-content: center !important;
     }
 }
 
-@container admin-table (max-width: 38rem) {
-    .custom-page-component-sequence {
+@container admin-table (max-width: 38rem){
+    .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 1.75rem;
         --admin-hierarchy-actions-column: 8rem;
@@ -2492,72 +1833,72 @@
 }
 
 /* ---------- Journal tables ---------- */
-.journal-table col.admin-table__col-position {
+.journal-table col.admin-table__col-position{
     width: 3rem !important;
 }
 
-.journal-table col.admin-table__col-drag {
+.journal-table col.admin-table__col-drag{
     width: 2rem !important;
 }
 
-@container admin-table (max-width: 62rem) {
-    .journal-table col.journal-table__actions--blog {
+@container admin-table (max-width: 62rem){
+    .journal-table col.journal-table__actions--blog{
         width: 10.5rem !important;
     }
 
-    .journal-table col.journal-table__actions--exhibitions {
+    .journal-table col.journal-table__actions--exhibitions{
         width: 8.5rem !important;
     }
 
-    .journal-row-actions .admin-action__label {
+    .journal-row-actions .admin-action__label{
         display: none !important;
     }
 
-    .journal-row-actions {
+    .journal-row-actions{
         gap: .05rem !important;
     }
 
-    .journal-row-actions .admin-action {
+    .journal-row-actions .admin-action{
         padding-inline: .05rem !important;
         justify-content: center !important;
     }
 }
 
-@container admin-table (max-width: 50rem) {
+@container admin-table (max-width: 50rem){
     .journal-table--blog .journal-col--visual,
-    .journal-table--blog .journal-col--publication {
+.journal-table--blog .journal-col--publication{
         display: none !important;
     }
 
-    .journal-table--exhibitions .journal-col--schedule {
+    .journal-table--exhibitions .journal-col--schedule{
         display: none !important;
     }
 
-    .journal-table .admin-responsive-meta {
+    .journal-table .admin-responsive-meta{
         display: block !important;
     }
 
     .journal-table--blog col.journal-col--identity,
-    .journal-table--exhibitions col.journal-col--identity {
+.journal-table--exhibitions col.journal-col--identity{
         width: auto !important;
     }
 }
 
-@container admin-table (max-width: 38rem) {
-    .journal-table col.admin-table__col-drag {
+@container admin-table (max-width: 38rem){
+    .journal-table col.admin-table__col-drag{
         width: 1.75rem !important;
     }
 
-    .journal-table col.journal-table__actions--blog {
+    .journal-table col.journal-table__actions--blog{
         width: 10rem !important;
     }
 
-    .journal-table col.journal-table__actions--exhibitions {
+    .journal-table col.journal-table__actions--exhibitions{
         width: 8rem !important;
     }
 
     .journal-table--blog .journal-col--status,
-    .journal-table--exhibitions .journal-col--timing {
+.journal-table--exhibitions .journal-col--timing{
         display: table-cell !important;
     }
 }
@@ -2565,12 +1906,12 @@
 /* Cross-feature burger-shell monotonicity for the current responsive pass.
  * Filament removing the sidebar must not reintroduce columns/actions that had
  * already yielded immediately before shell collapse. */
-@media (min-width: 38.01rem) and (max-width: 63.99rem) {
-    .admin-gallery-grid {
+@media (min-width: 38.01rem) and (max-width: 63.99rem){
+    .admin-gallery-grid{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .gallery-workspace__controls {
+    .gallery-workspace__controls{
         grid-template-columns:
             minmax(16.666667%, 1fr)
             5.5rem
@@ -2582,30 +1923,30 @@
     }
 
     .gallery-workspace__gallery-actions .admin-action__label,
-    .admin-task-controls--pages .admin-data-controls__utility .admin-action__label,
-    .custom-page-workspace__controls .admin-data-controls__utility .admin-action__label,
-    .journal-workspace__entries > .admin-data-controls .admin-data-controls__utility .admin-action__label,
-    .admin-pages__row-actions .admin-action__label,
-    .custom-page-row-actions .admin-action__label,
-    .journal-row-actions .admin-action__label {
+.admin-task-controls--pages .admin-data-controls__utility .admin-action__label,
+.custom-page-workspace__controls .admin-data-controls__utility .admin-action__label,
+.journal-workspace__entries > .admin-data-controls .admin-data-controls__utility .admin-action__label,
+.admin-pages__row-actions .admin-action__label,
+.custom-page-row-actions .admin-action__label,
+.journal-row-actions .admin-action__label{
         display: none !important;
     }
 
-    .admin-hierarchy--pages .admin-pages__template {
+    .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
 
     .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row {
+.admin-hierarchy--pages .admin-pages__row{
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     }
 
-    .admin-pages__primary-grid {
+    .admin-pages__primary-grid{
         grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
         gap: .3rem !important;
     }
 
-    .custom-page-component-sequence {
+    .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
         --admin-hierarchy-actions-column: 9rem;
@@ -2618,33 +1959,33 @@
     }
 
     .custom-page-component-sequence__header > :nth-child(2),
-    .custom-page-component__type,
-    .custom-page-child-row__kind {
+.custom-page-component__type,
+.custom-page-child-row__kind{
         display: none !important;
     }
 
     .custom-page-component-sequence .admin-responsive-meta,
-    .journal-table .admin-responsive-meta {
+.journal-table .admin-responsive-meta{
         display: block !important;
     }
 
     .journal-table--blog .journal-col--visual,
-    .journal-table--blog .journal-col--publication,
-    .journal-table--exhibitions .journal-col--schedule {
+.journal-table--blog .journal-col--publication,
+.journal-table--exhibitions .journal-col--schedule{
         display: none !important;
     }
 
-    .journal-table col.journal-table__actions--blog {
+    .journal-table col.journal-table__actions--blog{
         width: 10.5rem !important;
     }
 
-    .journal-table col.journal-table__actions--exhibitions {
+    .journal-table col.journal-table__actions--exhibitions{
         width: 8.5rem !important;
     }
 }
 
-@container admin-workspace (max-width: 30rem) {
-    .gallery-workspace__controls {
+@container admin-workspace (max-width: 30rem){
+    .gallery-workspace__controls{
         grid-template-columns:
             minmax(5rem, 1fr)
             4.25rem
@@ -2655,11 +1996,11 @@
         gap: .18rem !important;
     }
 
-    .gallery-workspace__controls .admin-action__label {
+    .gallery-workspace__controls .admin-action__label{
         display: none !important;
     }
 
-    .gallery-workspace__selection-trigger {
+    .gallery-workspace__selection-trigger{
         width: 5.75rem !important;
     }
 }
@@ -2671,46 +2012,34 @@
  * Custom intentionally have no Stage; their metric rule is the visual boundary.
  */
 
-@container admin-workspace (min-width: 30.01rem) and (max-width: 54rem) {
-    .admin-home-workspace :is(
-        .home-artwork-source-controls,
-        .home-component-controls
-    ) {
+@container admin-workspace (min-width: 30.01rem) and (max-width: 54rem){
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls){
         display: grid !important;
         grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
         gap: 0 !important;
         align-items: end !important;
     }
 
-    .admin-home-workspace .home-artwork-source-controls > :first-child {
+    .admin-home-workspace .home-artwork-source-controls > :first-child{
         grid-column: span 2 !important;
     }
 
-    .admin-home-workspace .home-component-controls > :first-child {
+    .admin-home-workspace .home-component-controls > :first-child{
         grid-column: span 3 !important;
     }
 
-    .admin-home-workspace :is(
-        .home-artwork-source-controls,
-        .home-component-controls
-    ) > :first-child {
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > :first-child{
         width: 100% !important;
         min-width: 0 !important;
         padding-right: .45rem !important;
         flex: none !important;
     }
 
-    .admin-home-workspace :is(
-        .home-artwork-source-controls,
-        .home-component-controls
-    ) > .admin-data-controls__filters {
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__filters{
         display: contents !important;
     }
 
-    .admin-home-workspace :is(
-        .home-artwork-source-controls,
-        .home-component-controls
-    ) > .admin-data-controls__filters > * {
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__filters > *{
         grid-column: span 1 !important;
         width: 100% !important;
         min-width: 0 !important;
@@ -2718,10 +2047,7 @@
         flex: none !important;
     }
 
-    .admin-home-workspace :is(
-        .home-artwork-source-controls,
-        .home-component-controls
-    ) > .admin-data-controls__utility {
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility{
         display: grid !important;
         min-width: 0 !important;
         grid-column: span 2 !important;
@@ -2730,10 +2056,7 @@
         align-items: end !important;
     }
 
-    .admin-home-workspace :is(
-        .home-artwork-source-controls,
-        .home-component-controls
-    ) > .admin-data-controls__utility > * {
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > *{
         width: 100% !important;
         min-width: 0 !important;
         margin-left: 0 !important;
@@ -2741,79 +2064,57 @@
         flex: none !important;
     }
 
-    .admin-home-workspace :is(
-        .home-artwork-source-controls,
-        .home-component-controls
-    ) .admin-selection__trigger {
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger{
         width: 100% !important;
         min-width: 0 !important;
     }
 }
 
-@container admin-workspace (max-width: 62rem) {
-    .admin-home-workspace .home-workspace-actions .admin-action__label {
+@container admin-workspace (max-width: 62rem){
+    .admin-home-workspace .home-workspace-actions .admin-action__label{
         display: none !important;
     }
 
-    .admin-home-workspace .home-workspace-actions .admin-action {
+    .admin-home-workspace .home-workspace-actions .admin-action{
         justify-content: center !important;
         padding-inline: .3rem !important;
     }
 }
 
-@container admin-workspace (max-width: 54rem) {
-    .admin-home-workspace .home-metric {
+@container admin-workspace (max-width: 54rem){
+    .admin-home-workspace .home-metric{
         display: none !important;
     }
 
-    .admin-home-workspace :is(
-        .home-metric--visits,
-        .home-metric--eligible,
-        .home-metric--candidates,
-        .home-metric--components,
-        .home-metric--images,
-        .home-metric--media
-    ) {
+    .admin-home-workspace :is(.home-metric--visits, .home-metric--eligible, .home-metric--candidates, .home-metric--components, .home-metric--images, .home-metric--media){
         display: block !important;
     }
 }
 
-@container admin-workspace (max-width: 38rem) {
-    .admin-home-workspace .home-metric {
+@container admin-workspace (max-width: 38rem){
+    .admin-home-workspace .home-metric{
         display: none !important;
     }
 
-    .admin-home-workspace :is(
-        .home-metric--visits,
-        .home-metric--eligible,
-        .home-metric--components,
-        .home-metric--media
-    ) {
+    .admin-home-workspace :is(.home-metric--visits, .home-metric--eligible, .home-metric--components, .home-metric--media){
         display: block !important;
     }
 }
 
-@media (min-width: 38.01rem) and (max-width: 63.99rem) {
-    .admin-home-workspace .home-metric {
+@media (min-width: 38.01rem) and (max-width: 63.99rem){
+    .admin-home-workspace .home-metric{
         display: none !important;
     }
 
-    .admin-home-workspace :is(
-        .home-metric--visits,
-        .home-metric--eligible,
-        .home-metric--candidates,
-        .home-metric--components,
-        .home-metric--images,
-        .home-metric--media
-    ) {
+    .admin-home-workspace :is(.home-metric--visits, .home-metric--eligible, .home-metric--candidates, .home-metric--components, .home-metric--images, .home-metric--media){
         display: block !important;
     }
 
-    .admin-home-workspace .home-workspace-actions .admin-action__label {
+    .admin-home-workspace .home-workspace-actions .admin-action__label{
         display: none !important;
     }
 
-    .home-hero-surface {
+    .home-hero-surface{
         display: grid !important;
         height: var(--admin-visual-stage-height) !important;
         grid-template-columns: minmax(0, 1fr) !important;
@@ -2821,12 +2122,12 @@
     }
 
     .home-hero-surface::before,
-    .home-hero-surface::after {
+.home-hero-surface::after{
         display: none !important;
         content: none !important;
     }
 
-    .home-hero-surface > .home-hero-surface__visual {
+    .home-hero-surface > .home-hero-surface__visual{
         display: grid !important;
         grid-column: 1 / -1 !important;
         width: 100% !important;
@@ -2836,7 +2137,7 @@
         padding: var(--admin-stage-divider-inset) 0 !important;
     }
 
-    .home-hero-surface > .home-hero-rail {
+    .home-hero-surface > .home-hero-rail{
         display: none !important;
     }
 }
@@ -2851,23 +2152,19 @@
  */
 
 /* ---------- Metrics ---------- */
-@container admin-workspace (max-width: 54rem) {
-    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics) {
+@container admin-workspace (max-width: 54rem){
+    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics){
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
-    :is(
-        .analytics-status-metrics > .analytics-metric,
-        .storage-status-metrics > .storage-metric,
-        .activity-status-metrics > .activity-metric
-    ) {
+    :is(.analytics-status-metrics > .analytics-metric, .storage-status-metrics > .storage-metric, .activity-status-metrics > .activity-metric){
         display: none !important;
     }
 
     .analytics-status-metrics > :is(.analytics-metric--visits, .analytics-metric--unique, .analytics-metric--actions),
-    .storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining, .storage-metric--files),
-    .activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending, .activity-metric--commits) {
+.storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining, .storage-metric--files),
+.activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending, .activity-metric--commits){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -2876,29 +2173,25 @@
     }
 
     .analytics-status-metrics > .analytics-metric--actions,
-    .storage-status-metrics > .storage-metric--files,
-    .activity-status-metrics > .activity-metric--commits {
+.storage-status-metrics > .storage-metric--files,
+.activity-status-metrics > .activity-metric--commits{
         border-right: 0 !important;
     }
 }
 
-@media (min-width: 38.01rem) and (max-width: 63.99rem) {
-    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics) {
+@media (min-width: 38.01rem) and (max-width: 63.99rem){
+    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics){
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
-    :is(
-        .analytics-status-metrics > .analytics-metric,
-        .storage-status-metrics > .storage-metric,
-        .activity-status-metrics > .activity-metric
-    ) {
+    :is(.analytics-status-metrics > .analytics-metric, .storage-status-metrics > .storage-metric, .activity-status-metrics > .activity-metric){
         display: none !important;
     }
 
     .analytics-status-metrics > :is(.analytics-metric--visits, .analytics-metric--unique, .analytics-metric--actions),
-    .storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining, .storage-metric--files),
-    .activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending, .activity-metric--commits) {
+.storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining, .storage-metric--files),
+.activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending, .activity-metric--commits){
         display: block !important;
         min-width: 0;
         padding: 1.05rem 1rem !important;
@@ -2907,31 +2200,27 @@
     }
 
     .analytics-status-metrics > .analytics-metric--actions,
-    .storage-status-metrics > .storage-metric--files,
-    .activity-status-metrics > .activity-metric--commits {
+.storage-status-metrics > .storage-metric--files,
+.activity-status-metrics > .activity-metric--commits{
         border-right: 0 !important;
     }
 }
 
-@container admin-workspace (max-width: 38rem) {
-    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics) {
+@container admin-workspace (max-width: 38rem){
+    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics){
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         grid-auto-columns: minmax(0, 1fr) !important;
         grid-auto-flow: row !important;
     }
 
-    :is(
-        .analytics-status-metrics > .analytics-metric,
-        .storage-status-metrics > .storage-metric,
-        .activity-status-metrics > .activity-metric
-    ) {
+    :is(.analytics-status-metrics > .analytics-metric, .storage-status-metrics > .storage-metric, .activity-status-metrics > .activity-metric){
         display: none !important;
     }
 
     .analytics-status-metrics > .analytics-metric--visits,
-    .storage-status-metrics > .storage-metric--used,
-    .activity-status-metrics > .activity-metric--changes {
+.storage-status-metrics > .storage-metric--used,
+.activity-status-metrics > .activity-metric--changes{
         display: block !important;
         grid-column: 1 !important;
         width: auto !important;
@@ -2942,8 +2231,8 @@
     }
 
     .analytics-status-metrics > .analytics-metric--unique,
-    .storage-status-metrics > .storage-metric--remaining,
-    .activity-status-metrics > .activity-metric--pending {
+.storage-status-metrics > .storage-metric--remaining,
+.activity-status-metrics > .activity-metric--pending{
         display: block !important;
         grid-column: 2 !important;
         width: auto !important;
@@ -2954,21 +2243,21 @@
     }
 }
 
-@media (max-width: 38rem) {
-    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics) {
+@media (max-width: 38rem){
+    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics){
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
     .analytics-status-metrics > .analytics-metric--visits,
-    .storage-status-metrics > .storage-metric--used,
-    .activity-status-metrics > .activity-metric--changes {
+.storage-status-metrics > .storage-metric--used,
+.activity-status-metrics > .activity-metric--changes{
         grid-column: 1 !important;
     }
 
     .analytics-status-metrics > .analytics-metric--unique,
-    .storage-status-metrics > .storage-metric--remaining,
-    .activity-status-metrics > .activity-metric--pending {
+.storage-status-metrics > .storage-metric--remaining,
+.activity-status-metrics > .activity-metric--pending{
         grid-column: 2 !important;
     }
 }
@@ -2976,18 +2265,18 @@
 /* ---------- One-row controls ---------- */
 .analytics-detail-surface > .admin-data-controls,
 .admin-storage .media-workspace__controls,
-.activity-workspace__controls {
+.activity-workspace__controls{
     display: grid !important;
     gap: .35rem !important;
     align-items: end !important;
 }
 
-.analytics-detail-surface > .admin-data-controls {
+.analytics-detail-surface > .admin-data-controls{
     grid-template-columns: minmax(16.666667%, 1fr) 7.5rem 6.5rem !important;
 }
 
 .admin-storage .media-workspace__controls,
-.activity-workspace__controls {
+.activity-workspace__controls{
     grid-template-columns:
         minmax(16.666667%, 1fr)
         repeat(4, minmax(0, .8fr))
@@ -2996,34 +2285,19 @@
         8rem !important;
 }
 
-:is(
-    .analytics-detail-surface > .admin-data-controls,
-    .admin-storage .media-workspace__controls,
-    .activity-workspace__controls
-) > .admin-data-controls__filters,
-:is(
-    .admin-storage .media-workspace__controls,
-    .activity-workspace__controls
-) > .admin-data-controls__utility {
+:is(.analytics-detail-surface > .admin-data-controls, .admin-storage .media-workspace__controls, .activity-workspace__controls) > .admin-data-controls__filters,
+:is(.admin-storage .media-workspace__controls, .activity-workspace__controls) > .admin-data-controls__utility{
     display: contents !important;
 }
 
-:is(
-    .analytics-detail-surface > .admin-data-controls,
-    .admin-storage .media-workspace__controls,
-    .activity-workspace__controls
-) > :first-child {
+:is(.analytics-detail-surface > .admin-data-controls, .admin-storage .media-workspace__controls, .activity-workspace__controls) > :first-child{
     grid-column: auto !important;
     width: 100% !important;
     min-width: 0 !important;
     padding-right: 0 !important;
 }
 
-:is(
-    .analytics-detail-surface > .admin-data-controls,
-    .admin-storage .media-workspace__controls,
-    .activity-workspace__controls
-) > .admin-data-controls__filters > * {
+:is(.analytics-detail-surface > .admin-data-controls, .admin-storage .media-workspace__controls, .activity-workspace__controls) > .admin-data-controls__filters > *{
     grid-column: auto !important;
     width: 100% !important;
     min-width: 0 !important;
@@ -3031,7 +2305,7 @@
 }
 
 .admin-storage .media-workspace__controls > .admin-data-controls__utility > :first-child,
-.activity-workspace__controls > .admin-data-controls__utility > :first-child {
+.activity-workspace__controls > .admin-data-controls__utility > :first-child{
     grid-column: auto !important;
     width: max-content !important;
     min-width: 0 !important;
@@ -3039,7 +2313,7 @@
 }
 
 .admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(2),
-.activity-workspace__controls > .admin-data-controls__utility > :nth-child(2) {
+.activity-workspace__controls > .admin-data-controls__utility > :nth-child(2){
     grid-column: auto !important;
     width: max-content !important;
     min-width: 0 !important;
@@ -3047,7 +2321,7 @@
 }
 
 .admin-storage .media-workspace__controls > .admin-data-controls__utility > :last-child,
-.activity-workspace__controls > .admin-data-controls__utility > :last-child {
+.activity-workspace__controls > .admin-data-controls__utility > :last-child{
     grid-column: auto !important;
     width: 8rem !important;
     min-width: 8rem !important;
@@ -3057,28 +2331,28 @@
 .admin-storage .media-workspace__controls .admin-data-control-label,
 .activity-workspace__controls .admin-data-control-label,
 .analytics-detail-surface > .admin-data-controls .admin-data-control-label,
-.analytics-detail-surface > .admin-data-controls .admin-data-field > span {
+.analytics-detail-surface > .admin-data-controls .admin-data-field > span{
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.activity-control--view .admin-toolbar {
+.activity-control--view .admin-toolbar{
     width: max-content !important;
     grid-template-columns: repeat(2, max-content) !important;
 }
 
 .activity-control--view .admin-action,
-.activity-control--reset .admin-action {
+.activity-control--reset .admin-action{
     width: auto !important;
     min-width: 0 !important;
     white-space: nowrap;
 }
 
-@container admin-workspace (max-width: 54rem) {
+@container admin-workspace (max-width: 54rem){
     .admin-storage .media-workspace__controls,
-    .activity-workspace__controls {
+.activity-workspace__controls{
         grid-template-columns:
             minmax(16.666667%, 1fr)
             repeat(4, minmax(0, 1fr))
@@ -3089,22 +2363,22 @@
     }
 
     .activity-control--view .admin-action__label,
-    .activity-control--reset .admin-action__label,
-    .admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action__label {
+.activity-control--reset .admin-action__label,
+.admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action__label{
         display: none !important;
     }
 
     .activity-control--view .admin-action,
-    .activity-control--reset .admin-action,
-    .admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action {
+.activity-control--reset .admin-action,
+.admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action{
         padding-inline: .2rem !important;
         justify-content: center !important;
     }
 }
 
-@media (min-width: 38.01rem) and (max-width: 63.99rem) {
+@media (min-width: 38.01rem) and (max-width: 63.99rem){
     .admin-storage .media-workspace__controls,
-    .activity-workspace__controls {
+.activity-workspace__controls{
         grid-template-columns:
             minmax(16.666667%, 1fr)
             repeat(4, minmax(0, 1fr))
@@ -3115,20 +2389,20 @@
     }
 
     .activity-control--view .admin-action__label,
-    .activity-control--reset .admin-action__label,
-    .admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action__label {
+.activity-control--reset .admin-action__label,
+.admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action__label{
         display: none !important;
     }
 }
 
-@container admin-workspace (max-width: 38rem) {
-    .analytics-detail-surface > .admin-data-controls {
+@container admin-workspace (max-width: 38rem){
+    .analytics-detail-surface > .admin-data-controls{
         grid-template-columns: minmax(16.666667%, 1fr) minmax(4.75rem, max-content) minmax(4rem, max-content) !important;
         gap: .2rem !important;
     }
 
     .admin-storage .media-workspace__controls,
-    .activity-workspace__controls {
+.activity-workspace__controls{
         grid-template-columns:
             minmax(16.666667%, 1fr)
             repeat(4, minmax(0, 1fr))
@@ -3139,25 +2413,25 @@
     }
 
     .admin-storage .media-workspace__controls > .admin-data-controls__utility > :last-child,
-    .activity-workspace__controls > .admin-data-controls__utility > :last-child {
+.activity-workspace__controls > .admin-data-controls__utility > :last-child{
         width: 5.75rem !important;
         min-width: 5.75rem !important;
     }
 
-    .activity-control--view .admin-toolbar {
+    .activity-control--view .admin-toolbar{
         width: 4.25rem !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: .08rem !important;
     }
 
     .activity-control--view .admin-action,
-    .activity-control--reset .admin-action {
+.activity-control--reset .admin-action{
         width: 100% !important;
         padding-inline: .12rem !important;
         justify-content: center !important;
     }
 
-    .admin-storage .media-workspace__view-options {
+    .admin-storage .media-workspace__view-options{
         width: 4.25rem !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         gap: .08rem !important;
@@ -3165,179 +2439,179 @@
 }
 
 /* Storage grid density follows the workspace rather than the viewport. */
-@container admin-workspace (max-width: 54rem) {
-    .admin-storage .media-workspace__grid {
+@container admin-workspace (max-width: 54rem){
+    .admin-storage .media-workspace__grid{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
 
-@container admin-workspace (max-width: 30rem) {
-    .admin-storage .media-workspace__grid {
+@container admin-workspace (max-width: 30rem){
+    .admin-storage .media-workspace__grid{
         grid-template-columns: minmax(0, 1fr) !important;
     }
 }
 
 /* ---------- Storage table ---------- */
-@container admin-table (max-width: 50rem) {
+@container admin-table (max-width: 50rem){
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
-    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
-    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
-    .admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
-    .admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
-    .admin-storage .media-workspace__table-wrap .media-workspace__usage-cell {
+.admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
+.admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
+.admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
+.admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
+.admin-storage .media-workspace__table-wrap .media-workspace__usage-cell{
         display: none !important;
     }
 
-    .admin-storage .media-workspace__col-media {
+    .admin-storage .media-workspace__col-media{
         width: auto !important;
     }
 
-    .admin-storage .media-workspace__col-type {
+    .admin-storage .media-workspace__col-type{
         width: 6rem !important;
     }
 
-    .admin-storage .media-workspace__col-size {
+    .admin-storage .media-workspace__col-size{
         width: 5rem !important;
     }
 
-    .admin-storage .media-workspace__col-status {
+    .admin-storage .media-workspace__col-status{
         width: 5.5rem !important;
     }
 
-    .admin-storage .media-workspace__col-actions {
+    .admin-storage .media-workspace__col-actions{
         width: 7rem !important;
     }
 
-    .admin-storage .media-workspace__col-selection {
+    .admin-storage .media-workspace__col-selection{
         width: var(--admin-table-selection-width) !important;
     }
 
-    .admin-storage .media-workspace__row-actions {
+    .admin-storage .media-workspace__row-actions{
         gap: .06rem !important;
     }
 
-    .admin-storage .media-workspace__row-actions .admin-action__label {
+    .admin-storage .media-workspace__row-actions .admin-action__label{
         display: none !important;
     }
 
-    .admin-storage .media-workspace__row-actions .admin-action {
+    .admin-storage .media-workspace__row-actions .admin-action{
         padding-inline: .08rem !important;
     }
 }
 
-@container admin-table (max-width: 38rem) {
+@container admin-table (max-width: 38rem){
     .admin-storage .media-workspace__table-wrap .media-workspace__col-type,
-    .admin-storage .media-workspace__table-wrap .media-workspace__col-size,
-    .admin-storage .media-workspace__table-wrap .media-workspace__type-head,
-    .admin-storage .media-workspace__table-wrap .media-workspace__size-head,
-    .admin-storage .media-workspace__table-wrap .media-workspace__type-cell,
-    .admin-storage .media-workspace__table-wrap .media-workspace__size-cell {
+.admin-storage .media-workspace__table-wrap .media-workspace__col-size,
+.admin-storage .media-workspace__table-wrap .media-workspace__type-head,
+.admin-storage .media-workspace__table-wrap .media-workspace__size-head,
+.admin-storage .media-workspace__table-wrap .media-workspace__type-cell,
+.admin-storage .media-workspace__table-wrap .media-workspace__size-cell{
         display: none !important;
     }
 
-    .admin-storage .media-workspace__identity .admin-responsive-meta {
+    .admin-storage .media-workspace__identity .admin-responsive-meta{
         display: block !important;
     }
 
-    .admin-storage .media-workspace__col-status {
+    .admin-storage .media-workspace__col-status{
         width: 5rem !important;
     }
 
-    .admin-storage .media-workspace__col-actions {
+    .admin-storage .media-workspace__col-actions{
         width: 6rem !important;
     }
 }
 
 /* ---------- Activity tables ---------- */
-@container admin-table (max-width: 50rem) {
+@container admin-table (max-width: 50rem){
     .activity-events-table .activity-col--who,
-    .activity-events-table .activity-col--publication,
-    .activity-commits-table .activity-commit-col--who,
-    .activity-commits-table .activity-commit-col--publication {
+.activity-events-table .activity-col--publication,
+.activity-commits-table .activity-commit-col--who,
+.activity-commits-table .activity-commit-col--publication{
         display: none !important;
     }
 
-    .activity-events-table .activity-col--change {
+    .activity-events-table .activity-col--change{
         width: 20% !important;
     }
 
-    .activity-events-table .activity-col--when {
+    .activity-events-table .activity-col--when{
         width: 7rem !important;
     }
 
-    .activity-events-table .activity-col--target {
+    .activity-events-table .activity-col--target{
         width: auto !important;
     }
 
     .activity-events-table .activity-col--area,
-    .activity-events-table .activity-col--type {
+.activity-events-table .activity-col--type{
         width: 7rem !important;
     }
 
     .activity-events-table .activity-col--actions,
-    .activity-commits-table .activity-commit-col--actions {
+.activity-commits-table .activity-commit-col--actions{
         width: 6.5rem !important;
     }
 
-    .activity-commits-table .activity-commit-col--commit {
+    .activity-commits-table .activity-commit-col--commit{
         width: 8rem !important;
     }
 
-    .activity-commits-table .activity-commit-col--when {
+    .activity-commits-table .activity-commit-col--when{
         width: 7rem !important;
     }
 
-    .activity-commits-table .activity-commit-col--summary {
+    .activity-commits-table .activity-commit-col--summary{
         width: auto !important;
     }
 
-    .activity-row-actions .admin-action__label {
+    .activity-row-actions .admin-action__label{
         display: none !important;
     }
 
-    .activity-row-actions .admin-action {
+    .activity-row-actions .admin-action{
         padding-inline: .12rem !important;
         justify-content: center !important;
     }
 
     .activity-events-table .admin-responsive-meta,
-    .activity-commits-table .admin-responsive-meta {
+.activity-commits-table .admin-responsive-meta{
         display: block !important;
     }
 }
 
-@container admin-table (max-width: 38rem) {
+@container admin-table (max-width: 38rem){
     .activity-events-table .activity-col--area,
-    .activity-events-table .activity-col--type {
+.activity-events-table .activity-col--type{
         display: none !important;
     }
 
-    .activity-events-table .activity-col--change {
+    .activity-events-table .activity-col--change{
         width: auto !important;
     }
 
-    .activity-events-table .activity-col--when {
+    .activity-events-table .activity-col--when{
         width: 5.75rem !important;
     }
 
-    .activity-events-table .activity-col--target {
+    .activity-events-table .activity-col--target{
         width: 7rem !important;
     }
 
     .activity-events-table .activity-col--actions,
-    .activity-commits-table .activity-commit-col--actions {
+.activity-commits-table .activity-commit-col--actions{
         width: 5.5rem !important;
     }
 
-    .activity-events-table .admin-responsive-meta--minimal {
+    .activity-events-table .admin-responsive-meta--minimal{
         display: block !important;
     }
 
-    .activity-commits-table .activity-commit-col--commit {
+    .activity-commits-table .activity-commit-col--commit{
         width: 6.25rem !important;
     }
 
-    .activity-commits-table .activity-commit-col--when {
+    .activity-commits-table .activity-commit-col--when{
         width: 5.75rem !important;
     }
 }
@@ -3345,77 +2619,77 @@
 /* Analytics/Storage/Activity burger-shell monotonicity.
  * Sidebar collapse must not promote Storage density or Activity/Storage table
  * columns back to a wider state. Minimal remains owned by container rules. */
-@media (min-width: 38.01rem) and (max-width: 63.99rem) {
-    .admin-storage .media-workspace__grid {
+@media (min-width: 38.01rem) and (max-width: 63.99rem){
+    .admin-storage .media-workspace__grid{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
-    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
-    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
-    .admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
-    .admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
-    .admin-storage .media-workspace__table-wrap .media-workspace__usage-cell {
+.admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
+.admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
+.admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
+.admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
+.admin-storage .media-workspace__table-wrap .media-workspace__usage-cell{
         display: none !important;
     }
 
-    .admin-storage .media-workspace__col-media {
+    .admin-storage .media-workspace__col-media{
         width: auto !important;
     }
 
-    .admin-storage .media-workspace__col-type {
+    .admin-storage .media-workspace__col-type{
         width: 6rem !important;
     }
 
-    .admin-storage .media-workspace__col-size {
+    .admin-storage .media-workspace__col-size{
         width: 5rem !important;
     }
 
-    .admin-storage .media-workspace__col-status {
+    .admin-storage .media-workspace__col-status{
         width: 5.5rem !important;
     }
 
-    .admin-storage .media-workspace__col-actions {
+    .admin-storage .media-workspace__col-actions{
         width: 7rem !important;
     }
 
     .activity-events-table .activity-col--who,
-    .activity-events-table .activity-col--publication,
-    .activity-commits-table .activity-commit-col--who,
-    .activity-commits-table .activity-commit-col--publication {
+.activity-events-table .activity-col--publication,
+.activity-commits-table .activity-commit-col--who,
+.activity-commits-table .activity-commit-col--publication{
         display: none !important;
     }
 
-    .activity-events-table .activity-col--change {
+    .activity-events-table .activity-col--change{
         width: 20% !important;
     }
 
     .activity-events-table .activity-col--when,
-    .activity-commits-table .activity-commit-col--when {
+.activity-commits-table .activity-commit-col--when{
         width: 7rem !important;
     }
 
     .activity-events-table .activity-col--target,
-    .activity-commits-table .activity-commit-col--summary {
+.activity-commits-table .activity-commit-col--summary{
         width: auto !important;
     }
 
     .activity-events-table .activity-col--area,
-    .activity-events-table .activity-col--type {
+.activity-events-table .activity-col--type{
         width: 7rem !important;
     }
 
     .activity-events-table .activity-col--actions,
-    .activity-commits-table .activity-commit-col--actions {
+.activity-commits-table .activity-commit-col--actions{
         width: 6.5rem !important;
     }
 
-    .activity-commits-table .activity-commit-col--commit {
+    .activity-commits-table .activity-commit-col--commit{
         width: 8rem !important;
     }
 
     .activity-row-actions .admin-action__label,
-    .admin-storage .media-workspace__row-actions .admin-action__label {
+.admin-storage .media-workspace__row-actions .admin-action__label{
         display: none !important;
     }
 }
@@ -3425,8 +2699,8 @@
  * Feature rules decide WHICH metrics remain visible; this block alone decides
  * HOW the visible metrics occupy space. No child keeps a source-position span.
  */
-@container admin-workspace (max-width: 54rem) {
-    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+@container admin-workspace (max-width: 54rem){
+    .admin-metrics:has(> .admin-metric:nth-child(6)){
         --admin-metric-columns: 3 !important;
         position: relative;
         display: grid !important;
@@ -3435,7 +2709,7 @@
         gap: 0 !important;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         box-sizing: border-box;
         grid-column: auto !important;
         grid-row: auto !important;
@@ -3450,7 +2724,7 @@
     }
 
     .admin-metrics:has(> .admin-metric:nth-child(6))::before,
-    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+.admin-metrics:has(> .admin-metric:nth-child(6))::after{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -3461,17 +2735,17 @@
         pointer-events: none;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6))::before {
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before{
         left: 33.333333%;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         left: 66.666667%;
     }
 }
 
-@media (min-width: 38.01rem) and (max-width: 63.99rem) {
-    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+@media (min-width: 38.01rem) and (max-width: 63.99rem){
+    .admin-metrics:has(> .admin-metric:nth-child(6)){
         --admin-metric-columns: 3 !important;
         position: relative;
         display: grid !important;
@@ -3480,7 +2754,7 @@
         gap: 0 !important;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         grid-column: auto !important;
         grid-row: auto !important;
         width: 100% !important;
@@ -3491,7 +2765,7 @@
     }
 
     .admin-metrics:has(> .admin-metric:nth-child(6))::before,
-    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+.admin-metrics:has(> .admin-metric:nth-child(6))::after{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -3502,19 +2776,19 @@
         pointer-events: none;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6))::before {
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before{
         left: 33.333333%;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         left: 66.666667%;
     }
 }
 
 /* Minimal is always exact 50/50. The second column can never inherit a
  * two-track span from its original six-cell source position. */
-@container admin-workspace (max-width: 38rem) {
-    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+@container admin-workspace (max-width: 38rem){
+    .admin-metrics:has(> .admin-metric:nth-child(6)){
         --admin-metric-columns: 2 !important;
         position: relative;
         display: grid !important;
@@ -3523,7 +2797,7 @@
         gap: 0 !important;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         grid-column: auto !important;
         grid-row: auto !important;
         width: 100% !important;
@@ -3536,7 +2810,7 @@
         border-right: 0 !important;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6))::before {
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -3548,7 +2822,7 @@
         pointer-events: none;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         display: none !important;
         content: none !important;
     }
@@ -3557,8 +2831,8 @@
 /* Viewport fallback for the Filament burger shell. It also owns semantic
  * visibility at Minimal so a widened content box cannot leave a third metric
  * alive or restore a source-position span. */
-@media (max-width: 38rem) {
-    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+@media (max-width: 38rem){
+    .admin-metrics:has(> .admin-metric:nth-child(6)){
         --admin-metric-columns: 2 !important;
         position: relative;
         display: grid !important;
@@ -3567,7 +2841,7 @@
         gap: 0 !important;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         grid-column: auto !important;
         grid-row: auto !important;
         width: 100% !important;
@@ -3577,7 +2851,7 @@
         border-right: 0 !important;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6))::before {
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -3589,33 +2863,31 @@
         pointer-events: none;
     }
 
-    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         display: none !important;
         content: none !important;
     }
 
-    .admin-dashboard .admin-metric,
     .admin-general .general-status-metrics > .general-metric,
-    .pages-status-metrics > .pages-metric,
-    .gallery-status-metrics > .gallery-metric,
-    .custom-page-status-metrics > .custom-page-metric,
-    .journal-status-metrics > .journal-metric,
-    .analytics-status-metrics > .analytics-metric,
-    .storage-status-metrics > .storage-metric,
-    .activity-status-metrics > .activity-metric {
+.pages-status-metrics > .pages-metric,
+.gallery-status-metrics > .gallery-metric,
+.custom-page-status-metrics > .custom-page-metric,
+.journal-status-metrics > .journal-metric,
+.analytics-status-metrics > .analytics-metric,
+.storage-status-metrics > .storage-metric,
+.activity-status-metrics > .activity-metric{
         display: none !important;
     }
 
-    .admin-dashboard :is(.admin-dashboard__metric--traffic, .admin-dashboard__metric--artworks),
     .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery),
-    .pages-status-metrics > :is(.pages-metric--published, .pages-metric--unpublished),
-    .gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
-    .custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
-    .journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
-    .journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming),
-    .analytics-status-metrics > :is(.analytics-metric--visits, .analytics-metric--unique),
-    .storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining),
-    .activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending) {
+.pages-status-metrics > :is(.pages-metric--published, .pages-metric--unpublished),
+.gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
+.custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
+.journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
+.journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming),
+.analytics-status-metrics > :is(.analytics-metric--visits, .analytics-metric--unique),
+.storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining),
+.activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending){
         display: block !important;
     }
 }
@@ -3627,27 +2899,27 @@
  */
 
 /* Narrow container: preserve the three-cell stage axes. */
-@container admin-workspace (min-width: 38.01rem) and (max-width: 54rem) {
-    :is(.analytics-visual-stage, .admin-storage__visual-stage, .activity-atlas__grid) {
+@container admin-workspace (min-width: 38.01rem) and (max-width: 54rem){
+    :is(.analytics-visual-stage, .admin-storage__visual-stage, .activity-atlas__grid){
         height: var(--admin-visual-stage-height) !important;
         min-height: 0 !important;
     }
 
     /* Analytics = Map (2 cells) | Geography (1 cell). */
-    .analytics-visual-stage {
+    .analytics-visual-stage{
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-template-rows: minmax(0, 1fr) !important;
         overflow: visible !important;
     }
 
-    .analytics-visual-stage::after {
+    .analytics-visual-stage::after{
         display: block !important;
         left: 66.666666% !important;
         content: "" !important;
     }
 
-    .analytics-visual-stage > .analytics-world {
+    .analytics-visual-stage > .analytics-world{
         display: block !important;
         grid-column: 1 / span 2 !important;
         grid-row: 1 !important;
@@ -3658,7 +2930,7 @@
         padding: var(--admin-stage-divider-inset) 0 !important;
     }
 
-    .analytics-visual-stage > .analytics-stage-rail {
+    .analytics-visual-stage > .analytics-stage-rail{
         display: grid !important;
         grid-column: 3 !important;
         grid-row: 1 !important;
@@ -3671,22 +2943,22 @@
     }
 
     .analytics-stage-ranking__head,
-    .analytics-country-rank {
+.analytics-country-rank{
         grid-template-columns: minmax(0, 1fr) 3.6rem !important;
     }
 
     .analytics-stage-ranking__head > :nth-child(2),
-    .analytics-country-rank > :nth-child(2) {
+.analytics-country-rank > :nth-child(2){
         display: none !important;
     }
 
     .analytics-stage-ranking__head > :nth-child(3),
-    .analytics-country-rank > :nth-child(3) {
+.analytics-country-rank > :nth-child(3){
         grid-column: 2 !important;
     }
 
     /* Storage = Upload | Capacity | Distribution. */
-    .admin-storage__visual-stage {
+    .admin-storage__visual-stage{
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-template-rows: minmax(0, 1fr) !important;
@@ -3694,22 +2966,22 @@
     }
 
     .admin-storage__visual-stage::before,
-    .admin-storage__visual-stage::after {
+.admin-storage__visual-stage::after{
         display: block !important;
         content: "" !important;
     }
 
-    .admin-storage__visual-stage::before {
+    .admin-storage__visual-stage::before{
         left: 33.333333% !important;
     }
 
-    .admin-storage__visual-stage::after {
+    .admin-storage__visual-stage::after{
         left: 66.666666% !important;
     }
 
     .admin-storage__upload,
-    .admin-storage__capacity-group,
-    .admin-storage__distribution {
+.admin-storage__capacity-group,
+.admin-storage__distribution{
         box-sizing: border-box;
         display: grid !important;
         grid-row: 1 !important;
@@ -3722,14 +2994,14 @@
         border: 0 !important;
     }
 
-    .admin-storage__upload {
+    .admin-storage__upload{
         grid-column: 1 !important;
         grid-template-rows: auto minmax(0, 1fr) !important;
         padding-right: var(--admin-stage-pane-space) !important;
         padding-left: 0 !important;
     }
 
-    .admin-storage__capacity-group {
+    .admin-storage__capacity-group{
         position: relative;
         grid-column: 2 !important;
         grid-template-columns: minmax(0, 1fr) !important;
@@ -3740,20 +3012,20 @@
         place-items: center !important;
     }
 
-    .admin-storage__capacity-group > .admin-storage__visual-heading {
+    .admin-storage__capacity-group > .admin-storage__visual-heading{
         display: flex !important;
     }
 
-    .admin-storage__capacity-group > .admin-storage-capacity {
+    .admin-storage__capacity-group > .admin-storage-capacity{
         display: grid !important;
         grid-row: 1 !important;
     }
 
-    .admin-storage__compact-capacity {
+    .admin-storage__compact-capacity{
         display: none !important;
     }
 
-    .admin-storage__capacity-actions {
+    .admin-storage__capacity-actions{
         display: flex !important;
         min-height: var(--admin-stage-orbit-caption-reserve) !important;
         grid-row: 2 !important;
@@ -3763,11 +3035,11 @@
         border: 0 !important;
     }
 
-    .admin-storage__capacity-actions .admin-action__label {
+    .admin-storage__capacity-actions .admin-action__label{
         display: none !important;
     }
 
-    .admin-storage__distribution {
+    .admin-storage__distribution{
         grid-column: 3 !important;
         grid-template-columns: minmax(0, 1fr) !important;
         grid-template-rows: auto minmax(0, 1fr) auto !important;
@@ -3777,33 +3049,33 @@
     }
 
     .admin-storage__distribution-columns,
-    .admin-storage__target-row {
+.admin-storage__target-row{
         grid-template-columns: minmax(0, 1fr) 2.5rem 4.5rem !important;
     }
 
-    .admin-storage__distribution-columns > :nth-child(3) {
+    .admin-storage__distribution-columns > :nth-child(3){
         grid-column: 3 !important;
     }
 
-    .admin-storage__target-track {
+    .admin-storage__target-track{
         display: none !important;
     }
 
     /* Activity = Calendar | Clock | Next Publication. */
-    .activity-atlas__grid {
+    .activity-atlas__grid{
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-template-rows: minmax(0, 1fr) !important;
         overflow: visible !important;
     }
 
-    .activity-atlas__grid::after {
+    .activity-atlas__grid::after{
         display: block !important;
         left: 66.666666% !important;
         content: "" !important;
     }
 
-    .activity-atlas__visual {
+    .activity-atlas__visual{
         display: grid !important;
         grid-column: 1 / span 2 !important;
         grid-row: 1 !important;
@@ -3816,7 +3088,7 @@
     }
 
     .activity-atlas__view.activity-calendar,
-    .activity-atlas__view.activity-calendar[style*="display: none"] {
+.activity-atlas__view.activity-calendar[style*="display: none"]{
         display: grid !important;
         grid-column: 1 !important;
         grid-row: 1 !important;
@@ -3826,7 +3098,7 @@
     }
 
     .activity-atlas__view.activity-clock,
-    .activity-atlas__view.activity-clock[style*="display: none"] {
+.activity-atlas__view.activity-clock[style*="display: none"]{
         display: grid !important;
         grid-column: 2 !important;
         grid-row: 1 !important;
@@ -3835,7 +3107,7 @@
         padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
     }
 
-    .activity-publication {
+    .activity-publication{
         display: flex !important;
         grid-column: 3 !important;
         grid-row: 1 !important;
@@ -3849,75 +3121,75 @@
         overflow: auto !important;
     }
 
-    .activity-publication__header {
+    .activity-publication__header{
         display: flex !important;
     }
 
     .activity-publication__staged,
-    .activity-publication__readiness,
-    .activity-publication__latest,
-    .activity-publication__recent {
+.activity-publication__readiness,
+.activity-publication__latest,
+.activity-publication__recent{
         display: grid !important;
     }
 
-    .activity-publication__actions {
+    .activity-publication__actions{
         margin-top: auto !important;
         padding: .7rem 0 0 !important;
     }
 
-    .activity-publication__actions .admin-toolbar {
+    .activity-publication__actions .admin-toolbar{
         flex-wrap: nowrap !important;
         justify-content: flex-end !important;
     }
 
-    .activity-publication__actions .admin-action__label {
+    .activity-publication__actions .admin-action__label{
         display: none !important;
     }
 }
 
 /* Burger shell must retain the same Narrow multi-cell composition. */
-@media (min-width: 38.01rem) and (max-width: 63.99rem) {
+@media (min-width: 38.01rem) and (max-width: 63.99rem){
     .analytics-visual-stage,
-    .admin-storage__visual-stage,
-    .activity-atlas__grid {
+.admin-storage__visual-stage,
+.activity-atlas__grid{
         height: var(--admin-visual-stage-height) !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-template-rows: minmax(0, 1fr) !important;
     }
 
     .analytics-visual-stage::after,
-    .admin-storage__visual-stage::before,
-    .admin-storage__visual-stage::after,
-    .activity-atlas__grid::after {
+.admin-storage__visual-stage::before,
+.admin-storage__visual-stage::after,
+.activity-atlas__grid::after{
         display: block !important;
         content: "" !important;
     }
 
     .analytics-visual-stage::after,
-    .admin-storage__visual-stage::after,
-    .activity-atlas__grid::after {
+.admin-storage__visual-stage::after,
+.activity-atlas__grid::after{
         left: 66.666666% !important;
     }
 
-    .admin-storage__visual-stage::before {
+    .admin-storage__visual-stage::before{
         left: 33.333333% !important;
     }
 
-    .analytics-visual-stage > .analytics-world {
+    .analytics-visual-stage > .analytics-world{
         display: block !important;
         grid-column: 1 / span 2 !important;
         width: 100% !important;
         height: 100% !important;
     }
 
-    .analytics-visual-stage > .analytics-stage-rail {
+    .analytics-visual-stage > .analytics-stage-rail{
         display: grid !important;
         grid-column: 3 !important;
         width: 100% !important;
         height: 100% !important;
     }
 
-    .admin-storage__upload {
+    .admin-storage__upload{
         display: grid !important;
         grid-column: 1 !important;
         grid-row: 1 !important;
@@ -3925,7 +3197,7 @@
         height: 100% !important;
     }
 
-    .admin-storage__capacity-group {
+    .admin-storage__capacity-group{
         display: grid !important;
         grid-column: 2 !important;
         grid-row: 1 !important;
@@ -3934,19 +3206,19 @@
     }
 
     .admin-storage__capacity-group > .admin-storage__visual-heading,
-    .admin-storage__capacity-group > .admin-storage-capacity {
+.admin-storage__capacity-group > .admin-storage-capacity{
         display: flex !important;
     }
 
-    .admin-storage__capacity-group > .admin-storage-capacity {
+    .admin-storage__capacity-group > .admin-storage-capacity{
         display: grid !important;
     }
 
-    .admin-storage__compact-capacity {
+    .admin-storage__compact-capacity{
         display: none !important;
     }
 
-    .admin-storage__distribution {
+    .admin-storage__distribution{
         display: grid !important;
         grid-column: 3 !important;
         grid-row: 1 !important;
@@ -3954,7 +3226,7 @@
         height: 100% !important;
     }
 
-    .activity-atlas__visual {
+    .activity-atlas__visual{
         display: grid !important;
         grid-column: 1 / span 2 !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -3963,18 +3235,18 @@
     }
 
     .activity-atlas__view.activity-calendar,
-    .activity-atlas__view.activity-calendar[style*="display: none"] {
+.activity-atlas__view.activity-calendar[style*="display: none"]{
         display: grid !important;
         grid-column: 1 !important;
     }
 
     .activity-atlas__view.activity-clock,
-    .activity-atlas__view.activity-clock[style*="display: none"] {
+.activity-atlas__view.activity-clock[style*="display: none"]{
         display: grid !important;
         grid-column: 2 !important;
     }
 
-    .activity-publication {
+    .activity-publication{
         display: flex !important;
         grid-column: 3 !important;
         grid-row: 1 !important;
@@ -3985,8 +3257,8 @@
 }
 
 /* Minimal: one focused surface, full stage width, no stage divider axes. */
-@container admin-workspace (max-width: 38rem) {
-    :is(.analytics-visual-stage, .admin-storage__visual-stage, .activity-atlas__grid) {
+@container admin-workspace (max-width: 38rem){
+    :is(.analytics-visual-stage, .admin-storage__visual-stage, .activity-atlas__grid){
         display: grid !important;
         width: 100% !important;
         height: var(--admin-visual-stage-height) !important;
@@ -3997,21 +3269,21 @@
     }
 
     .analytics-visual-stage::before,
-    .analytics-visual-stage::after,
-    .admin-storage__visual-stage::before,
-    .admin-storage__visual-stage::after,
-    .activity-atlas__grid::before,
-    .activity-atlas__grid::after {
+.analytics-visual-stage::after,
+.admin-storage__visual-stage::before,
+.admin-storage__visual-stage::after,
+.activity-atlas__grid::before,
+.activity-atlas__grid::after{
         display: none !important;
         content: none !important;
     }
 
     /* Analytics Minimal: Map uses the entire fixed-height stage. */
-    .analytics-visual-stage {
+    .analytics-visual-stage{
         grid-template-rows: minmax(0, 1fr) !important;
     }
 
-    .analytics-visual-stage > .analytics-world {
+    .analytics-visual-stage > .analytics-world{
         display: block !important;
         grid-column: 1 / -1 !important;
         grid-row: 1 !important;
@@ -4023,23 +3295,23 @@
     }
 
     .analytics-visual-stage .analytics-world__canvas,
-    .analytics-visual-stage .analytics-world__svg,
-    .analytics-visual-stage .analytics-world__marker-layer {
+.analytics-visual-stage .analytics-world__svg,
+.analytics-visual-stage .analytics-world__marker-layer{
         width: 100% !important;
         height: 100% !important;
         max-width: none !important;
     }
 
-    .analytics-visual-stage > .analytics-stage-rail {
+    .analytics-visual-stage > .analytics-stage-rail{
         display: none !important;
     }
 
     /* Storage Minimal: full-width Upload with a compact management footer. */
-    .admin-storage__visual-stage {
+    .admin-storage__visual-stage{
         grid-template-rows: minmax(0, 1fr) auto !important;
     }
 
-    .admin-storage__upload {
+    .admin-storage__upload{
         display: grid !important;
         grid-column: 1 / -1 !important;
         grid-row: 1 !important;
@@ -4051,7 +3323,7 @@
         padding: var(--admin-stage-divider-inset) 0 0 !important;
     }
 
-    .admin-storage__dropzone.media-workspace__dropzone {
+    .admin-storage__dropzone.media-workspace__dropzone{
         box-sizing: border-box;
         width: 100% !important;
         max-width: none !important;
@@ -4059,7 +3331,7 @@
         justify-self: stretch !important;
     }
 
-    .admin-storage__capacity-group {
+    .admin-storage__capacity-group{
         display: grid !important;
         grid-column: 1 / -1 !important;
         grid-row: 2 !important;
@@ -4076,12 +3348,12 @@
     }
 
     .admin-storage__capacity-group > .admin-storage__visual-heading,
-    .admin-storage__capacity-group > .admin-storage-capacity,
-    .admin-storage__distribution {
+.admin-storage__capacity-group > .admin-storage-capacity,
+.admin-storage__distribution{
         display: none !important;
     }
 
-    .admin-storage__compact-capacity {
+    .admin-storage__compact-capacity{
         display: grid !important;
         width: 100% !important;
         min-width: 0 !important;
@@ -4091,7 +3363,7 @@
         border: 0 !important;
     }
 
-    .admin-storage__capacity-actions {
+    .admin-storage__capacity-actions{
         display: flex !important;
         min-height: 0 !important;
         grid-row: 1 !important;
@@ -4101,20 +3373,20 @@
         border: 0 !important;
     }
 
-    .admin-storage__capacity-actions .admin-action__label {
+    .admin-storage__capacity-actions .admin-action__label{
         display: none !important;
     }
 
     /* Activity Minimal: Next Publication owns the entire fixed-height stage. */
-    .activity-atlas__grid {
+    .activity-atlas__grid{
         grid-template-rows: minmax(0, 1fr) !important;
     }
 
-    .activity-atlas__visual {
+    .activity-atlas__visual{
         display: none !important;
     }
 
-    .activity-publication {
+    .activity-publication{
         display: flex !important;
         grid-column: 1 / -1 !important;
         grid-row: 1 !important;
@@ -4128,55 +3400,55 @@
         overflow: auto !important;
     }
 
-    .activity-publication__header {
+    .activity-publication__header{
         display: flex !important;
     }
 
     .activity-publication__staged,
-    .activity-publication__readiness,
-    .activity-publication__latest,
-    .activity-publication__recent {
+.activity-publication__readiness,
+.activity-publication__latest,
+.activity-publication__recent{
         display: grid !important;
     }
 
-    .activity-publication__actions {
+    .activity-publication__actions{
         display: block !important;
         margin-top: auto !important;
         padding: .7rem 0 0 !important;
     }
 
-    .activity-publication__actions .admin-toolbar {
+    .activity-publication__actions .admin-toolbar{
         width: 100% !important;
         flex-wrap: nowrap !important;
         justify-content: flex-end !important;
     }
 
-    .activity-publication__actions .admin-action__label {
+    .activity-publication__actions .admin-action__label{
         display: inline !important;
     }
 }
 
 /* Viewport fallback keeps the shell transition monotonic at the smallest size. */
-@media (max-width: 38rem) {
+@media (max-width: 38rem){
     .analytics-visual-stage,
-    .admin-storage__visual-stage,
-    .activity-atlas__grid {
+.admin-storage__visual-stage,
+.activity-atlas__grid{
         width: 100% !important;
         height: var(--admin-visual-stage-height) !important;
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
     .analytics-visual-stage::before,
-    .analytics-visual-stage::after,
-    .admin-storage__visual-stage::before,
-    .admin-storage__visual-stage::after,
-    .activity-atlas__grid::before,
-    .activity-atlas__grid::after {
+.analytics-visual-stage::after,
+.admin-storage__visual-stage::before,
+.admin-storage__visual-stage::after,
+.activity-atlas__grid::before,
+.activity-atlas__grid::after{
         display: none !important;
         content: none !important;
     }
 
-    .analytics-visual-stage > .analytics-world {
+    .analytics-visual-stage > .analytics-world{
         display: block !important;
         grid-column: 1 / -1 !important;
         width: 100% !important;
@@ -4184,22 +3456,22 @@
     }
 
     .analytics-visual-stage > .analytics-stage-rail,
-    .admin-storage__distribution,
-    .activity-atlas__visual {
+.admin-storage__distribution,
+.activity-atlas__visual{
         display: none !important;
     }
 
-    .admin-storage__upload {
+    .admin-storage__upload{
         grid-column: 1 / -1 !important;
         width: 100% !important;
     }
 
-    .admin-storage__capacity-group {
+    .admin-storage__capacity-group{
         grid-column: 1 / -1 !important;
         width: 100% !important;
     }
 
-    .activity-publication {
+    .activity-publication{
         display: flex !important;
         grid-column: 1 / -1 !important;
         width: 100% !important;
