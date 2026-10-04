@@ -295,3 +295,74 @@ html.fi select option:disabled {
     box-sizing: border-box;
     padding-top: var(--admin-shell-content-inset) !important;
 }
+
+/*
+ * Burger-shell controls share the same 2rem header geometry as the user badge
+ * and persistent Notification surface. When the mobile drawer is open, it is a
+ * true foreground layer: navigation and its close control sit above the
+ * Notification instead of allowing the fixed message surface to bleed through.
+ */
+html.fi .fi-topbar .fi-user-menu-trigger .fi-user-avatar {
+    width: var(--admin-header-control-size);
+    height: var(--admin-header-control-size);
+}
+
+.admin-sidebar-close-shell {
+    display: none;
+}
+
+@media (max-width: 63.99rem) {
+    html.fi .fi-topbar .fi-topbar-open-sidebar-btn {
+        box-sizing: border-box;
+        width: var(--admin-header-control-size) !important;
+        min-width: var(--admin-header-control-size) !important;
+        height: var(--admin-header-control-size) !important;
+        min-height: var(--admin-header-control-size) !important;
+        padding: 0 !important;
+    }
+
+    html.fi .fi-topbar .fi-topbar-open-sidebar-btn .fi-icon {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    /* Filament normally swaps the Burger for an X in the same topbar slot.
+     * The drawer owns its close affordance instead, so the topbar control
+     * simply disappears while the drawer is open. */
+    html.fi .fi-topbar .fi-topbar-close-sidebar-btn {
+        display: none !important;
+    }
+
+    html.fi .fi-sidebar-close-overlay {
+        z-index: 45;
+    }
+
+    html.fi .fi-sidebar {
+        z-index: 50;
+    }
+
+    .admin-sidebar-close-shell {
+        box-sizing: border-box;
+        display: flex;
+        flex: 0 0 var(--admin-topbar-height);
+        min-height: var(--admin-topbar-height);
+        align-items: center;
+        justify-content: flex-end;
+        padding-inline: 1rem;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    html.fi .admin-sidebar-close-button {
+        width: var(--admin-header-control-size) !important;
+        min-width: var(--admin-header-control-size) !important;
+        height: var(--admin-header-control-size) !important;
+        min-height: var(--admin-header-control-size) !important;
+        padding: 0 !important;
+    }
+
+    html.fi .admin-sidebar-close-button .fi-icon {
+        width: 1rem;
+        height: 1rem;
+    }
+}
+

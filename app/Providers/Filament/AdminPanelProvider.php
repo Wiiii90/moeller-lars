@@ -98,6 +98,10 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('filament.partials.admin-header-notification')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::SIDEBAR_START,
+                fn (): string => view('filament.partials.admin-sidebar-close')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
                 fn (): string => view('filament.partials.admin-auth-back')->render(),
             )
