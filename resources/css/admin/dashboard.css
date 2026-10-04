@@ -182,7 +182,7 @@
     min-width: 0;
     min-height: 1.8em;
     padding-top: .28rem;
-    overflow: hidden;
+    overflow: visible;
     color: var(--admin-muted);
     font-size: .62rem;
     line-height: 1.35;
@@ -205,7 +205,7 @@
     align-content: end;
     align-items: baseline;
     flex-wrap: nowrap;
-    overflow: hidden;
+    overflow: visible;
     color: var(--admin-muted);
     font-size: .68rem;
     line-height: 1.45;
@@ -232,8 +232,8 @@
 .admin-dashboard__activity-visual .activity-clock__caption strong,
 .admin-dashboard__activity-visual .activity-clock__caption span {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
     white-space: nowrap;
 }
 

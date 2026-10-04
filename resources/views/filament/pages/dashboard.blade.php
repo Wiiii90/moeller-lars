@@ -109,7 +109,7 @@
                     :activity="$activity['clock_activity']"
                     :peak-count="$activity['clock_peak_count']"
                     :peak-hour="$activity['clock_peak_hour']"
-                    :caption-label="now()->format('M j, Y')"
+                    :caption-label="now()->format('j M Y')"
                     aria-context="activity distribution for the last 30 days"
                 />
             </article>
