@@ -4,16 +4,11 @@
  * 24 subtracks (4 per cell) so real control minima can be fitted without
  * inventing arbitrary page-local widths. The toolbar is always one row.
  *
- * Dashboard grammar:
- * Wide    >66rem : Search 12 | Type 4 | Clear 2 | Dashboard 2 | Selection 4
- * Compact >54rem : Search  8 | Type 4 | Clear 4 | Dashboard 4 | Selection 4
- * Narrow  >38rem : Search  7 | Type 5 | Clear 4 | Gap 2 | Dashboard 2 | Selection 4
- * Minimal <=38rem: Search  6 | Type 6 | Clear 4 | Gap 1 | Dashboard 2 | Selection 5
- *
- * Search gives up ruler subdivisions only at named state boundaries. Clear is
- * part of Query/Filter and keeps its text through Minimal. Narrow removes the
- * Dashboard/Selection headings together with their value labels and clusters
- * the two icon controls on the right, separated from Clear by a ruler gap.
+ * Dashboard is the content-minimum exception inside this shared owner. Search
+ * absorbs every spare pixel; Type and Clear consume only readable intrinsic
+ * minima; Dashboard + Selection form one stable terminal utility cluster.
+ * Narrow density removes utility labels without moving the icon/count axes.
+ * The burger shell may force that density, but never promote it again.
  */
 
 .admin-data-controls__utility {
@@ -198,40 +193,56 @@
     padding-inline: .2rem;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection {
-    display: grid;
-    min-width: 0;
-    grid-column: 17 / span 8;
-    grid-row: 1;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: 0;
-    align-items: end;
+/* Dashboard feed toolbar: real content minima + one terminal utility cluster.
+ * Search owns every spare pixel. Type remains readable but never grows simply
+ * because the workspace changes state. Selection keeps the final checkbox rail. */
+.admin-dashboard__feed-controls.admin-data-controls--six-cell {
+    grid-template-columns:
+        minmax(0, 1fr)
+        6.75rem
+        max-content
+        .75rem
+        max-content
+        8.5rem;
+    column-gap: .55rem;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+.admin-dashboard__feed-controls.admin-data-controls--six-cell > :first-child {
+    grid-column: 1;
+    padding-right: 0;
+}
+
+.admin-dashboard__feed-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
+    grid-column: 2;
+    padding-right: 0;
+}
+
+.admin-dashboard__feed-controls.admin-data-controls--six-cell
+> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection {
+    display: contents;
+}
+
+.admin-dashboard__feed-controls.admin-data-controls--six-cell
 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
 > :first-child {
     width: max-content;
-    max-width: 100%;
-    grid-column: 1 / span 2;
+    grid-column: 3;
     justify-self: start;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+.admin-dashboard__feed-controls.admin-data-controls--six-cell
 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
 > :nth-child(2) {
     width: max-content;
-    max-width: 100%;
-    grid-column: 3 / span 2;
+    grid-column: 5;
     justify-self: end;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+.admin-dashboard__feed-controls.admin-data-controls--six-cell
 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
 > :last-child {
-    width: 100%;
-    grid-column: 5 / span 4;
+    width: 8.5rem;
+    grid-column: 6;
     justify-self: stretch;
 }
 
@@ -274,94 +285,37 @@
     justify-self: center;
 }
 
-@container admin-workspace (max-width: 66rem) {
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
-        grid-column: 1 / span 8;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
-        grid-column: 9 / span 4;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection {
-        grid-column: 13 / span 12;
-        grid-template-columns: repeat(12, minmax(0, 1fr));
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :first-child {
-        grid-column: 1 / span 4;
-        justify-self: start;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :nth-child(2) {
-        grid-column: 5 / span 4;
-        justify-self: end;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :last-child {
-        grid-column: 9 / span 4;
-    }
-}
-
+/* Narrow Dashboard density. Task utilities collapse to icons in place:
+ * no fractional spacer tracks, no icon migration, no Search sacrifice. */
 @container admin-workspace (max-width: 54rem) {
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
-        grid-column: 1 / span 7;
+    .admin-dashboard__feed-controls.admin-data-controls--six-cell {
+        grid-template-columns:
+            minmax(0, 1fr)
+            6.75rem
+            max-content
+            .55rem
+            var(--admin-control-height)
+            4.75rem;
+        column-gap: .4rem;
     }
 
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
-        grid-column: 8 / span 5;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection {
-        grid-column: 13 / span 12;
-        grid-template-columns: repeat(12, minmax(0, 1fr));
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :first-child {
-        grid-column: 1 / span 4;
-        justify-self: start;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :nth-child(2) {
-        grid-column: 7 / span 2;
-        justify-self: end;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :last-child {
-        grid-column: 9 / span 4;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
     > :nth-child(2) > .admin-data-control-label,
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-selection
     > :last-child > .admin-data-control-label,
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions
     > :nth-child(2) .admin-action__label,
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-selection
     > :last-child .admin-selection__trigger-text {
         display: none !important;
     }
 
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions
     > :nth-child(2) .admin-action {
         width: var(--admin-control-height);
         min-width: var(--admin-control-height);
@@ -369,32 +323,69 @@
         padding-inline: 0 !important;
         justify-content: center !important;
     }
+
+    .admin-dashboard__feed-controls .admin-selection__trigger-label {
+        padding-right: 0;
+        justify-self: center;
+        justify-content: center;
+    }
+}
+
+/* Shell monotonicity: removing the sidebar can enlarge Search, but may never
+ * resurrect Dashboard/Selection text after the product has entered Narrow. */
+@media (max-width: 63.99rem) {
+    .admin-dashboard__feed-controls.admin-data-controls--six-cell {
+        grid-template-columns:
+            minmax(0, 1fr)
+            6.75rem
+            max-content
+            .55rem
+            var(--admin-control-height)
+            4.75rem;
+        column-gap: .4rem;
+    }
+
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) > .admin-data-control-label,
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-selection
+    > :last-child > .admin-data-control-label,
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions
+    > :nth-child(2) .admin-action__label,
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-selection
+    > :last-child .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions
+    > :nth-child(2) .admin-action {
+        width: var(--admin-control-height);
+        min-width: var(--admin-control-height);
+        max-width: var(--admin-control-height);
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-dashboard__feed-controls .admin-selection__trigger-label {
+        padding-right: 0;
+        justify-self: center;
+        justify-content: center;
+    }
 }
 
 @container admin-workspace (max-width: 38rem) {
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
-        grid-column: 1 / span 6;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
-        grid-column: 7 / span 6;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :first-child {
-        grid-column: 1 / span 4;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :nth-child(2) {
-        grid-column: 6 / span 2;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
-    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :last-child {
-        grid-column: 8 / span 5;
+    .admin-dashboard__feed-controls.admin-data-controls--six-cell {
+        grid-template-columns:
+            minmax(0, 1fr)
+            6.75rem
+            max-content
+            .35rem
+            var(--admin-control-height)
+            4.5rem;
+        column-gap: .3rem;
     }
 }
