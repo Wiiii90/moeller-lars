@@ -157,11 +157,17 @@
 }
 
 .admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :first-child {
+    width: max-content;
+    max-width: 100%;
     grid-column: 1;
+    justify-self: start;
 }
 
 .admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :nth-child(2) {
+    width: max-content;
+    max-width: 100%;
     grid-column: 2;
+    justify-self: end;
 }
 
 .admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child {
@@ -266,6 +272,17 @@
     justify-self: center;
 }
 
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility > :last-child .admin-selection__trigger-label {
+    min-width: 0;
+    justify-self: end;
+    justify-content: flex-end;
+    padding-right: .25rem;
+}
+
 
 @container admin-workspace (max-width: 54rem) {
     .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action__label,
@@ -293,3 +310,77 @@
         justify-content: center;
     }
 }
+
+/* Content-derived six-cell redistribution for the Search + one filter +
+ * Filter/Dashboard/Selection grammar.
+ *
+ * Wide:    Search 3 | Type 1 | Utility 2
+ * Compact: Search 2 | Type 1 | Utility 3
+ * Narrow:  Search 1 | Type 2 | Utility 3
+ *
+ * At 66rem, half a metric cell is 5.5rem: below that, the full DASHBOARD
+ * heading no longer fits reliably in a half-cell once control-label tracking
+ * is included, so Search donates one whole cell to Utility.
+ * At 54rem, a single metric cell is 9rem: Type is then at the practical
+ * minimum for "Notifications" plus native select chrome, so Search donates
+ * the next whole cell to Type. No control is continuously squeezed between
+ * those states. */
+@container admin-workspace (max-width: 66rem) {
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
+        grid-column: 1 / span 2;
+        grid-row: 1;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters,
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility {
+        grid-column: 4 / span 3;
+        grid-row: 1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :first-child {
+        grid-column: 1;
+        justify-self: start;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :nth-child(2) {
+        grid-column: 2;
+        justify-self: end;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility--has-selection > :last-child {
+        grid-column: 3;
+    }
+}
+
+@container admin-workspace (max-width: 54rem) {
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
+        grid-column: 1;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters,
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
+        grid-column: 2 / span 2;
+        grid-row: 1;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility {
+        grid-column: 4 / span 3;
+    }
+}
+
+/* FILTER remains the data-cluster anchor at Minimal. DASHBOARD and SELECTION
+ * headings may yield only once their complete words no longer fit; their
+ * controls/count rail remain present and aligned. */
+@container admin-workspace (max-width: 38rem) {
+    .admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection > :nth-child(2) > .admin-data-control-label,
+    .admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection > :last-child > .admin-data-control-label {
+        display: none !important;
+    }
+}
+

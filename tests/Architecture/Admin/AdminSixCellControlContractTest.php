@@ -43,6 +43,12 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->not->toContain(".admin-data-controls__utility .admin-data-control-label,\n    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action__label")
         ->toContain('width: min(100%, var(--admin-control-height));')
         ->toContain('max-width: 100%;')
+        ->toContain('@container admin-workspace (max-width: 66rem)')
+        ->toContain('grid-column: 4 / span 3;')
+        ->toContain('grid-template-columns: repeat(3, minmax(0, 1fr));')
+        ->toContain('grid-column: 2 / span 2;')
+        ->toContain('justify-self: end;')
+        ->toContain('padding-right: .25rem;')
         ->toContain(".admin-data-controls__utility .admin-action {\n    white-space: nowrap;")
         ->toContain('var(--admin-table-selection-width)')
         ->toContain('justify-self: center;');

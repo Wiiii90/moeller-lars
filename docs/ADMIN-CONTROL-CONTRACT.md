@@ -100,7 +100,7 @@ Toolbar sizing is always **content minimum + shared ruler**:
 6. preserve full dropdown values and action labels whenever their calculated minimum fits. Ellipsis is an emergency fallback, not normal sizing;
 7. when full utility labels no longer fit, use the shared complete-label → icon-only/overflow transition before clipping, adding a second toolbar row or introducing horizontal scrolling;
 8. toolbar group headings (for example Filter, Dashboard and Selection) are structural anchors and remain visible in compact states; only the action/value text beneath them may collapse to icon-only;
-9. overlapping controls or headings are never a supported responsive state. The compact transition must occur before two toolbar roles can occupy the same visual space.
+9. overlapping controls or headings are never a supported responsive state. For metric-grid toolbars, width pressure is resolved in whole ruler units: Search yields one metric cell at a time, and that cell is reassigned to the control group whose real content minimum requires it; do not continuously squeeze a dropdown below its readable content width. The compact transition must occur before two toolbar roles can occupy the same visual space.
 
 Responsive metric presentation does not replace the underlying ruler. A visible three- or two-metric state still uses a refinable ruler from which six-/three-/two-column alignment can be reconstructed.
 
