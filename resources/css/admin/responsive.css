@@ -293,18 +293,6 @@
         table-layout: fixed;
     }
 
-    .admin-dashboard__feed-table .admin-dashboard__col-position {
-        width: 3rem !important;
-    }
-
-    .admin-dashboard__feed-table .admin-dashboard__col-drag {
-        width: 2rem !important;
-    }
-
-    .admin-dashboard__feed-table col:nth-last-child(2) {
-        width: 6.5rem !important;
-    }
-
     .admin-row-actions .admin-action__label,
     .activity-actions-cell .admin-action__label,
     .media-workspace__row-actions .admin-action__label,
@@ -975,10 +963,6 @@
 
 /* Table-specific Narrow reduction. */
 @container admin-table (max-width: 50rem) {
-    /* Dashboard: Sender is optional in collection view. */
-    .admin-dashboard__feed-table .admin-dashboard__col-sender {
-        display: none;
-    }
 
     /* Blog image and publication / Exhibition schedule are supportive. */
     .journal-table--blog .journal-col--visual,
@@ -1433,26 +1417,6 @@
 }
 
 @container admin-table (max-width: 30rem) {
-    .admin-dashboard__feed-table .admin-dashboard__col-type,
-    .admin-dashboard__feed-table .admin-dashboard__col-date {
-        display: none;
-    }
-
-    .admin-dashboard__feed-table .admin-responsive-meta {
-        display: block;
-    }
-
-    .admin-dashboard__feed-table .admin-dashboard__col-position {
-        width: 3rem;
-    }
-
-    .admin-dashboard__feed-table .admin-dashboard__col-drag {
-        width: 1.75rem;
-    }
-
-    .admin-dashboard__feed-table col:nth-last-child(2) {
-        width: 5.75rem;
-    }
 }
 
 /* Ultra-narrow toolbars remain one row. Filter fields may collapse behind one
@@ -1922,74 +1886,12 @@
 }
 
 @container admin-table (max-width: 62rem) {
-    .admin-dashboard__feed-table .admin-dashboard__col-position {
-        width: 3rem !important;
-    }
-
-    .admin-dashboard__feed-table .admin-dashboard__col-drag {
-        width: 2rem !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-type {
-        width: var(--admin-table-three-quarter-unit) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-date {
-        width: var(--admin-table-three-quarter-unit) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-time {
-        width: var(--admin-table-half-unit) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-title {
-        width: calc(41.666667% - 5rem) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-sender {
-        width: var(--admin-table-half-unit) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions {
-        width: calc(var(--admin-table-one-unit) - var(--admin-table-selection-width)) !important;
-    }
-
-    .admin-dashboard__feed-table :is(
-        th.admin-dashboard__col-type,
-        td.admin-dashboard__col-type,
-        th.admin-dashboard__col-date,
-        td.admin-dashboard__col-date,
-        th.admin-dashboard__col-time,
-        td.admin-dashboard__col-time
-    ) {
-        display: table-cell !important;
-    }
 }
 
 @container admin-table (max-width: 50rem) {
-    .admin-dashboard__feed-table col.admin-dashboard__col-sender,
-    .admin-dashboard__feed-table th.admin-dashboard__col-sender,
-    .admin-dashboard__feed-table td.admin-dashboard__col-sender {
-        display: none !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-title {
-        width: calc(50% - 5rem) !important;
-    }
 }
 
 @container admin-table (max-width: 30rem) {
-    .admin-dashboard__feed-table .admin-dashboard__col-drag {
-        width: 1.75rem !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-title {
-        width: calc(50% - 4.75rem) !important;
-    }
-
-    .admin-dashboard__feed-table .admin-responsive-meta {
-        display: none !important;
-    }
 }
 
 /* General responsive authority

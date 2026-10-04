@@ -49,8 +49,7 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('admin-table__col-three-quarter-unit admin-dashboard__col-date')
         ->toContain('admin-table__col-half-unit admin-dashboard__col-time')
         ->toContain('admin-table__col-two-units-minus-selection admin-dashboard__col-actions')
-        ->toContain('>Time</th>')
-        ->not->toContain('metric-grid');
+        ->toContain('>Time</th>');
 
     expect($dashboardRow)
         ->toContain("$item['time_display']")
@@ -58,12 +57,19 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
 
     expect($dashboardCss)
         ->not->toContain('.admin-dashboard__feed-controls')
-        ->toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
+        ->not->toContain('col:nth-last-child')
+        ->toContain('grid-template-columns: repeat(4, minmax(0, 1fr));')
+        ->toContain('/* Dashboard feed responsive table authority.')
+        ->toContain('@container admin-table (max-width: 62rem)')
+        ->toContain('col.admin-dashboard__col-actions')
+        ->toContain('calc(var(--admin-table-one-unit) - var(--admin-table-selection-width))')
+        ->toContain('@container admin-table (max-width: 50rem)')
+        ->toContain('@container admin-table (max-width: 30rem)');
 
     expect($responsive)
         ->not->toContain('.admin-dashboard__feed-controls')
-        ->toContain('col.admin-dashboard__col-actions')
-        ->toContain('calc(var(--admin-table-one-unit) - var(--admin-table-selection-width))');
+        ->not->toContain('.admin-dashboard__feed-table')
+        ->not->toContain('.admin-dashboard__col-');
 
     expect($storage)
         ->toContain('media-workspace__controls')
