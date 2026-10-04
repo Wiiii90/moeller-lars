@@ -1,12 +1,11 @@
 import '../css/admin/selects.css';
 import './admin-selects.js';
-import { initializeAdminModalScrollBehavior } from './admin-modal-scroll.js';
+import './admin-notifications.js';
 
 let storageRuntimePromise = null;
 let refreshFrame = null;
 let livewireHookRegistered = false;
 
-initializeAdminModalScrollBehavior();
 
 function hasStorageVisualization() {
     return document.querySelector('[data-admin-viz="storage-capacity"]') !== null;

@@ -2,58 +2,52 @@
 
 use Illuminate\Support\Facades\File;
 
-it('keeps the admin Notification shell centralized bounded and SPA-persistent', function (): void {
+it('keeps one persisted admin Notification shell runtime', function (): void {
     $view = file_get_contents(resource_path('views/filament/partials/admin-header-notification.blade.php'));
+    $runtime = file_get_contents(resource_path('js/admin-notifications.js'));
+    $viz = file_get_contents(resource_path('js/admin-viz.js'));
     $styles = file_get_contents(resource_path('css/admin/notifications.css'));
+    $adminCss = file_get_contents(resource_path('css/admin.css'));
     $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
     $icons = file_get_contents(app_path('Filament/Support/AdminIcon.php'));
 
     expect($provider)
         ->toContain('PanelsRenderHook::BODY_START')
         ->toContain("view('filament.partials.admin-header-notification')")
-        ->toContain('->spa()')
-        ->toContain('->spaUrlExceptions')
+        ->not->toContain("view('filament.partials.admin-modal-bootstrap')")
         ->and($view)
         ->toContain("@persist('admin-header-notification')")
-        ->toContain("request()->hasHeader('X-Livewire-Navigate')")
-        ->toContain('queueLimit: 8')
-        ->toContain('seenLimit: 48')
-        ->toContain('displayDurationMs: 8000')
-        ->toContain('exitDurationMs: 700')
-        ->toContain('this.queue.push(notification)')
-        ->toContain('this.queue.shift()')
+        ->toContain('data-admin-header-notification')
+        ->toContain('data-admin-header-notification-initial')
+        ->toContain('data-admin-header-notification-title')
+        ->toContain('data-admin-header-notification-timer')
+        ->not->toContain('x-data=')
+        ->not->toContain('x-on:admin-header-notification')
+        ->and($runtime)
+        ->toContain('const DISPLAY_DURATION_MS = 8000')
+        ->toContain('const EXIT_DURATION_MS = 700')
+        ->toContain('const QUEUE_LIMIT = 8')
+        ->toContain('const SEEN_LIMIT = 48')
+        ->toContain("window.addEventListener('admin-header-notification'")
+        ->toContain('queue.push(normalized)')
+        ->toContain('queue.shift()')
         ->toContain('window.setTimeout')
         ->toContain('window.clearTimeout')
-        ->toContain("secondsRemaining + 's'")
-        ->toContain("x-text=\"'+' + pendingCount\"")
-        ->toContain('AdminIcon::NotificationSuccess->mini()')
-        ->toContain('AdminIcon::NotificationWarning->mini()')
-        ->toContain('AdminIcon::NotificationDanger->mini()')
-        ->toContain('AdminIcon::NotificationInfo->mini()')
-        ->toContain('x-bind:data-phase="phase"')
-        ->toContain('x-bind:data-message-revision="messageRevision"')
-        ->toContain('this.$nextTick(() => this.promoteNext())')
-        ->toContain('const initialNotifications = @js($initialNotifications)')
-        ->toContain('initialNotifications.forEach((notification) => this.accept(notification))')
-        ->not->toContain('__adminHeaderFeedbackRuntime')
-        ->not->toContain('__adminHeaderNotificationRuntime')
         ->not->toContain('setInterval')
-        ->not->toContain('requestAnimationFrame')
         ->not->toContain('MutationObserver')
         ->not->toContain('ResizeObserver')
-        ->not->toContain('wire:poll')
-        ->not->toContain('fetch(')
+        ->not->toContain('__adminHeader')
         ->not->toContain('Livewire.dispatch')
-        ->not->toContain('$wire')
+        ->and($viz)
+        ->toContain("import './admin-notifications.js';")
+        ->not->toContain('admin-modal-scroll')
         ->and($styles)
         ->toContain('@keyframes admin-header-notification-materialize')
         ->toContain('@keyframes admin-header-notification-dematerialize')
-        ->toContain('@keyframes admin-header-notification-beam-in')
-        ->toContain('@keyframes admin-header-notification-content-in')
-        ->toContain('@keyframes admin-header-notification-content-out')
         ->toContain('@media (prefers-reduced-motion: reduce)')
-        ->toContain('.admin-header-notification__timer')
-        ->toContain('.admin-header-notification__counter')
+        ->and($adminCss)
+        ->toContain('--admin-header-notification-edge-gap: .75rem;')
+        ->not->toContain('--admin-header-feedback-edge-gap')
         ->and($icons)
         ->toContain("case NotificationSuccess = 'heroicon-o-check-badge'")
         ->toContain("case NotificationWarning = 'heroicon-o-exclamation-triangle'")
@@ -72,7 +66,7 @@ it('keeps the admin Notification shell centralized bounded and SPA-persistent', 
     expect($renderOccurrences)->toBe(1);
 });
 
-it('reuses Activity change and details for successful persistent Notifications', function (): void {
+it('reuses Activity change and details for durable Notifications', function (): void {
     $audit = file_get_contents(app_path('Domain/Admin/AdminAuditService.php'));
     $context = file_get_contents(app_path('Domain/Admin/AdminActivityNotificationContext.php'));
     $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
@@ -91,7 +85,6 @@ it('reuses Activity change and details for successful persistent Notifications',
         ->toContain('$this->notificationContext->consumeRecorded()')
         ->toContain("(string) \$activityMessage['change']")
         ->toContain("\$activityMessage['details'] ?? null")
-        ->toContain("sourceId: $auditEventId > 0 ? 'activity:'.$auditEventId : null")
         ->toContain("dispatch('admin-header-notification'")
         ->not->toContain('public function inbox(')
         ->not->toContain('public function both(')

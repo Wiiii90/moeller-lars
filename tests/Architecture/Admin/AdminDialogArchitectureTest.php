@@ -85,37 +85,23 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('<dt>Published</dt>')
         ->toContain('<span>Publication</span>');
 
-    $modalScroll = file_get_contents($root.'/resources/js/admin-modal-scroll.js');
-    $modalBootstrap = file_get_contents($root.'/resources/views/filament/partials/admin-modal-bootstrap.blade.php');
     $panelProvider = file_get_contents($root.'/app/Providers/Filament/AdminPanelProvider.php');
+    $adminViz = file_get_contents($root.'/resources/js/admin-viz.js');
 
     expect($layouts)
         ->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
+        ->toContain('Filament owns modal scroll locking.')
+        ->not->toContain('admin-modal-scroll')
         ->not->toContain('admin-modal-existing-scrollbar')
         ->not->toContain('html.fi:has(.fi-modal.fi-modal-open)');
 
     expect($panelProvider)
-        ->toContain('PanelsRenderHook::SCRIPTS_BEFORE')
-        ->toContain("view('filament.partials.admin-modal-bootstrap')");
-
-    expect($modalBootstrap)
-        ->toContain("document.addEventListener('alpine:init', wrapFilamentModalRegistration")
-        ->toContain("if (name !== 'filamentModal')")
-        ->toContain('isScrollLocked: isAdminTaskDialog ? false : options?.isScrollLocked')
-        ->toContain('Alpine.data = originalData');
-
-    expect($modalScroll)
-        ->toContain("window.addEventListener('open-modal', acquireAdminTaskDialogSoftLock, true)")
-        ->toContain("window.addEventListener('modal-closed', releaseAdminTaskDialogSoftLock)")
-        ->toContain("const softLockedModalIds = new Set()")
-        ->toContain("softLockedModalIds.delete(id)")
-        ->toContain("window.addEventListener('scroll', restoreLockedWindowScroll)")
-        ->toContain("document.addEventListener('wheel', preventBackgroundWheel")
-        ->not->toContain('softScrollLockCount')
-        ->not->toContain('WeakSet')
-        ->not->toContain('state.acquireScrollLock = function ()')
-        ->not->toContain('document.documentElement.style')
-        ->not->toContain('document.documentElement.classList');
+        ->not->toContain("view('filament.partials.admin-modal-bootstrap')")
+        ->and($adminViz)
+        ->not->toContain('admin-modal-scroll')
+        ->not->toContain('initializeAdminModalScrollBehavior')
+        ->and(is_file($root.'/resources/js/admin-modal-scroll.js'))->toBeFalse()
+        ->and(is_file($root.'/resources/views/filament/partials/admin-modal-bootstrap.blade.php'))->toBeFalse();
 
     expect($homeWorkspace)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')

@@ -34,9 +34,8 @@ html:not(.dark) .fi-sidebar-nav {
 }
 
 /*
- * Do not reserve a permanent document or sidebar scrollbar gutter. Shared admin
- * task dialogs use a layout-neutral soft scroll lock in admin-modal-scroll.js,
- * so opening a dialog never mutates <html> overflow, padding or gutter geometry.
+ * Filament owns modal scroll locking. Keep the document gutter automatic so
+ * Filament can compensate with its native padding-right lock when needed.
  */
 html.fi,
 .fi-sidebar-nav {

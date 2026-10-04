@@ -45,7 +45,7 @@ When a successful admin mutation produced Activity in the same request, `AdminAc
 
 ## Header shell
 
-The header surface is a persisted SPA-shell element rendered through the panel-level `BODY_START` hook. It is deliberately outside Livewire page/topbar components so Livewire `@persist` can keep the same DOM and Alpine state across `wire:navigate` visits.
+The header surface is a persisted SPA-shell element rendered through the panel-level `BODY_START` hook. It is deliberately outside Livewire page/topbar components so Livewire `@persist` can keep the same DOM while the one-time `admin-notifications.js` controller keeps queue, timer and remaining-lifetime state across `wire:navigate` visits.
 
 Its only ingress is the project-owned `admin-header-notification` event plus the bounded session queue used for real full-document/redirect boundaries.
 

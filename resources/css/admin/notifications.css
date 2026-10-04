@@ -406,8 +406,8 @@
 
 @media (min-width: 1024px) {
     /*
-     * Desktop feedback and page content share the same viewport coordinate
-     * system and the same shell geometry variables. The feedback surface is
+     * Desktop Notification and page content share the same viewport coordinate
+     * system and the same shell geometry variables. The Notification surface is
      * fixed inside Filament's sticky topbar so its containing block cannot
      * change when a page gains or loses a document scrollbar.
      */

@@ -64,7 +64,7 @@
         - var(--admin-workspace-content-inline-end)
     );
     --admin-header-control-size: 2rem;
-    --admin-header-feedback-edge-gap: .75rem;
+    --admin-header-notification-edge-gap: .75rem;
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
     --admin-status-warning: var(--admin-accent);
