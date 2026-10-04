@@ -426,7 +426,9 @@
                     (
                         100%
                         - var(--sidebar-width)
-                        - var(--admin-workspace-outer-max-width)
+                        - var(--admin-workspace-gutter)
+                        - var(--admin-header-control-rail)
+                        - var(--admin-workspace-max-width)
                     ) / 2
                 )
             )

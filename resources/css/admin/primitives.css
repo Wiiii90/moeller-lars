@@ -37,7 +37,7 @@
     --admin-workspace-outer-max-width: calc(
         var(--admin-workspace-max-width)
         + var(--admin-workspace-gutter)
-        + var(--admin-workspace-gutter)
+        + var(--admin-header-control-rail)
     );
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);

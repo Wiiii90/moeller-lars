@@ -306,17 +306,17 @@ html.fi .fi-page:has(.admin-workspace) {
     }
 
     /*
-     * Desktop page geometry is centered independently of the fixed User rail.
-     * .fi-main owns one centered outer frame; the visible workspace sits inside
-     * that frame with symmetric 2rem gutters and a hard 80rem content maximum.
-     * Header controls may never right-anchor or visually shift page content.
+     * Desktop centers the workspace inside one safe main area. The sidebar side
+     * keeps the canonical 2rem gutter; the viewport side reserves the complete
+     * 4rem User rail. The badge can therefore never overlap content, while the
+     * 80rem workspace still centers instead of being pinned to either edge.
      */
     html.fi .fi-main:has(.admin-workspace) {
         box-sizing: border-box;
-        width: min(100%, var(--admin-workspace-outer-max-width));
-        max-width: var(--admin-workspace-outer-max-width) !important;
-        margin-inline: auto !important;
-        padding: 0 !important;
+        width: 100%;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 var(--admin-header-control-rail) 0 var(--admin-workspace-gutter) !important;
     }
 
     html.fi .fi-page:has(.admin-workspace) {
@@ -328,11 +328,7 @@ html.fi .fi-page:has(.admin-workspace) {
 
     html.fi .fi-main:has(.admin-workspace) .admin-workspace {
         box-sizing: border-box;
-        width: calc(
-            100%
-            - var(--admin-workspace-gutter)
-            - var(--admin-workspace-gutter)
-        );
+        width: 100%;
         max-width: var(--admin-workspace-max-width);
         margin-inline: auto;
     }
