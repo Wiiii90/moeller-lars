@@ -575,13 +575,16 @@
     .fi-topbar-open-collapse-sidebar-btn,
     .fi-topbar-close-collapse-sidebar-btn,
     .fi-user-menu-trigger
-) {
+),
+.admin-sidebar-close-button {
     box-sizing: border-box;
     width: var(--admin-header-control-size) !important;
     height: var(--admin-header-control-size) !important;
     min-width: var(--admin-header-control-size) !important;
     min-height: var(--admin-header-control-size) !important;
+    margin: 0 !important;
     padding: 0 !important;
+    border-radius: 9999px !important;
 }
 
 .fi-topbar :is(
@@ -589,9 +592,10 @@
     .fi-topbar-close-sidebar-btn,
     .fi-topbar-open-collapse-sidebar-btn,
     .fi-topbar-close-collapse-sidebar-btn
-) .fi-icon {
-    width: 1.1rem;
-    height: 1.1rem;
+) .fi-icon,
+.admin-sidebar-close-button .fi-icon {
+    width: 1rem;
+    height: 1rem;
 }
 
 .admin-workspace__heading > .admin-workspace__title:first-child {
