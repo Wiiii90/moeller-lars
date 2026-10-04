@@ -347,8 +347,8 @@
 
 .admin-pager {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: 1rem;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    gap: clamp(.35rem, 1.5vw, 1rem);
     margin-top: 0;
     padding-top: var(--admin-section-gap);
     align-items: center;
@@ -409,5 +409,15 @@
     justify-self: end;
     flex-wrap: nowrap;
 }
+
+.admin-pager__actions .admin-action {
+    min-width: 0;
+    padding-inline: .35rem;
+}
+
+.admin-pager__actions .admin-action:disabled {
+    opacity: .55;
+}
+
 
 

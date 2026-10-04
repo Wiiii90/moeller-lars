@@ -21,6 +21,8 @@ it('keeps admin table pagination on the shared pager primitive', function (): vo
 
     $picker = file_get_contents($root.'/resources/views/components/admin/page-size-picker.blade.php');
     $pager = file_get_contents($root.'/resources/views/components/admin/pager.blade.php');
+    $pagerCss = file_get_contents($root.'/resources/css/admin/data-workspace.css');
+    $responsiveCss = file_get_contents($root.'/resources/css/admin/responsive.css');
 
     expect($picker)
         ->not->toContain('urls')
@@ -37,4 +39,11 @@ it('keeps admin table pagination on the shared pager primitive', function (): vo
         ->toContain('next-wire-action="nextActivityPage"')
         ->toContain('previous-wire-action="previousCommitPage"')
         ->toContain('next-wire-action="nextCommitPage"');
+
+    expect($pagerCss)
+        ->toContain('grid-template-columns: max-content minmax(0, 1fr) max-content;')
+        ->toContain('.admin-pager__range')
+        ->toContain('.admin-pager__actions')
+        ->and($responsiveCss)
+        ->not->toContain('.admin-pager');
 });

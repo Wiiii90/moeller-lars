@@ -135,6 +135,8 @@ Tables use the shared semantic width states **Wide**, **Compact**, **Narrow** an
 
 Ordinary tables must fit without horizontal scrolling. Do not reserve horizontal-scrollbar space and do not hide scrollbars while leaving overflow underneath. If a table would overflow, reduce supportive/optional columns or action chrome before that point.
 
+Shared pagination is part of the same table surface and remains exactly one row at every supported width: page-size control left, range centered, Previous/Next right. It may tighten gaps and button padding, but it does not stack into a second row.
+
 Selection is invariant while the surface remains a table: the toolbar count/trigger, select-all checkbox and row checkboxes stay on the same terminal rail at every state. Other content yields before that rail drifts.
 
 Responsive reduction must preserve semantic DOM/action order. Do not visually reorder cells with CSS while leaving keyboard/screen-reader order behind, and do not reduce shared semantic font sizes as a fitting technique.

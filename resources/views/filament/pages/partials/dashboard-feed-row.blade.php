@@ -38,6 +38,11 @@
     <td class="admin-data-nowrap admin-dashboard__col-time">{{ $item['time_display'] }}</td>
     <td class="admin-data-title admin-dashboard__col-title">
         <span class="admin-dashboard__feed-title">{{ $item['title'] }}</span>
+        <small class="admin-dashboard__feed-meta">
+            <span>{{ $item['type_label'] }}</span>
+            <time datetime="{{ $item['date'] }}">{{ $item['date_display'] }}</time>
+            <span>{{ $item['time_display'] }}</span>
+        </small>
     </td>
     <td class="admin-data-sender admin-dashboard__col-sender">
         @if ($item['type'] === 'contact')

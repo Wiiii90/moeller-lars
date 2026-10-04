@@ -559,7 +559,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - **Every toolbar is exactly one row at every supported responsive state. Two-row toolbars are not allowed.**
 - Search, filters and **Clear** stay in the Query/Filter region; Clear is not a task action. Filter-reset UI is always named **Clear**, never Reset, and uses the shared Clear icon/action primitive.
 - Selection stays the terminal, visually distinct bulk-action region. Selection triggers use the shared multi-selection icon before the Selected label.
-- Width pressure is solved inside that one row: redistribute tracks, collapse lower-priority filters behind a local **Filters** trigger when necessary, and compact actions from full icon+label directly to icon-only or an explicit overflow action.
+- Width pressure is solved inside that one row: redistribute ruler tracks, preserve readable filter controls, and compact task actions from full icon+label directly to icon-only or an explicit overflow action. Do not invent a secondary **Filters** popup fallback merely to rescue a broken toolbar geometry.
 - Never abbreviate action labels into fragments such as `O…`, `P…` or other clipped pseudo-labels. A visible label is complete; otherwise it is hidden and the accessible icon action remains.
 - The underlying Livewire filter fields remain the authoritative controls; presentation-only compaction must not send resize state to the server.
 - Icon-only actions keep accessible labels/tooltips and semantic DOM order.
@@ -575,8 +575,8 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Tables may enter a narrower state earlier than metrics or stages because each component responds to its own available width.
 - **Metric separators are the preferred soft alignment grid.** On a page with a six-cell metric strip, toolbar regions and major table-column boundaries should align to the same 1/6 separators whenever semantics and fit allow. Deviate only when content needs it; do not invent arbitrary tracks while a clean metric boundary is available.
 - General Social Media uses the same six-cell ruler at Wide/Compact: Position + Drag + Platform end on 2/6, Profile URL ends on 4/6, Actions owns the final two cells. At narrower table widths Position/Drag become shared fixed rails, action labels collapse first, and Profile URL folds into Platform only at Minimal.
-- For Dashboard, the feed table still follows the six-cell ruler (cell 1 = Position/Drag/Type, cell 2 = Date, cells 3–4 = Title, cell 5 = Sender, cell 6 = Actions + terminal Selection). The toolbar redistributes whole ruler cells under pressure instead of continuously squeezing controls: Wide = Search 3 / Type 1 / Utility 2; Compact = Search 2 / Type 1 / Utility 3; Narrow/Minimal = Search 1 / Type 2 / Utility 3. Filter/Clear stays attached to the Search/Type side, Dashboard/Settings stays attached to Selection, and deliberate empty breathing room between those two clusters is allowed. Selection remains terminal; its Selected value sits immediately before the fixed count rail.
-- Dashboard table priority is fixed for narrow widths: Sender yields first; **Type and Date remain standalone columns through Minimal**; Actions compacts to the icon rail before either of those columns may disappear.
+- For Dashboard, the feed table follows the six-cell ruler and its toolbar refines the same ruler into 24 quarter-cell tracks. Wide = Search 12 / Type 4 / Clear 2 / Dashboard 2 / Selection 4; Compact = 8 / 4 / 4 / 4 / 4; Narrow keeps those tracks while Settings/Selected compact to icons; Minimal = 7 / 5 / 4 / 3 / 5. Clear remains part of Query/Filter and keeps its label. Dashboard stays attached to Selection; Selection remains terminal and its value/icon sits immediately before the fixed count rail.
+- Dashboard table priority is fixed: Actions compacts to its four-slot icon rail first; Sender yields next; at Minimal, Type + Date + Time fold into a second line under Title so Title remains readable instead of every data column degrading to ellipsis. Position/Drag, Title, Actions and terminal Selection remain explicit.
 - Pages/Custom Page hierarchies protect Position + Drag geometry centrally; their square position badges must never be clipped. Pages drops Template before Page type; Custom Page folds Component kind into Content before sacrificing identity.
 - Journal drops supportive media/publication/schedule columns before Status/Timing. Blog and Exhibitions keep their action rail icon-only before removing operational state.
 - Gallery remains a contact sheet rather than becoming a table; it moves 3 -> 2 -> 1 cards while its control bar stays one row.
@@ -585,6 +585,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Analytics detail tables remain fixed-layout/no-scroll and keep their report-specific six-cell distribution; identity cells absorb text pressure before numeric columns are removed.
 - While the surface remains tabular, toolbar Selected-count, header select-all and row checkboxes share one terminal Selection rail at every responsive state.
 - Preserve table semantics where practical; do not default narrow tables to card stacks.
+- Shared table pagination is always one row: Per page left, result range centered, Previous/Next right. Narrow states may tighten gaps/padding but never stack the range above the controls.
 - Do not reduce shared semantic font sizes merely to recover width.
 
 ### Visual Stages

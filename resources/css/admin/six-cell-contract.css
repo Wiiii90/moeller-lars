@@ -1,15 +1,25 @@
-/* Canonical six-cell alignment contract for metric-backed admin toolbars.
+/* Canonical metric-backed toolbar geometry.
  *
- * Six-cell geometry is scoped, never inferred from a toolbar merely being
- * complete. Generic/dense toolbars keep the flexible data-control contract.
- * Search width can be declared explicitly when the remaining controls are
- * intentionally sparse; otherwise the historical filter-count defaults apply.
- * Journal and Custom Page deliberately follow their six-metric ruler; Pages
- * owns the equivalent scoped geometry in table-contract.css.
+ * The visual ruler remains six equal workspace cells. Metric-grid toolbars use
+ * 24 subtracks (4 per cell) so real control minima can be fitted without
+ * inventing arbitrary page-local widths. The toolbar is always one row.
+ *
+ * Dashboard grammar:
+ * Wide    >66rem : Search 12 | Type 4 | Clear 2 | Dashboard 2 | Selection 4
+ * Compact >54rem : Search  8 | Type 4 | Clear 4 | Dashboard 4 | Selection 4
+ * Narrow  >38rem : same tracks as Compact; task/value labels compact to icons
+ * Minimal <=38rem: Search  7 | Type 5 | Clear 4 | Dashboard 3 | Selection 5
+ *
+ * Search gives up ruler subdivisions only at named state boundaries. Clear is
+ * part of Query/Filter and keeps its text through Minimal. Dashboard task text
+ * and Selected text compact before Query/Filter becomes unreadable.
  */
 
+.admin-data-controls__utility {
+    display: contents;
+}
+
 :is(
-    .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
 ) {
@@ -21,7 +31,6 @@
 }
 
 :is(
-    .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
 ) > * {
@@ -29,7 +38,13 @@
 }
 
 :is(
-    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__filters {
+    display: contents;
+}
+
+:is(
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
 ).admin-data-controls--filters-0 > :first-child {
@@ -37,7 +52,6 @@
 }
 
 :is(
-    .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
 ).admin-data-controls--filters-1 > :first-child {
@@ -45,92 +59,31 @@
 }
 
 :is(
-    .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
 ).admin-data-controls--filters-2 > :first-child {
     grid-column: span 2;
 }
 
-/* An explicit search span is authoritative. Keep these selectors on the same
- * scoped specificity level as the filter-count defaults above so their later
- * declaration reliably overrides the inferred width. */
 :is(
-    .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--six-cell-search-2 > :first-child {
-    grid-column: 1 / span 2;
-    grid-row: 1;
-}
-
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--six-cell-search-3 > :first-child {
-    grid-column: 1 / span 3;
-    grid-row: 1;
-}
-
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--six-cell-search-4 > :first-child {
-    grid-column: 1 / span 4;
-    grid-row: 1;
-}
-
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-1 > .admin-data-controls__filters > :nth-child(1) {
+).admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
     grid-column: 4;
-    grid-row: 1;
 }
 
 :is(
-    .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(1) {
+).admin-data-controls--filters-2 > .admin-data-controls__filters > :first-child {
     grid-column: 3;
-    grid-row: 1;
 }
 
 :is(
-    .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
 ).admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
     grid-column: 4;
-    grid-row: 1;
-}
-
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > :first-child,
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__filters > * {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    padding-right: .7rem;
-}
-
-/* The utility wrapper is semantic only for ordinary toolbars. Its children
- * remain direct layout participants of the toolbar so accepted page geometry
- * is not collapsed into an extra flex group. Metric-grid toolbars override
- * this below and deliberately make the wrapper a two-cell grid item. */
-.admin-data-controls__utility {
-    display: contents;
 }
 
 :is(
@@ -146,37 +99,75 @@
     align-items: end;
 }
 
-.admin-data-controls--six-cell > .admin-data-controls__utility {
+.admin-data-controls--six-cell {
     display: grid;
-    min-width: 0;
-    grid-column: 5 / span 2;
-    grid-row: 1;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    grid-template-rows: auto;
     gap: 0;
     align-items: end;
 }
 
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :first-child {
-    width: max-content;
-    max-width: 100%;
-    grid-column: 1;
-    justify-self: start;
+.admin-data-controls--six-cell > * {
+    min-width: 0;
 }
 
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :nth-child(2) {
-    width: max-content;
-    max-width: 100%;
-    grid-column: 2;
-    justify-self: end;
+.admin-data-controls--six-cell > .admin-data-controls__filters {
+    display: contents;
 }
 
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child {
-    grid-column: 3 / span 2;
+.admin-data-controls--six-cell > :first-child,
+.admin-data-controls--six-cell > .admin-data-controls__filters > * {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding-right: .7rem;
 }
 
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-reset:not(.admin-data-controls__utility--has-actions).admin-data-controls__utility--has-selection > :first-child,
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset).admin-data-controls__utility--has-selection > :first-child {
-    grid-column: 2;
+.admin-data-controls--six-cell.admin-data-controls--filters-0 > :first-child {
+    grid-column: 1 / span 16;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--filters-1 > :first-child {
+    grid-column: 1 / span 12;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--filters-2 > :first-child {
+    grid-column: 1 / span 8;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2 > :first-child {
+    grid-column: 1 / span 8;
+    grid-row: 1;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3 > :first-child {
+    grid-column: 1 / span 12;
+    grid-row: 1;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-4 > :first-child {
+    grid-column: 1 / span 16;
+    grid-row: 1;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2.admin-data-controls--filters-2 > .admin-data-controls__filters > :first-child {
+    grid-column: 9 / span 4;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2.admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
+    grid-column: 13 / span 4;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
+    grid-column: 13 / span 4;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-4.admin-data-controls--filters-2 > .admin-data-controls__filters > :first-child {
+    grid-column: 17 / span 4;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-4.admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
+    grid-column: 21 / span 4;
 }
 
 .admin-data-controls__utility > * {
@@ -206,29 +197,43 @@
     padding-inline: .2rem;
 }
 
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility .admin-selection__trigger > :first-child {
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection {
+    display: grid;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    grid-column: 17 / span 8;
+    grid-row: 1;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0;
+    align-items: end;
 }
 
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility > :last-child {
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+> :first-child {
+    width: max-content;
+    max-width: 100%;
+    grid-column: 1 / span 2;
+    justify-self: start;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+> :nth-child(2) {
+    width: max-content;
+    max-width: 100%;
+    grid-column: 3 / span 2;
+    justify-self: end;
+}
+
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+> :last-child {
     width: 100%;
+    grid-column: 5 / span 4;
     justify-self: stretch;
 }
 
-/* Selection heading uses the same content/count split as the trigger below.
- * This keeps the heading over Selected while the fixed count rail stays on the
- * terminal table-checkbox axis. */
 .admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
@@ -243,31 +248,10 @@
 
 .admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child > .admin-selection__anchor {
     grid-column: 1 / -1;
-}
-
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility > :last-child .admin-selection__anchor,
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility > :last-child .media-workspace__selection-anchor {
     width: 100%;
 }
 
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility > :last-child .admin-selection__trigger,
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility > :last-child .media-workspace__selection-trigger {
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection .admin-selection__trigger {
     display: grid;
     width: 100%;
     min-width: 0;
@@ -277,134 +261,115 @@
     justify-content: stretch;
 }
 
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility > :last-child .admin-selection__count,
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility > :last-child .media-workspace__selection-count {
-    margin-left: 0;
-    justify-self: center;
-}
-
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility > :last-child .admin-selection__trigger-label {
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection .admin-selection__trigger-label {
     min-width: 0;
     justify-self: end;
     justify-content: flex-end;
     padding-right: .25rem;
 }
 
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection .admin-selection__count {
+    margin-left: 0;
+    justify-self: center;
+}
+
+@container admin-workspace (max-width: 66rem) {
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
+        grid-column: 1 / span 8;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
+        grid-column: 9 / span 4;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection {
+        grid-column: 13 / span 12;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :first-child {
+        grid-column: 1 / span 4;
+        justify-self: start;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) {
+        grid-column: 5 / span 4;
+        justify-self: end;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :last-child {
+        grid-column: 9 / span 4;
+    }
+}
 
 @container admin-workspace (max-width: 54rem) {
-    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action__label,
-    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-selection__trigger-text {
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) .admin-action__label,
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :last-child .admin-selection__trigger-text {
         display: none !important;
     }
 
-    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action:not(.admin-selection__trigger) {
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) .admin-action {
         width: min(100%, var(--admin-control-height));
         min-width: 0;
         max-width: 100%;
         padding-inline: 0 !important;
-        justify-self: center;
+        justify-self: end;
         justify-content: center !important;
     }
-
-    .admin-data-controls--six-cell > .admin-data-controls__utility > :not(:last-child) {
-        display: flex;
-        min-width: 0;
-        align-items: flex-end;
-        justify-content: center;
-    }
-
-    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-selection__trigger-label {
-        justify-content: center;
-    }
-
-    .admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child > .admin-data-control-label {
-        justify-self: center;
-        padding-right: 0;
-    }
 }
 
-/* Content-derived six-cell redistribution for the Search + one filter +
- * Filter/Dashboard/Selection grammar.
- *
- * Wide:    Search 3 | Type 1 | Utility 2
- * Compact: Search 2 | Type 1 | Utility 3
- * Narrow:  Search 1 | Type 2 | Utility 3
- *
- * At 66rem, half a metric cell is 5.5rem: below that, the full DASHBOARD
- * heading no longer fits reliably in a half-cell once control-label tracking
- * is included, so Search donates one whole cell to Utility.
- * At 54rem, a single metric cell is 9rem: Type is then at the practical
- * minimum for "Notifications" plus native select chrome, so Search donates
- * the next whole cell to Type. No control is continuously squeezed between
- * those states. */
-@container admin-workspace (max-width: 66rem) {
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
-        grid-column: 1 / span 2;
-        grid-row: 1;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters,
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
-        grid-column: 3;
-        grid-row: 1;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility {
-        grid-column: 4 / span 3;
-        grid-row: 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :first-child {
-        grid-column: 1;
-        justify-self: start;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :nth-child(2) {
-        grid-column: 2;
-        justify-self: end;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility--has-selection > :last-child {
-        grid-column: 3;
-    }
-}
-
-@container admin-workspace (max-width: 54rem) {
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
-        grid-column: 1;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters,
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
-        grid-column: 2 / span 2;
-        grid-row: 1;
-    }
-
-    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__utility {
-        grid-column: 4 / span 3;
-    }
-}
-
-/* FILTER remains the data-cluster anchor at Minimal. DASHBOARD and SELECTION
- * headings may yield only once their complete words no longer fit; their
- * controls/count rail remain present and aligned. */
 @container admin-workspace (max-width: 38rem) {
-    .admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection > :nth-child(2) > .admin-data-control-label,
-    .admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection > :last-child > .admin-data-control-label {
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > :first-child {
+        grid-column: 1 / span 7;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
+        grid-column: 8 / span 5;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection {
+        grid-column: 13 / span 12;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :first-child {
+        grid-column: 1 / span 4;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) {
+        grid-column: 5 / span 3;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :last-child {
+        grid-column: 8 / span 5;
+    }
+
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) > .admin-data-control-label,
+    .admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1
+    > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :last-child > .admin-data-control-label {
         display: none !important;
     }
 }
-

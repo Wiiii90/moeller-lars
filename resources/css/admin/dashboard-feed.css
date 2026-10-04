@@ -120,57 +120,28 @@
 }
 
 /* Dashboard feed responsive table authority.
- * Dashboard-specific semantic column folding lives here only.
- * Shared table-contract.css still owns common Position/Drag/Selection rails;
- * responsive.css owns only cross-table behavior such as icon-only actions. */
+ * Wide keeps labels. Compact moves Actions + Selection to one ruler cell and
+ * turns row actions icon-only. Narrow removes Sender. Minimal folds Type,
+ * Date and Time into Title metadata before essential identity is squeezed. */
 @container admin-table (max-width: 62rem) {
     .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
+        min-height: 2rem;
         padding-inline: 0 !important;
         justify-content: center !important;
     }
 
-    .admin-dashboard__feed-table .admin-dashboard__col-position {
-        width: 3rem !important;
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__label {
+        display: none !important;
     }
 
-    .admin-dashboard__feed-table .admin-dashboard__col-drag {
-        width: 2rem !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-type {
-        width: var(--admin-table-three-quarter-unit) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-date {
-        width: var(--admin-table-three-quarter-unit) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-time {
-        width: var(--admin-table-half-unit) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-title {
-        width: calc(41.666667% - 5rem) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-sender {
-        width: var(--admin-table-half-unit) !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions {
-        width: calc(var(--admin-table-one-unit) - var(--admin-table-selection-width)) !important;
-    }
-
-    .admin-dashboard__feed-table :is(
-        th.admin-dashboard__col-type,
-        td.admin-dashboard__col-type,
-        th.admin-dashboard__col-date,
-        td.admin-dashboard__col-date,
-        th.admin-dashboard__col-time,
-        td.admin-dashboard__col-time
-    ) {
-        display: table-cell !important;
-    }
+    .admin-dashboard__feed-table .admin-dashboard__col-position { width: 3rem !important; }
+    .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 2rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-type { width: var(--admin-table-three-quarter-unit) !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-date { width: var(--admin-table-three-quarter-unit) !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-time { width: var(--admin-table-half-unit) !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: calc(41.666667% - 5rem) !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-sender { width: var(--admin-table-half-unit) !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: calc(var(--admin-table-one-unit) - var(--admin-table-selection-width)) !important; }
 }
 
 @container admin-table (max-width: 50rem) {
@@ -185,13 +156,54 @@
     }
 }
 
-@container admin-table (max-width: 30rem) {
-    .admin-dashboard__feed-table .admin-dashboard__col-drag {
-        width: 1.75rem !important;
-    }
-
-    .admin-dashboard__feed-table col.admin-dashboard__col-title {
-        width: calc(50% - 4.75rem) !important;
-    }
+.admin-dashboard__feed-meta {
+    display: none;
 }
 
+@container admin-table (max-width: 38rem) {
+    .admin-dashboard__feed-table col.admin-dashboard__col-type,
+    .admin-dashboard__feed-table th.admin-dashboard__col-type,
+    .admin-dashboard__feed-table td.admin-dashboard__col-type,
+    .admin-dashboard__feed-table col.admin-dashboard__col-date,
+    .admin-dashboard__feed-table th.admin-dashboard__col-date,
+    .admin-dashboard__feed-table td.admin-dashboard__col-date,
+    .admin-dashboard__feed-table col.admin-dashboard__col-time,
+    .admin-dashboard__feed-table th.admin-dashboard__col-time,
+    .admin-dashboard__feed-table td.admin-dashboard__col-time,
+    .admin-dashboard__feed-table col.admin-dashboard__col-sender,
+    .admin-dashboard__feed-table th.admin-dashboard__col-sender,
+    .admin-dashboard__feed-table td.admin-dashboard__col-sender {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: calc(100% - 13.75rem) !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 6.5rem !important; }
+
+    .admin-dashboard__feed-meta {
+        display: flex;
+        min-width: 0;
+        gap: .45rem;
+        margin-top: .16rem;
+        overflow: hidden;
+        color: var(--admin-muted);
+        font-size: var(--admin-font-size-table-meta);
+        white-space: nowrap;
+    }
+
+    .admin-dashboard__feed-meta > * {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions {
+        grid-template-columns: repeat(4, minmax(1.45rem, 1fr));
+        gap: .1rem !important;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
+        min-width: 1.45rem;
+        min-height: 2rem;
+    }
+}
