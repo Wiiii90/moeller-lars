@@ -105,7 +105,7 @@ function defaultInspector(config) {
     const usedPercent = clamp(config.percent, 0, 100);
     return {
         title: config.authoritative || '—',
-        meta: `${usedPercent.toFixed(1)}% used · ${config.remaining || '—'} free`,
+        meta: `${usedPercent.toFixed(1)}% used, ${config.remaining || '—'} free`,
     };
 }
 
@@ -125,7 +125,7 @@ function inspectSlice(element, config, datum) {
     if (! datum || datum.key === 'remaining') {
         setInspector(element, {
             title: 'Remaining',
-            meta: `${config.remaining || '—'} · ${(Number(datum?.capacityShare) || 0).toFixed(1)}% of capacity`,
+            meta: `${config.remaining || '—'}, ${(Number(datum?.capacityShare) || 0).toFixed(1)}% of capacity`,
         });
         return;
     }

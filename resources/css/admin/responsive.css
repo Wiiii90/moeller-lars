@@ -2084,27 +2084,22 @@
     }
 }
 
-/* Dashboard toolbar width authority.
- * Right-side controls consume only their intrinsic width. Search owns all
- * remaining space but never shrinks below one sixth of the toolbar. */
+/* Dashboard feed responsive authority.
+ * The toolbar follows 24 quarter-unit tracks. Table Actions + Selection owns
+ * 2/6 while labels are visible, then exactly 1/6 once the shared compact-table
+ * rule turns row actions icon-only. */
 .admin-dashboard__feed-controls {
     display: grid !important;
-    grid-template-columns:
-        minmax(16.666667%, 1fr)
-        max-content
-        max-content
-        max-content
-        8.5rem !important;
-    column-gap: .65rem !important;
-    row-gap: 0 !important;
+    grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
+    gap: 0 !important;
     align-items: end !important;
 }
 
 .admin-dashboard__feed-controls > :first-child {
-    grid-column: auto !important;
+    grid-column: span 8 !important;
     width: 100% !important;
     min-width: 0 !important;
-    padding-right: 0 !important;
+    padding-right: .7rem !important;
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__filters,
@@ -2113,116 +2108,142 @@
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
-    grid-column: auto !important;
-    width: 6.5rem !important;
-    min-width: 6.5rem !important;
-    padding-inline: 0 !important;
+    grid-column: span 4 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-inline: 0 .7rem !important;
 }
 
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-    grid-column: auto !important;
-    width: max-content !important;
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+    grid-column: span 3 !important;
+    width: 100% !important;
     min-width: 0 !important;
-    padding-inline: 0 !important;
+    padding-inline: 0 .7rem !important;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+    grid-column: span 4 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-inline: 0 .7rem !important;
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-    grid-column: auto !important;
-    width: 8.5rem !important;
-    min-width: 8.5rem !important;
+    grid-column: span 5 !important;
+    width: 100% !important;
+    min-width: 0 !important;
     margin-left: 0 !important;
     padding-inline: 0 !important;
 }
 
-@container admin-workspace (max-width: 38rem) {
-    .admin-dashboard__feed-controls {
-        column-gap: .35rem !important;
+@container admin-workspace (max-width: 54rem) {
+    .admin-dashboard__feed-controls > :first-child {
+        grid-column: span 7 !important;
     }
 
     .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
-        width: 5.25rem !important;
-        min-width: 5.25rem !important;
+        grid-column: span 5 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        grid-column: span 3 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+        grid-column: span 4 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+        grid-column: span 5 !important;
     }
 }
 
-
-/* Dashboard feed column priority authority.
- * Preserve Type + Date through Minimal. Sender yields first; Actions stays a
- * compact icon rail so data columns keep the available width. */
-@container admin-table (max-width: 50rem) {
-    .admin-dashboard__feed-table col.admin-dashboard__col-sender {
-        display: none !important;
+@container admin-workspace (max-width: 38rem) {
+    .admin-dashboard__feed-controls > :first-child {
+        grid-column: span 6 !important;
     }
 
-    .admin-dashboard__feed-table th.admin-dashboard__col-sender,
-    .admin-dashboard__feed-table td.admin-dashboard__col-sender {
-        display: none !important;
+    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
+        grid-column: span 5 !important;
     }
 
-    .admin-dashboard__feed-table col.admin-dashboard__col-type,
-    .admin-dashboard__feed-table col.admin-dashboard__col-date {
-        display: table-column !important;
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        grid-column: span 3 !important;
     }
 
-    .admin-dashboard__feed-table th.admin-dashboard__col-type,
-    .admin-dashboard__feed-table td.admin-dashboard__col-type,
-    .admin-dashboard__feed-table th.admin-dashboard__col-date,
-    .admin-dashboard__feed-table td.admin-dashboard__col-date {
-        display: table-cell !important;
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+        grid-column: span 4 !important;
     }
 
-    .admin-dashboard__feed-table .admin-responsive-meta {
-        display: none !important;
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+        grid-column: span 6 !important;
     }
+}
 
+@container admin-table (max-width: 62rem) {
     .admin-dashboard__feed-table .admin-dashboard__col-position {
         width: 3rem !important;
     }
 
     .admin-dashboard__feed-table .admin-dashboard__col-drag {
-        width: 1.5rem !important;
+        width: 2rem !important;
     }
 
     .admin-dashboard__feed-table col.admin-dashboard__col-type {
-        width: 5.25rem !important;
+        width: var(--admin-table-three-quarter-unit) !important;
     }
 
     .admin-dashboard__feed-table col.admin-dashboard__col-date {
-        width: 6.25rem !important;
+        width: var(--admin-table-three-quarter-unit) !important;
     }
 
-    .admin-dashboard__feed-table col:nth-last-child(2) {
-        width: 5.25rem !important;
+    .admin-dashboard__feed-table col.admin-dashboard__col-time {
+        width: var(--admin-table-half-unit) !important;
     }
 
-    .admin-dashboard__feed-table .admin-dashboard__feed-actions {
-        gap: .12rem !important;
+    .admin-dashboard__feed-table col.admin-dashboard__col-title {
+        width: calc(41.666667% - 5rem) !important;
     }
 
-    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
-        padding-inline: .1rem !important;
+    .admin-dashboard__feed-table col.admin-dashboard__col-sender {
+        width: var(--admin-table-half-unit) !important;
+    }
+
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions {
+        width: calc(var(--admin-table-one-unit) - var(--admin-table-selection-width)) !important;
+    }
+
+    .admin-dashboard__feed-table :is(
+        th.admin-dashboard__col-type,
+        td.admin-dashboard__col-type,
+        th.admin-dashboard__col-date,
+        td.admin-dashboard__col-date,
+        th.admin-dashboard__col-time,
+        td.admin-dashboard__col-time
+    ) {
+        display: table-cell !important;
+    }
+}
+
+@container admin-table (max-width: 50rem) {
+    .admin-dashboard__feed-table col.admin-dashboard__col-sender,
+    .admin-dashboard__feed-table th.admin-dashboard__col-sender,
+    .admin-dashboard__feed-table td.admin-dashboard__col-sender {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-table col.admin-dashboard__col-title {
+        width: calc(50% - 5rem) !important;
     }
 }
 
 @container admin-table (max-width: 30rem) {
-    .admin-dashboard__feed-table col.admin-dashboard__col-type {
-        width: 4.75rem !important;
+    .admin-dashboard__feed-table .admin-dashboard__col-drag {
+        width: 1.75rem !important;
     }
 
-    .admin-dashboard__feed-table col.admin-dashboard__col-date {
-        width: 5.25rem !important;
-    }
-
-    .admin-dashboard__feed-table col:nth-last-child(2) {
-        width: 5rem !important;
-    }
-
-    .admin-dashboard__feed-table th.admin-dashboard__col-type,
-    .admin-dashboard__feed-table td.admin-dashboard__col-type,
-    .admin-dashboard__feed-table th.admin-dashboard__col-date,
-    .admin-dashboard__feed-table td.admin-dashboard__col-date {
-        display: table-cell !important;
+    .admin-dashboard__feed-table col.admin-dashboard__col-title {
+        width: calc(50% - 4.75rem) !important;
     }
 
     .admin-dashboard__feed-table .admin-responsive-meta {

@@ -64,7 +64,7 @@
     @unless ($compact)
         <div class="admin-storage-capacity__inspector" data-admin-viz-inspector aria-hidden="true">
             <strong data-admin-viz-inspector-title>{{ $siteUsed }}</strong>
-            <span data-admin-viz-inspector-meta>@if ($capacityPercent !== null) {{ number_format($capacityPercent, 1) }}% used · {{ $capacity['remaining'] ?? '—' }} free @endif</span>
+            <span data-admin-viz-inspector-meta>@if ($capacityPercent !== null) {{ number_format($capacityPercent, 1) }}% used, {{ $capacity['remaining'] ?? '—' }} free @endif</span>
         </div>
     @endunless
     <script type="application/json" data-admin-viz-config>@json($vizConfig)</script>

@@ -6,8 +6,8 @@
     position: fixed;
     inset-block-start: calc((var(--admin-topbar-height) - var(--admin-header-control-size)) / 2);
     inset-block-end: auto;
-    inset-inline-start: calc(1rem + var(--admin-header-control-size) + var(--admin-header-notification-edge-gap));
-    inset-inline-end: calc(1rem + var(--admin-header-control-size) + var(--admin-header-notification-edge-gap));
+    inset-inline-start: var(--admin-header-control-rail);
+    inset-inline-end: var(--admin-header-control-rail);
     z-index: 35;
     box-sizing: border-box;
     display: grid;

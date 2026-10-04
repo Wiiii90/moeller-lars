@@ -2,22 +2,18 @@
 
 .admin-dashboard__feed-controls {
     display: grid;
-    grid-template-columns:
-        minmax(16.666667%, 1fr)
-        max-content
-        max-content
-        max-content
-        8.5rem;
-    column-gap: .65rem;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    column-gap: 0;
     row-gap: 0;
     padding: 0 0 .85rem;
     align-items: end;
 }
 
 .admin-dashboard__feed-controls > :first-child {
-    min-width: 0 !important;
+    grid-column: span 8;
     width: 100%;
-    padding-right: 0;
+    min-width: 0 !important;
+    padding-right: .7rem;
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__filters,
@@ -26,42 +22,42 @@
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
-    width: 6.5rem !important;
-    min-width: 6.5rem !important;
+    grid-column: span 4;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-right: .7rem;
 }
 
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child,
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-    width: max-content !important;
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+    grid-column: span 3;
+    width: 100% !important;
     min-width: 0 !important;
+    padding-right: .7rem;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+    grid-column: span 4;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-right: .7rem;
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-    width: 8.5rem !important;
-    min-width: 8.5rem !important;
+    grid-column: span 5;
+    width: 100% !important;
+    min-width: 0 !important;
     margin-left: 0 !important;
 }
 
 .admin-dashboard__feed-controls .admin-data-control-group,
-.admin-dashboard__feed-controls .admin-selection__anchor {
-    width: auto;
-    min-width: 0;
-}
-
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child,
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child .admin-selection__anchor,
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child .admin-selection__trigger {
-    width: 8.5rem !important;
-}
-
-.admin-dashboard__feed-controls .admin-data-control-group > .admin-action {
-    width: auto;
+.admin-dashboard__feed-controls .admin-selection__anchor,
+.admin-dashboard__feed-controls .admin-selection__trigger {
+    width: 100%;
     min-width: 0;
 }
 
 .admin-dashboard__feed-controls .admin-selection__trigger {
     display: grid;
-    min-width: 0;
     grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
     gap: 0;
     padding-right: 0;
@@ -164,25 +160,24 @@
 
 .admin-dashboard__pin-action.is-active { color: color-mix(in srgb, #9a6800 82%, var(--admin-text)); }
 
-/* Dashboard row actions have two states only: full icon+label while they fit,
- * then icon-only at the shared compact-table threshold. Never abbreviate a
- * label to fragments such as "O…" or "P…". */
+/* Wide rows reserve the final two sixths for Actions + Selection so the
+ * maximal Notification action set (Open, Pin, Read/Unread, Delete) remains
+ * complete. Compact rows switch the same four semantic slots to icons only. */
 .admin-dashboard__feed-table .admin-dashboard__feed-actions {
-    display: flex !important;
+    display: grid !important;
     width: 100%;
-    gap: .22rem;
+    min-width: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0 !important;
     align-items: center;
-    justify-content: flex-start !important;
-    flex-wrap: nowrap;
 }
 
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
-    width: auto;
+    width: 100%;
     min-width: 0;
-    padding-inline: .35rem;
-    justify-content: center;
-    overflow: visible;
-    flex: 0 0 auto;
+    padding-inline: .25rem;
+    justify-content: flex-start !important;
+    overflow: hidden;
 }
 
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action:first-child {
@@ -194,21 +189,16 @@
 }
 
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__label {
-    overflow: visible;
+    min-width: 0;
+    overflow: hidden;
     text-overflow: clip;
     white-space: nowrap;
 }
 
-
-
-
-/* Compact row-action rail: preserve data width before action whitespace. */
-@container admin-table (max-width: 50rem) {
-    .admin-dashboard__feed-table .admin-dashboard__feed-actions {
-        gap: .12rem;
-    }
-
+@container admin-table (max-width: 62rem) {
     .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
-        padding-inline: .1rem;
+        padding-inline: 0 !important;
+        justify-content: center !important;
     }
 }
+

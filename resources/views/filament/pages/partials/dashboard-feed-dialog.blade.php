@@ -17,6 +17,10 @@
             <dt>Date</dt>
             <dd>{{ $entry['date_display'] }}</dd>
         </div>
+        <div>
+            <dt>Time</dt>
+            <dd>{{ $entry['time_display'] }}</dd>
+        </div>
 
         @if ($entry['type'] === 'contact')
             <div>
@@ -29,7 +33,7 @@
         @elseif ($entry['type'] === 'notification')
             <div>
                 <dt>Status</dt>
-                <dd>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }} · {{ ucfirst($entry['notification_status']) }}</dd>
+                <dd>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }} — {{ ucfirst($entry['notification_status']) }}</dd>
             </div>
             @if ($entry['link'] !== null && $entry['link_label'] !== null)
                 <div>
@@ -59,7 +63,7 @@
         <p class="admin-detail-dialog__context">
             <span>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }}</span>
             @if ($entry['mail_delivery_status'])
-                <span aria-hidden="true">·</span>
+                <span aria-hidden="true">—</span>
                 <span>Mail {{ strtolower($entry['mail_delivery_status']) }}@if ($entry['mail_delivered_at']) · {{ $entry['mail_delivered_at'] }}@endif</span>
             @endif
         </p>

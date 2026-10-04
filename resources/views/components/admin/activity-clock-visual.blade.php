@@ -79,7 +79,7 @@
                             transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
                             opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
                         >
-                            <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($bucket['count']) }} changes</title>
+                            <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 — {{ number_format($bucket['count']) }} changes</title>
                         </line>
                     </a>
                 @else
@@ -92,7 +92,7 @@
                         transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
                         opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
                     >
-                        <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($bucket['count']) }} changes</title>
+                        <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 — {{ number_format($bucket['count']) }} changes</title>
                     </line>
                 @endif
             @endforeach
@@ -152,7 +152,7 @@
     @if ($captionLabel !== null)
         <div class="activity-clock__caption" aria-label="{{ $captionLabel }} and live local time">
             <strong>{{ $captionLabel }}</strong>
-            <span>Live local time · <time x-text="timeLabel()">—</time></span>
+            <span>Live local time: <time x-text="timeLabel()">—</time></span>
         </div>
     @endif
 </div>

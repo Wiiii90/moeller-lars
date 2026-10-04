@@ -6,6 +6,9 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
     $css = file_get_contents($root.'/resources/css/admin/six-cell-contract.css');
     $tableCss = file_get_contents($root.'/resources/css/admin/table-contract.css');
     $dashboard = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed.blade.php');
+    $dashboardRow = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-row.blade.php');
+    $dashboardCss = file_get_contents($root.'/resources/css/admin/dashboard-feed.css');
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
     $storage = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/storage-library.blade.php');
     $theme = file_get_contents($root.'/resources/views/filament/partials/admin-theme.blade.php');
     $vite = file_get_contents($root.'/vite.config.js');
@@ -36,7 +39,24 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
 
     expect($dashboard)
         ->toContain('admin-dashboard__feed-controls')
+        ->toContain('admin-table__col-three-quarter-unit admin-dashboard__col-type')
+        ->toContain('admin-table__col-three-quarter-unit admin-dashboard__col-date')
+        ->toContain('admin-table__col-half-unit admin-dashboard__col-time')
+        ->toContain('admin-table__col-two-units-minus-selection admin-dashboard__col-actions')
+        ->toContain('>Time</th>')
         ->not->toContain('metric-grid');
+
+    expect($dashboardRow)
+        ->toContain("$item['time_display']")
+        ->not->toContain(" · ");
+
+    expect($dashboardCss)
+        ->toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
+
+    expect($responsive)
+        ->toContain('col.admin-dashboard__col-actions')
+        ->toContain('calc(var(--admin-table-one-unit) - var(--admin-table-selection-width))')
+        ->toContain('grid-column: span 5 !important;');
 
     expect($storage)
         ->toContain('media-workspace__controls')

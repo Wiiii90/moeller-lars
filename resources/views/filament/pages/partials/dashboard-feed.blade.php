@@ -83,11 +83,12 @@
             <colgroup>
                 <col class="admin-table__col-quarter-unit admin-dashboard__col-position">
                 <col class="admin-table__col-quarter-unit admin-dashboard__col-drag">
-                <col class="admin-table__col-half-unit admin-dashboard__col-type">
-                <col class="admin-table__col-one-unit admin-dashboard__col-date">
-                <col class="admin-table__col-two-units admin-dashboard__col-title">
-                <col class="admin-table__col-one-unit admin-dashboard__col-sender">
-                <col class="admin-table__col-one-unit-minus-selection">
+                <col class="admin-table__col-three-quarter-unit admin-dashboard__col-type">
+                <col class="admin-table__col-three-quarter-unit admin-dashboard__col-date">
+                <col class="admin-table__col-half-unit admin-dashboard__col-time">
+                <col class="admin-table__col-one-unit admin-dashboard__col-title">
+                <col class="admin-table__col-half-unit admin-dashboard__col-sender">
+                <col class="admin-table__col-two-units-minus-selection admin-dashboard__col-actions">
                 <col class="admin-table__selection-col">
             </colgroup>
             <thead>
@@ -95,6 +96,7 @@
                     <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
                     <th scope="col" class="admin-dashboard__col-type">Type</th>
                     <th scope="col" class="admin-dashboard__col-date">Date</th>
+                    <th scope="col" class="admin-dashboard__col-time">Time</th>
                     <th scope="col" class="admin-dashboard__col-title">Title</th>
                     <th scope="col" class="admin-dashboard__col-sender">Sender</th>
                     <th scope="col" class="admin-table__actions">Actions</th>

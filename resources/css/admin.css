@@ -26,6 +26,13 @@
     --admin-section-space: 2rem;
     --admin-shell-content-inset: 1.5rem;
     --admin-topbar-height: 4rem;
+    --admin-header-control-size: 2rem;
+    --admin-header-control-edge-gap: 1rem;
+    --admin-header-control-rail: calc(
+        var(--admin-header-control-size)
+        + var(--admin-header-control-edge-gap)
+        + var(--admin-header-control-edge-gap)
+    );
     --admin-workspace-max-width: 80rem;
     --admin-workspace-gutter: 2rem;
     --admin-workspace-outer-max-width: calc(
@@ -53,18 +60,19 @@
         + var(--admin-workspace-gutter)
         - var(--admin-workspace-visual-shift)
     );
-    --admin-workspace-content-inline-end: calc(
-        var(--admin-workspace-main-extra-space)
-        + var(--admin-workspace-gutter)
-        + var(--admin-workspace-visual-shift)
+    --admin-workspace-content-inline-end: max(
+        var(--admin-header-control-rail),
+        calc(
+            var(--admin-workspace-main-extra-space)
+            + var(--admin-workspace-gutter)
+            + var(--admin-workspace-visual-shift)
+        )
     );
     --admin-workspace-content-width: calc(
         100vw
         - var(--admin-workspace-content-inline-start)
         - var(--admin-workspace-content-inline-end)
     );
-    --admin-header-control-size: 2rem;
-    --admin-header-notification-edge-gap: .75rem;
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
     --admin-status-warning: var(--admin-accent);

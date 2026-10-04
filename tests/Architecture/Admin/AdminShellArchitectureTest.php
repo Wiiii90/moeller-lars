@@ -6,6 +6,7 @@ it('keeps the mobile sidebar above header notifications with an explicit drawer 
     $admin = file_get_contents($root.'/resources/css/admin.css');
     $layouts = file_get_contents($root.'/resources/css/admin/layouts.css');
     $theme = file_get_contents($root.'/resources/css/admin/theme-effects.css');
+    $notifications = file_get_contents($root.'/resources/css/admin/notifications.css');
     $close = file_get_contents($root.'/resources/views/filament/partials/admin-sidebar-close.blade.php');
 
     expect($provider)
@@ -19,10 +20,18 @@ it('keeps the mobile sidebar above header notifications with an explicit drawer 
         ->toContain('title="Close navigation"');
 
     expect($admin)
+        ->toContain('--admin-header-control-rail: calc(')
+        ->toContain('--admin-workspace-content-inline-end: max(')
+        ->toContain('var(--admin-header-control-rail)')
         ->toContain('.admin-sidebar-close-button {')
         ->toContain('width: var(--admin-header-control-size) !important;')
         ->toContain('margin: 0 !important;')
         ->toContain('border-radius: 9999px !important;');
+
+    expect($notifications)
+        ->toContain('inset-inline-start: var(--admin-header-control-rail);')
+        ->toContain('inset-inline-end: var(--admin-header-control-rail);')
+        ->toContain('width: var(--admin-workspace-content-width);');
 
     expect($theme)
         ->toContain('html.fi .fi-topbar .fi-topbar-open-sidebar-btn,')
