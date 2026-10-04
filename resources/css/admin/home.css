@@ -1,11 +1,19 @@
 /* Home-only Hero presentation. Generic controls/tables/pagers come from shared admin references. */
 
-/* Preserve the established Home source-toolbar distribution and fixed
- * trailing Selection rail. Only Search is snapped to the first two cells of
- * the six-cell visual ruler. */
-.home-artwork-source-controls > :first-child {
-    flex: 0 0 33.333333%;
-    max-width: 33.333333%;
+/* Home toolbars use the shared six-cell contract. Under Construction and
+ * Custom have no Visual Stage, so the metric strip's lower rule acts as the
+ * stage boundary and owns the same line-to-toolbar breathing room. */
+.home-component-controls {
+    padding-top: var(--admin-section-gap);
+    padding-bottom: var(--admin-section-gap);
+}
+
+.home-workspace-actions {
+    gap: .18rem;
+}
+
+.home-workspace-actions .admin-action {
+    min-width: 0;
 }
 
 .home-skip-tools {

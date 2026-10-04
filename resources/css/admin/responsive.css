@@ -893,8 +893,8 @@
         justify-content: flex-end;
     }
 
-    /* Analytics keeps the map. Home keeps its functional Hero rail and drops
-     * the parallel artwork preview, so narrow mode never removes editing. */
+    /* Analytics keeps the map. Home reduces to the public-facing Hero preview;
+     * the editing rail yields at Narrow instead of replacing the preview. */
     .analytics-visual-stage,
     .home-hero-surface {
         display: grid !important;
@@ -910,17 +910,22 @@
         padding: 0 !important;
     }
 
-    .analytics-stage-rail,
-    .home-hero-surface > .home-hero-surface__visual {
+    .analytics-stage-rail {
         display: none !important;
     }
 
-    .home-hero-rail {
-        display: flex !important;
-        grid-column: 1 !important;
+    .home-hero-surface > .home-hero-surface__visual {
+        display: grid !important;
+        grid-column: 1 / -1 !important;
         width: 100% !important;
         height: 100% !important;
-        padding: 0 !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        padding: var(--admin-stage-divider-inset) 0 !important;
+    }
+
+    .home-hero-rail {
+        display: none !important;
     }
 
     .custom-page-component-sequence .admin-responsive-meta {
@@ -1118,7 +1123,7 @@
 
     .home-components-table .admin-row-actions {
         display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: .12rem;
     }
 }
@@ -2431,7 +2436,7 @@
 
 /* Pages / Gallery / Custom Page / Journal responsive authority
  * These workspaces share the same 6 / 6 / 3 / 2 metric grammar and one-row
- * control discipline. Home intentionally remains outside this pass. */
+ * control discipline. Home has its own dedicated authority below. */
 
 /* ---------- semantic metrics ---------- */
 @container admin-workspace (max-width: 54rem) {
@@ -3073,6 +3078,104 @@
     }
 }
 
+
+/* Home responsive authority
+ * All three current Home content templates share 6 / 6 / 3 / 2 metrics and
+ * the canonical one-row toolbar. Hero Artwork keeps its full Stage on wider
+ * states and becomes preview-only at Narrow/Minimal. Under Construction and
+ * Custom intentionally have no Stage; their metric rule is the visual boundary.
+ */
+
+@container admin-workspace (max-width: 62rem) {
+    .admin-home-workspace .home-workspace-actions .admin-action__label {
+        display: none !important;
+    }
+
+    .admin-home-workspace .home-workspace-actions .admin-action {
+        justify-content: center !important;
+        padding-inline: .3rem !important;
+    }
+}
+
+@container admin-workspace (max-width: 54rem) {
+    .admin-home-workspace .home-metric {
+        display: none !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-metric--visits,
+        .home-metric--eligible,
+        .home-metric--candidates,
+        .home-metric--components,
+        .home-metric--images,
+        .home-metric--media
+    ) {
+        display: block !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-home-workspace .home-metric {
+        display: none !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-metric--visits,
+        .home-metric--eligible,
+        .home-metric--components,
+        .home-metric--media
+    ) {
+        display: block !important;
+    }
+}
+
+@media (min-width: 38.01rem) and (max-width: 63.99rem) {
+    .admin-home-workspace .home-metric {
+        display: none !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-metric--visits,
+        .home-metric--eligible,
+        .home-metric--candidates,
+        .home-metric--components,
+        .home-metric--images,
+        .home-metric--media
+    ) {
+        display: block !important;
+    }
+
+    .admin-home-workspace .home-workspace-actions .admin-action__label {
+        display: none !important;
+    }
+
+    .home-hero-surface {
+        display: grid !important;
+        height: var(--admin-visual-stage-height) !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        overflow: hidden !important;
+    }
+
+    .home-hero-surface::before,
+    .home-hero-surface::after {
+        display: none !important;
+        content: none !important;
+    }
+
+    .home-hero-surface > .home-hero-surface__visual {
+        display: grid !important;
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        padding: var(--admin-stage-divider-inset) 0 !important;
+    }
+
+    .home-hero-surface > .home-hero-rail {
+        display: none !important;
+    }
+}
 
 /* Analytics / Storage / Activity responsive authority
  * Shared contract:

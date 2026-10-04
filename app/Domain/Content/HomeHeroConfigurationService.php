@@ -168,7 +168,8 @@ final class HomeHeroConfigurationService
             }
 
             if (
-                $groupSource === $current['group_source']
+                $fresh->template() === HomeTemplate::Artwork
+                && $groupSource === $current['group_source']
                 && $displayStrategy === $current['display_strategy']
                 && $manualGroup === $current['manual_group']
                 && $rotationInterval === $current['rotation_interval']

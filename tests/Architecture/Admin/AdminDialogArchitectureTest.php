@@ -47,6 +47,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $dashboardFeedDialog = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-dialog.blade.php');
     $activityCommitDialog = file_get_contents($root.'/resources/views/filament/pages/partials/activity-commit-details-dialog.blade.php');
     $homeWorkspace = file_get_contents($root.'/app/Filament/Pages/HomePresentation.php');
+    $homeSettingsDialog = file_get_contents($root.'/app/Filament/Support/HomeSettingsDialog.php');
     $artworkPreview = file_get_contents($root.'/resources/views/filament/resources/artworks/partials/preview-dialog.blade.php');
     $mediaPreview = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/preview-dialog.blade.php');
 
@@ -104,9 +105,13 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->and(is_file($root.'/resources/views/filament/partials/admin-modal-bootstrap.blade.php'))->toBeFalse();
 
     expect($homeWorkspace)
+        ->toContain('app(HomeSettingsDialog::class)')
+        ->toContain("->modalHeading('Home settings')")
+        ->not->toContain('use Filament\\Schemas\\Components\\Grid;');
+
+    expect($homeSettingsDialog)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')
-        ->toContain("->columns(['md' => 2])")
-        ->toContain("->modalHeading('Home settings')");
+        ->toContain("->columns(['md' => 2])");
 
     expect(substr_count($artworkPreview, 'class="media-file-dialog__details"'))->toBe(1);
     expect(substr_count($mediaPreview, 'class="media-file-dialog__details '))->toBe(2);

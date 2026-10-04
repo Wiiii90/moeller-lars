@@ -13,13 +13,13 @@ use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
-use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
+use App\Filament\Support\HomeSettingsDialog;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -31,12 +31,10 @@ use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -55,7 +53,7 @@ final class HomePresentation extends Page
 
     protected string $view = 'filament.pages.home-presentation';
 
-    /** @var list<array{label:string,value:string,description:string}> */
+    /** @var list<array{role:string,label:string,value:string,description:string}> */
     public array $metrics = [];
 
     public string $template = 'artwork';
@@ -290,128 +288,16 @@ final class HomePresentation extends Page
 
     public function settingsAction(): Action
     {
-        return AdminDialog::edit(Action::make('settings')
+        $dialog = app(HomeSettingsDialog::class);
+        $action = Action::make('settings')
             ->label('Settings')
-            ->fillForm(fn (): array => [
-                'template' => $this->template,
-                'show_in_navigation' => $this->showHomeInNavigation,
-                'show_details' => $this->artworkShowDetails,
-                'show_gallery_link' => $this->artworkShowGalleryLink,
-                'group_source' => $this->heroGroupSource,
-                'display_strategy' => $this->heroDisplayStrategy,
-                'newest_by' => $this->heroNewestBy,
-                'group_size' => $this->heroGroupSize,
-                'pool_rule' => $this->heroPoolRule,
-                'pool_year' => $this->heroPoolYear,
-                'manual_include_ids' => $this->manualHeroCandidateIds,
-                'rotation_interval_count' => $this->rotationIntervalCount,
-                'rotation_interval_unit' => $this->rotationIntervalUnit,
-                'public_site_gate' => $this->publicSiteGate,
-            ])
-            ->schema([
-                Grid::make()
-                    ->columns(['md' => 2])
-                    ->schema([
-                        Select::make('template')->label('Template')->options(HomeTemplate::options())->required()->live(),
-                        Toggle::make('show_in_navigation')
-                            ->label('Show Home in navigation')
-                            ->helperText('Only the public Home link changes. The Home page remains available at /.'),
-                        Select::make('group_source')
-                            ->label('Group source')
-                            ->options(['automatic' => 'Automatic', 'manual' => 'Manual'])
-                            ->required()->live()
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                        TextInput::make('group_size')->label('Group size')->numeric()->minValue(1)
-                            ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)->required()
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                        Select::make('newest_by')->label('Newest by')
-                            ->options(['artwork_date' => 'Artwork date', 'added' => 'Added'])->required()
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                        Select::make('pool_rule')->label('Candidate filter')
-                            ->options(['all' => 'All eligible', 'year' => 'Specific Year'])->required()->live()
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                        TextInput::make('pool_year')->label('Year')->numeric()->minValue(1000)->maxValue(3000)
-                            ->required(fn (callable $get): bool => $get('pool_rule') === 'year')
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic' && $get('pool_rule') === 'year'),
-                        $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
-                            ->helperText('Adds eligible artworks outside a Specific Year filter before Group size is applied.')
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic')
-                            ->columnSpanFull(),
-                        Select::make('display_strategy')->label('Display strategy')
-                            ->options(['ordered' => 'Ordered', 'random' => 'Random', 'sequential' => 'Sequential'])
-                            ->required()->live()
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                        TextInput::make('rotation_interval_count')->label('Rotation interval')->numeric()->minValue(1)->required()
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
-                        Select::make('rotation_interval_unit')->label('Interval unit')
-                            ->options(['days' => 'Days', 'weeks' => 'Weeks'])->required()
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
-                        Toggle::make('show_details')->label('Show artwork information')
-                            ->helperText('Shows title, material, dimensions and other artwork label information.')
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                        Toggle::make('show_gallery_link')->label('Show Gallery link')
-                            ->helperText('Shows the Gallery context button independently from artwork information.')
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                        Toggle::make('public_site_gate')->label('Temporarily gate the public site')
-                            ->helperText('Normal public content URLs return to Home while Under Construction is active. Admin and protected Preview stay available.')
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-                        Placeholder::make('skip_target')->label('Current redirect target')
-                            ->content(fn (): string => $this->skipTarget === null
-                                ? 'No published top-level page exists after Home. The public root safely remains on Home.'
-                                : $this->skipTarget['label'].' · '.$this->skipTarget['path'])
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::SkipHome->value)
-                            ->columnSpanFull(),
-                        Placeholder::make('custom_components')->label('Custom composition')
-                            ->content('Components are edited in the Home workspace.')
-                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value)
-                            ->columnSpanFull(),
-                    ])
-                    ->columnSpanFull(),
-            ])
-            ->modalHeading('Home settings'), AdminDialogSize::Large)->action(function (array $data): void {
-                $template = HomeTemplate::from((string) $data['template']);
-                $changed = false;
-                if ($template === HomeTemplate::Artwork) {
-                    $groupSource = (string) ($data['group_source'] ?? $this->heroGroupSource);
-                    $input = [
-                        'show_details' => $data['show_details'] ?? $this->artworkShowDetails,
-                        'show_gallery_link' => $data['show_gallery_link'] ?? $this->artworkShowGalleryLink,
-                        'group_source' => $groupSource,
-                        'display_strategy' => $data['display_strategy'] ?? $this->heroDisplayStrategy,
-                        'newest_by' => $data['newest_by'] ?? $this->heroNewestBy,
-                        'group_size' => $data['group_size'] ?? $this->heroGroupSize,
-                        'candidate_filter' => $data['pool_rule'] ?? $this->heroPoolRule,
-                        'specific_year' => $data['pool_year'] ?? $this->heroPoolYear,
-                        'manual_include_ids' => $data['manual_include_ids'] ?? $this->manualHeroCandidateIds,
-                        'rotation_interval_count' => $data['rotation_interval_count'] ?? $this->rotationIntervalCount,
-                        'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $this->rotationIntervalUnit,
-                    ];
-                    if ($groupSource === 'manual' && $this->manualHeroGroup === [] && $this->currentArtwork !== null) {
-                        $input['manual_group'] = [[
-                            'artwork_id' => (int) $this->currentArtwork['id'],
-                            'weight' => HomeHeroConfigurationService::WEIGHT_TOTAL,
-                        ]];
-                    }
-                    $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings($this->settings(), $input);
-                } else {
-                    $input = [];
-                    if ($template === HomeTemplate::UnderConstruction) {
-                        $input['public_site_gate'] = $data['public_site_gate'] ?? $this->publicSiteGate;
-                    }
-                    $changed = app(HomePresentationEditorialService::class)->updateSettings($this->settings(), $template, $input);
-                }
-
-                $homeSection = $this->homeSection();
-                $parentId = $homeSection->getAttribute('parent_id');
-                $homeSection = app(SiteSectionEditorialService::class)->updatePlacement(
-                    $homeSection,
-                    'published',
-                    (bool) ($data['show_in_navigation'] ?? false),
-                    is_numeric($parentId) ? (int) $parentId : null,
-                );
-                $changed = $homeSection->wasChanged(['state', 'show_in_navigation', 'parent_id', 'position']) || $changed;
-                $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
+            ->modalHeading('Home settings')
+            ->fillForm(fn (): array => $dialog->fill())
+            ->schema($dialog->schema())
+            ->action(function (array $data) use ($dialog): void {
+                $changed = $dialog->save($data);
                 $this->reloadWorkspace();
+
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Home settings saved',
@@ -419,6 +305,8 @@ final class HomePresentation extends Page
                     );
                 }
             });
+
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function addHeroArtworkAction(): Action
@@ -1104,28 +992,30 @@ final class HomePresentation extends Page
         if ($template === HomeTemplate::Artwork) {
             $analyticsDescription = $this->analyticsDescription();
             $this->metrics = [
-                ['label' => 'Visits · 30d', 'value' => $this->formatMetric($this->homeVisits), 'description' => $analyticsDescription],
-                ['label' => 'Views · 30d', 'value' => $this->formatMetric($this->homeViews), 'description' => $analyticsDescription],
-                ['label' => 'Source Galleries', 'value' => number_format($this->sourceGalleryCount), 'description' => 'Effective sources'],
-                ['label' => 'Eligible Artworks', 'value' => number_format($this->eligibleArtworkCount), 'description' => 'Home eligible'],
-                ['label' => 'Candidate Group', 'value' => number_format($this->heroGroupSource === 'manual' ? count($this->manualHeroGroup) : $this->candidatePoolCount), 'description' => $this->heroGroupSource === 'manual' ? 'Stored members' : 'Effective group'],
-                ['label' => 'Newest Year', 'value' => $this->newestEligibleYear === null ? '—' : (string) $this->newestEligibleYear, 'description' => 'Eligible newest'],
+                ['role' => 'visits', 'label' => 'Visits · 30d', 'value' => $this->formatMetric($this->homeVisits), 'description' => $analyticsDescription],
+                ['role' => 'views', 'label' => 'Views · 30d', 'value' => $this->formatMetric($this->homeViews), 'description' => $analyticsDescription],
+                ['role' => 'sources', 'label' => 'Source Galleries', 'value' => number_format($this->sourceGalleryCount), 'description' => 'Effective sources'],
+                ['role' => 'eligible', 'label' => 'Eligible Artworks', 'value' => number_format($this->eligibleArtworkCount), 'description' => 'Home eligible'],
+                ['role' => 'candidates', 'label' => 'Candidate Group', 'value' => number_format($this->heroGroupSource === 'manual' ? count($this->manualHeroGroup) : $this->candidatePoolCount), 'description' => $this->heroGroupSource === 'manual' ? 'Stored members' : 'Effective group'],
+                ['role' => 'year', 'label' => 'Newest Year', 'value' => $this->newestEligibleYear === null ? '—' : (string) $this->newestEligibleYear, 'description' => 'Eligible newest'],
             ];
 
             return;
         }
+
         if (in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
             $this->metrics = [
-                ['label' => 'Components', 'value' => number_format($this->componentStats['components']), 'description' => 'This template'],
-                ['label' => 'Images', 'value' => number_format($this->componentStats['images']), 'description' => 'Image blocks'],
-                ['label' => 'Headings', 'value' => number_format($this->componentStats['headings']), 'description' => 'Heading blocks'],
-                ['label' => 'Rich Text', 'value' => number_format($this->componentStats['rich_text']), 'description' => 'Text blocks'],
-                ['label' => 'Dividers', 'value' => number_format($this->componentStats['dividers']), 'description' => 'Divider blocks'],
-                ['label' => 'Media References', 'value' => number_format($this->componentStats['media_references']), 'description' => 'Referenced files'],
+                ['role' => 'components', 'label' => 'Components', 'value' => number_format($this->componentStats['components']), 'description' => 'This template'],
+                ['role' => 'images', 'label' => 'Images', 'value' => number_format($this->componentStats['images']), 'description' => 'Image blocks'],
+                ['role' => 'headings', 'label' => 'Headings', 'value' => number_format($this->componentStats['headings']), 'description' => 'Heading blocks'],
+                ['role' => 'rich-text', 'label' => 'Rich Text', 'value' => number_format($this->componentStats['rich_text']), 'description' => 'Text blocks'],
+                ['role' => 'dividers', 'label' => 'Dividers', 'value' => number_format($this->componentStats['dividers']), 'description' => 'Divider blocks'],
+                ['role' => 'media', 'label' => 'Media References', 'value' => number_format($this->componentStats['media_references']), 'description' => 'Referenced files'],
             ];
 
             return;
         }
+
         $this->metrics = [];
     }
 

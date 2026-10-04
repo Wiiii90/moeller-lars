@@ -2,9 +2,9 @@
     <x-admin.workspace title="Home" class="admin-home-workspace">
         @if ($metrics !== [])
             <div @if ($template === 'artwork') wire:init="loadHomeAnalytics" @endif>
-                <x-admin.metrics :columns="count($metrics)" aria-label="Home overview">
+                <x-admin.metrics :columns="count($metrics)" class="home-status-metrics" aria-label="Home overview">
                     @foreach ($metrics as $metric)
-                        <x-admin.metric :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
+                        <x-admin.metric class="home-metric home-metric--{{ $metric['role'] }}" :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
                     @endforeach
                 </x-admin.metrics>
             </div>
@@ -112,7 +112,7 @@
                     && \App\Models\ArtworkCategory::query()->whereHas('siteSection')->exists());
             @endphp
 
-            <x-admin.controls class="home-artwork-source-controls" aria-label="Gallery source controls">
+            <x-admin.controls class="home-artwork-source-controls" :metric-grid="true" :search-span="2" aria-label="Gallery source controls">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
@@ -149,16 +149,25 @@
                 <x-slot:actions>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">Hero Artwork</span>
-                        <div class="admin-toolbar">
-                            <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
+                        <div class="admin-toolbar home-workspace-actions">
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Settings</span>
+                            </button>
                             <button
-                                class="admin-action"
+                                class="admin-action admin-action--with-icon"
                                 type="button"
                                 wire:click="mountAction('addHeroArtwork')"
                                 @disabled($heroGroupSource !== 'manual')
                                 title="{{ $heroGroupSource === 'manual' ? 'Add artwork to the manual Hero group' : 'Switch Hero source to Manual to add artworks directly' }}"
-                            >Add artwork</button>
-                            <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
+                            >
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Add artwork</span>
+                            </button>
+                            <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Preview</span>
+                            </a>
                         </div>
                     </div>
                 </x-slot:actions>
@@ -171,8 +180,14 @@
                                 <x-admin.selection-trigger-label>Selected Galleries</x-admin.selection-trigger-label> <span class="admin-selection__count">{{ count($selectedSourceIds) }}</span>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">Enable preference</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(false)" x-on:click="open = false">Disable preference</button>
+                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Enable</span>
+                                </button>
+                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(false)" x-on:click="open = false">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Disable</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -239,8 +254,17 @@
                                 <td class="home-source-table__year">{{ $gallery['newest_year'] ?: '—' }}</td>
                                 <td class="admin-table__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
-                                        <button class="admin-action admin-action--state" type="button" wire:click="toggleGalleryEligibility({{ $gallery['id'] }})">{{ $gallery['preference_enabled'] ? 'Disable preference' : 'Enable preference' }}</button>
-                                        <a class="admin-action" href="{{ $gallery['workspace_url'] }}" wire:navigate>Open Gallery</a>
+                                        <x-admin.row-action
+                                            :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                            :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"
+                                            wire:click="toggleGalleryEligibility({{ $gallery['id'] }})"
+                                        />
+                                        <x-admin.row-action
+                                            :action="\App\Filament\Support\AdminRowAction::Open"
+                                            label="Open Gallery"
+                                            :href="$gallery['workspace_url']"
+                                            wire:navigate
+                                        />
                                     </div>
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
@@ -287,7 +311,7 @@
                 $componentFiltersActive = trim($componentSearch) !== '' || $componentType !== 'any';
             @endphp
 
-            <x-admin.controls aria-label="Home component controls">
+            <x-admin.controls class="home-component-controls" :metric-grid="true" :search-span="3" aria-label="Home component controls">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
@@ -315,10 +339,19 @@
                 <x-slot:actions>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">{{ strtoupper($templateLabel) }}</span>
-                        <div class="admin-toolbar">
-                            <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
-                            <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
-                            <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
+                        <div class="admin-toolbar home-workspace-actions">
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Settings</span>
+                            </button>
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addComponent')">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Add component</span>
+                            </button>
+                            <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Preview</span>
+                            </a>
                         </div>
                     </div>
                 </x-slot:actions>
@@ -428,9 +461,15 @@
         @elseif ($template === 'skip_home')
             <div class="home-skip-tools admin-data-control-group" aria-label="Skip Home actions">
                 <span class="admin-data-control-label">Skip Home</span>
-                <div class="admin-toolbar">
-                    <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
-                    <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
+                <div class="admin-toolbar home-workspace-actions">
+                    <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                        <span class="admin-action__label">Settings</span>
+                    </button>
+                    <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                        <span class="admin-action__label">Preview</span>
+                    </a>
                 </div>
             </div>
             @if ($skipTarget)
