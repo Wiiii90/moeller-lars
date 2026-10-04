@@ -18,8 +18,8 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain("'admin-data-controls--six-cell' => \$metricGrid")
         ->toContain("'admin-data-controls--six-cell-filters-'.\$normalizedFilterCount => \$metricGrid")
         ->toContain("'admin-data-controls--six-cell-search-'.\$normalizedSearchSpan => \$metricGrid && \$normalizedSearchSpan !== null")
-        ->toContain('@if (! $metricGrid)')
-        ->toContain('class="admin-data-controls__filter-trigger"')
+        ->not->toContain('admin-data-controls__filter-trigger')
+        ->not->toContain('adminFiltersOpen')
         ->toContain('@if ($hasUtility)')
         ->toContain('class="admin-data-controls__utility"')
         ->not->toContain('$hasCompleteDataToolbar')
@@ -78,6 +78,8 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->not->toContain('.admin-dashboard__feed-controls')
         ->not->toContain('.admin-dashboard__feed-table')
         ->not->toContain('.admin-dashboard__col-')
+        ->not->toContain('admin-data-controls__filter-trigger')
+        ->not->toContain('adminFiltersOpen')
         ->not->toContain("grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;");
 
     expect($storage)

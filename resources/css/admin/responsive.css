@@ -74,10 +74,6 @@
     display: none;
 }
 
-.admin-data-controls__filter-trigger {
-    display: none;
-}
-
 .admin-data-controls__filters {
     display: contents;
 }
@@ -1378,76 +1374,6 @@
 @container admin-table (max-width: 30rem) {
 }
 
-/* Ultra-narrow toolbars remain one row. Filter fields may collapse behind one
- * local presentation-only trigger to free horizontal space. */
-@container admin-workspace (max-width: 30rem) {
-    .admin-data-controls:not(.admin-data-controls--six-cell):has(> .admin-data-controls__filters) {
-        position: relative;
-    }
-
-    .admin-data-controls__filter-trigger {
-        display: flex;
-        min-width: 0;
-        min-height: var(--admin-control-height);
-        width: auto;
-        min-width: 4.25rem;
-        gap: .35rem;
-        flex: 0 0 4.75rem;
-        padding: 0 .45rem;
-        align-items: center;
-        justify-content: center;
-        border: 0;
-        border-bottom: 1px solid var(--admin-line);
-        background: transparent;
-        color: var(--admin-text);
-        font: inherit;
-        font-size: var(--admin-font-size-table-support);
-        cursor: pointer;
-    }
-
-    .admin-data-controls__filter-trigger-count {
-        display: inline-grid;
-        min-width: 1.2rem;
-        height: 1.2rem;
-        padding-inline: .2rem;
-        place-items: center;
-        border: 1px solid var(--admin-line-strong);
-        border-radius: 999px;
-        color: var(--admin-muted);
-        font-size: var(--admin-font-size-selection-count);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .admin-data-controls__filters {
-        position: absolute;
-        z-index: 60;
-        top: calc(100% + .35rem);
-        right: 0;
-        display: none !important;
-        width: min(20rem, 100%);
-        max-height: min(70dvh, 28rem);
-        gap: .65rem;
-        padding: .75rem;
-        overflow-y: auto;
-        border: 1px solid var(--admin-line-strong);
-        background: var(--admin-surface);
-        box-shadow: 0 .55rem 1.4rem rgb(0 0 0 / .14);
-    }
-
-    .admin-data-controls__filters.is-open {
-        display: grid !important;
-    }
-
-    .admin-data-controls__filters > * {
-        width: 100% !important;
-        min-width: 0 !important;
-        grid-column: 1 !important;
-        grid-row: auto !important;
-        padding-right: 0 !important;
-    }
-
-}
-
 /* Extreme widths: the task surface wins over summary statistics. */
 @container admin-workspace (max-width: 20rem) {
     .admin-metrics {
@@ -2318,14 +2244,6 @@
         .admin-task-controls--pages,
         .custom-page-workspace__controls,
         .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__filter-trigger {
-        display: none !important;
-    }
-
-    :is(
-        .admin-task-controls--pages,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
     ) > .admin-data-controls__filters,
     :is(
         .admin-task-controls--pages,
@@ -2785,13 +2703,6 @@
     .admin-home-workspace :is(
         .home-artwork-source-controls,
         .home-component-controls
-    ) > .admin-data-controls__filter-trigger {
-        display: none !important;
-    }
-
-    .admin-home-workspace :is(
-        .home-artwork-source-controls,
-        .home-component-controls
     ) > .admin-data-controls__filters {
         display: contents !important;
     }
@@ -3083,14 +2994,6 @@
         max-content
         max-content
         8rem !important;
-}
-
-:is(
-    .analytics-detail-surface > .admin-data-controls,
-    .admin-storage .media-workspace__controls,
-    .activity-workspace__controls
-) > .admin-data-controls__filter-trigger {
-    display: none !important;
 }
 
 :is(
