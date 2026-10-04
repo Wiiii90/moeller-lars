@@ -353,7 +353,7 @@ Responsive behavior is content-driven, not device-name driven. Issue #15 owns th
 - shared stage orbit size is canonical via `--admin-stage-orbit-size`; paired stage visuals must consume it directly and must not introduce page-local responsive orbit-size overrides;
 - Dashboard specifically keeps all three stage panes (Storage | Activity | Analytics) visible through Wide, Compact and Narrow; only Minimal may use the local selector and show one stage pane at a time; burger/sidebar collapse alone is not a Dashboard stage breakpoint;
 - Dashboard stage captions/facts remain one-line and visible through Narrow, and its visual row must scale smoothly without footer-driven height jumps;
-- Dashboard table preserves Type and Date through Minimal; Sender yields first and Actions compacts to its icon rail before either Type or Date may disappear;
+- Dashboard feed priority is monotonic: action labels yield before Title is damaged, Sender yields next, then Type + Date + Time fold together into complete Title metadata; burger/sidebar collapse may add breathing room but never unfold a state already reached;
 - responsive action density may progress from label+icon to icon-only to essential icons plus an overflow menu, while preserving accessible labels and semantic order;
 - legacy public breakpoint values are historical evidence only, not target layout authorities;
 - browser review must sweep continuously through transition widths, including sidebar-expanded/constrained desktop states, to catch broken intermediate compositions.
