@@ -560,6 +560,7 @@ Responsive behavior is content-driven and follows semantic width states rather t
   - Activity: Changes + Pending + Commits -> Changes + Pending.
   - Home Hero Artwork: Visits + Eligible Artworks + Candidate Group -> Visits + Eligible Artworks.
   - Home Under Construction / Custom: Components + Images + Media References -> Components + Media References.
+  - Home follows Dashboard's state gating: the Narrow set is exact thirds across the full metric strip; the two-metric Minimal set is exact 50/50 and may engage only when the Burger shell is active and the workspace is <=38rem.
 - Dashboard uses four effective presentation states only: Wide, Compact, Narrow and Minimal. The burger/mobile shell is not an additional Dashboard state; shell collapse may force Narrow but must never create a parallel responsive composition.
 - Never reduce a metric strip to a one-column list.
 - Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/2 rule.
@@ -580,7 +581,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Pages, Custom Page and Journal use elastic one-row toolbars: Search absorbs spare width down to one metric cell; filters and right-side utility controls consume only the width they need, with action labels collapsing to icons before data/filter controls are removed.
 - Gallery uses the same one-row principle in its custom toolbar; its Selection trigger still terminates on the shared Selection rail.
 - Analytics, Storage and Activity follow the same one-row rule. Analytics has Search + Report + Range; Storage and Activity keep all four filter controls, then compact Clear/View/Selection on the right. Their action labels collapse to icons before the row may wrap.
-- Home Hero Artwork, Under Construction and Custom use the same content-minimum one-row pressure model as Dashboard: Search is elastic, filter selects retain readable intrinsic widths, Clear is intrinsic, the active-template action group uses real content width, and Selection terminates on the checkbox axis. The redundant Filter and Selection headings are not rendered visually; the active template heading remains. Burger alone leaves Settings + Add artwork/component + Preview readable. At genuine toolbar pressure (about 50rem workspace) those three task actions collapse together to fixed icon slots; at Minimal, Selection compacts to icon + count and releases its former label width. Skip Home keeps its separate two-action toolbar.
+- Home Hero Artwork, Under Construction and Custom use the same content-minimum one-row pressure model as Dashboard: Search is elastic, filter selects retain readable intrinsic widths, Clear is intrinsic, the active-template action group uses real content width, and Selection terminates on the checkbox axis. Filter and Selection headings are not rendered visually; the active template heading remains. Home Selection uses the same structure as Dashboard: multi-selection trigger and selected-count circle are separate siblings, with the count centered on the terminal table-checkbox rail. Burger collapses only the Selection text; Settings + Add artwork/component + Preview remain readable until genuine toolbar pressure (about 50rem workspace), then become three adjacent fixed icon slots.
 
 ### Tables and Selection
 

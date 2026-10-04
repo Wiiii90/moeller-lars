@@ -529,13 +529,15 @@
     }
 
     .home-source-table__col-actions{
-        width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)) !important;
+        width: 13.5rem !important;
     }
 
     .home-source-table .admin-row-actions{
         display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: .08rem;
+        width: 13rem !important;
+        grid-template-columns: 5.25rem 7.25rem !important;
+        gap: .5rem !important;
+        justify-content: start !important;
     }
 
     .home-source-table .admin-action{
@@ -559,11 +561,11 @@
     }
 
     .home-components-table__col-content{
-        width: calc(66.666667% - 5rem) !important;
+        width: auto !important;
     }
 
     .home-components-table__col-actions{
-        width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)) !important;
+        width: 18.75rem !important;
     }
 
     .home-components-table .admin-responsive-meta,
@@ -579,8 +581,17 @@
 
     .home-components-table .admin-row-actions{
         display: grid !important;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: .12rem;
+        width: 18.25rem !important;
+        grid-template-columns: 4.75rem 5.25rem 3.25rem 4rem !important;
+        gap: .33rem !important;
+        justify-content: start !important;
+    }
+
+    .home-components-table .admin-row-actions .admin-action{
+        width: 100%;
+        min-width: 0;
+        padding-inline: 0 !important;
+        justify-content: flex-start !important;
     }
 }
 
@@ -775,6 +786,19 @@
 
     .home-components-table__col-actions{
         width: 7rem !important;
+    }
+
+    .home-components-table .admin-row-actions--four{
+        width: 6.75rem !important;
+        grid-template-columns: repeat(4, 1.35rem) !important;
+        gap: .45rem !important;
+    }
+
+    .home-components-table .admin-row-actions--four .admin-action{
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
     }
 
     .general-social-table .general-social-table__col-url,
@@ -1470,131 +1494,6 @@
  * Filament removing the sidebar must not reintroduce columns/actions that had
  * already yielded immediately before shell collapse. */
 @media (min-width: 38.01rem) and (max-width: 63.99rem){
-    .admin-gallery-grid{
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .gallery-workspace__controls{
-        grid-template-columns:
-            minmax(16.666667%, 1fr)
-            5.5rem
-            6.25rem
-            max-content
-            max-content
-            7rem !important;
-        gap: .3rem !important;
-    }
-
-        .admin-hierarchy--pages .admin-pages__template{
-        display: none !important;
-    }
-
-    .admin-hierarchy--pages .admin-pages__header,
-.admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    }
-
-    .admin-pages__primary-grid{
-        grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
-        gap: .3rem !important;
-    }
-
-    .custom-page-component-sequence{
-        --admin-hierarchy-position-column: 3rem;
-        --admin-hierarchy-drag-column: 2rem;
-        --admin-hierarchy-actions-column: minmax(16rem, 34%);
-        --admin-hierarchy-columns:
-            var(--admin-hierarchy-position-column)
-            var(--admin-hierarchy-drag-column)
-            minmax(0, 1fr)
-            var(--admin-hierarchy-actions-column)
-            var(--admin-table-selection-width);
-    }
-
-    .custom-page-component-sequence__header > :nth-child(2),
-.custom-page-component__type,
-.custom-page-child-row__kind{
-        display: none !important;
-    }
-
-    .custom-page-component-sequence .admin-responsive-meta,
-.journal-table .admin-responsive-meta{
-        display: block !important;
-    }
-
-    .journal-table--blog .journal-col--visual,
-.journal-table--blog .journal-col--publication,
-.journal-table--exhibitions .journal-col--schedule{
-        display: none !important;
-    }
-
-    .journal-table col.journal-table__actions--blog{
-        width: calc(50% - var(--admin-table-selection-width)) !important;
-    }
-
-    .journal-table col.journal-table__actions--exhibitions{
-        width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)) !important;
-    }
-}
-
-@container admin-workspace (max-width: 30rem){
-    .gallery-workspace__controls{
-        grid-template-columns:
-            minmax(5rem, 1fr)
-            4.25rem
-            4.75rem
-            max-content
-            max-content
-            5.75rem !important;
-        gap: .18rem !important;
-    }
-
-    .gallery-workspace__controls .admin-action__label{
-        display: none !important;
-    }
-
-    .gallery-workspace__selection-trigger{
-        width: 5.75rem !important;
-    }
-}
-
-/* Home responsive authority
- * All three current Home content templates share 6 / 6 / 3 / 2 metrics and
- * the canonical one-row toolbar. Hero Artwork keeps its full Stage on wider
- * states and becomes preview-only at Narrow/Minimal. Under Construction and
- * Custom intentionally have no Stage; their metric rule is the visual boundary.
- */
-
-@container admin-workspace (max-width: 54rem){
-    .admin-home-workspace .home-metric{
-        display: none !important;
-    }
-
-    .admin-home-workspace :is(.home-metric--visits, .home-metric--eligible, .home-metric--candidates, .home-metric--components, .home-metric--images, .home-metric--media){
-        display: block !important;
-    }
-}
-
-@container admin-workspace (max-width: 38rem){
-    .admin-home-workspace .home-metric{
-        display: none !important;
-    }
-
-    .admin-home-workspace :is(.home-metric--visits, .home-metric--eligible, .home-metric--components, .home-metric--media){
-        display: block !important;
-    }
-
-}
-
-@media (min-width: 38.01rem) and (max-width: 63.99rem){
-    .admin-home-workspace .home-metric{
-        display: none !important;
-    }
-
-    .admin-home-workspace :is(.home-metric--visits, .home-metric--eligible, .home-metric--candidates, .home-metric--components, .home-metric--images, .home-metric--media){
-        display: block !important;
-    }
-
     .home-hero-surface{
         display: grid !important;
         height: var(--admin-visual-stage-height) !important;
@@ -2177,7 +2076,7 @@
  * HOW the visible metrics occupy space. No child keeps a source-position span.
  */
 @container admin-workspace (max-width: 54rem){
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6)){
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)){
         --admin-metric-columns: 3 !important;
         position: relative;
         display: grid !important;
@@ -2186,7 +2085,7 @@
         gap: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         box-sizing: border-box;
         grid-column: auto !important;
         grid-row: auto !important;
@@ -2200,8 +2099,8 @@
         border-right: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::before,
-.admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::before,
+.admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -2212,11 +2111,11 @@
         pointer-events: none;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
         left: 33.333333%;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         left: 66.666667%;
     }
 }
@@ -2224,7 +2123,7 @@
 /* Minimal is always exact 50/50. The second column can never inherit a
  * two-track span from its original six-cell source position. */
 @container admin-workspace (max-width: 38rem){
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6)){
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)){
         --admin-metric-columns: 2 !important;
         position: relative;
         display: grid !important;
@@ -2233,7 +2132,7 @@
         gap: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
         grid-column: auto !important;
         grid-row: auto !important;
         width: 100% !important;
@@ -2246,7 +2145,7 @@
         border-right: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -2258,7 +2157,7 @@
         pointer-events: none;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
         display: none !important;
         content: none !important;
     }
@@ -2910,7 +2809,6 @@
 .custom-page-status-metrics > .custom-page-metric--components,
 .journal-status-metrics--blog > .journal-metric--published,
 .journal-status-metrics--exhibitions > .journal-metric--published,
-.admin-home-workspace :is(.home-metric--visits, .home-metric--components),
 .analytics-status-metrics > .analytics-metric--visits,
 .storage-status-metrics > .storage-metric--used,
 .activity-status-metrics > .activity-metric--changes{
@@ -2925,7 +2823,6 @@
 .custom-page-status-metrics > .custom-page-metric--components,
 .journal-status-metrics--blog > .journal-metric--published,
 .journal-status-metrics--exhibitions > .journal-metric--published,
-.admin-home-workspace :is(.home-metric--visits, .home-metric--components),
 .analytics-status-metrics > .analytics-metric--visits,
 .storage-status-metrics > .storage-metric--used,
 .activity-status-metrics > .activity-metric--changes{
@@ -2940,7 +2837,6 @@
 .custom-page-status-metrics > .custom-page-metric--components,
 .journal-status-metrics--blog > .journal-metric--published,
 .journal-status-metrics--exhibitions > .journal-metric--current,
-.admin-home-workspace :is(.home-metric--visits, .home-metric--components),
 .analytics-status-metrics > .analytics-metric--visits,
 .storage-status-metrics > .storage-metric--used,
 .activity-status-metrics > .activity-metric--changes{
@@ -2955,7 +2851,6 @@
 .custom-page-status-metrics > .custom-page-metric--components,
 .journal-status-metrics--blog > .journal-metric--published,
 .journal-status-metrics--exhibitions > .journal-metric--current,
-.admin-home-workspace :is(.home-metric--visits, .home-metric--components),
 .analytics-status-metrics > .analytics-metric--visits,
 .storage-status-metrics > .storage-metric--used,
 .activity-status-metrics > .activity-metric--changes{

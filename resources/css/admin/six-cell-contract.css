@@ -194,11 +194,10 @@
 }
 
 
-/* Home editable templates use the Dashboard pressure model rather than fixed
- * six-cell quotas. Search absorbs spare width; filter selects stay readable;
- * Clear is intrinsic; the active-template action group and terminal Selection
- * consume only their real content minima. Filter/Selection headings are
- * redundant and therefore never occupy a row/track. */
+/* Home editable templates use the same terminal-cluster geometry as Dashboard.
+ * Search absorbs spare width; filters keep readable widths; Clear is intrinsic;
+ * the active-template actions are adjacent; Selection is icon/label plus a
+ * separate count centered on the terminal checkbox rail. */
 :is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell {
     display: grid !important;
     width: 100%;
@@ -256,13 +255,17 @@
 }
 
 :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility {
-    display: flex !important;
+    display: grid !important;
     width: max-content;
     min-width: 0;
-    gap: .15rem;
-    align-items: flex-end;
+    grid-template-columns: max-content max-content max-content;
+    column-gap: .15rem;
+    align-items: end;
     justify-self: end;
-    flex-wrap: nowrap !important;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :first-child {
+    margin-right: .35rem;
 }
 
 :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :first-child > .admin-data-control-label,
@@ -271,15 +274,66 @@
 }
 
 :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
-    gap: .15rem;
+    display: grid !important;
+    width: max-content;
+    grid-template-columns: repeat(3, max-content);
+    gap: .15rem !important;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action {
+    width: auto;
+    min-width: 0;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) .admin-selection {
+    display: grid;
+    width: max-content;
+    grid-template-columns: max-content var(--admin-table-selection-width);
+    align-items: end;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) .admin-selection__anchor {
+    grid-column: 1;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    grid-template-columns: none !important;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
+}
+
+:is(.home-artwork-source-controls, .home-component-controls) .admin-selection > .admin-selection__count {
+    box-sizing: border-box;
+    width: 1.35rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    margin-left: 0;
+    grid-column: 2;
+    align-self: center;
+    justify-self: center;
+}
+
+@media (max-width: 63.99rem) {
+    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
 }
 
 @container admin-workspace (max-width: 50rem) {
     :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
-        display: grid !important;
-        width: max-content !important;
         grid-template-columns: repeat(3, var(--admin-control-height));
-        gap: .15rem !important;
     }
 
     :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action {
@@ -292,22 +346,6 @@
 
     :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action__label {
         display: none !important;
-    }
-}
-
-@container admin-workspace (max-width: 38rem) {
-    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__anchor,
-    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger {
-        width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
-        min-width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-label {
-        justify-content: center;
     }
 }
 
