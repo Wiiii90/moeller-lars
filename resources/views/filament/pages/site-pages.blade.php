@@ -9,7 +9,7 @@
 @endphp
 
 <x-filament-panels::page>
-    <x-admin.workspace title="Pages">
+    <x-admin.workspace title="Pages" class="admin-pages-workspace">
         <x-admin.metrics :columns="6" class="pages-status-metrics">
             <x-admin.metric class="pages-metric pages-metric--total" label="Total pages" :value="$metrics['total']">All site sections</x-admin.metric>
             <x-admin.metric class="pages-metric pages-metric--published" label="Published" :value="$metrics['published']">Public now</x-admin.metric>
@@ -53,8 +53,7 @@
                 </x-slot:filters>
 
                 <x-slot:reset>
-                    <div class="admin-task-control-group">
-                        <span class="admin-task-control-label">FILTER</span>
+                    <div class="admin-task-control-group admin-pages__clear">
                         <div class="admin-task-control-actions">
                             <x-admin.clear-filters wire:click="resetFilters" :disabled="! $filtersActive" />
                         </div>
@@ -78,8 +77,7 @@
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-task-control-group admin-selection" x-data="{ open: false }">
-                        <span class="admin-task-control-label">Selection</span>
+                    <div class="admin-task-control-group admin-selection admin-pages__selection" x-data="{ open: false }">
                         <div class="admin-selection__anchor">
                             <button
                                 class="admin-action admin-selection__trigger"
@@ -91,7 +89,6 @@
                                 @disabled($selectedCount === 0)
                             >
                                 <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
-                                <span class="admin-selection__count">{{ $selectedCount }}</span>
                             </button>
                             <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
                                 <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>Publish selected</button>
@@ -99,6 +96,7 @@
                                 <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedPages')" x-on:click="open = false" @disabled($selectedCount === 0)>Delete selected</button>
                             </div>
                         </div>
+                        <span class="admin-selection__count" aria-label="{{ $selectedCount }} selected">{{ $selectedCount }}</span>
                     </div>
                 </x-slot:selection>
             </x-admin.controls>

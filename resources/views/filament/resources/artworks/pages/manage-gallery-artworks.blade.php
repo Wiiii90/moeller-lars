@@ -166,7 +166,7 @@
                             aria-haspopup="menu"
                             @disabled(count($selectedArtworkIds) === 0)
                         >
-                            <x-admin.selection-trigger-label>Selected artworks</x-admin.selection-trigger-label>
+                            <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                             <span class="gallery-workspace__selection-count">{{ count($selectedArtworkIds) }}</span>
                         </button>
                         <div class="gallery-workspace__selection-menu" x-show="open" x-cloak x-on:click.outside="open = false" role="menu">

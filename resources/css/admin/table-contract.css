@@ -221,21 +221,18 @@
     padding-left: .65rem;
 }
 
-/* Stable semantic slots keep every icon on one horizontal axis. Geometry,
- * padding and slot weights absorb label length; typography never changes to
- * squeeze an action into the fixed two-unit rail. */
+/* Pages row actions use fixed semantic slots. Labels remain complete while
+ * the hierarchy has room; responsive.css collapses these exact same axes to
+ * icons only under genuine table pressure. */
 .admin-pages__row-actions {
     display: grid !important;
-    width: 100%;
+    width: 22.75rem;
+    max-width: 100%;
     min-width: 0;
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(0, 1.18fr)
-        minmax(0, .64fr)
-        minmax(0, 1.2fr)
-        minmax(0, .72fr);
-    gap: 0 !important;
+    grid-template-columns: 4.25rem 5rem 3.25rem 5.25rem 4rem;
+    gap: .25rem !important;
     padding-left: 0;
+    justify-content: start;
 }
 
 .admin-pages__row-actions .admin-action {
@@ -243,7 +240,7 @@
     min-width: 0;
     padding-inline: 0;
     justify-content: flex-start !important;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .admin-pages__row-actions .admin-action--state {
@@ -252,8 +249,8 @@
 
 .admin-pages__row-actions .admin-action__label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
     white-space: nowrap;
 }
 
@@ -352,61 +349,158 @@
     opacity: 1;
 }
 
-/* Pages toolbar uses the same six-unit reference as metrics and rows. Search
- * owns two cells, Type and Status one each, and the utility wrapper owns the
- * final two cells. Filter, Pages and Selection divide those last two cells
- * without introducing a second toolbar row. */
+/* Pages toolbar follows the Dashboard content-minimum grammar.
+ * Search owns spare width; Type/Status stay readable; Clear is intrinsic;
+ * Pages actions and Selection form one tight terminal cluster. */
 .admin-task-controls--pages {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0;
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(5rem, 1fr) 7rem 7rem max-content;
+    grid-template-rows: auto;
+    column-gap: .65rem;
     align-items: end;
 }
 
-.admin-task-controls--pages > * {
-    min-width: 0 !important;
-    width: 100%;
-    padding-right: .45rem;
-}
-
 .admin-task-controls--pages > :first-child {
-    grid-column: span 2;
+    min-width: 0 !important;
+    width: 100% !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    padding-right: 0 !important;
 }
 
-.admin-task-controls--pages > .admin-task-field:not(:first-child) {
-    grid-column: span 1;
+.admin-task-controls--pages > .admin-data-controls__filters {
+    display: contents !important;
+}
+
+.admin-task-controls--pages > .admin-data-controls__filters > :first-child {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    padding-inline: 0 !important;
+}
+
+.admin-task-controls--pages > .admin-data-controls__filters > :nth-child(2) {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    padding-inline: 0 !important;
 }
 
 .admin-task-controls--pages > .admin-data-controls__utility {
-    display: grid;
+    display: grid !important;
+    width: max-content;
     min-width: 0;
-    grid-column: span 2;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0;
-    padding-right: 0;
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    grid-template-columns: max-content max-content max-content;
+    column-gap: .15rem;
+    align-items: end;
+    justify-self: end;
+    padding-right: 0 !important;
 }
 
-.admin-task-controls--pages .admin-data-controls__utility > * {
-    min-width: 0;
-    width: 100%;
-    padding-right: .45rem;
+.admin-task-controls--pages > .admin-data-controls__utility > :first-child {
+    width: max-content !important;
+    min-width: 0 !important;
+    margin-right: .35rem;
+    padding-right: 0 !important;
 }
 
-.admin-task-controls--pages .admin-data-controls__utility > :last-child {
-    padding-right: 0;
+.admin-task-controls--pages > .admin-data-controls__utility > :nth-child(2) {
+    width: max-content !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
 }
 
-.admin-task-controls--pages .admin-task-control-group,
-.admin-task-controls--pages .admin-selection__anchor,
 .admin-task-controls--pages .admin-task-control-actions {
-    width: 100%;
+    gap: .15rem;
 }
 
-.admin-task-controls--pages .admin-task-control-actions > .admin-action,
-.admin-task-controls--pages .admin-selection__trigger {
-    width: 100%;
+.admin-task-controls--pages .admin-task-control-actions > .admin-action {
+    width: auto;
     min-width: 0;
-    padding-inline: .3rem;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
+}
+
+.admin-task-controls--pages .admin-pages__selection {
+    display: grid;
+    width: max-content !important;
+    min-width: 0 !important;
+    grid-template-columns: max-content var(--admin-table-selection-width);
+    align-items: end;
+    padding-right: 0 !important;
+}
+
+.admin-task-controls--pages .admin-pages__selection .admin-selection__anchor {
+    width: auto;
+    min-width: 0;
+    grid-column: 1;
+}
+
+.admin-task-controls--pages .admin-pages__selection .admin-selection__trigger {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    grid-template-columns: none !important;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
+}
+
+.admin-task-controls--pages .admin-pages__selection > .admin-selection__count {
+    box-sizing: border-box;
+    width: 1.35rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    margin-left: 0;
+    grid-column: 2;
+    align-self: center;
+    justify-self: center;
+}
+
+@media (max-width: 63.99rem) {
+    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+}
+
+@container admin-workspace (max-width: 50rem) {
+    .admin-task-controls--pages .admin-task-control-actions {
+        display: grid !important;
+        width: max-content !important;
+        grid-template-columns: repeat(2, var(--admin-control-height));
+        gap: .15rem !important;
+    }
+
+    .admin-task-controls--pages .admin-task-control-actions > .admin-action {
+        box-sizing: border-box;
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-task-controls--pages .admin-task-control-actions > .admin-action .admin-action__label {
+        display: none !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-task-controls--pages {
+        grid-template-columns: minmax(4rem, 1fr) 5rem 5.5rem max-content;
+        column-gap: .35rem;
+    }
 }
 
 .admin-selection--unlabeled {

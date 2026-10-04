@@ -128,7 +128,7 @@
                                 aria-haspopup="menu"
                                 @disabled($selectedIds === [])
                             >
-                                <x-admin.selection-trigger-label>Selected {{ $entryLabel }}</x-admin.selection-trigger-label> <span class="admin-selection__count">{{ count($selectedIds) }}</span>
+                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label> <span class="admin-selection__count">{{ count($selectedIds) }}</span>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak x-on:click.outside="open = false">
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false">Move selected up</button>

@@ -177,7 +177,7 @@
                         <span class="admin-data-control-label">Selection</span>
                         <div class="admin-selection__anchor">
                             <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedSourceIds === [])>
-                                <x-admin.selection-trigger-label>Selection</x-admin.selection-trigger-label>
+                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                                 <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">
@@ -383,7 +383,7 @@
                         <span class="admin-data-control-label">Selection</span>
                         <div class="admin-selection__anchor">
                             <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedComponentTargets === [])>
-                                <x-admin.selection-trigger-label>Selection</x-admin.selection-trigger-label>
+                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected up</button>

@@ -63,7 +63,7 @@
                         aria-label="Selection actions; {{ $selectedCount }} selected"
                         @disabled($selectedCount === 0)
                     >
-                        <x-admin.selection-trigger-label>Selection</x-admin.selection-trigger-label>
+                        <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                     </button>
                     <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
                         <button class="admin-action" type="button" role="menuitem" wire:click="bulkPin" @disabled(! $selectionCapabilities['has_selection'])>Pin selected</button>
