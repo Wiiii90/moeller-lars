@@ -12,8 +12,7 @@
     --admin-stage-orbit-gap: .35rem;
 }
 
-.admin-visual-stage,
-.admin-dashboard__overview {
+.admin-visual-stage {
     position: relative;
     box-sizing: border-box;
     height: var(--admin-visual-stage-height);
@@ -51,9 +50,7 @@
 )::after,
 .admin-visual-stage--triptych::before,
 .admin-visual-stage--triptych::after,
-.activity-atlas__grid::after,
-.admin-dashboard__overview::before,
-.admin-dashboard__overview::after {
+.activity-atlas__grid::after {
     position: absolute;
     z-index: 8;
     top: var(--admin-stage-divider-inset);
@@ -71,13 +68,11 @@
     .home-hero-surface
 )::after,
 .admin-visual-stage--triptych::after,
-.activity-atlas__grid::after,
-.admin-dashboard__overview::after {
+.activity-atlas__grid::after {
     left: 66.666666%;
 }
 
-.admin-visual-stage--triptych::before,
-.admin-dashboard__overview::before {
+.admin-visual-stage--triptych::before {
     left: 33.333333%;
 }
 
@@ -174,112 +169,6 @@
 .home-hero-surface__visual img,
 .home-hero-candidate__visual img {
     object-fit: contain;
-}
-
-/* Dashboard is the canonical visible three-pane special case. It consumes the
- * shared orbit size unchanged so Storage and Activity scale identically. */
-.admin-dashboard__overview {
-    display: grid;
-    height: var(--admin-visual-stage-height);
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: stretch;
-    border-bottom: 0 !important;
-    overflow: visible;
-}
-
-.admin-dashboard__overview-column,
-.admin-dashboard__overview-column + .admin-dashboard__overview-column,
-.admin-dashboard__overview-column:last-child {
-    min-width: 0;
-    min-height: 0;
-    grid-template-rows: auto minmax(0, 1fr) auto !important;
-    padding-top: 0 !important;
-    padding-bottom: var(--admin-stage-divider-inset) !important;
-    border: 0 !important;
-}
-
-.admin-dashboard__overview-column:first-child {
-    position: relative;
-    padding-right: var(--admin-stage-pane-space) !important;
-    padding-left: 0 !important;
-}
-
-.admin-dashboard__overview-column:first-child > :is(.admin-dashboard__overview-head, .admin-dashboard__storage-stage) {
-    position: relative;
-    z-index: 2;
-}
-
-.admin-dashboard__storage-stage {
-    display: grid;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    grid-row: 2;
-    grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve);
-    gap: var(--admin-stage-orbit-gap);
-    overflow: hidden;
-}
-
-.admin-dashboard__storage-visual {
-    position: relative;
-    z-index: 1;
-    inset: auto;
-    display: grid;
-    width: 100%;
-    height: 100% !important;
-    min-width: 0;
-    min-height: 0;
-    grid-row: 1;
-    place-items: center;
-    overflow: hidden;
-}
-
-.admin-dashboard__storage-visual::after {
-    display: none;
-    content: none;
-}
-
-.admin-dashboard__storage-visual > .admin-storage-capacity {
-    grid-row: 1;
-    align-self: center;
-    justify-self: center;
-}
-
-.admin-dashboard__overview-column:nth-child(2) {
-    position: relative;
-    padding-right: var(--admin-stage-pane-space) !important;
-    padding-left: var(--admin-stage-pane-space) !important;
-}
-
-.admin-dashboard__overview-column:nth-child(2) > :is(.admin-dashboard__overview-head, .admin-dashboard__facts) {
-    position: relative;
-    z-index: 2;
-}
-
-.admin-dashboard__overview-column:nth-child(2) > .admin-dashboard__activity-visual {
-    position: relative;
-    z-index: 1;
-    inset: auto;
-    width: 100%;
-    height: 100% !important;
-    min-height: 0;
-    grid-row: 2;
-    grid-template-rows: minmax(0, 1fr) auto !important;
-    gap: var(--admin-stage-orbit-gap);
-    place-items: center;
-    overflow: hidden;
-}
-
-.admin-dashboard__overview-column:last-child {
-    padding-right: 0 !important;
-    padding-left: var(--admin-stage-pane-space) !important;
-}
-
-.admin-dashboard__overview + .admin-dashboard__feed-section {
-    margin-top: var(--admin-section-space);
-    padding-top: var(--admin-section-gap);
-    border-top: 1px solid var(--admin-line-strong);
 }
 
 /* Activity is Calendar | Clock | Publication, one exact metric-third each. */
