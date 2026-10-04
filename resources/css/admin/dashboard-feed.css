@@ -1,6 +1,24 @@
 /* Dashboard feed composition only. Shared table/dialog primitives own chrome. */
 
+/* Dashboard toolbar sizing is content-derived, then snapped to the 24-track
+ * quarter-unit raster.
+ *
+ * Measured/derived full-label minima:
+ *   Type      8.5rem  (longest option: "Announcements" + native select affordance)
+ *   Clear     4.5rem  (0.9rem icon + gap + label + action padding)
+ *   Settings  6rem    (0.9rem icon + gap + label + action padding)
+ *   Selection 8rem    (icon + "Selected" + terminal 2.5rem count rail)
+ *
+ * At the Wide lower bound (54rem), one of 24 tracks is 2.25rem:
+ *   Type 4 + Clear 2 + Settings 3 + Selection 4 = 13 tracks.
+ * Search receives the remaining 11 tracks.
+ */
 .admin-dashboard__feed-controls {
+    --dashboard-toolbar-type-min: 8.5rem;
+    --dashboard-toolbar-clear-min: 4.5rem;
+    --dashboard-toolbar-settings-min: 6rem;
+    --dashboard-toolbar-selection-min: 8rem;
+
     display: grid;
     grid-template-columns: repeat(24, minmax(0, 1fr));
     column-gap: 0;
@@ -10,7 +28,7 @@
 }
 
 .admin-dashboard__feed-controls > :first-child {
-    grid-column: span 8;
+    grid-column: span 11;
     width: 100%;
     min-width: 0 !important;
     padding-right: .7rem;
@@ -29,24 +47,25 @@
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-    grid-column: span 3;
+    grid-column: span 2;
     width: 100% !important;
     min-width: 0 !important;
     padding-right: .7rem;
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-    grid-column: span 4;
+    grid-column: span 3;
     width: 100% !important;
     min-width: 0 !important;
     padding-right: .7rem;
 }
 
 .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-    grid-column: span 5;
+    grid-column: span 4;
     width: 100% !important;
     min-width: 0 !important;
     margin-left: 0 !important;
+    padding-right: 0;
 }
 
 .admin-dashboard__feed-controls .admin-data-control-group,

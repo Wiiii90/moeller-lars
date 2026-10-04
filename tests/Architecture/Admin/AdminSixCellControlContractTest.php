@@ -51,12 +51,21 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->not->toContain(" · ");
 
     expect($dashboardCss)
+        ->toContain('--dashboard-toolbar-type-min: 8.5rem;')
+        ->toContain('--dashboard-toolbar-clear-min: 4.5rem;')
+        ->toContain('--dashboard-toolbar-settings-min: 6rem;')
+        ->toContain('--dashboard-toolbar-selection-min: 8rem;')
+        ->toContain('grid-column: span 11;')
+        ->toContain('grid-column: span 4;')
         ->toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
 
     expect($responsive)
+        ->toContain('>=54rem:  track >=2.25rem')
+        ->toContain('grid-column: span 7 !important;')
+        ->toContain('@container admin-workspace (max-width: 41rem)')
+        ->toContain('@container admin-workspace (max-width: 30rem)')
         ->toContain('col.admin-dashboard__col-actions')
-        ->toContain('calc(var(--admin-table-one-unit) - var(--admin-table-selection-width))')
-        ->toContain('grid-column: span 5 !important;');
+        ->toContain('calc(var(--admin-table-one-unit) - var(--admin-table-selection-width))');
 
     expect($storage)
         ->toContain('media-workspace__controls')

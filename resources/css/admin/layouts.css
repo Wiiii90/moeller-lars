@@ -305,6 +305,16 @@ html.fi select option:disabled {
 }
 
 @media (max-width: 63.99rem) {
+    /* The content boundary is exactly one full control rail inside each viewport
+     * edge: 1rem edge gap + 2rem control + 1rem content gap. Filament's topbar
+     * already places Burger/User at the outer 1rem edge; matching .fi-main
+     * padding therefore guarantees those controls sit outside, never over,
+     * the workspace/Notification width. */
+    html.fi .fi-main:has(.admin-workspace) {
+        box-sizing: border-box;
+        padding-inline: var(--admin-header-control-rail) !important;
+    }
+
     /* Filament normally swaps the Burger for an X in the same topbar slot.
      * This shell keeps the Burger role in the topbar and places Close inside
      * the open drawer instead. */

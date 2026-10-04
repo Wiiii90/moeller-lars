@@ -53,6 +53,8 @@ it('keeps the mobile sidebar above header notifications with an explicit drawer 
         ->toContain(".admin-header-notification__body {\n    flex: 1 1 auto;\n    color: var(--admin-muted);");
 
     expect($layouts)
+        ->toContain('html.fi .fi-main:has(.admin-workspace)')
+        ->toContain('padding-inline: var(--admin-header-control-rail) !important;')
         ->toContain('html.fi .fi-topbar .fi-topbar-close-sidebar-btn')
         ->toContain('display: none !important;')
         ->toContain('html.fi .fi-sidebar-close-overlay')
