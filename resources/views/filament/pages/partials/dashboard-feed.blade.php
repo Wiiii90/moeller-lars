@@ -1,4 +1,4 @@
-<x-admin.section class="admin-dashboard__feed-section" aria-label="Dashboard feed">
+<x-admin.section class="admin-dashboard__feed-section admin-visual-stage-followup" aria-label="Dashboard feed">
     @php
         $selectedCount = count($selectedFeedKeys);
         $selectableFeedKeys = collect($feed)->pluck('key')->values()->all();
@@ -89,12 +89,12 @@
             <colgroup>
                 <col class="admin-table__col-quarter-unit admin-dashboard__col-position">
                 <col class="admin-table__col-quarter-unit admin-dashboard__col-drag">
-                <col class="admin-table__col-three-quarter-unit admin-dashboard__col-type">
-                <col class="admin-table__col-three-quarter-unit admin-dashboard__col-date">
-                <col class="admin-table__col-half-unit admin-dashboard__col-time">
-                <col class="admin-table__col-one-unit admin-dashboard__col-title">
-                <col class="admin-table__col-half-unit admin-dashboard__col-sender">
-                <col class="admin-table__col-two-units-minus-selection admin-dashboard__col-actions">
+                <col class="admin-dashboard__col-type">
+                <col class="admin-dashboard__col-date">
+                <col class="admin-dashboard__col-time">
+                <col class="admin-dashboard__col-title">
+                <col class="admin-dashboard__col-sender">
+                <col class="admin-dashboard__col-actions">
                 <col class="admin-table__selection-col">
             </colgroup>
             <thead>
