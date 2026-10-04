@@ -275,9 +275,11 @@
     }
 
     .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action:not(.admin-selection__trigger) {
-        width: var(--admin-control-height);
-        min-width: var(--admin-control-height);
+        width: min(100%, var(--admin-control-height));
+        min-width: 0;
+        max-width: 100%;
         padding-inline: 0 !important;
+        justify-self: center;
         justify-content: center !important;
     }
 

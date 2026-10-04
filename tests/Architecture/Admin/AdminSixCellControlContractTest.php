@@ -40,6 +40,8 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('grid-column: 3 / span 2;')
         ->toContain('@container admin-workspace (max-width: 54rem)')
         ->toContain('.admin-selection__trigger-text')
+        ->toContain('width: min(100%, var(--admin-control-height));')
+        ->toContain('max-width: 100%;')
         ->toContain(".admin-data-controls__utility .admin-action {\n    white-space: nowrap;")
         ->toContain('var(--admin-table-selection-width)')
         ->toContain('justify-self: center;');
@@ -84,6 +86,8 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
 
     expect($responsive)
         ->not->toContain('.admin-dashboard')
+        ->not->toContain('Dashboard responsive authority')
+        ->not->toContain('Dashboard stage footer authority')
         ->not->toContain('.admin-dashboard__feed-controls')
         ->not->toContain('.admin-dashboard__feed-table')
         ->not->toContain('.admin-dashboard__col-')

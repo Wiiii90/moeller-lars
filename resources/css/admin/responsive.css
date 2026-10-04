@@ -856,13 +856,6 @@
     }
 }
 
-/* Filament collapses the sidebar below 1024px, which gives the workspace
- * more horizontal room. That shell change must never promote Dashboard back
- * to a wider component state. Keep Dashboard in its Narrow composition while
- * the mobile/burger shell is active. */
-@media (max-width: 63.99rem){
-}
-
 /* Minimal: feature-specific metric reduction, more aggressive table
  * prioritization, and the same mandatory one-row toolbar. */
 @container admin-workspace (max-width: 38rem){
@@ -1078,9 +1071,6 @@
     }
 }
 
-@container admin-table (max-width: 30rem){
-}
-
 /* Extreme widths: the task surface wins over summary statistics. */
 @container admin-workspace (max-width: 20rem){
     .admin-metrics{
@@ -1157,57 +1147,6 @@
         grid-template-columns: minmax(0, 1fr);
         gap: .2rem;
     }
-}
-
-/* -------------------------------------------------------------------------
- * Dashboard responsive authority
- * -------------------------------------------------------------------------
- * Dashboard has four effective presentation states:
- *   Wide / Compact: six metrics + three simultaneous overview panes.
- *   Narrow:        three metrics + three simultaneous overview panes.
- *   Minimal:       two metrics + one selected overview pane.
- *
- * The mobile Filament shell is not a fifth presentation state. When the
- * sidebar collapses, Dashboard is forced to at least Narrow so the newly freed
- * content width can never promote it back to the desktop composition.
- */
-
-@container admin-workspace (max-width: 54rem){
-}
-
-@media (max-width: 63.99rem){
-}
-
-@container admin-workspace (max-width: 38rem){
-}
-
-@container admin-workspace (max-width: 20rem){
-}
-
-/* Dashboard stage footer authority: one-line captions never disappear or
- * participate in stage-height changes. Compact states abbreviate Storage only. */
-@container admin-workspace (max-width: 68rem){
-}
-
-@container admin-workspace (min-width: 38.01rem){
-}
-
-@container admin-workspace (max-width: 54rem){
-}
-
-@container admin-workspace (max-width: 41rem){
-}
-
-@container admin-workspace (max-width: 30rem){
-}
-
-@container admin-table (max-width: 62rem){
-}
-
-@container admin-table (max-width: 50rem){
-}
-
-@container admin-table (max-width: 30rem){
 }
 
 /* General responsive authority
