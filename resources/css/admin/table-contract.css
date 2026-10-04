@@ -48,7 +48,8 @@
 /* Ordering controls are geometry, not truncatable text. Their cells may not
  * clip the square position badge or drag handle. */
 .admin-table__position,
-.admin-table__drag {
+.admin-table__drag,
+.admin-table td.admin-table__actions {
     overflow: visible !important;
 }
 

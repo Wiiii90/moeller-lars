@@ -246,71 +246,31 @@
     }
 }
 
-@media (max-width: 63.99rem){
-    :is(
-        .admin-row-actions:not(.admin-dashboard__feed-actions),
-        .activity-actions-cell .admin-toolbar,
-        .media-workspace__row-actions,
-        .journal-row-actions,
-        .admin-pages__row-actions,
-        .custom-page-row-actions,
-        .general-social-table__actions .admin-toolbar
-    ) .admin-action__label{
+@container admin-table (max-width: 38rem){
+    :is(.admin-row-actions--three, .admin-row-actions--four) .admin-action__label{
         display: none !important;
     }
 
-    :is(
-        .admin-row-actions:not(.admin-dashboard__feed-actions),
-        .activity-actions-cell .admin-toolbar,
-        .media-workspace__row-actions,
-        .journal-row-actions,
-        .admin-pages__row-actions,
-        .custom-page-row-actions,
-        .general-social-table__actions .admin-toolbar
-    ) .admin-action{
-        justify-content: center !important;
-        padding-inline: 0 !important;
-    }
-
-    .admin-row-actions--three{ --admin-responsive-action-count: 3; }
-    .admin-row-actions--four,
-    .media-workspace__row-actions,
-    .general-social-table__actions .admin-toolbar{ --admin-responsive-action-count: 4; }
-    .admin-pages__row-actions{ --admin-responsive-action-count: 5; }
-    .custom-page-row-actions{ --admin-responsive-action-count: 4; }
-    .journal-row-actions--blog{ --admin-responsive-action-count: 7; }
-    .journal-row-actions--exhibitions{ --admin-responsive-action-count: 5; }
-
-    :is(
-        .admin-row-actions--three,
-        .admin-row-actions--four,
-        .media-workspace__row-actions,
-        .journal-row-actions--blog,
-        .journal-row-actions--exhibitions,
-        .admin-pages__row-actions,
-        .custom-page-row-actions,
-        .general-social-table__actions .admin-toolbar
-    ){
+    .admin-row-actions--three{
         width: max-content !important;
-        max-width: 100%;
-        grid-template-columns: repeat(var(--admin-responsive-action-count), 1.35rem) !important;
+        grid-template-columns: repeat(3, 1.35rem) !important;
         gap: .45rem !important;
         justify-content: start !important;
     }
 
-    :is(
-        .admin-row-actions--three,
-        .admin-row-actions--four,
-        .media-workspace__row-actions,
-        .journal-row-actions--blog,
-        .journal-row-actions--exhibitions,
-        .admin-pages__row-actions,
-        .custom-page-row-actions,
-        .general-social-table__actions .admin-toolbar
-    ) .admin-action{
+    .admin-row-actions--four{
+        width: max-content !important;
+        grid-template-columns: repeat(4, 1.35rem) !important;
+        gap: .45rem !important;
+        justify-content: start !important;
+    }
+
+    :is(.admin-row-actions--three, .admin-row-actions--four) .admin-action{
         box-sizing: border-box;
         width: 1.35rem !important;
         min-width: 1.35rem !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
     }
 }
 
@@ -1094,20 +1054,7 @@
     }
 
     .general-social-table .general-social-table__col-actions{
-        width: 7rem !important;
-    }
-
-    .general-social-table__actions .admin-toolbar{
-        display: grid !important;
-        width: 100%;
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-        gap: .08rem !important;
-    }
-
-    .general-social-table__actions .admin-action{
-        min-width: 0;
-        padding-inline: .1rem !important;
-        justify-content: center !important;
+        width: 22rem !important;
     }
 }
 
@@ -1127,7 +1074,7 @@
     }
 
     .general-social-table .general-social-table__col-actions{
-        width: 6.5rem !important;
+        width: 7.5rem !important;
     }
 
     .general-social-table .general-social-table__position-cell,
@@ -1328,18 +1275,6 @@
         width: 8.5rem !important;
         min-width: 8.5rem !important;
         padding-inline: 0 !important;
-    }
-}
-
-@container admin-workspace (max-width: 62rem){
-    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) .admin-data-controls__utility .admin-action__label,
-.gallery-workspace__gallery-actions .admin-action__label{
-        display: none !important;
-    }
-
-    :is(.admin-task-controls--pages, .custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) .admin-data-controls__utility .admin-action,
-.gallery-workspace__gallery-actions .admin-action{
-        padding-inline: .18rem !important;
     }
 }
 
@@ -1612,17 +1547,7 @@
         gap: .3rem !important;
     }
 
-    .gallery-workspace__gallery-actions .admin-action__label,
-.admin-task-controls--pages .admin-data-controls__utility .admin-action__label,
-.custom-page-workspace__controls .admin-data-controls__utility .admin-action__label,
-.journal-workspace__entries > .admin-data-controls .admin-data-controls__utility .admin-action__label,
-.admin-pages__row-actions .admin-action__label,
-.custom-page-row-actions .admin-action__label,
-.journal-row-actions .admin-action__label{
-        display: none !important;
-    }
-
-    .admin-hierarchy--pages .admin-pages__template{
+        .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
 
@@ -1639,7 +1564,7 @@
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
-        --admin-hierarchy-actions-column: 9rem;
+        --admin-hierarchy-actions-column: minmax(16rem, 34%);
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
@@ -1666,11 +1591,11 @@
     }
 
     .journal-table col.journal-table__actions--blog{
-        width: 10.5rem !important;
+        width: calc(50% - var(--admin-table-selection-width)) !important;
     }
 
     .journal-table col.journal-table__actions--exhibitions{
-        width: 8.5rem !important;
+        width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)) !important;
     }
 }
 
@@ -2342,7 +2267,7 @@
     }
 
     .admin-storage .media-workspace__col-actions{
-        width: 7rem !important;
+        width: 17rem !important;
     }
 
     .activity-events-table .activity-col--who,
@@ -2373,17 +2298,13 @@
 
     .activity-events-table .activity-col--actions,
 .activity-commits-table .activity-commit-col--actions{
-        width: 6.5rem !important;
+        width: 14rem !important;
     }
 
     .activity-commits-table .activity-commit-col--commit{
         width: 8rem !important;
     }
 
-    .activity-row-actions .admin-action__label,
-.admin-storage .media-workspace__row-actions .admin-action__label{
-        display: none !important;
-    }
 }
 
 /* Canonical responsive metric geometry.
