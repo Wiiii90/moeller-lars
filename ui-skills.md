@@ -534,9 +534,10 @@ Responsive behavior is content-driven and follows semantic width states rather t
 ### Shell/header geometry
 
 - Header controls use one shared equation: **1rem outer edge + 2rem circular control + 1rem separation to header content = 4rem control rail**.
-- In the desktop/sidebar shell, the User badge is vertically centered in the 4rem topbar and explicitly 1rem from the viewport right edge. Therefore its top, right and bottom gaps are all 1rem, and the workspace/Notification boundary stays one further 1rem gap to its left.
+- In the desktop/sidebar shell, the User badge is vertically centered in the 4rem topbar and explicitly 1rem from the viewport right edge. Therefore its top, right and bottom gaps are all 1rem.
+- Desktop Header Notification starts on the workspace/content left edge but extends to the fixed User-control rail, not to a variable centered-content end inset: Notification edge -> 1rem gap -> 2rem User badge -> 1rem viewport edge.
 - In the burger shell, that 4rem rail is reserved only inside the topbar. Page content below the topbar reclaims the rail and uses only the canonical 1rem shell inset on both left and right; do not carry Burger/User width down the whole page as empty padding.
-- Header Notification remains between the Burger/User control rails and may therefore use different horizontal insets from page content below it.
+- Header Notification remains between Burger/User controls and may therefore use different horizontal insets from page content below it.
 
 
 ### Metrics

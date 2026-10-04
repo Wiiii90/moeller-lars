@@ -409,16 +409,17 @@
 
 @media (min-width: 1024px) {
     /*
-     * Desktop Notification and page content share the same viewport coordinate
-     * system and the same shell geometry variables. The Notification surface is
-     * fixed inside Filament's sticky topbar so its containing block cannot
-     * change when a page gains or loses a document scrollbar.
+     * Desktop Notification starts on the workspace/content left edge and uses
+     * the full available header width up to the User rail. Its right edge is
+     * therefore always 1rem before the 2rem User badge, which itself remains
+     * 1rem from the viewport edge. The Notification is fixed inside Filament's
+     * sticky topbar so document scrollbar changes cannot shift this geometry.
      */
     .admin-header-notification {
         width: auto;
         max-width: none;
         inset-inline-start: var(--admin-workspace-content-inline-start);
-        inset-inline-end: var(--admin-workspace-content-inline-end);
+        inset-inline-end: var(--admin-header-control-rail);
         margin-block: 0;
     }
 
