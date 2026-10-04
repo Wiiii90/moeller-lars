@@ -325,39 +325,6 @@
     }
 }
 
-/* Shell monotonicity: removing the sidebar can enlarge Search, but may never
- * resurrect Dashboard/Selection text after the product has entered Narrow. */
-@media (max-width: 63.99rem) {
-    .admin-dashboard__feed-controls {
-        --dashboard-feed-action-track: calc(var(--admin-control-height) + .55rem);
-        --dashboard-feed-action-group-width: 100%;
-        --dashboard-feed-selection-width: 4.25rem;
-        --dashboard-feed-group-gap: .55rem;
-        --dashboard-feed-column-gap: .35rem;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) > .admin-data-control-label,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child > .admin-data-control-label,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action__label,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action {
-        width: var(--admin-control-height);
-        min-width: var(--admin-control-height);
-        max-width: var(--admin-control-height);
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-dashboard__feed-controls .admin-selection__trigger-label {
-        padding-right: 0;
-        justify-self: center;
-        justify-content: center;
-    }
-}
-
 @container admin-workspace (max-width: 38rem) {
     .admin-dashboard__feed-controls {
         --dashboard-feed-action-track: calc(var(--admin-control-height) + .45rem);
