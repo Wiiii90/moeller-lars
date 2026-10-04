@@ -3417,3 +3417,73 @@
         height: 100% !important;
     }
 }
+
+/* Canonical metric leading-edge invariant.
+ * Responsive semantic visibility may hide earlier DOM siblings. The first
+ * visible metric of every retained Narrow/Minimal set still starts flush on
+ * the workspace edge. This block is deliberately last so feature shorthand
+ * padding cannot reintroduce the left indent. */
+@container admin-workspace (max-width: 54rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(3n + 1),
+    .admin-general .general-metric--public-email,
+    .pages-status-metrics > .pages-metric--published,
+    .gallery-status-metrics > .gallery-metric--artworks,
+    .custom-page-status-metrics > .custom-page-metric--components,
+    .journal-status-metrics--blog > .journal-metric--published,
+    .journal-status-metrics--exhibitions > .journal-metric--published,
+    .admin-home-workspace :is(.home-metric--visits, .home-metric--components),
+    .analytics-status-metrics > .analytics-metric--visits,
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes {
+        padding-left: 0 !important;
+    }
+}
+
+@media (min-width: 38.01rem) and (max-width: 63.99rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(3n + 1),
+    .admin-general .general-metric--public-email,
+    .pages-status-metrics > .pages-metric--published,
+    .gallery-status-metrics > .gallery-metric--artworks,
+    .custom-page-status-metrics > .custom-page-metric--components,
+    .journal-status-metrics--blog > .journal-metric--published,
+    .journal-status-metrics--exhibitions > .journal-metric--published,
+    .admin-home-workspace :is(.home-metric--visits, .home-metric--components),
+    .analytics-status-metrics > .analytics-metric--visits,
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes {
+        padding-left: 0 !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(2n + 1),
+    .admin-general .general-metric--public-email,
+    .pages-status-metrics > .pages-metric--published,
+    .gallery-status-metrics > .gallery-metric--artworks,
+    .custom-page-status-metrics > .custom-page-metric--components,
+    .journal-status-metrics--blog > .journal-metric--published,
+    .journal-status-metrics--exhibitions > .journal-metric--current,
+    .admin-home-workspace :is(.home-metric--visits, .home-metric--components),
+    .analytics-status-metrics > .analytics-metric--visits,
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes {
+        padding-left: 0 !important;
+    }
+}
+
+@media (max-width: 38rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric:nth-child(2n + 1),
+    .admin-general .general-metric--public-email,
+    .pages-status-metrics > .pages-metric--published,
+    .gallery-status-metrics > .gallery-metric--artworks,
+    .custom-page-status-metrics > .custom-page-metric--components,
+    .journal-status-metrics--blog > .journal-metric--published,
+    .journal-status-metrics--exhibitions > .journal-metric--current,
+    .admin-home-workspace :is(.home-metric--visits, .home-metric--components),
+    .analytics-status-metrics > .analytics-metric--visits,
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes {
+        padding-left: 0 !important;
+    }
+}
+

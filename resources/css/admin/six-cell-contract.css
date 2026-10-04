@@ -268,7 +268,6 @@
 
 
 @container admin-workspace (max-width: 54rem) {
-    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-data-control-label,
     .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action__label,
     .admin-data-controls--six-cell > .admin-data-controls__utility .admin-selection__trigger-text {
         display: none !important;

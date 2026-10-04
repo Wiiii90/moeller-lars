@@ -21,6 +21,14 @@
     margin-top: var(--admin-section-space);
 }
 
+/* Leading-edge invariant: the first visual cell starts on the workspace edge.
+ * Feature panes may own right/interior breathing room, never a left indent on
+ * the first stage cell. Vertical stage rhythm is intentionally unaffected. */
+.admin-visual-stage > :first-child {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
 :is(
     .admin-visual-stage--rail:not(.general-appearance-stage),
     .analytics-visual-stage,

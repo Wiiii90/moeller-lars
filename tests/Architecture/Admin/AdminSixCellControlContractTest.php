@@ -40,6 +40,7 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('grid-column: 3 / span 2;')
         ->toContain('@container admin-workspace (max-width: 54rem)')
         ->toContain('.admin-selection__trigger-text')
+        ->not->toContain(".admin-data-controls__utility .admin-data-control-label,\n    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action__label")
         ->toContain('width: min(100%, var(--admin-control-height));')
         ->toContain('max-width: 100%;')
         ->toContain(".admin-data-controls__utility .admin-action {\n    white-space: nowrap;")
@@ -85,6 +86,10 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('padding: .25rem 0;');
 
     expect($responsive)
+        ->toContain('/* Canonical metric leading-edge invariant.')
+        ->toContain('.general-metric--public-email')
+        ->toContain('.pages-metric--published')
+        ->toContain('.storage-metric--used')
         ->not->toContain('.admin-dashboard')
         ->not->toContain('Dashboard responsive authority')
         ->not->toContain('Dashboard stage footer authority')

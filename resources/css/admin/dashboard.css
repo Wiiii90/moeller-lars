@@ -226,6 +226,10 @@
         border-right: 1px solid var(--admin-line) !important;
     }
 
+    .admin-dashboard .admin-dashboard__metric--traffic {
+        padding-left: 0 !important;
+    }
+
     .admin-dashboard .admin-dashboard__metric--changes {
         border-right: 0 !important;
     }
@@ -286,6 +290,7 @@
     }
 
     .admin-dashboard .admin-dashboard__metric--traffic {
+        padding-left: 0 !important;
         border-right: 1px solid var(--admin-line) !important;
     }
 
