@@ -645,9 +645,7 @@
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .general-layout-field:first-child,
-.general-layout-field + .general-layout-field,
-.general-two-column-settings > .fi-sc > :first-child,
+    .general-two-column-settings > .fi-sc > :first-child,
 .general-two-column-settings > .fi-sc > :last-child{
         padding-right: .35rem;
         padding-left: .35rem;
@@ -2848,6 +2846,14 @@
         grid-column: 1 / -1 !important;
         width: 100% !important;
         height: 100% !important;
+    }
+}
+
+/* General's first retained metric must beat the canonical six-metric child
+ * geometry itself; source DOM position is irrelevant once earlier metrics hide. */
+@container admin-workspace (max-width: 64rem){
+    .admin-workspace.admin-general .general-status-metrics:has(> .general-metric:nth-child(6)) > .general-metric--public-email{
+        padding-left: 0 !important;
     }
 }
 

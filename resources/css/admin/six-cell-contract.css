@@ -200,9 +200,10 @@
  * consume only their real content minima. Filter/Selection headings are
  * redundant and therefore never occupy a row/track. */
 :is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell {
-    display: grid;
+    display: grid !important;
     width: 100%;
     min-width: 0;
+    grid-template-rows: auto !important;
     column-gap: .65rem;
     align-items: end;
 }
@@ -217,49 +218,56 @@
 
 :is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell > :first-child {
     min-width: 0 !important;
-    grid-column: 1;
-    padding-right: 0;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    padding-right: 0 !important;
 }
 
 :is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell > .admin-data-controls__filters {
     display: contents;
 }
 
-.home-artwork-source-controls > .admin-data-controls__filters > :first-child {
-    grid-column: 2;
-    padding-right: 0;
+.home-artwork-source-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    padding-right: 0 !important;
 }
 
-.home-artwork-source-controls > .admin-data-controls__filters > :nth-child(2) {
-    grid-column: 3;
-    padding-right: 0;
+.home-artwork-source-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :nth-child(2) {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    padding-right: 0 !important;
 }
 
-.home-component-controls > .admin-data-controls__filters > :first-child {
-    grid-column: 2;
-    padding-right: 0;
+.home-component-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    padding-right: 0 !important;
 }
 
-.home-artwork-source-controls > .admin-data-controls__utility {
-    grid-column: 4;
+.home-artwork-source-controls.admin-data-controls--six-cell > .admin-data-controls__utility {
+    grid-column: 4 !important;
+    grid-row: 1 !important;
 }
 
-.home-component-controls > .admin-data-controls__utility {
-    grid-column: 3;
+.home-component-controls.admin-data-controls--six-cell > .admin-data-controls__utility {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
 }
 
 :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility {
-    display: flex;
+    display: flex !important;
     width: max-content;
     min-width: 0;
     gap: .15rem;
     align-items: flex-end;
     justify-self: end;
+    flex-wrap: nowrap !important;
 }
 
 :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :first-child > .admin-data-control-label,
 :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > .admin-selection > .admin-data-control-label {
-    display: none;
+    display: none !important;
 }
 
 :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
