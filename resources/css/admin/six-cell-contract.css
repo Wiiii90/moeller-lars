@@ -199,12 +199,11 @@
 .admin-dashboard__feed-controls.admin-data-controls--six-cell {
     grid-template-columns:
         minmax(0, 1fr)
-        6.5rem
+        7rem
         max-content
-        .75rem
         max-content
-        7.25rem;
-    column-gap: .55rem;
+        6.5rem;
+    column-gap: .45rem;
 }
 
 .admin-dashboard__feed-controls.admin-data-controls--six-cell > :first-child {
@@ -236,15 +235,16 @@
 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
 > :nth-child(2) {
     width: max-content;
-    grid-column: 5;
+    grid-column: 4;
+    margin-left: .65rem;
     justify-self: end;
 }
 
 .admin-dashboard__feed-controls.admin-data-controls--six-cell
 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
 > :last-child {
-    width: 7.25rem;
-    grid-column: 6;
+    width: 6.5rem;
+    grid-column: 5;
     justify-self: stretch;
 }
 
@@ -293,12 +293,25 @@
     .admin-dashboard__feed-controls.admin-data-controls--six-cell {
         grid-template-columns:
             minmax(0, 1fr)
-            6.5rem
+            7rem
             max-content
-            .55rem
             var(--admin-control-height)
-            4.5rem;
-        column-gap: .4rem;
+            4.25rem;
+        column-gap: .35rem;
+    }
+
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) {
+        grid-column: 4;
+        margin-left: .55rem;
+    }
+
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-selection
+    > :last-child {
+        width: 4.25rem;
+        grid-column: 5;
     }
 
     .admin-dashboard__feed-controls
@@ -339,12 +352,25 @@
     .admin-dashboard__feed-controls.admin-data-controls--six-cell {
         grid-template-columns:
             minmax(0, 1fr)
-            6.5rem
+            7rem
             max-content
-            .55rem
             var(--admin-control-height)
-            4.5rem;
-        column-gap: .4rem;
+            4.25rem;
+        column-gap: .35rem;
+    }
+
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) {
+        grid-column: 4;
+        margin-left: .55rem;
+    }
+
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-selection
+    > :last-child {
+        width: 4.25rem;
+        grid-column: 5;
     }
 
     .admin-dashboard__feed-controls
@@ -383,11 +409,16 @@
     .admin-dashboard__feed-controls.admin-data-controls--six-cell {
         grid-template-columns:
             minmax(0, 1fr)
-            6.5rem
+            7rem
             max-content
-            .35rem
             var(--admin-control-height)
             4.25rem;
         column-gap: .3rem;
+    }
+
+    .admin-dashboard__feed-controls
+    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
+    > :nth-child(2) {
+        margin-left: .45rem;
     }
 }
