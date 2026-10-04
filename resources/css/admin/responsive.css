@@ -574,7 +574,6 @@
  * prioritization, and the same mandatory one-row toolbar. */
 @container admin-workspace (max-width: 38rem){
     .admin-data-controls:not(.admin-data-controls--six-cell),
-.admin-task-controls--pages,
 .custom-page-workspace__controls{
         gap: .45rem !important;
     }
