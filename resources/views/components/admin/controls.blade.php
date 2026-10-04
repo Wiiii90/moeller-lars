@@ -25,31 +25,33 @@
         'admin-data-controls--six-cell-search-'.$normalizedSearchSpan => $metricGrid && $normalizedSearchSpan !== null,
     ]) }}
     @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
-    @isset($filters)
+    @if (isset($filters) && ! $metricGrid)
         x-data="{ adminFiltersOpen: false }"
         x-on:keydown.escape.window="adminFiltersOpen = false"
         x-on:click.outside="adminFiltersOpen = false"
-    @endisset
+    @endif
 >
     @isset($search)
         {{ $search }}
     @endisset
 
     @isset($filters)
-        <button
-            class="admin-data-controls__filter-trigger"
-            type="button"
-            x-on:click="adminFiltersOpen = ! adminFiltersOpen"
-            x-bind:aria-expanded="adminFiltersOpen.toString()"
-            aria-haspopup="true"
-            aria-label="Toggle filters"
-        >
-            <span>Filters</span>
-            <span class="admin-data-controls__filter-trigger-count">{{ $actualFilterCount }}</span>
-        </button>
+        @if (! $metricGrid)
+            <button
+                class="admin-data-controls__filter-trigger"
+                type="button"
+                x-on:click="adminFiltersOpen = ! adminFiltersOpen"
+                x-bind:aria-expanded="adminFiltersOpen.toString()"
+                aria-haspopup="true"
+                aria-label="Toggle filters"
+            >
+                <span>Filters</span>
+                <span class="admin-data-controls__filter-trigger-count">{{ $actualFilterCount }}</span>
+            </button>
+        @endif
         <div
             class="admin-data-controls__filters"
-            x-bind:class="{ 'is-open': adminFiltersOpen }"
+            @if (! $metricGrid) x-bind:class="{ 'is-open': adminFiltersOpen }" @endif
             role="group"
             aria-label="Filters"
         >
