@@ -86,53 +86,12 @@
     display: none;
 }
 
-/* Wide/Compact: preserve the accepted one-row toolbar grammar even when the
- * browser viewport happens to trigger an older feature media query. */
+/* Wide/Compact: preserve one-row grammar for non-six-cell flex toolbars.
+ * Six-cell geometry is owned exclusively by six-cell-contract.css. */
 @container admin-workspace (min-width: 54.01rem) {
     .admin-data-controls:not(.admin-data-controls--six-cell):not(.media-workspace__controls):not(.activity-workspace__controls),
     .admin-control-bar {
         flex-wrap: nowrap !important;
-    }
-
-    :is(
-        .admin-data-controls--six-cell,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) {
-        display: grid !important;
-        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-        gap: 0 !important;
-        align-items: end;
-    }
-
-    :is(
-        .admin-data-controls--six-cell,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > :first-child,
-    :is(
-        .admin-data-controls--six-cell,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__filters > * {
-        box-sizing: border-box;
-        width: 100% !important;
-        min-width: 0 !important;
-        padding-right: .7rem;
-        flex: none !important;
-    }
-
-    :is(
-        .admin-data-controls--six-cell,
-        .custom-page-workspace__controls,
-        .journal-workspace__entries > .admin-data-controls
-    ) > .admin-data-controls__utility {
-        display: grid !important;
-        min-width: 0;
-        grid-column: span 2;
-        grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;
-        gap: .2rem;
-        align-items: end;
     }
 
     .admin-task-controls--pages {

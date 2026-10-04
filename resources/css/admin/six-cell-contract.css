@@ -134,7 +134,6 @@
 }
 
 :is(
-    .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
 ) > .admin-data-controls__utility {
@@ -145,6 +144,33 @@
     grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;
     gap: .2rem;
     align-items: end;
+}
+
+.admin-data-controls--six-cell > .admin-data-controls__utility {
+    display: grid;
+    min-width: 0;
+    grid-column: 5 / span 2;
+    grid-row: 1;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    align-items: end;
+}
+
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :first-child {
+    grid-column: 1;
+}
+
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions > :nth-child(2) {
+    grid-column: 2;
+}
+
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child {
+    grid-column: 3 / span 2;
+}
+
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-reset:not(.admin-data-controls__utility--has-actions).admin-data-controls__utility--has-selection > :first-child,
+.admin-data-controls--six-cell > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset).admin-data-controls__utility--has-selection > :first-child {
+    grid-column: 2;
 }
 
 .admin-data-controls__utility > * {
@@ -241,3 +267,28 @@
 }
 
 
+@container admin-workspace (max-width: 54rem) {
+    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-data-control-label,
+    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action__label,
+    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-action:not(.admin-selection__trigger) {
+        width: var(--admin-control-height);
+        min-width: var(--admin-control-height);
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-data-controls--six-cell > .admin-data-controls__utility > :not(:last-child) {
+        display: flex;
+        min-width: 0;
+        align-items: flex-end;
+        justify-content: center;
+    }
+
+    .admin-data-controls--six-cell > .admin-data-controls__utility .admin-selection__trigger-label {
+        justify-content: center;
+    }
+}

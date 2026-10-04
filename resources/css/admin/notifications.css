@@ -415,10 +415,10 @@
      * change when a page gains or loses a document scrollbar.
      */
     .admin-header-notification {
-        width: var(--admin-workspace-content-width);
+        width: auto;
         max-width: none;
         inset-inline-start: var(--admin-workspace-content-inline-start);
-        inset-inline-end: auto;
+        inset-inline-end: var(--admin-workspace-content-inline-end);
         margin-block: 0;
     }
 

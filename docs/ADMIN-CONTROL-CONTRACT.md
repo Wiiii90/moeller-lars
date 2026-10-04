@@ -98,7 +98,8 @@ Toolbar sizing is always **content minimum + shared ruler**:
 4. keep filter/action groups compact inside their assigned region. Spare width is not permission to stretch one or two buttons across arbitrary bandwidth;
 5. keep Selection terminal at the far right. Its selected-count circle reserves `--admin-table-selection-width` and stays on the exact same horizontal axis as the table select-all and row checkboxes;
 6. preserve full dropdown values and action labels whenever their calculated minimum fits. Ellipsis is an emergency fallback, not normal sizing;
-7. when full utility labels no longer fit, use the shared complete-label → icon-only/overflow transition before clipping, adding a second toolbar row or introducing horizontal scrolling.
+7. when full utility labels no longer fit, use the shared complete-label → icon-only/overflow transition before clipping, adding a second toolbar row or introducing horizontal scrolling;
+8. overlapping controls or headings are never a supported responsive state. The compact transition must occur before two toolbar roles can occupy the same visual space.
 
 Responsive metric presentation does not replace the underlying ruler. A visible three- or two-metric state still uses a refinable ruler from which six-/three-/two-column alignment can be reconstructed.
 

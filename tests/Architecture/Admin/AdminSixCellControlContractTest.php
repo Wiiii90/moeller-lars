@@ -32,6 +32,11 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('.journal-workspace__entries > .admin-data-controls')
         ->toContain(".admin-data-controls__utility {\n    display: contents;")
         ->toContain('grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;')
+        ->toContain('.admin-data-controls--six-cell > .admin-data-controls__utility {')
+        ->toContain('grid-template-columns: repeat(4, minmax(0, 1fr));')
+        ->toContain('grid-column: 3 / span 2;')
+        ->toContain('@container admin-workspace (max-width: 54rem)')
+        ->toContain('.admin-selection__trigger-text')
         ->toContain(".admin-data-controls__utility .admin-action {\n    white-space: nowrap;")
         ->toContain('var(--admin-table-selection-width)')
         ->toContain('justify-self: center;');
@@ -70,7 +75,8 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
     expect($responsive)
         ->not->toContain('.admin-dashboard__feed-controls')
         ->not->toContain('.admin-dashboard__feed-table')
-        ->not->toContain('.admin-dashboard__col-');
+        ->not->toContain('.admin-dashboard__col-')
+        ->not->toContain("grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;");
 
     expect($storage)
         ->toContain('media-workspace__controls')
