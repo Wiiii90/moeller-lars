@@ -1058,7 +1058,7 @@
     }
 }
 
-@container admin-table (max-width: 38rem){
+@container admin-table (max-width: 44rem){
     .general-social-table .general-social-table__col-url,
 .general-social-table .general-social-table__url-head,
 .general-social-table .general-social-table__url{
@@ -1072,7 +1072,9 @@
     .general-social-table .general-social-table__col-platform{
         width: auto !important;
     }
+}
 
+@container admin-table (max-width: 38rem){
     .general-social-table .general-social-table__col-actions{
         width: 7.5rem !important;
     }
