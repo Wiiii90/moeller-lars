@@ -300,11 +300,47 @@ html.fi .fi-page:has(.admin-workspace) {
         width: 100%;
     }
 
-    /* Keep the already-accepted shell owner: Filament centers the page frame;
-     * this layer only reserves the fixed User rail. */
+    /*
+     * Filament centers page content inside the post-sidebar main area. That
+     * center is too far right by half the difference between Sidebar and User
+     * rail. Shift the visible workspace back toward the viewport center.
+     *
+     * The shift is clamped by the actual spare room in .fi-main, so it reaches
+     * exact viewport centering when there is room and smoothly gives way before
+     * the workspace could collide with Sidebar + canonical gutter.
+     */
     html.fi .fi-main:has(.admin-workspace) {
+        --admin-workspace-center-shift: min(
+            max(
+                0rem,
+                calc(
+                    (
+                        100%
+                        - var(--admin-header-control-rail)
+                        - var(--admin-workspace-max-width)
+                        - var(--admin-workspace-gutter)
+                        - var(--admin-workspace-gutter)
+                    ) / 2
+                )
+            ),
+            max(
+                0rem,
+                calc(
+                    (
+                        var(--sidebar-width)
+                        - var(--admin-header-control-rail)
+                    ) / 2
+                )
+            )
+        );
+
         padding-top: 0 !important;
         padding-right: var(--admin-header-control-rail) !important;
+    }
+
+    html.fi .fi-main:has(.admin-workspace) .admin-workspace {
+        position: relative;
+        inset-inline-start: calc(0rem - var(--admin-workspace-center-shift));
     }
 
     .fi-sidebar-nav {
