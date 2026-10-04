@@ -409,16 +409,23 @@
 
 @media (min-width: 1024px) {
     /*
-     * Desktop Notification starts on the workspace/content left edge and uses
-     * the full available header width up to the User rail. Its right edge is
-     * therefore always 1rem before the 2rem User badge, which itself remains
-     * 1rem from the viewport edge. The Notification is fixed inside Filament's
-     * sticky topbar so document scrollbar changes cannot shift this geometry.
+     * Desktop Notification mirrors the exact .admin-workspace width equation
+     * and shares its right edge at the start of the User rail. There is no
+     * separate left/right inset reconstruction and therefore no scrollbar-width
+     * drift between page content and the fixed header surface.
      */
     .admin-header-notification {
-        width: auto;
-        max-width: none;
-        inset-inline-start: var(--admin-workspace-content-inline-start);
+        width: min(
+            var(--admin-workspace-max-width),
+            calc(
+                100%
+                - var(--sidebar-width)
+                - var(--admin-workspace-gutter)
+                - var(--admin-header-control-rail)
+            )
+        );
+        max-width: var(--admin-workspace-max-width);
+        inset-inline-start: auto;
         inset-inline-end: var(--admin-header-control-rail);
         margin-block: 0;
     }

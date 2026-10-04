@@ -37,46 +37,14 @@
         + var(--admin-header-control-size)
         + var(--admin-header-control-edge-gap)
     );
+    /* Desktop workspace/header frame:
+     * - content may grow to 80rem;
+     * - at constrained widths it keeps a 2rem gap from the sidebar;
+     * - its right edge is always the start of the 4rem User rail.
+     * Notification uses this same width equation instead of reconstructing
+     * independent viewport insets. */
     --admin-workspace-max-width: 80rem;
     --admin-workspace-gutter: 2rem;
-    --admin-workspace-outer-max-width: calc(
-        var(--admin-workspace-max-width)
-        + var(--admin-workspace-gutter)
-        + var(--admin-workspace-gutter)
-    );
-    --admin-workspace-main-extra-space: max(
-        0rem,
-        calc(
-            (
-                100vw
-                - var(--sidebar-width)
-                - var(--admin-workspace-outer-max-width)
-            ) / 2
-        )
-    );
-    --admin-workspace-visual-shift: min(
-        var(--admin-workspace-main-extra-space),
-        calc(var(--sidebar-width) / 2)
-    );
-    --admin-workspace-content-inline-start: calc(
-        var(--sidebar-width)
-        + var(--admin-workspace-main-extra-space)
-        + var(--admin-workspace-gutter)
-        - var(--admin-workspace-visual-shift)
-    );
-    --admin-workspace-content-inline-end: max(
-        var(--admin-header-control-rail),
-        calc(
-            var(--admin-workspace-main-extra-space)
-            + var(--admin-workspace-gutter)
-            + var(--admin-workspace-visual-shift)
-        )
-    );
-    --admin-workspace-content-width: calc(
-        100vw
-        - var(--admin-workspace-content-inline-start)
-        - var(--admin-workspace-content-inline-end)
-    );
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
     --admin-status-warning: var(--admin-accent);

@@ -56,12 +56,28 @@ html.fi,
  * A 2rem control inside a 4rem topbar leaves the same 1rem on top and bottom;
  * the explicit inline-end inset makes the right gap the same 1rem as well. */
 html.fi .fi-topbar .fi-topbar-end {
-    position: absolute;
+    position: fixed;
     z-index: 40;
-    inset-block: 0;
-    inset-inline-end: var(--admin-header-control-edge-gap);
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    box-sizing: border-box;
     display: flex;
+    width: var(--admin-header-control-rail);
+    height: var(--admin-topbar-height);
+    margin: 0 !important;
+    padding: 0 !important;
     align-items: center;
+    justify-content: center;
+}
+
+/* Keep the User control itself on the same 2rem circle used by Burger/Close. */
+html.fi .fi-topbar .fi-topbar-end .fi-user-menu-trigger {
+    box-sizing: border-box;
+    width: var(--admin-header-control-size);
+    height: var(--admin-header-control-size);
+    min-width: var(--admin-header-control-size);
+    min-height: var(--admin-header-control-size);
+    padding: 0 !important;
 }
 
 /* Native select controls inherit the active browser color scheme. */
@@ -270,12 +286,9 @@ html.fi select option:disabled {
 
 @media (min-width: 1024px) {
     /*
-     * Keep the desktop shell on one horizontal coordinate system regardless of
-     * whether a classic document scrollbar is currently present. Filament
-     * centers .fi-main inside .fi-layout; 100% shrinks with the document
-     * scrollport, while 100vw remains tied to the layout viewport. The deliberate
-     * scrollbar-width overhang is clipped horizontally instead of reserving an
-     * empty gutter or compensating individual pages with transforms/offsets.
+     * Desktop uses the document scrollport as the single horizontal coordinate
+     * system. Do not use 100vw here: classic scrollbars make 100vw wider than
+     * fixed header surfaces and recreate the content/Notification drift.
      */
     html.fi,
     body.fi-body {
@@ -283,30 +296,48 @@ html.fi select option:disabled {
     }
 
     .fi-layout {
-        width: 100vw;
+        width: 100%;
     }
 
-    .fi-main {
-        width: min(100%, var(--admin-workspace-outer-max-width));
-        max-width: var(--admin-workspace-outer-max-width) !important;
+    /*
+     * Filament's main/page wrappers no longer own workspace centering or a fake
+     * User padding rail. The visible .admin-workspace is the frame owner.
+     */
+    html.fi .fi-main:has(.admin-workspace) {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    html.fi .fi-page:has(.admin-workspace) {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: none !important;
+        padding: var(--admin-shell-content-inset) 0 0 !important;
+    }
+
+    /*
+     * The workspace is right-anchored immediately before the User rail.
+     * At constrained desktop widths the remaining left space is exactly the
+     * canonical 2rem sidebar/content gutter. At larger widths the workspace
+     * stops at 80rem and surplus space accumulates only on the left.
+     */
+    html.fi .fi-main:has(.admin-workspace) .admin-workspace {
+        box-sizing: border-box;
+        width: min(
+            var(--admin-workspace-max-width),
+            calc(100% - var(--admin-workspace-gutter) - var(--admin-header-control-rail))
+        );
+        max-width: var(--admin-workspace-max-width);
+        margin-inline-start: auto;
+        margin-inline-end: var(--admin-header-control-rail);
     }
 
     .fi-sidebar-nav {
         padding-top: var(--admin-shell-content-inset) !important;
     }
-}
-
-/* Workspace top spacing belongs to the page, not to Filament's shell wrapper.
- * In the desktop/sidebar shell the right edge reserves the full 4rem user rail:
- * 1rem content-to-badge gap + 2rem badge + 1rem viewport edge gap. */
-.fi-main:has(.admin-workspace) {
-    padding-top: 0 !important;
-    padding-right: var(--admin-header-control-rail) !important;
-}
-
-.fi-page:has(.admin-workspace) {
-    box-sizing: border-box;
-    padding-top: var(--admin-shell-content-inset) !important;
 }
 
 /*
@@ -326,7 +357,14 @@ html.fi select option:disabled {
         box-sizing: border-box;
         width: 100%;
         max-width: none !important;
+        margin: 0 !important;
         padding-inline: var(--admin-header-control-edge-gap) !important;
+    }
+
+    html.fi .fi-main:has(.admin-workspace) .admin-workspace {
+        width: 100%;
+        max-width: none;
+        margin-inline: 0;
     }
 
     /* Filament normally swaps the Burger for an X in the same topbar slot.

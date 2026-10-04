@@ -4,16 +4,6 @@ html {
     scrollbar-gutter: stable;
 }
 
-@media (min-width: 1024px) {
-    /* A transformed ancestor becomes the containing block for fixed children.
-     * Keep the workspace shift without trapping viewport dialogs in the content. */
-    .fi-main {
-        position: relative;
-        inset-inline-start: calc(0rem - var(--admin-workspace-visual-shift));
-        transform: none;
-    }
-}
-
 .fi-modal-close-overlay {
     position: fixed;
     inset: 0;
