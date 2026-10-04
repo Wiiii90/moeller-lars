@@ -19,7 +19,7 @@
         </x-admin.metrics>
 
         <section
-            class="admin-dashboard__overview"
+            class="admin-dashboard__overview admin-visual-stage admin-visual-stage--triptych"
             aria-label="Storage, Activity and Analytics overview"
             x-data="{ compactPanel: 'storage' }"
         >
@@ -127,22 +127,34 @@
                     </div>
                     <figcaption class="admin-dashboard__analytics-caption">
                         @if ($analytics['status'] === 'disabled')
-                            No reporting data for this environment.
+                            <span class="admin-dashboard__analytics-caption--long">No reporting data for this environment.</span>
+                            <span class="admin-dashboard__analytics-caption--short">Reporting disabled.</span>
                         @elseif ($analytics['status'] === 'unavailable')
-                            Reporting data is currently unavailable.
+                            <span class="admin-dashboard__analytics-caption--long">Reporting data is currently unavailable.</span>
+                            <span class="admin-dashboard__analytics-caption--short">Reporting unavailable.</span>
                         @elseif ($analytics['country_state'] === 'unavailable')
-                            Country-level reporting is unavailable.
+                            <span class="admin-dashboard__analytics-caption--long">Country-level reporting is unavailable.</span>
+                            <span class="admin-dashboard__analytics-caption--short">Country data unavailable.</span>
                         @elseif ($analytics['country_state'] === 'empty')
-                            No country-level visits in this period.
+                            <span class="admin-dashboard__analytics-caption--long">No country-level visits in this period.</span>
+                            <span class="admin-dashboard__analytics-caption--short">No country visits.</span>
                         @else
-                            Country markers follow aggregate visit volume.
+                            <span class="admin-dashboard__analytics-caption--long">Country markers follow aggregate visit volume.</span>
+                            <span class="admin-dashboard__analytics-caption--short">Visit volume by country.</span>
                         @endif
                     </figcaption>
                 </figure>
                 <p class="admin-dashboard__facts">
                     <span>Visits <strong>{{ $analytics['visits_display'] }}</strong></span>
-                    <span>Unique visitors <strong>{{ $analytics['visitors_display'] }}</strong></span>
-                    <span>last 30 days</span>
+                    <span>
+                        <span class="admin-dashboard__analytics-fact-label--long">Unique visitors</span>
+                        <span class="admin-dashboard__analytics-fact-label--short">Visitors</span>
+                        <strong>{{ $analytics['visitors_display'] }}</strong>
+                    </span>
+                    <span>
+                        <span class="admin-dashboard__analytics-fact-label--long">last 30 days</span>
+                        <span class="admin-dashboard__analytics-fact-label--short">30 days</span>
+                    </span>
                 </p>
             </article>
         </section>
