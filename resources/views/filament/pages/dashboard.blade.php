@@ -14,7 +14,7 @@
                 <x-admin.metric
                     :label="$metric['label']"
                     :value="$metric['value']"
-                    class="admin-dashboard__metric admin-dashboard__metric--{{ $metricRole }} {{ $isPublishedPagesMetric ? 'admin-dashboard__metric--pages' : '' }}"
+                    class="admin-dashboard__metric admin-dashboard__metric--{{ $metricRole }}"
                 >
                     @if ($isPublishedPagesMetric)
                         <span class="admin-dashboard__metric-detail--long">{{ $metric['detail'] }}</span>
