@@ -84,11 +84,11 @@
 
 .admin-dashboard__pin-action.is-active { color: color-mix(in srgb, #9a6800 82%, var(--admin-text)); }
 
-/* Wide keeps the six-cell ruler while sizing support data to its content.
- * Identity receives eight quarter-cells; labelled Actions receive six;
- * Selection remains the fixed terminal rail. */
+/* Wide keeps the six-cell ruler while sizing support data to real content.
+ * Type owns three quarter-cells, Title seven and Actions + Selection the final
+ * six; the smaller Date/Time/Sender rails keep whole values readable. */
 .admin-dashboard__feed-table col.admin-dashboard__col-type {
-    width: 8.333333%;
+    width: 12.5%;
 }
 
 .admin-dashboard__feed-table col.admin-dashboard__col-date {
@@ -100,7 +100,7 @@
 }
 
 .admin-dashboard__feed-table col.admin-dashboard__col-title {
-    width: 33.333333%;
+    width: 29.166667%;
 }
 
 .admin-dashboard__feed-table col.admin-dashboard__col-sender {

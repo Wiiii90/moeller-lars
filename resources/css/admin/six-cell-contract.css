@@ -198,7 +198,7 @@
  * because the workspace changes state. Dashboard/Selection stay anchored at
  * the terminal edge; compact density changes labels, not their ownership. */
 .admin-dashboard__feed-controls.admin-data-controls--six-cell {
-    --dashboard-feed-type-width: 7rem;
+    --dashboard-feed-type-width: 7.75rem;
     --dashboard-feed-action-track: max-content;
     --dashboard-feed-action-group-width: max-content;
     --dashboard-feed-selection-width: 6.25rem;
