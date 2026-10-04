@@ -176,7 +176,7 @@
     .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 6.5rem !important; }
 }
 
-@container admin-table (max-width: 54rem) {
+@container admin-table (max-width: 50rem) {
     .admin-dashboard__feed-table col.admin-dashboard__col-sender,
     .admin-dashboard__feed-table th.admin-dashboard__col-sender,
     .admin-dashboard__feed-table td.admin-dashboard__col-sender {
