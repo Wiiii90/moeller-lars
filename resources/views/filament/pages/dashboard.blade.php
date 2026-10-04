@@ -29,39 +29,18 @@
         <section
             class="admin-dashboard__overview admin-visual-stage admin-visual-stage--triptych"
             aria-label="Storage, Activity and Analytics overview"
-            x-data="{ compactPanel: 'storage' }"
         >
-            <div class="admin-dashboard__overview-switcher" role="tablist" aria-label="Dashboard overview">
-                <button
-                    class="admin-action"
-                    type="button"
-                    role="tab"
-                    x-on:click="compactPanel = 'storage'"
-                    x-bind:aria-selected="(compactPanel === 'storage').toString()"
-                    x-bind:class="{ 'is-active': compactPanel === 'storage' }"
-                >Storage</button>
-                <button
-                    class="admin-action"
-                    type="button"
-                    role="tab"
-                    x-on:click="compactPanel = 'activity'"
-                    x-bind:aria-selected="(compactPanel === 'activity').toString()"
-                    x-bind:class="{ 'is-active': compactPanel === 'activity' }"
-                >Activity</button>
-                <button
-                    class="admin-action"
-                    type="button"
-                    role="tab"
-                    x-on:click="compactPanel = 'analytics'"
-                    x-bind:aria-selected="(compactPanel === 'analytics').toString()"
-                    x-bind:class="{ 'is-active': compactPanel === 'analytics' }"
-                >Analytics</button>
+            <input class="admin-dashboard__overview-panel-toggle" type="radio" name="dashboard-overview-panel" id="dashboard-overview-storage" checked>
+            <input class="admin-dashboard__overview-panel-toggle" type="radio" name="dashboard-overview-panel" id="dashboard-overview-activity">
+            <input class="admin-dashboard__overview-panel-toggle" type="radio" name="dashboard-overview-panel" id="dashboard-overview-analytics">
+
+            <div class="admin-dashboard__overview-switcher" aria-label="Dashboard overview">
+                <label class="admin-action" for="dashboard-overview-storage">Storage</label>
+                <label class="admin-action" for="dashboard-overview-activity">Activity</label>
+                <label class="admin-action" for="dashboard-overview-analytics">Analytics</label>
             </div>
 
-            <article
-                class="admin-dashboard__overview-column"
-                x-bind:class="{ 'is-compact-active': compactPanel === 'storage' }"
-            >
+            <article class="admin-dashboard__overview-column admin-dashboard__overview-column--storage">
                 <header class="admin-dashboard__overview-head">
                     <span class="admin-section__kicker">Storage</span>
                     <a class="admin-action" href="{{ $storage['url'] }}" wire:navigate>Open</a>
@@ -95,10 +74,7 @@
                 </div>
             </article>
 
-            <article
-                class="admin-dashboard__overview-column"
-                x-bind:class="{ 'is-compact-active': compactPanel === 'activity' }"
-            >
+            <article class="admin-dashboard__overview-column admin-dashboard__overview-column--activity">
                 <header class="admin-dashboard__overview-head">
                     <span class="admin-section__kicker">Activity</span>
                     <a class="admin-action" href="{{ $activity['url'] }}" wire:navigate>Open</a>
@@ -114,10 +90,7 @@
                 />
             </article>
 
-            <article
-                class="admin-dashboard__overview-column"
-                x-bind:class="{ 'is-compact-active': compactPanel === 'analytics' }"
-            >
+            <article class="admin-dashboard__overview-column admin-dashboard__overview-column--analytics">
                 <header class="admin-dashboard__overview-head">
                     <span class="admin-section__kicker">Analytics</span>
                     <a class="admin-action" href="{{ $analytics['url'] }}" wire:navigate>Open</a>

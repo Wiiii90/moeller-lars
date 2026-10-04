@@ -193,24 +193,15 @@
     padding-inline: .2rem;
 }
 
-/* Dashboard feed toolbar: real content minima + one terminal utility cluster.
- * Search owns every spare pixel. Type remains readable but never grows simply
- * because the workspace changes state. Dashboard/Selection stay anchored at
- * the terminal edge; compact density changes labels, not their ownership. */
+/* Dashboard feed toolbar: Search owns all spare width. Type is bounded by
+ * readable content; Clear is intrinsic; Dashboard + Selection are one compact
+ * terminal cluster. Dashboard keeps its heading, while Filter/Selection do not
+ * spend a second row on redundant headings. */
 .admin-dashboard__feed-controls.admin-data-controls--six-cell {
-    --dashboard-feed-type-width: 7.75rem;
-    --dashboard-feed-action-track: max-content;
-    --dashboard-feed-action-group-width: max-content;
-    --dashboard-feed-selection-width: 6.25rem;
-    --dashboard-feed-group-gap: .65rem;
-    --dashboard-feed-column-gap: .45rem;
-    grid-template-columns:
-        minmax(0, 1fr)
-        var(--dashboard-feed-type-width)
-        max-content
-        var(--dashboard-feed-action-track)
-        var(--dashboard-feed-selection-width);
-    column-gap: var(--dashboard-feed-column-gap);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 7.75rem max-content;
+    column-gap: .65rem;
+    align-items: end;
 }
 
 .admin-dashboard__feed-controls.admin-data-controls--six-cell > :first-child {
@@ -225,120 +216,68 @@
     padding-right: 0;
 }
 
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-    width: max-content;
+.admin-dashboard__feed-controls > .admin-data-controls__utility {
+    display: grid;
+    min-width: 0;
     grid-column: 3;
-    justify-self: start;
+    grid-template-columns: max-content max-content max-content;
+    column-gap: .15rem;
+    align-items: end;
 }
 
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
-    box-sizing: border-box;
-    width: var(--dashboard-feed-action-group-width);
-    grid-column: 4;
-    padding-left: var(--dashboard-feed-group-gap);
-    justify-self: end;
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+    margin-right: .45rem;
 }
 
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
 .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
-    width: var(--dashboard-feed-selection-width);
-    grid-column: 5;
-    justify-self: stretch;
-}
-
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
-    column-gap: 0;
-}
-
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child > .admin-data-control-label {
-    grid-column: 1;
-    justify-self: end;
-    padding-right: .25rem;
-}
-
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child > .admin-selection__anchor {
-    grid-column: 1 / -1;
-    width: 100%;
-}
-
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection .admin-selection__trigger {
-    display: grid;
-    width: 100%;
+    width: max-content;
     min-width: 0;
-    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
-    gap: 0;
-    padding-right: 0;
-    justify-content: stretch;
 }
 
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection .admin-selection__trigger-label {
+.admin-dashboard__settings-trigger {
+    width: var(--admin-control-height);
+    min-width: var(--admin-control-height);
+    padding-inline: 0 !important;
+    justify-content: center !important;
+}
+
+.admin-dashboard__selection .admin-selection__anchor,
+.admin-dashboard__selection .admin-selection__trigger {
+    width: auto;
     min-width: 0;
-    justify-self: end;
-    justify-content: flex-end;
-    padding-right: .25rem;
 }
 
-/* Dashboard keeps Settings + Selection as one visual utility cluster. The
- * selected-count badge remains terminal on the table checkbox axis, while the
- * Selection label/icon itself hugs the Settings control instead of floating
- * toward that terminal count rail. */
-.admin-dashboard__feed-controls .admin-selection__trigger-label {
-    justify-self: start;
+.admin-dashboard__selection .admin-selection__trigger {
+    display: inline-flex;
+    gap: .28rem;
+    padding-inline: .35rem !important;
     justify-content: flex-start;
-    padding-right: 0;
 }
 
-.admin-data-controls--six-cell > .admin-data-controls__utility--has-selection .admin-selection__count {
-    margin-left: 0;
-    justify-self: center;
-}
-
-/* Dashboard's heading may use the full compact group width; only the count
- * itself is constrained to the terminal table-selection rail. */
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child > .admin-data-control-label {
-    grid-column: 1 / -1;
-    padding-right: 0;
-}
-
-/* Narrow Dashboard density begins with the same semantic transition as the
- * three-metric strip. Utility controls contract in place; there is no spacer
- * track and no redistribution of Search width to empty regions. */
-@container admin-workspace (max-width: 64rem) {
-    .admin-dashboard__feed-controls {
-        --dashboard-feed-action-track: calc(var(--admin-control-height) + .55rem);
-        --dashboard-feed-action-group-width: 100%;
-        --dashboard-feed-selection-width: 4.25rem;
-        --dashboard-feed-group-gap: .55rem;
-        --dashboard-feed-column-gap: .35rem;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) > .admin-data-control-label,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child > .admin-data-control-label,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action__label,
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action {
-        width: var(--admin-control-height);
-        min-width: var(--admin-control-height);
-        max-width: var(--admin-control-height);
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-dashboard__feed-controls .admin-selection__trigger-label {
-        padding-right: 0;
-        justify-self: start;
-        justify-content: flex-start;
-    }
+.admin-dashboard__selection .admin-selection__trigger-label {
+    min-width: 0;
+    justify-content: flex-start;
 }
 
 @container admin-workspace (max-width: 38rem) {
-    .admin-dashboard__feed-controls {
-        --dashboard-feed-action-track: calc(var(--admin-control-height) + .45rem);
-        --dashboard-feed-group-gap: .45rem;
-        --dashboard-feed-column-gap: .3rem;
+    .admin-dashboard__feed-controls.admin-data-controls--six-cell {
+        grid-template-columns: minmax(0, 1fr) 6.5rem max-content;
+        column-gap: .45rem;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        margin-right: .25rem;
+    }
+
+    .admin-dashboard__selection .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-dashboard__selection .admin-selection__trigger {
+        width: var(--admin-control-height);
+        min-width: var(--admin-control-height);
+        padding-inline: 0 !important;
+        justify-content: center;
     }
 }

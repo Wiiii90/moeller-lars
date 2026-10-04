@@ -36,8 +36,7 @@
         </x-slot:filters>
 
         <x-slot:reset>
-            <div class="admin-data-control-group">
-                <span class="admin-data-control-label">Filter</span>
+            <div class="admin-data-control-group admin-dashboard__feed-clear">
                 <x-admin.clear-filters wire:click="resetFeed" />
             </div>
         </x-slot:reset>
@@ -45,16 +44,14 @@
         <x-slot:actions>
             <div class="admin-data-control-group">
                 <span class="admin-data-control-label">Dashboard</span>
-                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('dashboardSettings')">
+                <button class="admin-action admin-action--with-icon admin-dashboard__settings-trigger" type="button" wire:click="mountAction('dashboardSettings')" aria-label="Dashboard settings" title="Dashboard settings">
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">Settings</span>
                 </button>
             </div>
         </x-slot:actions>
 
         <x-slot:selection>
-            <div class="admin-data-control-group admin-selection" x-data="{ open: false }">
-                <span class="admin-data-control-label">Selection</span>
+            <div class="admin-data-control-group admin-selection admin-dashboard__selection" x-data="{ open: false }">
                 <div class="admin-selection__anchor">
                     <button
                         class="admin-action admin-selection__trigger"
@@ -62,10 +59,10 @@
                         x-on:click="open = ! open"
                         x-bind:aria-expanded="open"
                         aria-haspopup="menu"
+                        aria-label="Selection actions; {{ $selectedCount }} selected"
                         @disabled($selectedCount === 0)
                     >
-                        <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
-                        <span class="admin-selection__count">{{ $selectedCount }}</span>
+                        <x-admin.selection-trigger-label>Selection</x-admin.selection-trigger-label>
                     </button>
                     <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
                         <button class="admin-action" type="button" role="menuitem" wire:click="bulkPin" @disabled(! $selectionCapabilities['has_selection'])>Pin selected</button>

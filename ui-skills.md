@@ -168,7 +168,7 @@ A single selected-items button may expose a capability matrix.
 Rules:
 
 - selected count is visible;
-- when Selection controls an ordinary table or table-like hierarchy, it remains the terminal toolbar group and its circular selected-count badge is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it;
+- when Selection controls an ordinary table or table-like hierarchy, it normally remains the terminal toolbar group and its circular selected-count badge is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it; Dashboard feed is the documented exception and exposes count only accessibly while keeping the trigger compact;
 - the shared table contract reserves the terminal `--admin-table-selection-width` rail inside the Selection trigger for that badge; do not add page-local margins, padding nudges or duplicate trigger grids that move the badge off the checkbox axis;
 - the badge/checkbox axis is a desktop/table invariant until an intentional responsive breakpoint changes the composition; once controls or rows deliberately stack/reflow, exact cross-row pixel alignment may relax;
 - visual card/contact-sheet surfaces without one trailing table Selection column, such as Gallery, do not invent a fake column or axis merely to satisfy the table rule;
@@ -586,7 +586,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Tables may enter a narrower state earlier than metrics or stages because each component responds to its own available width.
 - **Metric separators are the preferred soft alignment grid.** On a page with a six-cell metric strip, toolbar regions and major table-column boundaries should align to the same 1/6 separators whenever semantics and fit allow. Deviate only when content needs it; do not invent arbitrary tracks while a clean metric boundary is available.
 - General Social Media uses the same six-cell ruler at Wide/Compact: Position + Drag + Platform end on 2/6, Profile URL ends on 4/6, Actions owns the final two cells. At narrower table widths Position/Drag become shared fixed rails, action labels collapse first, and Profile URL folds into Platform only at Minimal.
-- Dashboard feed controls use real content minima rather than fixed state quotas: Search owns all remaining width; Type is only as wide as its longest legitimate value/chrome requires; Clear stays intrinsic and complete; Dashboard + Selection form one compact terminal utility cluster separated from Query/Filter by only a small fixed group gap. Settings and the Selection label/icon remain visually adjacent; only the selected-count badge stretches to the terminal table-checkbox axis. Narrow/Minimal remove Dashboard/Selection text without making those utility icons drift apart. Shell collapse may force compact density but never promote it.
+- Dashboard feed controls use real content minima rather than fixed state quotas: Search owns all remaining width; Type keeps only a readable intrinsic width; Clear is intrinsic; Settings + Selection form one compact terminal cluster. Dashboard keeps its heading, while Filter and Selection do not render redundant headings. Settings is the gear icon immediately left of the bulk Selection trigger. Dashboard bulk Selection is the explicit table exception to the generic count-badge treatment: its trigger is icon + “Selection” with the selected count available to assistive text only; Minimal may reduce it to the icon. Shell collapse may force compact density but never promote it.
 - Dashboard table priority is fixed by content pressure, not one magic width: Action labels collapse before Title truncates; Sender yields next; Type + Date + Time then fold together into Title metadata before any of those values degrade into visible fragments. Folded metadata wraps whole values as needed and does not insert punctuation separators. Once folded, sidebar/burger collapse never unfolds it. Position/Drag, Title, Actions and terminal Selection remain explicit.
 - Pages/Custom Page hierarchies protect Position + Drag geometry centrally; their square position badges must never be clipped. Pages drops Template before Page type; Custom Page folds Component kind into Content before sacrificing identity.
 - Journal drops supportive media/publication/schedule columns before Status/Timing. Blog and Exhibitions keep their action rail icon-only before removing operational state.
@@ -622,7 +622,7 @@ Browser review must continuously resize through transition regions, not only che
 
 ## 22. CSS ownership
 
-The canonical theme entrypoint is `resources/css/admin.css`; feature modules live under `resources/css/admin/`.
+The canonical theme entrypoint is `resources/css/admin.css`; feature modules live under `resources/css/admin/`. The admin shell emits **only this one stylesheet entry**. Feature CSS must not also be linked as parallel Vite entries, and JavaScript runtimes must not import presentation CSS that changes initial layout after first paint.
 
 Before adding a selector, determine whether the rule belongs to:
 

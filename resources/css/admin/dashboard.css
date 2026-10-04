@@ -8,7 +8,8 @@
     gap: 0;
 }
 
-.admin-dashboard__overview-switcher {
+.admin-dashboard__overview-switcher,
+.admin-dashboard__overview-panel-toggle {
     display: none;
 }
 
@@ -365,14 +366,30 @@
             border-radius: .2rem;
         }
 
-        .admin-dashboard__overview-switcher .admin-action.is-active {
+        #dashboard-overview-storage:checked ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-storage"],
+        #dashboard-overview-activity:checked ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-activity"],
+        #dashboard-overview-analytics:checked ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-analytics"] {
             border-color: var(--admin-accent);
             background: transparent;
             color: var(--admin-accent-strong);
         }
 
-        .admin-dashboard__overview-column,
-        .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        .admin-dashboard__overview-panel-toggle {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            opacity: 0;
+        }
+
+        #dashboard-overview-storage:focus-visible ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-storage"],
+        #dashboard-overview-activity:focus-visible ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-activity"],
+        #dashboard-overview-analytics:focus-visible ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-analytics"] {
+            outline: 2px solid var(--admin-accent);
+            outline-offset: 2px;
+        }
+
+        .admin-dashboard__overview-column {
             display: none !important;
             min-width: 0;
             min-height: 0;
@@ -386,15 +403,21 @@
             box-shadow: none !important;
         }
 
-        .admin-dashboard__overview-column.is-compact-active {
+        #dashboard-overview-storage:checked ~ .admin-dashboard__overview-column--storage,
+        #dashboard-overview-activity:checked ~ .admin-dashboard__overview-column--activity,
+        #dashboard-overview-analytics:checked ~ .admin-dashboard__overview-column--analytics {
             display: grid !important;
         }
 
-        .admin-dashboard__overview-column.is-compact-active .admin-dashboard__overview-head {
+        #dashboard-overview-storage:checked ~ .admin-dashboard__overview-column--storage .admin-dashboard__overview-head,
+        #dashboard-overview-activity:checked ~ .admin-dashboard__overview-column--activity .admin-dashboard__overview-head,
+        #dashboard-overview-analytics:checked ~ .admin-dashboard__overview-column--analytics .admin-dashboard__overview-head {
             justify-content: flex-end;
         }
 
-        .admin-dashboard__overview-column.is-compact-active .admin-dashboard__overview-head > .admin-section__kicker {
+        #dashboard-overview-storage:checked ~ .admin-dashboard__overview-column--storage .admin-dashboard__overview-head > .admin-section__kicker,
+        #dashboard-overview-activity:checked ~ .admin-dashboard__overview-column--activity .admin-dashboard__overview-head > .admin-section__kicker,
+        #dashboard-overview-analytics:checked ~ .admin-dashboard__overview-column--analytics .admin-dashboard__overview-head > .admin-section__kicker {
             display: none;
         }
     }

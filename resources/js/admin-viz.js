@@ -1,5 +1,3 @@
-import '../css/admin/selects.css';
-import './admin-selects.js';
 import './admin-notifications.js';
 import './admin-action-titles.js';
 
