@@ -251,23 +251,6 @@
     text-align: center;
 }
 
-@container admin-workspace (max-width: 64rem) {
-    .admin-dashboard__fact-label--long { display: none; }
-    .admin-dashboard__fact-label--short { display: inline; }
-}
-
-@container admin-workspace (max-width: 64rem) {
-    .admin-dashboard__analytics-caption--long,
-    .admin-dashboard__analytics-fact-label--long {
-        display: none;
-    }
-
-    .admin-dashboard__analytics-caption--short,
-    .admin-dashboard__analytics-fact-label--short {
-        display: inline;
-    }
-}
-
 .admin-dashboard .admin-metrics {
     --admin-metric-columns: 6 !important;
     grid-auto-flow: row !important;
@@ -289,9 +272,21 @@
     .admin-dashboard__metric-detail--short { display: inline; }
 }
 
-/* Published Artworks is the longest retained label. Move atomically to the
- * semantic three-metric strip before that label itself starts to truncate. */
+/* Dashboard Narrow is one coherent presentation state: semantic metrics,
+ * compact stage copy and the three-pane stage all change density together. */
 @container admin-workspace (max-width: 64rem) {
+    .admin-dashboard__fact-label--long,
+    .admin-dashboard__analytics-caption--long,
+    .admin-dashboard__analytics-fact-label--long {
+        display: none;
+    }
+
+    .admin-dashboard__fact-label--short,
+    .admin-dashboard__analytics-caption--short,
+    .admin-dashboard__analytics-fact-label--short {
+        display: inline;
+    }
+
     .admin-dashboard .admin-metrics { --admin-metric-columns: 3 !important; }
     .admin-dashboard .admin-dashboard__metric--supportive { display: none !important; }
 
