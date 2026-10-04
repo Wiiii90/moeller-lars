@@ -772,7 +772,11 @@
     }
 
     .home-components-table__col-content{
-        width: calc(66.666667% - 4.75rem) !important;
+        width: auto !important;
+    }
+
+    .home-components-table__col-actions{
+        width: 7rem !important;
     }
 
     .general-social-table .general-social-table__col-url,
@@ -1629,7 +1633,7 @@
  * Custom intentionally have no Stage; their metric rule is the visual boundary.
  */
 
-@container admin-workspace (min-width: 30.01rem) and (max-width: 54rem){
+@container admin-workspace (max-width: 54rem){
     .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls){
         display: grid !important;
         grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
@@ -1638,11 +1642,11 @@
     }
 
     .admin-home-workspace .home-artwork-source-controls > :first-child{
-        grid-column: span 2 !important;
+        grid-column: span 1 !important;
     }
 
     .admin-home-workspace .home-component-controls > :first-child{
-        grid-column: span 3 !important;
+        grid-column: span 2 !important;
     }
 
     .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > :first-child{
@@ -1667,7 +1671,7 @@
     .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility{
         display: grid !important;
         min-width: 0 !important;
-        grid-column: span 2 !important;
+        grid-column: span 3 !important;
         grid-template-columns: 3.25rem minmax(0, 1fr) 7rem !important;
         gap: .12rem !important;
         align-items: end !important;
@@ -1697,6 +1701,29 @@
     }
 }
 
+@container admin-workspace (max-width: 50rem){
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions{
+        display: grid !important;
+        width: max-content !important;
+        max-width: 100%;
+        grid-template-columns: repeat(3, var(--admin-control-height));
+        gap: .15rem !important;
+        justify-content: start !important;
+    }
+
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action{
+        box-sizing: border-box;
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action__label{
+        display: none !important;
+    }
+}
+
 @container admin-workspace (max-width: 38rem){
     .admin-home-workspace .home-metric{
         display: none !important;
@@ -1706,25 +1733,24 @@
         display: block !important;
     }
 
-    .admin-home-workspace .home-workspace-actions{
-        display: grid !important;
-        width: max-content !important;
-        max-width: 100%;
-        grid-template-columns: repeat(3, var(--admin-control-height));
-        gap: .15rem !important;
-        justify-content: start !important;
-    }
-
-    .admin-home-workspace .home-workspace-actions .admin-action{
-        box-sizing: border-box;
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-home-workspace .home-workspace-actions .admin-action__label{
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-text{
         display: none !important;
+    }
+
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility{
+        grid-template-columns:
+            3.25rem
+            max-content
+            calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
+    }
+
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :last-child{
+        width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
+        min-width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
+    }
+
+    .admin-home-workspace :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-label{
+        justify-content: center;
     }
 }
 

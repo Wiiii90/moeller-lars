@@ -580,7 +580,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - Pages, Custom Page and Journal use elastic one-row toolbars: Search absorbs spare width down to one metric cell; filters and right-side utility controls consume only the width they need, with action labels collapsing to icons before data/filter controls are removed.
 - Gallery uses the same one-row principle in its custom toolbar; its Selection trigger still terminates on the shared Selection rail.
 - Analytics, Storage and Activity follow the same one-row rule. Analytics has Search + Report + Range; Storage and Activity keep all four filter controls, then compact Clear/View/Selection on the right. Their action labels collapse to icons before the row may wrap.
-- Home Hero Artwork, Under Construction and Custom use the same one-row pressure model. Settings + Add artwork/component + Preview remain complete through Burger/Narrow when space permits and collapse together to three compact icon slots only at Minimal workspace pressure; hiding the labels may not leave their former action width behind.
+- Home Hero Artwork, Under Construction and Custom use the same one-row pressure model. Burger itself leaves Settings + Add artwork/component + Preview readable and reallocates three metric cells to the trailing Clear / task-actions / Selection cluster. At genuine toolbar pressure (about 50rem workspace) those three task actions collapse together to fixed icon slots; at Minimal, Selection also compacts to icon + count while preserving the terminal checkbox axis. Every collapse must release its old width immediately. Skip Home is not part of this three-action geometry and keeps its own two-action toolbar.
 
 ### Tables and Selection
 
