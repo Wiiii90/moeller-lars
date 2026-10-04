@@ -24,5 +24,6 @@ it('keeps header controls and burger workspace on one shell geometry', function 
 
     expect($notifications)
         ->toContain('inset-inline-start: var(--admin-header-control-rail);')
-        ->toContain('inset-inline-end: var(--admin-header-control-rail);');
+        ->toContain('inset-inline-end: var(--admin-header-control-rail);')
+        ->not->toContain(".fi-topbar-end {\n        position: relative;");
 });

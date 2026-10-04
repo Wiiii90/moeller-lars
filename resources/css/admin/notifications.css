@@ -422,9 +422,10 @@
         margin-block: 0;
     }
 
+    /* Position is owned by layouts.css so Notification styling cannot
+     * move the User rail back onto Filament's default geometry. */
     .fi-topbar-end {
-        position: relative;
-        z-index: 2;
+        z-index: 40;
     }
 }
 
