@@ -99,9 +99,9 @@ Toolbar sizing is always **content minimum + shared ruler**:
 5. keep Selection terminal at the far right. Its selected-count circle reserves `--admin-table-selection-width` and stays on the exact same horizontal axis as the table select-all and row checkboxes;
 6. preserve full dropdown values and action labels whenever their calculated minimum fits. Ellipsis is an emergency fallback, not normal sizing;
 7. when full utility labels no longer fit, use the shared complete-label → icon-only/overflow transition before clipping, adding a second toolbar row or introducing horizontal scrolling;
-8. toolbar group headings are structural anchors. Query/Filter headings remain visible through Minimal; task/Selection headings may yield only at Minimal after their controls have already compacted to icons;
-9. Clear belongs to Query/Filter, not Task actions. Its full label is retained through Minimal unless the page-specific contract explicitly removes the whole filter/reset role;
-10. overlapping controls or headings are never a supported responsive state. Metric-grid toolbars use the six-cell ruler with 24 quarter-cell subtracks when needed; Search donates subdivisions only at the four named states, and filters are never continuously squeezed below their readable minimum.
+8. toolbar group headings are structural anchors. Query/Filter headings remain visible through Minimal. Task/Selection headings may yield at Narrow together with their action/value labels when doing so creates one stable icon cluster instead of a later collision state;
+9. Clear belongs to Query/Filter, not Task actions. Its full label is retained through Minimal when the calculated Query/Filter region can still fit it;
+10. overlapping controls or headings are never a supported responsive state. Metric-grid toolbars use the six-cell ruler with 24 quarter-cell subtracks when needed; Search donates subdivisions only at named state boundaries, filters gain space before their legitimate values become unreadable, and intentional empty ruler tracks may separate Query/Filter from a compact task/Selection icon cluster.
 
 Responsive metric presentation does not replace the underlying ruler. A visible three- or two-metric state still uses a refinable ruler from which six-/three-/two-column alignment can be reconstructed.
 

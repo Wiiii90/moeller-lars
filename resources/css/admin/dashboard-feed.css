@@ -120,9 +120,9 @@
 }
 
 /* Dashboard feed responsive table authority.
- * Wide keeps labels. Compact moves Actions + Selection to one ruler cell and
- * turns row actions icon-only. Narrow removes Sender. Minimal folds Type,
- * Date and Time into Title metadata before essential identity is squeezed. */
+ * Wide keeps labels. Compact turns the action rail icon-only. Narrow removes
+ * Sender. The table then folds Type/Date/Time into Title metadata at its own
+ * 44rem container threshold, before those columns become visibly unreadable. */
 @container admin-table (max-width: 62rem) {
     .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
         min-height: 2rem;
@@ -160,7 +160,7 @@
     display: none;
 }
 
-@container admin-table (max-width: 38rem) {
+@container admin-table (max-width: 44rem) {
     .admin-dashboard__feed-table col.admin-dashboard__col-type,
     .admin-dashboard__feed-table th.admin-dashboard__col-type,
     .admin-dashboard__feed-table td.admin-dashboard__col-type,
@@ -177,33 +177,36 @@
     }
 
     .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: calc(100% - 13.75rem) !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 6.5rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-title { width: calc(100% - 12.5rem) !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 5.25rem !important; }
 
     .admin-dashboard__feed-meta {
         display: flex;
         min-width: 0;
-        gap: .45rem;
+        gap: .08rem .42rem;
         margin-top: .16rem;
-        overflow: hidden;
+        align-items: baseline;
+        flex-wrap: wrap;
         color: var(--admin-muted);
         font-size: var(--admin-font-size-table-meta);
-        white-space: nowrap;
+        line-height: 1.25;
     }
 
     .admin-dashboard__feed-meta > * {
         min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        flex: 0 0 auto;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: nowrap;
     }
 
     .admin-dashboard__feed-table .admin-dashboard__feed-actions {
-        grid-template-columns: repeat(4, minmax(1.45rem, 1fr));
-        gap: .1rem !important;
+        grid-template-columns: repeat(4, minmax(1.15rem, 1fr));
+        gap: .05rem !important;
     }
 
     .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
-        min-width: 1.45rem;
+        min-width: 1.15rem;
         min-height: 2rem;
     }
 }
