@@ -336,7 +336,10 @@
     }
 
     .admin-dashboard__selection > .admin-selection__count {
-        width: var(--admin-table-selection-width);
+        box-sizing: border-box;
+        width: 1.35rem;
+        min-width: 1.35rem;
+        height: 1.35rem;
         grid-column: 4;
         grid-row: 2;
         margin-left: 0;

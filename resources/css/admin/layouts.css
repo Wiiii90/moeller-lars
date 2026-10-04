@@ -301,27 +301,19 @@ html.fi .fi-page:has(.admin-workspace) {
     }
 
     /*
-     * Filament centers page content inside the post-sidebar main area. That
-     * center is too far right by half the difference between Sidebar and User
-     * rail. Shift the visible workspace back toward the viewport center.
-     *
-     * The shift is clamped by the actual spare room in .fi-main, so it reaches
-     * exact viewport centering when there is room and smoothly gives way before
-     * the workspace could collide with Sidebar + canonical gutter.
+     * Filament centers .fi-main in the post-sidebar area. The accepted shell
+     * corrects that residual-area bias on the main frame itself so every page
+     * surface keeps its existing responsive width while its visual midpoint
+     * moves toward the whole viewport center.
      */
     html.fi .fi-main:has(.admin-workspace) {
-        --admin-workspace-center-shift: min(
-            max(
-                0rem,
-                calc(
-                    (
-                        100%
-                        - var(--admin-header-control-rail)
-                        - var(--admin-workspace-max-width)
-                        - var(--admin-workspace-gutter)
-                        - var(--admin-workspace-gutter)
-                    ) / 2
-                )
+        --admin-workspace-center-shift: clamp(
+            0rem,
+            calc(
+                50vw
+                - (var(--sidebar-width) / 2)
+                - (var(--admin-workspace-max-width) / 2)
+                - var(--admin-workspace-gutter)
             ),
             max(
                 0rem,
@@ -336,11 +328,7 @@ html.fi .fi-page:has(.admin-workspace) {
 
         padding-top: 0 !important;
         padding-right: var(--admin-header-control-rail) !important;
-    }
-
-    html.fi .fi-main:has(.admin-workspace) .admin-workspace {
-        position: relative;
-        inset-inline-start: calc(0rem - var(--admin-workspace-center-shift));
+        transform: translateX(calc(0rem - var(--admin-workspace-center-shift)));
     }
 
     .fi-sidebar-nav {
