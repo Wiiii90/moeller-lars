@@ -195,15 +195,22 @@
 
 /* Dashboard feed toolbar: real content minima + one terminal utility cluster.
  * Search owns every spare pixel. Type remains readable but never grows simply
- * because the workspace changes state. Selection keeps the final checkbox rail. */
+ * because the workspace changes state. Dashboard/Selection stay anchored at
+ * the terminal edge; compact density changes labels, not their ownership. */
 .admin-dashboard__feed-controls.admin-data-controls--six-cell {
+    --dashboard-feed-type-width: 7rem;
+    --dashboard-feed-action-track: max-content;
+    --dashboard-feed-action-group-width: max-content;
+    --dashboard-feed-selection-width: 6.25rem;
+    --dashboard-feed-group-gap: .65rem;
+    --dashboard-feed-column-gap: .45rem;
     grid-template-columns:
         minmax(0, 1fr)
-        7rem
+        var(--dashboard-feed-type-width)
         max-content
-        max-content
-        6.25rem;
-    column-gap: .45rem;
+        var(--dashboard-feed-action-track)
+        var(--dashboard-feed-selection-width);
+    column-gap: var(--dashboard-feed-column-gap);
 }
 
 .admin-dashboard__feed-controls.admin-data-controls--six-cell > :first-child {
@@ -218,42 +225,24 @@
     padding-right: 0;
 }
 
-.admin-dashboard__feed-controls.admin-data-controls--six-cell
-> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection {
-    display: contents;
-}
-
-.admin-dashboard__feed-controls.admin-data-controls--six-cell
-> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-> :first-child {
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
     width: max-content;
     grid-column: 3;
     justify-self: start;
 }
 
-.admin-dashboard__feed-controls.admin-data-controls--six-cell
-> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-> :nth-child(2) {
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
     box-sizing: border-box;
-    width: max-content;
+    width: var(--dashboard-feed-action-group-width);
     grid-column: 4;
-    padding-left: .65rem;
+    padding-left: var(--dashboard-feed-group-gap);
     justify-self: end;
 }
 
-.admin-dashboard__feed-controls.admin-data-controls--six-cell
-> .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-> :last-child {
-    width: 6.25rem;
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+    width: var(--dashboard-feed-selection-width);
     grid-column: 5;
     justify-self: stretch;
-}
-
-.admin-dashboard__feed-controls.admin-data-controls--six-cell
-> .admin-data-controls__utility--has-selection
-> :last-child > .admin-data-control-label {
-    grid-column: 1 / -1;
-    padding-right: 0;
 }
 
 .admin-data-controls--six-cell > .admin-data-controls__utility--has-selection > :last-child {
@@ -295,54 +284,32 @@
     justify-self: center;
 }
 
-/* Narrow Dashboard density. Task utilities collapse to icons in place:
- * no fractional spacer tracks, no icon migration, no Search sacrifice. */
+/* Dashboard's heading may use the full compact group width; only the count
+ * itself is constrained to the terminal table-selection rail. */
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child > .admin-data-control-label {
+    grid-column: 1 / -1;
+    padding-right: 0;
+}
+
+/* Narrow Dashboard density. Utility controls contract in place; there is no
+ * spacer track and no redistribution of Search width to empty regions. */
 @container admin-workspace (max-width: 54rem) {
-    .admin-dashboard__feed-controls.admin-data-controls--six-cell {
-        grid-template-columns:
-            minmax(0, 1fr)
-            7rem
-            max-content
-            calc(var(--admin-control-height) + .55rem)
-            4.25rem;
-        column-gap: .35rem;
+    .admin-dashboard__feed-controls {
+        --dashboard-feed-action-track: calc(var(--admin-control-height) + .55rem);
+        --dashboard-feed-action-group-width: 100%;
+        --dashboard-feed-selection-width: 4.25rem;
+        --dashboard-feed-group-gap: .55rem;
+        --dashboard-feed-column-gap: .35rem;
     }
 
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :nth-child(2) {
-        box-sizing: border-box;
-        width: 100%;
-        grid-column: 4;
-        padding-left: .55rem;
-        justify-self: stretch;
-    }
-
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-selection
-    > :last-child {
-        width: 4.25rem;
-        grid-column: 5;
-    }
-
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :nth-child(2) > .admin-data-control-label,
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-selection
-    > :last-child > .admin-data-control-label,
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions
-    > :nth-child(2) .admin-action__label,
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-selection
-    > :last-child .admin-selection__trigger-text {
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) > .admin-data-control-label,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child > .admin-data-control-label,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action__label,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child .admin-selection__trigger-text {
         display: none !important;
     }
 
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions
-    > :nth-child(2) .admin-action {
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action {
         width: var(--admin-control-height);
         min-width: var(--admin-control-height);
         max-width: var(--admin-control-height);
@@ -360,51 +327,22 @@
 /* Shell monotonicity: removing the sidebar can enlarge Search, but may never
  * resurrect Dashboard/Selection text after the product has entered Narrow. */
 @media (max-width: 63.99rem) {
-    .admin-dashboard__feed-controls.admin-data-controls--six-cell {
-        grid-template-columns:
-            minmax(0, 1fr)
-            7rem
-            max-content
-            calc(var(--admin-control-height) + .55rem)
-            4.25rem;
-        column-gap: .35rem;
+    .admin-dashboard__feed-controls {
+        --dashboard-feed-action-track: calc(var(--admin-control-height) + .55rem);
+        --dashboard-feed-action-group-width: 100%;
+        --dashboard-feed-selection-width: 4.25rem;
+        --dashboard-feed-group-gap: .55rem;
+        --dashboard-feed-column-gap: .35rem;
     }
 
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :nth-child(2) {
-        box-sizing: border-box;
-        width: 100%;
-        grid-column: 4;
-        padding-left: .55rem;
-        justify-self: stretch;
-    }
-
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-selection
-    > :last-child {
-        width: 4.25rem;
-        grid-column: 5;
-    }
-
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :nth-child(2) > .admin-data-control-label,
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-selection
-    > :last-child > .admin-data-control-label,
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions
-    > :nth-child(2) .admin-action__label,
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-selection
-    > :last-child .admin-selection__trigger-text {
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) > .admin-data-control-label,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child > .admin-data-control-label,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action__label,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child .admin-selection__trigger-text {
         display: none !important;
     }
 
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions
-    > :nth-child(2) .admin-action {
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) .admin-action {
         width: var(--admin-control-height);
         min-width: var(--admin-control-height);
         max-width: var(--admin-control-height);
@@ -420,19 +358,9 @@
 }
 
 @container admin-workspace (max-width: 38rem) {
-    .admin-dashboard__feed-controls.admin-data-controls--six-cell {
-        grid-template-columns:
-            minmax(0, 1fr)
-            7rem
-            max-content
-            calc(var(--admin-control-height) + .45rem)
-            4.25rem;
-        column-gap: .3rem;
-    }
-
-    .admin-dashboard__feed-controls
-    > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
-    > :nth-child(2) {
-        padding-left: .45rem;
+    .admin-dashboard__feed-controls {
+        --dashboard-feed-action-track: calc(var(--admin-control-height) + .45rem);
+        --dashboard-feed-group-gap: .45rem;
+        --dashboard-feed-column-gap: .3rem;
     }
 }
