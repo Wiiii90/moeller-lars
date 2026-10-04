@@ -111,7 +111,9 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
 
     expect($homeSettingsDialog)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')
-        ->toContain("->columns(['md' => 2])");
+        ->toContain("->columns(['md' => 2])")
+        ->toContain("->afterStateUpdated(function (\$livewire): void {")
+        ->toContain("persistMountedAdminEdit");
 
     expect(substr_count($artworkPreview, 'class="media-file-dialog__details"'))->toBe(1);
     expect(substr_count($mediaPreview, 'class="media-file-dialog__details '))->toBe(2);
