@@ -10,6 +10,10 @@
         ? $action
         : \App\Filament\Support\AdminRowAction::from((string) $action);
     $resolvedLabel = $label ?? $rowAction->label();
+    $actionAttributes = $attributes->merge([
+        'title' => $resolvedLabel,
+        'aria-label' => $resolvedLabel,
+    ]);
     $classes = [
         'admin-action',
         'admin-action--with-icon',
@@ -21,12 +25,12 @@
 @endphp
 
 @if ($href !== null)
-    <a href="{{ $href }}" {{ $attributes->class($classes) }}>
+    <a href="{{ $href }}" {{ $actionAttributes->class($classes) }}>
         <x-filament::icon :icon="$rowAction->icon()->mini()" class="admin-action__icon" />
         <span class="admin-action__label">{{ $resolvedLabel }}</span>
     </a>
 @else
-    <button type="button" {{ $attributes->class($classes) }} @disabled($disabled)>
+    <button type="button" {{ $actionAttributes->class($classes) }} @disabled($disabled)>
         <x-filament::icon :icon="$rowAction->icon()->mini()" class="admin-action__icon" />
         <span class="admin-action__label">{{ $resolvedLabel }}</span>
     </button>

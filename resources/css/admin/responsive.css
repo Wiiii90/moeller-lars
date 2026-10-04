@@ -1087,27 +1087,62 @@
         max-width: none;
     }
 
-    .home-source-table .home-source-table__candidates,
-    .home-source-table .home-source-table__artworks,
-    .home-source-table .home-source-table__year {
+    .home-source-table :is(
+        .home-source-table__candidates,
+        .home-source-table__artworks,
+        .home-source-table__year,
+        .home-source-table__col-candidates,
+        .home-source-table__col-artworks,
+        .home-source-table__col-year
+    ) {
         display: none;
+    }
+
+    .home-source-table__col-gallery {
+        width: var(--admin-table-two-units) !important;
+    }
+
+    .home-source-table__col-status,
+    .home-source-table__col-source {
+        width: var(--admin-table-one-unit) !important;
+    }
+
+    .home-source-table__col-actions {
+        width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)) !important;
     }
 
     .home-source-table .admin-row-actions {
         display: grid !important;
-        grid-template-columns: minmax(0, 1fr);
-        gap: .12rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .08rem;
     }
 
     .home-source-table .admin-action {
         width: 100%;
         min-width: 0;
         padding-inline: .2rem;
-        white-space: normal;
+        white-space: nowrap;
     }
 
-    .home-components-table .home-components-table__type {
+    .home-components-table .home-components-table__type,
+    .home-components-table .home-components-table__col-type {
         display: none;
+    }
+
+    .home-components-table__col-position {
+        width: 3rem !important;
+    }
+
+    .home-components-table__col-drag {
+        width: 2rem !important;
+    }
+
+    .home-components-table__col-content {
+        width: calc(66.666667% - 5rem) !important;
+    }
+
+    .home-components-table__col-actions {
+        width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)) !important;
     }
 
     .home-components-table .admin-responsive-meta,
@@ -1428,13 +1463,29 @@
         grid-auto-flow: row;
     }
 
-    .home-source-table .home-source-table__status,
-    .home-source-table .home-source-table__source {
+    .home-source-table :is(
+        .home-source-table__status,
+        .home-source-table__source,
+        .home-source-table__col-status,
+        .home-source-table__col-source
+    ) {
         display: none;
+    }
+
+    .home-source-table__col-gallery {
+        width: calc(var(--admin-table-two-units) + var(--admin-table-two-units)) !important;
     }
 
     .home-source-table .admin-responsive-meta {
         display: block;
+    }
+
+    .home-components-table__col-drag {
+        width: 1.75rem !important;
+    }
+
+    .home-components-table__col-content {
+        width: calc(66.666667% - 4.75rem) !important;
     }
 
     .general-social-table .general-social-table__col-url,
@@ -3085,6 +3136,92 @@
  * states and becomes preview-only at Narrow/Minimal. Under Construction and
  * Custom intentionally have no Stage; their metric rule is the visual boundary.
  */
+
+@container admin-workspace (min-width: 30.01rem) and (max-width: 54rem) {
+    .admin-home-workspace :is(
+        .home-artwork-source-controls,
+        .home-component-controls
+    ) {
+        display: grid !important;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        gap: 0 !important;
+        align-items: end !important;
+    }
+
+    .admin-home-workspace .home-artwork-source-controls > :first-child {
+        grid-column: span 2 !important;
+    }
+
+    .admin-home-workspace .home-component-controls > :first-child {
+        grid-column: span 3 !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-artwork-source-controls,
+        .home-component-controls
+    ) > :first-child {
+        width: 100% !important;
+        min-width: 0 !important;
+        padding-right: .45rem !important;
+        flex: none !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-artwork-source-controls,
+        .home-component-controls
+    ) > .admin-data-controls__filter-trigger {
+        display: none !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-artwork-source-controls,
+        .home-component-controls
+    ) > .admin-data-controls__filters {
+        display: contents !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-artwork-source-controls,
+        .home-component-controls
+    ) > .admin-data-controls__filters > * {
+        grid-column: span 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        padding-right: .45rem !important;
+        flex: none !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-artwork-source-controls,
+        .home-component-controls
+    ) > .admin-data-controls__utility {
+        display: grid !important;
+        min-width: 0 !important;
+        grid-column: span 2 !important;
+        grid-template-columns: 3.25rem minmax(0, 1fr) 7rem !important;
+        gap: .12rem !important;
+        align-items: end !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-artwork-source-controls,
+        .home-component-controls
+    ) > .admin-data-controls__utility > * {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
+        padding-inline: 0 !important;
+        flex: none !important;
+    }
+
+    .admin-home-workspace :is(
+        .home-artwork-source-controls,
+        .home-component-controls
+    ) .admin-selection__trigger {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}
 
 @container admin-workspace (max-width: 62rem) {
     .admin-home-workspace .home-workspace-actions .admin-action__label {

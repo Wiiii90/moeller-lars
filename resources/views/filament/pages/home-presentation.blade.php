@@ -194,8 +194,18 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-data-table home-source-table">
+            <x-admin.table class="admin-data-table admin-table--six-grid home-source-table">
                 <table>
+                    <colgroup>
+                        <col class="admin-table__col-one-unit home-source-table__col-gallery">
+                        <col class="admin-table__col-one-unit home-source-table__col-candidates">
+                        <col class="admin-table__col-half-unit home-source-table__col-status">
+                        <col class="admin-table__col-half-unit home-source-table__col-source">
+                        <col class="admin-table__col-half-unit home-source-table__col-artworks">
+                        <col class="admin-table__col-half-unit home-source-table__col-year">
+                        <col class="home-source-table__col-actions">
+                        <col class="admin-table__selection-col home-source-table__col-selection">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th scope="col">Gallery</th>
@@ -373,8 +383,16 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-data-table admin-table--ranked home-components-table">
+            <x-admin.table class="admin-data-table admin-table--ranked admin-table--six-grid home-components-table">
                 <table>
+                    <colgroup>
+                        <col class="admin-table__col-quarter-unit home-components-table__col-position">
+                        <col class="admin-table__col-quarter-unit home-components-table__col-drag">
+                        <col class="admin-table__col-one-unit home-components-table__col-type">
+                        <col class="home-components-table__col-content">
+                        <col class="home-components-table__col-actions">
+                        <col class="admin-table__selection-col home-components-table__col-selection">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
