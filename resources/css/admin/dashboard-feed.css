@@ -117,7 +117,11 @@
     display: grid !important;
     width: 100%;
     min-width: 0;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns:
+        minmax(0, .9fr)
+        minmax(0, 1fr)
+        minmax(0, 1.2fr)
+        minmax(0, 1.05fr);
     gap: 0 !important;
     align-items: center;
 }
@@ -147,7 +151,11 @@
 
 /* Action labels yield before Title starts paying for them. Supporting columns
  * become content-sized rails and Title receives the full remainder. */
-@container admin-table (max-width: 68rem) {
+@container admin-table (max-width: 72rem) {
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
     .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
         min-height: 2rem;
         padding-inline: 0 !important;
