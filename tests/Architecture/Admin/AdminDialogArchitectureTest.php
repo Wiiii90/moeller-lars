@@ -48,6 +48,9 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $activityCommitDialog = file_get_contents($root.'/resources/views/filament/pages/partials/activity-commit-details-dialog.blade.php');
     $homeWorkspace = file_get_contents($root.'/app/Filament/Pages/HomePresentation.php');
     $homeSettingsDialog = file_get_contents($root.'/app/Filament/Support/HomeSettingsDialog.php');
+    $artworkEditDialog = file_get_contents($root.'/app/Filament/Support/ArtworkEditDialog.php');
+    $galleryArtworkDialogs = file_get_contents($root.'/app/Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php');
+    $homeView = file_get_contents($root.'/resources/views/filament/pages/home-presentation.blade.php');
     $artworkPreview = file_get_contents($root.'/resources/views/filament/resources/artworks/partials/preview-dialog.blade.php');
     $mediaPreview = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/preview-dialog.blade.php');
 
@@ -114,6 +117,28 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain("->columns(['md' => 2])")
         ->toContain("->afterStateUpdated(function (\$livewire): void {")
         ->toContain("persistMountedAdminEdit");
+
+    expect($artworkEditDialog)
+        ->toContain('final class ArtworkEditDialog')
+        ->toContain('public function fill(Artwork $artwork): array')
+        ->toContain('public function schema(): array')
+        ->toContain('public function save(Artwork $artwork, array $data): bool');
+
+    expect($galleryArtworkDialogs)
+        ->toContain('app(ArtworkEditDialog::class)')
+        ->toContain('->schema($dialog->schema())')
+        ->not->toContain('ArtworkDimensions::split');
+
+    expect($homeWorkspace)
+        ->toContain('app(ArtworkEditDialog::class)')
+        ->toContain("Action::make('editArtwork')")
+        ->toContain('use WithFileUploads;')
+        ->not->toContain("ArtworkResource::getUrl('edit'");
+
+    expect($homeView)
+        ->toContain("mountAction('editArtwork', { artwork:")
+        ->toContain('AdminRowAction::Edit')
+        ->not->toContain("candidate['edit_url']");
 
     expect(substr_count($artworkPreview, 'class="media-file-dialog__details"'))->toBe(1);
     expect(substr_count($mediaPreview, 'class="media-file-dialog__details '))->toBe(2);

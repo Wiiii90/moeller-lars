@@ -246,13 +246,27 @@
                                 <td class="home-source-table__candidates">
                                     <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
                                         @forelse ($gallery['candidates'] as $candidate)
-                                            <a href="{{ $candidate['edit_url'] }}" wire:navigate title="{{ $candidate['title'] }} · {{ $candidate['year'] ?: '—' }}" aria-label="Edit {{ $candidate['title'] }}">
-                                                @if ($candidate['thumbnail_url'])
-                                                    <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
-                                                @else
-                                                    <span>—</span>
-                                                @endif
-                                            </a>
+                                            <span class="home-source-candidate">
+                                                <button
+                                                    class="home-source-candidate__preview"
+                                                    type="button"
+                                                    wire:click="mountAction('editArtwork', { artwork: {{ $candidate['id'] }} })"
+                                                    title="Edit {{ $candidate['title'] }}"
+                                                    aria-label="Edit {{ $candidate['title'] }}"
+                                                >
+                                                    @if ($candidate['thumbnail_url'])
+                                                        <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                                    @else
+                                                        <span>—</span>
+                                                    @endif
+                                                </button>
+                                                <x-admin.row-action
+                                                    class="home-source-candidate__edit"
+                                                    :action="\App\Filament\Support\AdminRowAction::Edit"
+                                                    wire:click="mountAction('editArtwork', { artwork: {{ $candidate['id'] }} })"
+                                                    aria-label="Edit {{ $candidate['title'] }}"
+                                                />
+                                            </span>
                                         @empty
                                             <span class="home-source-candidates__empty">—</span>
                                         @endforelse
