@@ -195,8 +195,9 @@
 
 /* Dashboard feed toolbar: Search owns all spare width. Type is bounded by
  * readable content; Clear is intrinsic; Dashboard + Selection are one compact
- * terminal cluster. Dashboard keeps its heading, while Filter/Selection do not
- * spend a second row on redundant headings. */
+ * terminal cluster. Dashboard keeps its heading; Filter/Selection headings stay
+ * removed. Settings and Selection keep labels until Narrow, then collapse in
+ * place to icons while the independent count remains on the checkbox axis. */
 .admin-dashboard__feed-controls.admin-data-controls--six-cell {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 7.75rem max-content;
@@ -229,35 +230,76 @@
     margin-right: .45rem;
 }
 
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
-.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
     width: max-content;
     min-width: 0;
 }
 
 .admin-dashboard__settings-trigger {
-    width: var(--admin-control-height);
-    min-width: var(--admin-control-height);
-    padding-inline: 0 !important;
-    justify-content: center !important;
+    width: auto;
+    min-width: 0;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
 }
 
-.admin-dashboard__selection .admin-selection__anchor,
-.admin-dashboard__selection .admin-selection__trigger {
+.admin-dashboard__selection {
+    display: grid;
+    width: max-content;
+    min-width: 0;
+    grid-template-columns: max-content var(--admin-table-selection-width);
+    column-gap: 0;
+    align-items: end;
+}
+
+.admin-dashboard__selection .admin-selection__anchor {
     width: auto;
     min-width: 0;
 }
 
 .admin-dashboard__selection .admin-selection__trigger {
-    display: inline-flex;
-    gap: .28rem;
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0;
+    gap: .28rem !important;
     padding-inline: .35rem !important;
-    justify-content: flex-start;
+    justify-content: flex-start !important;
 }
 
 .admin-dashboard__selection .admin-selection__trigger-label {
     min-width: 0;
     justify-content: flex-start;
+}
+
+.admin-dashboard__selection > .admin-selection__count {
+    grid-column: 2;
+    margin-left: 0;
+    align-self: center;
+    justify-self: center;
+}
+
+@container admin-workspace (max-width: 64rem) {
+    .admin-dashboard__settings-trigger {
+        width: var(--admin-control-height);
+        min-width: var(--admin-control-height);
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-dashboard__settings-trigger .admin-action__label,
+    .admin-dashboard__selection .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-dashboard__selection .admin-selection__trigger {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height);
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        margin-right: .3rem;
+    }
 }
 
 @container admin-workspace (max-width: 38rem) {
@@ -267,17 +309,6 @@
     }
 
     .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-        margin-right: .25rem;
-    }
-
-    .admin-dashboard__selection .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    .admin-dashboard__selection .admin-selection__trigger {
-        width: var(--admin-control-height);
-        min-width: var(--admin-control-height);
-        padding-inline: 0 !important;
-        justify-content: center;
+        margin-right: .2rem;
     }
 }

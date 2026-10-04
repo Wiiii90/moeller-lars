@@ -44,8 +44,9 @@
         <x-slot:actions>
             <div class="admin-data-control-group">
                 <span class="admin-data-control-label">Dashboard</span>
-                <button class="admin-action admin-action--with-icon admin-dashboard__settings-trigger" type="button" wire:click="mountAction('dashboardSettings')" aria-label="Dashboard settings" title="Dashboard settings">
+                <button class="admin-action admin-action--with-icon admin-dashboard__settings-trigger" type="button" wire:click="mountAction('dashboardSettings')" aria-label="Dashboard settings">
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">Settings</span>
                 </button>
             </div>
         </x-slot:actions>
@@ -76,6 +77,7 @@
                         @endif
                     </div>
                 </div>
+                <span class="admin-selection__count" aria-label="{{ $selectedCount }} selected">{{ $selectedCount }}</span>
             </div>
         </x-slot:selection>
     </x-admin.controls>
