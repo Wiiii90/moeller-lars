@@ -278,9 +278,40 @@
 }
 
 @media (max-width: 63.99rem) {
+    .admin-dashboard__feed-controls > .admin-data-controls__utility {
+        grid-template-columns:
+            max-content
+            var(--admin-control-height)
+            var(--admin-control-height)
+            var(--admin-table-selection-width);
+        grid-template-rows: auto var(--admin-control-height);
+        column-gap: .15rem;
+        align-items: end;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        grid-column: 1;
+        grid-row: 2;
+        margin-right: .3rem;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > .admin-dashboard__selection {
+        display: contents;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) > .admin-data-control-label {
+        grid-column: 2 / 5;
+        grid-row: 1;
+        min-width: 0;
+        white-space: nowrap;
+    }
+
     .admin-dashboard__settings-trigger {
         width: var(--admin-control-height);
         min-width: var(--admin-control-height);
+        grid-column: 2;
+        grid-row: 2;
         padding-inline: 0 !important;
         justify-content: center !important;
     }
@@ -290,6 +321,13 @@
         display: none !important;
     }
 
+    .admin-dashboard__selection .admin-selection__anchor {
+        width: var(--admin-control-height);
+        min-width: var(--admin-control-height);
+        grid-column: 3;
+        grid-row: 2;
+    }
+
     .admin-dashboard__selection .admin-selection__trigger {
         width: var(--admin-control-height) !important;
         min-width: var(--admin-control-height);
@@ -297,8 +335,13 @@
         justify-content: center !important;
     }
 
-    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
-        margin-right: .3rem;
+    .admin-dashboard__selection > .admin-selection__count {
+        width: var(--admin-table-selection-width);
+        grid-column: 4;
+        grid-row: 2;
+        margin-left: 0;
+        align-self: center;
+        justify-self: center;
     }
 }
 

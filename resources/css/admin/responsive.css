@@ -248,7 +248,7 @@
 
 @media (max-width: 63.99rem){
     :is(
-        .admin-row-actions,
+        .admin-row-actions:not(.admin-dashboard__feed-actions),
         .activity-actions-cell .admin-toolbar,
         .media-workspace__row-actions,
         .journal-row-actions,
@@ -260,7 +260,7 @@
     }
 
     :is(
-        .admin-row-actions,
+        .admin-row-actions:not(.admin-dashboard__feed-actions),
         .activity-actions-cell .admin-toolbar,
         .media-workspace__row-actions,
         .journal-row-actions,

@@ -344,7 +344,7 @@
             grid-template-columns: minmax(0, 1fr) !important;
             grid-template-rows: auto minmax(0, 1fr) !important;
             height: var(--admin-visual-stage-height) !important;
-            overflow: hidden !important;
+            overflow: visible !important;
             background: none !important;
         }
 
@@ -357,9 +357,11 @@
             display: grid !important;
             grid-row: 1;
             grid-template-columns: repeat(3, minmax(0, 1fr));
+            z-index: 3;
             gap: .25rem;
             padding: .25rem 0;
             border-bottom: 1px solid var(--admin-line);
+            transform: translateY(-.625rem);
         }
 
         .admin-dashboard__overview-switcher .admin-action {
