@@ -416,7 +416,7 @@
      * action labels may disappear, and Selection remains the terminal fixed
      * rail. Wrapping into a second toolbar row is not a supported state. */
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) {
@@ -428,7 +428,7 @@
     }
 
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > :first-child {
@@ -439,12 +439,12 @@
     }
 
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__filters,
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__utility {
@@ -452,7 +452,7 @@
     }
 
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__filters > * {
@@ -463,7 +463,7 @@
     }
 
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__utility--has-reset > :first-child {
@@ -473,12 +473,12 @@
     }
 
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child {
@@ -488,7 +488,7 @@
     }
 
     :is(
-        .admin-data-controls,
+        .admin-data-controls:not(.admin-data-controls--six-cell),
         .admin-task-controls--pages,
         .custom-page-workspace__controls
     ) > .admin-data-controls__utility--has-selection > :last-child {
@@ -1458,7 +1458,7 @@
 /* Ultra-narrow toolbars remain one row. Filter fields may collapse behind one
  * local presentation-only trigger to free horizontal space. */
 @container admin-workspace (max-width: 30rem) {
-    .admin-data-controls:has(> .admin-data-controls__filters) {
+    .admin-data-controls:not(.admin-data-controls--six-cell):has(> .admin-data-controls__filters) {
         position: relative;
     }
 

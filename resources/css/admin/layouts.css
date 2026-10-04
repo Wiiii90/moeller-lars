@@ -289,6 +289,7 @@ html.fi select option:disabled {
  * therefore receives the exact same vertical inset below the topbar. */
 .fi-main:has(.admin-workspace) {
     padding-top: 0 !important;
+    padding-right: var(--admin-header-control-rail) !important;
 }
 
 .fi-page:has(.admin-workspace) {
@@ -312,7 +313,7 @@ html.fi select option:disabled {
      * the workspace/Notification width. */
     html.fi .fi-main:has(.admin-workspace) {
         box-sizing: border-box;
-        padding-inline: var(--admin-header-control-rail) !important;
+        padding-left: var(--admin-header-control-rail) !important;
     }
 
     /* Filament normally swaps the Burger for an X in the same topbar slot.

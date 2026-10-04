@@ -25,6 +25,9 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
 
     expect($css)
         ->toContain('grid-template-columns: repeat(6, minmax(0, 1fr));')
+        ->toContain('grid-template-rows: auto;')
+        ->toContain('grid-column: 5 / span 2;')
+        ->toContain('grid-row: 1;')
         ->toContain('.custom-page-workspace__controls')
         ->toContain('.journal-workspace__entries > .admin-data-controls')
         ->toContain(".admin-data-controls__utility {\n    display: contents;")
