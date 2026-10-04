@@ -108,34 +108,29 @@
 }
 
 .admin-dashboard__feed-table col.admin-dashboard__col-actions {
-    width: calc(25% - var(--admin-table-selection-width));
+    width: 18rem;
 }
 
-/* Dashboard row actions have two states only: full labels while they fit
- * without stealing identity space, then one stable four-icon rail. */
+/* Dashboard row actions use intrinsic controls with one shared gap. Labels are
+ * never clipped into fragments and icon spacing is identical for all four
+ * actions. Burger switches the same rail to four equally spaced icon slots. */
 .admin-dashboard__feed-table .admin-dashboard__feed-actions {
-    display: grid !important;
-    width: 100%;
+    display: inline-grid !important;
+    width: max-content;
+    max-width: 100%;
     min-width: 0;
-    grid-template-columns:
-        minmax(0, .9fr)
-        minmax(0, 1fr)
-        minmax(0, 1.2fr)
-        minmax(0, 1.05fr);
-    gap: 0 !important;
+    grid-template-columns: repeat(4, max-content);
+    gap: .7rem !important;
     align-items: center;
+    justify-content: start;
 }
 
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
-    width: 100%;
+    width: max-content;
     min-width: 0;
-    padding-inline: .22rem;
+    padding-inline: 0;
     justify-content: flex-start !important;
-    overflow: hidden;
-}
-
-.admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action:first-child {
-    padding-left: 0;
+    overflow: visible;
 }
 
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__icon {
@@ -144,7 +139,7 @@
 
 .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__label {
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
     text-overflow: clip;
     white-space: nowrap;
 }
@@ -160,10 +155,10 @@
     .admin-dashboard__feed-table col.admin-dashboard__col-time { width: 4.5rem !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-sender { width: 5rem !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 14.25rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 18rem !important; }
 }
 
-@container admin-table (max-width: 50rem) {
+@container admin-table (max-width: 60rem) {
     .admin-dashboard__feed-table col.admin-dashboard__col-sender,
     .admin-dashboard__feed-table th.admin-dashboard__col-sender,
     .admin-dashboard__feed-table td.admin-dashboard__col-sender {
@@ -177,7 +172,7 @@
 
 /* Fold support metadata as one semantic step before any value becomes a text
  * fragment. Whole Type/Date/Time values may wrap as units below Title. */
-@container admin-table (max-width: 48rem) {
+@container admin-table (max-width: 54rem) {
     .admin-dashboard__feed-table col.admin-dashboard__col-type,
     .admin-dashboard__feed-table th.admin-dashboard__col-type,
     .admin-dashboard__feed-table td.admin-dashboard__col-type,
@@ -195,7 +190,7 @@
 
     .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 14.25rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 18rem !important; }
 
     .admin-dashboard__feed-meta {
         display: flex;
@@ -221,7 +216,15 @@
 /* Burger-shell monotonicity. The sidebar disappearing may give Title breathing
  * room, but never resurrects Sender or already-folded metadata columns. */
 @media (max-width: 63.99rem) {
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions {
+        width: max-content;
+        grid-template-columns: repeat(4, 1.35rem);
+        gap: .45rem !important;
+    }
+
     .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
+        width: 1.35rem;
+        min-width: 1.35rem;
         min-height: 2rem;
         padding-inline: 0 !important;
         justify-content: center !important;
@@ -249,7 +252,7 @@
     .admin-dashboard__feed-table .admin-dashboard__col-position { width: 3rem !important; }
     .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 6.5rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 7rem !important; }
 
     .admin-dashboard__feed-meta {
         display: flex;

@@ -417,21 +417,9 @@
     .admin-header-notification {
         width: auto;
         max-width: none;
-        inset-inline-start: calc(
-            var(--sidebar-width)
-            + var(--admin-workspace-gutter)
-            + max(
-                0rem,
-                calc(
-                    (
-                        100%
-                        - var(--sidebar-width)
-                        - var(--admin-workspace-gutter)
-                        - var(--admin-header-control-rail)
-                        - var(--admin-workspace-max-width)
-                    ) / 2
-                )
-            )
+        inset-inline-start: max(
+            calc(var(--sidebar-width) + var(--admin-workspace-gutter)),
+            calc((100% - var(--admin-workspace-max-width)) / 2)
         );
         inset-inline-end: var(--admin-header-control-rail);
         margin-block: 0;

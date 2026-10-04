@@ -306,17 +306,21 @@ html.fi .fi-page:has(.admin-workspace) {
     }
 
     /*
-     * Desktop centers the workspace inside one safe main area. The sidebar side
-     * keeps the canonical 2rem gutter; the viewport side reserves the complete
-     * 4rem User rail. The badge can therefore never overlap content, while the
-     * 80rem workspace still centers instead of being pinned to either edge.
+     * Desktop workspace is centered on the viewport, not on the residual area
+     * to the right of the sidebar. The live width shrinks only when necessary
+     * to keep the same global left/right margin outside the sidebar. This gives
+     * true viewport centering without ever entering the navigation or User rail.
+     *
+     * .fi-main already excludes --sidebar-width, so:
+     * viewport = 100% + sidebar
+     * centered safe width = viewport - 2 * (sidebar + gutter)
      */
     html.fi .fi-main:has(.admin-workspace) {
         box-sizing: border-box;
         width: 100%;
         max-width: none !important;
         margin: 0 !important;
-        padding: 0 var(--admin-header-control-rail) 0 var(--admin-workspace-gutter) !important;
+        padding: 0 !important;
     }
 
     html.fi .fi-page:has(.admin-workspace) {
@@ -328,9 +332,27 @@ html.fi .fi-page:has(.admin-workspace) {
 
     html.fi .fi-main:has(.admin-workspace) .admin-workspace {
         box-sizing: border-box;
-        width: 100%;
+        width: min(
+            var(--admin-workspace-max-width),
+            calc(
+                100%
+                - var(--sidebar-width)
+                - var(--admin-workspace-gutter)
+                - var(--admin-workspace-gutter)
+            )
+        );
         max-width: var(--admin-workspace-max-width);
-        margin-inline: auto;
+        margin-inline-start: max(
+            var(--admin-workspace-gutter),
+            calc(
+                (
+                    100%
+                    - var(--sidebar-width)
+                    - var(--admin-workspace-max-width)
+                ) / 2
+            )
+        );
+        margin-inline-end: auto;
     }
 
     .fi-sidebar-nav {
