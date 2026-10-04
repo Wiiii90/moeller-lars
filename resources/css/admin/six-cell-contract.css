@@ -1,8 +1,8 @@
 /* Canonical metric-backed toolbar geometry.
  *
- * The visual ruler remains six equal workspace cells. Metric-grid toolbars use
- * 24 subtracks (4 per cell) so real control minima can be fitted without
- * inventing arbitrary page-local widths. The toolbar is always one row.
+ * The visual ruler remains six equal workspace cells. Generic metric-grid
+ * toolbars use 24 subtracks (4 per cell); content-minimum exceptions may replace
+ * that internal track math without changing the one-row toolbar contract.
  *
  * Dashboard is the content-minimum exception inside this shared owner. Search
  * absorbs every spare pixel; Type and Clear consume only readable intrinsic
