@@ -199,11 +199,11 @@
 .admin-dashboard__feed-controls.admin-data-controls--six-cell {
     grid-template-columns:
         minmax(0, 1fr)
-        6.75rem
+        6.5rem
         max-content
         .75rem
         max-content
-        8.5rem;
+        7.25rem;
     column-gap: .55rem;
 }
 
@@ -241,7 +241,7 @@
 .admin-dashboard__feed-controls.admin-data-controls--six-cell
 > .admin-data-controls__utility--has-reset.admin-data-controls__utility--has-actions.admin-data-controls__utility--has-selection
 > :last-child {
-    width: 8.5rem;
+    width: 7.25rem;
     grid-column: 6;
     justify-self: stretch;
 }
@@ -291,11 +291,11 @@
     .admin-dashboard__feed-controls.admin-data-controls--six-cell {
         grid-template-columns:
             minmax(0, 1fr)
-            6.75rem
+            6.5rem
             max-content
             .55rem
             var(--admin-control-height)
-            4.75rem;
+            4.5rem;
         column-gap: .4rem;
     }
 
@@ -337,11 +337,11 @@
     .admin-dashboard__feed-controls.admin-data-controls--six-cell {
         grid-template-columns:
             minmax(0, 1fr)
-            6.75rem
+            6.5rem
             max-content
             .55rem
             var(--admin-control-height)
-            4.75rem;
+            4.5rem;
         column-gap: .4rem;
     }
 
@@ -381,11 +381,11 @@
     .admin-dashboard__feed-controls.admin-data-controls--six-cell {
         grid-template-columns:
             minmax(0, 1fr)
-            6.75rem
+            6.5rem
             max-content
             .35rem
             var(--admin-control-height)
-            4.5rem;
+            4.25rem;
         column-gap: .3rem;
     }
 }
