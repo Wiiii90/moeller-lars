@@ -1099,11 +1099,10 @@
     }
 
     .home-source-table__col-gallery {
-        width: var(--admin-table-two-units) !important;
+        width: 50% !important;
     }
 
-    .home-source-table__col-status,
-    .home-source-table__col-source {
+    .home-source-table__col-status {
         width: var(--admin-table-one-unit) !important;
     }
 
@@ -1465,9 +1464,7 @@
 
     .home-source-table :is(
         .home-source-table__status,
-        .home-source-table__source,
-        .home-source-table__col-status,
-        .home-source-table__col-source
+        .home-source-table__col-status
     ) {
         display: none;
     }

@@ -198,9 +198,8 @@
                 <table>
                     <colgroup>
                         <col class="admin-table__col-one-unit home-source-table__col-gallery">
-                        <col class="admin-table__col-one-unit home-source-table__col-candidates">
+                        <col class="admin-table__col-one-half-units home-source-table__col-candidates">
                         <col class="admin-table__col-half-unit home-source-table__col-status">
-                        <col class="admin-table__col-half-unit home-source-table__col-source">
                         <col class="admin-table__col-half-unit home-source-table__col-artworks">
                         <col class="admin-table__col-half-unit home-source-table__col-year">
                         <col class="home-source-table__col-actions">
@@ -211,7 +210,6 @@
                             <th scope="col">Gallery</th>
                             <th scope="col" class="home-source-table__candidates">Candidates</th>
                             <th scope="col" class="home-source-table__status">Status</th>
-                            <th scope="col" class="home-source-table__source">Source</th>
                             <th scope="col" class="home-source-table__artworks">Artworks</th>
                             <th scope="col" class="home-source-table__year">Newest Year</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
@@ -241,7 +239,7 @@
                             <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
                                 <td class="admin-table__identity">
                                     <strong>{{ $gallery['name'] }}</strong>
-                                    <small class="admin-responsive-meta">{{ $gallery['status_label'] }} · {{ $gallery['source_label'] }} · {{ number_format($gallery['published_artworks']) }} artworks · {{ $gallery['newest_year'] ?: '—' }}</small>
+                                    <small class="admin-responsive-meta">{{ $gallery['status_label'] }} · {{ number_format($gallery['published_artworks']) }} artworks · {{ $gallery['newest_year'] ?: '—' }}</small>
                                 </td>
                                 <td class="home-source-table__candidates">
                                     <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
@@ -273,7 +271,6 @@
                                     </div>
                                 </td>
                                 <td class="home-source-table__status"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
-                                <td class="home-source-table__source"><span class="admin-status {{ $gallery['effective_enabled'] ? 'is-published' : '' }}">{{ $gallery['source_label'] }}</span></td>
                                 <td class="home-source-table__artworks">{{ number_format($gallery['published_artworks']) }}</td>
                                 <td class="home-source-table__year">{{ $gallery['newest_year'] ?: '—' }}</td>
                                 <td class="admin-table__actions">
@@ -297,7 +294,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="8">
+                                <td class="admin-table__empty-cell" colspan="7">
                                     @if ($sourceHasRecords)
                                         <x-admin.empty-state title="No matching Galleries" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">Clear filters</button></x-slot:actions>

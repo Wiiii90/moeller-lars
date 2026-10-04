@@ -745,15 +745,12 @@ final class HomePresentation extends Page
             $section = $gallery->getRelationValue('siteSection');
             $state = (string) ($section?->getAttribute('state') ?? 'hidden');
             $preference = (bool) $gallery->getAttribute('show_on_home');
-            $effective = $preference && $state === 'published';
             $galleryCandidates = $candidates->get((int) $gallery->getKey(), collect());
 
             return [
                 'id' => (int) $gallery->getKey(),
                 'name' => (string) $gallery->getAttribute('name'),
                 'preference_enabled' => $preference,
-                'effective_enabled' => $effective,
-                'source_label' => $effective ? 'Enabled' : ($preference ? 'Unavailable' : 'Disabled'),
                 'state' => $state,
                 'status_label' => $state === 'published' ? 'Published' : 'Unpublished',
                 'published_artworks' => (int) $gallery->getAttribute('published_artworks_count'),
