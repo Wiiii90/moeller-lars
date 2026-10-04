@@ -119,18 +119,16 @@
     white-space: nowrap;
 }
 
-@container admin-table (max-width: 62rem) {
-    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-}
-
 /* Dashboard feed responsive table authority.
  * Dashboard-specific semantic column folding lives here only.
  * Shared table-contract.css still owns common Position/Drag/Selection rails;
  * responsive.css owns only cross-table behavior such as icon-only actions. */
 @container admin-table (max-width: 62rem) {
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
     .admin-dashboard__feed-table .admin-dashboard__col-position {
         width: 3rem !important;
     }

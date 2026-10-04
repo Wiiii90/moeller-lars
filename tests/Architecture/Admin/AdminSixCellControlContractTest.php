@@ -61,6 +61,7 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('grid-template-columns: repeat(4, minmax(0, 1fr));')
         ->toContain('/* Dashboard feed responsive table authority.')
         ->toContain('@container admin-table (max-width: 62rem)')
+        ->toContain('.admin-dashboard__feed-actions .admin-action')
         ->toContain('col.admin-dashboard__col-actions')
         ->toContain('calc(var(--admin-table-one-unit) - var(--admin-table-selection-width))')
         ->toContain('@container admin-table (max-width: 50rem)')
