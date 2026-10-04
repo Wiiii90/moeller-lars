@@ -278,9 +278,20 @@
     padding-left: 0 !important;
 }
 
-/* The longest six-metric detail is the real content minimum; yield before the
- * constrained desktop state can truncate it, while retaining a clean Compact strip. */
-@container admin-workspace (max-width: 66rem) {
+.admin-dashboard__metric-detail--short {
+    display: none;
+}
+
+/* Compact keeps all six metrics, but shortens the one detail whose prose would
+ * otherwise consume the cell before the metric labels themselves need to yield. */
+@container admin-workspace (max-width: 72rem) {
+    .admin-dashboard__metric-detail--long { display: none; }
+    .admin-dashboard__metric-detail--short { display: inline; }
+}
+
+/* Published Artworks is the longest retained label. Move atomically to the
+ * semantic three-metric strip before that label itself starts to truncate. */
+@container admin-workspace (max-width: 64rem) {
     .admin-dashboard .admin-metrics { --admin-metric-columns: 3 !important; }
     .admin-dashboard .admin-dashboard__metric--supportive { display: none !important; }
 

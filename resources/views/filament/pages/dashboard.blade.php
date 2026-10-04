@@ -9,12 +9,20 @@
                         'recent changes' => 'changes',
                         default => 'supportive',
                     };
+                    $isPublishedPagesMetric = strtolower((string) $metric['label']) === 'published pages';
                 @endphp
                 <x-admin.metric
                     :label="$metric['label']"
                     :value="$metric['value']"
-                    class="admin-dashboard__metric admin-dashboard__metric--{{ $metricRole }}"
-                >{{ $metric['detail'] }}</x-admin.metric>
+                    class="admin-dashboard__metric admin-dashboard__metric--{{ $metricRole }} {{ $isPublishedPagesMetric ? 'admin-dashboard__metric--pages' : '' }}"
+                >
+                    @if ($isPublishedPagesMetric)
+                        <span class="admin-dashboard__metric-detail--long">{{ $metric['detail'] }}</span>
+                        <span class="admin-dashboard__metric-detail--short">Nav groups excluded</span>
+                    @else
+                        {{ $metric['detail'] }}
+                    @endif
+                </x-admin.metric>
             @endforeach
         </x-admin.metrics>
 
