@@ -25,7 +25,9 @@
 }
 
 .home-components-table__col-content {
-    width: calc(var(--admin-table-two-units) + var(--admin-table-half-unit));
+    /* Position + Drag use the same fixed 3rem + 2rem rails as Journal.
+     * Content absorbs that fixed width so Actions still begin exactly at 4/6. */
+    width: calc(50% - 5rem);
 }
 
 .home-source-table .admin-row-actions {

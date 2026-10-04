@@ -386,8 +386,8 @@
             <x-admin.table class="admin-data-table admin-table--ranked admin-table--six-grid home-components-table">
                 <table>
                     <colgroup>
-                        <col class="admin-table__col-quarter-unit home-components-table__col-position">
-                        <col class="admin-table__col-quarter-unit home-components-table__col-drag">
+                        <col class="admin-table__col-position home-components-table__col-position">
+                        <col class="admin-table__col-drag home-components-table__col-drag">
                         <col class="admin-table__col-one-unit home-components-table__col-type">
                         <col class="home-components-table__col-content">
                         <col class="home-components-table__col-actions">
@@ -422,7 +422,12 @@
                             <tr wire:key="home-component-{{ $template }}-{{ $homeComponent['target'] }}" @if ($reorderEnabled) wire:sort:item="{{ $homeComponent['target'] }}" @endif>
                                 <td class="admin-table__position"><span class="admin-position">{{ str_pad((string) $homeComponent['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
                                 <td class="admin-table__drag">
-                                    <button class="admin-drag-handle" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $homeComponent['type_label'] }}">⋮⋮</button>
+                                    <button
+                                        class="admin-drag-handle"
+                                        type="button"
+                                        @if ($reorderEnabled) wire:sort:handle title="Drag to reorder" @else disabled title="Clear search/filter to reorder" @endif
+                                        aria-label="Drag {{ $homeComponent['type_label'] }} to reorder"
+                                    >⋮⋮</button>
                                 </td>
                                 <td class="home-components-table__type">{{ $homeComponent['type_label'] }}</td>
                                 <td class="admin-table__identity">
