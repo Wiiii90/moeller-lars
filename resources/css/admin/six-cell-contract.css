@@ -354,8 +354,20 @@
 
 @container admin-workspace (max-width: 38rem) {
     .admin-task-controls--pages.admin-data-controls--six-cell {
-        grid-template-columns: minmax(4rem, 1fr) 5rem 6rem max-content;
-        column-gap: .35rem;
+        grid-template-columns: minmax(3rem, 1fr) minmax(4.5rem, max-content) minmax(5.75rem, max-content) max-content;
+        column-gap: .2rem;
+    }
+
+    .admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__utility {
+        column-gap: .05rem;
+    }
+
+    .admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__utility > :first-child {
+        margin-right: .15rem;
+    }
+
+    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions {
+        gap: .05rem !important;
     }
 }
 
