@@ -26,7 +26,6 @@
                 if (this.allowedPanes.includes(stored)) this.activePane = stored
             } catch (_) {}
 
-            this.sync()
         },
         selectPane(pane) {
             if (! this.allowedPanes.includes(pane)) return
@@ -37,10 +36,6 @@
                 window.sessionStorage.setItem(this.storageKey, pane)
             } catch (_) {}
 
-            this.sync()
-        },
-        sync() {
-            this.$el.parentElement?.setAttribute('data-active-pane', this.activePane)
         },
     }"
 >
