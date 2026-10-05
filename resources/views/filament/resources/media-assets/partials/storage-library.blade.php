@@ -273,10 +273,10 @@
                             <col class="media-workspace__col-preview">
                         @endif
                         <col class="media-workspace__col-media">
-                        <col class="media-workspace__col-type">
-                        <col class="media-workspace__col-size">
-                        <col class="media-workspace__col-usage">
-                        <col class="media-workspace__col-status">
+                        <col class="media-workspace__col-type admin-table__yield--minimal">
+                        <col class="media-workspace__col-size admin-table__yield--narrow">
+                        <col class="media-workspace__col-usage admin-table__yield--compact">
+                        <col class="media-workspace__col-status admin-table__yield--narrow">
                         <col class="media-workspace__col-actions">
                         <col class="media-workspace__col-selection">
                     </colgroup>
@@ -286,10 +286,10 @@
                                 <th scope="col" class="media-workspace__thumb-head">Preview</th>
                             @endif
                             <th scope="col" class="media-workspace__media-head">Media</th>
-                            <th scope="col" class="media-workspace__type-head">Type</th>
-                            <th scope="col" class="media-workspace__size-head">Size</th>
-                            <th scope="col" class="media-workspace__usage-head">Used in</th>
-                            <th scope="col" class="media-workspace__status-head">Status</th>
+                            <th scope="col" class="media-workspace__type-head admin-table__yield--minimal">Type</th>
+                            <th scope="col" class="media-workspace__size-head admin-table__yield--narrow">Size</th>
+                            <th scope="col" class="media-workspace__usage-head admin-table__yield--compact">Used in</th>
+                            <th scope="col" class="media-workspace__status-head admin-table__yield--narrow">Status</th>
                             <th scope="col" class="media-workspace__actions-head admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="media-workspace__selection-head media-workspace__selection-head--trailing">
                                 <input
@@ -347,12 +347,12 @@
                                     </small>
                                     <small class="admin-responsive-meta">{{ $asset['type_label'] }} · {{ $asset['size'] }}</small>
                                 </td>
-                                <td class="media-workspace__type-cell">
+                                <td class="media-workspace__type-cell admin-table__yield--minimal">
                                     <strong class="media-workspace__type">{{ $asset['type_label'] }}</strong>
                                     @if ($asset['dimensions'])<small>{{ $asset['dimensions'] }}</small>@endif
                                 </td>
-                                <td class="media-workspace__size media-workspace__size-cell">{{ $asset['size'] }}</td>
-                                <td class="media-workspace__usage-cell">
+                                <td class="media-workspace__size media-workspace__size-cell admin-table__yield--narrow">{{ $asset['size'] }}</td>
+                                <td class="media-workspace__usage-cell admin-table__yield--compact">
                                     @if ($asset['references'] === [])
                                         <span class="media-workspace__unreferenced">Unreferenced</span>
                                     @else
@@ -369,10 +369,10 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td class="media-workspace__status-cell">
+                                <td class="media-workspace__status-cell admin-table__yield--narrow">
                                     <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
                                 </td>
-                                <td class="media-workspace__actions">
+                                <td class="media-workspace__actions admin-table__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--four-static admin-toolbar media-workspace__row-actions">
                                         <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon media-workspace__action-icon" />
