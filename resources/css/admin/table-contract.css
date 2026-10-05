@@ -309,10 +309,15 @@
 }
 
 .admin-table__selection--trailing,
-.admin-hierarchy__selection--trailing,
 .media-workspace__selection-head--trailing,
 .media-workspace__selection-cell--trailing {
-    padding-right: var(--admin-table-edge-inset) !important;
+    padding-inline: 0 !important;
+    text-align: center !important;
+}
+
+.admin-hierarchy__selection--trailing {
+    padding-inline: 0 !important;
+    justify-items: center !important;
 }
 
 /* Selection-axis contract: x-admin.controls renders Selection last. For
