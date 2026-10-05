@@ -258,7 +258,7 @@
     justify-self: start;
 }
 
-@container admin-workspace (max-width: 72rem) {
+@container admin-workspace (max-width: 64rem) {
     .admin-data-controls--dashboard-responsive {
         column-gap: .35rem;
     }
