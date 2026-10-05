@@ -128,6 +128,14 @@ At an intentional responsive breakpoint where controls or the table stack/reflow
 
 Tables use the shared semantic width states **Wide**, **Compact**, **Narrow** and **Minimal**, but transition according to the table container's actual available width rather than a device label or a metric breakpoint.
 
+Supportive columns declare their pressure priority with the shared table classes rather than feature-local hide rules:
+
+- `.admin-table__yield--compact` disappears at Compact pressure;
+- `.admin-table__yield--narrow` disappears at Narrow pressure;
+- `.admin-table__yield--minimal` disappears only at Minimal pressure.
+
+Apply the same declaration to the matching `<col>`, header cell and body cells so one semantic column changes atomically. Feature CSS may still size surviving content columns, but must not duplicate the visibility breakpoint. Actions and the terminal Selection rail never use a yield class.
+
 - Wide: full important data and action labels.
 - Compact: supportive data may merge into primary cells; actions may become icon-only.
 - Narrow: optional columns disappear; identity, essential state/actions and Selection remain.
