@@ -445,6 +445,17 @@
     }
 }
 
+@container admin-table (max-width: 56rem){
+    .home-source-table :is(.home-source-table__candidates, .home-source-table__artworks, .home-source-table__year, .home-source-table__col-candidates, .home-source-table__col-artworks, .home-source-table__col-year){
+        display: none !important;
+    }
+
+    .home-source-table__col-gallery{ width: auto !important; }
+    .home-source-table__col-status{ width: 7rem !important; }
+    .home-source-table__col-actions{ width: 18rem !important; }
+    .home-source-table .admin-responsive-meta{ display: block; }
+}
+
 /* Table-specific Narrow reduction. */
 @container admin-table (max-width: 50rem){
 
@@ -489,37 +500,6 @@
     .general-social-table__actions .admin-toolbar{
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         max-width: none;
-    }
-
-    .home-source-table :is(.home-source-table__candidates, .home-source-table__artworks, .home-source-table__year, .home-source-table__col-candidates, .home-source-table__col-artworks, .home-source-table__col-year){
-        display: none;
-    }
-
-    .home-source-table__col-gallery{
-        width: 50% !important;
-    }
-
-    .home-source-table__col-status{
-        width: var(--admin-table-one-unit) !important;
-    }
-
-    .home-source-table__col-actions{
-        width: 13.5rem !important;
-    }
-
-    .home-source-table .admin-row-actions{
-        display: grid !important;
-        width: 13rem !important;
-        grid-template-columns: 5.25rem 7.25rem !important;
-        gap: .5rem !important;
-        justify-content: start !important;
-    }
-
-    .home-source-table .admin-action{
-        width: 100%;
-        min-width: 0;
-        padding-inline: .2rem;
-        white-space: nowrap;
     }
 
     .home-components-table .home-components-table__type,
@@ -730,9 +710,8 @@
         display: none;
     }
 
-    .home-source-table__col-gallery{
-        width: calc(var(--admin-table-two-units) + var(--admin-table-two-units)) !important;
-    }
+    .home-source-table__col-gallery{ width: auto !important; }
+    .home-source-table__col-actions{ width: 18rem !important; }
 
     .home-source-table .admin-responsive-meta{
         display: block;

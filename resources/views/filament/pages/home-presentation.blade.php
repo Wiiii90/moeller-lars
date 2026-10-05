@@ -259,12 +259,6 @@
                                                         <span>—</span>
                                                     @endif
                                                 </button>
-                                                <x-admin.row-action
-                                                    class="home-source-candidate__edit"
-                                                    :action="\App\Filament\Support\AdminRowAction::Edit"
-                                                    wire:click="mountAction('editArtwork', { artwork: {{ $candidate['id'] }} })"
-                                                    aria-label="Edit {{ $candidate['title'] }}"
-                                                />
                                             </span>
                                         @empty
                                             <span class="home-source-candidates__empty">—</span>
@@ -275,13 +269,26 @@
                                 <td class="home-source-table__artworks">{{ number_format($gallery['published_artworks']) }}</td>
                                 <td class="home-source-table__year">{{ $gallery['newest_year'] ?: '—' }}</td>
                                 <td class="admin-table__actions">
-                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar home-source-table__row-actions">
+                                        <div class="home-source-table__candidate-actions" aria-label="Edit candidate artworks from {{ $gallery['name'] }}">
+                                            @foreach ($gallery['candidates'] as $candidate)
+                                                <x-admin.row-action
+                                                    class="home-source-table__candidate-edit-action"
+                                                    :action="\App\Filament\Support\AdminRowAction::Edit"
+                                                    wire:click="mountAction('editArtwork', { artwork: {{ $candidate['id'] }} })"
+                                                    aria-label="Edit {{ $candidate['title'] }}"
+                                                    title="Edit {{ $candidate['title'] }}"
+                                                />
+                                            @endforeach
+                                        </div>
                                         <x-admin.row-action
+                                            class="home-source-table__eligibility-action"
                                             :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
                                             :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"
                                             wire:click="toggleGalleryEligibility({{ $gallery['id'] }})"
                                         />
                                         <x-admin.row-action
+                                            class="home-source-table__open-action"
                                             :action="\App\Filament\Support\AdminRowAction::Open"
                                             label="Open Gallery"
                                             :href="$gallery['workspace_url']"

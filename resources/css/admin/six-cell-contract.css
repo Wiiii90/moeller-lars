@@ -208,11 +208,11 @@
 }
 
 .home-artwork-source-controls.admin-data-controls--six-cell {
-    grid-template-columns: minmax(5rem, 1fr) 7rem 8.5rem max-content;
+    grid-template-columns: minmax(4.25rem, 1fr) minmax(5rem, 7rem) minmax(5.5rem, 8.5rem) max-content;
 }
 
 .home-component-controls.admin-data-controls--six-cell {
-    grid-template-columns: minmax(5rem, 1fr) 7rem max-content;
+    grid-template-columns: minmax(4.25rem, 1fr) minmax(5rem, 7rem) max-content;
 }
 
 :is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell > :first-child {
@@ -346,6 +346,80 @@
 
     :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action__label {
         display: none !important;
+    }
+}
+
+@media (max-width: 63.99rem) {
+    @container admin-workspace (max-width: 50rem) {
+        :is(.home-artwork-source-controls, .home-component-controls) {
+            column-gap: .35rem;
+        }
+
+        .home-artwork-source-controls.admin-data-controls--six-cell {
+            grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 5rem) minmax(4.75rem, 5.5rem) max-content;
+        }
+
+        .home-component-controls.admin-data-controls--six-cell {
+            grid-template-columns: minmax(0, 1fr) minmax(4.75rem, 5.5rem) max-content;
+        }
+
+        :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility {
+            display: grid !important;
+            width: max-content;
+            grid-template-columns: max-content repeat(4, var(--admin-control-height)) var(--admin-table-selection-width);
+            grid-template-rows: auto var(--admin-control-height);
+            column-gap: .15rem;
+            align-items: end;
+            justify-self: end;
+        }
+
+        :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :first-child {
+            grid-column: 1;
+            grid-row: 2;
+            margin-right: .2rem;
+        }
+
+        :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :nth-child(2),
+        :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > .admin-selection {
+            display: contents !important;
+        }
+
+        :is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :nth-child(2) > .admin-data-control-label {
+            grid-column: 2 / 5;
+            grid-row: 1;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
+            display: contents !important;
+        }
+
+        :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions > :nth-child(1) { grid-column: 2; grid-row: 2; }
+        :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions > :nth-child(2) { grid-column: 3; grid-row: 2; }
+        :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions > :nth-child(3) { grid-column: 4; grid-row: 2; }
+
+        :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__anchor {
+            width: var(--admin-control-height);
+            min-width: var(--admin-control-height);
+            grid-column: 5;
+            grid-row: 2;
+        }
+
+        :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger {
+            width: var(--admin-control-height) !important;
+            min-width: var(--admin-control-height) !important;
+            padding-inline: 0 !important;
+            justify-content: center !important;
+        }
+
+        :is(.home-artwork-source-controls, .home-component-controls) .admin-selection > .admin-selection__count {
+            grid-column: 6;
+            grid-row: 2;
+            margin-left: 0;
+            align-self: center;
+            justify-self: center;
+        }
     }
 }
 
