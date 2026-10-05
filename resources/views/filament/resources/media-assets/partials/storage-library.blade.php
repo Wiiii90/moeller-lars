@@ -93,9 +93,9 @@
         <x-slot:actions>
             <div class="admin-data-control-group media-workspace__view-group">
                 <span class="admin-data-control-label">View</span>
-                <div class="media-workspace__view-options" role="group" aria-label="Media view">
+                <div class="media-workspace__view-options admin-editorial-actions" role="group" aria-label="Media view">
                     <button
-                        class="media-workspace__view-option {{ $viewMode === 'list' ? 'is-active' : '' }}"
+                        class="admin-action media-workspace__view-option {{ $viewMode === 'list' ? 'is-active' : '' }}"
                         type="button"
                         wire:click="setViewMode('list')"
                         aria-label="List"
@@ -103,9 +103,10 @@
                         aria-pressed="{{ $viewMode === 'list' ? 'true' : 'false' }}"
                     >
                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewList->mini()" class="media-workspace__view-icon" />
+                        <span class="admin-action__label">List</span>
                     </button>
                     <button
-                        class="media-workspace__view-option {{ $viewMode === 'grid' ? 'is-active' : '' }}"
+                        class="admin-action media-workspace__view-option {{ $viewMode === 'grid' ? 'is-active' : '' }}"
                         type="button"
                         wire:click="setViewMode('grid')"
                         aria-label="Grid"
@@ -113,9 +114,10 @@
                         aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}"
                     >
                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewGrid->mini()" class="media-workspace__view-icon" />
+                        <span class="admin-action__label">Grid</span>
                     </button>
                     <button
-                        class="media-workspace__view-option {{ $viewMode === 'dense' ? 'is-active' : '' }}"
+                        class="admin-action media-workspace__view-option {{ $viewMode === 'dense' ? 'is-active' : '' }}"
                         type="button"
                         wire:click="setViewMode('dense')"
                         aria-label="Dense"
@@ -123,6 +125,7 @@
                         aria-pressed="{{ $viewMode === 'dense' ? 'true' : 'false' }}"
                     >
                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewDense->mini()" class="media-workspace__view-icon" />
+                        <span class="admin-action__label">Dense</span>
                     </button>
                 </div>
             </div>
