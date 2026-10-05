@@ -194,6 +194,162 @@
 }
 
 
+/* Pages uses the same content-minimum metric-backed toolbar grammar as
+ * Dashboard/Home. Search owns spare width, Type/Status keep readable minima,
+ * Clear remains a normal intrinsic query action, Pages actions compact only
+ * under genuine workspace pressure, and Selection terminates on the checkbox
+ * rail. */
+.admin-task-controls--pages.admin-data-controls--six-cell {
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(5rem, 1fr) 7rem 7rem max-content;
+    grid-template-rows: auto;
+    column-gap: .65rem;
+    align-items: end;
+}
+
+.admin-task-controls--pages.admin-data-controls--six-cell > :first-child {
+    min-width: 0 !important;
+    width: 100% !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    padding-right: 0 !important;
+}
+
+.admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__filters {
+    display: contents !important;
+}
+
+.admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    padding-inline: 0 !important;
+}
+
+.admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__filters > :nth-child(2) {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    padding-inline: 0 !important;
+}
+
+.admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__utility {
+    display: grid !important;
+    width: max-content;
+    min-width: 0;
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    grid-template-columns: max-content max-content max-content;
+    column-gap: .15rem;
+    align-items: end;
+    justify-self: end;
+    padding-right: 0 !important;
+}
+
+.admin-task-controls--pages > .admin-data-controls__utility > :first-child {
+    width: max-content !important;
+    min-width: 0 !important;
+    margin-right: .35rem;
+    padding-right: 0 !important;
+}
+
+.admin-task-controls--pages > .admin-data-controls__utility > :nth-child(2) {
+    width: max-content !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+}
+
+.admin-task-controls--pages .admin-task-control-actions {
+    gap: .15rem;
+}
+
+.admin-task-controls--pages .admin-task-control-actions > .admin-action {
+    width: auto;
+    min-width: 0;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
+}
+
+.admin-task-controls--pages .admin-pages__selection {
+    display: grid;
+    width: max-content !important;
+    min-width: 0 !important;
+    grid-template-columns: max-content var(--admin-table-selection-width);
+    align-items: end;
+    padding-right: 0 !important;
+}
+
+.admin-task-controls--pages .admin-pages__selection .admin-selection__anchor {
+    width: auto;
+    min-width: 0;
+    grid-column: 1;
+}
+
+.admin-task-controls--pages .admin-pages__selection .admin-selection__trigger {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    grid-template-columns: none !important;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
+}
+
+.admin-task-controls--pages .admin-pages__selection > .admin-selection__count {
+    box-sizing: border-box;
+    width: 1.35rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    margin-left: 0;
+    grid-column: 2;
+    align-self: center;
+    justify-self: center;
+}
+
+@media (max-width: 63.99rem) {
+    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+}
+
+@container admin-workspace (max-width: 50rem) {
+    .admin-task-controls--pages .admin-task-control-actions {
+        display: grid !important;
+        width: max-content !important;
+        grid-template-columns: repeat(2, var(--admin-control-height));
+        gap: .15rem !important;
+    }
+
+    .admin-task-controls--pages .admin-task-control-actions > .admin-action {
+        box-sizing: border-box;
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-task-controls--pages .admin-task-control-actions > .admin-action .admin-action__label {
+        display: none !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-task-controls--pages.admin-data-controls--six-cell {
+        grid-template-columns: minmax(4rem, 1fr) 5rem 6rem max-content;
+        column-gap: .35rem;
+    }
+}
+
 /* Home editable templates use the same terminal-cluster geometry as Dashboard.
  * Search absorbs spare width; filters keep readable widths; Clear is intrinsic;
  * the active-template actions are adjacent; Selection is icon/label plus a
