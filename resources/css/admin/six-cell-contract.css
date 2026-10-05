@@ -108,7 +108,8 @@
 
 /* Shared Dashboard-derived responsive toolbar grammar.
  *
- * Pages, Home, Gallery, Journal and Custom Page all keep one structural model:
+ * Pages, Home, Gallery, Journal, Custom Page, Storage, Activity and Analytics
+ * all keep one structural model:
  * Search is elastic; filters keep readable fixed widths; Clear is intrinsic;
  * task actions form one adjacent cluster; Selection is terminal with a separate
  * count. Under real pressure the task cluster and Selected label collapse in
