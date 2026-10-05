@@ -299,7 +299,7 @@
             </div>
 
             <div class="admin-visual-stage-followup">
-                <x-admin.controls class="activity-workspace__controls" aria-label="Activity controls">
+                <x-admin.controls class="activity-workspace__controls admin-data-controls--dashboard-responsive" aria-label="Activity controls" metric-grid :filter-count="4" :search-span="2">
                     <x-slot:search>
                         <label class="admin-data-field activity-control--search">
                             <span>Search</span>
@@ -363,7 +363,7 @@
                     <x-slot:actions>
                         <div class="admin-data-control-group activity-control--view">
                             <span class="admin-data-control-label">View</span>
-                            <div class="admin-toolbar" role="group" aria-label="Activity table view">
+                            <div class="admin-toolbar admin-editorial-actions" role="group" aria-label="Activity table view">
                                 <button
                                     class="admin-action admin-action--with-icon {{ $viewMode === 'activity' ? 'is-primary' : '' }}"
                                     type="button"
@@ -411,7 +411,6 @@
                                     @disabled($selectedCount === 0)
                                 >
                                     <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
-                                    <span class="admin-selection__count">{{ $selectedCount }}</span>
                                 </button>
 
                                 <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
@@ -448,6 +447,7 @@
                                     <button class="admin-action" type="button" role="menuitem" wire:click="clearSelection" x-on:click="open = false" @disabled($selectedCount === 0)>Clear selection</button>
                                 </div>
                             </div>
+                            <span class="admin-selection__count" aria-label="{{ $selectedCount }} selected">{{ $selectedCount }}</span>
                         </div>
                     </x-slot:selection>
                 </x-admin.controls>
