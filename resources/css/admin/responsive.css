@@ -359,7 +359,7 @@
     }
 
     .home-source-table__col-gallery{ width: auto !important; }
-    .home-source-table__col-actions{ width: 3.45rem !important; }
+    .home-source-table__col-actions{ width: 3.15rem !important; }
 
     .home-source-table .admin-row-actions-heading{
         --admin-row-actions-width: 3.15rem;
@@ -378,7 +378,7 @@
     }
 
     .home-components-table__col-actions{
-        width: 7rem !important;
+        width: 6.75rem !important;
     }
 
     .home-components-table .admin-row-actions-heading{
@@ -590,7 +590,7 @@
     }
 
     .general-social-table .general-social-table__col-actions{
-        width: 5.25rem !important;
+        width: 4.95rem !important;
     }
 
     .general-social-table .admin-row-actions-heading{
@@ -767,7 +767,7 @@
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
-        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem);
+        --admin-hierarchy-actions-column: var(--admin-row-actions-move-state-delete-compact-width);
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
@@ -808,7 +808,7 @@
  * before operational Status/Timing yields. */
 @container admin-table (max-width: 64rem){
     .journal-table col.journal-table__actions--blog{
-        width: calc(var(--admin-row-actions-journal-blog-compact-width) + .35rem) !important;
+        width: var(--admin-row-actions-journal-blog-compact-width) !important;
     }
 
     .journal-table--blog .admin-row-actions-heading{
@@ -816,20 +816,11 @@
     }
 
     .journal-table col.journal-table__actions--exhibitions{
-        width: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem) !important;
+        width: var(--admin-row-actions-move-state-delete-compact-width) !important;
     }
 
     .journal-table--exhibitions .admin-row-actions-heading{
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
-    }
-
-    .journal-table--blog .journal-col--visual,
-    .journal-table--blog .journal-col--publication{
-        display: none !important;
-    }
-
-    .journal-table--exhibitions .journal-col--schedule{
-        display: none !important;
     }
 
     .journal-table .admin-responsive-meta{
@@ -1002,12 +993,6 @@
 
 /* ---------- Storage table ---------- */
 @container admin-table (max-width: 64rem){
-    .admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
-    .admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
-    .admin-storage .media-workspace__table-wrap .media-workspace__usage-cell{
-        display: none !important;
-    }
-
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview{ width: 4.5rem !important; }
     .admin-storage .media-workspace__col-media{ width: auto !important; }
     .admin-storage .media-workspace__col-type{ width: 6rem !important; }
@@ -1017,25 +1002,13 @@
 }
 
 @container admin-table (max-width: 38rem){
-    .admin-storage .media-workspace__table-wrap .media-workspace__col-type,
-    .admin-storage .media-workspace__table-wrap .media-workspace__col-size,
-    .admin-storage .media-workspace__table-wrap .media-workspace__col-status,
-    .admin-storage .media-workspace__table-wrap .media-workspace__type-head,
-    .admin-storage .media-workspace__table-wrap .media-workspace__size-head,
-    .admin-storage .media-workspace__table-wrap .media-workspace__status-head,
-    .admin-storage .media-workspace__table-wrap .media-workspace__type-cell,
-    .admin-storage .media-workspace__table-wrap .media-workspace__size-cell,
-    .admin-storage .media-workspace__table-wrap .media-workspace__status-cell{
-        display: none !important;
-    }
-
     .admin-storage .media-workspace__identity .admin-responsive-meta{
         display: block !important;
     }
 
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview{ width: 4rem !important; }
     .admin-storage .media-workspace__col-media{ width: auto !important; }
-    .admin-storage .media-workspace__col-actions{ width: 7.05rem !important; }
+    .admin-storage .media-workspace__col-actions{ width: 6.75rem !important; }
 
     .admin-storage .media-workspace__actions-head .admin-row-actions-heading{
         --admin-row-actions-width: 6.75rem;
@@ -1044,13 +1017,6 @@
 
 /* ---------- Activity tables ---------- */
 @container admin-table (max-width: 64rem){
-    .activity-events-table .activity-col--who,
-    .activity-events-table .activity-col--publication,
-    .activity-commits-table .activity-commit-col--who,
-    .activity-commits-table .activity-commit-col--publication{
-        display: none !important;
-    }
-
     .activity-events-table .activity-col--change{ width: 20% !important; }
     .activity-events-table .activity-col--when{ width: 7rem !important; }
     .activity-events-table .activity-col--target{ width: auto !important; }
@@ -1069,19 +1035,14 @@
 }
 
 @container admin-table (max-width: 38rem){
-    .activity-events-table .activity-col--area,
-    .activity-events-table .activity-col--type{
-        display: none !important;
-    }
-
     .activity-events-table .activity-col--change{ width: auto !important; }
     .activity-events-table .activity-col--when{ width: 5.75rem !important; }
     .activity-events-table .activity-col--target{ width: 7rem !important; }
-    .activity-events-table .activity-col--actions{ width: 3.45rem !important; }
+    .activity-events-table .activity-col--actions{ width: 3.15rem !important; }
 
     .activity-commits-table .activity-commit-col--commit{ width: 6.25rem !important; }
     .activity-commits-table .activity-commit-col--when{ width: 5.75rem !important; }
-    .activity-commits-table .activity-commit-col--actions{ width: 5.25rem !important; }
+    .activity-commits-table .activity-commit-col--actions{ width: 4.95rem !important; }
 
     .activity-events-table .admin-row-actions-heading{ --admin-row-actions-width: 3.15rem; }
     .activity-commits-table .admin-row-actions-heading{ --admin-row-actions-width: 4.95rem; }
