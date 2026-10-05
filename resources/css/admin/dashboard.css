@@ -353,34 +353,12 @@
             display: none !important;
         }
 
-        .admin-dashboard__overview-switcher {
-            display: grid !important;
-            grid-row: 1;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            z-index: 3;
-            gap: .25rem;
-            padding: .25rem 0;
-            border-bottom: 1px solid var(--admin-line);
-            transform: translateY(-.625rem);
-        }
-
-        .admin-dashboard__overview-switcher .admin-action {
-            box-sizing: border-box;
-            width: 100%;
-            min-width: 0;
-            min-height: 2rem;
-            padding: .38rem .5rem;
-            justify-content: center;
-            border: 1px solid transparent;
-            border-radius: .2rem;
-        }
-
         #dashboard-overview-storage:checked ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-storage"],
         #dashboard-overview-activity:checked ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-activity"],
         #dashboard-overview-analytics:checked ~ .admin-dashboard__overview-switcher label[for="dashboard-overview-analytics"] {
             border-color: var(--admin-accent);
-            background: transparent;
-            color: var(--admin-accent-strong);
+            background: var(--admin-subtle);
+            color: var(--admin-text);
         }
 
         .admin-dashboard__overview-panel-toggle {
