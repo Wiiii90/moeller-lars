@@ -705,21 +705,24 @@
     }
 }
 
-/* Pages table priority follows the shared component states. Compact consumes
- * the shared dense five-action rail and spends the released width on the
- * composite Page Type / Template column. Both controls remain equal-width and
- * side-by-side through Compact/Narrow; only Minimal stacks them. */
+/* Pages table priority follows the shared component states. Compact removes
+ * supportive Template data and consumes the shared dense five-action rail;
+ * Minimal only tightens ordering/type tracks. Page Type remains explicit. */
 @container admin-table (max-width: 64rem){
+    .admin-hierarchy--pages .admin-pages__template{
+        display: none !important;
+    }
+
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row{
         grid-template-columns:
             minmax(0, 1fr)
-            var(--admin-pages-classification-width)
+            minmax(9rem, 10rem)
             calc(var(--admin-row-actions-move-state-delete-compact-width) + var(--admin-table-selection-width)) !important;
     }
 
     .admin-pages__primary-grid,
-    .admin-hierarchy--pages .admin-pages__classification,
+    .admin-hierarchy--pages .admin-pages__type,
     .admin-pages__utility-grid{
         grid-column: auto !important;
     }
@@ -743,7 +746,7 @@
     .admin-hierarchy--pages .admin-pages__row{
         grid-template-columns:
             minmax(0, 1fr)
-            calc(var(--admin-pages-classification-control-width) + .7rem)
+            7.5rem
             calc(var(--admin-row-actions-move-state-delete-compact-width) + var(--admin-table-selection-width)) !important;
     }
 
@@ -752,18 +755,8 @@
         gap: .25rem !important;
     }
 
-    .admin-hierarchy--pages .admin-pages__classification{
+    .admin-hierarchy--pages .admin-pages__type{
         padding-inline: .35rem;
-    }
-
-    .admin-pages__row > .admin-pages__classification.has-template{
-        grid-template-columns: minmax(0, var(--admin-pages-classification-control-width)) !important;
-        gap: .2rem !important;
-        padding-block: .3rem;
-    }
-
-    .admin-pages__row:has(> .admin-pages__classification.has-template){
-        min-height: 4.6rem;
     }
 }
 
