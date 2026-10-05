@@ -375,7 +375,7 @@
 
 /* Home component actions yield before the Component column. The four shared
  * semantic axes keep their positions while their labels disappear. */
-@container admin-table (max-width: 66rem){
+@container admin-table (max-width: 72rem){
     .home-components-table__col-actions{
         width: 7rem !important;
     }
@@ -546,7 +546,7 @@
 
 }
 
-@container admin-table (max-width: 56rem){
+@container admin-table (max-width: 60rem){
     .home-source-table__col-actions{
         width: 5rem !important;
     }
@@ -807,7 +807,7 @@
     }
 }
 
-@container admin-table (max-width: 50rem){
+@container admin-table (max-width: 60rem){
     .general-social-table .general-social-table__col-actions{
         width: 6.75rem !important;
     }
@@ -949,9 +949,9 @@
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row{
         grid-template-columns:
-            minmax(0, 5fr)
-            minmax(9rem, 2fr)
-            minmax(28.5rem, 5fr) !important;
+            minmax(0, 1fr)
+            minmax(9rem, 10rem)
+            11.05rem !important;
     }
 
     .admin-pages__primary-grid,
