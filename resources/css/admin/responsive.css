@@ -1032,7 +1032,7 @@
 }
 
 /* ---------- Storage table ---------- */
-@container admin-table (max-width: 54rem){
+@container admin-table (max-width: 64rem){
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
@@ -1077,7 +1077,7 @@
 }
 
 /* ---------- Activity tables ---------- */
-@container admin-table (max-width: 54rem){
+@container admin-table (max-width: 64rem){
     .activity-events-table .activity-col--who,
     .activity-events-table .activity-col--publication,
     .activity-commits-table .activity-commit-col--who,
