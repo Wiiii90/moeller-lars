@@ -343,7 +343,15 @@
         justify-content: center !important;
         border: 1px solid transparent;
         border-radius: .2rem;
+        background: transparent;
+        color: var(--admin-text);
         white-space: nowrap;
+    }
+
+    .admin-stage-tabs > .admin-action:is(.is-primary, [aria-pressed="true"]) {
+        border-color: var(--admin-accent);
+        background: var(--admin-subtle);
+        color: var(--admin-text);
     }
 
     .admin-focus-stage [data-admin-stage-pane] {
