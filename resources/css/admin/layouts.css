@@ -34,10 +34,14 @@ html:not(.dark) .fi-sidebar-nav {
 }
 
 /*
- * Filament owns modal scroll locking. Keep the document gutter automatic so
- * Filament can compensate with its native padding-right lock when needed.
+ * Filament owns modal scroll locking. The document keeps one stable scrollbar
+ * gutter so locking <html> never changes the shell width. Sidebar scrolling is
+ * independent and does not reserve a permanent gutter.
  */
-html.fi,
+html.fi {
+    scrollbar-gutter: stable !important;
+}
+
 .fi-sidebar-nav {
     scrollbar-gutter: auto !important;
 }
@@ -306,9 +310,11 @@ html.fi .fi-page:has(.admin-workspace) {
             )
         );
 
+        position: relative;
+        inset-inline-start: calc(0rem - var(--admin-workspace-center-shift));
         padding-top: 0 !important;
-        padding-right: var(--admin-header-control-rail) !important;
-        transform: translateX(calc(0rem - var(--admin-workspace-center-shift)));
+        padding-inline: var(--admin-workspace-gutter) !important;
+        transform: none;
     }
 
     .fi-sidebar-nav {
