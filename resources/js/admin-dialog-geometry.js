@@ -1,5 +1,18 @@
 const openModalSelector = '.fi-modal.fi-modal-open';
-const modalScrollbarGutterClass = 'admin-modal-scrollbar-gutter';
+const visibleScrollbarLockClass = 'admin-modal-visible-scrollbar-lock';
+const scrollKeys = new Set([
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'End',
+    'Home',
+    'PageDown',
+    'PageUp',
+    ' ',
+]);
+
+let lockedScrollPosition = null;
 
 function hasClassicDocumentScrollbar() {
     const root = document.documentElement;
@@ -19,25 +32,91 @@ function modalFromOpenEvent(event) {
     return modal;
 }
 
-function prepareModalScrollbarGeometry(event) {
-    if (! modalFromOpenEvent(event)) return;
-
-    document.documentElement.classList.toggle(
-        modalScrollbarGutterClass,
-        hasClassicDocumentScrollbar(),
-    );
+function hasOpenBlockingAdminDialog() {
+    return Array.from(document.querySelectorAll(openModalSelector)).some((modal) => (
+        ! modal.classList.contains('fi-modal-click-through')
+        && modal.querySelector(':scope > .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog')
+    ));
 }
 
-function releaseModalScrollbarGeometry() {
-    queueMicrotask(() => {
-        if (document.querySelector('.fi-modal.fi-modal-open:not(.fi-modal-click-through)')) return;
+function freezeDocumentScroll(modal) {
+    if (! hasClassicDocumentScrollbar()) return;
 
-        document.documentElement.classList.remove(modalScrollbarGutterClass);
+    if (lockedScrollPosition === null) {
+        lockedScrollPosition = {
+            left: window.scrollX,
+            top: window.scrollY,
+        };
+    }
+
+    document.documentElement.classList.add(visibleScrollbarLockClass);
+
+    // Measure before Filament mutates <html> for its native lock. This keeps
+    // the dialog layer on the exact same Main frame the user was looking at.
+    syncModalGeometry(modal);
+}
+
+function restoreLockedDocumentScroll() {
+    if (lockedScrollPosition === null) return;
+
+    const { left, top } = lockedScrollPosition;
+
+    if ((window.scrollX === left) && (window.scrollY === top)) return;
+
+    window.scrollTo({
+        left,
+        top,
+        behavior: 'instant',
     });
 }
 
-function resetModalScrollbarGeometry() {
-    document.documentElement.classList.remove(modalScrollbarGutterClass);
+function releaseDocumentScroll() {
+    queueMicrotask(() => {
+        if (hasOpenBlockingAdminDialog()) return;
+
+        restoreLockedDocumentScroll();
+        lockedScrollPosition = null;
+        document.documentElement.classList.remove(visibleScrollbarLockClass);
+    });
+}
+
+function resetDocumentScrollLock() {
+    lockedScrollPosition = null;
+    document.documentElement.classList.remove(visibleScrollbarLockClass);
+}
+
+function eventIsInsideOpenDialog(event) {
+    const target = event.target;
+
+    return target instanceof Element
+        && target.closest('.fi-modal.fi-modal-open > .fi-modal-window-ctn') !== null;
+}
+
+function preventBackgroundPointerScroll(event) {
+    if (lockedScrollPosition === null) return;
+    if (eventIsInsideOpenDialog(event)) return;
+
+    event.preventDefault();
+}
+
+function preventBackgroundKeyboardScroll(event) {
+    if (lockedScrollPosition === null) return;
+    if (! scrollKeys.has(event.key)) return;
+    if (eventIsInsideOpenDialog(event)) return;
+
+    const target = event.target;
+
+    if (
+        target instanceof HTMLElement
+        && (
+            target.isContentEditable
+            || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)
+        )
+    ) {
+        return;
+    }
+
+    event.preventDefault();
 }
 
 function numericPx(value) {
@@ -108,12 +187,22 @@ function syncOpenModalGeometry() {
     }
 }
 
-// Capture runs before Filament's window-level open listener. On a page that
-// already has a classic scrollbar, the temporary stable gutter is visible to
-// Filament before acquireScrollLock() decides whether padding compensation is
-// needed. Filament still owns the actual acquire/release lifecycle.
-window.addEventListener('open-modal', prepareModalScrollbarGeometry, true);
-window.addEventListener('modal-closed', releaseModalScrollbarGeometry);
+// Capture runs before Filament's window-level open listener. For long pages we
+// keep the already-visible classic scrollbar, freeze its scroll position and
+// neutralize only Filament's visual overflow/padding mutation via CSS. Filament
+// still owns open/close/focus/Escape/destroy and its native lock counter.
+window.addEventListener('open-modal', (event) => {
+    const modal = modalFromOpenEvent(event);
+    if (! modal) return;
+
+    freezeDocumentScroll(modal);
+}, true);
+
+window.addEventListener('modal-closed', releaseDocumentScroll);
+window.addEventListener('scroll', restoreLockedDocumentScroll, { passive: true });
+window.addEventListener('wheel', preventBackgroundPointerScroll, { capture: true, passive: false });
+window.addEventListener('touchmove', preventBackgroundPointerScroll, { capture: true, passive: false });
+document.addEventListener('keydown', preventBackgroundKeyboardScroll, true);
 
 document.addEventListener('x-modal-opened', (event) => {
     syncModalGeometry(modalForEvent(event), { resetScroll: true });
@@ -121,6 +210,6 @@ document.addEventListener('x-modal-opened', (event) => {
 
 window.addEventListener('resize', syncOpenModalGeometry, { passive: true });
 document.addEventListener('livewire:navigated', () => {
-    resetModalScrollbarGeometry();
+    resetDocumentScrollLock();
     syncOpenModalGeometry();
 });
