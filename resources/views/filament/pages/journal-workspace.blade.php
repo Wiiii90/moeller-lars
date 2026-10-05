@@ -39,8 +39,8 @@
         <x-admin.section class="journal-workspace__entries" aria-label="{{ $isBlog ? 'Blog entries' : 'Exhibition entries' }}">
             <x-admin.controls class="admin-data-controls--dashboard-responsive" aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}" metric-grid :filter-count="$isBlog ? 1 : 2" :search-span="$isBlog ? 3 : 2">
                 <x-slot:search>
-                    <label class="admin-field admin-control-bar__search">
-                        <span class="admin-field__label">Search</span>
+                    <label class="admin-data-field">
+                        <span>Search</span>
                         <x-admin.search-input
                             model="search"
                             placeholder="{{ $isBlog ? 'Title or excerpt' : 'Title, venue, place or date' }}"
@@ -49,8 +49,8 @@
                 </x-slot:search>
 
                 <x-slot:filters>
-                    <label class="admin-field">
-                        <span class="admin-field__label">Status</span>
+                    <label class="admin-data-field">
+                        <span>Status</span>
                         <select wire:model.live="statusFilter">
                             <option value="any">Any</option>
                             @if ($isBlog)
@@ -67,8 +67,8 @@
                     </label>
 
                     @unless ($isBlog)
-                        <label class="admin-field">
-                            <span class="admin-field__label">Timing</span>
+                        <label class="admin-data-field">
+                            <span>Timing</span>
                             <select wire:model.live="timingFilter">
                                 <option value="any">Any</option>
                                 <option value="upcoming">Upcoming</option>
@@ -81,18 +81,16 @@
                 </x-slot:filters>
 
                 <x-slot:reset>
-                    <div class="admin-control-group">
-                        <span class="admin-control-group__label">Filter</span>
-                        <div class="admin-control-group__actions">
-                            <x-admin.clear-filters wire:click="resetFilters" />
-                        </div>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">Filter</span>
+                        <x-admin.clear-filters wire:click="resetFilters" />
                     </div>
                 </x-slot:reset>
 
                 <x-slot:actions>
-                    <div class="admin-control-group">
-                        <span class="admin-control-group__label">Journal</span>
-                        <div class="admin-control-group__actions admin-editorial-actions">
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">Journal</span>
+                        <div class="admin-toolbar admin-editorial-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('journalSettings')" aria-label="Journal settings">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Settings</span>
@@ -117,8 +115,8 @@
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-control-group admin-selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
-                        <span class="admin-control-group__label">Selection</span>
+                    <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+                        <span class="admin-data-control-label">Selection</span>
                         <div class="admin-selection__anchor">
                             <button
                                 class="admin-action admin-selection__trigger"
