@@ -163,17 +163,13 @@
     padding-inline: .35rem;
     align-items: center;
     justify-content: center !important;
-    justify-self: center;
+    justify-self: start;
     overflow: visible;
 }
 
-.admin-row-actions--stable .admin-action:last-child {
-    justify-self: end;
-}
-
 .admin-row-actions--stable .admin-action--state {
-    width: 100%;
-    min-width: var(--admin-row-state-slot, 0);
+    width: max-content;
+    min-width: 0;
 }
 
 .admin-row-actions--stable .admin-action__label {
@@ -229,28 +225,21 @@
     --admin-row-actions-columns: max-content max-content max-content max-content;
 }
 
-/* Dense action recipes use fixed semantic slots in Wide. The icon axis is the
- * first grid track inside every slot, so changing labels or disabled states
- * never moves icons vertically from row to row. */
+/* Dense action recipes use fixed semantic slots in Wide. Buttons stay
+ * content-sized and start on the slot axis: Pin may be narrower than Unpin,
+ * Publish narrower than Unpublish, and the freed width remains between actions
+ * instead of being stuffed into the smaller button. */
 :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action {
-    display: grid !important;
-    width: 100%;
+    display: inline-flex !important;
+    width: max-content;
     min-width: 0;
-    grid-template-columns: .9rem minmax(0, 1fr);
-    column-gap: .25rem;
-    padding-inline: .15rem;
-    justify-items: start;
-}
-
-:is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action__icon {
-    justify-self: center;
-}
-
-:is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action__label {
+    gap: .3rem;
+    padding-inline: .35rem;
     justify-self: start;
 }
 
 :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action--state {
+    width: max-content;
     min-width: 0;
 }
 
