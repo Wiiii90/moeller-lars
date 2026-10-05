@@ -459,24 +459,24 @@
                 <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="activity-col--change">
-                        <col class="activity-col--who">
+                        <col class="activity-col--who admin-table__yield--compact">
                         <col class="activity-col--when">
                         <col class="activity-col--target">
-                        <col class="activity-col--area">
-                        <col class="activity-col--type">
-                        <col class="activity-col--publication">
+                        <col class="activity-col--area admin-table__yield--minimal">
+                        <col class="activity-col--type admin-table__yield--minimal">
+                        <col class="activity-col--publication admin-table__yield--compact">
                         <col class="activity-col--actions">
                         <col class="admin-table__selection-col">
                     </colgroup>
                     <thead>
                         <tr>
                             <th scope="col" class="activity-col--change">Change</th>
-                            <th scope="col" class="activity-col--who">Who</th>
+                            <th scope="col" class="activity-col--who admin-table__yield--compact">Who</th>
                             <th scope="col" class="activity-col--when">When</th>
                             <th scope="col" class="activity-col--target">Target</th>
-                            <th scope="col" class="activity-col--area">Area</th>
-                            <th scope="col" class="activity-col--type">Type</th>
-                            <th scope="col" class="activity-col--publication">Publication</th>
+                            <th scope="col" class="activity-col--area admin-table__yield--minimal">Area</th>
+                            <th scope="col" class="activity-col--type admin-table__yield--minimal">Type</th>
+                            <th scope="col" class="activity-col--publication admin-table__yield--compact">Publication</th>
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -505,15 +505,15 @@
                                     <small class="admin-responsive-meta">{{ $event['actor'] }} · {{ ucfirst($event['publication_status']) }}</small>
                                     <small class="admin-responsive-meta admin-responsive-meta--minimal">{{ $event['area'] }} · {{ $event['type'] }}</small>
                                 </td>
-                                <td class="activity-who-cell activity-col--who" title="{{ $event['actor'] }}"><strong>{{ $event['actor'] }}</strong></td>
+                                <td class="activity-who-cell activity-col--who admin-table__yield--compact" title="{{ $event['actor'] }}"><strong>{{ $event['actor'] }}</strong></td>
                                 <td class="activity-when-cell activity-col--when">
                                     <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
                                     <small>{{ $event['timestamp'] }}</small>
                                 </td>
                                 <td class="activity-target-cell activity-col--target" title="{{ $event['target'] }}"><strong>{{ $event['target'] }}</strong></td>
-                                <td class="activity-area-cell activity-col--area"><span>{{ $event['area'] }}</span></td>
-                                <td class="activity-type-cell activity-col--type"><span>{{ $event['type'] }}</span></td>
-                                <td class="activity-publication-cell activity-col--publication">
+                                <td class="activity-area-cell activity-col--area admin-table__yield--minimal"><span>{{ $event['area'] }}</span></td>
+                                <td class="activity-type-cell activity-col--type admin-table__yield--minimal"><span>{{ $event['type'] }}</span></td>
+                                <td class="activity-publication-cell activity-col--publication admin-table__yield--compact">
                                     @if ($event['publication_status'] === 'committed')
                                         <div class="activity-publication-cell__stack" title="Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}{{ $event['checkpoint_message'] ? ' · '.$event['checkpoint_message'] : '' }}">
                                             <span class="admin-status is-published">Committed</span>
@@ -594,20 +594,20 @@
                 <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="activity-commit-col--commit">
-                        <col class="activity-commit-col--who">
+                        <col class="activity-commit-col--who admin-table__yield--compact">
                         <col class="activity-commit-col--when">
                         <col class="activity-commit-col--summary">
-                        <col class="activity-commit-col--publication">
+                        <col class="activity-commit-col--publication admin-table__yield--compact">
                         <col class="activity-commit-col--actions">
                         <col class="admin-table__selection-col">
                     </colgroup>
                     <thead>
                         <tr>
                             <th scope="col" class="activity-commit-col--commit">Commit</th>
-                            <th scope="col" class="activity-commit-col--who">Who</th>
+                            <th scope="col" class="activity-commit-col--who admin-table__yield--compact">Who</th>
                             <th scope="col" class="activity-commit-col--when">When</th>
                             <th scope="col" class="activity-commit-col--summary">Summary</th>
-                            <th scope="col" class="activity-commit-col--publication">Publication</th>
+                            <th scope="col" class="activity-commit-col--publication admin-table__yield--compact">Publication</th>
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -637,7 +637,7 @@
                                         @if ($commit['live'])<span class="admin-status is-published">LIVE</span>@endif
                                     </div>
                                 </td>
-                                <td class="activity-who-cell activity-commit-col--who"><strong>{{ $commit['actor'] }}</strong></td>
+                                <td class="activity-who-cell activity-commit-col--who admin-table__yield--compact"><strong>{{ $commit['actor'] }}</strong></td>
                                 <td class="activity-when-cell activity-commit-col--when">
                                     <time datetime="{{ str_replace(' ', 'T', $commit['timestamp']) }}" title="{{ $commit['timestamp'] }}">{{ $commit['when'] }}</time>
                                     <small>{{ $commit['timestamp'] }}</small>
@@ -652,7 +652,7 @@
                                         {{ $commit['actor'] }} · {{ $commit['restorable'] ? 'Restorable' : ($commit['legacy'] ? 'Metadata only' : 'Schema changed') }}
                                     </small>
                                 </td>
-                                <td class="activity-publication-cell activity-commit-col--publication">
+                                <td class="activity-publication-cell activity-commit-col--publication admin-table__yield--compact">
                                     <span class="admin-status {{ $commit['restorable'] ? 'is-published' : '' }}">
                                         {{ $commit['restorable'] ? 'Restorable' : ($commit['legacy'] ? 'Metadata only' : 'Schema changed') }}
                                     </span>
