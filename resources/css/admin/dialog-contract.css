@@ -22,6 +22,7 @@
     inset-inline: var(--admin-dialog-layer-inline-start) var(--admin-dialog-layer-inline-end) !important;
     box-sizing: border-box;
     min-height: 0 !important;
+    overscroll-behavior: contain;
     padding-block: 1rem !important;
     padding-inline: var(--admin-dialog-layer-padding-inline) !important;
 }
