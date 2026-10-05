@@ -10,7 +10,7 @@
 
 <x-filament-panels::page>
     <x-admin.workspace title="Pages" class="admin-pages-workspace">
-        <x-admin.metrics :columns="6" class="pages-status-metrics">
+        <x-admin.metrics :columns="6" class="pages-status-metrics admin-metrics--six-state">
             <x-admin.metric class="pages-metric pages-metric--total" label="Total pages" :value="$metrics['total']">All site sections</x-admin.metric>
             <x-admin.metric class="pages-metric pages-metric--published" label="Published" :value="$metrics['published']">Public now</x-admin.metric>
             <x-admin.metric class="pages-metric pages-metric--unpublished" label="Unpublished" :value="$metrics['unpublished']">Not public</x-admin.metric>
