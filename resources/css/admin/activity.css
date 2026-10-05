@@ -492,7 +492,7 @@ a.activity-calendar__day:focus-visible {
 }
 
 .activity-events-table .activity-col--actions {
-    width: calc(16.6667% - var(--admin-table-selection-width));
+    width: 10rem;
 }
 
 .activity-events-table .activity-col--who {
@@ -538,6 +538,10 @@ a.activity-calendar__day:focus-visible {
 .activity-workspace__table th:last-child,
 .activity-workspace__table td:last-child {
     padding-right: 0;
+}
+
+.activity-workspace__table .admin-table__actions {
+    padding-inline: .2rem !important;
 }
 
 .activity-change-cell,
@@ -659,7 +663,7 @@ a.activity-calendar__day:focus-visible {
 }
 
 .activity-commits-table .activity-commit-col--actions {
-    width: calc(16.6667% - var(--admin-table-selection-width));
+    width: 14.75rem;
 }
 
 .activity-commits-table .activity-commit-col--who {
