@@ -138,7 +138,7 @@
         </x-admin.metrics>
 
         <section
-            class="analytics-visual-stage admin-visual-stage"
+            class="analytics-visual-stage admin-visual-stage admin-visual-stage--single-minimal"
             aria-label="Analytics Visual Stage"
             x-data="{
                 selectedCountry: @js($initialCountry),
