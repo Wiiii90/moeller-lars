@@ -804,8 +804,8 @@
 }
 
 /* Blog and Exhibitions both use dense action rails. Compact switches those
- * rails to icons and removes supportive media/publication/schedule columns
- * before operational Status/Timing yields. */
+ * rails to icons and removes Publication/Schedule first. The shared cover
+ * preview remains visible; operational Status/Timing yields only at Minimal. */
 @container admin-table (max-width: 64rem){
     .journal-table col.journal-table__actions--blog{
         width: var(--admin-row-actions-journal-blog-compact-width) !important;
@@ -836,11 +836,6 @@
 @container admin-table (max-width: 38rem){
     .journal-table col.admin-table__col-drag{
         width: 1.75rem !important;
-    }
-
-    .journal-table--blog .journal-col--status,
-    .journal-table--exhibitions .journal-col--timing{
-        display: table-cell !important;
     }
 }
 
