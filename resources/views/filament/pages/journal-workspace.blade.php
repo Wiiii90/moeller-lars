@@ -37,7 +37,7 @@
         </x-admin.metrics>
 
         <x-admin.section class="journal-workspace__entries" aria-label="{{ $isBlog ? 'Blog entries' : 'Exhibition entries' }}">
-            <x-admin.controls class="admin-data-controls--content-minimum" aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}">
+            <x-admin.controls class="admin-data-controls--dashboard-responsive" aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}" metric-grid :filter-count="$isBlog ? 1 : 2" :search-span="$isBlog ? 3 : 2">
                 <x-slot:search>
                     <label class="admin-field admin-control-bar__search">
                         <span class="admin-field__label">Search</span>
