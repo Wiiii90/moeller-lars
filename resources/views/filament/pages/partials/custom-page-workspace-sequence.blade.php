@@ -3,7 +3,7 @@
                 <span class="admin-hierarchy__ordering-heading">Position</span>
                 <span>Component</span>
                 <span>Content</span>
-                <span class="custom-page-component-sequence__actions-heading">Actions</span>
+                <span class="custom-page-component-sequence__actions-heading admin-row-actions-heading">Actions</span>
                 <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select all visible components and entries">
                     <input
                         type="checkbox"
@@ -64,7 +64,7 @@
                                     @endif
                                 </div>
 
-                                <div class="admin-row-actions admin-row-actions--canonical custom-page-row-actions custom-page-component__actions admin-toolbar">
+                                <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete custom-page-row-actions custom-page-component__actions admin-toolbar">
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                         wire:click="moveComponent({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', 'up')"
@@ -142,7 +142,7 @@
                                                     @endif
                                                 </div>
 
-                                                <div class="admin-row-actions admin-row-actions--canonical custom-page-row-actions custom-page-child-row__actions admin-toolbar">
+                                                <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete custom-page-row-actions custom-page-child-row__actions admin-toolbar">
                                                     @if ($child['kind'] === 'list')
                                                         <x-admin.row-action
                                                             :action="\App\Filament\Support\AdminRowAction::MoveUp"
