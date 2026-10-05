@@ -497,8 +497,7 @@
 /* Minimal: feature-specific metric reduction, more aggressive table
  * prioritization, and the same mandatory one-row toolbar. */
 @container admin-workspace (max-width: 38rem){
-    .admin-data-controls:not(.admin-data-controls--six-cell),
-.custom-page-workspace__controls{
+    .admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum){
         gap: .45rem !important;
     }
 
@@ -588,14 +587,6 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .custom-page-component-sequence{
-        --admin-hierarchy-actions-column: minmax(6.25rem, 34%);
-    }
-
-    .custom-page-row-actions{
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-auto-rows: minmax(1.8rem, auto);
-    }
 }
 
 @container admin-table (max-width: 56rem){
@@ -654,17 +645,8 @@
         display: block !important;
     }
 
-    /* Narrow row actions remain a single icon rail; they do not grow table
-     * rows just because labels disappeared. */
-    .journal-row-actions--blog{
-        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-        grid-auto-rows: minmax(1.8rem, auto);
-    }
-
-    .journal-row-actions--exhibitions{
-        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-        grid-auto-rows: minmax(1.8rem, auto);
-    }
+    /* Narrow row actions stay on the same fixed semantic axes; dedicated
+     * table authority below owns their icon-only density. */
 
     .media-workspace__row-actions{
         grid-auto-flow: row;
