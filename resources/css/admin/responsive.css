@@ -1046,12 +1046,8 @@
     .admin-storage .media-workspace__col-type{ width: 6rem !important; }
     .admin-storage .media-workspace__col-size{ width: 5rem !important; }
     .admin-storage .media-workspace__col-status{ width: 5.5rem !important; }
-    .admin-storage .media-workspace__col-actions{ width: 19.3rem !important; }
     .admin-storage .media-workspace__col-selection{ width: var(--admin-table-selection-width) !important; }
 
-    .admin-storage .media-workspace__actions-head .admin-row-actions-heading{
-        --admin-row-actions-width: 19rem;
-    }
 }
 
 @container admin-table (max-width: 38rem){
@@ -1090,15 +1086,11 @@
     .activity-events-table .activity-col--target{ width: auto !important; }
     .activity-events-table .activity-col--area,
     .activity-events-table .activity-col--type{ width: 6.5rem !important; }
-    .activity-events-table .activity-col--actions{ width: 9.8rem !important; }
 
     .activity-commits-table .activity-commit-col--commit{ width: 8rem !important; }
     .activity-commits-table .activity-commit-col--when{ width: 7rem !important; }
     .activity-commits-table .activity-commit-col--summary{ width: auto !important; }
-    .activity-commits-table .activity-commit-col--actions{ width: 14.55rem !important; }
 
-    .activity-events-table .admin-row-actions-heading{ --admin-row-actions-width: 9.5rem; }
-    .activity-commits-table .admin-row-actions-heading{ --admin-row-actions-width: 14.25rem; }
 
     .activity-events-table .admin-responsive-meta,
     .activity-commits-table .admin-responsive-meta{
