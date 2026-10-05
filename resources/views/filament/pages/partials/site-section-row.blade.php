@@ -86,11 +86,11 @@
     </div>
 
     <div class="admin-pages__utility-grid" role="presentation">
-        <div class="admin-row-actions admin-row-actions--canonical admin-toolbar admin-pages__row-actions" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
+        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete admin-toolbar admin-pages__row-actions" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
             @if ($isHome)
                 @if ($homeState['skip_home'] ?? false)
                     <button
-                        class="admin-action admin-pages__redirect-target"
+                        class="admin-action admin-action--with-icon admin-pages__redirect-target"
                         type="button"
                         wire:click="mountAction('skipHome')"
                         title="Change Skip Home target"
