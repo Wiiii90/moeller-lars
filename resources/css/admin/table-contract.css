@@ -128,6 +128,26 @@
     justify-content: center;
 }
 
+/* Canonical three-axis ordering rail: Move up | Move down | Delete.
+ * Fixed semantic slots keep the icon axes vertically aligned across rows. */
+.admin-row-actions--order-delete {
+    display: grid !important;
+    width: 14rem;
+    max-width: 100%;
+    min-width: 0;
+    grid-template-columns: 4.5rem 5rem 4rem;
+    gap: .25rem !important;
+    justify-content: start;
+}
+
+.admin-row-actions--order-delete .admin-action {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0;
+    justify-content: flex-start !important;
+    overflow: visible;
+}
+
 .admin-table__selection--trailing,
 .admin-hierarchy__selection--trailing,
 .media-workspace__selection-head--trailing,
