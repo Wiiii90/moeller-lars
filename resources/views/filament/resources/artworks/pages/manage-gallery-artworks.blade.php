@@ -94,7 +94,7 @@
         @php($reorderEnabled = trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
 
         <div class="gallery-workspace__result-surface">
-            <x-admin.controls class="admin-data-controls--content-minimum gallery-workspace__controls" aria-label="Gallery controls">
+            <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
