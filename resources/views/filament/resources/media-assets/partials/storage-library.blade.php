@@ -287,7 +287,7 @@
                             <th scope="col" class="media-workspace__size-head">Size</th>
                             <th scope="col" class="media-workspace__usage-head">Used in</th>
                             <th scope="col" class="media-workspace__status-head">Status</th>
-                            <th scope="col" class="media-workspace__actions-head">Actions</th>
+                            <th scope="col" class="media-workspace__actions-head admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="media-workspace__selection-head media-workspace__selection-head--trailing">
                                 <input
                                     type="checkbox"
@@ -370,7 +370,7 @@
                                     <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
                                 </td>
                                 <td class="media-workspace__actions">
-                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar media-workspace__row-actions">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--four-static admin-toolbar media-workspace__row-actions">
                                         <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon media-workspace__action-icon" />
                                             <span class="admin-action__label">Details</span>
