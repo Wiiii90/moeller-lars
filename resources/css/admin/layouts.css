@@ -34,21 +34,20 @@ html:not(.dark) .fi-sidebar-nav {
 }
 
 /*
- * Filament owns modal state and lock lifecycle. The document does not reserve a
- * permanent scrollbar gutter: short pages must stay rail-free. Before Filament
- * acquires a blocking modal lock, the shared dialog runtime marks <html> only
- * when a classic vertical scrollbar already exists. In that one state the real
- * scrollbar stays visible and Filament's padding compensation is neutralized.
+ * Filament owns modal state and scroll-lock lifecycle. The document reserves no
+ * permanent scrollbar gutter, so short pages stay rail-free. Immediately before
+ * Filament locks a blocking admin dialog, the shared dialog runtime marks <html>
+ * only when a classic vertical scrollbar already exists. That temporary marker
+ * reserves the scrollbar width while Filament hides the real rail, preventing
+ * shell jitter without showing a second scrollbar beside the dialog scroller.
  */
 html.fi,
 .fi-sidebar-nav {
     scrollbar-gutter: auto !important;
 }
 
-html.fi.admin-modal-existing-scrollbar {
-    overflow-y: scroll !important;
-    padding-right: 0 !important;
-    scrollbar-gutter: auto !important;
+html.fi.admin-modal-scrollbar-gutter {
+    scrollbar-gutter: stable !important;
 }
 
 /* Sidebar navigation uses the same top inset as its horizontal shell inset on every viewport. */
