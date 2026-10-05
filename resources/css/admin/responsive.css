@@ -1365,6 +1365,54 @@
     }
 }
 
+/* Keep Pages row actions monotonic across the shell transition too:
+ * pre-Burger container pressure may already have compacted them, and opening
+ * the workspace by removing the sidebar must never bring the labels back. */
+@media (max-width: 63.99rem){
+    .admin-hierarchy--pages .admin-pages__template{
+        display: none !important;
+    }
+
+    .admin-hierarchy--pages .admin-pages__header,
+    .admin-hierarchy--pages .admin-pages__row{
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(8rem, 10rem)
+            11.05rem !important;
+    }
+
+    .admin-pages__primary-grid{
+        grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
+        gap: .3rem !important;
+    }
+
+    .admin-pages__utility-grid{
+        grid-template-columns: 8.55rem var(--admin-table-selection-width) !important;
+    }
+
+    .admin-pages__row-actions{
+        width: 8.55rem !important;
+        grid-template-columns: repeat(5, 1.35rem) !important;
+        gap: .45rem !important;
+    }
+
+    .admin-pages__row-actions .admin-action{
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        min-height: 2rem;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-pages__row-actions .admin-action__label{
+        display: none !important;
+    }
+
+    .admin-pages__redirect-target{
+        width: auto !important;
+    }
+}
+
 @container admin-table (max-width: 38rem){
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row{
