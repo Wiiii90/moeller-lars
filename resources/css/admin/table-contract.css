@@ -17,13 +17,6 @@
     --admin-table-edge-inset: .5rem;
     --admin-table-leading-square: 1.65rem;
     --admin-table-selection-width: 2.5rem;
-    --admin-pages-classification-control-width: 9.25rem;
-    --admin-pages-classification-gap: .4rem;
-    --admin-pages-classification-width: calc(
-        (2 * var(--admin-pages-classification-control-width))
-        + var(--admin-pages-classification-gap)
-        + 1.3rem
-    );
 
     /* Stable row-action rail geometry. Shared semantic slots are sized for
      * their longest legitimate label; consumers never squeeze the button text
@@ -438,9 +431,8 @@
 }
 
 /* Pages keeps the six-cell metric ruler as a soft reference, but Wide reserves
- * the real labeled five-action rail plus terminal Selection first. Page Type
- * and the optional Home/Journal Template form one composite editable column;
- * identity absorbs the remaining width. */
+ * the real labeled five-action rail plus terminal Selection first. Identity,
+ * Page Type and Template divide the remaining width without squeezing Actions. */
 .admin-hierarchy--pages {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
@@ -449,7 +441,8 @@
 .admin-hierarchy--pages .admin-pages__row {
     grid-template-columns:
         minmax(0, 1fr)
-        var(--admin-pages-classification-width)
+        minmax(9rem, 10rem)
+        minmax(7rem, 9rem)
         calc(var(--admin-row-actions-move-state-delete-width) + var(--admin-table-selection-width));
     column-gap: 0;
 }
@@ -477,31 +470,18 @@
     align-items: center;
 }
 
-.admin-hierarchy--pages .admin-pages__classification {
+.admin-hierarchy--pages .admin-pages__type,
+.admin-hierarchy--pages .admin-pages__template {
     grid-column: auto;
 }
 
-.admin-pages__header > .admin-pages__classification,
-.admin-pages__row > .admin-pages__classification {
+.admin-pages__header > .admin-pages__type,
+.admin-pages__header > .admin-pages__template,
+.admin-pages__row > .admin-pages__type,
+.admin-pages__row > .admin-pages__template {
     box-sizing: border-box;
     min-width: 0;
     padding-inline: .65rem;
-}
-
-.admin-pages__row > .admin-pages__classification {
-    display: grid;
-    grid-template-columns: minmax(0, var(--admin-pages-classification-control-width));
-    gap: var(--admin-pages-classification-gap);
-    align-items: center;
-}
-
-.admin-pages__row > .admin-pages__classification.has-template {
-    grid-template-columns: repeat(2, minmax(0, var(--admin-pages-classification-control-width)));
-}
-
-.admin-pages__classification > :is(.admin-pages__type, .admin-pages__template) {
-    width: 100%;
-    min-width: 0;
 }
 
 .admin-pages__header .admin-pages__utility-grid > :first-child {
