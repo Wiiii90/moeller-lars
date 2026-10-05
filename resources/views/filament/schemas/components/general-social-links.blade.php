@@ -2,6 +2,12 @@
     $rows = $generalPage->socialRows();
     $links = $get('social_links');
     $links = is_array($links) ? array_values($links) : [];
+    $platformOptions = \App\Domain\Content\SocialLinks::options();
+    $usedPlatforms = collect($links)
+        ->pluck('platform')
+        ->filter(fn (mixed $platform): bool => is_string($platform) && $platform !== '')
+        ->values()
+        ->all();
 @endphp
 
 <section class="general-social-section" aria-labelledby="general-social-heading">
@@ -52,52 +58,51 @@
                             >⋮⋮</button>
                         </td>
                         <td class="general-social-table__platform">
-                            <span>{{ $platformLabel }}</span>
-                            <small class="admin-responsive-meta" title="{{ $url }}">{{ $url }}</small>
+                            <select
+                                class="admin-inline-select"
+                                aria-label="Platform for social link {{ $index + 1 }}"
+                                wire:change="updateSocialLink({{ $index }}, 'platform', $event.target.value)"
+                            >
+                                <option value="">Choose platform</option>
+                                @foreach ($platformOptions as $value => $label)
+                                    <option
+                                        value="{{ $value }}"
+                                        @selected($platform === $value)
+                                        @disabled($platform !== $value && in_array($value, $usedPlatforms, true))
+                                    >{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </td>
-                        <td class="general-social-table__url" title="{{ $url }}">
-                            {{ $url }}
+                        <td class="general-social-table__url">
+                            <input
+                                class="admin-inline-input"
+                                type="url"
+                                value="{{ $url }}"
+                                placeholder="https://"
+                                aria-label="Profile URL for {{ $platformLabel }}"
+                                wire:change="updateSocialLink({{ $index }}, 'url', $event.target.value)"
+                                x-on:keydown.enter.prevent="$el.blur()"
+                            >
                         </td>
                         <td class="admin-table__actions general-social-table__actions">
-                            <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--four">
-                                <button
-                                    class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled"
-                                    type="button"
+                            <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--three">
+                                <x-admin.row-action
+                                    :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                     wire:click="moveSocialLink({{ $index }}, 'up')"
-                                    @disabled($index === 0)
+                                    :disabled="$index === 0"
                                     aria-label="Move social link {{ $index + 1 }} up"
-                                >
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Move up</span>
-                                </button>
-                                <button
-                                    class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled"
-                                    type="button"
+                                />
+                                <x-admin.row-action
+                                    :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                     wire:click="moveSocialLink({{ $index }}, 'down')"
-                                    @disabled($index === count($links) - 1)
+                                    :disabled="$index === count($links) - 1"
                                     aria-label="Move social link {{ $index + 1 }} down"
-                                >
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Move down</span>
-                                </button>
-                                <button
-                                    class="admin-action admin-action--with-icon"
-                                    type="button"
-                                    wire:click="mountAction('editSocialLink', { index: {{ $index }} })"
-                                    aria-label="Edit social link {{ $index + 1 }}"
-                                >
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Edit</span>
-                                </button>
-                                <button
-                                    class="admin-action admin-action--with-icon is-danger"
-                                    type="button"
+                                />
+                                <x-admin.row-action
+                                    :action="\App\Filament\Support\AdminRowAction::Delete"
                                     wire:click="deleteSocialLink({{ $index }})"
                                     aria-label="Delete social link {{ $index + 1 }}"
-                                >
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Delete</span>
-                                </button>
+                                />
                             </x-admin.toolbar>
                         </td>
                     </tr>
