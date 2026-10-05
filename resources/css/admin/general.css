@@ -607,83 +607,8 @@
     align-items: center;
 }
 
-.general-social-table__editable {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    padding: .4rem .25rem;
-    overflow: hidden;
-    border: 1px solid transparent;
-    border-radius: .2rem;
-    background: transparent;
-    color: var(--admin-text);
-    font: inherit;
-    font-size: .76rem;
-    line-height: 1.2;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    cursor: text;
-}
-
-.general-social-table__editable:hover,
-.general-social-table__editable:focus-visible {
-    border-color: var(--admin-line);
-    background: var(--admin-subtle);
-    outline: none;
-}
-
-.general-social-table__editable--url {
-    color: var(--admin-muted);
-}
-
-.general-social-table__editor {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    height: var(--admin-control-height);
-    padding: .45rem .25rem;
-    border: 0;
-    border-bottom: 1px solid var(--admin-line);
-    border-radius: 0;
-    background: transparent;
-    color: var(--admin-text);
-    font: inherit;
-    font-size: .76rem;
-    outline: none;
-}
-
-.general-social-table__editor:focus {
-    border-bottom-color: var(--admin-accent);
-}
-
 .admin-general .general-social-table select option[value=""] {
     display: block;
-}
-
-.general-social-table__actions .admin-toolbar {
-    display: grid;
-    width: 100%;
-    max-width: 22rem;
-    grid-template-columns:
-        minmax(4.5rem, 1fr)
-        minmax(5rem, 1fr)
-        minmax(3.5rem, .8fr)
-        minmax(4rem, .9fr);
-    gap: .25rem;
-    align-items: center;
-    justify-content: start;
-}
-
-.general-social-table__actions .admin-action {
-    min-width: 0;
-    justify-content: center;
-}
-
-.general-social-table__actions .admin-order-action {
-    width: 100%;
-    min-width: 0;
-    padding-inline: .2rem;
 }
 
 .general-social-table + .admin-add-row {
