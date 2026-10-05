@@ -86,7 +86,7 @@
 /* Fixed layout may start earlier, but icon-only density must not. Labels are
  * removed only with the Burger transition, and their rails compact in the same
  * rule so no invisible label leaves dead space behind. */
-@container admin-table (max-width: 62rem){
+@container admin-table (max-width: 54rem){
     .admin-table > table{
         table-layout: fixed;
     }
