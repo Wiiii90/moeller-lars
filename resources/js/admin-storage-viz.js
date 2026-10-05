@@ -143,48 +143,17 @@ function inspectSlice(element, config, datum) {
     });
 }
 
-function unavailableOption(element, config, compact) {
-    const colors = palette(element);
-
+function unavailableOption(element, config) {
     return {
         animation: false,
         stateAnimation: { duration: 0 },
-        graphic: compact ? [
-            {
-                type: 'text',
-                silent: true,
-                left: 'center',
-                top: '43%',
-                style: {
-                    text: config.measurement_available ? (config.authoritative || '—') : '—',
-                    fill: colors.text,
-                    fontSize: 15,
-                    fontWeight: 600,
-                    fontFamily: 'inherit',
-                    textAlign: 'center',
-                },
-            },
-            {
-                type: 'text',
-                silent: true,
-                left: 'center',
-                top: '57%',
-                style: {
-                    text: config.measurement_available ? 'No allowance' : 'No measurement',
-                    fill: colors.muted,
-                    fontSize: 8,
-                    fontWeight: 600,
-                    fontFamily: 'inherit',
-                    textAlign: 'center',
-                },
-            },
-        ] : [],
+        graphic: [],
         series: [],
     };
 }
 
-function storageRows(config, compact) {
-    if (! compact && Array.isArray(config.segments) && config.segments.length > 0) {
+function storageRows(config) {
+    if (Array.isArray(config.segments) && config.segments.length > 0) {
         return config.segments.filter((row) => Number(row.bytes) > 0);
     }
 
@@ -197,9 +166,9 @@ function storageRows(config, compact) {
         }));
 }
 
-function usedSlices(config, colors, compact) {
+function usedSlices(config, colors) {
     const usedPercent = clamp(config.percent, 0, 100);
-    const rows = storageRows(config, compact);
+    const rows = storageRows(config);
     const totalUsedBytes = rows.reduce((sum, row) => sum + (Number(row.bytes) || 0), 0);
     if (totalUsedBytes <= 0 || usedPercent <= 0) return [];
 
@@ -212,10 +181,6 @@ function usedSlices(config, colors, compact) {
         };
     }).filter((entry) => entry.bytes > 0 && entry.capacityShare > 0);
 
-    if (compact) {
-        return candidates.map((entry, index) => sliceFromEntry(entry, colors.chart[index % colors.chart.length], true));
-    }
-
     const visible = [];
     const grouped = [];
     for (const entry of candidates) {
@@ -226,7 +191,7 @@ function usedSlices(config, colors, compact) {
         }
     }
 
-    const slices = visible.map((entry, index) => sliceFromEntry(entry, colors.chart[index % colors.chart.length], false));
+    const slices = visible.map((entry, index) => sliceFromEntry(entry, colors.chart[index % colors.chart.length]));
     if (grouped.length > 0) {
         const bytes = grouped.reduce((sum, entry) => sum + entry.bytes, 0);
         const files = grouped.reduce((sum, entry) => sum + (Number(entry.row.files) || 0), 0);
@@ -256,7 +221,7 @@ function usedSlices(config, colors, compact) {
     return slices;
 }
 
-function sliceFromEntry(entry, color, compact) {
+function sliceFromEntry(entry, color) {
     const row = entry.row;
     const area = row.area || row.key || 'referenced';
 
@@ -271,11 +236,9 @@ function sliceFromEntry(entry, color, compact) {
         capacityShare: entry.capacityShare,
         itemStyle: {
             color,
-            opacity: compact ? 1 : 0.84,
+            opacity: 0.84,
         },
-        emphasis: compact ? {
-            disabled: true,
-        } : {
+        emphasis: {
             focus: 'none',
             scale: false,
             itemStyle: { opacity: 1 },
@@ -283,9 +246,9 @@ function sliceFromEntry(entry, color, compact) {
     };
 }
 
-function storageSlices(config, colors, compact) {
+function storageSlices(config, colors) {
     const usedPercent = clamp(config.percent, 0, 100);
-    const slices = usedSlices(config, colors, compact);
+    const slices = usedSlices(config, colors);
 
     if (slices.length === 0 && usedPercent > 0) {
         slices.push({
@@ -299,11 +262,9 @@ function storageSlices(config, colors, compact) {
             capacityShare: usedPercent,
             itemStyle: {
                 color: colors.accent,
-                opacity: compact ? 1 : 0.84,
+                opacity: 0.84,
             },
-            emphasis: compact ? {
-                disabled: true,
-            } : {
+            emphasis: {
                 focus: 'none',
                 scale: false,
                 itemStyle: { opacity: 1 },
@@ -335,59 +296,24 @@ function storageSlices(config, colors, compact) {
     return slices;
 }
 
-function compactGraphics(colors, config, usedPercent) {
-    return [
-        {
-            type: 'text',
-            silent: true,
-            left: 'center',
-            top: '39%',
-            style: {
-                text: config.authoritative || '—',
-                fill: colors.text,
-                fontSize: 15,
-                fontWeight: 620,
-                fontFamily: 'inherit',
-                textAlign: 'center',
-            },
-        },
-        {
-            type: 'text',
-            silent: true,
-            left: 'center',
-            top: '54%',
-            style: {
-                text: `${usedPercent.toFixed(1)}% used`,
-                fill: colors.muted,
-                fontSize: 8,
-                fontWeight: 600,
-                fontFamily: 'inherit',
-                textAlign: 'center',
-            },
-        },
-    ];
-}
-
 function storageOption(element, config) {
-    const compact = element.classList.contains('is-compact');
     if (! config.configured || ! config.measurement_available || config.percent === null) {
-        return unavailableOption(element, config, compact);
+        return unavailableOption(element, config);
     }
 
     const colors = palette(element);
-    const usedPercent = clamp(config.percent, 0, 100);
-    const slices = storageSlices(config, colors, compact);
+    const slices = storageSlices(config, colors);
 
     return {
         animation: false,
         stateAnimation: { duration: 0 },
-        graphic: compact ? compactGraphics(colors, config, usedPercent) : [],
+        graphic: [],
         series: [
             {
                 id: 'storage-capacity-donut',
                 type: 'pie',
-                silent: compact,
-                radius: compact ? ['61%', '82%'] : ['58.125%', '88.125%'],
+                silent: false,
+                radius: ['58.125%', '88.125%'],
                 center: ['50%', '50%'],
                 startAngle: 90,
                 clockwise: true,
@@ -398,9 +324,7 @@ function storageOption(element, config) {
                 padAngle: 0,
                 label: { show: false },
                 labelLine: { show: false },
-                emphasis: compact ? {
-                    disabled: true,
-                } : {
+                emphasis: {
                     focus: 'none',
                     scale: false,
                 },
@@ -440,7 +364,6 @@ function cancelInspectorReset(entry) {
 }
 
 function bindInspector(element, entry) {
-    if (element.classList.contains('is-compact')) return;
 
     entry.chart.on('mouseover', (params) => {
         if (params?.seriesId !== 'storage-capacity-donut') return;
