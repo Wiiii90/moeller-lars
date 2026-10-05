@@ -1307,7 +1307,7 @@
         grid-template-columns:
             minmax(0, 5fr)
             minmax(9rem, 2fr)
-            minmax(25.25rem, 5fr) !important;
+            minmax(28.5rem, 5fr) !important;
     }
 
     .admin-pages__primary-grid,
@@ -1353,8 +1353,10 @@
         width: 1.35rem !important;
         min-width: 1.35rem !important;
         min-height: 2rem;
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
         padding-inline: 0 !important;
-        justify-content: center !important;
+        justify-items: center;
     }
 
     .admin-pages__row-actions .admin-action__label{
@@ -1401,8 +1403,10 @@
         width: 1.35rem !important;
         min-width: 1.35rem !important;
         min-height: 2rem;
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
         padding-inline: 0 !important;
-        justify-content: center !important;
+        justify-items: center;
     }
 
     .admin-pages__row-actions .admin-action__label{
