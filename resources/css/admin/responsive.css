@@ -1246,11 +1246,10 @@
 
 /* ---------- Pages responsive authority ---------- */
 
-/* Metrics: identical state semantics to Dashboard. */
+/* Pages chooses the semantic members for the shared 6 / 3 / 2 metric state.
+ * Geometry and divider axes are owned by .admin-metrics--six-state below. */
 .admin-pages-workspace .pages-status-metrics{
     --admin-metric-columns: 6 !important;
-    grid-auto-flow: row !important;
-    gap: 0 !important;
 }
 
 .admin-pages-workspace .pages-metric--total{
@@ -1258,14 +1257,6 @@
 }
 
 @container admin-workspace (max-width: 64rem){
-    .admin-pages-workspace .pages-status-metrics{
-        --admin-metric-columns: 3 !important;
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-auto-flow: row !important;
-        gap: 0 !important;
-    }
-
     .admin-pages-workspace .pages-metric{
         display: none !important;
     }
@@ -1276,33 +1267,15 @@
         .pages-metric--navigation
     ){
         display: block !important;
-        min-width: 0;
-        grid-column: auto !important;
-        grid-row: auto !important;
-        width: 100% !important;
-        max-width: none !important;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-        border-right: 0 !important;
     }
 
     .admin-pages-workspace .pages-metric--published{
         padding-left: 0 !important;
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-pages-workspace .pages-metric--unpublished{
-        border-right: 1px solid var(--admin-line) !important;
     }
 }
 
 @media (max-width: 63.99rem){
     @container admin-workspace (max-width: 38rem){
-        .admin-pages-workspace .pages-status-metrics{
-            --admin-metric-columns: 2 !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        }
-
         .admin-pages-workspace .pages-status-metrics > .pages-metric{
             display: none !important;
         }
@@ -1312,25 +1285,17 @@
             .pages-metric--unpublished
         ){
             display: block !important;
-            min-width: 0;
-            grid-column: auto !important;
-            grid-row: auto !important;
-            width: 100% !important;
-            max-width: none !important;
-            padding: 1.05rem 1rem !important;
-            border-top: 0 !important;
-            border-right: 0 !important;
         }
 
         .admin-pages-workspace .pages-metric--published{
             padding-left: 0 !important;
-            border-right: 1px solid var(--admin-line) !important;
         }
     }
 }
 
-/* Hierarchy: Template yields first, then Page type. Actions keep complete
- * labels in five fixed semantic slots until the actual table is Minimal. */
+/* Template is supportive and yields first. Page type stays explicit because it
+ * is an editable column. When the five action slots become the pressure point,
+ * they compact in place before Page type is sacrificed. */
 @container admin-table (max-width: 76rem){
     .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
@@ -1338,7 +1303,10 @@
 
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns: minmax(0, 1fr) 9rem 25.5rem !important;
+        grid-template-columns:
+            minmax(0, 5fr)
+            minmax(9rem, 2fr)
+            minmax(25.25rem, 5fr) !important;
     }
 
     .admin-pages__primary-grid,
@@ -1348,59 +1316,26 @@
     }
 
     .admin-pages__utility-grid{
-        grid-template-columns: 22.75rem var(--admin-table-selection-width) !important;
+        grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width) !important;
     }
 }
 
-@container admin-table (max-width: 52rem){
-    .admin-hierarchy--pages .admin-pages__type,
+@container admin-table (max-width: 60rem){
     .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
 
-    .admin-hierarchy--pages .admin-responsive-meta{
-        display: block !important;
-    }
-
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns: minmax(0, 1fr) 25.5rem !important;
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(8rem, 10rem)
+            11.05rem !important;
     }
 
     .admin-pages__primary-grid{
         grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
         gap: .3rem !important;
-    }
-}
-
-/* Keep the pre-collapse Pages hierarchy state monotonic when the Sidebar gives
- * its width back to the workspace. Only supportive columns stay folded here;
- * action labels still follow actual table pressure and may remain readable. */
-@media (max-width: 63.99rem){
-    .admin-hierarchy--pages .admin-pages__type,
-    .admin-hierarchy--pages .admin-pages__template{
-        display: none !important;
-    }
-
-    .admin-hierarchy--pages .admin-responsive-meta{
-        display: block !important;
-    }
-
-    .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns: minmax(0, 1fr) 25.5rem !important;
-    }
-
-    .admin-pages__primary-grid{
-        grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
-        gap: .3rem !important;
-    }
-}
-
-@container admin-table (max-width: 38rem){
-    .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns: minmax(0, 1fr) 11.25rem !important;
     }
 
     .admin-pages__utility-grid{
@@ -1427,6 +1362,25 @@
 
     .admin-pages__redirect-target{
         width: auto !important;
+    }
+}
+
+@container admin-table (max-width: 38rem){
+    .admin-hierarchy--pages .admin-pages__header,
+    .admin-hierarchy--pages .admin-pages__row{
+        grid-template-columns:
+            minmax(0, 1fr)
+            7.5rem
+            11.05rem !important;
+    }
+
+    .admin-pages__primary-grid{
+        grid-template-columns: 2.75rem 1.5rem minmax(0, 1fr) !important;
+        gap: .25rem !important;
+    }
+
+    .admin-hierarchy--pages .admin-pages__type{
+        padding-inline: .35rem;
     }
 }
 
@@ -2221,6 +2175,72 @@
         width: 8rem !important;
     }
 
+}
+
+/* Shared Dashboard-style six-metric state geometry. Feature code selects
+ * semantic members; this owner alone defines 3-way/2-way tracks and divider
+ * axes so hidden source siblings cannot erase separators. */
+@container admin-workspace (max-width: 64rem){
+    .admin-metrics--six-state{
+        --admin-metric-columns: 3 !important;
+        position: relative;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
+        gap: 0 !important;
+    }
+
+    .admin-metrics--six-state > .admin-metric{
+        box-sizing: border-box;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        justify-self: stretch !important;
+        align-self: stretch !important;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+        border-right: 0 !important;
+    }
+
+    .admin-metrics--six-state::before,
+    .admin-metrics--six-state::after{
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--admin-line);
+        content: "";
+        pointer-events: none;
+    }
+
+    .admin-metrics--six-state::before{
+        left: 33.333333%;
+    }
+
+    .admin-metrics--six-state::after{
+        left: 66.666667%;
+    }
+}
+
+@media (max-width: 63.99rem){
+    @container admin-workspace (max-width: 38rem){
+        .admin-metrics--six-state{
+            --admin-metric-columns: 2 !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+
+        .admin-metrics--six-state::before{
+            left: 50%;
+        }
+
+        .admin-metrics--six-state::after{
+            display: none !important;
+            content: none !important;
+        }
+    }
 }
 
 /* Canonical responsive metric geometry.
