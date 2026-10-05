@@ -18,6 +18,13 @@
     --admin-table-leading-square: 1.65rem;
     --admin-table-selection-width: 2.5rem;
 
+    /* Stable row-action rail geometry. Responsive consumers reference these
+     * semantic rail widths instead of repeating numeric widths page by page. */
+    --admin-row-actions-move-state-delete-width: 23rem;
+    --admin-row-actions-move-state-delete-minimal-width: 8.55rem;
+    --admin-row-actions-journal-blog-width: 39rem;
+    --admin-row-actions-journal-blog-narrow-width: 12.15rem;
+
     /* Shared semantic typography for ordinary table/control surfaces. Feature
      * layouts consume these tokens instead of shrinking text to make it fit. */
     --admin-font-size-control-label: .68rem;
@@ -189,7 +196,7 @@
 }
 
 .admin-row-actions--move-state-delete {
-    --admin-row-actions-width: 23rem;
+    --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
     --admin-row-actions-columns: max-content max-content max-content minmax(6.25rem, max-content) max-content;
     --admin-row-state-slot: 6.25rem;
 }
@@ -201,7 +208,7 @@
 }
 
 .admin-row-actions--journal-blog {
-    --admin-row-actions-width: 39rem;
+    --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
     --admin-row-actions-columns: max-content max-content max-content minmax(8.5rem, max-content) max-content max-content max-content;
     --admin-row-state-slot: 8.5rem;
 }
@@ -226,7 +233,7 @@
  * Minimal (38rem): every stable rail becomes icon-only on the same semantic axes. */
 @container admin-table (max-width: 54rem) {
     .admin-row-actions--journal-blog {
-        --admin-row-actions-width: 12.15rem;
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-narrow-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);
         --admin-row-actions-gap: .45rem;
     }
@@ -365,7 +372,7 @@
  * contain Position/Drag + Name, Page Type and Template each own one full unit,
  * and Actions + trailing Selection own the final two units. */
 .admin-hierarchy--pages {
-    --admin-row-actions-width: 23rem;
+    --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
 
 .admin-hierarchy--pages .admin-pages__header,
