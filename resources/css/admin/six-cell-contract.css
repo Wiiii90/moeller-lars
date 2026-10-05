@@ -111,8 +111,9 @@
  * Gallery, Journal and Custom Page use one row and one terminal Selection axis:
  * Search absorbs spare width; filter selects keep readable fixed widths; Clear
  * stays textual; feature actions collapse together to square icons under real
- * pressure; Selection collapses at the same breakpoint and keeps its independent
- * count centered on the table checkbox rail. */
+ * pressure; Selection collapses at the same breakpoint. Table/hierarchy
+ * surfaces keep the independent count on their checkbox rail; contact sheets
+ * keep the same trigger/count pair intrinsic. */
 .admin-data-controls--content-minimum {
     display: grid !important;
     width: 100%;
