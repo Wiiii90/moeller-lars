@@ -101,9 +101,7 @@
 .admin-data-field,
 .admin-data-control-group,
 .admin-task-field,
-.admin-task-control-group,
-.gallery-workspace__field,
-.gallery-workspace__control-group {
+.admin-task-control-group {
     display: grid;
     min-width: 0;
     gap: .28rem;
@@ -119,9 +117,7 @@
 .admin-data-field > span,
 .admin-data-control-label,
 .admin-task-field > span,
-.admin-task-control-label,
-.gallery-workspace__field > span,
-.gallery-workspace__control-label {
+.admin-task-control-label > span {
     color: var(--admin-muted);
     font-size: var(--admin-font-size-control-label);
     font-weight: 700;
@@ -138,9 +134,7 @@
     .admin-data-field > span,
     .admin-data-control-label,
     .admin-task-field > span,
-    .admin-task-control-label,
-    .gallery-workspace__field > span,
-    .gallery-workspace__control-label
+    .admin-task-control-label
 ) {
     min-width: 0;
     overflow: hidden;
@@ -153,9 +147,7 @@
 .admin-data-field input,
 .admin-data-field select,
 .admin-task-field input,
-.admin-task-field select,
-.gallery-workspace__field input,
-.gallery-workspace__field select {
+.admin-task-field select input select {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -178,16 +170,13 @@
 .admin-data-field input:focus,
 .admin-data-field select:focus,
 .admin-task-field input:focus,
-.admin-task-field select:focus,
-.gallery-workspace__field input:focus,
-.gallery-workspace__field select:focus {
+.admin-task-field select:focus input:focus select:focus {
     border-color: var(--admin-accent);
 }
 
 .admin-field input::placeholder,
 .admin-data-field input::placeholder,
-.admin-task-field input::placeholder,
-.gallery-workspace__field input::placeholder {
+.admin-task-field input::placeholder input::placeholder {
     color: var(--admin-faint);
     opacity: 1;
 }
@@ -206,8 +195,7 @@
     min-height: var(--admin-control-height);
 }
 
-.admin-data-control-group > .admin-action,
-.gallery-workspace__control-group > .admin-action {
+.admin-data-control-group > .admin-action > .admin-action {
     justify-self: start;
 }
 
