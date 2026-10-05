@@ -1168,303 +1168,59 @@
     }
 }
 
-/* Analytics / Storage / Activity responsive authority
- * Shared contract:
- * - semantic metrics: 6 / 6 / 3 / 2
- * - one-row controls at every supported width
- * - burger/sidebar collapse is monotonic
- * - supportive table columns yield before task-critical identity/state/actions
- * - Visual Stage height remains the shared fixed token
- */
+/* Analytics / Storage / Activity responsive authority.
+ *
+ * The shared owners now handle metric tracks, toolbar geometry and row-action
+ * density. These pages declare only semantic visibility/column priority.
+ * No viewport mirror of the same container state is maintained here. */
 
-/* ---------- Metrics ---------- */
-@container admin-workspace (max-width: 54rem){
-    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics){
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
-
-    :is(.analytics-status-metrics > .analytics-metric, .storage-status-metrics > .storage-metric, .activity-status-metrics > .activity-metric){
+/* ---------- semantic metrics ---------- */
+@container admin-workspace (max-width: 64rem){
+    :is(
+        .analytics-status-metrics > .analytics-metric,
+        .storage-status-metrics > .storage-metric,
+        .activity-status-metrics > .activity-metric
+    ){
         display: none !important;
     }
 
-    .analytics-status-metrics > :is(.analytics-metric--visits, .analytics-metric--unique, .analytics-metric--actions),
-.storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining, .storage-metric--files),
-.activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending, .activity-metric--commits){
+    .analytics-status-metrics > :is(
+        .analytics-metric--visits,
+        .analytics-metric--unique,
+        .analytics-metric--actions
+    ),
+    .storage-status-metrics > :is(
+        .storage-metric--used,
+        .storage-metric--remaining,
+        .storage-metric--files
+    ),
+    .activity-status-metrics > :is(
+        .activity-metric--changes,
+        .activity-metric--pending,
+        .activity-metric--commits
+    ){
         display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-        border-right: 1px solid var(--admin-line) !important;
     }
 
-    .analytics-status-metrics > .analytics-metric--actions,
-.storage-status-metrics > .storage-metric--files,
-.activity-status-metrics > .activity-metric--commits{
-        border-right: 0 !important;
-    }
-}
+    .storage-status-metrics > .storage-metric--used,
+    .activity-status-metrics > .activity-metric--changes{ order: 1; }
 
-@media (min-width: 38.01rem) and (max-width: 63.99rem){
-    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics){
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
+    .storage-status-metrics > .storage-metric--remaining,
+    .activity-status-metrics > .activity-metric--pending{ order: 2; }
 
-    :is(.analytics-status-metrics > .analytics-metric, .storage-status-metrics > .storage-metric, .activity-status-metrics > .activity-metric){
-        display: none !important;
-    }
-
-    .analytics-status-metrics > :is(.analytics-metric--visits, .analytics-metric--unique, .analytics-metric--actions),
-.storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining, .storage-metric--files),
-.activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending, .activity-metric--commits){
-        display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .analytics-status-metrics > .analytics-metric--actions,
-.storage-status-metrics > .storage-metric--files,
-.activity-status-metrics > .activity-metric--commits{
-        border-right: 0 !important;
-    }
+    .storage-status-metrics > .storage-metric--files,
+    .activity-status-metrics > .activity-metric--commits{ order: 3; }
 }
 
 @container admin-workspace (max-width: 38rem){
-    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics){
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        grid-auto-columns: minmax(0, 1fr) !important;
-        grid-auto-flow: row !important;
-    }
-
-    :is(.analytics-status-metrics > .analytics-metric, .storage-status-metrics > .storage-metric, .activity-status-metrics > .activity-metric){
-        display: none !important;
-    }
-
-    .analytics-status-metrics > .analytics-metric--visits,
-.storage-status-metrics > .storage-metric--used,
-.activity-status-metrics > .activity-metric--changes{
-        display: block !important;
-        grid-column: 1 !important;
-        width: auto !important;
-        max-width: none !important;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .analytics-status-metrics > .analytics-metric--unique,
-.storage-status-metrics > .storage-metric--remaining,
-.activity-status-metrics > .activity-metric--pending{
-        display: block !important;
-        grid-column: 2 !important;
-        width: auto !important;
-        max-width: none !important;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-        border-right: 0 !important;
-    }
-}
-
-@media (max-width: 38rem){
-    :is(.analytics-status-metrics, .storage-status-metrics, .activity-status-metrics){
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .analytics-status-metrics > .analytics-metric--visits,
-.storage-status-metrics > .storage-metric--used,
-.activity-status-metrics > .activity-metric--changes{
-        grid-column: 1 !important;
-    }
-
-    .analytics-status-metrics > .analytics-metric--unique,
-.storage-status-metrics > .storage-metric--remaining,
-.activity-status-metrics > .activity-metric--pending{
-        grid-column: 2 !important;
-    }
-}
-
-/* ---------- One-row controls ---------- */
-.analytics-detail-surface > .admin-data-controls,
-.admin-storage .media-workspace__controls,
-.activity-workspace__controls{
-    display: grid !important;
-    gap: .35rem !important;
-    align-items: end !important;
-}
-
-.analytics-detail-surface > .admin-data-controls{
-    grid-template-columns: minmax(16.666667%, 1fr) 7.5rem 6.5rem !important;
-}
-
-.admin-storage .media-workspace__controls,
-.activity-workspace__controls{
-    grid-template-columns:
-        minmax(16.666667%, 1fr)
-        repeat(4, minmax(0, .8fr))
-        max-content
-        max-content
-        8rem !important;
-}
-
-:is(.analytics-detail-surface > .admin-data-controls, .admin-storage .media-workspace__controls, .activity-workspace__controls) > .admin-data-controls__filters,
-:is(.admin-storage .media-workspace__controls, .activity-workspace__controls) > .admin-data-controls__utility{
-    display: contents !important;
-}
-
-:is(.analytics-detail-surface > .admin-data-controls, .admin-storage .media-workspace__controls, .activity-workspace__controls) > :first-child{
-    grid-column: auto !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    padding-right: 0 !important;
-}
-
-:is(.analytics-detail-surface > .admin-data-controls, .admin-storage .media-workspace__controls, .activity-workspace__controls) > .admin-data-controls__filters > *{
-    grid-column: auto !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    padding-inline: 0 !important;
-}
-
-.admin-storage .media-workspace__controls > .admin-data-controls__utility > :first-child,
-.activity-workspace__controls > .admin-data-controls__utility > :first-child{
-    grid-column: auto !important;
-    width: max-content !important;
-    min-width: 0 !important;
-    padding-inline: 0 !important;
-}
-
-.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(2),
-.activity-workspace__controls > .admin-data-controls__utility > :nth-child(2){
-    grid-column: auto !important;
-    width: max-content !important;
-    min-width: 0 !important;
-    padding-inline: 0 !important;
-}
-
-.admin-storage .media-workspace__controls > .admin-data-controls__utility > :last-child,
-.activity-workspace__controls > .admin-data-controls__utility > :last-child{
-    grid-column: auto !important;
-    width: 8rem !important;
-    min-width: 8rem !important;
-    padding-inline: 0 !important;
-}
-
-.admin-storage .media-workspace__controls .admin-data-control-label,
-.activity-workspace__controls .admin-data-control-label,
-.analytics-detail-surface > .admin-data-controls .admin-data-control-label,
-.analytics-detail-surface > .admin-data-controls .admin-data-field > span{
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.activity-control--view .admin-toolbar{
-    width: max-content !important;
-    grid-template-columns: repeat(2, max-content) !important;
-}
-
-.activity-control--view .admin-action,
-.activity-control--reset .admin-action{
-    width: auto !important;
-    min-width: 0 !important;
-    white-space: nowrap;
-}
-
-@container admin-workspace (max-width: 54rem){
-    .admin-storage .media-workspace__controls,
-.activity-workspace__controls{
-        grid-template-columns:
-            minmax(16.666667%, 1fr)
-            repeat(4, minmax(0, 1fr))
-            max-content
-            max-content
-            7rem !important;
-        gap: .25rem !important;
-    }
-
-    .activity-control--view .admin-action__label,
-.activity-control--reset .admin-action__label,
-.admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action__label{
-        display: none !important;
-    }
-
-    .activity-control--view .admin-action,
-.activity-control--reset .admin-action,
-.admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action{
-        padding-inline: .2rem !important;
-        justify-content: center !important;
-    }
-}
-
-@media (min-width: 38.01rem) and (max-width: 63.99rem){
-    .admin-storage .media-workspace__controls,
-.activity-workspace__controls{
-        grid-template-columns:
-            minmax(16.666667%, 1fr)
-            repeat(4, minmax(0, 1fr))
-            max-content
-            max-content
-            7rem !important;
-        gap: .25rem !important;
-    }
-
-    .activity-control--view .admin-action__label,
-.activity-control--reset .admin-action__label,
-.admin-storage .media-workspace__controls .admin-data-controls__utility .admin-action__label{
+    .analytics-status-metrics > .analytics-metric--actions,
+    .storage-status-metrics > .storage-metric--files,
+    .activity-status-metrics > .activity-metric--commits{
         display: none !important;
     }
 }
 
-@container admin-workspace (max-width: 38rem){
-    .analytics-detail-surface > .admin-data-controls{
-        grid-template-columns: minmax(16.666667%, 1fr) minmax(4.75rem, max-content) minmax(4rem, max-content) !important;
-        gap: .2rem !important;
-    }
-
-    .admin-storage .media-workspace__controls,
-.activity-workspace__controls{
-        grid-template-columns:
-            minmax(16.666667%, 1fr)
-            repeat(4, minmax(0, 1fr))
-            2.25rem
-            4.25rem
-            5.75rem !important;
-        gap: .16rem !important;
-    }
-
-    .admin-storage .media-workspace__controls > .admin-data-controls__utility > :last-child,
-.activity-workspace__controls > .admin-data-controls__utility > :last-child{
-        width: 5.75rem !important;
-        min-width: 5.75rem !important;
-    }
-
-    .activity-control--view .admin-toolbar{
-        width: 4.25rem !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: .08rem !important;
-    }
-
-    .activity-control--view .admin-action,
-.activity-control--reset .admin-action{
-        width: 100% !important;
-        padding-inline: .12rem !important;
-        justify-content: center !important;
-    }
-
-    .admin-storage .media-workspace__view-options{
-        width: 4.25rem !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        gap: .08rem !important;
-    }
-}
-
-/* Storage grid density follows the workspace rather than the viewport. */
+/* ---------- Storage contact sheet ---------- */
 @container admin-workspace (max-width: 54rem){
     .admin-storage .media-workspace__grid{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -1478,60 +1234,35 @@
 }
 
 /* ---------- Storage table ---------- */
-@container admin-table (max-width: 50rem){
+@container admin-table (max-width: 54rem){
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
-.admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
-.admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
-.admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
-.admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
-.admin-storage .media-workspace__table-wrap .media-workspace__usage-cell{
+    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
+    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
+    .admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
+    .admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
+    .admin-storage .media-workspace__table-wrap .media-workspace__usage-cell{
         display: none !important;
     }
 
-    .admin-storage .media-workspace__col-media{
-        width: auto !important;
-    }
+    .admin-storage .media-workspace__col-media{ width: auto !important; }
+    .admin-storage .media-workspace__col-type{ width: 6rem !important; }
+    .admin-storage .media-workspace__col-size{ width: 5rem !important; }
+    .admin-storage .media-workspace__col-status{ width: 5.5rem !important; }
+    .admin-storage .media-workspace__col-actions{ width: 19.3rem !important; }
+    .admin-storage .media-workspace__col-selection{ width: var(--admin-table-selection-width) !important; }
 
-    .admin-storage .media-workspace__col-type{
-        width: 6rem !important;
-    }
-
-    .admin-storage .media-workspace__col-size{
-        width: 5rem !important;
-    }
-
-    .admin-storage .media-workspace__col-status{
-        width: 5.5rem !important;
-    }
-
-    .admin-storage .media-workspace__col-actions{
-        width: 7rem !important;
-    }
-
-    .admin-storage .media-workspace__col-selection{
-        width: var(--admin-table-selection-width) !important;
-    }
-
-    .admin-storage .media-workspace__row-actions{
-        gap: .06rem !important;
-    }
-
-    .admin-storage .media-workspace__row-actions .admin-action__label{
-        display: none !important;
-    }
-
-    .admin-storage .media-workspace__row-actions .admin-action{
-        padding-inline: .08rem !important;
+    .admin-storage .media-workspace__actions-head .admin-row-actions-heading{
+        --admin-row-actions-width: 19rem;
     }
 }
 
 @container admin-table (max-width: 38rem){
     .admin-storage .media-workspace__table-wrap .media-workspace__col-type,
-.admin-storage .media-workspace__table-wrap .media-workspace__col-size,
-.admin-storage .media-workspace__table-wrap .media-workspace__type-head,
-.admin-storage .media-workspace__table-wrap .media-workspace__size-head,
-.admin-storage .media-workspace__table-wrap .media-workspace__type-cell,
-.admin-storage .media-workspace__table-wrap .media-workspace__size-cell{
+    .admin-storage .media-workspace__table-wrap .media-workspace__col-size,
+    .admin-storage .media-workspace__table-wrap .media-workspace__type-head,
+    .admin-storage .media-workspace__table-wrap .media-workspace__size-head,
+    .admin-storage .media-workspace__table-wrap .media-workspace__type-cell,
+    .admin-storage .media-workspace__table-wrap .media-workspace__size-cell{
         display: none !important;
     }
 
@@ -1539,181 +1270,65 @@
         display: block !important;
     }
 
-    .admin-storage .media-workspace__col-status{
-        width: 5rem !important;
-    }
+    .admin-storage .media-workspace__col-status{ width: 5rem !important; }
+    .admin-storage .media-workspace__col-actions{ width: 7.05rem !important; }
 
-    .admin-storage .media-workspace__col-actions{
-        width: 6rem !important;
+    .admin-storage .media-workspace__actions-head .admin-row-actions-heading{
+        --admin-row-actions-width: 6.75rem;
     }
 }
 
 /* ---------- Activity tables ---------- */
-@container admin-table (max-width: 50rem){
+@container admin-table (max-width: 54rem){
     .activity-events-table .activity-col--who,
-.activity-events-table .activity-col--publication,
-.activity-commits-table .activity-commit-col--who,
-.activity-commits-table .activity-commit-col--publication{
+    .activity-events-table .activity-col--publication,
+    .activity-commits-table .activity-commit-col--who,
+    .activity-commits-table .activity-commit-col--publication{
         display: none !important;
     }
 
-    .activity-events-table .activity-col--change{
-        width: 20% !important;
-    }
-
-    .activity-events-table .activity-col--when{
-        width: 7rem !important;
-    }
-
-    .activity-events-table .activity-col--target{
-        width: auto !important;
-    }
-
+    .activity-events-table .activity-col--change{ width: 20% !important; }
+    .activity-events-table .activity-col--when{ width: 7rem !important; }
+    .activity-events-table .activity-col--target{ width: auto !important; }
     .activity-events-table .activity-col--area,
-.activity-events-table .activity-col--type{
-        width: 7rem !important;
-    }
+    .activity-events-table .activity-col--type{ width: 6.5rem !important; }
+    .activity-events-table .activity-col--actions{ width: 9.8rem !important; }
 
-    .activity-events-table .activity-col--actions,
-.activity-commits-table .activity-commit-col--actions{
-        width: 6.5rem !important;
-    }
+    .activity-commits-table .activity-commit-col--commit{ width: 8rem !important; }
+    .activity-commits-table .activity-commit-col--when{ width: 7rem !important; }
+    .activity-commits-table .activity-commit-col--summary{ width: auto !important; }
+    .activity-commits-table .activity-commit-col--actions{ width: 14.55rem !important; }
 
-    .activity-commits-table .activity-commit-col--commit{
-        width: 8rem !important;
-    }
-
-    .activity-commits-table .activity-commit-col--when{
-        width: 7rem !important;
-    }
-
-    .activity-commits-table .activity-commit-col--summary{
-        width: auto !important;
-    }
-
-    .activity-row-actions .admin-action__label{
-        display: none !important;
-    }
-
-    .activity-row-actions .admin-action{
-        padding-inline: .12rem !important;
-        justify-content: center !important;
-    }
+    .activity-events-table .admin-row-actions-heading{ --admin-row-actions-width: 9.5rem; }
+    .activity-commits-table .admin-row-actions-heading{ --admin-row-actions-width: 14.25rem; }
 
     .activity-events-table .admin-responsive-meta,
-.activity-commits-table .admin-responsive-meta{
+    .activity-commits-table .admin-responsive-meta{
         display: block !important;
     }
 }
 
 @container admin-table (max-width: 38rem){
     .activity-events-table .activity-col--area,
-.activity-events-table .activity-col--type{
+    .activity-events-table .activity-col--type{
         display: none !important;
     }
 
-    .activity-events-table .activity-col--change{
-        width: auto !important;
-    }
+    .activity-events-table .activity-col--change{ width: auto !important; }
+    .activity-events-table .activity-col--when{ width: 5.75rem !important; }
+    .activity-events-table .activity-col--target{ width: 7rem !important; }
+    .activity-events-table .activity-col--actions{ width: 3.45rem !important; }
 
-    .activity-events-table .activity-col--when{
-        width: 5.75rem !important;
-    }
+    .activity-commits-table .activity-commit-col--commit{ width: 6.25rem !important; }
+    .activity-commits-table .activity-commit-col--when{ width: 5.75rem !important; }
+    .activity-commits-table .activity-commit-col--actions{ width: 5.25rem !important; }
 
-    .activity-events-table .activity-col--target{
-        width: 7rem !important;
-    }
-
-    .activity-events-table .activity-col--actions,
-.activity-commits-table .activity-commit-col--actions{
-        width: 5.5rem !important;
-    }
+    .activity-events-table .admin-row-actions-heading{ --admin-row-actions-width: 3.15rem; }
+    .activity-commits-table .admin-row-actions-heading{ --admin-row-actions-width: 4.95rem; }
 
     .activity-events-table .admin-responsive-meta--minimal{
         display: block !important;
     }
-
-    .activity-commits-table .activity-commit-col--commit{
-        width: 6.25rem !important;
-    }
-
-    .activity-commits-table .activity-commit-col--when{
-        width: 5.75rem !important;
-    }
-}
-
-/* Analytics/Storage/Activity burger-shell monotonicity.
- * Sidebar collapse must not promote Storage density or Activity/Storage table
- * columns back to a wider state. Minimal remains owned by container rules. */
-@media (min-width: 38.01rem) and (max-width: 63.99rem){
-    .admin-storage .media-workspace__grid{
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
-.admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
-.admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
-.admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
-.admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
-.admin-storage .media-workspace__table-wrap .media-workspace__usage-cell{
-        display: none !important;
-    }
-
-    .admin-storage .media-workspace__col-media{
-        width: auto !important;
-    }
-
-    .admin-storage .media-workspace__col-type{
-        width: 6rem !important;
-    }
-
-    .admin-storage .media-workspace__col-size{
-        width: 5rem !important;
-    }
-
-    .admin-storage .media-workspace__col-status{
-        width: 5.5rem !important;
-    }
-
-    .admin-storage .media-workspace__col-actions{
-        width: 17rem !important;
-    }
-
-    .activity-events-table .activity-col--who,
-.activity-events-table .activity-col--publication,
-.activity-commits-table .activity-commit-col--who,
-.activity-commits-table .activity-commit-col--publication{
-        display: none !important;
-    }
-
-    .activity-events-table .activity-col--change{
-        width: 20% !important;
-    }
-
-    .activity-events-table .activity-col--when,
-.activity-commits-table .activity-commit-col--when{
-        width: 7rem !important;
-    }
-
-    .activity-events-table .activity-col--target,
-.activity-commits-table .activity-commit-col--summary{
-        width: auto !important;
-    }
-
-    .activity-events-table .activity-col--area,
-.activity-events-table .activity-col--type{
-        width: 7rem !important;
-    }
-
-    .activity-events-table .activity-col--actions,
-.activity-commits-table .activity-commit-col--actions{
-        width: 14rem !important;
-    }
-
-    .activity-commits-table .activity-commit-col--commit{
-        width: 8rem !important;
-    }
-
 }
 
 /* Shared Dashboard-style six-metric state geometry. Feature code selects
