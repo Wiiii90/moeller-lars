@@ -215,21 +215,6 @@
     transition: width .12s linear;
 }
 
-.gallery-workspace__controls {
-    display: grid;
-    grid-template-columns: minmax(11rem, 1.5fr) minmax(6.4rem, .65fr) minmax(8rem, .8fr) auto auto auto;
-    gap: .55rem;
-    align-items: end;
-}
-
-.gallery-workspace__gallery-actions {
-    display: flex;
-    min-width: 0;
-    gap: .35rem;
-    align-items: center;
-    flex-wrap: nowrap;
-}
-
 .gallery-workspace__result-surface > .admin-empty-state {
     border-top: 0;
 }
