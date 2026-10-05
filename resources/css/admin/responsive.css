@@ -456,6 +456,31 @@
     .home-source-table .admin-responsive-meta{ display: block; }
 }
 
+/* Home component actions yield before the Component column. The four shared
+ * semantic axes keep their positions while their labels disappear. */
+@container admin-table (max-width: 56rem){
+    .home-components-table__col-actions{
+        width: 7rem !important;
+    }
+
+    .home-components-table .admin-row-actions--four{
+        width: 6.75rem !important;
+        grid-template-columns: repeat(4, 1.35rem) !important;
+        gap: .45rem !important;
+    }
+
+    .home-components-table .admin-row-actions--four .admin-action{
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .home-components-table .admin-row-actions--four .admin-action__label{
+        display: none !important;
+    }
+}
+
 /* Table-specific Narrow reduction. */
 @container admin-table (max-width: 50rem){
 
@@ -514,10 +539,6 @@
         width: auto !important;
     }
 
-    .home-components-table__col-actions{
-        width: 7rem !important;
-    }
-
     .home-components-table .admin-responsive-meta,
 .journal-table .admin-responsive-meta,
 .activity-events-table .admin-responsive-meta,
@@ -526,23 +547,6 @@
     }
 
     .admin-responsive-meta--minimal{
-        display: none !important;
-    }
-
-    .home-components-table .admin-row-actions--four{
-        width: 6.75rem !important;
-        grid-template-columns: repeat(4, 1.35rem) !important;
-        gap: .45rem !important;
-    }
-
-    .home-components-table .admin-row-actions--four .admin-action{
-        width: 1.35rem !important;
-        min-width: 1.35rem !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .home-components-table .admin-row-actions--four .admin-action__label{
         display: none !important;
     }
 }
