@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <x-admin.workspace :title="$galleryContext['name']">
-        <x-admin.metrics :columns="6" class="gallery-status-metrics" aria-label="Gallery overview">
+        <x-admin.metrics :columns="6" class="gallery-status-metrics admin-metrics--six-state" aria-label="Gallery overview">
             @foreach ($metrics as $metric)
                 @php
                     $metricRole = match ($metric['label']) {
