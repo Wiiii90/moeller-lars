@@ -138,10 +138,6 @@
         align-items: end;
     }
 
-    .gallery-workspace__controls{
-        grid-auto-flow: column;
-        align-items: end;
-    }
 }
 
 /* Compact workspace: redistribute controls while preserving the global
@@ -175,20 +171,6 @@
         gap: .2rem;
     }
 
-    .gallery-workspace__controls{
-        grid-template-columns: minmax(10rem, 1.4fr) minmax(5.5rem, .6fr) minmax(6.5rem, .7fr) 4rem minmax(12rem, 1.2fr) 8.5rem !important;
-        gap: .35rem !important;
-        grid-auto-flow: row;
-    }
-
-    .gallery-workspace__gallery-actions{
-        gap: .15rem;
-    }
-
-    .gallery-workspace__gallery-actions .admin-action{
-        min-width: 0;
-        padding-inline: .32rem;
-    }
 
     .analytics-stage-rail{
         padding-left: 1.25rem;
