@@ -149,10 +149,13 @@ it('keeps Pages type and optional template in one responsive classification colu
         ->toContain('admin-pages__template');
 
     expect($tableContract)
+        ->toContain('--admin-pages-classification-control-width: 9.25rem')
         ->toContain('.admin-pages__classification.has-template')
-        ->toContain('repeat(2, minmax(0, 1fr))');
+        ->toContain('repeat(2, minmax(0, var(--admin-pages-classification-control-width)))');
 
     expect($responsive)
+        ->toContain('var(--admin-pages-classification-width)')
+        ->toContain('@container admin-table (max-width: 38rem)')
         ->toContain('.admin-pages__row > .admin-pages__classification.has-template')
         ->not->toContain('.admin-hierarchy--pages .admin-pages__template{');
 });
