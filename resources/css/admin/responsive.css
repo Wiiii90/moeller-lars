@@ -354,8 +354,7 @@
         width: 100%;
     }
 
-    .gallery-workspace__selection-menu,
-.admin-selection__menu,
+    .admin-selection__menu,
 .media-workspace__multi-action-menu{
         right: auto;
         left: 0;
