@@ -5,7 +5,6 @@
     $isHome = $section['type'] === \App\Domain\Content\SiteSectionType::Home->value;
     $homeState = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->tableState() : null;
     $homeTemplateOptions = $isHome ? \App\Domain\Content\HomeTemplate::options() : [];
-    $hasTemplateControl = $isHome || $section['type'] === \App\Domain\Content\SiteSectionType::Journal->value;
 @endphp
 
 <div
@@ -44,53 +43,45 @@
         </div>
     </div>
 
-    <div
-        class="admin-pages__classification {{ $hasTemplateControl ? 'has-template' : '' }}"
-        role="cell"
-        data-cell="page-type-template"
-    >
-        <div class="admin-pages__type">
-            @if ($isHome)
-                <span class="admin-inline-control-value">Landing Page</span>
-            @elseif ($section['can_convert'])
-                <select
-                    class="admin-inline-select"
-                    aria-label="Page type for {{ $label }}"
-                    wire:change="convertSectionType({{ $section['id'] }}, $event.target.value)"
-                >
-                    @foreach ($editableTypeOptions as $value => $typeLabel)
-                        <option value="{{ $value }}" @selected($section['type'] === $value)>{{ $typeLabel }}</option>
-                    @endforeach
-                </select>
-            @else
-                <span class="admin-inline-control-value">{{ $section['type_label'] }}</span>
-            @endif
-        </div>
+    <div class="admin-pages__type" role="cell" data-cell="page-type">
+        @if ($isHome)
+            <span class="admin-inline-control-value">Landing Page</span>
+        @elseif ($section['can_convert'])
+            <select
+                class="admin-inline-select"
+                aria-label="Page type for {{ $label }}"
+                wire:change="convertSectionType({{ $section['id'] }}, $event.target.value)"
+            >
+                @foreach ($editableTypeOptions as $value => $typeLabel)
+                    <option value="{{ $value }}" @selected($section['type'] === $value)>{{ $typeLabel }}</option>
+                @endforeach
+            </select>
+        @else
+            <span>{{ $section['type_label'] }}</span>
+        @endif
+    </div>
 
-        @if ($hasTemplateControl)
-            <div class="admin-pages__template">
-                @if ($isHome)
-                    <select
-                        class="admin-inline-select"
-                        aria-label="Home template"
-                        wire:change="changeHomeTemplate({{ $section['id'] }}, $event.target.value)"
-                    >
-                        @foreach ($homeTemplateOptions as $value => $templateLabel)
-                            <option value="{{ $value }}" @selected(($homeState['template'] ?? null) === $value)>{{ $templateLabel }}</option>
-                        @endforeach
-                    </select>
-                @else
-                    <select
-                        class="admin-inline-select"
-                        aria-label="Journal template for {{ $label }}"
-                        wire:change="changeJournalTemplate({{ $section['id'] }}, $event.target.value)"
-                    >
-                        @foreach ($journalTemplateOptions as $value => $templateLabel)
-                            <option value="{{ $value }}" @selected($section['template'] === $value)>{{ $templateLabel }}</option>
-                        @endforeach
-                    </select>
-                @endif
-            </div>
+    <div class="admin-pages__template" role="cell" data-cell="template">
+        @if ($isHome)
+            <select
+                class="admin-inline-select"
+                aria-label="Home template"
+                wire:change="changeHomeTemplate({{ $section['id'] }}, $event.target.value)"
+            >
+                @foreach ($homeTemplateOptions as $value => $templateLabel)
+                    <option value="{{ $value }}" @selected(($homeState['template'] ?? null) === $value)>{{ $templateLabel }}</option>
+                @endforeach
+            </select>
+        @elseif ($section['type'] === \App\Domain\Content\SiteSectionType::Journal->value)
+            <select
+                class="admin-inline-select"
+                aria-label="Journal template for {{ $label }}"
+                wire:change="changeJournalTemplate({{ $section['id'] }}, $event.target.value)"
+            >
+                @foreach ($journalTemplateOptions as $value => $templateLabel)
+                    <option value="{{ $value }}" @selected($section['template'] === $value)>{{ $templateLabel }}</option>
+                @endforeach
+            </select>
         @endif
     </div>
 
