@@ -1236,7 +1236,7 @@
 
 /* ---------- Custom Page hierarchy ---------- */
 /* Five action labels yield before Component identity. */
-@container admin-table (max-width: 84rem){
+@container admin-table (max-width: 86rem){
     .custom-page-component-sequence{
         --admin-hierarchy-actions-column: 8.85rem;
     }
@@ -1304,7 +1304,7 @@
     width: 2rem !important;
 }
 
-@container admin-table (max-width: 84rem){
+@container admin-table (max-width: 86rem){
     .journal-table col.journal-table__actions--blog{
         width: 12.5rem !important;
     }
