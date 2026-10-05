@@ -285,7 +285,7 @@
  * Storage and Activity keep the same three semantic Stage panes at every width.
  * Minimal does not delete two panes or invent a page-local replacement surface:
  * it exposes one pane at a time through the same three-way switcher. The
- * switcher persists its active ordinal in the browser session; the middle pane
+ * switcher persists its active pane key in the browser session; the middle pane
  * is the view-provided default. */
 .admin-stage-switcher {
     display: none;
