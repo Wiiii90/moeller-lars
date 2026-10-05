@@ -47,7 +47,7 @@ Workspace searches, filters, pager controls and compact inline controls may rema
 
 A native control is not a separate design system. It is another renderer of this contract.
 
-Native single-selects and pager selects use the shared `admin-selects.js` popup layer. Opening a dropdown must never add document height, change the page scrollbar, call window scrolling APIs or reserve layout space for the popup. The popup stays viewport-positioned and constrains overflow to its own internal scrollbar.
+Native single-selects and pager selects stay on one native render path. Shared CSS in `resources/css/admin/layouts.css`, `resources/css/admin/data-workspace.css` and `resources/css/admin/task-surfaces.css` owns their trigger, typography and popup theming; Chromium's customizable-select surface is progressive enhancement only. Do not add a JavaScript-generated replacement select, duplicate popup DOM or a second presentation path. Opening a dropdown must never add document height, change the page scrollbar, call window scrolling APIs or reserve layout space for the popup.
 
 ## Persistence semantics
 
