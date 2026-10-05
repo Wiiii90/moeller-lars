@@ -27,12 +27,24 @@
     min-width: 0;
 }
 
-.admin-data-controls--six-cell > .admin-data-controls__filters {
+/* The filter owner is transparent while filters are inline. Under shared
+ * pressure it becomes one toolbar item and the exact same Livewire controls
+ * become a popover; filter state is never duplicated or resize-synchronized. */
+.admin-data-controls--six-cell > .admin-filter-overflow {
+    display: contents;
+}
+
+.admin-filter-overflow__trigger,
+.admin-filter-overflow__reset {
+    display: none !important;
+}
+
+.admin-data-controls--six-cell > .admin-filter-overflow > .admin-data-controls__filters {
     display: contents;
 }
 
 .admin-data-controls--six-cell > :first-child,
-.admin-data-controls--six-cell > .admin-data-controls__filters > * {
+.admin-data-controls--six-cell > .admin-filter-overflow > .admin-data-controls__filters > * {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -66,23 +78,23 @@
     grid-row: 1;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2.admin-data-controls--filters-2 > .admin-data-controls__filters > :first-child {
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2.admin-data-controls--filters-2 > .admin-filter-overflow > .admin-data-controls__filters > :first-child {
     grid-column: 9 / span 4;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2.admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2.admin-data-controls--filters-2 > .admin-filter-overflow > .admin-data-controls__filters > :nth-child(2) {
     grid-column: 13 / span 4;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3.admin-data-controls--filters-1 > .admin-filter-overflow > .admin-data-controls__filters > :first-child {
     grid-column: 13 / span 4;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-4.admin-data-controls--filters-2 > .admin-data-controls__filters > :first-child {
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-4.admin-data-controls--filters-2 > .admin-filter-overflow > .admin-data-controls__filters > :first-child {
     grid-column: 17 / span 4;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-4.admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-4.admin-data-controls--filters-2 > .admin-filter-overflow > .admin-data-controls__filters > :nth-child(2) {
     grid-column: 21 / span 4;
 }
 
@@ -152,11 +164,11 @@
     padding-right: 0 !important;
 }
 
-.admin-data-controls--dashboard-responsive > .admin-data-controls__filters {
+.admin-data-controls--dashboard-responsive > .admin-filter-overflow > .admin-data-controls__filters {
     display: contents !important;
 }
 
-.admin-data-controls--dashboard-responsive > .admin-data-controls__filters > :first-child {
+.admin-data-controls--dashboard-responsive > .admin-filter-overflow > .admin-data-controls__filters > :first-child {
     box-sizing: border-box;
     width: 100% !important;
     min-width: 0 !important;
@@ -169,7 +181,7 @@
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2,
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-) > .admin-data-controls__filters > :nth-child(2) {
+) > .admin-filter-overflow > .admin-data-controls__filters > :nth-child(2) {
     box-sizing: border-box;
     width: 100% !important;
     min-width: 0 !important;
@@ -181,7 +193,7 @@
 :is(
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-) > .admin-data-controls__filters > :nth-child(3) {
+) > .admin-filter-overflow > .admin-data-controls__filters > :nth-child(3) {
     box-sizing: border-box;
     width: 100% !important;
     min-width: 0 !important;
@@ -190,7 +202,7 @@
     padding-inline: 0 !important;
 }
 
-.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-data-controls__filters > :nth-child(4) {
+.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow > .admin-data-controls__filters > :nth-child(4) {
     box-sizing: border-box;
     width: 100% !important;
     min-width: 0 !important;
@@ -378,6 +390,221 @@
     }
 }
 
+/* Shared filter overflow.
+ *
+ * Filter count decides WHEN overflow is allowed; actual workspace width decides
+ * WHEN it activates. Three/four-filter toolbars overflow at Narrow. Two-filter
+ * toolbars wait until Minimal. One-filter toolbars such as Dashboard stay inline.
+ * Clear moves into the panel while overflow is active, Search remains directly
+ * usable, and task/Selection controls remain terminal on the same row. */
+@container admin-workspace (max-width: 54rem) {
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) {
+        grid-template-columns: minmax(10rem, 1fr) max-content max-content !important;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow {
+        position: relative;
+        display: block !important;
+        min-width: 0;
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        align-self: end;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow > .admin-filter-overflow__trigger {
+        display: inline-flex !important;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow > .admin-data-controls__filters {
+        display: none !important;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
+        position: absolute;
+        z-index: 120;
+        top: calc(100% + .35rem);
+        right: 0;
+        box-sizing: border-box;
+        display: grid !important;
+        width: min(17rem, calc(100vw - 2rem));
+        padding: .55rem;
+        gap: .55rem;
+        border: 1px solid var(--admin-line-strong);
+        border-radius: .2rem;
+        background: var(--admin-control-popover-surface, var(--admin-surface));
+        box-shadow: 0 .55rem 1.2rem rgba(0, 0, 0, .14);
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters > :is(
+        .admin-data-field,
+        .admin-task-field
+    ) {
+        width: 100% !important;
+        min-width: 0 !important;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        padding-inline: 0 !important;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters > .admin-filter-overflow__reset {
+        display: block !important;
+        margin-top: .1rem;
+        padding-top: .45rem;
+        border-top: 1px solid var(--admin-line);
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow[data-open="true"] .admin-filter-overflow__reset > * {
+        width: 100% !important;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow[data-open="true"] .admin-filter-overflow__reset :is(
+        .admin-data-control-label,
+        .admin-control-group__label
+    ) {
+        display: none !important;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-filter-overflow[data-open="true"] .admin-filter-overflow__reset .admin-action {
+        width: 100% !important;
+        justify-content: flex-start !important;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-data-controls__utility {
+        grid-column: 3 !important;
+    }
+
+    :is(
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+    ) > .admin-data-controls__utility--has-reset > :first-child {
+        display: none !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
+        grid-template-columns: minmax(8rem, 1fr) max-content max-content !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow {
+        position: relative;
+        display: block !important;
+        min-width: 0;
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        align-self: end;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow > .admin-filter-overflow__trigger {
+        display: inline-flex !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow > .admin-data-controls__filters {
+        display: none !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
+        position: absolute;
+        z-index: 120;
+        top: calc(100% + .35rem);
+        right: 0;
+        box-sizing: border-box;
+        display: grid !important;
+        width: min(17rem, calc(100vw - 2rem));
+        padding: .55rem;
+        gap: .55rem;
+        border: 1px solid var(--admin-line-strong);
+        border-radius: .2rem;
+        background: var(--admin-control-popover-surface, var(--admin-surface));
+        box-shadow: 0 .55rem 1.2rem rgba(0, 0, 0, .14);
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters > :is(
+        .admin-data-field,
+        .admin-task-field
+    ) {
+        width: 100% !important;
+        min-width: 0 !important;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        padding-inline: 0 !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters > .admin-filter-overflow__reset {
+        display: block !important;
+        margin-top: .1rem;
+        padding-top: .45rem;
+        border-top: 1px solid var(--admin-line);
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow[data-open="true"] .admin-filter-overflow__reset > * {
+        width: 100% !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow[data-open="true"] .admin-filter-overflow__reset :is(
+        .admin-data-control-label,
+        .admin-control-group__label
+    ) {
+        display: none !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow[data-open="true"] .admin-filter-overflow__reset .admin-action {
+        width: 100% !important;
+        justify-content: flex-start !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-data-controls__utility {
+        grid-column: 3 !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-data-controls__utility--has-reset > :first-child {
+        display: none !important;
+    }
+}
+
+.admin-filter-overflow__trigger {
+    box-sizing: border-box;
+    min-height: var(--admin-control-height);
+    padding-inline: .45rem !important;
+    gap: .3rem;
+    align-items: center;
+    justify-content: flex-start !important;
+    white-space: nowrap;
+}
+
 /* Dashboard feed toolbar: Search owns all spare width. Type is bounded by
  * readable content; Clear is intrinsic; Dashboard + Selection are one compact
  * terminal cluster. Dashboard keeps its heading; Filter/Selection headings stay
@@ -396,7 +623,7 @@
     padding-right: 0;
 }
 
-.admin-dashboard__feed-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
+.admin-dashboard__feed-controls.admin-data-controls--six-cell > .admin-filter-overflow > .admin-data-controls__filters > :first-child {
     min-width: 0 !important;
     grid-column: 2;
     padding-right: 0;
