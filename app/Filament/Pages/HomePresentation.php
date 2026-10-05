@@ -15,7 +15,6 @@ use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
-use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -304,29 +303,6 @@ final class HomePresentation extends Page
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Home settings saved',
-                        status: 'success',
-                    );
-                }
-            });
-
-        return AdminDialog::edit($action, AdminDialogSize::Large);
-    }
-
-    public function editArtworkAction(): Action
-    {
-        $dialog = app(ArtworkEditDialog::class);
-        $action = Action::make('editArtwork')
-            ->label('Edit')
-            ->modalHeading(fn (array $arguments): string => 'Edit '.$this->homeActionArtwork($arguments)->getAttribute('title'))
-            ->fillForm(fn (array $arguments): array => $dialog->fill($this->homeActionArtwork($arguments)))
-            ->schema($dialog->schema())
-            ->action(function (array $data, array $arguments) use ($dialog): void {
-                $changed = $dialog->save($this->homeActionArtwork($arguments), $data);
-                $this->reloadWorkspace();
-
-                if ($changed) {
-                    app(AdminNotifier::class)->notification(
-                        title: 'Artwork saved',
                         status: 'success',
                     );
                 }
@@ -1066,27 +1042,6 @@ final class HomePresentation extends Page
             'thumbnail_url' => ArtworkResource::thumbnailUrl($artwork),
             'gallery_url' => $gallery instanceof ArtworkCategory ? ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]) : null,
         ];
-    }
-
-    /** @param array<string, mixed> $arguments */
-    private function homeActionArtwork(array $arguments): Artwork
-    {
-        $artworkId = filter_var($arguments['artwork'] ?? null, FILTER_VALIDATE_INT);
-        if ($artworkId === false || $artworkId <= 0) {
-            throw ValidationException::withMessages(['artwork' => 'Choose a valid Hero Artwork.']);
-        }
-
-        /** @var Artwork|null $artwork */
-        $artwork = Artwork::query()
-            ->whereKey((int) $artworkId)
-            ->whereHas('category.siteSection')
-            ->first();
-
-        if (! $artwork instanceof Artwork) {
-            throw ValidationException::withMessages(['artwork' => 'Hero Artwork is no longer available.']);
-        }
-
-        return $artwork;
     }
 
     private function heroArtworkSelect(string $name, string $label, bool $multiple = false): Select

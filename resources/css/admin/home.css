@@ -19,7 +19,7 @@
 /* Home ordinary tables follow the same six-unit ruler as the metric strip.
  * Hero source data owns the first four units. Component templates mirror the
  * accepted Custom Page split. Actions + terminal Selection own the final two. */
-.home-source-table__col-actions { width: 18rem; }
+.home-source-table__col-actions { width: 11.75rem; }
 
 .home-components-table__col-actions {
     width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
@@ -33,32 +33,12 @@
 
 .home-source-table .home-source-table__row-actions {
     display: grid !important;
-    width: 17.5rem;
+    width: 11.25rem;
     max-width: 100%;
-    grid-template-columns: 6rem 4.75rem 6.25rem;
+    grid-template-columns: 4.75rem 6.25rem;
     gap: .25rem;
     justify-content: start !important;
 }
-
-.home-source-table__candidate-actions {
-    display: grid;
-    width: 6rem;
-    min-width: 6rem;
-    grid-template-columns: repeat(5, 1.05rem);
-    gap: .1875rem;
-    align-items: center;
-    justify-content: start;
-}
-
-.home-source-table__candidate-edit-action {
-    box-sizing: border-box;
-    width: 1.05rem !important;
-    min-width: 1.05rem !important;
-    padding-inline: 0 !important;
-    justify-content: center !important;
-}
-
-.home-source-table__candidate-edit-action .admin-action__label { display: none !important; }
 
 .home-source-table__eligibility-action,
 .home-source-table__open-action {
@@ -311,7 +291,6 @@
     border: 0;
     background: var(--admin-subtle);
     color: inherit;
-    cursor: pointer;
 }
 
 .home-source-candidate__preview img {

@@ -452,7 +452,7 @@
 
     .home-source-table__col-gallery{ width: auto !important; }
     .home-source-table__col-status{ width: 7rem !important; }
-    .home-source-table__col-actions{ width: 18rem !important; }
+    .home-source-table__col-actions{ width: 11.75rem !important; }
     .home-source-table .admin-responsive-meta{ display: block; }
 }
 
@@ -711,7 +711,7 @@
     }
 
     .home-source-table__col-gallery{ width: auto !important; }
-    .home-source-table__col-actions{ width: 18rem !important; }
+    .home-source-table__col-actions{ width: 11.75rem !important; }
 
     .home-source-table .admin-responsive-meta{
         display: block;
