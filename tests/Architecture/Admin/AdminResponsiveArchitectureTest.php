@@ -130,3 +130,32 @@ it('gates focused and single-visual stages behind the burger minimal state', fun
         ->toContain('.admin-visual-stage--single-minimal')
         ->toContain('.admin-stage-tabs');
 });
+
+it('owns filter overflow centrally by filter count and workspace pressure', function (): void {
+    $root = dirname(__DIR__, 3);
+    $controls = file_get_contents($root.'/resources/views/components/admin/controls.blade.php');
+    $sixCell = file_get_contents($root.'/resources/css/admin/six-cell-contract.css');
+    $icons = file_get_contents($root.'/app/Filament/Support/AdminIcon.php');
+
+    expect($controls)
+        ->toContain('admin-filter-overflow')
+        ->toContain('admin-filter-overflow__trigger')
+        ->toContain('admin-filter-overflow__reset')
+        ->toContain('AdminIcon::Filter')
+        ->toContain('x-on:resize.window="open = false"');
+
+    expect($sixCell)
+        ->toContain('Shared filter overflow')
+        ->toContain('@container admin-workspace (max-width: 54rem)')
+        ->toContain('.admin-data-controls--filters-3')
+        ->toContain('.admin-data-controls--filters-4')
+        ->toContain('@container admin-workspace (max-width: 38rem)')
+        ->toContain('.admin-data-controls--filters-2')
+        ->toContain('minmax(10rem, 1fr)')
+        ->toContain('minmax(8rem, 1fr)')
+        ->toContain('.admin-filter-overflow__reset')
+        ->toContain('display: none !important');
+
+    expect($icons)
+        ->toContain("case Filter = 'heroicon-o-funnel';");
+});
