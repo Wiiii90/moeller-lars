@@ -142,8 +142,8 @@
     display: grid !important;
     width: var(--admin-row-actions-width);
     max-width: none;
-    min-width: var(--admin-row-actions-width);
-    flex: 0 0 var(--admin-row-actions-width);
+    min-width: 0;
+    flex: 0 0 auto;
     grid-template-columns: var(--admin-row-actions-columns);
     gap: var(--admin-row-actions-gap, .25rem) !important;
     margin-inline-start: auto !important;
