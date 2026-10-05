@@ -85,7 +85,7 @@
                             >
                         </td>
                         <td class="admin-table__actions general-social-table__actions">
-                            <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--three">
+                            <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--order-delete">
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                     wire:click="moveSocialLink({{ $index }}, 'up')"
