@@ -541,7 +541,6 @@
     }
 
     .general-background-row > .fi-sc,
-.general-layout-controls__fields,
 .general-two-column-settings > .fi-sc{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
