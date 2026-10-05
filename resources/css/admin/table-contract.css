@@ -128,24 +128,85 @@
     justify-content: center;
 }
 
-/* Canonical three-axis ordering rail: Move up | Move down | Delete.
- * Fixed semantic slots keep the icon axes vertically aligned across rows. */
-.admin-row-actions--order-delete {
+/* Canonical stable row-action rail.
+ *
+ * Feature tables only choose a semantic slot recipe. The shared rail owns:
+ * - right anchoring against the terminal Selection axis;
+ * - fixed semantic slots so labels/toggles never move neighboring icons;
+ * - a fixed icon column inside every labeled action;
+ * - centered labels inside the remaining slot width.
+ *
+ * Responsive owners may collapse these exact slots to icon-only geometry, but
+ * they must not invent a second action layout. */
+.admin-row-actions--stable {
     display: grid !important;
-    width: 14rem;
+    width: var(--admin-row-actions-width);
     max-width: 100%;
     min-width: 0;
-    grid-template-columns: 4.5rem 5rem 4rem;
-    gap: .25rem !important;
-    justify-content: start;
+    grid-template-columns: var(--admin-row-actions-columns);
+    gap: var(--admin-row-actions-gap, .25rem) !important;
+    margin-left: auto;
+    align-items: center;
+    justify-content: end !important;
 }
 
-.admin-row-actions--order-delete .admin-action {
+.admin-row-actions--stable .admin-action {
+    box-sizing: border-box;
+    display: grid !important;
     width: 100%;
     min-width: 0;
-    padding-inline: 0;
-    justify-content: flex-start !important;
+    grid-template-columns: .9rem minmax(0, 1fr);
+    gap: .3rem;
+    padding-inline: .25rem;
+    align-items: center;
+    justify-content: stretch !important;
     overflow: visible;
+}
+
+.admin-row-actions--stable .admin-action__icon {
+    justify-self: center;
+}
+
+.admin-row-actions--stable .admin-action__label {
+    min-width: 0;
+    overflow: visible;
+    text-align: center;
+    text-overflow: clip;
+    white-space: nowrap;
+}
+
+.admin-row-actions--move-delete {
+    --admin-row-actions-width: 15.25rem;
+    --admin-row-actions-columns: 4.75rem 5.5rem 4.5rem;
+}
+
+.admin-row-actions--move-edit-delete {
+    --admin-row-actions-width: 19.5rem;
+    --admin-row-actions-columns: 4.75rem 5.5rem 4rem 4.5rem;
+}
+
+.admin-row-actions--move-state-delete {
+    --admin-row-actions-width: 26rem;
+    --admin-row-actions-columns: 4.75rem 5.5rem 4rem 6.25rem 4.5rem;
+}
+
+.admin-row-actions--state-open {
+    --admin-row-actions-width: 13.75rem;
+    --admin-row-actions-columns: 6.25rem 7.25rem;
+}
+
+.admin-row-actions--journal-blog {
+    --admin-row-actions-width: 39rem;
+    --admin-row-actions-columns: 4.75rem 5.5rem 4rem 8.25rem 5.5rem 5rem 4.5rem;
+}
+
+.admin-row-actions-heading {
+    box-sizing: border-box;
+    display: block;
+    width: min(100%, var(--admin-row-actions-width, 100%));
+    margin-left: auto;
+    padding-left: .25rem;
+    text-align: left;
 }
 
 .admin-table__selection--trailing,
