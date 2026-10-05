@@ -1373,6 +1373,30 @@
     }
 }
 
+/* Keep the pre-collapse Pages hierarchy state monotonic when the Sidebar gives
+ * its width back to the workspace. Only supportive columns stay folded here;
+ * action labels still follow actual table pressure and may remain readable. */
+@media (max-width: 63.99rem){
+    .admin-hierarchy--pages .admin-pages__type,
+    .admin-hierarchy--pages .admin-pages__template{
+        display: none !important;
+    }
+
+    .admin-hierarchy--pages .admin-responsive-meta{
+        display: block !important;
+    }
+
+    .admin-hierarchy--pages .admin-pages__header,
+    .admin-hierarchy--pages .admin-pages__row{
+        grid-template-columns: minmax(0, 1fr) 25.5rem !important;
+    }
+
+    .admin-pages__primary-grid{
+        grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
+        gap: .3rem !important;
+    }
+}
+
 @container admin-table (max-width: 38rem){
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row{
