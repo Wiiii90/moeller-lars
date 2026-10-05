@@ -462,8 +462,8 @@ Confirmation dialogs use one shared `Small` width. Feature code does not overrid
 
 Required behavior:
 
-- the modal layer is viewport-fixed but visually bounded to the current admin content frame below the topbar; the backdrop covers that frame including its shell padding, while the dialog window stays inside the frame padding;
-- desktop workspace centering must never use a transformed `.fi-main`, because transformed ancestors trap Filament's fixed modal layer and make dialog position depend on document scroll;
+- the blocking backdrop covers the complete application viewport, including Topbar and Sidebar. Light and Dark may use different scrim opacity, but never different geometry. The dialog window itself is independently bounded to the current admin content frame below the topbar and stays inside that frame's canonical inline padding;
+- desktop workspace centering must never use a transformed `.fi-main` or viewport-width (`vw`) arithmetic. It is derived from the actual post-sidebar Main/scrollport width so adding or removing a classic vertical scrollbar cannot alter the content midpoint or create asymmetric inline spacing; transformed ancestors would also trap Filament's fixed modal layer and make dialog position depend on document scroll;
 - opening/closing a dialog must not change shell width. The root keeps no permanent scrollbar gutter. If a classic document scrollbar already exists, that same scrollbar stays visible while the blocking admin dialog is open, but the shared dialog runtime freezes the document scroll position and prevents background wheel/touch/keyboard scrolling. Filament still owns Open/Close/Focus/Escape/Destroy and its native lock counter; the shared runtime only neutralizes Filament's visual overflow/padding mutation for the already-scrollable document. A short page gains neither a scrollbar nor a gutter;
 - every open remeasures the current Main frame and resets retained modal/window/content scroll positions before interaction, so reopening after scrolling never resumes at an old internal position;
 - centered/bounded modal;
