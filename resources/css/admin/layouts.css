@@ -291,17 +291,17 @@ html.fi .fi-page:has(.admin-workspace) {
     }
 
     /*
-     * Filament centers .fi-main in the post-sidebar area. The accepted shell
-     * corrects that residual-area bias on the main frame itself so every page
-     * surface keeps its existing responsive width while its visual midpoint
-     * moves toward the whole viewport center.
+     * Filament centers .fi-main in the post-sidebar area. Correct that residual
+     * bias from the actual Main/scrollport width, never from vw. A classic
+     * vertical scrollbar therefore changes neither the workspace midpoint nor
+     * its left/right content padding. The clamp still reduces the correction
+     * automatically when the Main frame no longer has enough spare width.
      */
     html.fi .fi-main:has(.admin-workspace) {
         --admin-workspace-center-shift: clamp(
             0rem,
             calc(
-                50vw
-                - (var(--sidebar-width) / 2)
+                50%
                 - (var(--admin-workspace-max-width) / 2)
                 - var(--admin-workspace-gutter)
             ),
