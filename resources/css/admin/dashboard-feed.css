@@ -6,6 +6,7 @@
     --admin-row-actions-width: 17rem;
     --admin-row-actions-columns: 3.25rem 3.75rem 4.25rem 4.25rem;
     --admin-row-actions-gap: .5rem;
+    --admin-row-action-padding: 0rem;
 }
 
 .admin-dashboard__feed-table > table { min-width: 0; table-layout: fixed; }
@@ -253,6 +254,10 @@
 
     .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action__label {
         display: none !important;
+    }
+
+    .admin-dashboard__feed-table .admin-row-actions-heading {
+        --admin-row-actions-width: 6.75rem;
     }
 
     .admin-dashboard__feed-table col.admin-dashboard__col-actions {
