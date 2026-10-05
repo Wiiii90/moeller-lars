@@ -380,14 +380,6 @@
         display: none;
     }
 
-    .custom-page-row-actions .admin-action__label{
-        display: none;
-    }
-
-    .custom-page-component-sequence .custom-page-row-actions .admin-action{
-        justify-content: center !important;
-        padding-inline: .2rem;
-    }
 }
 
 @container admin-table (max-width: 56rem){
@@ -542,14 +534,6 @@
         min-width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
         flex: 0 0 calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
         margin-left: 0 !important;
-    }
-
-    .gallery-workspace__responsive-action-icon{
-        display: inline-block;
-    }
-
-    .gallery-workspace__gallery-actions .admin-action__label{
-        display: none;
     }
 
     .admin-gallery-grid{
