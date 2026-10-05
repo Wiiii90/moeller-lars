@@ -18,8 +18,17 @@
 
 /* Home ordinary tables follow the same six-unit ruler as the metric strip.
  * Hero source data owns the first four units. Component templates mirror the
- * accepted Custom Page split. Actions + terminal Selection own the final two. */
-.home-source-table__col-actions { width: 11.75rem; }
+ * accepted Custom Page split. Actions + terminal Selection own the final two.
+ * Shared stable rails own the button geometry and right anchoring. */
+.home-source-table {
+    --admin-row-actions-width: 13.75rem;
+}
+
+.home-components-table {
+    --admin-row-actions-width: 19.5rem;
+}
+
+.home-source-table__col-actions { width: 14.25rem; }
 
 .home-components-table__col-actions {
     width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
@@ -29,36 +38,6 @@
     /* Position + Drag use the same fixed 3rem + 2rem rails as Journal.
      * Content absorbs that fixed width so Actions still begin exactly at 4/6. */
     width: calc(50% - 5rem);
-}
-
-.home-source-table .home-source-table__row-actions {
-    display: grid !important;
-    width: 11.25rem;
-    max-width: 100%;
-    grid-template-columns: 4.75rem 6.25rem;
-    gap: .25rem;
-    justify-content: start !important;
-}
-
-.home-source-table__eligibility-action,
-.home-source-table__open-action {
-    width: 100% !important;
-    min-width: 0 !important;
-    padding-inline: 0 !important;
-    justify-content: flex-start !important;
-}
-
-.home-components-table .admin-row-actions {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: .12rem;
-}
-
-.home-source-table .admin-row-actions .admin-action,
-.home-components-table .admin-row-actions .admin-action {
-    width: 100%;
-    min-width: 0;
-    justify-content: center;
 }
 
 .home-skip-tools {
