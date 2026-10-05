@@ -9,23 +9,52 @@
     max-width: 100%;
 }
 
-/* Row-action rail geometry is owned by table-contract.css. Journal only owns
- * its content-column distribution and presentation. */
-.journal-table--blog col:nth-child(4) {
-    width: var(--admin-table-one-unit);
+/* Row-action recipes live in table-contract.css. Journal binds its Wide
+ * columns to those shared rail widths; identity absorbs the remaining space.
+ * This guarantees complete labels without a horizontal overflow contract. */
+.journal-table--blog {
+    --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
 }
 
-.journal-table--blog col:nth-child(6) {
-    width: var(--admin-table-half-unit);
+.journal-table--exhibitions {
+    --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
+}
+
+.journal-table--blog col.journal-col--visual {
+    width: 4rem;
+}
+
+.journal-table--blog col.journal-col--identity {
+    width: auto;
+}
+
+.journal-table--blog col.journal-col--status {
+    width: 5rem;
+}
+
+.journal-table--blog col.journal-col--publication {
+    width: 6rem;
 }
 
 .journal-table col.journal-table__actions--blog {
-    width: calc(50% - var(--admin-table-selection-width));
+    width: var(--admin-row-actions-journal-blog-width);
 }
 
-/* Exhibitions keeps the colgroup's canonical four-content/two-utility split:
- * Schedule ends exactly on the 4/6 metric line and Actions + Selection own the
- * final two cells. */
+.journal-table--exhibitions col.journal-col--identity {
+    width: auto;
+}
+
+.journal-table--exhibitions col.journal-col--timing {
+    width: 5.5rem;
+}
+
+.journal-table--exhibitions col.journal-col--schedule {
+    width: 8rem;
+}
+
+.journal-table col.journal-table__actions--exhibitions {
+    width: var(--admin-row-actions-move-state-delete-width);
+}
 
 .journal-row-actions {
     min-width: 0;
