@@ -66,7 +66,7 @@
                 </x-slot:reset>
 
                 <x-slot:actions>
-                    <div class="admin-task-control-group">
+                    <div class="admin-task-control-group admin-pages__actions">
                         <span class="admin-task-control-label">PAGES</span>
                         <div class="admin-task-control-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('pagesSettings')" aria-label="Page settings">
