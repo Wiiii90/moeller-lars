@@ -395,7 +395,7 @@
 
 /* Home component actions yield before the Component column. The four shared
  * semantic axes keep their positions while their labels disappear. */
-@container admin-table (max-width: 56rem){
+@container admin-table (max-width: 66rem){
     .home-components-table__col-actions{
         width: 7rem !important;
     }
@@ -1112,7 +1112,7 @@
 /* Template is supportive and yields first. Page type stays explicit because it
  * is an editable column. When the five action slots become the pressure point,
  * they compact in place before Page type is sacrificed. */
-@container admin-table (max-width: 76rem){
+@container admin-table (max-width: 86rem){
     .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
