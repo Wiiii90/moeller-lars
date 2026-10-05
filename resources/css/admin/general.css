@@ -15,34 +15,26 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr) auto !important;
+    grid-template-rows: minmax(0, 1fr) !important;
     gap: 0 !important;
     overflow: visible;
 }
 
 /* Filament wraps schema components in grid/component containers. Flatten only
- * wrapper ancestors of the three stage blocks; internal field schemas stay intact. */
+ * wrapper ancestors of the two stage panes; internal field schemas stay intact. */
 .general-appearance-stage :not(
     .general-appearance-stage__controls,
-    .general-appearance-stage__preview,
-    .general-appearance-stage__geometry
+    .general-appearance-stage__preview
 ):has(.general-appearance-stage__controls),
 .general-appearance-stage :not(
     .general-appearance-stage__controls,
-    .general-appearance-stage__preview,
-    .general-appearance-stage__geometry
-):has(.general-appearance-stage__preview),
-.general-appearance-stage :not(
-    .general-appearance-stage__controls,
-    .general-appearance-stage__preview,
-    .general-appearance-stage__geometry
-):has(.general-appearance-stage__geometry) {
+    .general-appearance-stage__preview
+):has(.general-appearance-stage__preview) {
     display: contents !important;
 }
 
 .general-appearance-stage__controls,
-.general-appearance-stage__preview,
-.general-appearance-stage__geometry {
+.general-appearance-stage__preview {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -65,23 +57,20 @@
     padding-bottom: .2rem;
     overflow-x: hidden;
     overflow-y: auto;
-    scrollbar-gutter: stable;
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
 }
 
-.general-appearance-stage__geometry {
-    display: grid;
-    grid-column: 1;
-    grid-row: 2;
-    height: auto;
-    margin-top: 1rem;
-    padding-right: var(--admin-stage-pane-space);
-    align-content: start;
+.general-appearance-stage__controls::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 .general-appearance-stage__preview {
     display: grid;
     grid-column: 2;
-    grid-row: 1 / -1;
+    grid-row: 1;
     height: 100%;
     grid-template-rows: auto minmax(0, 1fr);
     gap: .25rem;
@@ -115,10 +104,6 @@
 .general-appearance-stage__controls > .fi-sc {
     align-content: start;
     gap: var(--admin-section-gap) !important;
-}
-
-.general-appearance-stage__geometry > * {
-    min-width: 0;
 }
 
 .general-stage-kicker,
@@ -225,8 +210,11 @@
 }
 
 .general-background-row,
+.general-layout-row,
 .general-background-row > .fi-sc,
-.general-background-row > .fi-sc > * {
+.general-layout-row > .fi-sc,
+.general-background-row > .fi-sc > *,
+.general-layout-row > .fi-sc > * {
     min-width: 0;
 }
 
@@ -246,81 +234,15 @@
     min-width: 0;
 }
 
-/* Page geometry now belongs to the settings side in both preview modes. */
-.general-layout-controls {
-    display: grid;
-    width: 100%;
+.general-layout-row > .fi-sc {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0 var(--admin-stage-pane-space) !important;
+}
+
+.general-layout-row > .fi-sc > * {
+    grid-column: span 1 !important;
     min-width: 0;
-    margin: 0;
-    padding: 0;
-    align-content: start;
-}
-
-.general-layout-controls__fields {
-    display: grid;
-    min-width: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--admin-stage-pane-space);
-    row-gap: 0;
-}
-
-.general-layout-field {
-    display: grid;
-    min-width: 0;
-    gap: .24rem;
-}
-
-.general-layout-field:first-child,
-.general-layout-field + .general-layout-field {
-    padding-right: 0;
-    padding-left: 0;
-}
-
-.general-layout-field > span:first-child {
-    color: var(--admin-muted);
-    font-size: .68rem;
-    font-weight: 700;
-    letter-spacing: .09em;
-    line-height: 1.25;
-    text-transform: uppercase;
-}
-
-.general-layout-field__control {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    border-bottom: 1px solid var(--admin-line);
-}
-
-.general-layout-field__control:focus-within {
-    border-color: var(--admin-accent);
-}
-
-.general-layout-field__control input {
-    width: 100%;
-    min-width: 0;
-    height: var(--admin-control-height);
-    padding: .45rem .25rem;
-    border: 0;
-    background: transparent;
-    color: var(--admin-text);
-    font: inherit;
-    font-size: .78rem;
-    outline: 0;
-    font-variant-numeric: tabular-nums;
-}
-
-.general-layout-field__control > small {
-    padding-right: .3rem;
-    color: var(--admin-faint);
-    font-size: .64rem;
-}
-
-.general-layout-field > em {
-    color: var(--admin-danger);
-    font-size: .62rem;
-    font-style: normal;
-    line-height: 1.35;
 }
 
 /* Contact and Legal share the metric-aligned half-width split. */
