@@ -157,8 +157,7 @@
                             <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
                             <span role="columnheader" data-column="page">Name</span>
                         </div>
-                        <span class="admin-pages__type" role="columnheader" data-column="page-type">Page type</span>
-                        <span class="admin-pages__template" role="columnheader" data-column="template">Template</span>
+                        <span class="admin-pages__classification" role="columnheader" data-column="page-type-template">Page type / Template</span>
                         <div class="admin-pages__utility-grid" role="presentation">
                             <span class="admin-row-actions-heading" role="columnheader" data-column="actions">Actions</span>
                             <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="columnheader" data-column="selection">
