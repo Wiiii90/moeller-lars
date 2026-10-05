@@ -32,16 +32,41 @@
     @isset($filters)
         <div
             class="admin-filter-overflow"
-            x-data="{ open: false }"
+            x-data="{
+                open: false,
+                panelStyle: '',
+                positionPanel() {
+                    const trigger = this.$refs.trigger
+                    if (! trigger) return
+
+                    const viewportMargin = 8
+                    const panelGap = 6
+                    const preferredWidth = 272
+                    const panelWidth = Math.max(0, Math.min(preferredWidth, window.innerWidth - (viewportMargin * 2)))
+                    const rect = trigger.getBoundingClientRect()
+                    const maxLeft = Math.max(viewportMargin, window.innerWidth - panelWidth - viewportMargin)
+                    const left = Math.min(Math.max(rect.left, viewportMargin), maxLeft)
+                    const below = window.innerHeight - rect.bottom - viewportMargin - panelGap
+                    const above = rect.top - viewportMargin - panelGap
+
+                    if (below >= 180 || below >= above) {
+                        this.panelStyle = `left:${left}px;top:${rect.bottom + panelGap}px;bottom:auto;width:${panelWidth}px;max-height:${Math.max(120, below)}px;`
+                    } else {
+                        this.panelStyle = `left:${left}px;top:auto;bottom:${window.innerHeight - rect.top + panelGap}px;width:${panelWidth}px;max-height:${Math.max(120, above)}px;`
+                    }
+                },
+            }"
             x-bind:data-open="open ? 'true' : 'false'"
             x-on:keydown.escape.window="open = false"
-            x-on:resize.window="open = false"
+            x-on:resize.window="if (open) $nextTick(() => positionPanel())"
+            x-on:scroll.window="open = false"
             x-on:click.outside="open = false"
         >
             <button
                 class="admin-action admin-action--with-icon admin-filter-overflow__trigger"
                 type="button"
-                x-on:click="open = ! open"
+                x-ref="trigger"
+                x-on:click="open = ! open; if (open) $nextTick(() => positionPanel())"
                 x-bind:aria-expanded="open"
                 aria-haspopup="true"
                 aria-label="Filters"
@@ -54,6 +79,8 @@
                 class="admin-data-controls__filters"
                 role="group"
                 aria-label="Filters"
+                x-ref="panel"
+                x-bind:style="panelStyle"
             >
                 {{ $filters }}
 
