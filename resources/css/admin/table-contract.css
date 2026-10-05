@@ -130,20 +130,16 @@
 
 /* Canonical stable row-action rail.
  *
- * Feature tables only choose a semantic slot recipe. The shared rail owns:
- * - right anchoring against the terminal Selection axis;
- * - fixed semantic slots so labels/toggles never move neighboring icons;
- * - a fixed icon column inside every labeled action;
- * - centered labels inside the remaining slot width.
- *
- * Responsive owners may collapse these exact slots to icon-only geometry, but
- * they must not invent a second action layout. */
+ * Static actions size to their real icon + label content. The rail itself is
+ * right-anchored and reserves only the semantic state slot that must survive a
+ * label toggle (for example Publish -> Unpublish). Responsive density is global:
+ * ordinary rails keep labels until Minimal table pressure; only the seven-action
+ * Blog rail yields one state earlier because it is intrinsically denser. */
 .admin-row-actions--stable {
     display: grid !important;
     width: var(--admin-row-actions-width);
     max-width: none;
     min-width: 0;
-    flex: 0 0 auto;
     grid-template-columns: var(--admin-row-actions-columns);
     gap: var(--admin-row-actions-gap, .25rem) !important;
     margin-inline-start: auto !important;
@@ -155,40 +151,18 @@
 .admin-row-actions--stable .admin-action {
     box-sizing: border-box;
     display: inline-flex !important;
-    width: 100%;
+    width: max-content;
     min-width: 0;
     gap: .3rem;
-    padding-inline: var(--admin-row-action-padding, .25rem);
+    padding-inline: .35rem;
     align-items: center;
     justify-content: center !important;
     overflow: visible;
 }
 
-/* State actions reserve the longest label in their semantic slot and balance
- * the icon with an equal ghost column. The visible icon therefore stays on the
- * same axis when Publish becomes Unpublish, etc. */
 .admin-row-actions--stable .admin-action--state {
-    display: grid !important;
-    grid-template-columns: .9rem minmax(0, 1fr) .9rem;
-    gap: .2rem;
-    justify-content: stretch !important;
-}
-
-.admin-row-actions--stable .admin-action--state::after {
-    width: .9rem;
-    height: .9rem;
-    grid-column: 3;
-    content: "";
-}
-
-.admin-row-actions--stable .admin-action--state .admin-action__icon {
-    grid-column: 1;
-    justify-self: center;
-}
-
-.admin-row-actions--stable .admin-action--state .admin-action__label {
-    grid-column: 2;
-    justify-self: center;
+    width: 100%;
+    min-width: var(--admin-row-state-slot, 0);
 }
 
 .admin-row-actions--stable .admin-action__label {
@@ -201,33 +175,36 @@
 
 .admin-row-actions--move-delete {
     --admin-row-actions-width: 13.75rem;
-    --admin-row-actions-columns: 4.25rem 5rem 4rem;
+    --admin-row-actions-columns: max-content max-content max-content;
 }
 
 .admin-row-actions--move-edit-delete {
     --admin-row-actions-width: 17.25rem;
-    --admin-row-actions-columns: 4.25rem 5rem 3.25rem 4rem;
+    --admin-row-actions-columns: max-content max-content max-content max-content;
 }
 
 .admin-row-actions--move-state-delete {
     --admin-row-actions-width: 23rem;
-    --admin-row-actions-columns: 4.25rem 5rem 3.25rem 5.5rem 4rem;
+    --admin-row-actions-columns: max-content max-content max-content minmax(6.25rem, max-content) max-content;
+    --admin-row-state-slot: 6.25rem;
 }
 
 .admin-row-actions--state-open {
     --admin-row-actions-width: 11.5rem;
-    --admin-row-actions-columns: 5rem 6.25rem;
+    --admin-row-actions-columns: minmax(6.25rem, max-content) max-content;
+    --admin-row-state-slot: 6.25rem;
 }
 
 .admin-row-actions--journal-blog {
     --admin-row-actions-width: 39rem;
-    --admin-row-actions-columns: 4.75rem 5.5rem 4rem 8.25rem 5.5rem 5rem 4.5rem;
+    --admin-row-actions-columns: max-content max-content max-content minmax(8.5rem, max-content) max-content max-content max-content;
+    --admin-row-state-slot: 8.5rem;
 }
 
-/* One compacting algorithm for every shared action recipe. Consumers choose
- * only the semantic recipe; responsive pressure never invents a page-local
- * button layout. */
-@container admin-table (max-width: 86rem) {
+/* Canonical action-density states.
+ * Narrow (54rem): only the seven-action dense rail becomes icon-only.
+ * Minimal (38rem): every stable rail becomes icon-only on the same semantic axes. */
+@container admin-table (max-width: 54rem) {
     .admin-row-actions--journal-blog {
         --admin-row-actions-width: 12.15rem;
         --admin-row-actions-columns: repeat(7, 1.35rem);
@@ -235,18 +212,11 @@
     }
 
     .admin-row-actions--journal-blog .admin-action {
-        display: inline-flex !important;
         width: 1.35rem !important;
         min-width: 1.35rem !important;
-        grid-template-columns: none !important;
         gap: 0 !important;
         padding-inline: 0 !important;
         justify-content: center !important;
-        justify-items: center;
-    }
-
-    .admin-row-actions--journal-blog .admin-action--state::after {
-        display: none !important;
     }
 
     .admin-row-actions--journal-blog .admin-action__label {
@@ -254,89 +224,45 @@
     }
 }
 
-@container admin-table (max-width: 76rem) {
-    .admin-row-actions--move-state-delete {
-        --admin-row-actions-width: 8.55rem;
-        --admin-row-actions-columns: repeat(5, 1.35rem);
+@container admin-table (max-width: 38rem) {
+    :is(
+        .admin-row-actions--move-delete,
+        .admin-row-actions--move-edit-delete,
+        .admin-row-actions--move-state-delete,
+        .admin-row-actions--state-open
+    ) {
+        --admin-row-actions-columns: repeat(var(--admin-row-action-count), 1.35rem);
         --admin-row-actions-gap: .45rem;
+        --admin-row-actions-width: calc(
+            (var(--admin-row-action-count) * 1.35rem)
+            + ((var(--admin-row-action-count) - 1) * .45rem)
+        );
     }
 
-    .admin-row-actions--move-state-delete .admin-action {
-        display: inline-flex !important;
+    .admin-row-actions--move-delete { --admin-row-action-count: 3; }
+    .admin-row-actions--move-edit-delete { --admin-row-action-count: 4; }
+    .admin-row-actions--move-state-delete { --admin-row-action-count: 5; }
+    .admin-row-actions--state-open { --admin-row-action-count: 2; }
+
+    :is(
+        .admin-row-actions--move-delete,
+        .admin-row-actions--move-edit-delete,
+        .admin-row-actions--move-state-delete,
+        .admin-row-actions--state-open
+    ) .admin-action {
         width: 1.35rem !important;
         min-width: 1.35rem !important;
-        grid-template-columns: none !important;
         gap: 0 !important;
         padding-inline: 0 !important;
         justify-content: center !important;
-        justify-items: center;
     }
 
-    .admin-row-actions--move-state-delete .admin-action--state::after {
-        display: none !important;
-    }
-
-    .admin-row-actions--move-state-delete .admin-action__label {
-        display: none !important;
-    }
-}
-
-@container admin-table (max-width: 72rem) {
-    .admin-row-actions--move-edit-delete {
-        --admin-row-actions-width: 6.75rem;
-        --admin-row-actions-columns: repeat(4, 1.35rem);
-        --admin-row-actions-gap: .45rem;
-    }
-
-    .admin-row-actions--move-edit-delete .admin-action {
-        display: inline-flex !important;
-        width: 1.35rem !important;
-        min-width: 1.35rem !important;
-        grid-template-columns: none !important;
-        gap: 0 !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-        justify-items: center;
-    }
-
-    .admin-row-actions--move-edit-delete .admin-action--state::after {
-        display: none !important;
-    }
-
-    .admin-row-actions--move-edit-delete .admin-action__label {
-        display: none !important;
-    }
-}
-
-@container admin-table (max-width: 60rem) {
-    .admin-row-actions--move-delete {
-        --admin-row-actions-width: 4.95rem;
-        --admin-row-actions-columns: repeat(3, 1.35rem);
-        --admin-row-actions-gap: .45rem;
-    }
-
-    .admin-row-actions--state-open {
-        --admin-row-actions-width: 3.15rem;
-        --admin-row-actions-columns: repeat(2, 1.35rem);
-        --admin-row-actions-gap: .45rem;
-    }
-
-    :is(.admin-row-actions--move-delete, .admin-row-actions--state-open) .admin-action {
-        display: inline-flex !important;
-        width: 1.35rem !important;
-        min-width: 1.35rem !important;
-        grid-template-columns: none !important;
-        gap: 0 !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-        justify-items: center;
-    }
-
-    :is(.admin-row-actions--move-delete, .admin-row-actions--state-open) .admin-action--state::after {
-        display: none !important;
-    }
-
-    :is(.admin-row-actions--move-delete, .admin-row-actions--state-open) .admin-action__label {
+    :is(
+        .admin-row-actions--move-delete,
+        .admin-row-actions--move-edit-delete,
+        .admin-row-actions--move-state-delete,
+        .admin-row-actions--state-open
+    ) .admin-action__label {
         display: none !important;
     }
 }
