@@ -51,7 +51,6 @@
 
 <section
     class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-focus-stage"
-    data-active-pane="capacity"
     aria-label="Storage upload, total capacity and media distribution"
     x-data="{
         selectedTarget: null,
