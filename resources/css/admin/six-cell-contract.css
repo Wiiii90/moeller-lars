@@ -94,19 +94,11 @@
     white-space: nowrap;
 }
 
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility .admin-control-group__actions {
+.admin-data-controls--six-cell > .admin-data-controls__utility .admin-control-group__actions {
     gap: .15rem;
 }
 
-:is(
-    .admin-data-controls--six-cell,
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility :is(
+.admin-data-controls--six-cell > .admin-data-controls__utility :is(
     .admin-control-group__actions > .admin-action,
     .admin-selection__trigger
 ) {
