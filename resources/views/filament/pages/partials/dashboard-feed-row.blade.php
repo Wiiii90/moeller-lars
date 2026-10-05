@@ -55,7 +55,7 @@
         @endif
     </td>
     <td class="admin-table__actions">
-        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-dashboard__feed-actions">
+        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-dashboard__feed-actions">
             <x-admin.row-action
                 :action="\App\Filament\Support\AdminRowAction::Open"
                 wire:click="openFeedEntry('{{ $item['key'] }}')"
