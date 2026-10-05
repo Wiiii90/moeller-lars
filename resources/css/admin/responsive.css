@@ -1529,164 +1529,30 @@
     }
 }
 
-/* Canonical stage transition authority for Analytics / Storage / Activity.
- * Wide + Compact + Narrow preserve the desktop multi-cell composition.
- * Only Minimal becomes a focused single-surface stage.
- * The shared stage height never changes between these states.
- */
-
-/* Narrow container: preserve the three-cell stage axes. */
-@container admin-workspace (min-width: 38.01rem) and (max-width: 54rem){
-    :is(.analytics-visual-stage, .admin-storage__visual-stage, .activity-atlas__grid){
-        height: var(--admin-visual-stage-height) !important;
-        min-height: 0 !important;
-    }
-
-    /* Analytics = Map (2 cells) | Geography (1 cell). */
-    .analytics-visual-stage{
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-template-rows: minmax(0, 1fr) !important;
-        overflow: visible !important;
-    }
-
-    .analytics-visual-stage::after{
-        display: block !important;
-        left: 66.666666% !important;
-        content: "" !important;
-    }
-
-    .analytics-visual-stage > .analytics-world{
-        display: block !important;
-        grid-column: 1 / span 2 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        padding: var(--admin-stage-divider-inset) 0 !important;
-    }
-
-    .analytics-visual-stage > .analytics-stage-rail{
-        display: grid !important;
-        grid-column: 3 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        padding: var(--admin-stage-divider-inset) 0 var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
-        border-left: 0 !important;
-    }
-
+/* Storage / Activity / Analytics Stage content compression.
+ *
+ * Stage geometry itself belongs to stage.css. Narrow keeps the desktop
+ * three-cell composition; only content inside a cell becomes denser. Minimal
+ * focused-pane behavior for Storage/Activity and map-only Analytics is also
+ * owned centrally by stage.css. */
+@container admin-workspace (max-width: 54rem){
     .analytics-stage-ranking__head,
-.analytics-country-rank{
+    .analytics-country-rank{
         grid-template-columns: minmax(0, 1fr) 3.6rem !important;
     }
 
     .analytics-stage-ranking__head > :nth-child(2),
-.analytics-country-rank > :nth-child(2){
+    .analytics-country-rank > :nth-child(2){
         display: none !important;
     }
 
     .analytics-stage-ranking__head > :nth-child(3),
-.analytics-country-rank > :nth-child(3){
+    .analytics-country-rank > :nth-child(3){
         grid-column: 2 !important;
-    }
-
-    /* Storage = Upload | Capacity | Distribution. */
-    .admin-storage__visual-stage{
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-template-rows: minmax(0, 1fr) !important;
-        overflow: visible !important;
-    }
-
-    .admin-storage__visual-stage::before,
-.admin-storage__visual-stage::after{
-        display: block !important;
-        content: "" !important;
-    }
-
-    .admin-storage__visual-stage::before{
-        left: 33.333333% !important;
-    }
-
-    .admin-storage__visual-stage::after{
-        left: 66.666666% !important;
-    }
-
-    .admin-storage__upload,
-.admin-storage__capacity-group,
-.admin-storage__distribution{
-        box-sizing: border-box;
-        display: grid !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        padding-top: var(--admin-stage-divider-inset) !important;
-        padding-bottom: var(--admin-stage-divider-inset) !important;
-        border: 0 !important;
-    }
-
-    .admin-storage__upload{
-        grid-column: 1 !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
-        padding-right: var(--admin-stage-pane-space) !important;
-        padding-left: 0 !important;
-    }
-
-    .admin-storage__capacity-group{
-        position: relative;
-        grid-column: 2 !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve) !important;
-        gap: var(--admin-stage-orbit-gap) !important;
-        padding-right: var(--admin-stage-pane-space) !important;
-        padding-left: var(--admin-stage-pane-space) !important;
-        place-items: center !important;
-    }
-
-    .admin-storage__capacity-group > .admin-storage__visual-heading{
-        display: flex !important;
-    }
-
-    .admin-storage__capacity-group > .admin-storage-capacity{
-        display: grid !important;
-        grid-row: 1 !important;
-    }
-
-    .admin-storage__compact-capacity{
-        display: none !important;
-    }
-
-    .admin-storage__capacity-actions{
-        display: flex !important;
-        min-height: var(--admin-stage-orbit-caption-reserve) !important;
-        grid-row: 2 !important;
-        padding: 0 !important;
-        justify-self: stretch !important;
-        justify-content: center !important;
-        border: 0 !important;
-    }
-
-    .admin-storage__capacity-actions .admin-action__label{
-        display: none !important;
-    }
-
-    .admin-storage__distribution{
-        grid-column: 3 !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-        padding-right: 0 !important;
-        padding-left: var(--admin-stage-pane-space) !important;
-        overflow: hidden !important;
     }
 
     .admin-storage__distribution-columns,
-.admin-storage__target-row{
+    .admin-storage__target-row{
         grid-template-columns: minmax(0, 1fr) 2.5rem 4.5rem !important;
     }
 
@@ -1698,421 +1564,30 @@
         display: none !important;
     }
 
-    /* Activity = Calendar | Clock | Next Publication. */
-    .activity-atlas__grid{
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-template-rows: minmax(0, 1fr) !important;
-        overflow: visible !important;
-    }
-
-    .activity-atlas__grid::after{
-        display: block !important;
-        left: 66.666666% !important;
-        content: "" !important;
-    }
-
-    .activity-atlas__visual{
-        display: grid !important;
-        grid-column: 1 / span 2 !important;
-        grid-row: 1 !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        grid-template-rows: minmax(0, 1fr) !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-    }
-
-    .activity-atlas__view.activity-calendar,
-.activity-atlas__view.activity-calendar[style*="display: none"]{
-        display: grid !important;
-        grid-column: 1 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) var(--admin-stage-divider-inset) 0 !important;
-    }
-
-    .activity-atlas__view.activity-clock,
-.activity-atlas__view.activity-clock[style*="display: none"]{
-        display: grid !important;
-        grid-column: 2 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
-    }
-
-    .activity-publication{
-        display: flex !important;
-        grid-column: 3 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        padding: var(--admin-stage-divider-inset) 0 var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
-        flex-direction: column !important;
-        border: 0 !important;
-        overflow: auto !important;
-    }
-
-    .activity-publication__header{
-        display: flex !important;
-    }
-
-    .activity-publication__staged,
-.activity-publication__readiness,
-.activity-publication__latest,
-.activity-publication__recent{
-        display: grid !important;
-    }
-
-    .activity-publication__actions{
-        margin-top: auto !important;
-        padding: .7rem 0 0 !important;
-    }
-
-    .activity-publication__actions .admin-toolbar{
-        flex-wrap: nowrap !important;
-        justify-content: flex-end !important;
-    }
-
+    .admin-storage__capacity-actions .admin-action__label,
     .activity-publication__actions .admin-action__label{
         display: none !important;
     }
-}
 
-/* Burger shell must retain the same Narrow multi-cell composition. */
-@media (min-width: 38.01rem) and (max-width: 63.99rem){
-    .analytics-visual-stage,
-.admin-storage__visual-stage,
-.activity-atlas__grid{
-        height: var(--admin-visual-stage-height) !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-template-rows: minmax(0, 1fr) !important;
+    .activity-calendar{
+        --activity-calendar-cell-size: .56rem;
     }
 
-    .analytics-visual-stage::after,
-.admin-storage__visual-stage::before,
-.admin-storage__visual-stage::after,
-.activity-atlas__grid::after{
-        display: block !important;
-        content: "" !important;
+    .activity-calendar__band{
+        grid-template-columns: 1.75rem minmax(0, 1fr);
+        gap: .1rem .35rem;
     }
 
-    .analytics-visual-stage::after,
-.admin-storage__visual-stage::after,
-.activity-atlas__grid::after{
-        left: 66.666666% !important;
-    }
-
-    .admin-storage__visual-stage::before{
-        left: 33.333333% !important;
-    }
-
-    .analytics-visual-stage > .analytics-world{
-        display: block !important;
-        grid-column: 1 / span 2 !important;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .analytics-visual-stage > .analytics-stage-rail{
-        display: grid !important;
-        grid-column: 3 !important;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .admin-storage__upload{
-        display: grid !important;
-        grid-column: 1 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .admin-storage__capacity-group{
-        display: grid !important;
-        grid-column: 2 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .admin-storage__capacity-group > .admin-storage__visual-heading,
-.admin-storage__capacity-group > .admin-storage-capacity{
-        display: flex !important;
-    }
-
-    .admin-storage__capacity-group > .admin-storage-capacity{
-        display: grid !important;
-    }
-
-    .admin-storage__compact-capacity{
-        display: none !important;
-    }
-
-    .admin-storage__distribution{
-        display: grid !important;
-        grid-column: 3 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .activity-atlas__visual{
-        display: grid !important;
-        grid-column: 1 / span 2 !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .activity-atlas__view.activity-calendar,
-.activity-atlas__view.activity-calendar[style*="display: none"]{
-        display: grid !important;
-        grid-column: 1 !important;
-    }
-
-    .activity-atlas__view.activity-clock,
-.activity-atlas__view.activity-clock[style*="display: none"]{
-        display: grid !important;
-        grid-column: 2 !important;
-    }
-
-    .activity-publication{
-        display: flex !important;
-        grid-column: 3 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        flex-direction: column !important;
+    .activity-calendar__cells,
+    .activity-calendar__weekdays{
+        gap: .07rem;
     }
 }
 
-/* Minimal: one focused surface, full stage width, no stage divider axes. */
 @container admin-workspace (max-width: 38rem){
-    :is(.analytics-visual-stage, .admin-storage__visual-stage, .activity-atlas__grid){
-        display: grid !important;
-        width: 100% !important;
-        height: var(--admin-visual-stage-height) !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        overflow: hidden !important;
-    }
-
-    .analytics-visual-stage::before,
-.analytics-visual-stage::after,
-.admin-storage__visual-stage::before,
-.admin-storage__visual-stage::after,
-.activity-atlas__grid::before,
-.activity-atlas__grid::after{
-        display: none !important;
-        content: none !important;
-    }
-
-    /* Analytics Minimal: Map uses the entire fixed-height stage. */
-    .analytics-visual-stage{
-        grid-template-rows: minmax(0, 1fr) !important;
-    }
-
-    .analytics-visual-stage > .analytics-world{
-        display: block !important;
-        grid-column: 1 / -1 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        padding: var(--admin-stage-divider-inset) 0 !important;
-    }
-
-    .analytics-visual-stage .analytics-world__canvas,
-.analytics-visual-stage .analytics-world__svg,
-.analytics-visual-stage .analytics-world__marker-layer{
-        width: 100% !important;
-        height: 100% !important;
-        max-width: none !important;
-    }
-
-    .analytics-visual-stage > .analytics-stage-rail{
-        display: none !important;
-    }
-
-    /* Storage Minimal: full-width Upload with a compact management footer. */
-    .admin-storage__visual-stage{
-        grid-template-rows: minmax(0, 1fr) auto !important;
-    }
-
-    .admin-storage__upload{
-        display: grid !important;
-        grid-column: 1 / -1 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
-        padding: var(--admin-stage-divider-inset) 0 0 !important;
-    }
-
-    .admin-storage__dropzone.media-workspace__dropzone{
-        box-sizing: border-box;
-        width: 100% !important;
-        max-width: none !important;
-        height: 100% !important;
-        justify-self: stretch !important;
-    }
-
-    .admin-storage__capacity-group{
-        display: grid !important;
-        grid-column: 1 / -1 !important;
-        grid-row: 2 !important;
-        width: 100% !important;
-        height: auto !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        grid-template-columns: minmax(0, 1fr) auto !important;
-        grid-template-rows: auto !important;
-        gap: .35rem !important;
-        padding: .45rem 0 0 !important;
-        align-items: center !important;
-        border: 0 !important;
-    }
-
-    .admin-storage__capacity-group > .admin-storage__visual-heading,
-.admin-storage__capacity-group > .admin-storage-capacity,
-.admin-storage__distribution{
-        display: none !important;
-    }
-
-    .admin-storage__compact-capacity{
-        display: grid !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        gap: .25rem !important;
-        padding: 0 !important;
-        border: 0 !important;
-    }
-
-    .admin-storage__capacity-actions{
-        display: flex !important;
-        min-height: 0 !important;
-        grid-row: 1 !important;
-        gap: .18rem !important;
-        padding: 0 !important;
-        justify-self: end !important;
-        border: 0 !important;
-    }
-
-    .admin-storage__capacity-actions .admin-action__label{
-        display: none !important;
-    }
-
-    /* Activity Minimal: Next Publication owns the entire fixed-height stage. */
-    .activity-atlas__grid{
-        grid-template-rows: minmax(0, 1fr) !important;
-    }
-
-    .activity-atlas__visual{
-        display: none !important;
-    }
-
-    .activity-publication{
-        display: flex !important;
-        grid-column: 1 / -1 !important;
-        grid-row: 1 !important;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        padding: var(--admin-stage-divider-inset) 0 !important;
-        flex-direction: column !important;
-        border: 0 !important;
-        overflow: auto !important;
-    }
-
-    .activity-publication__header{
-        display: flex !important;
-    }
-
-    .activity-publication__staged,
-.activity-publication__readiness,
-.activity-publication__latest,
-.activity-publication__recent{
-        display: grid !important;
-    }
-
-    .activity-publication__actions{
-        display: block !important;
-        margin-top: auto !important;
-        padding: .7rem 0 0 !important;
-    }
-
-    .activity-publication__actions .admin-toolbar{
-        width: 100% !important;
-        flex-wrap: nowrap !important;
-        justify-content: flex-end !important;
-    }
-
+    .admin-storage__capacity-actions .admin-action__label,
     .activity-publication__actions .admin-action__label{
         display: inline !important;
-    }
-}
-
-/* Viewport fallback keeps the shell transition monotonic at the smallest size. */
-@media (max-width: 38rem){
-    .analytics-visual-stage,
-.admin-storage__visual-stage,
-.activity-atlas__grid{
-        width: 100% !important;
-        height: var(--admin-visual-stage-height) !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-    }
-
-    .analytics-visual-stage::before,
-.analytics-visual-stage::after,
-.admin-storage__visual-stage::before,
-.admin-storage__visual-stage::after,
-.activity-atlas__grid::before,
-.activity-atlas__grid::after{
-        display: none !important;
-        content: none !important;
-    }
-
-    .analytics-visual-stage > .analytics-world{
-        display: block !important;
-        grid-column: 1 / -1 !important;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .analytics-visual-stage > .analytics-stage-rail,
-.admin-storage__distribution,
-.activity-atlas__visual{
-        display: none !important;
-    }
-
-    .admin-storage__upload{
-        grid-column: 1 / -1 !important;
-        width: 100% !important;
-    }
-
-    .admin-storage__capacity-group{
-        grid-column: 1 / -1 !important;
-        width: 100% !important;
-    }
-
-    .activity-publication{
-        display: flex !important;
-        grid-column: 1 / -1 !important;
-        width: 100% !important;
-        height: 100% !important;
     }
 }
 
