@@ -171,7 +171,7 @@ Rules:
 - when Selection controls an ordinary table or table-like hierarchy, it remains the terminal toolbar group and its circular selected-count badge is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it; Dashboard feed keeps that count visibly separate from the bulk-action trigger while preserving the same terminal checkbox axis;
 - the shared table contract reserves the terminal `--admin-table-selection-width` rail inside the Selection trigger for that badge; do not add page-local margins, padding nudges or duplicate trigger grids that move the badge off the checkbox axis;
 - the badge/checkbox axis is a desktop/table invariant until an intentional responsive breakpoint changes the composition; once controls or rows deliberately stack/reflow, exact cross-row pixel alignment may relax;
-- visual card/contact-sheet surfaces without one trailing table Selection column, such as Gallery, do not invent a fake column or axis merely to satisfy the table rule;
+- visual card/contact-sheet surfaces without one trailing table Selection column, such as Gallery, do not invent a fake column or axis merely to satisfy the table rule; their shared Selection trigger/count pair stays intrinsic rather than reserving the table's fixed 2.5rem Selection rail;
 - invalid actions remain visible but disabled when that makes capability/state clearer;
 - do not duplicate separate “selected parents” and “selected children” menus in the same toolbar;
 - mixed selections must not cause ambiguous mutations;
@@ -304,7 +304,7 @@ Types:
 - Rich Text;
 - Divider.
 
-DnD is enabled only in neutral filter state. Bottom full-width `+ Add component` remains a valid add affordance even when the top action group also has Add component. Under Construction and Custom share this exact responsive table: Component yields before Content; Move up / Move down / Edit / Delete stay readable until the shared four-action rail reaches genuine Minimal table pressure. Hero Artwork's source table instead drops Candidates / Artworks / Newest Year first, then Status at Minimal, while its two row actions remain explicit.
+DnD is enabled only in neutral filter state. Bottom full-width `+ Add component` remains a valid add affordance even when the top action group also has Add component. Under Construction and Custom share this exact responsive table: the fixed Move up / Move down / Edit / Delete rail compacts to the same four icon axes before it can squeeze Content, then Component kind yields before Content. Hero Artwork's source table drops Candidates / Artworks / Newest Year before Status; its fixed Enable/Disable + Open Gallery rail likewise compacts in place before table pressure can truncate either label.
 
 ## 12. Journal table references
 
