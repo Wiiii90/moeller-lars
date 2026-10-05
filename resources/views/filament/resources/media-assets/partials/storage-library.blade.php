@@ -17,7 +17,7 @@
             ->exists();
     @endphp
 
-    <x-admin.controls class="media-workspace__controls" aria-label="File search and filters">
+    <x-admin.controls class="media-workspace__controls admin-data-controls--dashboard-responsive" aria-label="File search and filters" metric-grid :filter-count="4" :search-span="2">
         <x-slot:search>
             <label class="admin-data-field">
                 <span>Search</span>
@@ -130,15 +130,15 @@
 
         <x-slot:selection>
             <div
-                class="admin-data-control-group media-workspace__multi-action"
+                class="admin-data-control-group admin-selection media-workspace__multi-action"
                 x-data="{ open: false }"
                 x-on:click.outside="open = false"
                 x-on:keydown.escape.window="open = false"
             >
                 <span class="admin-data-control-label">Selection</span>
-                <div class="media-workspace__multi-action-anchor">
+                <div class="admin-selection__anchor media-workspace__multi-action-anchor">
                     <button
-                        class="admin-action media-workspace__selection-trigger"
+                        class="admin-action admin-selection__trigger media-workspace__selection-trigger"
                         type="button"
                         x-on:click="open = ! open"
                         x-bind:aria-expanded="open.toString()"
@@ -146,9 +146,8 @@
                         @disabled($selectedAssets === [])
                     >
                         <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
-                        <span class="media-workspace__selection-count">{{ count($selectedAssets) }}</span>
                     </button>
-                    <div class="media-workspace__multi-action-menu" role="menu" x-show="open" x-cloak>
+                    <div class="admin-selection__menu media-workspace__multi-action-menu" role="menu" x-show="open" x-cloak>
                         <a
                             class="admin-action"
                             role="menuitem"
@@ -164,6 +163,7 @@
                         >Delete selected</button>
                     </div>
                 </div>
+                <span class="admin-selection__count media-workspace__selection-count" aria-label="{{ count($selectedAssets) }} selected">{{ count($selectedAssets) }}</span>
             </div>
         </x-slot:selection>
     </x-admin.controls>
