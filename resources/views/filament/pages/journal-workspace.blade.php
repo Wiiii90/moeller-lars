@@ -179,7 +179,7 @@
                                 <th scope="col" class="journal-col--timing">Timing</th>
                                 <th scope="col" class="journal-col--schedule">Schedule</th>
                             @endif
-                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -247,7 +247,7 @@
                                     </td>
                                 @endif
                                 <td class="admin-table__actions">
-                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical journal-row-actions {{ $isBlog ? 'journal-row-actions--blog' : 'journal-row-actions--exhibitions' }}">
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable journal-row-actions {{ $isBlog ? 'admin-row-actions--journal-blog journal-row-actions--blog' : 'admin-row-actions--move-state-delete journal-row-actions--exhibitions' }}">
                                         @if ($isBlog)
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::MoveUp"
