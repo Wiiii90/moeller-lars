@@ -161,7 +161,7 @@
     min-width: 0;
     height: var(--admin-control-height);
     min-height: var(--admin-control-height);
-    padding: .45rem var(--admin-control-text-inset, .25rem);
+    padding: 0 var(--admin-control-text-inset, .25rem);
     border: 0;
     border-bottom: 1px solid var(--admin-line);
     border-radius: 0;
@@ -169,6 +169,7 @@
     color: var(--admin-text);
     font: inherit;
     font-size: var(--admin-font-size-control-value);
+    line-height: calc(var(--admin-control-height) - 1px);
     outline: none;
 }
 

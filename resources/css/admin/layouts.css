@@ -100,32 +100,29 @@ html.fi select option:disabled {
 }
 
 /*
- * Chromium's Windows native popup can ignore option colors even with
- * color-scheme. In browsers with customizable selects, opt only the shared
- * admin controls into the themeable picker in dark mode. Light mode keeps its
- * existing native appearance.
+ * Shared native selects use Chromium's customizable-select surface whenever it
+ * exists. Light/Dark therefore keep the same trigger, option and selected-mark
+ * geometry; only colors change through tokens. Picker direction remains native
+ * so it may open upward when there is not enough room below.
  */
 @supports (appearance: base-select) {
-    html.fi.dark :is(
+    html.fi :is(
         .admin-field,
         .admin-data-field,
         .admin-task-field,
         .gallery-workspace__field,
-        .media-workspace__field,
-        .admin-pager__size,
-        .media-workspace__pager-size
+        .media-workspace__field
     ) select {
         appearance: base-select;
+        align-items: center;
     }
 
-    html.fi.dark :is(
+    html.fi :is(
         .admin-field,
         .admin-data-field,
         .admin-task-field,
         .gallery-workspace__field,
-        .media-workspace__field,
-        .admin-pager__size,
-        .media-workspace__pager-size
+        .media-workspace__field
     ) select::picker(select) {
         appearance: base-select;
         margin-top: .2rem;
@@ -137,51 +134,61 @@ html.fi select option:disabled {
         box-shadow: none;
     }
 
-    html.fi.dark :is(
+    html.fi :is(
         .admin-field,
         .admin-data-field,
         .admin-task-field,
         .gallery-workspace__field,
-        .media-workspace__field,
-        .admin-pager__size,
-        .media-workspace__pager-size
+        .media-workspace__field
     ) select option {
+        display: flex;
+        min-height: 2rem;
         padding: .45rem .7rem;
+        align-items: center;
+        gap: .55rem;
         background: var(--admin-control-popup-surface);
         color: var(--admin-control-popup-ink);
+        line-height: 1.2;
     }
 
-    html.fi.dark :is(
+    html.fi :is(
         .admin-field,
         .admin-data-field,
         .admin-task-field,
         .gallery-workspace__field,
-        .media-workspace__field,
-        .admin-pager__size,
-        .media-workspace__pager-size
+        .media-workspace__field
+    ) select option::checkmark {
+        order: 2;
+        margin-inline-start: auto;
+        color: var(--admin-accent);
+    }
+
+    html.fi :is(
+        .admin-field,
+        .admin-data-field,
+        .admin-task-field,
+        .gallery-workspace__field,
+        .media-workspace__field
     ) select option:hover,
-    html.fi.dark :is(
+    html.fi :is(
         .admin-field,
         .admin-data-field,
         .admin-task-field,
         .gallery-workspace__field,
-        .media-workspace__field,
-        .admin-pager__size,
-        .media-workspace__pager-size
+        .media-workspace__field
     ) select option:checked {
         background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface));
         color: var(--admin-control-popup-ink);
     }
 
-    html.fi.dark :is(
+    html.fi :is(
         .admin-field,
         .admin-data-field,
         .admin-task-field,
         .gallery-workspace__field,
-        .media-workspace__field,
-        .admin-pager__size,
-        .media-workspace__pager-size
+        .media-workspace__field
     ) select::picker-icon {
+        margin-inline-start: auto;
         color: var(--admin-muted);
     }
 }

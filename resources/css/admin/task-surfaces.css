@@ -172,7 +172,8 @@
 .admin-hierarchy__selection,
 .media-workspace__selection-head,
 .media-workspace__selection-cell {
-    width: 2.5rem;
+    box-sizing: border-box;
+    width: var(--admin-table-selection-width);
     padding-inline: .5rem !important;
     text-align: center !important;
 }
