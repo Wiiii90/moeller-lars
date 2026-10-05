@@ -785,7 +785,7 @@
 
 /* General Social Media keeps Platform and Profile URL as direct inline
  * controls. Shared row actions compact before either editable field yields. */
-@container admin-table (max-width: 62rem){
+@container admin-table (max-width: 64rem){
     .general-social-table col.admin-table__col-position{
         width: 3rem !important;
     }
@@ -807,19 +807,17 @@
     }
 }
 
-@container admin-table (max-width: 60rem){
+@container admin-table (max-width: 38rem){
+    .general-social-table .general-social-table__col-platform{
+        width: 7.5rem !important;
+    }
+
     .general-social-table .general-social-table__col-actions{
-        width: 6.75rem !important;
+        width: 5.25rem !important;
     }
 
     .general-social-table .admin-row-actions-heading{
         --admin-row-actions-width: 4.95rem;
-    }
-}
-
-@container admin-table (max-width: 38rem){
-    .general-social-table .general-social-table__col-platform{
-        width: 7.5rem !important;
     }
 
     .general-social-table .general-social-table__position-cell,
