@@ -114,7 +114,7 @@
         aria-label="Storage stage"
     />
 
-    <div class="admin-storage__upload admin-visual-stage__pane" data-admin-stage-pane="upload">
+    <div class="admin-storage__upload admin-visual-stage__pane" data-admin-stage-pane="upload" data-admin-stage-slot="1">
         <div class="admin-storage__visual-heading">
             <p class="admin-storage__eyebrow">Upload Media Files</p>
         </div>
@@ -193,7 +193,7 @@
         </div>
     </div>
 
-    <div class="admin-storage__capacity-group admin-visual-stage__pane" data-admin-stage-pane="capacity">
+    <div class="admin-storage__capacity-group admin-visual-stage__pane" data-admin-stage-pane="capacity" data-admin-stage-slot="2">
         <div class="admin-storage__visual-heading">
             <p class="admin-storage__eyebrow">Total Capacity</p>
         </div>
@@ -223,7 +223,7 @@
         </div>
     </div>
 
-    <div class="admin-storage__distribution admin-visual-stage__pane" data-admin-stage-pane="distribution">
+    <div class="admin-storage__distribution admin-visual-stage__pane" data-admin-stage-pane="distribution" data-admin-stage-slot="3">
         <div class="admin-storage__visual-heading">
             <p class="admin-storage__eyebrow">Media Distribution</p>
         </div>
