@@ -13,7 +13,7 @@
 @endphp
 
 <div
-    class="admin-stage-switcher"
+    class="admin-stage-tabs admin-stage-switcher"
     role="group"
     aria-label="{{ $ariaLabel }}"
     x-data="{
