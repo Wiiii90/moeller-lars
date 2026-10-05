@@ -477,82 +477,24 @@
     --media-task-surface-header-height: 2.25rem;
 }
 
-.admin-storage .media-workspace__table .admin-action {
-    gap: .28rem;
-}
-
-/* Search owns the first two metric cells. The remaining four cells use fine
- * subtracks so heterogeneous filters can take efficient widths instead of one
- * full cell each. Selection owns the final half-cell; its fixed inner selection
- * rail therefore remains aligned with the trailing table checkboxes. */
+/* Storage toolbar composition is owned by the shared
+ * admin-data-controls--dashboard-responsive contract. The feature owns only
+ * the three icon-only view choices inside its semantic View group. */
 .admin-storage .media-workspace__controls {
-    display: grid;
-    grid-template-columns: repeat(72, minmax(0, 1fr));
-    gap: .35rem;
     padding-top: 0;
     padding-bottom: var(--admin-section-gap);
-    align-items: end;
     border-bottom: 0;
 }
 
-.admin-storage .media-workspace__controls > * {
-    width: 100%;
-    min-width: 0 !important;
-}
-
-.admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 24; }
-.admin-storage .media-workspace__controls > :nth-child(2) { grid-column: span 7; }
-.admin-storage .media-workspace__controls > :nth-child(3) { grid-column: span 6; }
-.admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 7; }
-.admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 9; }
-
-.admin-storage .media-workspace__controls > .admin-data-controls__utility {
-    display: contents;
-}
-
-.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(1) { grid-column: span 5; }
-.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(2) { grid-column: span 8; }
-.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(3) { grid-column: span 6; }
-
-.admin-storage .media-workspace__controls .admin-data-field select,
-.admin-storage .media-workspace__controls .admin-data-field input {
-    padding-inline: .35rem;
-}
-
-.admin-storage .media-workspace__controls .admin-data-field select {
-    white-space: nowrap;
-}
-
-.admin-storage .media-workspace__controls .admin-data-control-group > .admin-action,
-.admin-storage .media-workspace__multi-action-anchor,
-.admin-storage .media-workspace__selection-trigger,
-.admin-storage .media-workspace__view-options {
-    width: 100%;
-    min-width: 0;
-}
-
 .admin-storage .media-workspace__view-options {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, var(--admin-control-height));
     gap: .12rem;
 }
 
 .admin-storage .media-workspace__view-option {
-    width: 100%;
-}
-
-/* Storage owns only its compact label treatment; the shared table contract
- * owns the terminal selected-count/checkbox axis. */
-.admin-storage .media-workspace__selection-trigger {
-    padding-left: .35rem;
-    text-align: left;
-}
-
-.admin-storage .media-workspace__selection-trigger .admin-action__label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    width: var(--admin-control-height);
+    min-width: var(--admin-control-height);
 }
 
 /* Six-cell table contract: the first two metric cells are Preview + Media,
@@ -585,41 +527,6 @@
     width: auto;
     padding-inline: .2rem !important;
 }
-
-.admin-storage .media-workspace__row-actions {
-    display: grid !important;
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0;
-    align-items: center;
-}
-
-.admin-storage .media-workspace__row-actions .admin-action {
-    display: inline-flex;
-    width: auto;
-    min-width: 0;
-    padding-inline: .35rem;
-    gap: .28rem;
-    align-items: center;
-    justify-self: center;
-    justify-content: center;
-    overflow: hidden;
-    text-align: center;
-}
-
-.admin-storage .media-workspace__row-actions .admin-action__icon {
-    width: 1rem;
-    min-width: 1rem;
-}
-
-.admin-storage .media-workspace__row-actions .admin-action__label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 
 @media (prefers-reduced-motion: reduce) {
     .admin-storage__target-track i {
