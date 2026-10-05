@@ -21,10 +21,11 @@
 
         <section aria-label="Pages editor">
             <x-admin.controls
-                class="admin-task-controls admin-task-controls--pages"
+                class="admin-task-controls admin-task-controls--pages admin-data-controls--dashboard-responsive"
                 aria-label="Page controls"
                 metric-grid
                 :filter-count="2"
+                :search-span="2"
             >
                 <x-slot:search>
                     <label class="admin-task-field">
@@ -68,7 +69,7 @@
                 <x-slot:actions>
                     <div class="admin-task-control-group admin-pages__actions">
                         <span class="admin-task-control-label">PAGES</span>
-                        <div class="admin-task-control-actions">
+                        <div class="admin-task-control-actions admin-editorial-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('pagesSettings')" aria-label="Page settings">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Settings</span>
