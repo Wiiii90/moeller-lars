@@ -681,11 +681,6 @@
     justify-content: flex-start !important;
 }
 
-.admin-dashboard__selection .admin-selection__trigger-label {
-    min-width: 0;
-    justify-content: flex-start;
-}
-
 .admin-dashboard__selection > .admin-selection__count {
     grid-column: 2;
     margin-left: 0;
