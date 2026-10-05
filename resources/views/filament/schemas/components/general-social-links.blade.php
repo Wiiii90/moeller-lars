@@ -27,7 +27,7 @@
                     <th scope="colgroup" colspan="2" class="admin-table__ordering-heading general-social-table__position-head">Position</th>
                     <th scope="col" class="general-social-table__platform-head">Platform</th>
                     <th scope="col" class="general-social-table__url-head">Profile URL</th>
-                    <th scope="col" class="admin-table__actions">Actions</th>
+                    <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                 </tr>
             </thead>
             <tbody wire:sort="sortSocialLink">
@@ -85,7 +85,7 @@
                             >
                         </td>
                         <td class="admin-table__actions general-social-table__actions">
-                            <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--order-delete">
+                            <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-delete">
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                     wire:click="moveSocialLink({{ $index }}, 'up')"
