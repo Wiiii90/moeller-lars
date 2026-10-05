@@ -134,6 +134,14 @@
     grid-template-columns: minmax(0, 1fr) 6.5rem 7rem max-content !important;
 }
 
+.admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
+    grid-template-columns: minmax(0, 1fr) 5.75rem 5.75rem 7rem max-content !important;
+}
+
+.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
+    grid-template-columns: minmax(0, 1fr) 5.75rem 5.75rem 7.5rem 6.5rem max-content !important;
+}
+
 .admin-data-controls--dashboard-responsive > :first-child {
     box-sizing: border-box;
     width: 100% !important;
@@ -156,11 +164,36 @@
     padding-inline: 0 !important;
 }
 
-.admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
+:is(
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2,
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+) > .admin-data-controls__filters > :nth-child(2) {
     box-sizing: border-box;
     width: 100% !important;
     min-width: 0 !important;
     grid-column: 3 !important;
+    grid-row: 1 !important;
+    padding-inline: 0 !important;
+}
+
+:is(
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
+) > .admin-data-controls__filters > :nth-child(3) {
+    box-sizing: border-box;
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    padding-inline: 0 !important;
+}
+
+.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-data-controls__filters > :nth-child(4) {
+    box-sizing: border-box;
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 5 !important;
     grid-row: 1 !important;
     padding-inline: 0 !important;
 }
@@ -330,6 +363,14 @@
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
         grid-template-columns: minmax(0, 1fr) 4.75rem 5.75rem max-content !important;
     }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
+        grid-template-columns: minmax(0, 1fr) 4.75rem 4.75rem 5.75rem max-content !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
+        grid-template-columns: minmax(0, 1fr) 4.75rem 4.75rem 6.25rem 5.5rem max-content !important;
+    }
 }
 
 @container admin-workspace (max-width: 38rem) {
@@ -343,6 +384,14 @@
 
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
         grid-template-columns: minmax(3rem, 1fr) 4.5rem 5.25rem max-content !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
+        grid-template-columns: minmax(2.75rem, 1fr) 4.25rem 4.25rem 5.25rem max-content !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
+        grid-template-columns: minmax(2.75rem, 1fr) 4.25rem 4.25rem 5.25rem 4.75rem max-content !important;
     }
 
     .admin-data-controls--dashboard-responsive > .admin-data-controls__utility {
