@@ -324,20 +324,33 @@
     background: rgba(20, 20, 20, .78);
 }
 
-.admin-inline-select {
+.admin-inline-select,
+.admin-inline-control-value {
     box-sizing: border-box;
     width: 100%;
     height: 2rem;
     min-width: 0;
-    padding: .3rem 1.7rem .3rem var(--admin-control-text-inset);
+    color: var(--admin-text);
+    font: inherit;
+    font-size: var(--admin-font-size-control-value);
+    font-weight: 400;
+    letter-spacing: normal;
+    line-height: 1.2;
+}
+
+.admin-inline-select {
+    padding: 0 var(--admin-control-text-inset);
     border: 1px solid var(--admin-line-strong);
     border-radius: .2rem;
     background: transparent;
-    color: var(--admin-text);
-    font: inherit;
-    font-size: var(--admin-font-size-table-support);
-    line-height: 1;
     outline: none;
+}
+
+.admin-inline-control-value {
+    display: flex;
+    padding-inline: var(--admin-control-text-inset);
+    align-items: center;
+    white-space: nowrap;
 }
 
 .admin-inline-select:hover,
