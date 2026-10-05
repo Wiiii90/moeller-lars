@@ -497,11 +497,6 @@
         display: none;
     }
 
-    .general-social-table__actions .admin-toolbar{
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-        max-width: none;
-    }
-
     .home-components-table .home-components-table__type,
 .home-components-table .home-components-table__col-type{
         display: none;
@@ -742,15 +737,6 @@
         justify-content: center !important;
     }
 
-    .general-social-table .general-social-table__col-url,
-.general-social-table .general-social-table__url-head,
-.general-social-table .general-social-table__url{
-        display: none;
-    }
-
-    .general-social-table .admin-responsive-meta{
-        display: block;
-    }
 }
 
 /* Extreme widths: the task surface wins over summary statistics. */
@@ -934,9 +920,8 @@
 }
 
 
-/* General Social Media table: preserve the shared Position/Drag rails, reduce
- * action chrome before data, and only fold Profile URL into Platform at the
- * smallest table state. */
+/* General Social Media keeps Platform and Profile URL as direct inline
+ * controls. Shared row actions compact before either editable field yields. */
 @container admin-table (max-width: 62rem){
     .general-social-table col.admin-table__col-position{
         width: 3rem !important;
@@ -955,33 +940,40 @@
     }
 
     .general-social-table .general-social-table__col-actions{
-        width: 22rem !important;
+        width: 15rem !important;
     }
 }
 
-@container admin-table (max-width: 44rem){
-    .general-social-table .general-social-table__col-url,
-.general-social-table .general-social-table__url-head,
-.general-social-table .general-social-table__url{
+@container admin-table (max-width: 50rem){
+    .general-social-table .general-social-table__col-actions{
+        width: 6.75rem !important;
+    }
+
+    .general-social-table__actions .admin-row-actions--three{
+        width: 6.45rem !important;
+        grid-template-columns: repeat(3, 1.35rem) !important;
+        gap: .45rem !important;
+    }
+
+    .general-social-table__actions .admin-row-actions--three .admin-action{
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .general-social-table__actions .admin-row-actions--three .admin-action__label{
         display: none !important;
-    }
-
-    .general-social-table .admin-responsive-meta{
-        display: block !important;
-    }
-
-    .general-social-table .general-social-table__col-platform{
-        width: auto !important;
     }
 }
 
 @container admin-table (max-width: 38rem){
-    .general-social-table .general-social-table__col-actions{
+    .general-social-table .general-social-table__col-platform{
         width: 7.5rem !important;
     }
 
     .general-social-table .general-social-table__position-cell,
-.general-social-table .general-social-table__drag-cell{
+    .general-social-table .general-social-table__drag-cell{
         overflow: visible !important;
     }
 }
