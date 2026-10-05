@@ -228,19 +228,13 @@
  * only the semantic recipe; responsive pressure never invents a page-local
  * button layout. */
 @container admin-table (max-width: 86rem) {
-    .admin-row-actions--move-state-delete {
-        --admin-row-actions-width: 8.55rem;
-        --admin-row-actions-columns: repeat(5, 1.35rem);
-        --admin-row-actions-gap: .45rem;
-    }
-
     .admin-row-actions--journal-blog {
         --admin-row-actions-width: 12.15rem;
         --admin-row-actions-columns: repeat(7, 1.35rem);
         --admin-row-actions-gap: .45rem;
     }
 
-    :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action {
+    .admin-row-actions--journal-blog .admin-action {
         display: inline-flex !important;
         width: 1.35rem !important;
         min-width: 1.35rem !important;
@@ -251,11 +245,38 @@
         justify-items: center;
     }
 
-    :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action--state::after {
+    .admin-row-actions--journal-blog .admin-action--state::after {
         display: none !important;
     }
 
-    :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action__label {
+    .admin-row-actions--journal-blog .admin-action__label {
+        display: none !important;
+    }
+}
+
+@container admin-table (max-width: 76rem) {
+    .admin-row-actions--move-state-delete {
+        --admin-row-actions-width: 8.55rem;
+        --admin-row-actions-columns: repeat(5, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    .admin-row-actions--move-state-delete .admin-action {
+        display: inline-flex !important;
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        grid-template-columns: none !important;
+        gap: 0 !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+        justify-items: center;
+    }
+
+    .admin-row-actions--move-state-delete .admin-action--state::after {
+        display: none !important;
+    }
+
+    .admin-row-actions--move-state-delete .admin-action__label {
         display: none !important;
     }
 }
