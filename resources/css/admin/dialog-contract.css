@@ -1,16 +1,33 @@
 /* Shared Filament viewport/modal geometry. Filament still owns lifecycle,
  * focus, Escape handling and nested interactive behavior. */
-html {
-    scrollbar-gutter: stable;
+/* Dialog geometry is measured from the current .fi-main on every open. The
+ * modal layer remains viewport-fixed but visually belongs to the active content
+ * frame below the topbar. Filament still owns modal lifecycle and scroll lock. */
+.fi-modal {
+    --admin-dialog-layer-inline-start: 0px;
+    --admin-dialog-layer-inline-end: 0px;
+    --admin-dialog-layer-block-start: var(--admin-topbar-height);
+    --admin-dialog-layer-padding-inline: 1rem;
 }
 
 .fi-modal-close-overlay {
     position: fixed;
-    inset: 0;
+    inset-block: var(--admin-dialog-layer-block-start) 0 !important;
+    inset-inline: var(--admin-dialog-layer-inline-start) var(--admin-dialog-layer-inline-end) !important;
+}
+
+.fi-modal-window-ctn {
+    position: fixed;
+    inset-block: var(--admin-dialog-layer-block-start) 0 !important;
+    inset-inline: var(--admin-dialog-layer-inline-start) var(--admin-dialog-layer-inline-end) !important;
+    box-sizing: border-box;
+    min-height: 0 !important;
+    padding-block: 1rem !important;
+    padding-inline: var(--admin-dialog-layer-padding-inline) !important;
 }
 
 .fi-modal-window {
-    max-height: calc(100dvh - 2rem);
+    max-height: calc(100dvh - var(--admin-dialog-layer-block-start) - 2rem);
 }
 
 .fi-modal-header,
@@ -109,18 +126,22 @@ html {
 
 @supports not (height: 100dvh) {
     .fi-modal-window {
-        max-height: calc(100vh - 2rem);
+        max-height: calc(100vh - var(--admin-dialog-layer-block-start) - 2rem);
     }
 }
 
 @media (max-width: 46rem) {
+    .fi-modal-window-ctn {
+        padding-block: .5rem !important;
+    }
+
     .fi-modal-window {
-        max-height: calc(100dvh - 1rem);
+        max-height: calc(100dvh - var(--admin-dialog-layer-block-start) - 1rem);
     }
 
     @supports not (height: 100dvh) {
         .fi-modal-window {
-            max-height: calc(100vh - 1rem);
+            max-height: calc(100vh - var(--admin-dialog-layer-block-start) - 1rem);
         }
     }
 }
@@ -148,8 +169,8 @@ html {
 .admin-dialog--small,
 .admin-dialog--default,
 .admin-dialog--large {
-    width: min(var(--admin-dialog-width), calc(100vw - var(--admin-dialog-viewport-gutter)));
-    max-width: min(var(--admin-dialog-width), calc(100vw - var(--admin-dialog-viewport-gutter))) !important;
+    width: min(var(--admin-dialog-width), 100%);
+    max-width: min(var(--admin-dialog-width), 100%) !important;
 }
 
 /*
