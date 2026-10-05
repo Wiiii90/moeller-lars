@@ -46,6 +46,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $dashboardFeedCss = file_get_contents($root.'/resources/css/admin/dashboard-feed.css');
     $dashboardFeedDialog = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-dialog.blade.php');
     $activityCommitDialog = file_get_contents($root.'/resources/views/filament/pages/partials/activity-commit-details-dialog.blade.php');
+    $dialogGeometry = file_get_contents($root.'/resources/js/admin-dialog-geometry.js');
     $homeWorkspace = file_get_contents($root.'/app/Filament/Pages/HomePresentation.php');
     $homeSettingsDialog = file_get_contents($root.'/app/Filament/Support/HomeSettingsDialog.php');
     $artworkEditDialog = file_get_contents($root.'/app/Filament/Support/ArtworkEditDialog.php');
@@ -72,6 +73,10 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('transform: translate3d(.3rem, -.3rem, 0) scale(.985) !important;')
         ->toContain('transition-duration: 260ms !important;')
         ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->toContain('--admin-dialog-layer-inline-start')
+        ->toContain('inset-block: var(--admin-dialog-layer-block-start) 0 !important')
+        ->toContain('min-height: 0 !important')
+        ->toContain('width: min(var(--admin-dialog-width), 100%)')
         ->not->toContain('--admin-dialog-width-mini')
         ->not->toContain('.admin-dialog--mini')
         ->toContain('/* Shared read-only detail content used by Viewer dialogs. */')
@@ -93,8 +98,13 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $adminViz = file_get_contents($root.'/resources/js/admin-viz.js');
 
     expect($layouts)
-        ->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
+        ->toContain("html.fi {\n    scrollbar-gutter: stable !important;\n}")
+        ->toContain(".fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
         ->toContain('Filament owns modal scroll locking.')
+        ->toContain('inset-inline-start: calc(0rem - var(--admin-workspace-center-shift));')
+        ->toContain('padding-inline: var(--admin-workspace-gutter) !important;')
+        ->toContain('transform: none;')
+        ->not->toContain('padding-right: var(--admin-header-control-rail)')
         ->not->toContain('admin-modal-scroll')
         ->not->toContain('admin-modal-existing-scrollbar')
         ->not->toContain('html.fi:has(.fi-modal.fi-modal-open)');
@@ -102,8 +112,15 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     expect($panelProvider)
         ->not->toContain("view('filament.partials.admin-modal-bootstrap')")
         ->and($adminViz)
+        ->toContain("import './admin-dialog-geometry.js';")
         ->not->toContain('admin-modal-scroll')
         ->not->toContain('initializeAdminModalScrollBehavior')
+        ->and($dialogGeometry)
+        ->toContain("document.addEventListener('x-modal-opened'")
+        ->toContain("element.scrollTop = 0")
+        ->toContain("--admin-dialog-layer-inline-start")
+        ->not->toContain("document.documentElement.style.overflow")
+        ->not->toContain("document.documentElement.style.paddingRight")
         ->and(is_file($root.'/resources/js/admin-modal-scroll.js'))->toBeFalse()
         ->and(is_file($root.'/resources/views/filament/partials/admin-modal-bootstrap.blade.php'))->toBeFalse();
 
