@@ -235,7 +235,7 @@
 /* Dense rails compact against their own allocated width. Their ideal labeled
  * widths are the thresholds, so Pages/Custom Page/Journal do not need viewport
  * or table-width guesses merely to prevent action overflow. */
-@container admin-row-actions (max-width: 22.99rem) {
+@container admin-row-actions (max-width: 23rem) {
     .admin-row-actions--move-state-delete .admin-action {
         width: 1.35rem !important;
         min-width: 1.35rem !important;
@@ -253,7 +253,7 @@
     }
 }
 
-@container admin-row-actions (max-width: 38.99rem) {
+@container admin-row-actions (max-width: 39rem) {
     .admin-row-actions--journal-blog .admin-action {
         width: 1.35rem !important;
         min-width: 1.35rem !important;
