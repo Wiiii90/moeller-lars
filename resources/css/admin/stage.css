@@ -421,9 +421,13 @@
         grid-template-rows: auto minmax(0, 1fr) auto !important;
     }
 
-    /* Analytics intentionally has no focused-pane switcher. Its Minimal Stage
-     * is the map alone; the country ranking/flag rail is supportive context. */
-    .analytics-visual-stage {
+    /* Shared single-visual Minimal state.
+     *
+     * A stage that declares this modifier keeps exactly one primary visual pane
+     * at Minimal. The stage owner removes multi-pane divider geometry and gives
+     * that primary pane the complete stage box; consumers only declare the
+     * semantic mode and never reproduce the geometry locally. */
+    .admin-visual-stage--single-minimal {
         display: grid !important;
         width: 100% !important;
         height: var(--admin-visual-stage-height) !important;
@@ -434,32 +438,40 @@
         overflow: hidden !important;
     }
 
-    .analytics-visual-stage::before,
-    .analytics-visual-stage::after {
+    .admin-visual-stage--single-minimal::before,
+    .admin-visual-stage--single-minimal::after {
         display: none !important;
         content: none !important;
     }
 
-    .analytics-visual-stage > .analytics-world {
-        position: absolute !important;
-        inset: var(--admin-stage-divider-inset) 0 !important;
-        display: block !important;
-        width: auto !important;
-        height: auto !important;
+    .admin-visual-stage--single-minimal > .admin-visual-stage__pane:first-child {
+        position: relative !important;
+        inset: auto !important;
+        display: grid !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        margin: 0 !important;
+        padding: var(--admin-stage-divider-inset) 0 !important;
+        place-items: center !important;
+        overflow: hidden !important;
+    }
+
+    .admin-visual-stage--single-minimal > .admin-visual-stage__pane:first-child > * {
+        box-sizing: border-box;
+        width: 100% !important;
+        height: 100% !important;
         max-width: none !important;
         min-width: 0 !important;
         min-height: 0 !important;
         margin: 0 !important;
-        padding: 0 !important;
     }
 
-    .analytics-visual-stage > .analytics-world > .analytics-world__canvas {
-        width: 100% !important;
-        height: 100% !important;
-        max-width: none !important;
-    }
-
-    .analytics-visual-stage > .analytics-stage-rail {
+    .admin-visual-stage--single-minimal > .admin-visual-stage__pane:not(:first-child) {
         display: none !important;
     }
 }
