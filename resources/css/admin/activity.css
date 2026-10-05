@@ -473,6 +473,14 @@ a.activity-calendar__day:focus-visible {
 }
 
 /* Activity controls use the shared Dashboard-responsive toolbar contract. */
+.activity-events-table {
+    --admin-row-actions-width: 9.5rem;
+}
+
+.activity-commits-table {
+    --admin-row-actions-width: 14.25rem;
+}
+
 .activity-events-table table {
     min-width: 0;
     max-width: 100%;
