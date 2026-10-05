@@ -226,7 +226,7 @@ async function shellGeometry(page) {
       scroll_y: window.scrollY,
       has_vertical_overflow: root.scrollHeight > root.clientHeight,
       has_classic_scrollbar: window.innerWidth > root.clientWidth,
-      modal_scrollbar_gutter: root.classList.contains('admin-modal-scrollbar-gutter'),
+      modal_visible_scrollbar_lock: root.classList.contains('admin-modal-visible-scrollbar-lock'),
       inline_overflow: root.style.overflow,
       inline_padding_right: root.style.paddingRight,
       overflow_y: rootStyle.overflowY,
@@ -248,24 +248,29 @@ function expectStableModalScrollLock(before, during, context) {
   const hadClassicScrollbar = before.has_classic_scrollbar;
 
   expect(
-    during.modal_scrollbar_gutter,
-    `${context}: temporary gutter mode must match pre-open classic scrollbar state`,
+    during.modal_visible_scrollbar_lock,
+    `${context}: visible-scrollbar lock must match pre-open classic scrollbar state`,
   ).toBe(hadClassicScrollbar);
 
-  expect(during.inline_overflow, `${context}: Filament did not acquire the root scroll lock`).toBe('hidden');
-  expect(during.inline_padding_right, `${context}: Filament injected right-padding compensation`).toBe(before.inline_padding_right);
+  expect(during.scroll_y, `${context}: background scroll position changed on open`).toBe(before.scroll_y);
 
   if (hadClassicScrollbar) {
-    expect(during.scrollbar_gutter, `${context}: pre-existing scrollbar width was not reserved`).toContain('stable');
+    expect(during.has_classic_scrollbar, `${context}: pre-existing document scrollbar disappeared`).toBe(true);
+    expect(during.overflow_y, `${context}: document scrollbar is not visibly retained`).toBe('scroll');
+    expect(during.padding_right, `${context}: Filament padding compensation created a second rail`).toBe('0px');
+    expect(during.scrollbar_gutter, `${context}: extra scrollbar gutter was introduced`).toBe('auto');
     return;
   }
 
+  expect(during.has_classic_scrollbar, `${context}: short page gained a document scrollbar`).toBe(false);
+  expect(during.inline_overflow, `${context}: Filament did not acquire its native short-page lock`).toBe('hidden');
   expect(during.scrollbar_gutter, `${context}: short page gained a reserved gutter`).toBe('auto');
 }
 
 function expectReleasedModalScrollLock(before, after, context) {
-  expect(after.modal_scrollbar_gutter, `${context}: temporary scrollbar gutter leaked after close`).toBe(false);
+  expect(after.modal_visible_scrollbar_lock, `${context}: visible-scrollbar lock leaked after close`).toBe(false);
   expect(after.has_classic_scrollbar, `${context}: classic scrollbar state did not restore`).toBe(before.has_classic_scrollbar);
+  expect(after.scroll_y, `${context}: background scroll position did not restore`).toBe(before.scroll_y);
   expect(after.inline_overflow, `${context}: root overflow was not restored`).toBe(before.inline_overflow);
   expect(after.inline_padding_right, `${context}: root padding-right was not restored`).toBe(before.inline_padding_right);
   expect(after.scrollbar_gutter, `${context}: root scrollbar gutter changed after close`).toBe(before.scrollbar_gutter);
@@ -450,8 +455,8 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectReleasedModalScrollLock(pagesBeforeDialogGeometry, pagesAfterDialogGeometry, 'Pages Add page close');
 
     // Explicitly cover a document that already needs vertical scrolling.
-    // CI Chromium may use overlay scrollbars, so vertical overflow rather than
-    // innerWidth/clientWidth is the portable trigger for the production path.
+    // On classic-scrollbar browsers the visible rail must remain present and
+    // frozen. Overlay-scrollbar browsers stay on Filament's native lock path.
     await page.evaluate(() => {
       const spacer = document.createElement('div');
       spacer.dataset.modalScrollbarTestSpacer = 'true';
