@@ -326,51 +326,21 @@
     }
 }
 
-@media (max-width: 63.99rem) {
-    .admin-data-controls--dashboard-responsive .admin-editorial-actions {
-        grid-auto-columns: var(--admin-control-height);
-    }
-
-    .admin-data-controls--dashboard-responsive .admin-editorial-actions > .admin-action {
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-data-controls--dashboard-responsive .admin-editorial-actions .admin-action__label,
-    .admin-data-controls--dashboard-responsive .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    .admin-data-controls--dashboard-responsive .admin-selection__trigger {
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-data-controls--dashboard-responsive .admin-selection__trigger-label {
-        width: 100%;
-        justify-content: center;
-    }
-}
-
-@container admin-workspace (max-width: 50rem) {
+@container admin-workspace (max-width: 54rem) {
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-1 {
-        grid-template-columns: minmax(0, 1fr) 5.25rem max-content !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 5.25rem) max-content !important;
     }
 
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
-        grid-template-columns: minmax(0, 1fr) 4.75rem 5.75rem max-content !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4.75rem) minmax(0, 5.75rem) max-content !important;
     }
 
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
-        grid-template-columns: minmax(0, 1fr) 4.75rem 4.75rem 5.75rem max-content !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4.75rem) minmax(0, 4.75rem) minmax(0, 5.75rem) max-content !important;
     }
 
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
-        grid-template-columns: minmax(0, 1fr) 4.75rem 4.75rem 6.25rem 5.5rem max-content !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4.75rem) minmax(0, 4.75rem) minmax(0, 6.25rem) minmax(0, 5.5rem) max-content !important;
     }
 }
 
@@ -380,19 +350,19 @@
     }
 
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-1 {
-        grid-template-columns: minmax(3rem, 1fr) 4.75rem max-content !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4.75rem) max-content !important;
     }
 
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
-        grid-template-columns: minmax(3rem, 1fr) 4.5rem 5.25rem max-content !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4.5rem) minmax(0, 5.25rem) max-content !important;
     }
 
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
-        grid-template-columns: minmax(2.75rem, 1fr) 4.25rem 4.25rem 5.25rem max-content !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4.25rem) minmax(0, 4.25rem) minmax(0, 5.25rem) max-content !important;
     }
 
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
-        grid-template-columns: minmax(2.75rem, 1fr) 4.25rem 4.25rem 5.25rem 4.75rem max-content !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4.25rem) minmax(0, 4.25rem) minmax(0, 5.25rem) minmax(0, 4.75rem) max-content !important;
     }
 
     .admin-data-controls--dashboard-responsive > .admin-data-controls__utility {
