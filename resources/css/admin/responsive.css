@@ -1303,11 +1303,7 @@
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         }
 
-        /* Narrow already reduced Pages to Published / Unpublished /
-         * In navigation. Minimal only removes that third semantic metric.
-         * Target it explicitly so the earlier higher-specificity Narrow
-         * visibility rule cannot leave a third item in a two-track grid. */
-        .admin-pages-workspace .pages-status-metrics > .pages-metric--navigation{
+        .admin-pages-workspace .pages-metric{
             display: none !important;
         }
 
@@ -1374,56 +1370,6 @@
     .admin-pages__primary-grid{
         grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
         gap: .3rem !important;
-    }
-}
-
-/* Sidebar collapse is monotonic for Pages too. The wider workspace created by
- * the Burger shell must not resurrect Page type or full row-action labels that
- * already yielded in the constrained desktop state. */
-@media (max-width: 63.99rem){
-    .admin-hierarchy--pages .admin-pages__type,
-    .admin-hierarchy--pages .admin-pages__template{
-        display: none !important;
-    }
-
-    .admin-hierarchy--pages .admin-responsive-meta{
-        display: block !important;
-    }
-
-    .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns: minmax(0, 1fr) 11.25rem !important;
-    }
-
-    .admin-pages__primary-grid{
-        grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
-        gap: .3rem !important;
-    }
-
-    .admin-pages__utility-grid{
-        grid-template-columns: 8.55rem var(--admin-table-selection-width) !important;
-    }
-
-    .admin-pages__row-actions{
-        width: 8.55rem !important;
-        grid-template-columns: repeat(5, 1.35rem) !important;
-        gap: .45rem !important;
-    }
-
-    .admin-pages__row-actions .admin-action{
-        width: 1.35rem !important;
-        min-width: 1.35rem !important;
-        min-height: 2rem;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-pages__row-actions .admin-action__label{
-        display: none !important;
-    }
-
-    .admin-pages__redirect-target{
-        width: auto !important;
     }
 }
 
