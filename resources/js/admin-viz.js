@@ -1,5 +1,6 @@
 import './admin-notifications.js';
 import './admin-action-titles.js';
+import './admin-dialog-geometry.js';
 
 let storageRuntimePromise = null;
 let refreshFrame = null;
