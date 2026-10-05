@@ -18,7 +18,7 @@
 }
 
 .journal-table--exhibitions {
-    --admin-row-actions-width: 26rem;
+    --admin-row-actions-width: 23rem;
 }
 
 .journal-table--blog col:nth-child(4) {
