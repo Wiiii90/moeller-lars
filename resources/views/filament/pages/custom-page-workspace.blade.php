@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <x-admin.workspace :title="$pageTitle" class="custom-page-workspace">
-        <x-admin.metrics :columns="6" class="custom-page-status-metrics" aria-label="Custom page overview">
+        <x-admin.metrics :columns="6" class="custom-page-status-metrics admin-metrics--six-state" aria-label="Custom page overview">
             @foreach ($metrics as $metric)
                 @php
                     $metricRole = match ($metric['label']) {
