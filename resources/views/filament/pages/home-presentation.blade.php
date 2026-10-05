@@ -2,7 +2,7 @@
     <x-admin.workspace title="Home" class="admin-home-workspace">
         @if ($metrics !== [])
             <div @if ($template === 'artwork') wire:init="loadHomeAnalytics" @endif>
-                <x-admin.metrics :columns="count($metrics)" class="home-status-metrics" aria-label="Home overview">
+                <x-admin.metrics :columns="count($metrics)" class="home-status-metrics admin-metrics--six-state" aria-label="Home overview">
                     @foreach ($metrics as $metric)
                         <x-admin.metric class="home-metric home-metric--{{ $metric['role'] }}" :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
                     @endforeach
