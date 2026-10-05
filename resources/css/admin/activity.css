@@ -648,14 +648,6 @@ a.activity-calendar__day:focus-visible {
     flex-wrap: nowrap;
 }
 
-.activity-actions-cell .admin-action {
-    column-gap: .28rem;
-}
-
-.activity-actions-cell .admin-action:first-child {
-    margin-left: 0;
-}
-
 .activity-commits-table table {
     min-width: 0;
     max-width: 100%;
