@@ -330,11 +330,21 @@
     font-size: var(--admin-font-size-control-value);
     font-weight: 400;
     letter-spacing: normal;
-    line-height: 1.2;
+    line-height: 1rem;
+    vertical-align: middle;
+}
+
+/* Inline table editors share one text box. Native select rendering otherwise
+ * places the selected value on a browser-dependent baseline while adjacent
+ * inputs are vertically centered. Equal block padding makes Platform/Page Type/
+ * Component Type use the same value axis as inline text inputs on every table. */
+.admin-inline-select,
+.admin-inline-input {
+    padding-block: .4375rem;
 }
 
 .admin-inline-select {
-    padding: 0 var(--admin-control-text-inset);
+    padding-inline: var(--admin-control-text-inset);
     border: 1px solid var(--admin-line-strong);
     border-radius: .2rem;
     background: transparent;
@@ -342,7 +352,7 @@
 }
 
 .admin-inline-input {
-    padding: 0 var(--admin-control-text-inset);
+    padding-inline: var(--admin-control-text-inset);
     border: 0;
     border-bottom: 1px solid var(--admin-line);
     border-radius: 0;
