@@ -676,7 +676,7 @@
     padding-left: 0 !important;
 }
 
-@container admin-workspace (max-width: 54rem){
+@container admin-workspace (max-width: 64rem){
     .admin-pages-workspace .pages-metric{
         display: none !important;
     }
@@ -714,9 +714,9 @@
 }
 
 /* Pages follows the same responsive state model as Dashboard.
- * Compact (64rem) removes only supportive Template data. Narrow (54rem)
- * compacts the shared five-action rail and returns that space to Name/Page Type.
- * Minimal (38rem) tightens only the ordering rails. Page Type stays explicit. */
+ * Narrow (64rem) removes only supportive Template data and reallocates real
+ * space to the still-labeled five-action rail. Minimal (38rem) compacts those
+ * same five semantic axes to icons. Page Type remains explicit throughout. */
 @container admin-table (max-width: 64rem){
     .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
@@ -750,17 +750,26 @@
     }
 }
 
-@container admin-table (max-width: 54rem){
+@container admin-table (max-width: 38rem){
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row{
         grid-template-columns:
             minmax(0, 1fr)
-            minmax(7.5rem, 9rem)
-            calc(var(--admin-row-actions-move-state-delete-compact-width) + var(--admin-table-selection-width)) !important;
+            7.5rem
+            calc(var(--admin-row-actions-move-state-delete-minimal-width) + var(--admin-table-selection-width)) !important;
+    }
+
+    .admin-pages__primary-grid{
+        grid-template-columns: 2.75rem 1.5rem minmax(0, 1fr) !important;
+        gap: .25rem !important;
     }
 
     .admin-pages__utility-grid{
-        grid-template-columns: var(--admin-row-actions-move-state-delete-compact-width) var(--admin-table-selection-width) !important;
+        grid-template-columns: var(--admin-row-actions-move-state-delete-minimal-width) var(--admin-table-selection-width) !important;
+    }
+
+    .admin-pages__row-actions{
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
     }
 
     .admin-hierarchy--pages .admin-pages__type{
@@ -768,29 +777,14 @@
     }
 }
 
-@container admin-table (max-width: 38rem){
-    .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns:
-            minmax(0, 1fr)
-            7.5rem
-            calc(var(--admin-row-actions-move-state-delete-compact-width) + var(--admin-table-selection-width)) !important;
-    }
-
-    .admin-pages__primary-grid{
-        grid-template-columns: 2.75rem 1.5rem minmax(0, 1fr) !important;
-        gap: .25rem !important;
-    }
-}
-
 /* ---------- Custom Page hierarchy ---------- */
-/* Narrow folds supportive Component identity into Content and compacts the same
- * shared five-action rail. Minimal only tightens the ordering rails further. */
+/* Narrow keeps action labels and sacrifices supportive Component identity first.
+ * Minimal compacts the same five semantic action axes to icons. */
 @container admin-table (max-width: 54rem){
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
-        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem);
+        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-width) + .3rem);
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
@@ -814,6 +808,11 @@
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 1.75rem;
+        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-minimal-width) + .3rem);
+    }
+
+    .custom-page-component-sequence .admin-row-actions-heading{
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
     }
 }
 
@@ -826,8 +825,9 @@
     width: 2rem !important;
 }
 
-/* Blog and Exhibitions both use dense rails, so Narrow compacts their seven-
- * and five-action rails together. Supporting columns yield in the same state. */
+/* Blog has seven actions, so Narrow is its one deliberate dense-rail state.
+ * Exhibitions keeps the five labeled actions until Minimal. Supporting columns
+ * yield first for both tables. */
 @container admin-table (max-width: 54rem){
     .journal-table col.journal-table__actions--blog{
         width: calc(var(--admin-row-actions-journal-blog-narrow-width) + .35rem) !important;
@@ -838,11 +838,11 @@
     }
 
     .journal-table col.journal-table__actions--exhibitions{
-        width: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem) !important;
+        width: calc(var(--admin-row-actions-move-state-delete-width) + .5rem) !important;
     }
 
     .journal-table--exhibitions .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
     }
 
     .journal-table--blog .journal-col--visual,
@@ -867,6 +867,14 @@
 @container admin-table (max-width: 38rem){
     .journal-table col.admin-table__col-drag{
         width: 1.75rem !important;
+    }
+
+    .journal-table col.journal-table__actions--exhibitions{
+        width: calc(var(--admin-row-actions-move-state-delete-minimal-width) + .3rem) !important;
+    }
+
+    .journal-table--exhibitions .admin-row-actions-heading{
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
     }
 
     .journal-table--blog .journal-col--status,
