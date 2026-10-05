@@ -1166,11 +1166,9 @@
     }
 }
 
-/* Canonical responsive metric geometry.
- * This is the single layout authority for every six-metric strip.
- * Feature rules decide WHICH metrics remain visible; this block alone decides
- * HOW the visible metrics occupy space. No child keeps a source-position span.
- */
+/* Fallback responsive metric geometry for legacy six-metric strips that have
+ * not opted into .admin-metrics--six-state. The explicit six-state contract
+ * above is authoritative for Dashboard-derived task surfaces. */
 @container admin-workspace (max-width: 54rem){
     .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state){
         --admin-metric-columns: 3 !important;
