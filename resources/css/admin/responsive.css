@@ -255,7 +255,7 @@
     /* Toolbar is always exactly one row. Query/filter controls shrink first,
      * action labels may disappear, and Selection remains the terminal fixed
      * rail. Wrapping into a second toolbar row is not a supported state. */
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls){
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)){
         display: flex !important;
         min-width: 0;
         gap: .35rem !important;
@@ -263,39 +263,39 @@
         flex-wrap: nowrap !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls) > :first-child{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > :first-child{
         width: auto !important;
         min-width: 0 !important;
         padding-right: 0 !important;
         flex: 1 1 12rem !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls) > .admin-data-controls__filters,
-:is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls) > .admin-data-controls__utility{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__filters,
+:is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility{
         display: contents !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls) > .admin-data-controls__filters > *{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__filters > *{
         width: auto !important;
         min-width: 4.5rem !important;
         padding-right: 0 !important;
         flex: 0 1 7rem !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls) > .admin-data-controls__utility--has-reset > :first-child{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility--has-reset > :first-child{
         width: auto !important;
         min-width: 3.5rem !important;
         flex: 0 1 4.5rem !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
-:is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
+:is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child{
         width: auto !important;
         min-width: 3.5rem !important;
         flex: 0 1 7rem !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls) > .admin-data-controls__utility--has-selection > :last-child{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility--has-selection > :last-child{
         width: 8.5rem !important;
         min-width: 8.5rem !important;
         flex: 0 0 8.5rem !important;
@@ -306,60 +306,6 @@
 .admin-data-controls__utility .admin-task-control-actions,
 .admin-data-controls__utility .admin-toolbar{
         flex-wrap: nowrap !important;
-    }
-
-    /* Gallery obeys the same one-row toolbar invariant. */
-    .gallery-workspace__controls{
-        display: flex !important;
-        min-width: 0;
-        gap: .35rem !important;
-        align-items: end;
-        flex-wrap: nowrap !important;
-    }
-
-    .gallery-workspace__search{
-        min-width: 0 !important;
-        flex: 1 1 12rem;
-    }
-
-    .gallery-workspace__controls > .gallery-workspace__field:not(.gallery-workspace__search){
-        min-width: 4.5rem;
-        flex: 0 1 6.5rem;
-    }
-
-    .gallery-workspace__controls > .gallery-workspace__control-group:not(.gallery-workspace__gallery):not(.gallery-workspace__selection){
-        min-width: 3.5rem;
-        flex: 0 1 4.5rem;
-    }
-
-    .gallery-workspace__gallery{
-        min-width: 8rem;
-        flex: 0 1 14rem;
-    }
-
-    .gallery-workspace__selection{
-        width: 8.5rem;
-        min-width: 8.5rem;
-        flex: 0 0 8.5rem;
-        margin-left: auto;
-    }
-
-    .gallery-workspace__gallery-actions{
-        display: grid !important;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: .15rem !important;
-        flex-wrap: nowrap !important;
-    }
-
-    .gallery-workspace__gallery-actions .admin-action{
-        width: 100%;
-        min-width: 0;
-        justify-content: center;
-        overflow: hidden;
-    }
-
-    .gallery-workspace__responsive-action-icon{
-        display: none;
     }
 
     .custom-page-component-sequence .admin-responsive-meta{
@@ -572,7 +518,7 @@
         display: none;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls)
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum))
     > .admin-data-controls__utility--has-actions
     > :is(:first-child, :nth-child(2)){
         width: auto !important;
@@ -580,7 +526,7 @@
         flex: 0 0 auto !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls)
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum))
     > .admin-data-controls__utility--has-actions
     :is(.admin-control-group__actions, .admin-task-control-actions)
     > .admin-action{
@@ -590,7 +536,7 @@
         justify-content: center !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell), .custom-page-workspace__controls)
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum))
     > .admin-data-controls__utility--has-selection
     > :last-child{
         width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
@@ -1119,141 +1065,16 @@
     }
 }
 
-/* ---------- one-row metric-backed toolbars ---------- */
-@container admin-workspace (min-width: 30.01rem){
-.custom-page-workspace__controls,
-.journal-workspace__entries > .admin-data-controls{
-        display: grid !important;
-        grid-template-columns:
-            minmax(16.666667%, 1fr)
-            repeat(var(--admin-responsive-filter-count, 1), max-content)
-            max-content
-            max-content
-            8.5rem !important;
-        gap: .5rem !important;
-        align-items: end !important;
-    }
-    .custom-page-workspace__controls{
-        --admin-responsive-filter-count: 1;
-    }
-
-    .journal-workspace__entries > .admin-data-controls.admin-data-controls--filters-1{
-        --admin-responsive-filter-count: 1;
-    }
-
-    .journal-workspace__entries > .admin-data-controls.admin-data-controls--filters-2{
-        --admin-responsive-filter-count: 2;
-    }
-
-    :is(.custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > :first-child{
-        grid-column: auto !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        padding-right: 0 !important;
-    }
-
-    :is(.custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__filters,
-:is(.custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__utility{
-        display: contents !important;
-    }
-
-    :is(.custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__filters > *{
-        grid-column: auto !important;
-        width: 7rem !important;
-        min-width: 0 !important;
-        padding-inline: 0 !important;
-    }
-
-    :is(.custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__utility > :first-child,
-:is(.custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__utility > :nth-child(2){
-        grid-column: auto !important;
-        width: max-content !important;
-        min-width: 0 !important;
-        padding-inline: 0 !important;
-    }
-
-    :is(.custom-page-workspace__controls, .journal-workspace__entries > .admin-data-controls) > .admin-data-controls__utility > :last-child{
-        grid-column: auto !important;
-        width: 8.5rem !important;
-        min-width: 8.5rem !important;
-        padding-inline: 0 !important;
-    }
-}
-
-/* ---------- Gallery toolbar/contact sheet ---------- */
-.gallery-workspace__controls{
-    display: grid !important;
-    grid-template-columns:
-        minmax(16.666667%, 1fr)
-        6.5rem
-        7.25rem
-        max-content
-        max-content
-        8.5rem !important;
-    gap: .45rem !important;
-    align-items: end !important;
-}
-
-.gallery-workspace__gallery-actions{
-    gap: .18rem !important;
-}
-
-.gallery-workspace__selection-anchor{
-    width: 100%;
-    min-width: 0;
-}
-
-.gallery-workspace__selection-trigger{
-    display: grid !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
-    gap: 0 !important;
-    padding-right: 0 !important;
-    justify-content: stretch !important;
-}
-
-.gallery-workspace__selection-count{
-    margin-left: 0 !important;
-    justify-self: center;
-}
-
+/* ---------- Gallery contact sheet ---------- */
 @container admin-workspace (max-width: 54rem){
     .admin-gallery-grid{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .gallery-workspace__controls{
-        grid-template-columns:
-            minmax(16.666667%, 1fr)
-            5.5rem
-            6.25rem
-            max-content
-            max-content
-            7rem !important;
-        gap: .3rem !important;
     }
 }
 
 @container admin-workspace (max-width: 38rem){
     .admin-gallery-grid{
         grid-template-columns: minmax(0, 1fr) !important;
-    }
-
-    .gallery-workspace__controls{
-        grid-template-columns:
-            minmax(16.666667%, 1fr)
-            4.75rem
-            5.5rem
-            max-content
-            max-content
-            6.5rem !important;
-        gap: .22rem !important;
-    }
-
-    .gallery-workspace__selection-trigger{
-        min-width: 0 !important;
-        width: 6.5rem !important;
     }
 }
 
