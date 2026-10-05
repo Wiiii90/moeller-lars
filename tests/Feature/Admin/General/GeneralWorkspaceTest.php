@@ -4,7 +4,6 @@ use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\General;
-use App\Livewire\Admin\GeneralLayoutControls;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\AuditEvent;
@@ -207,20 +206,22 @@ it('delivers ticker feedback for General layout changes', function (): void {
         'public_content_padding' => 48,
     ]);
 
-    Livewire::test(GeneralLayoutControls::class)
-        ->set('pageWidth', 1160)
-        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+    Livewire::test(General::class)
+        ->assertSet('data.public_page_width', 1080)
+        ->assertSet('data.public_content_padding', 48)
+        ->set('data.public_page_width', 1160)
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             $message = $params['notification'] ?? [];
 
-            return $event === 'admin-notification-ticker'
+            return $event === 'admin-header-notification'
                 && ($message['body'] ?? null) === 'Public page width updated.'
                 && ($message['status'] ?? null) === 'success';
         })
-        ->set('contentPadding', 64)
-        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+        ->set('data.public_content_padding', 64)
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             $message = $params['notification'] ?? [];
 
-            return $event === 'admin-notification-ticker'
+            return $event === 'admin-header-notification'
                 && ($message['body'] ?? null) === 'Public content padding updated.'
                 && ($message['status'] ?? null) === 'success';
         });
@@ -242,26 +243,26 @@ it('delivers ticker feedback for General contact legal and social mutations', fu
 
     Livewire::test(General::class)
         ->set('data.contact_recipient_email', 'after@example.invalid')
-        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             $message = $params['notification'] ?? [];
 
-            return $event === 'admin-notification-ticker'
+            return $event === 'admin-header-notification'
                 && ($message['body'] ?? null) === 'Contact form recipient updated.'
                 && ($message['status'] ?? null) === 'success';
         })
         ->set('data.legal_disclaimer', 'After legal text.')
-        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             $message = $params['notification'] ?? [];
 
-            return $event === 'admin-notification-ticker'
+            return $event === 'admin-header-notification'
                 && ($message['body'] ?? null) === 'Legal disclaimer updated.'
                 && ($message['status'] ?? null) === 'success';
         })
         ->call('updateSocialLink', 0, 'url', 'https://example.invalid/after')
-        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             $message = $params['notification'] ?? [];
 
-            return $event === 'admin-notification-ticker'
+            return $event === 'admin-header-notification'
                 && ($message['body'] ?? null) === 'Social links updated.'
                 && ($message['status'] ?? null) === 'success';
         });
