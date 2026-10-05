@@ -10,7 +10,17 @@
 }
 
 /* Blog needs a wider action rail than Exhibitions: content ends on the 3/6
- * metric line, then Actions + trailing Selection own the final three units. */
+ * metric line, then Actions + trailing Selection own the final three units.
+ * Both variants use the shared stable rail; only their semantic slot recipes
+ * differ. */
+.journal-table--blog {
+    --admin-row-actions-width: 39rem;
+}
+
+.journal-table--exhibitions {
+    --admin-row-actions-width: 26rem;
+}
+
 .journal-table--blog col:nth-child(4) {
     width: var(--admin-table-one-unit);
 }
@@ -25,68 +35,10 @@
 
 /* Exhibitions keeps the colgroup's canonical four-content/two-utility split:
  * Schedule ends exactly on the 4/6 metric line and Actions + Selection own the
- * final two cells. Do not shift that boundary to a half-cell just to gain room. */
-
-.journal-table .admin-table__actions {
-    padding-left: .35rem !important;
-}
+ * final two cells. */
 
 .journal-row-actions {
-    display: grid !important;
-    width: 100%;
     min-width: 0;
-    gap: .06rem !important;
-}
-
-/* Blog has seven actions and deliberately owns three metric units. Each action
- * keeps its intrinsic label width while the spare rail space is distributed
- * evenly, so no action paints into the next slot. */
-.journal-row-actions--blog {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: .28rem !important;
-    justify-content: stretch;
-}
-
-.journal-row-actions--exhibitions {
-    grid-template-columns:
-        minmax(0, .88fr)
-        minmax(0, 1.08fr)
-        minmax(0, .7fr)
-        minmax(0, 1.18fr)
-        minmax(0, .76fr);
-}
-
-.journal-row-actions .admin-action {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    padding-inline: .08rem;
-    justify-content: flex-start !important;
-    overflow: hidden;
-}
-
-.journal-row-actions .admin-action--with-icon {
-    gap: .16rem;
-}
-
-.journal-row-actions .admin-action--state {
-    min-width: 0;
-}
-
-.journal-row-actions .admin-action__label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.journal-row-actions.journal-row-actions--blog .admin-action {
-    width: 100%;
-    padding-inline: .06rem;
-}
-
-.journal-row-actions.journal-row-actions--blog .admin-action--with-icon {
-    gap: .12rem;
 }
 
 /* Keep Blog rows on the same vertical rhythm as Exhibition rows. */
