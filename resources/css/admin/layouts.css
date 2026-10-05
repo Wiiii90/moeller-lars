@@ -110,13 +110,14 @@ html.fi select option:disabled {
      * inline table and pager selects therefore share the same trigger baseline,
      * popup, right-side selected mark and picker icon without generated DOM. */
     html.fi .admin-workspace select:not([multiple]):not([size]) {
+        position: relative;
         box-sizing: border-box;
-        display: flex;
+        display: block;
         width: 100%;
         min-width: 0;
         appearance: base-select;
-        align-items: center;
-        flex-wrap: nowrap;
+        padding-inline-end: 1.45rem !important;
+        overflow: hidden;
         white-space: nowrap;
     }
 
@@ -155,10 +156,13 @@ html.fi select option:disabled {
     }
 
     html.fi .admin-workspace select:not([multiple]):not([size])::picker-icon {
-        margin-inline-start: auto;
-        flex: 0 0 auto;
-        align-self: center;
+        position: absolute;
+        inset-block-start: 50%;
+        inset-inline-end: .35rem;
+        margin: 0;
         color: var(--admin-muted);
+        transform: translateY(-50%);
+        pointer-events: none;
     }
 }
 
