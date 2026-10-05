@@ -157,7 +157,7 @@
     min-width: 0;
     grid-template-columns: .9rem minmax(0, 1fr);
     gap: .3rem;
-    padding-inline: .25rem;
+    padding-inline: var(--admin-row-action-padding, .25rem);
     align-items: center;
     justify-content: stretch !important;
     overflow: visible;
