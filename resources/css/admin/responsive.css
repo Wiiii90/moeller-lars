@@ -828,103 +828,51 @@
     }
 }
 
-/* Gallery / Custom Page / Journal responsive authority
- * These workspaces share the same 6 / 6 / 3 / 2 metric grammar and one-row
- * control discipline. Home has its own dedicated authority below. */
+/* Gallery / Custom Page / Journal choose semantic members for the same
+ * Dashboard-style six-state metric geometry used by Pages and Home. */
+:is(.gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
+    --admin-metric-columns: 6 !important;
+}
 
-/* ---------- semantic metrics ---------- */
-@container admin-workspace (max-width: 54rem){
-    :is(.gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
-
+@container admin-workspace (max-width: 64rem){
     :is(.gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
         display: none !important;
     }
 
-.gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published, .gallery-metric--visits),
-.custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits, .custom-page-metric--views),
-.journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--scheduled, .journal-metric--draft),
-.journal-status-metrics--exhibitions > :is(.journal-metric--published, .journal-metric--current, .journal-metric--upcoming){
+    .gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published, .gallery-metric--visits),
+    .custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits, .custom-page-metric--views),
+    .journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--scheduled, .journal-metric--draft),
+    .journal-status-metrics--exhibitions > :is(.journal-metric--published, .journal-metric--current, .journal-metric--upcoming){
         display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-        border-right: 1px solid var(--admin-line) !important;
     }
 
-.gallery-status-metrics > .gallery-metric--visits,
-.custom-page-status-metrics > .custom-page-metric--views,
-.journal-status-metrics--blog > .journal-metric--draft,
-.journal-status-metrics--exhibitions > .journal-metric--upcoming{
-        border-right: 0 !important;
+    .gallery-status-metrics > .gallery-metric--artworks,
+    .custom-page-status-metrics > .custom-page-metric--components,
+    .journal-status-metrics--blog > .journal-metric--published,
+    .journal-status-metrics--exhibitions > .journal-metric--published{
+        padding-left: 0 !important;
     }
 }
 
-/* Sidebar collapse is monotonic: it may force Narrow but never promote any of
- * these workspaces back to a six-metric state. */
 @media (max-width: 63.99rem){
-    :is(.gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
+    @container admin-workspace (max-width: 38rem){
+        :is(.gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
+            display: none !important;
+        }
 
-    :is(.gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
-        display: none !important;
-    }
+        .gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
+        .custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
+        .journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
+        .journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming){
+            display: block !important;
+        }
 
-.gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published, .gallery-metric--visits),
-.custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits, .custom-page-metric--views),
-.journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--scheduled, .journal-metric--draft),
-.journal-status-metrics--exhibitions > :is(.journal-metric--published, .journal-metric--current, .journal-metric--upcoming){
-        display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-.gallery-status-metrics > .gallery-metric--visits,
-.custom-page-status-metrics > .custom-page-metric--views,
-.journal-status-metrics--blog > .journal-metric--draft,
-.journal-status-metrics--exhibitions > .journal-metric--upcoming{
-        border-right: 0 !important;
-    }
-}
-
-@container admin-workspace (max-width: 38rem){
-    :is(.gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    :is(.gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
-        display: none !important;
-    }
-
-.gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
-.custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
-.journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
-.journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming){
-        display: block !important;
-        min-width: 0;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-    }
-
-.gallery-status-metrics > :is(.gallery-metric--artworks),
-.custom-page-status-metrics > :is(.custom-page-metric--components),
-.journal-status-metrics--blog > :is(.journal-metric--published),
-.journal-status-metrics--exhibitions > :is(.journal-metric--current){
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-.gallery-status-metrics > .gallery-metric--published,
-.custom-page-status-metrics > .custom-page-metric--visits,
-.journal-status-metrics--blog > .journal-metric--draft,
-.journal-status-metrics--exhibitions > .journal-metric--upcoming{
-        border-right: 0 !important;
+        .gallery-status-metrics > .gallery-metric--artworks,
+        .custom-page-status-metrics > .custom-page-metric--components,
+        .journal-status-metrics--blog > .journal-metric--published,
+        .journal-status-metrics--exhibitions > .journal-metric--current{
+            padding-left: 0 !important;
+        }
     }
 }
 
@@ -1897,7 +1845,7 @@
  * HOW the visible metrics occupy space. No child keeps a source-position span.
  */
 @container admin-workspace (max-width: 54rem){
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)){
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state){
         --admin-metric-columns: 3 !important;
         position: relative;
         display: grid !important;
@@ -1906,7 +1854,7 @@
         gap: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state) > .admin-metric{
         box-sizing: border-box;
         grid-column: auto !important;
         grid-row: auto !important;
@@ -1920,8 +1868,8 @@
         border-right: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::before,
-.admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state)::before,
+.admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state)::after{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -1932,11 +1880,11 @@
         pointer-events: none;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state)::before{
         left: 33.333333%;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state)::after{
         left: 66.666667%;
     }
 }
@@ -1944,7 +1892,7 @@
 /* Minimal is always exact 50/50. The second column can never inherit a
  * two-track span from its original six-cell source position. */
 @container admin-workspace (max-width: 38rem){
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)){
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state){
         --admin-metric-columns: 2 !important;
         position: relative;
         display: grid !important;
@@ -1953,7 +1901,7 @@
         gap: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state) > .admin-metric{
         grid-column: auto !important;
         grid-row: auto !important;
         width: 100% !important;
@@ -1966,7 +1914,7 @@
         border-right: 0 !important;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::before{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state)::before{
         position: absolute;
         z-index: 1;
         top: 0;
@@ -1978,7 +1926,7 @@
         pointer-events: none;
     }
 
-    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6))::after{
+    .admin-workspace:not(.admin-dashboard):not(.admin-general):not(.admin-home-workspace):not(.admin-pages-workspace) .admin-metrics:has(> .admin-metric:nth-child(6)):not(.admin-metrics--six-state)::after{
         display: none !important;
         content: none !important;
     }
