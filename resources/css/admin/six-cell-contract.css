@@ -390,14 +390,14 @@
 }
 
 .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
-    position: absolute;
+    position: fixed;
     z-index: 120;
-    top: calc(100% + .35rem);
-    right: 0;
     box-sizing: border-box;
-    width: min(17rem, calc(100vw - 2rem));
+    max-width: calc(100vw - 1rem);
     padding: .55rem;
     gap: .55rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border: 1px solid var(--admin-line-strong);
     border-radius: .2rem;
     background: var(--admin-control-popover-surface, var(--admin-surface));
