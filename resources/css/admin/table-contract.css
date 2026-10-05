@@ -20,9 +20,9 @@
 
     /* Stable row-action rail geometry. Responsive consumers reference these
      * semantic rail widths instead of repeating numeric widths page by page. */
-    --admin-row-actions-move-state-delete-width: 23rem;
+    --admin-row-actions-move-state-delete-width: 22rem;
     --admin-row-actions-move-state-delete-compact-width: 8.55rem;
-    --admin-row-actions-journal-blog-width: 39rem;
+    --admin-row-actions-journal-blog-width: 32rem;
     --admin-row-actions-journal-blog-compact-width: 12.15rem;
 
     /* Shared semantic typography for ordinary table/control surfaces. Feature
@@ -137,15 +137,14 @@
 
 /* Canonical stable row-action rail.
  *
- * The rail is content-driven: its semantic recipe supplies an ideal labeled
- * width, but the rail may shrink to the width actually assigned by its table
- * track. Dense five-/seven-action recipes then compact from their OWN rail
- * width rather than from a page-specific table breakpoint. Two- to four-action
- * rails keep the accepted Dashboard/Activity/Storage Minimal behavior. */
+ * Every semantic action owns one stable slot. Wide uses complete labels; the
+ * shared table Compact state switches dense five-/seven-action rails to the
+ * same fixed icon axes atomically. Slot geometry never depends on the row's
+ * current label (for example Publish versus Unpublish). */
 .admin-row-actions--stable {
     display: grid !important;
-    width: min(100%, var(--admin-row-actions-width));
-    max-width: var(--admin-row-actions-width);
+    width: var(--admin-row-actions-width);
+    max-width: none;
     min-width: 0;
     grid-template-columns: var(--admin-row-actions-columns);
     gap: var(--admin-row-actions-gap, .25rem) !important;
@@ -153,8 +152,6 @@
     margin-inline-end: 0 !important;
     align-items: center;
     justify-content: end !important;
-    container-name: admin-row-actions;
-    container-type: inline-size;
 }
 
 .admin-row-actions--stable .admin-action {
@@ -199,9 +196,9 @@
 
 .admin-row-actions--move-state-delete {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
-    --admin-row-actions-columns: repeat(5, max-content);
-    --admin-row-actions-gap: .45rem;
-    --admin-row-state-slot: 6.25rem;
+    --admin-row-actions-columns: 4.15rem 4.8rem 2.8rem 5.8rem 3.7rem;
+    --admin-row-actions-gap: .1875rem;
+    --admin-row-state-slot: 0;
 }
 
 .admin-row-actions--state-open {
@@ -212,9 +209,9 @@
 
 .admin-row-actions--journal-blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
-    --admin-row-actions-columns: repeat(7, max-content);
-    --admin-row-actions-gap: .45rem;
-    --admin-row-state-slot: 8.5rem;
+    --admin-row-actions-columns: 4.15rem 4.8rem 2.8rem 7.1rem 4.5rem 4rem 3.55rem;
+    --admin-row-actions-gap: .18rem;
+    --admin-row-state-slot: 0;
 }
 
 .admin-row-actions--two-static {
@@ -232,41 +229,54 @@
     --admin-row-actions-columns: max-content max-content max-content max-content;
 }
 
-/* Dense rails compact against their own allocated width. Their ideal labeled
- * widths are the thresholds, so Pages/Custom Page/Journal do not need viewport
- * or table-width guesses merely to prevent action overflow. */
-@container admin-row-actions (max-width: 23rem) {
-    .admin-row-actions--move-state-delete .admin-action {
-        width: 1.35rem !important;
-        min-width: 1.35rem !important;
-        gap: 0 !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-row-actions--move-state-delete .admin-action--state {
-        min-width: 1.35rem !important;
-    }
-
-    .admin-row-actions--move-state-delete .admin-action__label {
-        display: none !important;
-    }
+/* Dense action recipes use fixed semantic slots in Wide. The icon axis is the
+ * first grid track inside every slot, so changing labels or disabled states
+ * never moves icons vertically from row to row. */
+:is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action {
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: .9rem minmax(0, 1fr);
+    column-gap: .25rem;
+    padding-inline: .15rem;
+    justify-items: start;
 }
 
-@container admin-row-actions (max-width: 39rem) {
-    .admin-row-actions--journal-blog .admin-action {
+:is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action__icon {
+    justify-self: center;
+}
+
+:is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action__label {
+    justify-self: start;
+}
+
+:is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action--state {
+    min-width: 0;
+}
+
+@container admin-table (max-width: 64rem) {
+    .admin-row-actions--move-state-delete {
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
+        --admin-row-actions-columns: repeat(5, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    .admin-row-actions--journal-blog {
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
+        --admin-row-actions-columns: repeat(7, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action {
         width: 1.35rem !important;
         min-width: 1.35rem !important;
+        grid-template-columns: 1fr;
         gap: 0 !important;
         padding-inline: 0 !important;
-        justify-content: center !important;
+        justify-items: center;
     }
 
-    .admin-row-actions--journal-blog .admin-action--state {
-        min-width: 1.35rem !important;
-    }
-
-    .admin-row-actions--journal-blog .admin-action__label {
+    :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action__label {
         display: none !important;
     }
 }
@@ -384,16 +394,20 @@
     overflow: visible !important;
 }
 
-/* Pages uses the same six visual units as its metrics. The first two units
- * contain Position/Drag + Name, Page Type and Template each own one full unit,
- * and Actions + trailing Selection own the final two units. */
+/* Pages keeps the six-cell metric ruler as a soft reference, but Wide reserves
+ * the real labeled five-action rail plus terminal Selection first. Identity,
+ * Page Type and Template divide the remaining width without squeezing Actions. */
 .admin-hierarchy--pages {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
 
 .admin-hierarchy--pages .admin-pages__header,
 .admin-hierarchy--pages .admin-pages__row {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(9rem, 10rem)
+        minmax(7rem, 9rem)
+        calc(var(--admin-row-actions-move-state-delete-width) + var(--admin-table-selection-width));
     column-gap: 0;
 }
 
@@ -405,7 +419,7 @@
 .admin-pages__primary-grid {
     display: grid;
     min-width: 0;
-    grid-column: span 2;
+    grid-column: auto;
     grid-template-columns: 3.25rem 2rem minmax(0, 1fr);
     gap: .45rem;
     align-items: center;
@@ -414,10 +428,15 @@
 .admin-pages__utility-grid {
     display: grid;
     min-width: 0;
-    grid-column: span 2;
-    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    grid-column: auto;
+    grid-template-columns: var(--admin-row-actions-move-state-delete-width) var(--admin-table-selection-width);
     gap: 0;
     align-items: center;
+}
+
+.admin-hierarchy--pages .admin-pages__type,
+.admin-hierarchy--pages .admin-pages__template {
+    grid-column: auto;
 }
 
 .admin-pages__header > .admin-pages__type,
@@ -546,20 +565,19 @@
     grid-column: span 2;
 }
 
-/* Custom Page hierarchy uses the same six metric units as the workspace above.
- * Position + Drag consume half a unit, Component one unit and Content 2.5
- * units. Actions start exactly on the 4/6 metric line and own the final two
- * units together with the trailing Selection rail. */
+/* Custom Page uses the same stable five-action rail as Pages. Ordering and
+ * Component remain bounded; Content absorbs the remaining Wide space. */
 .custom-page-component-sequence {
-    --admin-hierarchy-position-column: var(--admin-table-quarter-unit);
-    --admin-hierarchy-drag-column: var(--admin-table-quarter-unit);
-    --admin-hierarchy-actions-column: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
+    --admin-hierarchy-position-column: 3rem;
+    --admin-hierarchy-drag-column: 2rem;
+    --admin-hierarchy-component-column: 9rem;
+    --admin-hierarchy-actions-column: var(--admin-row-actions-move-state-delete-width);
     --admin-hierarchy-row-gap: 0;
     --admin-hierarchy-columns:
         var(--admin-hierarchy-position-column)
         var(--admin-hierarchy-drag-column)
-        var(--admin-table-one-unit)
-        calc(var(--admin-table-two-units) + var(--admin-table-half-unit))
+        var(--admin-hierarchy-component-column)
+        minmax(0, 1fr)
         var(--admin-hierarchy-actions-column)
         var(--admin-table-selection-width);
 }
