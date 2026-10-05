@@ -8,7 +8,7 @@
  * is owned by the canonical responsive layer; no inner horizontal scrollport or
  * desktop minimum-width floor is permitted. */
 .custom-page-component-sequence {
-    --admin-row-actions-width: 26rem;
+    --admin-row-actions-width: 23rem;
     width: 100%;
     min-width: 0;
     max-width: 100%;
