@@ -1505,26 +1505,46 @@
     width: 2rem !important;
 }
 
-@container admin-table (max-width: 62rem){
+@container admin-table (max-width: 84rem){
     .journal-table col.journal-table__actions--blog{
-        width: 10.5rem !important;
+        width: 12.5rem !important;
     }
 
     .journal-table col.journal-table__actions--exhibitions{
-        width: 8.5rem !important;
+        width: 8.85rem !important;
+    }
+
+    .journal-row-actions--blog{
+        --admin-row-actions-width: 12.15rem;
+        --admin-row-actions-columns: repeat(7, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    .journal-row-actions--exhibitions{
+        --admin-row-actions-width: 8.55rem;
+        --admin-row-actions-columns: repeat(5, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    .journal-row-actions .admin-action{
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+        padding-inline: 0 !important;
+        justify-items: center;
     }
 
     .journal-row-actions .admin-action__label{
         display: none !important;
     }
 
-    .journal-row-actions{
-        gap: .05rem !important;
+    .journal-table--blog .admin-row-actions-heading{
+        --admin-row-actions-width: 12.15rem;
     }
 
-    .journal-row-actions .admin-action{
-        padding-inline: .05rem !important;
-        justify-content: center !important;
+    .journal-table--exhibitions .admin-row-actions-heading{
+        --admin-row-actions-width: 8.55rem;
     }
 }
 
@@ -1551,14 +1571,6 @@
 @container admin-table (max-width: 38rem){
     .journal-table col.admin-table__col-drag{
         width: 1.75rem !important;
-    }
-
-    .journal-table col.journal-table__actions--blog{
-        width: 10rem !important;
-    }
-
-    .journal-table col.journal-table__actions--exhibitions{
-        width: 8rem !important;
     }
 
     .journal-table--blog .journal-col--status,
