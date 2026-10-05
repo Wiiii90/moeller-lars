@@ -472,8 +472,9 @@
 }
 
 /* Storage toolbar composition is owned by the shared
- * admin-data-controls--dashboard-responsive contract. The feature owns only
- * the three icon-only view choices inside its semantic View group. */
+ * admin-data-controls--dashboard-responsive contract. View is a normal shared
+ * action cluster: labels remain visible on Wide and collapse with every other
+ * editorial action at the common Compact state. */
 .admin-storage .media-workspace__controls {
     padding-top: 0;
     padding-bottom: var(--admin-section-gap);
@@ -482,13 +483,22 @@
 
 .admin-storage .media-workspace__view-options {
     display: grid;
-    grid-template-columns: repeat(3, var(--admin-control-height));
+    width: max-content;
+    min-width: 0;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
     gap: .12rem;
+    align-items: center;
 }
 
 .admin-storage .media-workspace__view-option {
-    width: var(--admin-control-height);
-    min-width: var(--admin-control-height);
+    width: auto;
+    min-width: 0;
+    height: var(--admin-control-height);
+    padding-inline: .35rem;
+    gap: .3rem;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Six-cell table contract: the first two metric cells are Preview + Media,
