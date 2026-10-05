@@ -260,6 +260,10 @@
 /* Pages uses the same six visual units as its metrics. The first two units
  * contain Position/Drag + Name, Page Type and Template each own one full unit,
  * and Actions + trailing Selection own the final two units. */
+.admin-hierarchy--pages {
+    --admin-row-actions-width: 26rem;
+}
+
 .admin-hierarchy--pages .admin-pages__header,
 .admin-hierarchy--pages .admin-pages__row {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -299,40 +303,13 @@
 }
 
 .admin-pages__header .admin-pages__utility-grid > :first-child {
-    padding-left: .65rem;
-}
-
-/* Pages row actions use fixed semantic slots. Labels remain complete while
- * the hierarchy has room; responsive.css collapses these exact same axes to
- * icons only under genuine table pressure. */
-.admin-pages__row-actions {
-    display: grid !important;
-    width: 22.75rem;
-    max-width: 100%;
-    min-width: 0;
-    grid-template-columns: 4.25rem 5rem 3.25rem 5.25rem 4rem;
-    gap: .25rem !important;
     padding-left: 0;
-    justify-content: start;
 }
 
-.admin-pages__row-actions .admin-action {
-    width: 100%;
-    min-width: 0;
-    padding-inline: 0;
-    justify-content: flex-start !important;
-    overflow: visible;
-}
-
-.admin-pages__row-actions .admin-action--state {
-    min-width: 0;
-}
-
-.admin-pages__row-actions .admin-action__label {
-    min-width: 0;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: nowrap;
+/* Pages uses the shared fixed five-slot rail. The local class only preserves
+ * hierarchy-specific placeholder/redirect behavior. */
+.admin-pages__row-actions {
+    padding-left: 0;
 }
 
 .admin-pages__redirect-target {
