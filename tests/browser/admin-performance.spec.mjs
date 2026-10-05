@@ -225,6 +225,8 @@ async function shellGeometry(page) {
       main_width: main?.getBoundingClientRect().width ?? null,
       scroll_y: window.scrollY,
       has_vertical_overflow: root.scrollHeight > root.clientHeight,
+      has_classic_scrollbar: window.innerWidth > root.clientWidth,
+      modal_existing_scrollbar: root.classList.contains('admin-modal-existing-scrollbar'),
       inline_overflow: root.style.overflow,
       inline_padding_right: root.style.paddingRight,
       overflow_y: rootStyle.overflowY,
@@ -243,13 +245,29 @@ function expectStableShellGeometry(before, during, context) {
 }
 
 function expectStableModalScrollLock(before, during, context) {
-  expect(during.inline_overflow, `${context}: Filament did not acquire the root scroll lock`).toBe('hidden');
-  expect(during.inline_padding_right, `${context}: modal added root padding compensation despite stable gutter`).toBe(before.inline_padding_right);
-  expect(during.padding_right, `${context}: modal changed computed root padding-right`).toBe(before.padding_right);
-  expect(during.scrollbar_gutter, `${context}: root lost the stable scrollbar gutter`).toContain('stable');
+  const hadClassicScrollbar = before.has_classic_scrollbar;
+
+  expect(
+    during.modal_existing_scrollbar,
+    `${context}: preserved-scrollbar mode must match pre-open classic scrollbar state`,
+  ).toBe(hadClassicScrollbar);
+
+  if (hadClassicScrollbar) {
+    expect(during.has_classic_scrollbar, `${context}: existing scrollbar disappeared`).toBe(true);
+    expect(during.overflow_y, `${context}: existing scrollbar is not visibly preserved`).toBe('scroll');
+    expect(during.padding_right, `${context}: Filament padding compensation leaked into layout`).toBe('0px');
+    expect(during.scrollbar_gutter, `${context}: permanent stable gutter was introduced`).toBe('auto');
+    return;
+  }
+
+  expect(during.has_classic_scrollbar, `${context}: short page gained a classic scrollbar`).toBe(false);
+  expect(during.inline_overflow, `${context}: Filament did not acquire its native short-page lock`).toBe('hidden');
+  expect(during.scrollbar_gutter, `${context}: short page gained a reserved gutter`).toBe('auto');
 }
 
 function expectReleasedModalScrollLock(before, after, context) {
+  expect(after.modal_existing_scrollbar, `${context}: preserved-scrollbar marker leaked after close`).toBe(false);
+  expect(after.has_classic_scrollbar, `${context}: classic scrollbar state did not restore`).toBe(before.has_classic_scrollbar);
   expect(after.inline_overflow, `${context}: root overflow was not restored`).toBe(before.inline_overflow);
   expect(after.inline_padding_right, `${context}: root padding-right was not restored`).toBe(before.inline_padding_right);
   expect(after.scrollbar_gutter, `${context}: root scrollbar gutter changed after close`).toBe(before.scrollbar_gutter);
