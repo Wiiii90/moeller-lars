@@ -23,7 +23,7 @@
     --admin-row-actions-move-state-delete-width: 23rem;
     --admin-row-actions-move-state-delete-compact-width: 8.55rem;
     --admin-row-actions-journal-blog-width: 39rem;
-    --admin-row-actions-journal-blog-narrow-width: 12.15rem;
+    --admin-row-actions-journal-blog-compact-width: 12.15rem;
 
     /* Shared semantic typography for ordinary table/control surfaces. Feature
      * layouts consume these tokens instead of shrinking text to make it fit. */
@@ -241,7 +241,7 @@
     }
 
     .admin-row-actions--journal-blog {
-        --admin-row-actions-width: var(--admin-row-actions-journal-blog-narrow-width);
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);
         --admin-row-actions-gap: .45rem;
     }
