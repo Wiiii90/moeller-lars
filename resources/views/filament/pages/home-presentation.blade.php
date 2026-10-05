@@ -112,7 +112,7 @@
                     && \App\Models\ArtworkCategory::query()->whereHas('siteSection')->exists());
             @endphp
 
-            <x-admin.controls class="home-artwork-source-controls" :metric-grid="true" :search-span="2" aria-label="Gallery source controls">
+            <x-admin.controls class="home-artwork-source-controls admin-data-controls--dashboard-responsive" :metric-grid="true" :search-span="2" aria-label="Gallery source controls">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
@@ -149,7 +149,7 @@
                 <x-slot:actions>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">Hero Artwork</span>
-                        <div class="admin-toolbar home-workspace-actions">
+                        <div class="admin-toolbar admin-editorial-actions home-workspace-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Settings</span>
@@ -326,7 +326,7 @@
                 $componentFiltersActive = trim($componentSearch) !== '' || $componentType !== 'any';
             @endphp
 
-            <x-admin.controls class="home-component-controls" :metric-grid="true" :search-span="3" aria-label="Home component controls">
+            <x-admin.controls class="home-component-controls admin-data-controls--dashboard-responsive" :metric-grid="true" :search-span="3" aria-label="Home component controls">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
@@ -354,7 +354,7 @@
                 <x-slot:actions>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">{{ strtoupper($templateLabel) }}</span>
-                        <div class="admin-toolbar home-workspace-actions">
+                        <div class="admin-toolbar admin-editorial-actions home-workspace-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Settings</span>
@@ -490,7 +490,7 @@
         @elseif ($template === 'skip_home')
             <div class="home-skip-tools admin-data-control-group" aria-label="Skip Home actions">
                 <span class="admin-data-control-label">Skip Home</span>
-                <div class="admin-toolbar home-workspace-actions">
+                <div class="admin-toolbar admin-editorial-actions home-workspace-actions">
                     <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                         <span class="admin-action__label">Settings</span>
