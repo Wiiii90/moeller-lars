@@ -727,7 +727,7 @@
         grid-template-columns:
             minmax(0, 1fr)
             minmax(9rem, 10rem)
-            25.5rem !important;
+            calc(var(--admin-row-actions-move-state-delete-width) + var(--admin-table-selection-width)) !important;
     }
 
     .admin-pages__primary-grid,
@@ -742,7 +742,7 @@
     }
 
     .admin-pages__utility-grid{
-        grid-template-columns: 23rem var(--admin-table-selection-width) !important;
+        grid-template-columns: var(--admin-row-actions-move-state-delete-width) var(--admin-table-selection-width) !important;
     }
 
     .admin-pages__redirect-target{
@@ -756,7 +756,7 @@
         grid-template-columns:
             minmax(0, 1fr)
             7.5rem
-            11.05rem !important;
+            calc(var(--admin-row-actions-move-state-delete-minimal-width) + var(--admin-table-selection-width)) !important;
     }
 
     .admin-pages__primary-grid{
@@ -765,11 +765,11 @@
     }
 
     .admin-pages__utility-grid{
-        grid-template-columns: 8.55rem var(--admin-table-selection-width) !important;
+        grid-template-columns: var(--admin-row-actions-move-state-delete-minimal-width) var(--admin-table-selection-width) !important;
     }
 
     .admin-pages__row-actions{
-        --admin-row-actions-width: 8.55rem;
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
     }
 
     .admin-hierarchy--pages .admin-pages__type{
@@ -784,7 +784,7 @@
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
-        --admin-hierarchy-actions-column: 23.3rem;
+        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-width) + .3rem);
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
@@ -808,11 +808,11 @@
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 1.75rem;
-        --admin-hierarchy-actions-column: 8.85rem;
+        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-minimal-width) + .3rem);
     }
 
     .custom-page-component-sequence .admin-row-actions-heading{
-        --admin-row-actions-width: 8.55rem;
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
     }
 }
 
@@ -830,19 +830,19 @@
  * yield first for both tables. */
 @container admin-table (max-width: 54rem){
     .journal-table col.journal-table__actions--blog{
-        width: 12.5rem !important;
+        width: calc(var(--admin-row-actions-journal-blog-narrow-width) + .35rem) !important;
     }
 
     .journal-table--blog .admin-row-actions-heading{
-        --admin-row-actions-width: 12.15rem;
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-narrow-width);
     }
 
     .journal-table col.journal-table__actions--exhibitions{
-        width: 23.5rem !important;
+        width: calc(var(--admin-row-actions-move-state-delete-width) + .5rem) !important;
     }
 
     .journal-table--exhibitions .admin-row-actions-heading{
-        --admin-row-actions-width: 23rem;
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
     }
 
     .journal-table--blog .journal-col--visual,
@@ -870,11 +870,11 @@
     }
 
     .journal-table col.journal-table__actions--exhibitions{
-        width: 8.85rem !important;
+        width: calc(var(--admin-row-actions-move-state-delete-minimal-width) + .3rem) !important;
     }
 
     .journal-table--exhibitions .admin-row-actions-heading{
-        --admin-row-actions-width: 8.55rem;
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
     }
 
     .journal-table--blog .journal-col--status,
