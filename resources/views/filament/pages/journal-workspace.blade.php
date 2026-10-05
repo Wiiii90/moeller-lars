@@ -14,7 +14,7 @@
     @endphp
 
     <x-admin.workspace :title="$journalTitle" class="journal-workspace">
-        <x-admin.metrics :columns="6" class="journal-status-metrics {{ $isBlog ? 'journal-status-metrics--blog' : 'journal-status-metrics--exhibitions' }}" aria-label="{{ $isBlog ? 'Blog overview' : 'Exhibitions overview' }}">
+        <x-admin.metrics :columns="6" class="journal-status-metrics admin-metrics--six-state {{ $isBlog ? 'journal-status-metrics--blog' : 'journal-status-metrics--exhibitions' }}" aria-label="{{ $isBlog ? 'Blog overview' : 'Exhibitions overview' }}">
             @foreach ($metrics as $metric)
                 @php
                     $metricRole = match ($metric['label']) {
