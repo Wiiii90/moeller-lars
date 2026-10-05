@@ -157,7 +157,12 @@
     padding-inline: .35rem;
     align-items: center;
     justify-content: center !important;
+    justify-self: center;
     overflow: visible;
+}
+
+.admin-row-actions--stable .admin-action:last-child {
+    justify-self: end;
 }
 
 .admin-row-actions--stable .admin-action--state {
