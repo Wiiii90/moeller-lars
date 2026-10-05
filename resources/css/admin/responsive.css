@@ -70,126 +70,16 @@
     white-space: nowrap;
 }
 
-.admin-storage__compact-capacity{
-    display: none;
-}
-
 .admin-data-controls__filters{
     display: contents;
 }
 
-/* Wide/Compact: preserve one-row grammar for non-six-cell flex toolbars.
- * Six-cell geometry is owned exclusively by six-cell-contract.css. */
+/* Wide/Compact: non-six-cell flex toolbars remain one row. Six-cell
+ * toolbars are owned exclusively by six-cell-contract.css. */
 @container admin-workspace (min-width: 54.01rem){
-    .admin-data-controls:not(.admin-data-controls--six-cell):not(.media-workspace__controls):not(.activity-workspace__controls),
-.admin-control-bar{
+    .admin-data-controls:not(.admin-data-controls--six-cell),
+    .admin-control-bar{
         flex-wrap: nowrap !important;
-    }
-
-    .admin-storage .media-workspace__controls{
-        display: grid !important;
-        grid-template-columns: repeat(72, minmax(0, 1fr)) !important;
-        gap: .35rem !important;
-        align-items: end;
-    }
-
-    .admin-storage .media-workspace__controls > :first-child{ grid-column: span 24; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(1){ grid-column: span 7; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(2){ grid-column: span 6; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(3){ grid-column: span 7; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > :nth-child(4){ grid-column: span 9; }
-
-    .admin-storage .media-workspace__controls > .admin-data-controls__utility{
-        display: grid !important;
-        min-width: 0;
-        grid-column: span 19;
-        grid-template-columns: 5fr 8fr 6fr;
-        gap: .2rem;
-        align-items: end;
-    }
-
-    .activity-workspace__controls{
-        display: grid !important;
-        grid-template-columns:
-            minmax(0, 33.3333%)
-            minmax(0, .85fr)
-            minmax(0, 1fr)
-            minmax(0, .95fr)
-            minmax(0, 1.2fr)
-            minmax(20.75rem, auto) !important;
-        gap: 0 !important;
-        align-items: end;
-    }
-
-    .activity-workspace__controls > :first-child,
-.activity-workspace__controls > .admin-data-controls__filters > *{
-        box-sizing: border-box;
-        width: 100% !important;
-        min-width: 0 !important;
-        padding-right: .7rem;
-        flex: none !important;
-    }
-
-    .activity-workspace__controls > .admin-data-controls__utility{
-        display: grid !important;
-        min-width: 0;
-        grid-template-columns: 4rem 8.25rem 8.5rem;
-        gap: .2rem;
-        align-items: end;
-    }
-
-}
-
-/* Compact workspace: redistribute controls while preserving the global
- * one-row toolbar invariant. */
-@container admin-workspace (min-width: 54.01rem) and (max-width: 68rem){
-    .admin-storage .media-workspace__controls{
-        grid-template-columns: repeat(36, minmax(0, 1fr)) !important;
-        gap: .3rem !important;
-    }
-
-    .admin-storage .media-workspace__controls > :first-child{ grid-column: span 10 !important; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__filters > *{ grid-column: span 4 !important; }
-    .admin-storage .media-workspace__controls > .admin-data-controls__utility{
-        display: grid !important;
-        grid-column: span 10 !important;
-        grid-template-columns: 2fr 4fr 4fr;
-        gap: .2rem;
-    }
-
-    .activity-workspace__controls{
-        grid-template-columns: repeat(36, minmax(0, 1fr)) !important;
-        gap: .3rem !important;
-    }
-
-    .activity-workspace__controls > :first-child{ grid-column: span 10 !important; }
-    .activity-workspace__controls > .admin-data-controls__filters > *{ grid-column: span 4 !important; }
-    .activity-workspace__controls > .admin-data-controls__utility{
-        display: grid !important;
-        grid-column: span 10 !important;
-        grid-template-columns: 2fr 4fr 4fr;
-        gap: .2rem;
-    }
-
-
-    .analytics-stage-rail{
-        padding-left: 1.25rem;
-    }
-
-    .analytics-stage-ranking__head,
-.analytics-country-rank{
-        grid-template-columns: minmax(6rem, 1fr) 3.35rem 3.35rem;
-        gap: .4rem;
-    }
-
-    .admin-storage__distribution-columns,
-.admin-storage__target-row{
-        grid-template-columns: minmax(7rem, 1fr) 2.35rem minmax(3rem, .62fr) 4.2rem;
-        gap: .4rem;
-    }
-
-    .media-workspace__grid{
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
