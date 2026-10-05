@@ -215,6 +215,7 @@ async function shellGeometry(page) {
     const layout = document.querySelector('.fi-layout');
     const main = document.querySelector('.fi-main');
     const rootStyle = getComputedStyle(root);
+    const mainStyle = main ? getComputedStyle(main) : null;
 
     return {
       inner_width: window.innerWidth,
@@ -223,6 +224,8 @@ async function shellGeometry(page) {
       layout_width: layout?.getBoundingClientRect().width ?? null,
       main_left: main?.getBoundingClientRect().left ?? null,
       main_width: main?.getBoundingClientRect().width ?? null,
+      main_padding_left: Number.parseFloat(mainStyle?.paddingLeft ?? '0'),
+      main_padding_right: Number.parseFloat(mainStyle?.paddingRight ?? '0'),
       scroll_y: window.scrollY,
       has_vertical_overflow: root.scrollHeight > root.clientHeight,
       has_classic_scrollbar: window.innerWidth > root.clientWidth,
@@ -237,6 +240,8 @@ async function shellGeometry(page) {
 }
 
 function expectStableShellGeometry(before, during, context) {
+  expect(before.main_padding_left, `${context}: Main padding was asymmetric before dialog`).toBeCloseTo(before.main_padding_right, 2);
+  expect(during.main_padding_left, `${context}: Main padding became asymmetric during dialog`).toBeCloseTo(during.main_padding_right, 2);
   expect(during.client_width, `${context}: document client width shifted`).toBe(before.client_width);
   expect(during.layout_left, `${context}: layout left edge shifted`).toBeCloseTo(before.layout_left, 1);
   expect(during.layout_width, `${context}: layout width shifted`).toBeCloseTo(before.layout_width, 1);
@@ -297,20 +302,23 @@ async function modalFrameGeometry(page) {
       overlay_left: overlayRect?.left ?? null,
       overlay_right: overlayRect?.right ?? null,
       overlay_top: overlayRect?.top ?? null,
+      overlay_bottom: overlayRect?.bottom ?? null,
       topbar_bottom: topbar?.getBoundingClientRect().bottom ?? 0,
       window_left: windowRect?.left ?? null,
       window_right: windowRect?.right ?? null,
       window_top: windowRect?.top ?? null,
       window_bottom: windowRect?.bottom ?? null,
+      viewport_width: window.innerWidth,
       viewport_height: window.innerHeight,
     };
   });
 }
 
 function expectDialogFrameBounded(geometry, context) {
-  expect(geometry.overlay_left, `${context}: overlay left edge drifted from Main`).toBeCloseTo(geometry.main_left, 1);
-  expect(geometry.overlay_right, `${context}: overlay right edge drifted from Main`).toBeCloseTo(geometry.main_right, 1);
-  expect(geometry.overlay_top, `${context}: overlay escaped above the topbar`).toBeCloseTo(geometry.topbar_bottom, 1);
+  expect(geometry.overlay_left, `${context}: overlay does not cover viewport left edge`).toBeCloseTo(0, 1);
+  expect(geometry.overlay_right, `${context}: overlay does not cover viewport right edge`).toBeCloseTo(geometry.viewport_width, 1);
+  expect(geometry.overlay_top, `${context}: overlay does not cover viewport top edge`).toBeCloseTo(0, 1);
+  expect(geometry.overlay_bottom, `${context}: overlay does not cover viewport bottom edge`).toBeCloseTo(geometry.viewport_height, 1);
   expect(geometry.window_left, `${context}: dialog crossed Main left padding`).toBeGreaterThanOrEqual(
     geometry.main_left + geometry.main_padding_left - 1,
   );
