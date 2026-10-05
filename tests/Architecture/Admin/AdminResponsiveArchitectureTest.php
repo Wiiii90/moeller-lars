@@ -79,4 +79,41 @@ it('centralizes responsive metric geometry for every six-metric strip', function
         ->toContain('gap: 0 !important');
 });
 
+it('keeps ordinary table pressure centralized and selection terminal', function (): void {
+    $root = dirname(__DIR__, 3);
+    $tableContract = file_get_contents($root.'/resources/css/admin/table-contract.css');
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+    $storage = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/storage-library.blade.php');
+    $journal = file_get_contents($root.'/resources/views/filament/pages/journal-workspace.blade.php');
+    $activity = file_get_contents($root.'/resources/views/filament/pages/activity.blade.php');
 
+    expect($tableContract)
+        ->toContain('.admin-table__yield--compact')
+        ->toContain('.admin-table__yield--narrow')
+        ->toContain('.admin-table__yield--minimal')
+        ->toContain('td.admin-table__actions')
+        ->toContain('padding-inline: 0 !important');
+
+    expect($storage)
+        ->toContain('media-workspace__col-usage admin-table__yield--compact')
+        ->toContain('media-workspace__col-size admin-table__yield--narrow')
+        ->toContain('media-workspace__col-status admin-table__yield--narrow')
+        ->toContain('media-workspace__col-type admin-table__yield--minimal')
+        ->toContain('media-workspace__actions admin-table__actions');
+
+    expect($journal)
+        ->toContain('journal-col--visual admin-table__yield--compact')
+        ->toContain('journal-col--publication admin-table__yield--compact')
+        ->toContain('journal-col--schedule admin-table__yield--compact');
+
+    expect($activity)
+        ->toContain('activity-col--who admin-table__yield--compact')
+        ->toContain('activity-col--publication admin-table__yield--compact')
+        ->toContain('activity-col--area admin-table__yield--minimal')
+        ->toContain('activity-col--type admin-table__yield--minimal');
+
+    expect($responsive)
+        ->not->toContain('media-workspace__usage-head')
+        ->not->toContain('journal-table--blog .journal-col--visual')
+        ->not->toContain('activity-events-table .activity-col--who,');
+});
