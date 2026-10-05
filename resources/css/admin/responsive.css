@@ -515,7 +515,7 @@
     }
 
     .home-components-table__col-actions{
-        width: 18.75rem !important;
+        width: 7rem !important;
     }
 
     .home-components-table .admin-responsive-meta,
@@ -529,19 +529,21 @@
         display: none !important;
     }
 
-    .home-components-table .admin-row-actions{
-        display: grid !important;
-        width: 18.25rem !important;
-        grid-template-columns: 4.75rem 5.25rem 3.25rem 4rem !important;
-        gap: .33rem !important;
-        justify-content: start !important;
+    .home-components-table .admin-row-actions--four{
+        width: 6.75rem !important;
+        grid-template-columns: repeat(4, 1.35rem) !important;
+        gap: .45rem !important;
     }
 
-    .home-components-table .admin-row-actions .admin-action{
-        width: 100%;
-        min-width: 0;
+    .home-components-table .admin-row-actions--four .admin-action{
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
         padding-inline: 0 !important;
-        justify-content: flex-start !important;
+        justify-content: center !important;
+    }
+
+    .home-components-table .admin-row-actions--four .admin-action__label{
+        display: none !important;
     }
 }
 
@@ -658,6 +660,29 @@
     }
 }
 
+@container admin-table (max-width: 44rem){
+    .home-source-table__col-actions{
+        width: 5rem !important;
+    }
+
+    .home-source-table .home-source-table__row-actions{
+        width: 3.15rem !important;
+        grid-template-columns: repeat(2, 1.35rem) !important;
+        gap: .45rem !important;
+    }
+
+    .home-source-table .home-source-table__row-actions .admin-action{
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .home-source-table .home-source-table__row-actions .admin-action__label{
+        display: none !important;
+    }
+}
+
 @container admin-table (max-width: 38rem){
     /* Storage keeps Media | Status | Actions | Selection. Type/size are folded
      * into Media metadata by the Blade row. */
@@ -706,7 +731,6 @@
     }
 
     .home-source-table__col-gallery{ width: auto !important; }
-    .home-source-table__col-actions{ width: 11.75rem !important; }
 
     .home-source-table .admin-responsive-meta{
         display: block;
@@ -718,23 +742,6 @@
 
     .home-components-table__col-content{
         width: auto !important;
-    }
-
-    .home-components-table__col-actions{
-        width: 7rem !important;
-    }
-
-    .home-components-table .admin-row-actions--four{
-        width: 6.75rem !important;
-        grid-template-columns: repeat(4, 1.35rem) !important;
-        gap: .45rem !important;
-    }
-
-    .home-components-table .admin-row-actions--four .admin-action{
-        width: 1.35rem !important;
-        min-width: 1.35rem !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
     }
 
 }
