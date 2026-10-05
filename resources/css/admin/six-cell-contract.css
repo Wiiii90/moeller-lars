@@ -106,15 +106,14 @@
 }
 
 
-/* Shared content-minimum editorial toolbar.
+/* Shared Dashboard-derived responsive toolbar grammar.
  *
- * Gallery, Journal and Custom Page use one row and one terminal Selection axis:
- * Search absorbs spare width; filter selects keep readable fixed widths; Clear
- * stays textual; feature actions collapse together to square icons under real
- * pressure; Selection collapses at the same breakpoint. Table/hierarchy
- * surfaces keep the independent count on their checkbox rail; contact sheets
- * keep the same trigger/count pair intrinsic. */
-.admin-data-controls--content-minimum {
+ * Pages, Home, Gallery, Journal and Custom Page all keep one structural model:
+ * Search is elastic; filters keep readable fixed widths; Clear is intrinsic;
+ * task actions form one adjacent cluster; Selection is terminal with a separate
+ * count. Under real pressure the task cluster and Selected label collapse in
+ * place to square icons. No consumer owns an alternative toolbar grid. */
+.admin-data-controls--dashboard-responsive.admin-data-controls--six-cell {
     display: grid !important;
     width: 100%;
     min-width: 0;
@@ -123,19 +122,20 @@
     align-items: end;
 }
 
-.admin-data-controls--content-minimum.admin-data-controls--filters-0 {
-    grid-template-columns: minmax(5rem, 1fr) max-content;
+.admin-data-controls--dashboard-responsive.admin-data-controls--filters-0 {
+    grid-template-columns: minmax(0, 1fr) max-content !important;
 }
 
-.admin-data-controls--content-minimum.admin-data-controls--filters-1 {
-    grid-template-columns: minmax(5rem, 1fr) 7rem max-content;
+.admin-data-controls--dashboard-responsive.admin-data-controls--filters-1 {
+    grid-template-columns: minmax(0, 1fr) 7rem max-content !important;
 }
 
-.admin-data-controls--content-minimum.admin-data-controls--filters-2 {
-    grid-template-columns: minmax(5rem, 1fr) 6.5rem 7.25rem max-content;
+.admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
+    grid-template-columns: minmax(0, 1fr) 6.5rem 7rem max-content !important;
 }
 
-.admin-data-controls--content-minimum > :first-child {
+.admin-data-controls--dashboard-responsive > :first-child {
+    box-sizing: border-box;
     width: 100% !important;
     min-width: 0 !important;
     grid-column: 1 !important;
@@ -143,12 +143,12 @@
     padding-right: 0 !important;
 }
 
-.admin-data-controls--content-minimum > .admin-data-controls__filters {
+.admin-data-controls--dashboard-responsive > .admin-data-controls__filters {
     display: contents !important;
 }
 
-.admin-data-controls--content-minimum.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child,
-.admin-data-controls--content-minimum.admin-data-controls--filters-2 > .admin-data-controls__filters > :first-child {
+.admin-data-controls--dashboard-responsive > .admin-data-controls__filters > :first-child {
+    box-sizing: border-box;
     width: 100% !important;
     min-width: 0 !important;
     grid-column: 2 !important;
@@ -156,7 +156,8 @@
     padding-inline: 0 !important;
 }
 
-.admin-data-controls--content-minimum.admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
+.admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
+    box-sizing: border-box;
     width: 100% !important;
     min-width: 0 !important;
     grid-column: 3 !important;
@@ -164,36 +165,36 @@
     padding-inline: 0 !important;
 }
 
-.admin-data-controls--content-minimum > .admin-data-controls__utility {
+.admin-data-controls--dashboard-responsive > .admin-data-controls__utility {
     display: grid !important;
     width: max-content;
     min-width: 0;
+    grid-column: -2 / -1 !important;
     grid-row: 1 !important;
-    grid-template-columns: max-content max-content max-content;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
     column-gap: .15rem;
     align-items: end;
     justify-self: end;
     padding-right: 0 !important;
 }
 
-.admin-data-controls--content-minimum.admin-data-controls--filters-0 > .admin-data-controls__utility { grid-column: 2 !important; }
-.admin-data-controls--content-minimum.admin-data-controls--filters-1 > .admin-data-controls__utility { grid-column: 3 !important; }
-.admin-data-controls--content-minimum.admin-data-controls--filters-2 > .admin-data-controls__utility { grid-column: 4 !important; }
-
-.admin-data-controls--content-minimum > .admin-data-controls__utility > :first-child {
+.admin-data-controls--dashboard-responsive > .admin-data-controls__utility > * {
     width: max-content !important;
     min-width: 0 !important;
+    padding-right: 0 !important;
+}
+
+.admin-data-controls--dashboard-responsive > .admin-data-controls__utility--has-reset > :first-child {
     margin-right: .35rem;
-    padding-right: 0 !important;
 }
 
-.admin-data-controls--content-minimum > .admin-data-controls__utility > :nth-child(2) {
-    width: max-content !important;
-    min-width: 0 !important;
-    padding-right: 0 !important;
+.admin-data-controls--dashboard-responsive > .admin-data-controls__utility--has-reset > :first-child :is(.admin-data-control-label, .admin-control-group__label),
+.admin-data-controls--dashboard-responsive .admin-selection > :is(.admin-data-control-label, .admin-control-group__label) {
+    display: none !important;
 }
 
-.admin-editorial-actions {
+.admin-data-controls--dashboard-responsive .admin-editorial-actions {
     display: grid !important;
     width: max-content;
     min-width: 0;
@@ -203,36 +204,31 @@
     align-items: center;
 }
 
-.admin-editorial-actions > .admin-action {
+.admin-data-controls--dashboard-responsive .admin-editorial-actions > .admin-action {
+    box-sizing: border-box;
     width: auto;
     min-width: 0;
     padding-inline: .35rem !important;
     justify-content: flex-start !important;
 }
 
-.admin-data-controls--content-minimum .admin-selection {
-    display: grid;
+.admin-data-controls--dashboard-responsive .admin-selection {
+    display: grid !important;
     width: max-content !important;
     min-width: 0 !important;
     grid-template-columns: max-content var(--admin-table-selection-width);
-    grid-template-rows: auto var(--admin-control-height);
     column-gap: 0;
     align-items: end;
+    padding-right: 0 !important;
 }
 
-.admin-data-controls--content-minimum .admin-selection > :is(.admin-data-control-label, .admin-control-group__label) {
-    grid-column: 1 / 3;
-    grid-row: 1;
-}
-
-.admin-data-controls--content-minimum .admin-selection__anchor {
+.admin-data-controls--dashboard-responsive .admin-selection__anchor {
     width: auto;
     min-width: 0;
     grid-column: 1;
-    grid-row: 2;
 }
 
-.admin-data-controls--content-minimum .admin-selection__trigger {
+.admin-data-controls--dashboard-responsive .admin-selection__trigger {
     display: inline-flex !important;
     width: auto !important;
     min-width: 0 !important;
@@ -241,548 +237,124 @@
     justify-content: flex-start !important;
 }
 
-.admin-data-controls--content-minimum .admin-selection > .admin-selection__count {
+.admin-data-controls--dashboard-responsive .admin-selection > .admin-selection__count {
     box-sizing: border-box;
     width: 1.35rem;
     min-width: 1.35rem;
     height: 1.35rem;
     margin-left: 0;
     grid-column: 2;
-    grid-row: 2;
     align-self: center;
     justify-self: center;
 }
 
-/* Contact sheets have no trailing table checkbox axis. They still use the
- * canonical Selection trigger/count pair, but the count stays intrinsic beside
- * the trigger instead of reserving a fake table-selection rail. */
-.admin-data-controls--content-minimum .admin-selection--free-count {
+/* Contact sheets have no trailing table checkbox rail. */
+.admin-data-controls--dashboard-responsive .admin-selection--free-count {
     grid-template-columns: max-content max-content;
     column-gap: .15rem;
 }
 
-.admin-data-controls--content-minimum .admin-selection--free-count > :is(.admin-data-control-label, .admin-control-group__label) {
-    grid-column: 1 / 3;
-}
-
-.admin-data-controls--content-minimum .admin-selection--free-count > .admin-selection__count {
+.admin-data-controls--dashboard-responsive .admin-selection--free-count > .admin-selection__count {
     justify-self: start;
 }
 
-@container admin-workspace (max-width: 60rem) {
-    .admin-data-controls--content-minimum {
+@container admin-workspace (max-width: 72rem) {
+    .admin-data-controls--dashboard-responsive {
         column-gap: .35rem;
     }
 
-    .admin-data-controls--content-minimum .admin-editorial-actions {
+    .admin-data-controls--dashboard-responsive .admin-editorial-actions {
         grid-auto-columns: var(--admin-control-height);
     }
 
-    .admin-data-controls--content-minimum .admin-editorial-actions > .admin-action {
-        box-sizing: border-box;
+    .admin-data-controls--dashboard-responsive .admin-editorial-actions > .admin-action {
         width: var(--admin-control-height) !important;
         min-width: var(--admin-control-height) !important;
         padding-inline: 0 !important;
         justify-content: center !important;
     }
 
-    .admin-data-controls--content-minimum .admin-editorial-actions .admin-action__label,
-    .admin-data-controls--content-minimum .admin-selection__trigger-text {
+    .admin-data-controls--dashboard-responsive .admin-editorial-actions .admin-action__label,
+    .admin-data-controls--dashboard-responsive .admin-selection__trigger-text {
         display: none !important;
     }
 
-    .admin-data-controls--content-minimum .admin-selection__trigger {
+    .admin-data-controls--dashboard-responsive .admin-selection__trigger {
         width: var(--admin-control-height) !important;
         min-width: var(--admin-control-height) !important;
         padding-inline: 0 !important;
         justify-content: center !important;
     }
 
-    .admin-data-controls--content-minimum .admin-selection__trigger-label {
+    .admin-data-controls--dashboard-responsive .admin-selection__trigger-label {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 63.99rem) {
+    .admin-data-controls--dashboard-responsive .admin-editorial-actions {
+        grid-auto-columns: var(--admin-control-height);
+    }
+
+    .admin-data-controls--dashboard-responsive .admin-editorial-actions > .admin-action {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-data-controls--dashboard-responsive .admin-editorial-actions .admin-action__label,
+    .admin-data-controls--dashboard-responsive .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-data-controls--dashboard-responsive .admin-selection__trigger {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-data-controls--dashboard-responsive .admin-selection__trigger-label {
         width: 100%;
         justify-content: center;
     }
 }
 
 @container admin-workspace (max-width: 50rem) {
-    .admin-data-controls--content-minimum.admin-data-controls--filters-1 {
-        grid-template-columns: minmax(0, 1fr) 5.25rem max-content;
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-1 {
+        grid-template-columns: minmax(0, 1fr) 5.25rem max-content !important;
     }
 
-    .admin-data-controls--content-minimum.admin-data-controls--filters-2 {
-        grid-template-columns: minmax(0, 1fr) 4.75rem 5.75rem max-content;
-    }
-}
-
-@media (max-width: 63.99rem) {
-    .admin-data-controls--content-minimum .admin-editorial-actions {
-        grid-auto-columns: var(--admin-control-height);
-    }
-
-    .admin-data-controls--content-minimum .admin-editorial-actions > .admin-action {
-        box-sizing: border-box;
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-data-controls--content-minimum .admin-editorial-actions .admin-action__label,
-    .admin-data-controls--content-minimum .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    .admin-data-controls--content-minimum .admin-selection__trigger {
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-data-controls--content-minimum .admin-selection__trigger-label {
-        width: 100%;
-        justify-content: center;
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
+        grid-template-columns: minmax(0, 1fr) 4.75rem 5.75rem max-content !important;
     }
 }
 
 @container admin-workspace (max-width: 38rem) {
-    .admin-data-controls--content-minimum {
+    .admin-data-controls--dashboard-responsive {
         column-gap: .2rem;
     }
 
-    .admin-data-controls--content-minimum > .admin-data-controls__utility > :first-child .admin-action__label {
-        display: inline !important;
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-1 {
+        grid-template-columns: minmax(3rem, 1fr) 4.75rem max-content !important;
     }
 
-    .admin-data-controls--content-minimum.admin-data-controls--filters-1 {
-        grid-template-columns: minmax(3rem, 1fr) 4.75rem max-content;
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
+        grid-template-columns: minmax(3rem, 1fr) 4.5rem 5.25rem max-content !important;
     }
 
-    .admin-data-controls--content-minimum.admin-data-controls--filters-2 {
-        grid-template-columns: minmax(3rem, 1fr) 4.5rem 5.25rem max-content;
-    }
-
-    .admin-data-controls--content-minimum > .admin-data-controls__utility {
+    .admin-data-controls--dashboard-responsive > .admin-data-controls__utility {
         column-gap: .05rem;
     }
 
-    .admin-data-controls--content-minimum > .admin-data-controls__utility > :first-child {
-        margin-right: .15rem;
-    }
-}
-
-/* Pages uses the same content-minimum metric-backed toolbar grammar as
- * Dashboard/Home. Search owns spare width, Type/Status keep readable minima,
- * Clear remains a normal intrinsic query action, Pages actions compact only
- * under genuine workspace pressure, and Selection terminates on the checkbox
- * rail. */
-.admin-task-controls--pages.admin-data-controls--six-cell {
-    display: grid !important;
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: minmax(5rem, 1fr) 7rem 7rem max-content;
-    grid-template-rows: auto;
-    column-gap: .65rem;
-    align-items: end;
-}
-
-.admin-task-controls--pages.admin-data-controls--six-cell > :first-child {
-    min-width: 0 !important;
-    width: 100% !important;
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    padding-right: 0 !important;
-}
-
-.admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__filters {
-    display: contents !important;
-}
-
-.admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
-    width: 100% !important;
-    min-width: 0 !important;
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    padding-inline: 0 !important;
-}
-
-.admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__filters > :nth-child(2) {
-    width: 100% !important;
-    min-width: 0 !important;
-    grid-column: 3 !important;
-    grid-row: 1 !important;
-    padding-inline: 0 !important;
-}
-
-.admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__utility {
-    display: grid !important;
-    width: max-content;
-    min-width: 0;
-    grid-column: 4 !important;
-    grid-row: 1 !important;
-    grid-template-columns: max-content max-content max-content;
-    column-gap: .15rem;
-    align-items: end;
-    justify-self: end;
-    padding-right: 0 !important;
-}
-
-.admin-task-controls--pages > .admin-data-controls__utility > :first-child {
-    width: max-content !important;
-    min-width: 0 !important;
-    margin-right: .35rem;
-    padding-right: 0 !important;
-}
-
-.admin-task-controls--pages > .admin-data-controls__utility > :nth-child(2) {
-    width: max-content !important;
-    min-width: 0 !important;
-    padding-right: 0 !important;
-}
-
-.admin-task-controls--pages .admin-task-control-actions {
-    gap: .15rem;
-}
-
-.admin-task-controls--pages .admin-pages__actions .admin-task-control-actions {
-    gap: 0 !important;
-}
-
-.admin-task-controls--pages .admin-task-control-actions > .admin-action {
-    width: auto;
-    min-width: 0;
-    padding-inline: .35rem !important;
-    justify-content: flex-start !important;
-}
-
-/* Clear belongs to Query/Filter, not the task-action density ladder. */
-.admin-task-controls--pages.admin-data-controls--six-cell .admin-pages__clear .admin-task-control-actions .admin-action__label {
-    display: inline !important;
-}
-
-.admin-task-controls--pages .admin-pages__selection {
-    display: grid;
-    width: max-content !important;
-    min-width: 0 !important;
-    grid-template-columns: max-content var(--admin-table-selection-width);
-    align-items: end;
-    padding-right: 0 !important;
-}
-
-.admin-task-controls--pages .admin-pages__selection .admin-selection__anchor {
-    width: auto;
-    min-width: 0;
-    grid-column: 1;
-}
-
-.admin-task-controls--pages .admin-pages__selection .admin-selection__trigger {
-    display: inline-flex !important;
-    width: auto !important;
-    min-width: 0 !important;
-    grid-template-columns: none !important;
-    padding-inline: .35rem !important;
-    justify-content: flex-start !important;
-}
-
-.admin-task-controls--pages .admin-pages__selection > .admin-selection__count {
-    box-sizing: border-box;
-    width: 1.35rem;
-    min-width: 1.35rem;
-    height: 1.35rem;
-    margin-left: 0;
-    grid-column: 2;
-    align-self: center;
-    justify-self: center;
-}
-
-@container admin-workspace (max-width: 50rem) {
-    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions {
-        display: grid !important;
-        width: max-content !important;
-        grid-template-columns: repeat(2, var(--admin-control-height));
-        gap: 0 !important;
-    }
-
-    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions > .admin-action {
-        box-sizing: border-box;
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions > .admin-action .admin-action__label,
-    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger {
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-label {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .admin-task-controls--pages.admin-data-controls--six-cell .admin-pages__clear .admin-task-control-actions .admin-action__label {
-        display: inline !important;
-    }
-}
-
-/* Burger mode must not re-expand labels merely because removing the sidebar
- * gives the workspace width back. Once Pages has compacted, keep the whole
- * task/Selection cluster on the same icon geometry as the pre-Burger state. */
-@media (max-width: 63.99rem) {
-    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions {
-        display: grid !important;
-        width: max-content !important;
-        grid-template-columns: repeat(2, var(--admin-control-height));
-        gap: 0 !important;
-    }
-
-    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions > .admin-action {
-        box-sizing: border-box;
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions > .admin-action .admin-action__label,
-    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger {
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-label {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .admin-task-controls--pages.admin-data-controls--six-cell .admin-pages__clear .admin-task-control-actions .admin-action__label {
-        display: inline !important;
-    }
-}
-
-@container admin-workspace (max-width: 38rem) {
-    .admin-task-controls--pages.admin-data-controls--six-cell {
-        grid-template-columns: minmax(3rem, 1fr) minmax(4.5rem, max-content) minmax(5.75rem, max-content) max-content;
-        column-gap: .2rem;
-    }
-
-    .admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__utility {
-        column-gap: .05rem;
-    }
-
-    .admin-task-controls--pages.admin-data-controls--six-cell > .admin-data-controls__utility > :first-child {
+    .admin-data-controls--dashboard-responsive > .admin-data-controls__utility--has-reset > :first-child {
         margin-right: .15rem;
     }
 
-    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions {
-        gap: 0 !important;
-    }
-}
-
-/* Home editable templates use the same terminal-cluster geometry as Dashboard.
- * Search absorbs spare width; filters keep readable widths; Clear is intrinsic;
- * the active-template actions are adjacent; Selection is icon/label plus a
- * separate count centered on the terminal checkbox rail. */
-:is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell {
-    display: grid !important;
-    width: 100%;
-    min-width: 0;
-    grid-template-rows: auto !important;
-    column-gap: .65rem;
-    align-items: end;
-}
-
-.home-artwork-source-controls.admin-data-controls--six-cell {
-    grid-template-columns: minmax(4.25rem, 1fr) minmax(5rem, 7rem) minmax(5.5rem, 8.5rem) max-content;
-}
-
-.home-component-controls.admin-data-controls--six-cell {
-    grid-template-columns: minmax(4.25rem, 1fr) minmax(5rem, 7rem) max-content;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell > :first-child {
-    min-width: 0 !important;
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    padding-right: 0 !important;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls).admin-data-controls--six-cell > .admin-data-controls__filters {
-    display: contents;
-}
-
-.home-artwork-source-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    padding-right: 0 !important;
-}
-
-.home-artwork-source-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :nth-child(2) {
-    grid-column: 3 !important;
-    grid-row: 1 !important;
-    padding-right: 0 !important;
-}
-
-.home-component-controls.admin-data-controls--six-cell > .admin-data-controls__filters > :first-child {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    padding-right: 0 !important;
-}
-
-.home-artwork-source-controls.admin-data-controls--six-cell > .admin-data-controls__utility {
-    grid-column: 4 !important;
-    grid-row: 1 !important;
-}
-
-.home-component-controls.admin-data-controls--six-cell > .admin-data-controls__utility {
-    grid-column: 3 !important;
-    grid-row: 1 !important;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility {
-    display: grid !important;
-    width: max-content;
-    min-width: 0;
-    grid-template-columns: max-content max-content max-content;
-    column-gap: .15rem;
-    align-items: end;
-    justify-self: end;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :first-child {
-    margin-right: .35rem;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > :first-child > .admin-data-control-label,
-:is(.home-artwork-source-controls, .home-component-controls) > .admin-data-controls__utility > .admin-selection > .admin-data-control-label {
-    display: none !important;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
-    display: grid !important;
-    width: max-content;
-    grid-template-columns: repeat(3, max-content);
-    gap: 0 !important;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action {
-    width: auto;
-    min-width: 0;
-    padding-inline: .35rem !important;
-    justify-content: flex-start !important;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) .admin-selection {
-    display: grid;
-    width: max-content;
-    grid-template-columns: max-content var(--admin-table-selection-width);
-    align-items: end;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) .admin-selection__anchor {
-    grid-column: 1;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger {
-    display: inline-flex !important;
-    width: auto !important;
-    min-width: 0 !important;
-    grid-template-columns: none !important;
-    padding-inline: .35rem !important;
-    justify-content: flex-start !important;
-}
-
-:is(.home-artwork-source-controls, .home-component-controls) .admin-selection > .admin-selection__count {
-    box-sizing: border-box;
-    width: 1.35rem;
-    min-width: 1.35rem;
-    height: 1.35rem;
-    margin-left: 0;
-    grid-column: 2;
-    align-self: center;
-    justify-self: center;
-}
-
-@container admin-workspace (max-width: 50rem) {
-    :is(.home-artwork-source-controls, .home-component-controls) {
-        column-gap: .35rem;
-    }
-
-    .home-artwork-source-controls.admin-data-controls--six-cell {
-        grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 5rem) minmax(4.75rem, 5.5rem) max-content;
-    }
-
-    .home-component-controls.admin-data-controls--six-cell {
-        grid-template-columns: minmax(0, 1fr) minmax(4.75rem, 5.5rem) max-content;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
-        grid-template-columns: repeat(3, var(--admin-control-height));
-        gap: 0 !important;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action {
-        box-sizing: border-box;
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action__label,
-    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger {
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-}
-
-/* Burger width reclamation is monotonic for Home too. A toolbar that already
- * compacted under desktop pressure must not re-expand its task/Selection labels
- * simply because the sidebar disappeared. */
-@media (max-width: 63.99rem) {
-    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions {
-        grid-template-columns: repeat(3, var(--admin-control-height));
-        gap: 0 !important;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action {
-        box-sizing: border-box;
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .home-workspace-actions .admin-action__label,
-    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger-text {
-        display: none !important;
-    }
-
-    :is(.home-artwork-source-controls, .home-component-controls) .admin-selection__trigger {
-        width: var(--admin-control-height) !important;
-        min-width: var(--admin-control-height) !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
+    .admin-data-controls--dashboard-responsive > .admin-data-controls__utility--has-reset > :first-child .admin-action__label {
+        display: inline !important;
     }
 }
 
