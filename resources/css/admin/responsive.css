@@ -952,20 +952,20 @@
         width: 6.75rem !important;
     }
 
-    .general-social-table__actions .admin-row-actions--three{
+    .general-social-table__actions .admin-row-actions--order-delete{
         width: 6.45rem !important;
         grid-template-columns: repeat(3, 1.35rem) !important;
         gap: .45rem !important;
     }
 
-    .general-social-table__actions .admin-row-actions--three .admin-action{
+    .general-social-table__actions .admin-row-actions--order-delete .admin-action{
         width: 1.35rem !important;
         min-width: 1.35rem !important;
         padding-inline: 0 !important;
         justify-content: center !important;
     }
 
-    .general-social-table__actions .admin-row-actions--three .admin-action__label{
+    .general-social-table__actions .admin-row-actions--order-delete .admin-action__label{
         display: none !important;
     }
 }
