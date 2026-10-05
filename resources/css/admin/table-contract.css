@@ -141,37 +141,58 @@
 .admin-row-actions--stable {
     display: grid !important;
     width: var(--admin-row-actions-width);
-    max-width: 100%;
-    min-width: 0;
+    max-width: none;
+    min-width: var(--admin-row-actions-width);
+    flex: 0 0 var(--admin-row-actions-width);
     grid-template-columns: var(--admin-row-actions-columns);
     gap: var(--admin-row-actions-gap, .25rem) !important;
-    margin-left: auto;
+    margin-inline-start: auto !important;
+    margin-inline-end: 0 !important;
     align-items: center;
     justify-content: end !important;
 }
 
 .admin-row-actions--stable .admin-action {
     box-sizing: border-box;
-    display: grid !important;
+    display: inline-flex !important;
     width: 100%;
     min-width: 0;
-    grid-template-columns: .9rem minmax(0, 1fr);
     gap: .3rem;
     padding-inline: var(--admin-row-action-padding, .25rem);
     align-items: center;
-    justify-content: stretch !important;
+    justify-content: center !important;
     overflow: visible;
 }
 
-.admin-row-actions--stable .admin-action__icon {
+/* State actions reserve the longest label in their semantic slot and balance
+ * the icon with an equal ghost column. The visible icon therefore stays on the
+ * same axis when Publish becomes Unpublish, etc. */
+.admin-row-actions--stable .admin-action--state {
+    display: grid !important;
+    grid-template-columns: .9rem minmax(0, 1fr) .9rem;
+    gap: .2rem;
+    justify-content: stretch !important;
+}
+
+.admin-row-actions--stable .admin-action--state::after {
+    width: .9rem;
+    height: .9rem;
+    grid-column: 3;
+    content: "";
+}
+
+.admin-row-actions--stable .admin-action--state .admin-action__icon {
     grid-column: 1;
+    justify-self: center;
+}
+
+.admin-row-actions--stable .admin-action--state .admin-action__label {
+    grid-column: 2;
     justify-self: center;
 }
 
 .admin-row-actions--stable .admin-action__label {
     min-width: 0;
-    grid-column: 2;
-    justify-self: center;
     overflow: visible;
     text-align: center;
     text-overflow: clip;
@@ -179,23 +200,23 @@
 }
 
 .admin-row-actions--move-delete {
-    --admin-row-actions-width: 15.25rem;
-    --admin-row-actions-columns: 4.75rem 5.5rem 4.5rem;
+    --admin-row-actions-width: 13.75rem;
+    --admin-row-actions-columns: 4.25rem 5rem 4rem;
 }
 
 .admin-row-actions--move-edit-delete {
-    --admin-row-actions-width: 19.5rem;
-    --admin-row-actions-columns: 4.75rem 5.5rem 4rem 4.5rem;
+    --admin-row-actions-width: 17.25rem;
+    --admin-row-actions-columns: 4.25rem 5rem 3.25rem 4rem;
 }
 
 .admin-row-actions--move-state-delete {
-    --admin-row-actions-width: 26rem;
-    --admin-row-actions-columns: 4.75rem 5.5rem 4rem 6.25rem 4.5rem;
+    --admin-row-actions-width: 23rem;
+    --admin-row-actions-columns: 4.25rem 5rem 3.25rem 5.5rem 4rem;
 }
 
 .admin-row-actions--state-open {
-    --admin-row-actions-width: 13.75rem;
-    --admin-row-actions-columns: 6.25rem 7.25rem;
+    --admin-row-actions-width: 11.5rem;
+    --admin-row-actions-columns: 5rem 6.25rem;
 }
 
 .admin-row-actions--journal-blog {
@@ -264,7 +285,7 @@
  * contain Position/Drag + Name, Page Type and Template each own one full unit,
  * and Actions + trailing Selection own the final two units. */
 .admin-hierarchy--pages {
-    --admin-row-actions-width: 26rem;
+    --admin-row-actions-width: 23rem;
 }
 
 .admin-hierarchy--pages .admin-pages__header,
