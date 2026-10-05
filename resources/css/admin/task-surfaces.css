@@ -54,9 +54,11 @@
 
 .admin-selection__trigger-label {
     display: inline-flex;
+    width: 100%;
     min-width: 0;
     gap: .3rem;
     align-items: center;
+    justify-content: center;
     overflow: hidden;
 }
 
@@ -325,6 +327,7 @@
 }
 
 .admin-inline-select,
+.admin-inline-input,
 .admin-inline-control-value {
     box-sizing: border-box;
     width: 100%;
@@ -346,6 +349,15 @@
     outline: none;
 }
 
+.admin-inline-input {
+    padding: 0 var(--admin-control-text-inset);
+    border: 0;
+    border-bottom: 1px solid var(--admin-line);
+    border-radius: 0;
+    background: transparent;
+    outline: none;
+}
+
 .admin-inline-control-value {
     display: flex;
     padding-inline: var(--admin-control-text-inset);
@@ -357,6 +369,11 @@
 .admin-inline-select:focus-visible {
     border-color: var(--admin-accent);
     background: var(--admin-subtle);
+}
+
+.admin-inline-input:hover,
+.admin-inline-input:focus-visible {
+    border-bottom-color: var(--admin-accent);
 }
 
 .admin-status {
