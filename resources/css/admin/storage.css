@@ -502,6 +502,7 @@
  * filters (Type, Size, Usage/Used in, Status), and Actions begins exactly at
  * 4/6. Selection keeps the shared fixed trailing checkbox rail. */
 .admin-storage .media-workspace__table {
+    --admin-row-actions-width: 19rem;
     min-width: 0;
     max-width: 100%;
     table-layout: fixed;
