@@ -187,10 +187,6 @@
         display: none;
     }
 
-    .activity-calendar{
-        --activity-calendar-cell-size: .64rem;
-    }
-
     .home-workspace__skip-row{
         grid-template-columns: minmax(0, 1fr) auto;
     }
