@@ -252,17 +252,9 @@
     justify-self: center;
 }
 
-@container admin-workspace (max-width: 50rem) {
+@container admin-workspace (max-width: 60rem) {
     .admin-data-controls--content-minimum {
         column-gap: .35rem;
-    }
-
-    .admin-data-controls--content-minimum.admin-data-controls--filters-1 {
-        grid-template-columns: minmax(0, 1fr) 5.25rem max-content;
-    }
-
-    .admin-data-controls--content-minimum.admin-data-controls--filters-2 {
-        grid-template-columns: minmax(0, 1fr) 4.75rem 5.75rem max-content;
     }
 
     .admin-data-controls--content-minimum .admin-editorial-actions {
@@ -292,6 +284,16 @@
     .admin-data-controls--content-minimum .admin-selection__trigger-label {
         width: 100%;
         justify-content: center;
+    }
+}
+
+@container admin-workspace (max-width: 50rem) {
+    .admin-data-controls--content-minimum.admin-data-controls--filters-1 {
+        grid-template-columns: minmax(0, 1fr) 5.25rem max-content;
+    }
+
+    .admin-data-controls--content-minimum.admin-data-controls--filters-2 {
+        grid-template-columns: minmax(0, 1fr) 4.75rem 5.75rem max-content;
     }
 }
 
