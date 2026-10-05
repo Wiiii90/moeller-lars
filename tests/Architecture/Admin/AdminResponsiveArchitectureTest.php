@@ -130,3 +130,29 @@ it('gates focused and single-visual stages behind the burger minimal state', fun
         ->toContain('.admin-visual-stage--single-minimal')
         ->toContain('.admin-stage-tabs');
 });
+
+it('keeps Pages type and optional template in one responsive classification column', function (): void {
+    $root = dirname(__DIR__, 3);
+    $pages = file_get_contents($root.'/resources/views/filament/pages/site-pages.blade.php');
+    $row = file_get_contents($root.'/resources/views/filament/pages/partials/site-section-row.blade.php');
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+    $tableContract = file_get_contents($root.'/resources/css/admin/table-contract.css');
+
+    expect($pages)
+        ->toContain('admin-pages__classification')
+        ->toContain('Page type / Template')
+        ->not->toContain('data-column="template">Template');
+
+    expect($row)
+        ->toContain('$hasTemplateControl')
+        ->toContain('admin-pages__classification')
+        ->toContain('admin-pages__template');
+
+    expect($tableContract)
+        ->toContain('.admin-pages__classification.has-template')
+        ->toContain('repeat(2, minmax(0, 1fr))');
+
+    expect($responsive)
+        ->toContain('.admin-pages__row > .admin-pages__classification.has-template')
+        ->not->toContain('.admin-hierarchy--pages .admin-pages__template{');
+});
