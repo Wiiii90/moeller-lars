@@ -532,7 +532,6 @@
 .admin-storage .media-workspace__actions,
 .admin-storage .media-workspace__actions-head {
     width: auto;
-    padding-inline: .2rem !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
