@@ -943,7 +943,7 @@
     }
 
     .general-social-table .general-social-table__col-actions{
-        width: 15rem !important;
+        width: 15.5rem !important;
     }
 }
 
@@ -952,21 +952,27 @@
         width: 6.75rem !important;
     }
 
-    .general-social-table__actions .admin-row-actions--order-delete{
-        width: 6.45rem !important;
-        grid-template-columns: repeat(3, 1.35rem) !important;
-        gap: .45rem !important;
+    .general-social-table__actions .admin-row-actions--stable{
+        --admin-row-actions-width: 6.45rem;
+        --admin-row-actions-columns: repeat(3, 1.35rem);
+        --admin-row-actions-gap: .45rem;
     }
 
-    .general-social-table__actions .admin-row-actions--order-delete .admin-action{
+    .general-social-table__actions .admin-row-actions--stable .admin-action{
         width: 1.35rem !important;
         min-width: 1.35rem !important;
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
         padding-inline: 0 !important;
-        justify-content: center !important;
+        justify-items: center;
     }
 
-    .general-social-table__actions .admin-row-actions--order-delete .admin-action__label{
+    .general-social-table__actions .admin-row-actions--stable .admin-action__label{
         display: none !important;
+    }
+
+    .general-social-table .admin-row-actions-heading{
+        --admin-row-actions-width: 6.45rem;
     }
 }
 
