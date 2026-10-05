@@ -151,14 +151,15 @@
                         <col class="admin-table__col-quarter-unit admin-table__col-position">
                         <col class="admin-table__col-quarter-unit admin-table__col-drag">
                         @if ($isBlog)
-                            <col class="admin-table__col-half-unit journal-col--visual admin-table__yield--compact">
+                            <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-unit journal-col--identity">
-                            <col class="admin-table__col-half-unit journal-col--status">
+                            <col class="admin-table__col-half-unit journal-col--status admin-table__yield--minimal">
                             <col class="admin-table__col-one-unit journal-col--publication admin-table__yield--compact">
                             <col class="journal-table__actions--blog">
                         @else
+                            <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-half-units journal-col--identity">
-                            <col class="admin-table__col-half-unit journal-col--timing">
+                            <col class="admin-table__col-half-unit journal-col--timing admin-table__yield--minimal">
                             <col class="admin-table__col-one-half-units journal-col--schedule admin-table__yield--compact">
                             <col class="admin-table__col-two-units-minus-selection journal-table__actions--exhibitions">
                         @endif
@@ -167,15 +168,13 @@
                     <thead>
                         <tr>
                             <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
-                            @if ($isBlog)
-                                <th scope="col" class="journal-visual journal-col--visual admin-table__yield--compact">Image</th>
-                            @endif
+                            <th scope="col" class="journal-visual journal-col--visual">Image</th>
                             <th scope="col" class="journal-col--identity">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
                             @if ($isBlog)
-                                <th scope="col" class="journal-col--status">Status</th>
+                                <th scope="col" class="journal-col--status admin-table__yield--minimal">Status</th>
                                 <th scope="col" class="journal-col--publication admin-table__yield--compact">Publication</th>
                             @else
-                                <th scope="col" class="journal-col--timing">Timing</th>
+                                <th scope="col" class="journal-col--timing admin-table__yield--minimal">Timing</th>
                                 <th scope="col" class="journal-col--schedule admin-table__yield--compact">Schedule</th>
                             @endif
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
@@ -211,17 +210,15 @@
                                         aria-label="Drag {{ $entry['title'] }} to reorder"
                                     >⋮⋮</button>
                                 </td>
-                                @if ($isBlog)
-                                    <td class="journal-visual journal-col--visual admin-table__yield--compact">
-                                        <div class="journal-visual__thumbnail">
-                                            @if ($entry['thumbnail_url'])
-                                                <img src="{{ $entry['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
-                                            @else
-                                                <span aria-label="No image">—</span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                @endif
+                                <td class="journal-visual journal-col--visual">
+                                    <div class="journal-visual__thumbnail">
+                                        @if ($entry['thumbnail_url'])
+                                            <img src="{{ $entry['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                        @else
+                                            <span aria-label="No image">—</span>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="admin-table__identity journal-col--identity">
                                     <strong>{{ $entry['title'] }}</strong>
                                     @if ($isBlog)
@@ -236,10 +233,10 @@
                                     @endif
                                 </td>
                                 @if ($isBlog)
-                                    <td class="journal-col--status"><span class="journal-state is-{{ $entry['state'] }}">{{ ucfirst($entry['state']) }}</span></td>
+                                    <td class="journal-col--status admin-table__yield--minimal"><span class="journal-state is-{{ $entry['state'] }}">{{ ucfirst($entry['state']) }}</span></td>
                                     <td class="journal-publication journal-col--publication admin-table__yield--compact">{{ $entry['publication'] }}</td>
                                 @else
-                                    <td class="journal-col--timing"><span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span></td>
+                                    <td class="journal-col--timing admin-table__yield--minimal"><span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span></td>
                                     <td class="journal-schedule journal-col--schedule admin-table__yield--compact">
                                         @if ($entry['vernissage'])<em>Vernissage: {{ $entry['vernissage'] }}</em>@endif
                                         @if ($entry['date_text'] !== '')<span>{{ $entry['date_text'] }}</span>@endif
@@ -358,7 +355,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="{{ $isBlog ? 8 : 7 }}">
+                                <td class="admin-table__empty-cell" colspan="8">
                                     @if ($unfilteredEntryCount > 0)
                                         <x-admin.empty-state :title="'No matching '.$entryLabel" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button></x-slot:actions>
