@@ -1,4 +1,5 @@
-        <section class="custom-page-component-sequence admin-hierarchy" aria-label="Page component sequence">
+        <x-admin.table>
+            <section class="custom-page-component-sequence admin-hierarchy" aria-label="Page component sequence">
             <div class="custom-page-component-sequence__header admin-hierarchy__header">
                 <span class="admin-hierarchy__ordering-heading">Position</span>
                 <span>Component</span>
@@ -224,4 +225,5 @@
                     @endforeach
                 </div>
             @endif
-        </section>
+            </section>
+        </x-admin.table>
