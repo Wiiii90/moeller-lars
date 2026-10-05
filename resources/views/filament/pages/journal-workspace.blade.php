@@ -37,7 +37,7 @@
         </x-admin.metrics>
 
         <x-admin.section class="journal-workspace__entries" aria-label="{{ $isBlog ? 'Blog entries' : 'Exhibition entries' }}">
-            <x-admin.controls aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}">
+            <x-admin.controls class="admin-data-controls--content-minimum" aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}">
                 <x-slot:search>
                     <label class="admin-field admin-control-bar__search">
                         <span class="admin-field__label">Search</span>
@@ -92,7 +92,7 @@
                 <x-slot:actions>
                     <div class="admin-control-group">
                         <span class="admin-control-group__label">Journal</span>
-                        <div class="admin-control-group__actions">
+                        <div class="admin-control-group__actions admin-editorial-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('journalSettings')" aria-label="Journal settings">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Settings</span>
@@ -128,7 +128,7 @@
                                 aria-haspopup="menu"
                                 @disabled($selectedIds === [])
                             >
-                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label> <span class="admin-selection__count">{{ count($selectedIds) }}</span>
+                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak x-on:click.outside="open = false">
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false">Move selected up</button>
@@ -142,6 +142,7 @@
                                 <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('{{ $isBlog ? 'deleteSelectedPosts' : 'deleteSelectedExhibitions' }}')" x-on:click="open = false">Delete selected</button>
                             </div>
                         </div>
+                        <span class="admin-selection__count" aria-label="{{ count($selectedIds) }} selected">{{ count($selectedIds) }}</span>
                     </div>
                 </x-slot:selection>
             </x-admin.controls>
