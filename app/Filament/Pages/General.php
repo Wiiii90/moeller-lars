@@ -43,6 +43,8 @@ final class General extends Page
         'background_gradient_start',
         'background_gradient_end',
         'background_gradient_angle',
+        'public_page_width',
+        'public_content_padding',
         'public_email',
         'contact_recipient_email',
         'social_links',
@@ -80,6 +82,9 @@ final class General extends Page
             $data['background_color'] = PublicAppearance::DEFAULT_PAGE_COLOR;
         }
 
+        $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width'] ?? null);
+        $data['public_content_padding'] = PublicAppearance::normalizeContentPadding($data['public_content_padding'] ?? null);
+
         $this->data = $data;
         $this->syncAppearanceControlState();
         $this->form->fill($this->data);
@@ -88,12 +93,6 @@ final class General extends Page
     public function getBreadcrumbs(): array
     {
         return [];
-    }
-
-    /** @return array<string, mixed> */
-    protected function getViewData(): array
-    {
-        return ['generalSettings' => $this->generalSettingsRecord()];
     }
 
     public function setPreviewDevice(string $device): void
@@ -110,6 +109,9 @@ final class General extends Page
         return $schema
             ->components([
                 Group::make([
+                    View::make('filament.schemas.components.general-status-metrics')
+                        ->columnSpanFull(),
+
                     Group::make([
                         Group::make([
                             View::make('filament.schemas.components.admin-section-heading')
@@ -209,6 +211,36 @@ final class General extends Page
                                 ->extraAttributes(['class' => 'general-background-row'])
                                 ->columnSpanFull(),
 
+                            Group::make([
+                                TextInput::make('public_page_width')
+                                    ->label('Page width')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(PublicAppearance::MIN_PAGE_WIDTH)
+                                    ->maxValue(PublicAppearance::MAX_PAGE_WIDTH)
+                                    ->step(10)
+                                    ->suffix('px')
+                                    ->required()
+                                    ->lazy()
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('public_page_width')),
+                                TextInput::make('public_content_padding')
+                                    ->label('Content padding')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(PublicAppearance::MIN_CONTENT_PADDING)
+                                    ->maxValue(PublicAppearance::MAX_CONTENT_PADDING)
+                                    ->step(1)
+                                    ->suffix('px')
+                                    ->required()
+                                    ->lazy()
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('public_content_padding')),
+                            ])
+                                ->columns(2)
+                                ->extraAttributes(['class' => 'general-layout-row'])
+                                ->columnSpanFull(),
+
                             Hidden::make('background_color'),
                             Hidden::make('background_gradient_start'),
                             Hidden::make('background_gradient_end'),
@@ -219,14 +251,6 @@ final class General extends Page
 
                         View::make('filament.schemas.components.general-live-preview')
                             ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
-                            ->columnSpanFull(),
-
-                        Group::make([
-                            View::make('filament.schemas.components.general-layout-controls')
-                                ->columnSpanFull(),
-                        ])
-                            ->columns(1)
-                            ->extraAttributes(['class' => 'general-appearance-stage__geometry'])
                             ->columnSpanFull(),
                     ])
                         ->columns(3)
@@ -523,6 +547,8 @@ final class General extends Page
                 'background_gradient_start',
                 'background_gradient_end',
                 'background_gradient_angle',
+                'public_page_width',
+                'public_content_padding',
             ], true)) {
                 $this->dispatch('general-appearance-updated');
             }
@@ -658,6 +684,7 @@ final class General extends Page
             'background_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
             'background_color', 'background_gradient_start', 'background_gradient_end' => $this->normalizeColorCandidate($value),
             'background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
+            'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
             'default_media_copyright_notice' => is_string($value) ? (($trimmed = trim($value)) === '' ? null : $trimmed) : $value,
