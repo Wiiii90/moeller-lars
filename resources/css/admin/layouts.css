@@ -106,25 +106,16 @@ html.fi select option:disabled {
  * so it may open upward when there is not enough room below.
  */
 @supports (appearance: base-select) {
-    html.fi :is(
-        .admin-field,
-        .admin-data-field,
-        .admin-task-field,
-        .gallery-workspace__field,
-        .media-workspace__field
-    ) select {
+    /* One native select render path for every workspace single-select. Toolbar,
+     * inline table and pager selects therefore share the same trigger baseline,
+     * popup, right-side selected mark and picker icon without generated DOM. */
+    html.fi .admin-workspace select:not([multiple]):not([size]) {
         appearance: base-select;
         align-items: center;
         white-space: nowrap;
     }
 
-    html.fi :is(
-        .admin-field,
-        .admin-data-field,
-        .admin-task-field,
-        .gallery-workspace__field,
-        .media-workspace__field
-    ) select::picker(select) {
+    html.fi .admin-workspace select:not([multiple]):not([size])::picker(select) {
         appearance: base-select;
         margin-top: .2rem;
         padding: .2rem 0;
@@ -135,13 +126,7 @@ html.fi select option:disabled {
         box-shadow: none;
     }
 
-    html.fi :is(
-        .admin-field,
-        .admin-data-field,
-        .admin-task-field,
-        .gallery-workspace__field,
-        .media-workspace__field
-    ) select option {
+    html.fi .admin-workspace select:not([multiple]):not([size]) option {
         display: flex;
         min-height: 2rem;
         padding: .45rem .7rem;
@@ -152,43 +137,19 @@ html.fi select option:disabled {
         line-height: 1.2;
     }
 
-    html.fi :is(
-        .admin-field,
-        .admin-data-field,
-        .admin-task-field,
-        .gallery-workspace__field,
-        .media-workspace__field
-    ) select option::checkmark {
+    html.fi .admin-workspace select:not([multiple]):not([size]) option::checkmark {
         order: 2;
         margin-inline-start: auto;
         color: var(--admin-accent);
     }
 
-    html.fi :is(
-        .admin-field,
-        .admin-data-field,
-        .admin-task-field,
-        .gallery-workspace__field,
-        .media-workspace__field
-    ) select option:hover,
-    html.fi :is(
-        .admin-field,
-        .admin-data-field,
-        .admin-task-field,
-        .gallery-workspace__field,
-        .media-workspace__field
-    ) select option:checked {
+    html.fi .admin-workspace select:not([multiple]):not([size]) option:hover,
+    html.fi .admin-workspace select:not([multiple]):not([size]) option:checked {
         background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface));
         color: var(--admin-control-popup-ink);
     }
 
-    html.fi :is(
-        .admin-field,
-        .admin-data-field,
-        .admin-task-field,
-        .gallery-workspace__field,
-        .media-workspace__field
-    ) select::picker-icon {
+    html.fi .admin-workspace select:not([multiple]):not([size])::picker-icon {
         margin-inline-start: auto;
         color: var(--admin-muted);
     }
