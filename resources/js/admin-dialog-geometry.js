@@ -1,5 +1,5 @@
 const openModalSelector = '.fi-modal.fi-modal-open';
-const existingScrollbarClass = 'admin-modal-existing-scrollbar';
+const modalScrollbarGutterClass = 'admin-modal-scrollbar-gutter';
 
 function hasClassicDocumentScrollbar() {
     const root = document.documentElement;
@@ -23,7 +23,7 @@ function prepareModalScrollbarGeometry(event) {
     if (! modalFromOpenEvent(event)) return;
 
     document.documentElement.classList.toggle(
-        existingScrollbarClass,
+        modalScrollbarGutterClass,
         hasClassicDocumentScrollbar(),
     );
 }
@@ -32,12 +32,12 @@ function releaseModalScrollbarGeometry() {
     queueMicrotask(() => {
         if (document.querySelector('.fi-modal.fi-modal-open:not(.fi-modal-click-through)')) return;
 
-        document.documentElement.classList.remove(existingScrollbarClass);
+        document.documentElement.classList.remove(modalScrollbarGutterClass);
     });
 }
 
 function resetModalScrollbarGeometry() {
-    document.documentElement.classList.remove(existingScrollbarClass);
+    document.documentElement.classList.remove(modalScrollbarGutterClass);
 }
 
 function numericPx(value) {
@@ -108,9 +108,10 @@ function syncOpenModalGeometry() {
     }
 }
 
-// Capture runs before Filament's window-level open listener. That lets us
-// preserve a real pre-existing classic scrollbar without inventing one on a
-// short page. Filament still performs its normal acquire/release lifecycle.
+// Capture runs before Filament's window-level open listener. On a page that
+// already has a classic scrollbar, the temporary stable gutter is visible to
+// Filament before acquireScrollLock() decides whether padding compensation is
+// needed. Filament still owns the actual acquire/release lifecycle.
 window.addEventListener('open-modal', prepareModalScrollbarGeometry, true);
 window.addEventListener('modal-closed', releaseModalScrollbarGeometry);
 
