@@ -49,6 +49,7 @@
             class="admin-action"
             type="button"
             data-admin-stage-slot="{{ $loop->iteration }}"
+            aria-pressed="{{ $value === $defaultPane ? 'true' : 'false' }}"
             x-on:click="selectPane(@js($value))"
             x-bind:class="{ 'is-primary': activePane === @js($value) }"
             x-bind:aria-pressed="(activePane === @js($value)).toString()"
