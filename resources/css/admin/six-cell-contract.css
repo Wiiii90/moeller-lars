@@ -347,13 +347,6 @@
         grid-template-columns: minmax(0, 1fr) minmax(0, 4.75rem) minmax(0, 5.75rem) max-content !important;
     }
 
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 4.75rem) minmax(0, 4.75rem) minmax(0, 5.75rem) max-content !important;
-    }
-
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 4.75rem) minmax(0, 4.75rem) minmax(0, 6.25rem) minmax(0, 5.5rem) max-content !important;
-    }
 }
 
 @container admin-workspace (max-width: 38rem) {
@@ -365,17 +358,6 @@
         grid-template-columns: minmax(0, 1fr) minmax(0, 4.75rem) max-content !important;
     }
 
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 4.5rem) minmax(0, 5.25rem) max-content !important;
-    }
-
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 4.25rem) minmax(0, 4.25rem) minmax(0, 5.25rem) max-content !important;
-    }
-
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 4.25rem) minmax(0, 4.25rem) minmax(0, 5.25rem) minmax(0, 4.75rem) max-content !important;
-    }
 
     .admin-data-controls--dashboard-responsive > .admin-data-controls__utility {
         column-gap: .05rem;
