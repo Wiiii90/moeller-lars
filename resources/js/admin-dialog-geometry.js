@@ -1,4 +1,44 @@
 const openModalSelector = '.fi-modal.fi-modal-open';
+const existingScrollbarClass = 'admin-modal-existing-scrollbar';
+
+function hasClassicDocumentScrollbar() {
+    const root = document.documentElement;
+
+    return window.innerWidth > root.clientWidth;
+}
+
+function modalFromOpenEvent(event) {
+    const id = event.detail?.id;
+    if (id === undefined || id === null || id === '') return null;
+
+    const modal = document.getElementById(String(id));
+    if (! modal?.classList.contains('fi-modal')) return null;
+    if (modal.classList.contains('fi-modal-click-through')) return null;
+    if (! modal.querySelector(':scope > .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog')) return null;
+
+    return modal;
+}
+
+function prepareModalScrollbarGeometry(event) {
+    if (! modalFromOpenEvent(event)) return;
+
+    document.documentElement.classList.toggle(
+        existingScrollbarClass,
+        hasClassicDocumentScrollbar(),
+    );
+}
+
+function releaseModalScrollbarGeometry() {
+    queueMicrotask(() => {
+        if (document.querySelector('.fi-modal.fi-modal-open:not(.fi-modal-click-through)')) return;
+
+        document.documentElement.classList.remove(existingScrollbarClass);
+    });
+}
+
+function resetModalScrollbarGeometry() {
+    document.documentElement.classList.remove(existingScrollbarClass);
+}
 
 function numericPx(value) {
     const parsed = Number.parseFloat(value);
@@ -68,9 +108,18 @@ function syncOpenModalGeometry() {
     }
 }
 
+// Capture runs before Filament's window-level open listener. That lets us
+// preserve a real pre-existing classic scrollbar without inventing one on a
+// short page. Filament still performs its normal acquire/release lifecycle.
+window.addEventListener('open-modal', prepareModalScrollbarGeometry, true);
+window.addEventListener('modal-closed', releaseModalScrollbarGeometry);
+
 document.addEventListener('x-modal-opened', (event) => {
     syncModalGeometry(modalForEvent(event), { resetScroll: true });
 });
 
 window.addEventListener('resize', syncOpenModalGeometry, { passive: true });
-document.addEventListener('livewire:navigated', syncOpenModalGeometry);
+document.addEventListener('livewire:navigated', () => {
+    resetModalScrollbarGeometry();
+    syncOpenModalGeometry();
+});
