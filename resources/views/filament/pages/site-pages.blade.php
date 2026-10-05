@@ -20,7 +20,12 @@
         </x-admin.metrics>
 
         <section aria-label="Pages editor">
-            <x-admin.controls class="admin-task-controls admin-task-controls--pages" aria-label="Page controls">
+            <x-admin.controls
+                class="admin-task-controls admin-task-controls--pages"
+                aria-label="Page controls"
+                metric-grid
+                :filter-count="2"
+            >
                 <x-slot:search>
                     <label class="admin-task-field">
                         <span>SEARCH</span>
