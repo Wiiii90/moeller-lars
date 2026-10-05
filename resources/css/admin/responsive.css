@@ -1450,11 +1450,40 @@
 }
 
 /* ---------- Custom Page hierarchy ---------- */
+/* Five action labels yield before Component identity. */
+@container admin-table (max-width: 84rem){
+    .custom-page-component-sequence{
+        --admin-hierarchy-actions-column: 8.85rem;
+    }
+
+    .custom-page-row-actions{
+        --admin-row-actions-width: 8.55rem;
+        --admin-row-actions-columns: repeat(5, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    .custom-page-component-sequence .custom-page-row-actions .admin-action{
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+        padding-inline: 0 !important;
+        justify-items: center;
+    }
+
+    .custom-page-row-actions .admin-action__label{
+        display: none !important;
+    }
+
+    .custom-page-component-sequence .admin-row-actions-heading{
+        --admin-row-actions-width: 8.55rem;
+    }
+}
+
 @container admin-table (max-width: 50rem){
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
-        --admin-hierarchy-actions-column: 9rem;
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
@@ -1472,27 +1501,12 @@
     .custom-page-component-sequence .admin-responsive-meta{
         display: block !important;
     }
-
-    .custom-page-row-actions .admin-action__label{
-        display: none !important;
-    }
-
-    .custom-page-row-actions{
-        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-        gap: .06rem !important;
-    }
-
-    .custom-page-component-sequence .custom-page-row-actions .admin-action{
-        padding-inline: .08rem !important;
-        justify-content: center !important;
-    }
 }
 
 @container admin-table (max-width: 38rem){
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 1.75rem;
-        --admin-hierarchy-actions-column: 8rem;
     }
 }
 
