@@ -346,6 +346,52 @@
         justify-content: center !important;
     }
 
+    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-label {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .admin-task-controls--pages.admin-data-controls--six-cell .admin-pages__clear .admin-task-control-actions .admin-action__label {
+        display: inline !important;
+    }
+}
+
+/* Burger mode must not re-expand labels merely because removing the sidebar
+ * gives the workspace width back. Once Pages has compacted, keep the whole
+ * task/Selection cluster on the same icon geometry as the pre-Burger state. */
+@media (max-width: 63.99rem) {
+    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions {
+        display: grid !important;
+        width: max-content !important;
+        grid-template-columns: repeat(2, var(--admin-control-height));
+        gap: 0 !important;
+    }
+
+    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions > .admin-action {
+        box-sizing: border-box;
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions > .admin-action .admin-action__label,
+    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-task-controls--pages .admin-pages__selection .admin-selection__trigger-label {
+        width: 100%;
+        justify-content: center;
+    }
+
     .admin-task-controls--pages.admin-data-controls--six-cell .admin-pages__clear .admin-task-control-actions .admin-action__label {
         display: inline !important;
     }
