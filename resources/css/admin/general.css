@@ -112,6 +112,11 @@
     margin: 0;
 }
 
+.general-stage-kicker,
+.general-live-preview__title {
+    line-height: 1.2;
+}
+
 /* Canonical line-based General controls. */
 .admin-general .fi-input-wrp {
     box-sizing: border-box;
@@ -270,7 +275,7 @@
     min-width: 0;
     min-height: 1.75rem;
     gap: .65rem;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
 }
 
@@ -283,6 +288,7 @@
     min-width: 0;
     gap: .2rem;
     align-items: center;
+    margin-top: -.35rem;
     margin-left: auto;
 }
 
@@ -515,6 +521,10 @@
 
 .general-social-section__heading {
     margin-bottom: var(--admin-section-gap);
+}
+
+.general-social-table {
+    --admin-row-actions-width: 15.25rem;
 }
 
 .general-social-table > table {
