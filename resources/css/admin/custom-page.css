@@ -32,6 +32,7 @@
  * is owned by the canonical responsive layer; no inner horizontal scrollport or
  * desktop minimum-width floor is permitted. */
 .custom-page-component-sequence {
+    --admin-row-actions-width: 26rem;
     width: 100%;
     min-width: 0;
     max-width: 100%;
@@ -52,53 +53,17 @@
     padding-left: .65rem;
 }
 
-/* Actions own the complete fifth visual cell plus the space up to the trailing
- * selection rail. Keep header and rows on the same inset so the rail reads as
- * one aligned table region rather than a loose toolbar. */
-.custom-page-component-sequence__header > span:nth-last-child(2),
+/* Actions own the complete utility rail up to terminal Selection. Shared
+ * stable-action geometry right-anchors the same five semantic slots in every
+ * component/child row and aligns the header to the first slot. */
+.custom-page-component-sequence__header > span:nth-last-child(2) {
+    box-sizing: border-box;
+    min-width: 0;
+}
+
 .custom-page-component__actions,
 .custom-page-child-row__actions {
-    box-sizing: border-box;
     min-width: 0;
-    padding-left: .35rem;
-    padding-right: .1rem;
-}
-
-.custom-page-row-actions {
-    display: grid !important;
-    width: 100%;
-    min-width: 0;
-    grid-template-columns:
-        minmax(0, .92fr)
-        minmax(0, 1.12fr)
-        minmax(0, .68fr)
-        minmax(0, 1.22fr)
-        minmax(0, .78fr);
-    gap: .06rem !important;
-}
-
-.custom-page-component-sequence .custom-page-row-actions .admin-action {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    padding-inline: .08rem;
-    justify-content: flex-start !important;
-    overflow: hidden;
-}
-
-.custom-page-component-sequence .custom-page-row-actions .admin-action--with-icon {
-    gap: .18rem;
-}
-
-.custom-page-component-sequence .custom-page-row-actions .admin-action--state {
-    min-width: 0;
-}
-
-.custom-page-row-actions .admin-action__label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .custom-page-child-row__kind {
