@@ -97,7 +97,7 @@
         </x-admin.metrics>
 
         <section class="activity-atlas" aria-label="Activity timeline">
-            <div class="activity-atlas__grid admin-visual-stage admin-focus-stage" data-active-pane="clock" aria-label="Activity timeline">
+            <div class="activity-atlas__grid admin-visual-stage admin-focus-stage" aria-label="Activity timeline">
                 <x-admin.stage-switcher
                     storage-key="admin-stage.activity"
                     default-pane="clock"
