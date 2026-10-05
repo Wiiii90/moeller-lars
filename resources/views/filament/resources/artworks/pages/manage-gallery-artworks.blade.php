@@ -161,7 +161,7 @@
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+                    <div class="admin-data-control-group admin-selection admin-selection--free-count" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
                         <span class="admin-data-control-label">Selection</span>
                         <div class="admin-selection__anchor">
                             <button
