@@ -21,14 +21,14 @@
  * accepted Custom Page split. Actions + terminal Selection own the final two.
  * Shared stable rails own the button geometry and right anchoring. */
 .home-source-table {
-    --admin-row-actions-width: 13.75rem;
+    --admin-row-actions-width: 11.5rem;
 }
 
 .home-components-table {
-    --admin-row-actions-width: 19.5rem;
+    --admin-row-actions-width: 17.25rem;
 }
 
-.home-source-table__col-actions { width: 14.25rem; }
+.home-source-table__col-actions { width: 12rem; }
 
 .home-components-table__col-actions {
     width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
