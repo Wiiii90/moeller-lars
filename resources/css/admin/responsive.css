@@ -362,7 +362,7 @@
 
 }
 
-@container admin-table (max-width: 56rem){
+@container admin-table (max-width: 54rem){
     .home-source-table :is(.home-source-table__candidates, .home-source-table__artworks, .home-source-table__year, .home-source-table__col-candidates, .home-source-table__col-artworks, .home-source-table__col-year){
         display: none !important;
     }
@@ -373,61 +373,33 @@
     .home-source-table .admin-responsive-meta{ display: block; }
 }
 
-/* Home component actions yield before the Component column. The four shared
- * semantic axes keep their positions while their labels disappear. */
-@container admin-table (max-width: 72rem){
-    .home-components-table__col-actions{
-        width: 7rem !important;
-    }
-
-    .home-components-table .admin-row-actions-heading{
-        --admin-row-actions-width: 6.75rem;
-    }
-}
-
 /* Table-specific Narrow reduction. */
-@container admin-table (max-width: 50rem){
-
-    /* Blog image and publication / Exhibition schedule are supportive. */
-    .journal-table--blog .journal-col--visual,
-.journal-table--blog .journal-col--publication,
-.journal-table--exhibitions .journal-col--schedule{
-        display: none;
-    }
-
+@container admin-table (max-width: 54rem){
     /* Storage: preview and detailed reference column yield first. */
     .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
-.media-workspace__table-wrap:not(.is-dense) th:nth-child(1),
-.media-workspace__table-wrap:not(.is-dense) td:nth-child(1){
+    .media-workspace__table-wrap:not(.is-dense) th:nth-child(1),
+    .media-workspace__table-wrap:not(.is-dense) td:nth-child(1){
         display: none;
     }
 
     .media-workspace__table-wrap .media-workspace__col-usage,
-.media-workspace__table-wrap .media-workspace__usage-head,
-.media-workspace__table-wrap .media-workspace__usage-cell{
+    .media-workspace__table-wrap .media-workspace__usage-head,
+    .media-workspace__table-wrap .media-workspace__usage-cell{
         display: none;
-    }
-
-    /* Pages: Template is supportive. */
-    .admin-hierarchy--pages .admin-pages__template{
-        display: none !important;
-    }
-
-    .admin-hierarchy--pages .admin-pages__header,
-.admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     }
 
     /* Activity: publication and actor are contextual rather than primary. */
     .activity-events-table .activity-col--publication,
-.activity-events-table .activity-col--who,
-.activity-commits-table .activity-commit-col--publication,
-.activity-commits-table .activity-commit-col--who{
+    .activity-events-table .activity-col--who,
+    .activity-commits-table .activity-commit-col--publication,
+    .activity-commits-table .activity-commit-col--who{
         display: none;
     }
 
+    /* Home components protect Content and the labeled action rail; Component
+     * kind folds into responsive metadata first. */
     .home-components-table .home-components-table__type,
-.home-components-table .home-components-table__col-type{
+    .home-components-table .home-components-table__col-type{
         display: none;
     }
 
@@ -443,10 +415,13 @@
         width: auto !important;
     }
 
+    .home-components-table__col-actions{
+        width: 17.75rem !important;
+    }
+
     .home-components-table .admin-responsive-meta,
-.journal-table .admin-responsive-meta,
-.activity-events-table .admin-responsive-meta,
-.activity-commits-table .admin-responsive-meta{
+    .activity-events-table .admin-responsive-meta,
+    .activity-commits-table .admin-responsive-meta{
         display: block;
     }
 
@@ -546,16 +521,6 @@
 
 }
 
-@container admin-table (max-width: 60rem){
-    .home-source-table__col-actions{
-        width: 5rem !important;
-    }
-
-    .home-source-table .admin-row-actions-heading{
-        --admin-row-actions-width: 3.15rem;
-    }
-}
-
 @container admin-table (max-width: 38rem){
     /* Storage keeps Media | Status | Actions | Selection. Type/size are folded
      * into Media metadata by the Blade row. */
@@ -595,6 +560,11 @@
     }
 
     .home-source-table__col-gallery{ width: auto !important; }
+    .home-source-table__col-actions{ width: 3.45rem !important; }
+
+    .home-source-table .admin-row-actions-heading{
+        --admin-row-actions-width: 3.15rem;
+    }
 
     .home-source-table .admin-responsive-meta{
         display: block;
@@ -606,6 +576,14 @@
 
     .home-components-table__col-content{
         width: auto !important;
+    }
+
+    .home-components-table__col-actions{
+        width: 7rem !important;
+    }
+
+    .home-components-table .admin-row-actions-heading{
+        --admin-row-actions-width: 6.75rem;
     }
 
 }
