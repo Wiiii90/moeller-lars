@@ -115,6 +115,7 @@ html.fi select option:disabled {
     ) select {
         appearance: base-select;
         align-items: center;
+        white-space: nowrap;
     }
 
     html.fi :is(
