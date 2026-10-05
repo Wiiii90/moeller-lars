@@ -117,3 +117,16 @@ it('keeps ordinary table pressure centralized and selection terminal', function 
         ->not->toContain('journal-table--blog .journal-col--visual')
         ->not->toContain('activity-events-table .activity-col--who,');
 });
+
+it('gates focused and single-visual stages behind the burger minimal state', function (): void {
+    $root = dirname(__DIR__, 3);
+    $stage = file_get_contents($root.'/resources/css/admin/stage.css');
+
+    expect($stage)
+        ->toContain('@media (max-width: 63.99rem)')
+        ->toContain('@container admin-workspace (max-width: 38rem)')
+        ->toContain('.admin-focus-stage')
+        ->toContain('.admin-dashboard__overview')
+        ->toContain('.admin-visual-stage--single-minimal')
+        ->toContain('.admin-stage-tabs');
+});
