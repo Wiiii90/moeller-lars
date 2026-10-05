@@ -866,7 +866,7 @@
     .general-appearance-stage{
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: minmax(0, 1fr) auto !important;
+        grid-template-rows: minmax(0, 1fr) !important;
     }
 
     .general-appearance-stage::after{
@@ -884,16 +884,8 @@
         padding-left: 0 !important;
         overflow-x: hidden;
         overflow-y: auto;
-    }
-
-    .general-appearance-stage__geometry{
-        display: grid !important;
-        grid-column: 1 / -1 !important;
-        grid-row: 2 !important;
-        width: 100% !important;
-        margin: .75rem 0 0 !important;
-        padding-right: 0 !important;
-        padding-left: 0 !important;
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
     }
 
     .general-appearance-stage__preview{
