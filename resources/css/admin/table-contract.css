@@ -229,10 +229,11 @@
 }
 
 /* Canonical action-density states.
- * Narrow (54rem): intrinsically dense five- and seven-action rails compact in
- * place. Minimal (38rem): the remaining two- to four-action rails compact on
- * the same semantic axes. Consumers never invent their own density breakpoint. */
-@container admin-table (max-width: 54rem) {
+ * Compact (64rem): intrinsically dense five- and seven-action rails compact in
+ * place before their labels can consume identity/state columns. Minimal (38rem):
+ * the remaining two- to four-action rails compact on the same semantic axes.
+ * Consumers never invent their own density breakpoint. */
+@container admin-table (max-width: 64rem) {
     .admin-row-actions--move-state-delete {
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
         --admin-row-actions-columns: repeat(5, 1.35rem);
