@@ -22,6 +22,7 @@
     inset-inline: var(--admin-dialog-layer-inline-start) var(--admin-dialog-layer-inline-end) !important;
     box-sizing: border-box;
     min-height: 0 !important;
+    overflow: hidden !important;
     overscroll-behavior: contain;
     padding-block: 1rem !important;
     padding-inline: var(--admin-dialog-layer-padding-inline) !important;
@@ -41,7 +42,7 @@
     flex: 1 1 auto;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scrollbar-gutter: stable;
+    scrollbar-gutter: auto;
 }
 
 /* Shared dialog motion. The window closes toward the native X in the
@@ -94,9 +95,9 @@
         transform: none !important;
     }
 }
-/* Dialogs keep one visible scroll affordance: the internal content rail is
- * deliberately reduced to a quiet thumb. Filament hides the locked document
- * scrollbar; a temporary root gutter may reserve its former width for geometry. */
+/* The modal container is positioning geometry only. The dialog content is
+ * the one and only modal-internal scroller. A pre-existing document scrollbar
+ * may remain visible at the viewport edge, but its scroll position is frozen. */
 .admin-task-dialog .fi-modal-content {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--admin-muted) 48%, transparent) transparent;
