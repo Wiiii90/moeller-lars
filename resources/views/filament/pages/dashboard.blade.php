@@ -34,7 +34,7 @@
             <input class="admin-dashboard__overview-panel-toggle" type="radio" name="dashboard-overview-panel" id="dashboard-overview-activity">
             <input class="admin-dashboard__overview-panel-toggle" type="radio" name="dashboard-overview-panel" id="dashboard-overview-analytics">
 
-            <div class="admin-dashboard__overview-switcher" aria-label="Dashboard overview">
+            <div class="admin-stage-tabs admin-dashboard__overview-switcher" aria-label="Dashboard overview">
                 <label class="admin-action" for="dashboard-overview-storage">Storage</label>
                 <label class="admin-action" for="dashboard-overview-activity">Activity</label>
                 <label class="admin-action" for="dashboard-overview-analytics">Analytics</label>
