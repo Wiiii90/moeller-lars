@@ -275,7 +275,7 @@
 }
 
 /* Clear belongs to Query/Filter, not the task-action density ladder. */
-.admin-task-controls--pages .admin-pages__clear .admin-action__label {
+.admin-task-controls--pages.admin-data-controls--six-cell .admin-pages__clear .admin-task-control-actions .admin-action__label {
     display: inline !important;
 }
 
@@ -347,7 +347,7 @@
         display: none !important;
     }
 
-    .admin-task-controls--pages .admin-pages__clear .admin-action__label {
+    .admin-task-controls--pages.admin-data-controls--six-cell .admin-pages__clear .admin-task-control-actions .admin-action__label {
         display: inline !important;
     }
 }
