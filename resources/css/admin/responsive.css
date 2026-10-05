@@ -1001,21 +1001,13 @@
 }
 
 /* ---------- Custom Page hierarchy ---------- */
-/* Five action labels yield before Component identity. */
-@container admin-table (max-width: 76rem){
-    .custom-page-component-sequence{
-        --admin-hierarchy-actions-column: 8.85rem;
-    }
-
-    .custom-page-component-sequence .admin-row-actions-heading{
-        --admin-row-actions-width: 8.55rem;
-    }
-}
-
-@container admin-table (max-width: 50rem){
+/* Narrow keeps action labels and sacrifices supportive Component identity first.
+ * Minimal compacts the same five semantic action axes to icons. */
+@container admin-table (max-width: 54rem){
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
+        --admin-hierarchy-actions-column: 23.3rem;
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
@@ -1025,8 +1017,8 @@
     }
 
     .custom-page-component-sequence__header > :nth-child(2),
-.custom-page-component__type,
-.custom-page-child-row__kind{
+    .custom-page-component__type,
+    .custom-page-child-row__kind{
         display: none !important;
     }
 
@@ -1039,6 +1031,11 @@
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 1.75rem;
+        --admin-hierarchy-actions-column: 8.85rem;
+    }
+
+    .custom-page-component-sequence .admin-row-actions-heading{
+        --admin-row-actions-width: 8.55rem;
     }
 }
 
@@ -1051,7 +1048,10 @@
     width: 2rem !important;
 }
 
-@container admin-table (max-width: 86rem){
+/* Blog has seven actions, so Narrow is its one deliberate dense-rail state.
+ * Exhibitions keeps the five labeled actions until Minimal. Supporting columns
+ * yield first for both tables. */
+@container admin-table (max-width: 54rem){
     .journal-table col.journal-table__actions--blog{
         width: 12.5rem !important;
     }
@@ -1059,21 +1059,17 @@
     .journal-table--blog .admin-row-actions-heading{
         --admin-row-actions-width: 12.15rem;
     }
-}
 
-@container admin-table (max-width: 76rem){
     .journal-table col.journal-table__actions--exhibitions{
-        width: 8.85rem !important;
+        width: 23.5rem !important;
     }
 
     .journal-table--exhibitions .admin-row-actions-heading{
-        --admin-row-actions-width: 8.55rem;
+        --admin-row-actions-width: 23rem;
     }
-}
 
-@container admin-table (max-width: 50rem){
     .journal-table--blog .journal-col--visual,
-.journal-table--blog .journal-col--publication{
+    .journal-table--blog .journal-col--publication{
         display: none !important;
     }
 
@@ -1086,7 +1082,7 @@
     }
 
     .journal-table--blog col.journal-col--identity,
-.journal-table--exhibitions col.journal-col--identity{
+    .journal-table--exhibitions col.journal-col--identity{
         width: auto !important;
     }
 }
@@ -1096,8 +1092,16 @@
         width: 1.75rem !important;
     }
 
+    .journal-table col.journal-table__actions--exhibitions{
+        width: 8.85rem !important;
+    }
+
+    .journal-table--exhibitions .admin-row-actions-heading{
+        --admin-row-actions-width: 8.55rem;
+    }
+
     .journal-table--blog .journal-col--status,
-.journal-table--exhibitions .journal-col--timing{
+    .journal-table--exhibitions .journal-col--timing{
         display: table-cell !important;
     }
 }
