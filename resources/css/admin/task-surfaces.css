@@ -179,7 +179,8 @@
 }
 
 .admin-table__selection input[type="checkbox"],
-.admin-hierarchy__selection input[type="checkbox"]-checkbox input[type="checkbox"],
+.admin-hierarchy__selection input[type="checkbox"],
+.gallery-workspace__selection-checkbox input[type="checkbox"],
 .media-workspace__selection-head input[type="checkbox"],
 .media-workspace__selection-cell input[type="checkbox"],
 .media-workspace__selection-checkbox input[type="checkbox"] {
@@ -198,7 +199,8 @@
 }
 
 .admin-table__selection input[type="checkbox"]::before,
-.admin-hierarchy__selection input[type="checkbox"]::before-checkbox input[type="checkbox"]::before,
+.admin-hierarchy__selection input[type="checkbox"]::before,
+.gallery-workspace__selection-checkbox input[type="checkbox"]::before,
 .media-workspace__selection-head input[type="checkbox"]::before,
 .media-workspace__selection-cell input[type="checkbox"]::before,
 .media-workspace__selection-checkbox input[type="checkbox"]::before {
@@ -214,7 +216,8 @@
 .admin-table__selection input[type="checkbox"]:checked,
 .admin-table__selection input[type="checkbox"]:indeterminate,
 .admin-hierarchy__selection input[type="checkbox"]:checked,
-.admin-hierarchy__selection input[type="checkbox"]:indeterminate-checkbox input[type="checkbox"]:checked,
+.admin-hierarchy__selection input[type="checkbox"]:indeterminate,
+.gallery-workspace__selection-checkbox input[type="checkbox"]:checked,
 .media-workspace__selection-head input[type="checkbox"]:checked,
 .media-workspace__selection-head input[type="checkbox"]:indeterminate,
 .media-workspace__selection-cell input[type="checkbox"]:checked,
@@ -224,7 +227,8 @@
 }
 
 .admin-table__selection input[type="checkbox"]:checked::before,
-.admin-hierarchy__selection input[type="checkbox"]:checked::before-checkbox input[type="checkbox"]:checked::before,
+.admin-hierarchy__selection input[type="checkbox"]:checked::before,
+.gallery-workspace__selection-checkbox input[type="checkbox"]:checked::before,
 .media-workspace__selection-head input[type="checkbox"]:checked::before,
 .media-workspace__selection-cell input[type="checkbox"]:checked::before,
 .media-workspace__selection-checkbox input[type="checkbox"]:checked::before {
@@ -242,7 +246,8 @@
 }
 
 .admin-table__selection input[type="checkbox"]:focus-visible,
-.admin-hierarchy__selection input[type="checkbox"]:focus-visible-checkbox input[type="checkbox"]:focus-visible,
+.admin-hierarchy__selection input[type="checkbox"]:focus-visible,
+.gallery-workspace__selection-checkbox input[type="checkbox"]:focus-visible,
 .media-workspace__selection-head input[type="checkbox"]:focus-visible,
 .media-workspace__selection-cell input[type="checkbox"]:focus-visible,
 .media-workspace__selection-checkbox input[type="checkbox"]:focus-visible {
@@ -251,7 +256,8 @@
 }
 
 .admin-table__selection input[type="checkbox"]:disabled,
-.admin-hierarchy__selection input[type="checkbox"]:disabled-checkbox input[type="checkbox"]:disabled,
+.admin-hierarchy__selection input[type="checkbox"]:disabled,
+.gallery-workspace__selection-checkbox input[type="checkbox"]:disabled,
 .media-workspace__selection-head input[type="checkbox"]:disabled,
 .media-workspace__selection-cell input[type="checkbox"]:disabled,
 .media-workspace__selection-checkbox input[type="checkbox"]:disabled {
