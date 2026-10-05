@@ -431,8 +431,9 @@
 }
 
 /* Pages keeps the six-cell metric ruler as a soft reference, but Wide reserves
- * the real labeled five-action rail plus terminal Selection first. Identity,
- * Page Type and Template divide the remaining width without squeezing Actions. */
+ * the real labeled five-action rail plus terminal Selection first. Page Type
+ * and the optional Home/Journal Template form one composite editable column;
+ * identity absorbs the remaining width. */
 .admin-hierarchy--pages {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
@@ -441,8 +442,7 @@
 .admin-hierarchy--pages .admin-pages__row {
     grid-template-columns:
         minmax(0, 1fr)
-        minmax(9rem, 10rem)
-        minmax(7rem, 9rem)
+        minmax(14rem, 16rem)
         calc(var(--admin-row-actions-move-state-delete-width) + var(--admin-table-selection-width));
     column-gap: 0;
 }
@@ -470,18 +470,30 @@
     align-items: center;
 }
 
-.admin-hierarchy--pages .admin-pages__type,
-.admin-hierarchy--pages .admin-pages__template {
+.admin-hierarchy--pages .admin-pages__classification {
     grid-column: auto;
 }
 
-.admin-pages__header > .admin-pages__type,
-.admin-pages__header > .admin-pages__template,
-.admin-pages__row > .admin-pages__type,
-.admin-pages__row > .admin-pages__template {
+.admin-pages__header > .admin-pages__classification,
+.admin-pages__row > .admin-pages__classification {
     box-sizing: border-box;
     min-width: 0;
     padding-inline: .65rem;
+}
+
+.admin-pages__row > .admin-pages__classification {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .35rem;
+    align-items: center;
+}
+
+.admin-pages__row > .admin-pages__classification.has-template {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-pages__classification > :is(.admin-pages__type, .admin-pages__template) {
+    min-width: 0;
 }
 
 .admin-pages__header .admin-pages__utility-grid > :first-child {
