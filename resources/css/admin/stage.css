@@ -280,4 +280,159 @@
     display: none !important;
 }
 
+/* Shared focused-stage state.
+ *
+ * Storage and Activity keep the same three semantic Stage panes at every width.
+ * Minimal does not delete two panes or invent a page-local replacement surface:
+ * it exposes one pane at a time through the same three-way switcher. The
+ * switcher persists its active ordinal in the browser session; the middle pane
+ * is the view-provided default. */
+.admin-stage-switcher {
+    display: none;
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-focus-stage {
+        display: grid !important;
+        width: 100%;
+        height: var(--admin-visual-stage-height) !important;
+        min-width: 0;
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto minmax(0, 1fr) !important;
+        overflow: visible !important;
+    }
+
+    .admin-focus-stage::before,
+    .admin-focus-stage::after {
+        display: none !important;
+        content: none !important;
+    }
+
+    .admin-focus-stage > .admin-stage-switcher {
+        position: relative;
+        z-index: 12;
+        display: grid !important;
+        grid-column: 1;
+        grid-row: 1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .25rem;
+        padding: .25rem 0;
+        border-bottom: 1px solid var(--admin-line);
+        transform: translateY(-.625rem);
+    }
+
+    .admin-stage-switcher > .admin-action {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        min-height: 2rem;
+        padding: .38rem .5rem;
+        justify-content: center !important;
+        border: 1px solid transparent;
+        border-radius: .2rem;
+        white-space: nowrap;
+    }
+
+    .admin-focus-stage [data-admin-stage-pane] {
+        display: none !important;
+        box-sizing: border-box;
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+    }
+
+    .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="1"][aria-pressed="true"])
+        [data-admin-stage-pane][data-admin-stage-slot="1"],
+    .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="2"][aria-pressed="true"])
+        [data-admin-stage-pane][data-admin-stage-slot="2"],
+    .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="3"][aria-pressed="true"])
+        [data-admin-stage-pane][data-admin-stage-slot="3"] {
+        display: grid !important;
+    }
+
+    /* Activity's desktop visual wrapper only groups Calendar + Clock. At
+     * Minimal it must disappear structurally so those two semantic panes can
+     * occupy the same focused Stage cell as Publication. */
+    .admin-focus-stage.activity-atlas__grid > .activity-atlas__visual {
+        display: contents !important;
+    }
+
+    .admin-focus-stage .activity-publication[data-admin-stage-pane] {
+        display: none !important;
+    }
+
+    .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="3"][aria-pressed="true"])
+        .activity-publication[data-admin-stage-pane][data-admin-stage-slot="3"] {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .admin-focus-stage .activity-calendar[data-admin-stage-pane],
+    .admin-focus-stage .activity-clock[data-admin-stage-pane],
+    .admin-focus-stage .activity-publication[data-admin-stage-pane] {
+        padding: var(--admin-stage-divider-inset) 0 !important;
+        overflow: hidden !important;
+    }
+
+    .admin-focus-stage .activity-publication[data-admin-stage-pane] {
+        overflow-y: auto !important;
+    }
+
+    .admin-focus-stage.admin-storage__visual-stage > :is(
+        .admin-storage__upload,
+        .admin-storage__capacity-group,
+        .admin-storage__distribution
+    ) {
+        padding: var(--admin-stage-divider-inset) 0 !important;
+    }
+
+    .admin-focus-stage .admin-storage__capacity-group {
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve) !important;
+        gap: var(--admin-stage-orbit-gap) !important;
+        place-items: center !important;
+    }
+
+    .admin-focus-stage .admin-storage__distribution {
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+    }
+
+    /* Analytics intentionally has no focused-pane switcher. Its Minimal Stage
+     * is the map alone; the country ranking/flag rail is supportive context. */
+    .analytics-visual-stage {
+        display: grid !important;
+        width: 100% !important;
+        height: var(--admin-visual-stage-height) !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) !important;
+        overflow: hidden !important;
+    }
+
+    .analytics-visual-stage::before,
+    .analytics-visual-stage::after {
+        display: none !important;
+        content: none !important;
+    }
+
+    .analytics-visual-stage > .analytics-world {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        padding: var(--admin-stage-divider-inset) 0 !important;
+    }
+
+    .analytics-visual-stage > .analytics-stage-rail {
+        display: none !important;
+    }
+}
 
