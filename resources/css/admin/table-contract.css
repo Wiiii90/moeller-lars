@@ -75,6 +75,29 @@
     text-align: left !important;
 }
 
+/* Table-pressure contract.
+ *
+ * Consumers only declare WHEN supportive columns may yield. The shared table
+ * owner performs the actual state transition so Actions + terminal Selection
+ * can never be pushed outside the visible table box by page-local width math. */
+@container admin-table (max-width: 64rem) {
+    .admin-table__yield--compact {
+        display: none !important;
+    }
+}
+
+@container admin-table (max-width: 54rem) {
+    .admin-table__yield--narrow {
+        display: none !important;
+    }
+}
+
+@container admin-table (max-width: 38rem) {
+    .admin-table__yield--minimal {
+        display: none !important;
+    }
+}
+
 .admin-table--six-grid {
     table-layout: fixed;
 }
@@ -328,6 +351,12 @@
     margin-left: auto;
     padding-left: .25rem;
     text-align: left;
+}
+
+.admin-table th.admin-table__actions,
+.admin-table td.admin-table__actions {
+    box-sizing: border-box;
+    padding-inline: 0 !important;
 }
 
 .admin-table__selection--trailing,
