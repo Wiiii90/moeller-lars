@@ -1,4 +1,4 @@
-        <x-admin.controls class="admin-data-controls--content-minimum custom-page-workspace__controls" aria-label="Component table tools">
+        <x-admin.controls class="admin-data-controls--dashboard-responsive custom-page-workspace__controls" aria-label="Component table tools" metric-grid :filter-count="1" :search-span="3">
             <x-slot:search>
                 <label class="admin-data-field custom-page-workspace__search">
                     <span>Search</span>
