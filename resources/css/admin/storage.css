@@ -467,12 +467,6 @@
     display: none;
 }
 
-.admin-storage-capacity.is-compact[data-admin-viz="storage-capacity"] {
-    --storage-fallback-ring-width: 1.15rem;
-    width: min(100%, 9.5rem);
-    height: 9.5rem;
-}
-
 .admin-storage .media-workspace__library {
     --media-task-surface-header-height: 2.25rem;
 }
