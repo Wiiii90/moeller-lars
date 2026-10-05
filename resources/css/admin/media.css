@@ -84,26 +84,9 @@
     color: var(--admin-success);
 }
 
-/* Media owns the number and widths of its control columns; field geometry is shared. */
-.media-workspace__controls {
-    grid-template-columns:
-        minmax(14rem, 2fr)
-        minmax(7rem, .7fr)
-        minmax(11rem, 1.15fr)
-        minmax(8rem, .75fr)
-        auto
-        auto
-        auto;
-}
-
+/* Storage toolbar geometry is owned by the shared admin controls contract. */
 .media-workspace__control-label.is-placeholder {
     visibility: hidden;
-}
-
-.media-workspace__view-group .admin-toolbar {
-    min-height: var(--admin-control-height);
-    justify-content: flex-start;
-    flex-wrap: nowrap;
 }
 
 .media-workspace__thumb-head,
