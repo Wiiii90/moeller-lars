@@ -103,7 +103,7 @@
                     <th scope="col" class="admin-dashboard__col-time">Time</th>
                     <th scope="col" class="admin-dashboard__col-title">Title</th>
                     <th scope="col" class="admin-dashboard__col-sender">Sender</th>
-                    <th scope="col" class="admin-table__actions">Actions</th>
+                    <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                     <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                         <input
                             type="checkbox"
