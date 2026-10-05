@@ -705,24 +705,21 @@
     }
 }
 
-/* Pages table priority follows the shared component states. Compact removes
- * supportive Template data and consumes the shared dense five-action rail;
- * Minimal only tightens ordering/type tracks. Page Type remains explicit. */
+/* Pages table priority follows the shared component states. Compact consumes
+ * the shared dense five-action rail, while the composite Page Type / Template
+ * column remains directly editable. Rows with a Template stack the two controls
+ * inside that one semantic column instead of dropping Template. */
 @container admin-table (max-width: 64rem){
-    .admin-hierarchy--pages .admin-pages__template{
-        display: none !important;
-    }
-
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row{
         grid-template-columns:
             minmax(0, 1fr)
-            minmax(9rem, 10rem)
+            minmax(9.5rem, 11rem)
             calc(var(--admin-row-actions-move-state-delete-compact-width) + var(--admin-table-selection-width)) !important;
     }
 
     .admin-pages__primary-grid,
-    .admin-hierarchy--pages .admin-pages__type,
+    .admin-hierarchy--pages .admin-pages__classification,
     .admin-pages__utility-grid{
         grid-column: auto !important;
     }
@@ -730,6 +727,16 @@
     .admin-pages__primary-grid{
         grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
         gap: .3rem !important;
+    }
+
+    .admin-pages__row > .admin-pages__classification.has-template{
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: .2rem !important;
+        padding-block: .3rem;
+    }
+
+    .admin-pages__row:has(> .admin-pages__classification.has-template){
+        min-height: 4.6rem;
     }
 
     .admin-pages__utility-grid{
@@ -746,7 +753,7 @@
     .admin-hierarchy--pages .admin-pages__row{
         grid-template-columns:
             minmax(0, 1fr)
-            7.5rem
+            8rem
             calc(var(--admin-row-actions-move-state-delete-compact-width) + var(--admin-table-selection-width)) !important;
     }
 
@@ -755,7 +762,7 @@
         gap: .25rem !important;
     }
 
-    .admin-hierarchy--pages .admin-pages__type{
+    .admin-hierarchy--pages .admin-pages__classification{
         padding-inline: .35rem;
     }
 }
