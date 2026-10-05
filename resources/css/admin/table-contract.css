@@ -21,7 +21,7 @@
     /* Stable row-action rail geometry. Responsive consumers reference these
      * semantic rail widths instead of repeating numeric widths page by page. */
     --admin-row-actions-move-state-delete-width: 23rem;
-    --admin-row-actions-move-state-delete-minimal-width: 8.55rem;
+    --admin-row-actions-move-state-delete-compact-width: 8.55rem;
     --admin-row-actions-journal-blog-width: 39rem;
     --admin-row-actions-journal-blog-narrow-width: 12.15rem;
 
@@ -229,16 +229,26 @@
 }
 
 /* Canonical action-density states.
- * Narrow (54rem): only the seven-action dense rail becomes icon-only.
- * Minimal (38rem): every stable rail becomes icon-only on the same semantic axes. */
+ * Narrow (54rem): intrinsically dense five- and seven-action rails compact in
+ * place. Minimal (38rem): the remaining two- to four-action rails compact on
+ * the same semantic axes. Consumers never invent their own density breakpoint. */
 @container admin-table (max-width: 54rem) {
+    .admin-row-actions--move-state-delete {
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
+        --admin-row-actions-columns: repeat(5, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
     .admin-row-actions--journal-blog {
         --admin-row-actions-width: var(--admin-row-actions-journal-blog-narrow-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);
         --admin-row-actions-gap: .45rem;
     }
 
-    .admin-row-actions--journal-blog .admin-action {
+    :is(
+        .admin-row-actions--move-state-delete,
+        .admin-row-actions--journal-blog
+    ) .admin-action {
         width: 1.35rem !important;
         min-width: 1.35rem !important;
         gap: 0 !important;
@@ -246,7 +256,10 @@
         justify-content: center !important;
     }
 
-    .admin-row-actions--journal-blog .admin-action__label {
+    :is(
+        .admin-row-actions--move-state-delete,
+        .admin-row-actions--journal-blog
+    ) .admin-action__label {
         display: none !important;
     }
 }
@@ -255,7 +268,6 @@
     :is(
         .admin-row-actions--move-delete,
         .admin-row-actions--move-edit-delete,
-        .admin-row-actions--move-state-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
@@ -271,7 +283,6 @@
 
     .admin-row-actions--move-delete { --admin-row-action-count: 3; }
     .admin-row-actions--move-edit-delete { --admin-row-action-count: 4; }
-    .admin-row-actions--move-state-delete { --admin-row-action-count: 5; }
     .admin-row-actions--state-open { --admin-row-action-count: 2; }
     .admin-row-actions--two-static { --admin-row-action-count: 2; }
     .admin-row-actions--three-static { --admin-row-action-count: 3; }
@@ -280,7 +291,6 @@
     :is(
         .admin-row-actions--move-delete,
         .admin-row-actions--move-edit-delete,
-        .admin-row-actions--move-state-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
@@ -296,7 +306,6 @@
     :is(
         .admin-row-actions--move-delete,
         .admin-row-actions--move-edit-delete,
-        .admin-row-actions--move-state-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
