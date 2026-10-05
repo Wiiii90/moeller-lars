@@ -20,7 +20,7 @@
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
 
-.journal-table--blog col.journal-col--visual {
+.journal-table col.journal-col--visual {
     width: 4rem;
 }
 
