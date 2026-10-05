@@ -472,78 +472,7 @@ a.activity-calendar__day:focus-visible {
     flex-wrap: nowrap;
 }
 
-/* Activity keeps Search on the first two metric cells and Selection as the
- * fixed trailing anchor. The filters share the remaining flexible room while
- * Reset and View stay compact instead of consuming whole metric cells. */
-.activity-workspace__controls {
-    display: grid;
-    grid-template-columns:
-        minmax(0, 33.3333%)
-        minmax(0, .85fr)
-        minmax(0, 1fr)
-        minmax(0, .95fr)
-        minmax(0, 1.2fr)
-        4rem
-        8.25rem
-        8.5rem;
-    gap: 0;
-    align-items: end;
-}
-
-.activity-workspace__controls > :not(.admin-data-controls__utility) {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0 !important;
-    padding-right: .7rem;
-}
-
-.activity-workspace__controls > .admin-data-controls__utility {
-    display: contents;
-}
-
-.activity-workspace__controls > .admin-data-controls__utility > * {
-    width: 100%;
-    min-width: 0;
-}
-
-.activity-control--reset > .admin-action,
-.activity-control--view .admin-toolbar,
-.activity-control--selection .admin-selection__anchor,
-.activity-control--selection .admin-selection__trigger {
-    width: 100%;
-    min-width: 0;
-}
-
-.activity-control--reset > .admin-action {
-    justify-content: center;
-}
-
-.activity-control--view .admin-toolbar {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .3rem;
-}
-
-.activity-control--view .admin-action {
-    width: 100%;
-    min-width: 0;
-    padding-inline: .45rem;
-    justify-content: center;
-}
-
-.activity-control--selection .admin-selection__trigger {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
-    gap: 0;
-    padding-right: 0;
-    justify-content: stretch;
-}
-
-.activity-control--selection .admin-selection__count {
-    margin-left: 0;
-    justify-self: center;
-}
-
+/* Activity controls use the shared Dashboard-responsive toolbar contract. */
 .activity-events-table table {
     min-width: 0;
     max-width: 100%;
