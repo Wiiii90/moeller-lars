@@ -242,12 +242,62 @@ function expectStableShellGeometry(before, during, context) {
   expect(during.main_width, `${context}: main width shifted`).toBeCloseTo(before.main_width, 1);
 }
 
-function expectModalRootUntouched(before, during, context) {
-  expect(during.inline_overflow, `${context}: modal mutated root inline overflow`).toBe(before.inline_overflow);
-  expect(during.inline_padding_right, `${context}: modal mutated root inline padding-right`).toBe(before.inline_padding_right);
-  expect(during.overflow_y, `${context}: modal changed computed root overflow-y`).toBe(before.overflow_y);
+function expectStableModalScrollLock(before, during, context) {
+  expect(during.inline_overflow, `${context}: Filament did not acquire the root scroll lock`).toBe('hidden');
+  expect(during.inline_padding_right, `${context}: modal added root padding compensation despite stable gutter`).toBe(before.inline_padding_right);
   expect(during.padding_right, `${context}: modal changed computed root padding-right`).toBe(before.padding_right);
-  expect(during.scrollbar_gutter, `${context}: modal changed root scrollbar gutter`).toBe(before.scrollbar_gutter);
+  expect(during.scrollbar_gutter, `${context}: root lost the stable scrollbar gutter`).toContain('stable');
+}
+
+function expectReleasedModalScrollLock(before, after, context) {
+  expect(after.inline_overflow, `${context}: root overflow was not restored`).toBe(before.inline_overflow);
+  expect(after.inline_padding_right, `${context}: root padding-right was not restored`).toBe(before.inline_padding_right);
+  expect(after.scrollbar_gutter, `${context}: root scrollbar gutter changed after close`).toBe(before.scrollbar_gutter);
+}
+
+async function modalFrameGeometry(page) {
+  return page.locator('.fi-modal.fi-modal-open').last().evaluate((modal) => {
+    const main = modal.closest('.fi-main') ?? document.querySelector('.fi-main:has(.admin-workspace)');
+    const overlay = modal.querySelector(':scope > .fi-modal-close-overlay');
+    const container = modal.querySelector(':scope > .fi-modal-window-ctn');
+    const windowElement = container?.querySelector(':scope > .fi-modal-window');
+    const topbar = document.querySelector('.fi-topbar');
+    const mainRect = main?.getBoundingClientRect();
+    const overlayRect = overlay?.getBoundingClientRect();
+    const containerRect = container?.getBoundingClientRect();
+    const windowRect = windowElement?.getBoundingClientRect();
+    const mainStyle = main ? getComputedStyle(main) : null;
+
+    return {
+      main_left: mainRect?.left ?? null,
+      main_right: mainRect?.right ?? null,
+      main_padding_left: Number.parseFloat(mainStyle?.paddingLeft ?? '0'),
+      main_padding_right: Number.parseFloat(mainStyle?.paddingRight ?? '0'),
+      overlay_left: overlayRect?.left ?? null,
+      overlay_right: overlayRect?.right ?? null,
+      overlay_top: overlayRect?.top ?? null,
+      topbar_bottom: topbar?.getBoundingClientRect().bottom ?? 0,
+      window_left: windowRect?.left ?? null,
+      window_right: windowRect?.right ?? null,
+      window_top: windowRect?.top ?? null,
+      window_bottom: windowRect?.bottom ?? null,
+      viewport_height: window.innerHeight,
+    };
+  });
+}
+
+function expectDialogFrameBounded(geometry, context) {
+  expect(geometry.overlay_left, `${context}: overlay left edge drifted from Main`).toBeCloseTo(geometry.main_left, 1);
+  expect(geometry.overlay_right, `${context}: overlay right edge drifted from Main`).toBeCloseTo(geometry.main_right, 1);
+  expect(geometry.overlay_top, `${context}: overlay escaped above the topbar`).toBeCloseTo(geometry.topbar_bottom, 1);
+  expect(geometry.window_left, `${context}: dialog crossed Main left padding`).toBeGreaterThanOrEqual(
+    geometry.main_left + geometry.main_padding_left - 1,
+  );
+  expect(geometry.window_right, `${context}: dialog crossed Main right padding`).toBeLessThanOrEqual(
+    geometry.main_right - geometry.main_padding_right + 1,
+  );
+  expect(geometry.window_top, `${context}: dialog escaped above visible content`).toBeGreaterThanOrEqual(geometry.topbar_bottom);
+  expect(geometry.window_bottom, `${context}: dialog escaped below viewport`).toBeLessThanOrEqual(geometry.viewport_height);
 }
 
 async function visualGeometry(page, selector) {
@@ -375,11 +425,13 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectNoBrowserErrors(addPage);
     const pagesDuringDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
-    expectModalRootUntouched(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
+    expectStableModalScrollLock(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
+    expectDialogFrameBounded(await modalFrameGeometry(page), 'Pages Add page open');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
     const pagesAfterDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(pagesBeforeDialogGeometry, pagesAfterDialogGeometry, 'Pages Add page close');
+    expectReleasedModalScrollLock(pagesBeforeDialogGeometry, pagesAfterDialogGeometry, 'Pages Add page close');
 
     // Explicitly cover a document that already needs vertical scrolling.
     // CI Chromium may use overlay scrollbars, so vertical overflow rather than
@@ -398,7 +450,8 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
     const longPageDuringDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
-    expectModalRootUntouched(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
+    expectStableModalScrollLock(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
+    expectDialogFrameBounded(await modalFrameGeometry(page), 'Pages long-page Add page open');
 
     await page.evaluate(() => window.scrollTo(0, 320));
     await page.waitForTimeout(50);
@@ -412,6 +465,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
     const longPageAfterDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(longPageBeforeDialogGeometry, longPageAfterDialogGeometry, 'Pages long-page Add page close');
+    expectReleasedModalScrollLock(longPageBeforeDialogGeometry, longPageAfterDialogGeometry, 'Pages long-page Add page close');
     await page.evaluate(() => document.querySelector('[data-modal-scrollbar-test-spacer]')?.remove());
 
     await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
@@ -451,11 +505,13 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectNoBrowserErrors(homeSettings);
     const homeDuringDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
-    expectModalRootUntouched(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
+    expectStableModalScrollLock(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
+    expectDialogFrameBounded(await modalFrameGeometry(page), 'Home settings open');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Home settings', exact: true })).toBeHidden();
     const homeAfterDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(homeBeforeDialogGeometry, homeAfterDialogGeometry, 'Home settings close');
+    expectReleasedModalScrollLock(homeBeforeDialogGeometry, homeAfterDialogGeometry, 'Home settings close');
 
     await page.goto('/admin/activity');
     await expect(page.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
