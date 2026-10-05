@@ -40,7 +40,7 @@
     }, $storageTargets);
 @endphp
 
-<x-admin.metrics :columns="6" class="storage-status-metrics" aria-label="Storage statistics">
+<x-admin.metrics :columns="6" class="storage-status-metrics admin-metrics--six-state" aria-label="Storage statistics">
     <x-admin.metric class="storage-metric storage-metric--files" label="Files" :value="number_format($libraryFiles)">Available</x-admin.metric>
     <x-admin.metric class="storage-metric storage-metric--images" label="Images" :value="number_format($libraryImages)">Available images</x-admin.metric>
     <x-admin.metric class="storage-metric storage-metric--unreferenced" label="Unreferenced" :value="number_format($libraryUnreferenced)">No canonical consumer</x-admin.metric>
@@ -50,7 +50,8 @@
 </x-admin.metrics>
 
 <section
-    class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych"
+    class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-focus-stage"
+    data-active-pane="capacity"
     aria-label="Storage upload, total capacity and media distribution"
     x-data="{
         selectedTarget: null,
@@ -106,7 +107,14 @@
         },
     }"
 >
-    <div class="admin-storage__upload admin-visual-stage__pane">
+    <x-admin.stage-switcher
+        storage-key="admin-stage.storage"
+        default-pane="capacity"
+        :panes="['upload' => 'Upload', 'capacity' => 'Capacity', 'distribution' => 'Distribution']"
+        aria-label="Storage stage"
+    />
+
+    <div class="admin-storage__upload admin-visual-stage__pane" data-admin-stage-pane="upload">
         <div class="admin-storage__visual-heading">
             <p class="admin-storage__eyebrow">Upload Media Files</p>
         </div>
@@ -185,7 +193,7 @@
         </div>
     </div>
 
-    <div class="admin-storage__capacity-group admin-visual-stage__pane">
+    <div class="admin-storage__capacity-group admin-visual-stage__pane" data-admin-stage-pane="capacity">
         <div class="admin-storage__visual-heading">
             <p class="admin-storage__eyebrow">Total Capacity</p>
         </div>
@@ -195,24 +203,6 @@
             :breakdown="$storageBreakdown"
             :segments="$storageSegments"
         />
-
-        <div class="admin-storage__compact-capacity" aria-label="Storage capacity summary">
-            <span aria-label="Used {{ $capacity['authoritative'] ?? '—' }}">
-                <small class="admin-storage__capacity-label admin-storage__capacity-label--long" aria-hidden="true">Used</small>
-                <small class="admin-storage__capacity-label admin-storage__capacity-label--short" aria-hidden="true">U:</small>
-                <strong>{{ $capacity['authoritative'] ?? '—' }}</strong>
-            </span>
-            <span aria-label="Remaining {{ $capacity['remaining'] ?? '—' }}">
-                <small class="admin-storage__capacity-label admin-storage__capacity-label--long" aria-hidden="true">Remaining</small>
-                <small class="admin-storage__capacity-label admin-storage__capacity-label--short" aria-hidden="true">R:</small>
-                <strong>{{ $capacity['remaining'] ?? '—' }}</strong>
-            </span>
-            <span aria-label="Allowance {{ $capacity['allowance'] ?? '—' }}">
-                <small class="admin-storage__capacity-label admin-storage__capacity-label--long" aria-hidden="true">Allowance</small>
-                <small class="admin-storage__capacity-label admin-storage__capacity-label--short" aria-hidden="true">A:</small>
-                <strong>{{ $capacity['allowance'] ?? '—' }}</strong>
-            </span>
-        </div>
 
         <div class="admin-storage__capacity-actions" aria-label="Storage capacity actions">
             <button
@@ -233,7 +223,7 @@
         </div>
     </div>
 
-    <div class="admin-storage__distribution admin-visual-stage__pane">
+    <div class="admin-storage__distribution admin-visual-stage__pane" data-admin-stage-pane="distribution">
         <div class="admin-storage__visual-heading">
             <p class="admin-storage__eyebrow">Media Distribution</p>
         </div>
