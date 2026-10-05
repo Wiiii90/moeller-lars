@@ -294,185 +294,190 @@
     box-sizing: border-box;
 }
 
-@container admin-workspace (max-width: 38rem) {
-    :is(.admin-focus-stage, .admin-dashboard__overview):has(> .admin-stage-tabs) {
-        margin-top: var(--admin-section-gap) !important;
-        height: calc(var(--admin-visual-stage-height) + var(--admin-section-gap)) !important;
-    }
-
-    .admin-focus-stage {
-        display: grid !important;
-        width: 100% !important;
-        min-width: 0;
-        min-height: 0;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: auto minmax(0, 1fr) !important;
-        overflow: visible !important;
-    }
-
-    .admin-focus-stage::before,
-    .admin-focus-stage::after {
-        display: none !important;
-        content: none !important;
-    }
-
-    .admin-stage-tabs {
-        position: relative;
-        z-index: 12;
-        display: grid !important;
-        width: 100% !important;
-        min-width: 0;
-        grid-column: 1 / -1 !important;
-        grid-row: 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .25rem;
-        padding: 0 0 .35rem;
-        justify-self: stretch;
-        border-bottom: 1px solid var(--admin-line);
-        transform: none !important;
-    }
-
-    .admin-stage-tabs > .admin-action {
-        box-sizing: border-box;
-        display: inline-flex;
-        width: 100%;
-        min-width: 0;
-        min-height: 2rem;
-        padding: .38rem .5rem;
-        align-items: center;
-        justify-content: center !important;
-        border: 1px solid transparent;
-        border-radius: .2rem;
-        background: transparent;
-        color: var(--admin-text);
-        white-space: nowrap;
-    }
-
-    .admin-stage-tabs > .admin-action:is(.is-primary, [aria-pressed="true"]) {
-        border-color: var(--admin-accent);
-        background: var(--admin-subtle);
-        color: var(--admin-text);
-    }
-
-    .admin-focus-stage [data-admin-stage-pane] {
-        display: none !important;
-        box-sizing: border-box;
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        grid-column: 1 / -1 !important;
-        grid-row: 2 !important;
-    }
-
-    .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="1"][aria-pressed="true"])
-        [data-admin-stage-pane][data-admin-stage-slot="1"],
-    .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="2"][aria-pressed="true"])
-        [data-admin-stage-pane][data-admin-stage-slot="2"],
-    .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="3"][aria-pressed="true"])
-        [data-admin-stage-pane][data-admin-stage-slot="3"] {
-        display: grid !important;
-    }
-
-    /* Activity's desktop visual wrapper only groups Calendar + Clock. At
-     * Minimal it must disappear structurally so those two semantic panes can
-     * occupy the same focused Stage cell as Publication. */
-    .admin-focus-stage.activity-atlas__grid > .activity-atlas__visual {
-        display: contents !important;
-    }
-
-    .admin-focus-stage .activity-publication[data-admin-stage-pane] {
-        display: none !important;
-    }
-
-    .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="3"][aria-pressed="true"])
-        .activity-publication[data-admin-stage-pane][data-admin-stage-slot="3"] {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    .admin-focus-stage .activity-calendar[data-admin-stage-pane],
-    .admin-focus-stage .activity-clock[data-admin-stage-pane],
-    .admin-focus-stage .activity-publication[data-admin-stage-pane] {
-        padding: var(--admin-stage-divider-inset) 0 !important;
-        overflow: hidden !important;
-    }
-
-    .admin-focus-stage .activity-publication[data-admin-stage-pane] {
-        overflow-y: auto !important;
-    }
-
-    .admin-focus-stage.admin-storage__visual-stage > :is(
-        .admin-storage__upload,
-        .admin-storage__capacity-group,
-        .admin-storage__distribution
-    ) {
-        padding: var(--admin-stage-divider-inset) 0 !important;
-    }
-
-    .admin-focus-stage .admin-storage__capacity-group {
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve) !important;
-        gap: var(--admin-stage-orbit-gap) !important;
-        place-items: center !important;
-    }
-
-    .admin-focus-stage .admin-storage__distribution {
-        grid-template-rows: auto minmax(0, 1fr) auto !important;
-    }
-
-    /* Shared single-visual Minimal state.
-     *
-     * A stage that declares this modifier keeps exactly one primary visual pane
-     * at Minimal. The stage owner removes multi-pane divider geometry and gives
-     * that primary pane the complete stage box; consumers only declare the
-     * semantic mode and never reproduce the geometry locally. */
-    .admin-visual-stage--single-minimal {
-        display: grid !important;
-        width: 100% !important;
-        height: var(--admin-visual-stage-height) !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: minmax(0, 1fr) !important;
-        overflow: hidden !important;
-    }
-
-    .admin-visual-stage--single-minimal::before,
-    .admin-visual-stage--single-minimal::after {
-        display: none !important;
-        content: none !important;
-    }
-
-    .admin-visual-stage--single-minimal > .admin-visual-stage__pane:first-child {
-        position: relative !important;
-        inset: auto !important;
-        display: grid !important;
-        width: 100% !important;
-        height: 100% !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        grid-column: 1 / -1 !important;
-        grid-row: 1 !important;
-        margin: 0 !important;
-        padding: var(--admin-stage-divider-inset) 0 !important;
-        place-items: center !important;
-        overflow: hidden !important;
-    }
-
-    .admin-visual-stage--single-minimal > .admin-visual-stage__pane:first-child > * {
-        box-sizing: border-box;
-        width: 100% !important;
-        height: 100% !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-    }
-
-    .admin-visual-stage--single-minimal > .admin-visual-stage__pane:not(:first-child) {
-        display: none !important;
+/* Minimal Stage composition is a shell + workspace state, never a narrow
+ * desktop/sidebar state. This mirrors the metric Minimal gate and prevents a
+ * <=38rem content column from activating focused/mobile Stage views while the
+ * desktop shell is still present. */
+@media (max-width: 63.99rem) {
+    @container admin-workspace (max-width: 38rem) {
+        :is(.admin-focus-stage, .admin-dashboard__overview):has(> .admin-stage-tabs) {
+            margin-top: var(--admin-section-gap) !important;
+            height: calc(var(--admin-visual-stage-height) + var(--admin-section-gap)) !important;
+        }
+    
+        .admin-focus-stage {
+            display: grid !important;
+            width: 100% !important;
+            min-width: 0;
+            min-height: 0;
+            grid-template-columns: minmax(0, 1fr) !important;
+            grid-template-rows: auto minmax(0, 1fr) !important;
+            overflow: visible !important;
+        }
+    
+        .admin-focus-stage::before,
+        .admin-focus-stage::after {
+            display: none !important;
+            content: none !important;
+        }
+    
+        .admin-stage-tabs {
+            position: relative;
+            z-index: 12;
+            display: grid !important;
+            width: 100% !important;
+            min-width: 0;
+            grid-column: 1 / -1 !important;
+            grid-row: 1;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: .25rem;
+            padding: 0 0 .35rem;
+            justify-self: stretch;
+            border-bottom: 1px solid var(--admin-line);
+            transform: none !important;
+        }
+    
+        .admin-stage-tabs > .admin-action {
+            box-sizing: border-box;
+            display: inline-flex;
+            width: 100%;
+            min-width: 0;
+            min-height: 2rem;
+            padding: .38rem .5rem;
+            align-items: center;
+            justify-content: center !important;
+            border: 1px solid transparent;
+            border-radius: .2rem;
+            background: transparent;
+            color: var(--admin-text);
+            white-space: nowrap;
+        }
+    
+        .admin-stage-tabs > .admin-action:is(.is-primary, [aria-pressed="true"]) {
+            border-color: var(--admin-accent);
+            background: var(--admin-subtle);
+            color: var(--admin-text);
+        }
+    
+        .admin-focus-stage [data-admin-stage-pane] {
+            display: none !important;
+            box-sizing: border-box;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            grid-column: 1 / -1 !important;
+            grid-row: 2 !important;
+        }
+    
+        .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="1"][aria-pressed="true"])
+            [data-admin-stage-pane][data-admin-stage-slot="1"],
+        .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="2"][aria-pressed="true"])
+            [data-admin-stage-pane][data-admin-stage-slot="2"],
+        .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="3"][aria-pressed="true"])
+            [data-admin-stage-pane][data-admin-stage-slot="3"] {
+            display: grid !important;
+        }
+    
+        /* Activity's desktop visual wrapper only groups Calendar + Clock. At
+         * Minimal it must disappear structurally so those two semantic panes can
+         * occupy the same focused Stage cell as Publication. */
+        .admin-focus-stage.activity-atlas__grid > .activity-atlas__visual {
+            display: contents !important;
+        }
+    
+        .admin-focus-stage .activity-publication[data-admin-stage-pane] {
+            display: none !important;
+        }
+    
+        .admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="3"][aria-pressed="true"])
+            .activity-publication[data-admin-stage-pane][data-admin-stage-slot="3"] {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+    
+        .admin-focus-stage .activity-calendar[data-admin-stage-pane],
+        .admin-focus-stage .activity-clock[data-admin-stage-pane],
+        .admin-focus-stage .activity-publication[data-admin-stage-pane] {
+            padding: var(--admin-stage-divider-inset) 0 !important;
+            overflow: hidden !important;
+        }
+    
+        .admin-focus-stage .activity-publication[data-admin-stage-pane] {
+            overflow-y: auto !important;
+        }
+    
+        .admin-focus-stage.admin-storage__visual-stage > :is(
+            .admin-storage__upload,
+            .admin-storage__capacity-group,
+            .admin-storage__distribution
+        ) {
+            padding: var(--admin-stage-divider-inset) 0 !important;
+        }
+    
+        .admin-focus-stage .admin-storage__capacity-group {
+            grid-template-columns: minmax(0, 1fr) !important;
+            grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve) !important;
+            gap: var(--admin-stage-orbit-gap) !important;
+            place-items: center !important;
+        }
+    
+        .admin-focus-stage .admin-storage__distribution {
+            grid-template-rows: auto minmax(0, 1fr) auto !important;
+        }
+    
+        /* Shared single-visual Minimal state.
+         *
+         * A stage that declares this modifier keeps exactly one primary visual pane
+         * at Minimal. The stage owner removes multi-pane divider geometry and gives
+         * that primary pane the complete stage box; consumers only declare the
+         * semantic mode and never reproduce the geometry locally. */
+        .admin-visual-stage--single-minimal {
+            display: grid !important;
+            width: 100% !important;
+            height: var(--admin-visual-stage-height) !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            grid-template-rows: minmax(0, 1fr) !important;
+            overflow: hidden !important;
+        }
+    
+        .admin-visual-stage--single-minimal::before,
+        .admin-visual-stage--single-minimal::after {
+            display: none !important;
+            content: none !important;
+        }
+    
+        .admin-visual-stage--single-minimal > .admin-visual-stage__pane:first-child {
+            position: relative !important;
+            inset: auto !important;
+            display: grid !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            grid-column: 1 / -1 !important;
+            grid-row: 1 !important;
+            margin: 0 !important;
+            padding: var(--admin-stage-divider-inset) 0 !important;
+            place-items: center !important;
+            overflow: hidden !important;
+        }
+    
+        .admin-visual-stage--single-minimal > .admin-visual-stage__pane:first-child > * {
+            box-sizing: border-box;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+        }
+    
+        .admin-visual-stage--single-minimal > .admin-visual-stage__pane:not(:first-child) {
+            display: none !important;
+        }
     }
 }
-
