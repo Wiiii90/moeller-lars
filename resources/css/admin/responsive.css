@@ -605,11 +605,7 @@
 
 /* Gallery / Custom Page / Journal choose semantic members for the same
  * Dashboard-style six-state metric geometry used by Pages and Home. */
-:is(.gallery-status-metrics, .custom-page-status-metrics, .journal-status-metrics){
-    --admin-metric-columns: 6 !important;
-}
-
-@container admin-workspace (max-width: 64rem){
+@container admin-workspace (max-width: 54rem){
     :is(.gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
         display: none !important;
     }
@@ -652,7 +648,7 @@
 }
 
 /* ---------- Gallery contact sheet ---------- */
-@container admin-workspace (max-width: 68rem){
+@container admin-workspace (max-width: 64rem){
     .admin-gallery-grid{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
@@ -668,15 +664,11 @@
 
 /* Pages chooses the semantic members for the shared 6 / 3 / 2 metric state.
  * Geometry and divider axes are owned by .admin-metrics--six-state below. */
-.admin-pages-workspace .pages-status-metrics{
-    --admin-metric-columns: 6 !important;
-}
-
 .admin-pages-workspace .pages-metric--total{
     padding-left: 0 !important;
 }
 
-@container admin-workspace (max-width: 64rem){
+@container admin-workspace (max-width: 54rem){
     .admin-pages-workspace .pages-metric{
         display: none !important;
     }
@@ -713,10 +705,9 @@
     }
 }
 
-/* Pages follows the same responsive state model as Dashboard.
- * Narrow (64rem) removes only supportive Template data and reallocates real
- * space to the still-labeled five-action rail. Minimal (38rem) compacts those
- * same five semantic axes to icons. Page Type remains explicit throughout. */
+/* Pages table priority follows the shared component states. Compact removes
+ * supportive Template data and consumes the shared dense five-action rail;
+ * Minimal only tightens ordering/type tracks. Page Type remains explicit. */
 @container admin-table (max-width: 64rem){
     .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
@@ -727,7 +718,7 @@
         grid-template-columns:
             minmax(0, 1fr)
             minmax(9rem, 10rem)
-            calc(var(--admin-row-actions-move-state-delete-width) + var(--admin-table-selection-width)) !important;
+            calc(var(--admin-row-actions-move-state-delete-compact-width) + var(--admin-table-selection-width)) !important;
     }
 
     .admin-pages__primary-grid,
@@ -742,7 +733,7 @@
     }
 
     .admin-pages__utility-grid{
-        grid-template-columns: var(--admin-row-actions-move-state-delete-width) var(--admin-table-selection-width) !important;
+        grid-template-columns: var(--admin-row-actions-move-state-delete-compact-width) var(--admin-table-selection-width) !important;
     }
 
     .admin-pages__redirect-target{
@@ -756,7 +747,7 @@
         grid-template-columns:
             minmax(0, 1fr)
             7.5rem
-            calc(var(--admin-row-actions-move-state-delete-minimal-width) + var(--admin-table-selection-width)) !important;
+            calc(var(--admin-row-actions-move-state-delete-compact-width) + var(--admin-table-selection-width)) !important;
     }
 
     .admin-pages__primary-grid{
@@ -765,11 +756,11 @@
     }
 
     .admin-pages__utility-grid{
-        grid-template-columns: var(--admin-row-actions-move-state-delete-minimal-width) var(--admin-table-selection-width) !important;
+        grid-template-columns: var(--admin-row-actions-move-state-delete-compact-width) var(--admin-table-selection-width) !important;
     }
 
     .admin-pages__row-actions{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
     .admin-hierarchy--pages .admin-pages__type{
@@ -778,13 +769,13 @@
 }
 
 /* ---------- Custom Page hierarchy ---------- */
-/* Narrow keeps action labels and sacrifices supportive Component identity first.
- * Minimal compacts the same five semantic action axes to icons. */
-@container admin-table (max-width: 54rem){
+/* Compact folds supportive Component identity into Content while the shared
+ * five-action rail compacts centrally. Minimal only tightens ordering rails. */
+@container admin-table (max-width: 64rem){
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
-        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-width) + .3rem);
+        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem);
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
@@ -808,11 +799,11 @@
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 1.75rem;
-        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-minimal-width) + .3rem);
+        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem);
     }
 
     .custom-page-component-sequence .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 }
 
@@ -825,10 +816,10 @@
     width: 2rem !important;
 }
 
-/* Blog has seven actions, so Narrow is its one deliberate dense-rail state.
- * Exhibitions keeps the five labeled actions until Minimal. Supporting columns
- * yield first for both tables. */
-@container admin-table (max-width: 54rem){
+/* Blog and Exhibitions both use dense action rails. Compact switches those
+ * rails to icons and removes supportive media/publication/schedule columns
+ * before operational Status/Timing yields. */
+@container admin-table (max-width: 64rem){
     .journal-table col.journal-table__actions--blog{
         width: calc(var(--admin-row-actions-journal-blog-narrow-width) + .35rem) !important;
     }
@@ -838,11 +829,11 @@
     }
 
     .journal-table col.journal-table__actions--exhibitions{
-        width: calc(var(--admin-row-actions-move-state-delete-width) + .5rem) !important;
+        width: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem) !important;
     }
 
     .journal-table--exhibitions .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
     .journal-table--blog .journal-col--visual,
@@ -870,11 +861,11 @@
     }
 
     .journal-table col.journal-table__actions--exhibitions{
-        width: calc(var(--admin-row-actions-move-state-delete-minimal-width) + .3rem) !important;
+        width: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem) !important;
     }
 
     .journal-table--exhibitions .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-minimal-width);
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
     .journal-table--blog .journal-col--status,
@@ -886,15 +877,11 @@
 /* Home selects semantic members for the shared Dashboard-style 6 / 3 / 2
  * metric geometry. Divider axes and track sizing belong to
  * .admin-metrics--six-state, not to individual metric children. */
-.admin-home-workspace .home-status-metrics{
-    --admin-metric-columns: 6 !important;
-}
-
 .admin-home-workspace :is(.home-metric--visits, .home-metric--components){
     padding-left: 0 !important;
 }
 
-@container admin-workspace (max-width: 64rem){
+@container admin-workspace (max-width: 54rem){
     .admin-home-workspace .home-metric{
         display: none !important;
     }
@@ -974,7 +961,7 @@
  * No viewport mirror of the same container state is maintained here. */
 
 /* ---------- semantic metrics ---------- */
-@container admin-workspace (max-width: 64rem){
+@container admin-workspace (max-width: 54rem){
     :is(
         .analytics-status-metrics > .analytics-metric,
         .storage-status-metrics > .storage-metric,
@@ -1011,11 +998,13 @@
     .activity-status-metrics > .activity-metric--commits{ order: 3; }
 }
 
-@container admin-workspace (max-width: 38rem){
-    .analytics-status-metrics > .analytics-metric--actions,
-    .storage-status-metrics > .storage-metric--files,
-    .activity-status-metrics > .activity-metric--commits{
-        display: none !important;
+@media (max-width: 63.99rem){
+    @container admin-workspace (max-width: 38rem){
+        .analytics-status-metrics > .analytics-metric--actions,
+        .storage-status-metrics > .storage-metric--files,
+        .activity-status-metrics > .activity-metric--commits{
+            display: none !important;
+        }
     }
 }
 
@@ -1123,10 +1112,19 @@
     }
 }
 
-/* Shared Dashboard-style six-metric state geometry. Feature code selects
- * semantic members; this owner alone defines 3-way/2-way tracks and divider
- * axes so hidden source siblings cannot erase separators. */
-@container admin-workspace (max-width: 64rem){
+/* Shared Dashboard-derived six-metric state geometry.
+ * Feature code selects semantic members; this owner alone defines 6 / 3 / 2
+ * tracks and divider axes. Minimal is gated by the Burger shell so visibility
+ * and geometry always change atomically. */
+.admin-metrics--six-state{
+    --admin-metric-columns: 6 !important;
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
+    gap: 0 !important;
+}
+
+@container admin-workspace (max-width: 54rem){
     .admin-metrics--six-state{
         --admin-metric-columns: 3 !important;
         position: relative;
@@ -1171,19 +1169,21 @@
     }
 }
 
-@container admin-workspace (max-width: 38rem){
-    .admin-metrics--six-state{
-        --admin-metric-columns: 2 !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
+@media (max-width: 63.99rem){
+    @container admin-workspace (max-width: 38rem){
+        .admin-metrics--six-state{
+            --admin-metric-columns: 2 !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
 
-    .admin-metrics--six-state::before{
-        left: 50%;
-    }
+        .admin-metrics--six-state::before{
+            left: 50%;
+        }
 
-    .admin-metrics--six-state::after{
-        display: none !important;
-        content: none !important;
+        .admin-metrics--six-state::after{
+            display: none !important;
+            content: none !important;
+        }
     }
 }
 
