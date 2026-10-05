@@ -35,6 +35,7 @@
             x-data="{ open: false }"
             x-bind:data-open="open ? 'true' : 'false'"
             x-on:keydown.escape.window="open = false"
+            x-on:resize.window="open = false"
             x-on:click.outside="open = false"
         >
             <button
