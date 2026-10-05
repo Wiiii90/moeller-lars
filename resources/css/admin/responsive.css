@@ -236,7 +236,7 @@
     /* Toolbar is always exactly one row. Query/filter controls shrink first,
      * action labels may disappear, and Selection remains the terminal fixed
      * rail. Wrapping into a second toolbar row is not a supported state. */
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)){
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)){
         display: flex !important;
         min-width: 0;
         gap: .35rem !important;
@@ -244,39 +244,39 @@
         flex-wrap: nowrap !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > :first-child{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)) > :first-child{
         width: auto !important;
         min-width: 0 !important;
         padding-right: 0 !important;
         flex: 1 1 12rem !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__filters,
-:is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)) > .admin-data-controls__filters,
+:is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)) > .admin-data-controls__utility{
         display: contents !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__filters > *{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)) > .admin-data-controls__filters > *{
         width: auto !important;
         min-width: 4.5rem !important;
         padding-right: 0 !important;
         flex: 0 1 7rem !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility--has-reset > :first-child{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)) > .admin-data-controls__utility--has-reset > :first-child{
         width: auto !important;
         min-width: 3.5rem !important;
         flex: 0 1 4.5rem !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
-:is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)) > .admin-data-controls__utility--has-actions.admin-data-controls__utility--has-reset > :nth-child(2),
+:is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)) > .admin-data-controls__utility--has-actions:not(.admin-data-controls__utility--has-reset) > :first-child{
         width: auto !important;
         min-width: 3.5rem !important;
         flex: 0 1 7rem !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum)) > .admin-data-controls__utility--has-selection > :last-child{
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive)) > .admin-data-controls__utility--has-selection > :last-child{
         width: 8.5rem !important;
         min-width: 8.5rem !important;
         flex: 0 0 8.5rem !important;
@@ -477,7 +477,7 @@
 /* Minimal: feature-specific metric reduction, more aggressive table
  * prioritization, and the same mandatory one-row toolbar. */
 @container admin-workspace (max-width: 38rem){
-    .admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum){
+    .admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive){
         gap: .45rem !important;
     }
 
@@ -488,7 +488,7 @@
         display: none;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum))
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive))
     > .admin-data-controls__utility--has-actions
     > :is(:first-child, :nth-child(2)){
         width: auto !important;
@@ -496,7 +496,7 @@
         flex: 0 0 auto !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum))
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive))
     > .admin-data-controls__utility--has-actions
     :is(.admin-control-group__actions, .admin-task-control-actions)
     > .admin-action{
@@ -506,7 +506,7 @@
         justify-content: center !important;
     }
 
-    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--content-minimum))
+    :is(.admin-data-controls:not(.admin-data-controls--six-cell):not(.admin-data-controls--dashboard-responsive))
     > .admin-data-controls__utility--has-selection
     > :last-child{
         width: calc(var(--admin-control-height) + var(--admin-table-selection-width)) !important;
