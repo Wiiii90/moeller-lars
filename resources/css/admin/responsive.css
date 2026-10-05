@@ -936,10 +936,11 @@
     }
 }
 
-/* Template is supportive and yields first. Page type stays explicit because it
- * is an editable column. When the five action slots become the pressure point,
- * they compact in place before Page type is sacrificed. */
-@container admin-table (max-width: 76rem){
+/* Pages follows the same responsive state model as Dashboard.
+ * Narrow (64rem) removes only supportive Template data and reallocates real
+ * space to the still-labeled five-action rail. Minimal (38rem) compacts those
+ * same five semantic axes to icons. Page Type remains explicit throughout. */
+@container admin-table (max-width: 64rem){
     .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
@@ -949,7 +950,7 @@
         grid-template-columns:
             minmax(0, 1fr)
             minmax(9rem, 10rem)
-            11.05rem !important;
+            25.5rem !important;
     }
 
     .admin-pages__primary-grid,
@@ -958,61 +959,13 @@
         grid-column: auto !important;
     }
 
-    .admin-pages__utility-grid{
-        grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width) !important;
-    }
-}
-
-@container admin-table (max-width: 60rem){
-    .admin-hierarchy--pages .admin-pages__template{
-        display: none !important;
-    }
-
-    .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns:
-            minmax(0, 1fr)
-            minmax(8rem, 10rem)
-            11.05rem !important;
-    }
-
     .admin-pages__primary-grid{
         grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
         gap: .3rem !important;
     }
 
     .admin-pages__utility-grid{
-        grid-template-columns: 8.55rem var(--admin-table-selection-width) !important;
-    }
-
-    .admin-pages__redirect-target{
-        width: auto !important;
-    }
-}
-
-/* Keep Pages row actions monotonic across the shell transition too:
- * pre-Burger container pressure may already have compacted them, and opening
- * the workspace by removing the sidebar must never bring the labels back. */
-@media (max-width: 63.99rem){
-    .admin-hierarchy--pages .admin-pages__template{
-        display: none !important;
-    }
-
-    .admin-hierarchy--pages .admin-pages__header,
-    .admin-hierarchy--pages .admin-pages__row{
-        grid-template-columns:
-            minmax(0, 1fr)
-            minmax(8rem, 10rem)
-            11.05rem !important;
-    }
-
-    .admin-pages__primary-grid{
-        grid-template-columns: 3rem 1.75rem minmax(0, 1fr) !important;
-        gap: .3rem !important;
-    }
-
-    .admin-pages__utility-grid{
-        grid-template-columns: 8.55rem var(--admin-table-selection-width) !important;
+        grid-template-columns: 23rem var(--admin-table-selection-width) !important;
     }
 
     .admin-pages__redirect-target{
@@ -1032,6 +985,14 @@
     .admin-pages__primary-grid{
         grid-template-columns: 2.75rem 1.5rem minmax(0, 1fr) !important;
         gap: .25rem !important;
+    }
+
+    .admin-pages__utility-grid{
+        grid-template-columns: 8.55rem var(--admin-table-selection-width) !important;
+    }
+
+    .admin-pages__row-actions{
+        --admin-row-actions-width: 8.55rem;
     }
 
     .admin-hierarchy--pages .admin-pages__type{
