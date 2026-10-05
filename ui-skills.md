@@ -464,7 +464,7 @@ Required behavior:
 
 - the modal layer is viewport-fixed but visually bounded to the current admin content frame below the topbar; the backdrop covers that frame including its shell padding, while the dialog window stays inside the frame padding;
 - desktop workspace centering must never use a transformed `.fi-main`, because transformed ancestors trap Filament's fixed modal layer and make dialog position depend on document scroll;
-- opening/closing a dialog must not change shell width. The root keeps no permanent scrollbar gutter. Immediately before Filament acquires its normal lock, the shared dialog runtime records whether a classic document scrollbar already exists. A real existing scrollbar remains visible and Filament's right-padding compensation is neutralized; a short page stays scrollbar-free. This geometry marker must not replace Filament's Open/Close/Focus/Escape/Destroy lifecycle or become a page-local scroll-lock implementation;
+- opening/closing a dialog must not change shell width. The root keeps no permanent scrollbar gutter. Immediately before Filament acquires its normal lock, the shared dialog runtime records whether a classic document scrollbar already exists. Only in that case it temporarily reserves the same width with a stable gutter while Filament hides the real document scrollbar; a short page gets neither scrollbar nor gutter. This marker must not replace Filament's Open/Close/Focus/Escape/Destroy lifecycle or become a page-local scroll-lock implementation;
 - every open remeasures the current Main frame and resets retained modal/window/content scroll positions before interaction, so reopening after scrolling never resumes at an old internal position;
 - centered/bounded modal;
 - internal scrolling for long content;
