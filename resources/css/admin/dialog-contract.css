@@ -140,7 +140,7 @@
     }
 
     @supports not (height: 100dvh) {
-        .fi-modal-window {
+        .fi-modal-window.admin-task-dialog {
             max-height: calc(100vh - var(--admin-dialog-layer-block-start) - 1rem);
         }
     }
