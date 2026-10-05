@@ -43,7 +43,7 @@ Do not create alternative media pickers, rich-text editors, material selectors o
 
 ## Native/Blade adapter
 
-Workspace searches, filters, pager controls and compact inline controls may remain native HTML where Filament state is not useful. They must use the shared admin field classes owned by `resources/css/admin/data-workspace.css`, `resources/css/admin/forms.css` and `resources/css/admin/task-surfaces.css` rather than page-local control styling.
+Workspace searches, filters, pager controls and compact inline controls may remain native HTML where Filament state is not useful. They must use the shared admin field classes owned by `resources/css/admin/data-workspace.css`, `resources/css/admin/forms.css` and `resources/css/admin/task-surfaces.css` rather than page-local control styling. Table-level direct editors use the shared `admin-inline-select` / `admin-inline-input` geometry; static values aligned with those controls use `admin-inline-control-value`.
 
 A native control is not a separate design system. It is another renderer of this contract.
 
