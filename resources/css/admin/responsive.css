@@ -941,7 +941,7 @@
 /* Template is supportive and yields first. Page type stays explicit because it
  * is an editable column. When the five action slots become the pressure point,
  * they compact in place before Page type is sacrificed. */
-@container admin-table (max-width: 86rem){
+@container admin-table (max-width: 76rem){
     .admin-hierarchy--pages .admin-pages__template{
         display: none !important;
     }
@@ -1043,7 +1043,7 @@
 
 /* ---------- Custom Page hierarchy ---------- */
 /* Five action labels yield before Component identity. */
-@container admin-table (max-width: 86rem){
+@container admin-table (max-width: 76rem){
     .custom-page-component-sequence{
         --admin-hierarchy-actions-column: 8.85rem;
     }
@@ -1097,12 +1097,14 @@
         width: 12.5rem !important;
     }
 
-    .journal-table col.journal-table__actions--exhibitions{
-        width: 8.85rem !important;
-    }
-
     .journal-table--blog .admin-row-actions-heading{
         --admin-row-actions-width: 12.15rem;
+    }
+}
+
+@container admin-table (max-width: 76rem){
+    .journal-table col.journal-table__actions--exhibitions{
+        width: 8.85rem !important;
     }
 
     .journal-table--exhibitions .admin-row-actions-heading{
