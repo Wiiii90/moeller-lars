@@ -515,7 +515,7 @@
 .admin-storage .media-workspace__col-size { width: 8.333333%; }
 .admin-storage .media-workspace__col-usage { width: 9.722222%; }
 .admin-storage .media-workspace__col-status { width: 5.555556%; }
-.admin-storage .media-workspace__col-actions { width: calc(33.333333% - 2.5rem); }
+.admin-storage .media-workspace__col-actions { width: 19.5rem; }
 .admin-storage .media-workspace__col-selection { width: 2.5rem; }
 
 .admin-storage .media-workspace__identity,
@@ -524,7 +524,8 @@
     max-width: 100%;
 }
 
-.admin-storage .media-workspace__actions {
+.admin-storage .media-workspace__actions,
+.admin-storage .media-workspace__actions-head {
     width: auto;
     padding-inline: .2rem !important;
 }
