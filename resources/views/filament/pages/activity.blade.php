@@ -477,7 +477,7 @@
                             <th scope="col" class="activity-col--area">Area</th>
                             <th scope="col" class="activity-col--type">Type</th>
                             <th scope="col" class="activity-col--publication">Publication</th>
-                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -526,7 +526,7 @@
                                     @endif
                                 </td>
                                 <td class="admin-table__actions activity-actions-cell">
-                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical activity-row-actions">
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--two-static activity-row-actions">
                                         <button class="admin-action" type="button" wire:click="mountAction('activityDetails', { id: {{ $event['id'] }} })">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
                                             <span class="admin-action__label">Details</span>
@@ -537,6 +537,11 @@
                                                 type="button"
                                                 wire:click="mountAction('undoActivity', { id: {{ $event['id'] }} })"
                                             >
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Undo</span>
+                                            </button>
+                                        @else
+                                            <button class="admin-action" type="button" disabled aria-label="Undo unavailable">
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
                                                 <span class="admin-action__label">Undo</span>
                                             </button>
@@ -603,7 +608,7 @@
                             <th scope="col" class="activity-commit-col--when">When</th>
                             <th scope="col" class="activity-commit-col--summary">Summary</th>
                             <th scope="col" class="activity-commit-col--publication">Publication</th>
-                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -654,7 +659,7 @@
                                     <small>{{ number_format($commit['change_count']) }} changes · {{ number_format($commit['activity_count']) }} activities</small>
                                 </td>
                                 <td class="admin-table__actions activity-actions-cell">
-                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical activity-row-actions">
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--three-static activity-row-actions">
                                         <button class="admin-action" type="button" wire:click="openCommitDetails({{ $commit['id'] }})">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
                                             <span class="admin-action__label">Details</span>
@@ -668,6 +673,11 @@
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
                                                 <span class="admin-action__label">Restore</span>
                                             </button>
+                                        @else
+                                            <button class="admin-action" type="button" disabled aria-label="Restore unavailable">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Restore</span>
+                                            </button>
                                         @endif
                                         @if ($commit['can_revert'])
                                             <button
@@ -675,6 +685,11 @@
                                                 type="button"
                                                 wire:click="mountAction('revertCurrentCommit', { id: {{ $commit['id'] }} })"
                                             >
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Revert</span>
+                                            </button>
+                                        @else
+                                            <button class="admin-action" type="button" disabled aria-label="Revert unavailable">
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
                                                 <span class="admin-action__label">Revert</span>
                                             </button>
