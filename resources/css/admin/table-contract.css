@@ -17,6 +17,13 @@
     --admin-table-edge-inset: .5rem;
     --admin-table-leading-square: 1.65rem;
     --admin-table-selection-width: 2.5rem;
+    --admin-pages-classification-control-width: 9.25rem;
+    --admin-pages-classification-gap: .4rem;
+    --admin-pages-classification-width: calc(
+        (2 * var(--admin-pages-classification-control-width))
+        + var(--admin-pages-classification-gap)
+        + 1.3rem
+    );
 
     /* Stable row-action rail geometry. Shared semantic slots are sized for
      * their longest legitimate label; consumers never squeeze the button text
@@ -442,7 +449,7 @@
 .admin-hierarchy--pages .admin-pages__row {
     grid-template-columns:
         minmax(0, 1fr)
-        minmax(14rem, 16rem)
+        var(--admin-pages-classification-width)
         calc(var(--admin-row-actions-move-state-delete-width) + var(--admin-table-selection-width));
     column-gap: 0;
 }
@@ -483,16 +490,17 @@
 
 .admin-pages__row > .admin-pages__classification {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: .35rem;
+    grid-template-columns: minmax(0, var(--admin-pages-classification-control-width));
+    gap: var(--admin-pages-classification-gap);
     align-items: center;
 }
 
 .admin-pages__row > .admin-pages__classification.has-template {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, var(--admin-pages-classification-control-width)));
 }
 
 .admin-pages__classification > :is(.admin-pages__type, .admin-pages__template) {
+    width: 100%;
     min-width: 0;
 }
 
