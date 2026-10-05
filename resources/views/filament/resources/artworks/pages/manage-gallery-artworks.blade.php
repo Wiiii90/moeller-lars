@@ -94,95 +94,102 @@
         @php($reorderEnabled = trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
 
         <div class="gallery-workspace__result-surface">
-            <div class="gallery-workspace__controls" aria-label="Gallery controls">
-                <label class="gallery-workspace__field gallery-workspace__search">
-                    <span>Search</span>
-                    <x-admin.search-input
-                        model="search"
-                        placeholder="Title, material, dimensions"
-                    />
-                </label>
+            <x-admin.controls class="admin-data-controls--content-minimum gallery-workspace__controls" aria-label="Gallery controls">
+                <x-slot:search>
+                    <label class="admin-data-field">
+                        <span>Search</span>
+                        <x-admin.search-input model="search" placeholder="Title, material, dimensions" />
+                    </label>
+                </x-slot:search>
 
-                <label class="gallery-workspace__field">
-                    <span>Status</span>
-                    <select wire:model.live="statusFilter">
-                        <option value="any">Any</option>
-                        <option value="published">Published</option>
-                        <option value="draft">Draft</option>
-                    </select>
-                </label>
+                <x-slot:filters>
+                    <label class="admin-data-field">
+                        <span>Status</span>
+                        <select wire:model.live="statusFilter">
+                            <option value="any">Any</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </label>
 
-                <label class="gallery-workspace__field">
-                    <span>Readiness</span>
-                    <select wire:model.live="readinessFilter">
-                        <option value="any">Any</option>
-                        <option value="ready">Ready</option>
-                        <option value="needs-attention">Needs attention</option>
-                    </select>
-                </label>
+                    <label class="admin-data-field">
+                        <span>Readiness</span>
+                        <select wire:model.live="readinessFilter">
+                            <option value="any">Any</option>
+                            <option value="ready">Ready</option>
+                            <option value="needs-attention">Needs attention</option>
+                        </select>
+                    </label>
+                </x-slot:filters>
 
-                <div class="gallery-workspace__control-group">
-                    <span class="gallery-workspace__control-label">Filter</span>
-                    <x-admin.clear-filters wire:click="resetFilters" />
-                </div>
-
-                <div class="gallery-workspace__control-group gallery-workspace__gallery">
-                    <span class="gallery-workspace__control-label">Gallery</span>
-                    <div class="gallery-workspace__gallery-actions">
-                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('gallerySettings')" aria-label="Gallery settings">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
-                            <span class="admin-action__label">Settings</span>
-                        </button>
-                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addArtwork')" aria-label="Add artwork">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Artwork->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
-                            <span class="admin-action__label">Add artwork</span>
-                        </button>
-                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('materialPresets')" aria-label="Materials">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Materials->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
-                            <span class="admin-action__label">Materials</span>
-                        </button>
-                        @if ($galleryContext['public_url'])
-                            <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
-                                <span class="admin-action__label">Preview</span>
-                            </a>
-                        @else
-                            <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish the Gallery to open its public URL" aria-label="Preview Gallery">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon gallery-workspace__responsive-action-icon" />
-                                <span class="admin-action__label">Preview</span>
-                            </button>
-                        @endif
+                <x-slot:reset>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">Filter</span>
+                        <x-admin.clear-filters wire:click="resetFilters" />
                     </div>
-                </div>
+                </x-slot:reset>
 
-                <div class="gallery-workspace__control-group gallery-workspace__selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
-                    <span class="gallery-workspace__control-label">Selection</span>
-                    <div class="gallery-workspace__selection-anchor">
-                        <button
-                            class="admin-action gallery-workspace__selection-trigger"
-                            type="button"
-                            x-on:click="open = !open"
-                            x-bind:aria-expanded="open"
-                            aria-haspopup="menu"
-                            @disabled(count($selectedArtworkIds) === 0)
-                        >
-                            <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
-                            <span class="gallery-workspace__selection-count">{{ count($selectedArtworkIds) }}</span>
-                        </button>
-                        <div class="gallery-workspace__selection-menu" x-show="open" x-cloak x-on:click.outside="open = false" role="menu">
-                            @if ($moveTargets !== [])
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('moveSelectedToGallery')">Move to Gallery…</button>
+                <x-slot:actions>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">Gallery</span>
+                        <div class="admin-toolbar admin-editorial-actions gallery-workspace__gallery-actions">
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('gallerySettings')" aria-label="Gallery settings">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Settings</span>
+                            </button>
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addArtwork')" aria-label="Add artwork">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Artwork->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Add artwork</span>
+                            </button>
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('materialPresets')" aria-label="Materials">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Materials->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Materials</span>
+                            </button>
+                            @if ($galleryContext['public_url'])
+                                <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Preview</span>
+                                </a>
+                            @else
+                                <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish the Gallery to open its public URL" aria-label="Preview Gallery">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Preview</span>
+                                </button>
                             @endif
-                            <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('up')" @disabled(! $reorderEnabled)>Move selected up</button>
-                            <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $reorderEnabled)>Move selected down</button>
-                            <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')">Publish selected</button>
-                            <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')">Unpublish selected</button>
-                            <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')">Remove selected</button>
-                            <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')">Delete selected</button>
                         </div>
                     </div>
-                </div>
-            </div>
+                </x-slot:actions>
+
+                <x-slot:selection>
+                    <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+                        <span class="admin-data-control-label">Selection</span>
+                        <div class="admin-selection__anchor">
+                            <button
+                                class="admin-action admin-selection__trigger"
+                                type="button"
+                                x-on:click="open = !open"
+                                x-bind:aria-expanded="open.toString()"
+                                aria-haspopup="menu"
+                                @disabled(count($selectedArtworkIds) === 0)
+                            >
+                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
+                            </button>
+                            <div class="admin-selection__menu" x-show="open" x-cloak x-on:click.outside="open = false" role="menu">
+                                @if ($moveTargets !== [])
+                                    <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('moveSelectedToGallery')">Move to Gallery…</button>
+                                @endif
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('up')" @disabled(! $reorderEnabled)>Move selected up</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $reorderEnabled)>Move selected down</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')">Publish selected</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')">Unpublish selected</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')">Remove selected</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')">Delete selected</button>
+                            </div>
+                        </div>
+                        <span class="admin-selection__count" aria-label="{{ count($selectedArtworkIds) }} selected">{{ count($selectedArtworkIds) }}</span>
+                    </div>
+                </x-slot:selection>
+            </x-admin.controls>
 
             @if ($artworks !== [])
                 <section
