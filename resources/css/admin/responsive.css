@@ -373,29 +373,9 @@
     .home-source-table .admin-responsive-meta{ display: block; }
 }
 
-/* Table-specific Narrow reduction. */
+/* Table-specific Narrow reduction for the already-reviewed Home table.
+ * Storage and Activity have their own single authority later in this file. */
 @container admin-table (max-width: 54rem){
-    /* Storage: preview and detailed reference column yield first. */
-    .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
-    .media-workspace__table-wrap:not(.is-dense) th:nth-child(1),
-    .media-workspace__table-wrap:not(.is-dense) td:nth-child(1){
-        display: none;
-    }
-
-    .media-workspace__table-wrap .media-workspace__col-usage,
-    .media-workspace__table-wrap .media-workspace__usage-head,
-    .media-workspace__table-wrap .media-workspace__usage-cell{
-        display: none;
-    }
-
-    /* Activity: publication and actor are contextual rather than primary. */
-    .activity-events-table .activity-col--publication,
-    .activity-events-table .activity-col--who,
-    .activity-commits-table .activity-commit-col--publication,
-    .activity-commits-table .activity-commit-col--who{
-        display: none;
-    }
-
     /* Home components protect Content and the labeled action rail; Component
      * kind folds into responsive metadata first. */
     .home-components-table .home-components-table__type,
@@ -419,9 +399,7 @@
         width: 17.75rem !important;
     }
 
-    .home-components-table .admin-responsive-meta,
-    .activity-events-table .admin-responsive-meta,
-    .activity-commits-table .admin-responsive-meta{
+    .home-components-table .admin-responsive-meta{
         display: block;
     }
 
@@ -482,39 +460,6 @@
         padding-left: .35rem;
     }
 
-    .activity-calendar{
-        --activity-calendar-cell-size: .56rem;
-    }
-
-    .activity-calendar__band{
-        grid-template-columns: 1.75rem minmax(0, 1fr);
-        gap: .1rem .35rem;
-    }
-
-    .activity-calendar__cells,
-.activity-calendar__weekdays{
-        gap: .07rem;
-    }
-
-    .activity-publication{
-        grid-template-columns: minmax(0, 1fr) auto auto;
-        gap: .4rem;
-    }
-
-    .activity-publication__staged > span,
-.activity-publication__readiness > span{
-        display: none;
-    }
-
-    .activity-publication__actions .admin-action__label{
-        display: none;
-    }
-
-    .activity-publication__actions .admin-action{
-        justify-content: center;
-        padding-inline: .3rem;
-    }
-
     .home-workspace__skip-row{
         grid-template-columns: minmax(0, 1fr);
     }
@@ -522,39 +467,6 @@
 }
 
 @container admin-table (max-width: 38rem){
-    /* Storage keeps Media | Status | Actions | Selection. Type/size are folded
-     * into Media metadata by the Blade row. */
-    .media-workspace__table-wrap .media-workspace__col-type,
-.media-workspace__table-wrap .media-workspace__col-size,
-.media-workspace__table-wrap .media-workspace__type-head,
-.media-workspace__table-wrap .media-workspace__size-head,
-.media-workspace__table-wrap .media-workspace__type-cell,
-.media-workspace__table-wrap .media-workspace__size-cell{
-        display: none;
-    }
-
-    .media-workspace__identity .admin-responsive-meta{
-        display: block;
-    }
-
-    /* Activity retains change/target/time/actions/selection in the smallest
-     * table state. */
-    .activity-events-table .activity-col--area,
-.activity-events-table .activity-col--type{
-        display: none;
-    }
-
-    .activity-events-table .admin-responsive-meta--minimal{
-        display: block !important;
-    }
-
-    /* Narrow row actions stay on the same fixed semantic axes; dedicated
-     * table authority below owns their icon-only density. */
-
-    .media-workspace__row-actions{
-        grid-auto-flow: row;
-    }
-
     .home-source-table :is(.home-source-table__status, .home-source-table__col-status){
         display: none;
     }
