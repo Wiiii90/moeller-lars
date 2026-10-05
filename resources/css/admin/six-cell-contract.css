@@ -252,6 +252,22 @@
     justify-self: center;
 }
 
+/* Contact sheets have no trailing table checkbox axis. They still use the
+ * canonical Selection trigger/count pair, but the count stays intrinsic beside
+ * the trigger instead of reserving a fake table-selection rail. */
+.admin-data-controls--content-minimum .admin-selection--free-count {
+    grid-template-columns: max-content max-content;
+    column-gap: .15rem;
+}
+
+.admin-data-controls--content-minimum .admin-selection--free-count > :is(.admin-data-control-label, .admin-control-group__label) {
+    grid-column: 1 / 3;
+}
+
+.admin-data-controls--content-minimum .admin-selection--free-count > .admin-selection__count {
+    justify-self: start;
+}
+
 @container admin-workspace (max-width: 60rem) {
     .admin-data-controls--content-minimum {
         column-gap: .35rem;
@@ -331,6 +347,10 @@
 @container admin-workspace (max-width: 38rem) {
     .admin-data-controls--content-minimum {
         column-gap: .2rem;
+    }
+
+    .admin-data-controls--content-minimum > .admin-data-controls__utility > :first-child .admin-action__label {
+        display: inline !important;
     }
 
     .admin-data-controls--content-minimum.admin-data-controls--filters-1 {
