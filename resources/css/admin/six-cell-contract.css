@@ -274,6 +274,11 @@
     justify-content: flex-start !important;
 }
 
+/* Clear belongs to Query/Filter, not the task-action density ladder. */
+.admin-task-controls--pages .admin-pages__clear .admin-action__label {
+    display: inline !important;
+}
+
 .admin-task-controls--pages .admin-pages__selection {
     display: grid;
     width: max-content !important;
@@ -323,14 +328,14 @@
 }
 
 @container admin-workspace (max-width: 50rem) {
-    .admin-task-controls--pages .admin-task-control-actions {
+    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions {
         display: grid !important;
         width: max-content !important;
         grid-template-columns: repeat(2, var(--admin-control-height));
         gap: .15rem !important;
     }
 
-    .admin-task-controls--pages .admin-task-control-actions > .admin-action {
+    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions > .admin-action {
         box-sizing: border-box;
         width: var(--admin-control-height) !important;
         min-width: var(--admin-control-height) !important;
@@ -338,8 +343,12 @@
         justify-content: center !important;
     }
 
-    .admin-task-controls--pages .admin-task-control-actions > .admin-action .admin-action__label {
+    .admin-task-controls--pages .admin-pages__actions .admin-task-control-actions > .admin-action .admin-action__label {
         display: none !important;
+    }
+
+    .admin-task-controls--pages .admin-pages__clear .admin-action__label {
+        display: inline !important;
     }
 }
 
