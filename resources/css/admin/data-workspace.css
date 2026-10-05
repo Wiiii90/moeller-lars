@@ -117,7 +117,7 @@
 .admin-data-field > span,
 .admin-data-control-label,
 .admin-task-field > span,
-.admin-task-control-label > span {
+.admin-task-control-label {
     color: var(--admin-muted);
     font-size: var(--admin-font-size-control-label);
     font-weight: 700;
@@ -147,7 +147,7 @@
 .admin-data-field input,
 .admin-data-field select,
 .admin-task-field input,
-.admin-task-field select input select {
+.admin-task-field select {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -170,13 +170,13 @@
 .admin-data-field input:focus,
 .admin-data-field select:focus,
 .admin-task-field input:focus,
-.admin-task-field select:focus input:focus select:focus {
+.admin-task-field select:focus {
     border-color: var(--admin-accent);
 }
 
 .admin-field input::placeholder,
 .admin-data-field input::placeholder,
-.admin-task-field input::placeholder input::placeholder {
+.admin-task-field input::placeholder {
     color: var(--admin-faint);
     opacity: 1;
 }
@@ -195,7 +195,7 @@
     min-height: var(--admin-control-height);
 }
 
-.admin-data-control-group > .admin-action > .admin-action {
+.admin-data-control-group > .admin-action {
     justify-self: start;
 }
 
