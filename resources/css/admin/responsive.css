@@ -1034,30 +1034,30 @@
 
 /* ---------- Storage table ---------- */
 @container admin-table (max-width: 64rem){
-    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview,
-    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb-head,
-    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__thumb,
     .admin-storage .media-workspace__table-wrap .media-workspace__col-usage,
     .admin-storage .media-workspace__table-wrap .media-workspace__usage-head,
     .admin-storage .media-workspace__table-wrap .media-workspace__usage-cell{
         display: none !important;
     }
 
+    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview{ width: 4.5rem !important; }
     .admin-storage .media-workspace__col-media{ width: auto !important; }
     .admin-storage .media-workspace__col-type{ width: 6rem !important; }
     .admin-storage .media-workspace__col-size{ width: 5rem !important; }
     .admin-storage .media-workspace__col-status{ width: 5.5rem !important; }
     .admin-storage .media-workspace__col-selection{ width: var(--admin-table-selection-width) !important; }
-
 }
 
 @container admin-table (max-width: 38rem){
     .admin-storage .media-workspace__table-wrap .media-workspace__col-type,
     .admin-storage .media-workspace__table-wrap .media-workspace__col-size,
+    .admin-storage .media-workspace__table-wrap .media-workspace__col-status,
     .admin-storage .media-workspace__table-wrap .media-workspace__type-head,
     .admin-storage .media-workspace__table-wrap .media-workspace__size-head,
+    .admin-storage .media-workspace__table-wrap .media-workspace__status-head,
     .admin-storage .media-workspace__table-wrap .media-workspace__type-cell,
-    .admin-storage .media-workspace__table-wrap .media-workspace__size-cell{
+    .admin-storage .media-workspace__table-wrap .media-workspace__size-cell,
+    .admin-storage .media-workspace__table-wrap .media-workspace__status-cell{
         display: none !important;
     }
 
@@ -1065,7 +1065,8 @@
         display: block !important;
     }
 
-    .admin-storage .media-workspace__col-status{ width: 5rem !important; }
+    .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview{ width: 4rem !important; }
+    .admin-storage .media-workspace__col-media{ width: auto !important; }
     .admin-storage .media-workspace__col-actions{ width: 7.05rem !important; }
 
     .admin-storage .media-workspace__actions-head .admin-row-actions-heading{
