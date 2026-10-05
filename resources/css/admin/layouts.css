@@ -34,15 +34,20 @@ html:not(.dark) .fi-sidebar-nav {
 }
 
 /*
- * Filament owns modal scroll locking. The document keeps one stable scrollbar
- * gutter so locking <html> never changes the shell width. Sidebar scrolling is
- * independent and does not reserve a permanent gutter.
+ * Filament owns modal state and lock lifecycle. The document does not reserve a
+ * permanent scrollbar gutter: short pages must stay rail-free. Before Filament
+ * acquires a blocking modal lock, the shared dialog runtime marks <html> only
+ * when a classic vertical scrollbar already exists. In that one state the real
+ * scrollbar stays visible and Filament's padding compensation is neutralized.
  */
-html.fi {
-    scrollbar-gutter: stable !important;
+html.fi,
+.fi-sidebar-nav {
+    scrollbar-gutter: auto !important;
 }
 
-.fi-sidebar-nav {
+html.fi.admin-modal-existing-scrollbar {
+    overflow-y: scroll !important;
+    padding-right: 0 !important;
     scrollbar-gutter: auto !important;
 }
 
