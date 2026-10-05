@@ -3,9 +3,10 @@
  * Loaded after all feature modules so old viewport repair rules cannot reintroduce
  * wrapping, horizontal table scrollports or generic Visual Stage stacking.
  * Width states are based on actual workspace/table containers:
- *   Wide/Compact > 54rem
- *   Narrow       <= 54rem
- *   Minimal      <= 38rem
+ *   Wide          > 64rem
+ *   Compact       <= 64rem
+ *   Narrow        <= 54rem
+ *   Minimal       <= 38rem
  * An extreme <= 20rem state may omit metric strips entirely.
  */
 
