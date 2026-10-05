@@ -282,10 +282,11 @@
 
 /* Shared focused-stage state.
  *
- * Storage and Activity keep the same three semantic Stage panes at every width.
- * Dashboard uses the same visual tab primitive. Minimal does not delete semantic
- * panes or invent a page-local replacement surface: tabbed stages expose one
- * pane at a time. Storage/Activity persist the active pane in the SPA session. */
+ * Dashboard, Storage and Activity retain their simultaneous desktop panes
+ * through Wide, Compact and Narrow. Only true Minimal (Burger shell + <=38rem
+ * workspace) exposes the shared local selector. Analytics follows the same
+ * gate for its map-only Minimal composition. Storage/Activity persist the
+ * active pane in the SPA session. */
 .admin-stage-switcher {
     display: none;
 }
