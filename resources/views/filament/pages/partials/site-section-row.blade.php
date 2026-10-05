@@ -40,13 +40,12 @@
             @else
                 <strong>{{ $label }}</strong>
             @endif
-            <small class="admin-responsive-meta">{{ $section['type_label'] }}</small>
         </div>
     </div>
 
     <div class="admin-pages__type" role="cell" data-cell="page-type">
         @if ($isHome)
-            <span>Landing Page</span>
+            <span class="admin-inline-control-value">Landing Page</span>
         @elseif ($section['can_convert'])
             <select
                 class="admin-inline-select"
