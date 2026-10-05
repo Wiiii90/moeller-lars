@@ -317,10 +317,10 @@ Current Blog table role order:
 Current Exhibitions table role order:
 
 ```text
-[Position] [Drag] [Exhibition] [Status] [Timing] [Schedule] [Actions] [Selection]
+[Position] [Drag] [Image] [Exhibition] [Timing] [Schedule] [Actions] [Selection]
 ```
 
-Position and Drag share the leading ordering region; Selection remains the trailing utility. Omit either role when the task does not expose it rather than inserting a placeholder.
+Blog and Exhibitions use the same canonical Cover/feature-media preview when one is configured; an empty preview cell is the neutral fallback. Position and Drag share the leading ordering region; Selection remains the trailing utility. Under pressure, Blog Publication and Exhibition Schedule yield at Compact. The preview remains visible. Only at Minimal do Blog Status and Exhibition Timing yield, leaving Ordering + Preview + Identity + Actions + Selection as the stable smallest composition.
 
 For Exhibition identity, keep the secondary line concise, e.g. `Venue · City`; do not dump full street/country metadata into the collection row.
 
