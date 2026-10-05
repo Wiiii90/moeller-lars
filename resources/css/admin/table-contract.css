@@ -137,15 +137,15 @@
 
 /* Canonical stable row-action rail.
  *
- * Static actions size to their real icon + label content. The rail itself is
- * right-anchored and reserves only the semantic state slot that must survive a
- * label toggle (for example Publish -> Unpublish). Responsive density is global:
- * intrinsically dense five- and seven-action rails compact at Narrow; two- to
- * four-action rails retain labels until Minimal table pressure. */
+ * The rail is content-driven: its semantic recipe supplies an ideal labeled
+ * width, but the rail may shrink to the width actually assigned by its table
+ * track. Dense five-/seven-action recipes then compact from their OWN rail
+ * width rather than from a page-specific table breakpoint. Two- to four-action
+ * rails keep the accepted Dashboard/Activity/Storage Minimal behavior. */
 .admin-row-actions--stable {
     display: grid !important;
-    width: var(--admin-row-actions-width);
-    max-width: none;
+    width: min(100%, var(--admin-row-actions-width));
+    max-width: var(--admin-row-actions-width);
     min-width: 0;
     grid-template-columns: var(--admin-row-actions-columns);
     gap: var(--admin-row-actions-gap, .25rem) !important;
@@ -153,6 +153,8 @@
     margin-inline-end: 0 !important;
     align-items: center;
     justify-content: end !important;
+    container-name: admin-row-actions;
+    container-type: inline-size;
 }
 
 .admin-row-actions--stable .admin-action {
@@ -197,7 +199,8 @@
 
 .admin-row-actions--move-state-delete {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
-    --admin-row-actions-columns: max-content max-content max-content minmax(6.25rem, max-content) max-content;
+    --admin-row-actions-columns: repeat(5, max-content);
+    --admin-row-actions-gap: .45rem;
     --admin-row-state-slot: 6.25rem;
 }
 
@@ -209,7 +212,8 @@
 
 .admin-row-actions--journal-blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
-    --admin-row-actions-columns: max-content max-content max-content minmax(8.5rem, max-content) max-content max-content max-content;
+    --admin-row-actions-columns: repeat(7, max-content);
+    --admin-row-actions-gap: .45rem;
     --admin-row-state-slot: 8.5rem;
 }
 
@@ -228,28 +232,11 @@
     --admin-row-actions-columns: max-content max-content max-content max-content;
 }
 
-/* Canonical action-density states.
- * Compact (64rem): intrinsically dense five- and seven-action rails compact in
- * place before their labels can consume identity/state columns. Minimal (38rem):
- * the remaining two- to four-action rails compact on the same semantic axes.
- * Consumers never invent their own density breakpoint. */
-@container admin-table (max-width: 64rem) {
-    .admin-row-actions--move-state-delete {
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
-        --admin-row-actions-columns: repeat(5, 1.35rem);
-        --admin-row-actions-gap: .45rem;
-    }
-
-    .admin-row-actions--journal-blog {
-        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
-        --admin-row-actions-columns: repeat(7, 1.35rem);
-        --admin-row-actions-gap: .45rem;
-    }
-
-    :is(
-        .admin-row-actions--move-state-delete,
-        .admin-row-actions--journal-blog
-    ) .admin-action {
+/* Dense rails compact against their own allocated width. Their ideal labeled
+ * widths are the thresholds, so Pages/Custom Page/Journal do not need viewport
+ * or table-width guesses merely to prevent action overflow. */
+@container admin-row-actions (max-width: 22.99rem) {
+    .admin-row-actions--move-state-delete .admin-action {
         width: 1.35rem !important;
         min-width: 1.35rem !important;
         gap: 0 !important;
@@ -257,10 +244,29 @@
         justify-content: center !important;
     }
 
-    :is(
-        .admin-row-actions--move-state-delete,
-        .admin-row-actions--journal-blog
-    ) .admin-action__label {
+    .admin-row-actions--move-state-delete .admin-action--state {
+        min-width: 1.35rem !important;
+    }
+
+    .admin-row-actions--move-state-delete .admin-action__label {
+        display: none !important;
+    }
+}
+
+@container admin-row-actions (max-width: 38.99rem) {
+    .admin-row-actions--journal-blog .admin-action {
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        gap: 0 !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-row-actions--journal-blog .admin-action--state {
+        min-width: 1.35rem !important;
+    }
+
+    .admin-row-actions--journal-blog .admin-action__label {
         display: none !important;
     }
 }
