@@ -106,7 +106,7 @@
                 />
 
                 <div class="activity-atlas__visual admin-visual-stage__pane">
-                    <div class="activity-atlas__view activity-calendar" data-admin-stage-pane="calendar">
+                    <div class="activity-atlas__view activity-calendar" data-admin-stage-pane="calendar" data-admin-stage-slot="1">
                         <div class="activity-calendar__header">
                             <div class="activity-calendar__year-nav" aria-label="Calendar year">
                                 @if ($calendarPreviousYear !== null)
@@ -211,11 +211,11 @@
                         :hour-urls="$hourUrls"
                         :caption-label="$selectedCalendarLabel"
                         :aria-context="$timelineItemLabel.' distribution for '.$selectedCalendarLabel"
-                        data-admin-stage-pane="clock"
+                        data-admin-stage-pane="clock" data-admin-stage-slot="2"
                     />
                 </div>
 
-                <aside class="activity-publication admin-visual-stage__pane" data-admin-stage-pane="publication" aria-label="Next publication">
+                <aside class="activity-publication admin-visual-stage__pane" data-admin-stage-pane="publication" data-admin-stage-slot="3" aria-label="Next publication">
                     <header class="activity-publication__header">
                         <strong>Next publication</strong>
                     </header>
