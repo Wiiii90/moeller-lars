@@ -1312,10 +1312,12 @@
     }
 }
 
-@container admin-workspace (max-width: 38rem){
-    .admin-storage__capacity-actions .admin-action__label,
-    .activity-publication__actions .admin-action__label{
-        display: inline !important;
+@media (max-width: 63.99rem){
+    @container admin-workspace (max-width: 38rem){
+        .admin-storage__capacity-actions .admin-action__label,
+        .activity-publication__actions .admin-action__label{
+            display: inline !important;
+        }
     }
 }
 
