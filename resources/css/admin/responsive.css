@@ -2,12 +2,12 @@
  *
  * Loaded after all feature modules so old viewport repair rules cannot reintroduce
  * wrapping, horizontal table scrollports or generic Visual Stage stacking.
- * Width states are based on actual workspace/table containers:
- *   Wide          > 64rem
- *   Compact       <= 64rem
- *   Narrow        <= 54rem
- *   Minimal       <= 38rem
- * An extreme <= 20rem state may omit metric strips entirely.
+ * Dashboard remains the state reference: Compact may reduce detail before the
+ * semantic Narrow state; six-state metric strips enter Narrow at 64rem, while
+ * Minimal requires the Burger shell plus <=38rem workspace. Tables may respond
+ * earlier to their own content pressure, but consumers do not invent viewport
+ * mirrors of the same state. An extreme <=20rem state may omit metrics where
+ * the feature contract permits it.
  */
 
 .admin-workspace{
@@ -605,7 +605,7 @@
 
 /* Gallery / Custom Page / Journal choose semantic members for the same
  * Dashboard-style six-state metric geometry used by Pages and Home. */
-@container admin-workspace (max-width: 54rem){
+@container admin-workspace (max-width: 64rem){
     :is(.gallery-status-metrics > .gallery-metric, .custom-page-status-metrics > .custom-page-metric, .journal-status-metrics > .journal-metric){
         display: none !important;
     }
@@ -668,7 +668,7 @@
     padding-left: 0 !important;
 }
 
-@container admin-workspace (max-width: 54rem){
+@container admin-workspace (max-width: 64rem){
     .admin-pages-workspace .pages-metric{
         display: none !important;
     }
@@ -860,7 +860,7 @@
     padding-left: 0 !important;
 }
 
-@container admin-workspace (max-width: 54rem){
+@container admin-workspace (max-width: 64rem){
     .admin-home-workspace .home-metric{
         display: none !important;
     }
@@ -940,7 +940,7 @@
  * No viewport mirror of the same container state is maintained here. */
 
 /* ---------- semantic metrics ---------- */
-@container admin-workspace (max-width: 54rem){
+@container admin-workspace (max-width: 64rem){
     :is(
         .analytics-status-metrics > .analytics-metric,
         .storage-status-metrics > .storage-metric,
@@ -1103,7 +1103,7 @@
     gap: 0 !important;
 }
 
-@container admin-workspace (max-width: 54rem){
+@container admin-workspace (max-width: 64rem){
     .admin-metrics--six-state{
         --admin-metric-columns: 3 !important;
         position: relative;
