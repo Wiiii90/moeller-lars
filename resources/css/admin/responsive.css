@@ -1542,14 +1542,11 @@
     }
 }
 
-/* Home metric authority mirrors Dashboard exactly.
- * Wide/Compact = six metrics. Narrow = three semantic metrics across exact
- * thirds. Minimal = two semantic metrics across exact halves, but only after
- * the shell has collapsed to Burger. */
+/* Home selects semantic members for the shared Dashboard-style 6 / 3 / 2
+ * metric geometry. Divider axes and track sizing belong to
+ * .admin-metrics--six-state, not to individual metric children. */
 .admin-home-workspace .home-status-metrics{
     --admin-metric-columns: 6 !important;
-    grid-auto-flow: row !important;
-    gap: 0 !important;
 }
 
 .admin-home-workspace :is(.home-metric--visits, .home-metric--components){
@@ -1557,15 +1554,6 @@
 }
 
 @container admin-workspace (max-width: 64rem){
-    .admin-home-workspace .home-status-metrics{
-        --admin-metric-columns: 3 !important;
-        position: relative;
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        grid-auto-flow: row !important;
-        gap: 0 !important;
-    }
-
     .admin-home-workspace .home-metric{
         display: none !important;
     }
@@ -1579,37 +1567,15 @@
         .home-metric--media
     ){
         display: block !important;
-        min-width: 0;
-        grid-column: auto !important;
-        grid-row: auto !important;
-        width: 100% !important;
-        max-width: none !important;
-        padding: 1.05rem 1rem !important;
-        border-top: 0 !important;
-        border-right: 0 !important;
     }
 
     .admin-home-workspace :is(.home-metric--visits, .home-metric--components){
         padding-left: 0 !important;
-        border-right: 1px solid var(--admin-line) !important;
-    }
-
-    .admin-home-workspace :is(.home-metric--eligible, .home-metric--images){
-        border-right: 1px solid var(--admin-line) !important;
     }
 }
 
 @media (max-width: 63.99rem){
     @container admin-workspace (max-width: 38rem){
-        .admin-home-workspace .home-status-metrics{
-            --admin-metric-columns: 2 !important;
-            position: relative;
-            display: grid !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            grid-auto-flow: row !important;
-            gap: 0 !important;
-        }
-
         .admin-home-workspace .home-metric{
             display: none !important;
         }
@@ -1621,19 +1587,10 @@
             .home-metric--media
         ){
             display: block !important;
-            min-width: 0;
-            grid-column: auto !important;
-            grid-row: auto !important;
-            width: 100% !important;
-            max-width: none !important;
-            padding: 1.05rem 1rem !important;
-            border-top: 0 !important;
-            border-right: 0 !important;
         }
 
         .admin-home-workspace :is(.home-metric--visits, .home-metric--components){
             padding-left: 0 !important;
-            border-right: 1px solid var(--admin-line) !important;
         }
     }
 }
