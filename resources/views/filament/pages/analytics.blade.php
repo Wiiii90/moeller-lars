@@ -112,7 +112,7 @@
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
-        <x-admin.metrics :columns="6" class="analytics-status-metrics" aria-label="Traffic summary">
+        <x-admin.metrics :columns="6" class="analytics-status-metrics admin-metrics--six-state" aria-label="Traffic summary">
             @foreach ($kpis as $kpi)
                 @php
                     $metricRole = match ($kpi['key'] ?? null) {
@@ -219,7 +219,7 @@
         </section>
 
         <section class="analytics-detail-surface admin-visual-stage-followup" aria-label="Analytics detail table">
-            <x-admin.controls :metric-grid="true" :search-span="4" aria-label="Analytics report controls">
+            <x-admin.controls class="admin-data-controls--dashboard-responsive" :metric-grid="true" :filter-count="2" :search-span="4" aria-label="Analytics report controls">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
