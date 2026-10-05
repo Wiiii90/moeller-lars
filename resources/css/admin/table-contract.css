@@ -496,9 +496,32 @@
     }
 }
 
+@media (max-width: 63.99rem) {
+    /* The Burger shell may reclaim horizontal room, but Pages stays at least as
+     * compact as the constrained desktop state it replaced. */
+    .admin-task-controls--pages .admin-task-control-actions {
+        display: grid !important;
+        width: max-content !important;
+        grid-template-columns: repeat(2, var(--admin-control-height));
+        gap: .15rem !important;
+    }
+
+    .admin-task-controls--pages .admin-task-control-actions > .admin-action {
+        box-sizing: border-box;
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-task-controls--pages .admin-task-control-actions > .admin-action .admin-action__label {
+        display: none !important;
+    }
+}
+
 @container admin-workspace (max-width: 38rem) {
     .admin-task-controls--pages {
-        grid-template-columns: minmax(4rem, 1fr) 5rem 5.5rem max-content;
+        grid-template-columns: minmax(4rem, 1fr) 5rem 6rem max-content;
         column-gap: .35rem;
     }
 }
