@@ -18,11 +18,17 @@
     --admin-table-leading-square: 1.65rem;
     --admin-table-selection-width: 2.5rem;
 
-    /* Stable row-action rail geometry. Responsive consumers reference these
-     * semantic rail widths instead of repeating numeric widths page by page. */
-    --admin-row-actions-move-state-delete-width: 22rem;
+    /* Stable row-action rail geometry. Shared semantic slots are sized for
+     * their longest legitimate label; consumers never squeeze the button text
+     * into a smaller slot or compensate page by page. */
+    --admin-row-action-slot-move-up-width: 4.75rem;
+    --admin-row-action-slot-move-down-width: 5.5rem;
+    --admin-row-action-slot-edit-width: 3.25rem;
+    --admin-row-action-slot-delete-width: 4.25rem;
+    --admin-row-action-slot-state-width: 6rem;
+    --admin-row-actions-move-state-delete-width: 24.5rem;
     --admin-row-actions-move-state-delete-compact-width: 8.55rem;
-    --admin-row-actions-journal-blog-width: 32rem;
+    --admin-row-actions-journal-blog-width: 34.5rem;
     --admin-row-actions-journal-blog-compact-width: 12.15rem;
 
     /* Shared semantic typography for ordinary table/control surfaces. Feature
@@ -215,7 +221,12 @@
 
 .admin-row-actions--move-state-delete {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
-    --admin-row-actions-columns: 4.15rem 4.8rem 2.8rem 5.8rem 3.7rem;
+    --admin-row-actions-columns:
+        var(--admin-row-action-slot-move-up-width)
+        var(--admin-row-action-slot-move-down-width)
+        var(--admin-row-action-slot-edit-width)
+        var(--admin-row-action-slot-state-width)
+        var(--admin-row-action-slot-delete-width);
     --admin-row-actions-gap: .1875rem;
     --admin-row-state-slot: 0;
 }
@@ -228,7 +239,14 @@
 
 .admin-row-actions--journal-blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
-    --admin-row-actions-columns: 4.15rem 4.8rem 2.8rem 7.1rem 4.5rem 4rem 3.55rem;
+    --admin-row-actions-columns:
+        var(--admin-row-action-slot-move-up-width)
+        var(--admin-row-action-slot-move-down-width)
+        var(--admin-row-action-slot-edit-width)
+        7.1rem
+        4.5rem
+        4rem
+        var(--admin-row-action-slot-delete-width);
     --admin-row-actions-gap: .18rem;
     --admin-row-state-slot: 0;
 }
