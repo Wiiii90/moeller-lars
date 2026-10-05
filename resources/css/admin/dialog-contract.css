@@ -1,8 +1,10 @@
 /* Shared Filament viewport/modal geometry. Filament still owns lifecycle,
- * focus, Escape handling and nested interactive behavior. */
-/* Dialog geometry is measured from the current .fi-main on every open. The
- * modal layer remains viewport-fixed but visually belongs to the active content
- * frame below the topbar. Filament still owns modal lifecycle and scroll lock. */
+ * focus, Escape handling and nested interactive behavior.
+ *
+ * Backdrop and window bounds deliberately have different owners:
+ * - the scrim covers the whole application viewport;
+ * - the dialog window remains bounded to the measured admin content frame,
+ *   including its canonical inline padding and the space below the topbar. */
 .fi-modal {
     --admin-dialog-layer-inline-start: 0px;
     --admin-dialog-layer-inline-end: 0px;
@@ -12,8 +14,12 @@
 
 .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-close-overlay {
     position: fixed;
-    inset-block: var(--admin-dialog-layer-block-start) 0 !important;
-    inset-inline: var(--admin-dialog-layer-inline-start) var(--admin-dialog-layer-inline-end) !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, .42) !important;
+}
+
+html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-close-overlay {
+    background: rgba(0, 0, 0, .56) !important;
 }
 
 .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-window-ctn {
