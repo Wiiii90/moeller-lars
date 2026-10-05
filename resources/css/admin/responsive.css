@@ -1303,7 +1303,7 @@
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         }
 
-        .admin-pages-workspace .pages-metric{
+        .admin-pages-workspace .pages-status-metrics > .pages-metric{
             display: none !important;
         }
 
