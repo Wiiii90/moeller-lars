@@ -755,14 +755,6 @@
         gap: .25rem !important;
     }
 
-    .admin-pages__utility-grid{
-        grid-template-columns: var(--admin-row-actions-move-state-delete-compact-width) var(--admin-table-selection-width) !important;
-    }
-
-    .admin-pages__row-actions{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
-    }
-
     .admin-hierarchy--pages .admin-pages__type{
         padding-inline: .35rem;
     }
@@ -799,11 +791,6 @@
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 1.75rem;
-        --admin-hierarchy-actions-column: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem);
-    }
-
-    .custom-page-component-sequence .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 }
 
@@ -821,11 +808,11 @@
  * before operational Status/Timing yields. */
 @container admin-table (max-width: 64rem){
     .journal-table col.journal-table__actions--blog{
-        width: calc(var(--admin-row-actions-journal-blog-narrow-width) + .35rem) !important;
+        width: calc(var(--admin-row-actions-journal-blog-compact-width) + .35rem) !important;
     }
 
     .journal-table--blog .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-journal-blog-narrow-width);
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
     }
 
     .journal-table col.journal-table__actions--exhibitions{
@@ -858,14 +845,6 @@
 @container admin-table (max-width: 38rem){
     .journal-table col.admin-table__col-drag{
         width: 1.75rem !important;
-    }
-
-    .journal-table col.journal-table__actions--exhibitions{
-        width: calc(var(--admin-row-actions-move-state-delete-compact-width) + .3rem) !important;
-    }
-
-    .journal-table--exhibitions .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
     .journal-table--blog .journal-col--status,
