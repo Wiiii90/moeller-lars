@@ -213,7 +213,7 @@
                             <th scope="col" class="home-source-table__status">Status</th>
                             <th scope="col" class="home-source-table__artworks">Artworks</th>
                             <th scope="col" class="home-source-table__year">Newest Year</th>
-                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -266,7 +266,7 @@
                                 <td class="home-source-table__artworks">{{ number_format($gallery['published_artworks']) }}</td>
                                 <td class="home-source-table__year">{{ $gallery['newest_year'] ?: '—' }}</td>
                                 <td class="admin-table__actions">
-                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar home-source-table__row-actions">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--state-open admin-toolbar home-source-table__row-actions">
                                         <x-admin.row-action
                                             class="home-source-table__eligibility-action"
                                             :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
@@ -404,7 +404,7 @@
                             <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
                             <th scope="col" class="home-components-table__type">Component</th>
                             <th scope="col">Content</th>
-                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -442,7 +442,7 @@
                                     @if ($homeComponent['content']['secondary'] !== '')<small>{{ $homeComponent['content']['secondary'] }}</small>@endif
                                 </td>
                                 <td class="admin-table__actions">
-                                    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--four admin-toolbar">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-edit-delete admin-toolbar home-components-table__row-actions">
                                         <x-admin.row-action
                                             :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                             wire:click="moveComponent({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', 'up')"
