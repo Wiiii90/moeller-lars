@@ -94,8 +94,9 @@
         transform: none !important;
     }
 }
-/* Dialogs keep a visible scroll affordance, but the native desktop rail is
- * deliberately reduced to a quiet thumb. The page scrollbar is untouched. */
+/* Dialogs keep one visible scroll affordance: the internal content rail is
+ * deliberately reduced to a quiet thumb. Filament hides the locked document
+ * scrollbar; a temporary root gutter may reserve its former width for geometry. */
 .admin-task-dialog .fi-modal-content {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--admin-muted) 48%, transparent) transparent;
