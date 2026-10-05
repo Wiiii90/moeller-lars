@@ -102,9 +102,12 @@ it('keeps ordinary table pressure centralized and selection terminal', function 
         ->toContain('media-workspace__actions admin-table__actions');
 
     expect($journal)
-        ->toContain('journal-col--visual admin-table__yield--compact')
+        ->toContain('<th scope="col" class="journal-visual journal-col--visual">Image</th>')
+        ->toContain('journal-col--status admin-table__yield--minimal')
+        ->toContain('journal-col--timing admin-table__yield--minimal')
         ->toContain('journal-col--publication admin-table__yield--compact')
-        ->toContain('journal-col--schedule admin-table__yield--compact');
+        ->toContain('journal-col--schedule admin-table__yield--compact')
+        ->not->toContain('journal-col--visual admin-table__yield--compact');
 
     expect($activity)
         ->toContain('activity-col--who admin-table__yield--compact')
@@ -142,7 +145,9 @@ it('owns filter overflow centrally by filter count and workspace pressure', func
         ->toContain('admin-filter-overflow__trigger')
         ->toContain('admin-filter-overflow__reset')
         ->toContain('AdminIcon::Filter')
-        ->toContain('x-on:resize.window="open = false"');
+        ->toContain('positionPanel()')
+        ->toContain('x-bind:style="panelStyle"')
+        ->toContain('x-on:resize.window="if (open) $nextTick(() => positionPanel())"');
 
     expect($sixCell)
         ->toContain('Shared filter overflow')
@@ -154,6 +159,9 @@ it('owns filter overflow centrally by filter count and workspace pressure', func
         ->toContain('minmax(10rem, 1fr)')
         ->toContain('minmax(8rem, 1fr)')
         ->toContain('.admin-filter-overflow__reset')
+        ->toContain('position: fixed')
+        ->toContain('max-width: calc(100vw - 1rem)')
+        ->toContain('overflow-y: auto')
         ->toContain('display: none !important');
 
     expect($icons)
