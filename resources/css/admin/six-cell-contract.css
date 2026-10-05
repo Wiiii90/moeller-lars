@@ -15,86 +15,6 @@
     display: contents;
 }
 
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-template-rows: auto;
-    gap: 0;
-    align-items: end;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > * {
-    min-width: 0;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__filters {
-    display: contents;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-0 > :first-child {
-    grid-column: span 4;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-1 > :first-child {
-    grid-column: span 3;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-2 > :first-child {
-    grid-column: span 2;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child {
-    grid-column: 4;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-2 > .admin-data-controls__filters > :first-child {
-    grid-column: 3;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
-    grid-column: 4;
-}
-
-:is(
-    .custom-page-workspace__controls,
-    .journal-workspace__entries > .admin-data-controls
-) > .admin-data-controls__utility {
-    display: grid;
-    min-width: 0;
-    grid-column: 5 / span 2;
-    grid-row: 1;
-    grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;
-    gap: .2rem;
-    align-items: end;
-}
-
 .admin-data-controls--six-cell {
     display: grid;
     grid-template-columns: repeat(24, minmax(0, 1fr));
@@ -193,6 +113,248 @@
     padding-inline: .2rem;
 }
 
+
+/* Shared content-minimum editorial toolbar.
+ *
+ * Gallery, Journal and Custom Page use one row and one terminal Selection axis:
+ * Search absorbs spare width; filter selects keep readable fixed widths; Clear
+ * stays textual; feature actions collapse together to square icons under real
+ * pressure; Selection collapses at the same breakpoint and keeps its independent
+ * count centered on the table checkbox rail. */
+.admin-data-controls--content-minimum {
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    grid-template-rows: auto;
+    column-gap: .65rem;
+    align-items: end;
+}
+
+.admin-data-controls--content-minimum.admin-data-controls--filters-0 {
+    grid-template-columns: minmax(5rem, 1fr) max-content;
+}
+
+.admin-data-controls--content-minimum.admin-data-controls--filters-1 {
+    grid-template-columns: minmax(5rem, 1fr) 7rem max-content;
+}
+
+.admin-data-controls--content-minimum.admin-data-controls--filters-2 {
+    grid-template-columns: minmax(5rem, 1fr) 6.5rem 7.25rem max-content;
+}
+
+.admin-data-controls--content-minimum > :first-child {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    padding-right: 0 !important;
+}
+
+.admin-data-controls--content-minimum > .admin-data-controls__filters {
+    display: contents !important;
+}
+
+.admin-data-controls--content-minimum.admin-data-controls--filters-1 > .admin-data-controls__filters > :first-child,
+.admin-data-controls--content-minimum.admin-data-controls--filters-2 > .admin-data-controls__filters > :first-child {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    padding-inline: 0 !important;
+}
+
+.admin-data-controls--content-minimum.admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    padding-inline: 0 !important;
+}
+
+.admin-data-controls--content-minimum > .admin-data-controls__utility {
+    display: grid !important;
+    width: max-content;
+    min-width: 0;
+    grid-row: 1 !important;
+    grid-template-columns: max-content max-content max-content;
+    column-gap: .15rem;
+    align-items: end;
+    justify-self: end;
+    padding-right: 0 !important;
+}
+
+.admin-data-controls--content-minimum.admin-data-controls--filters-0 > .admin-data-controls__utility { grid-column: 2 !important; }
+.admin-data-controls--content-minimum.admin-data-controls--filters-1 > .admin-data-controls__utility { grid-column: 3 !important; }
+.admin-data-controls--content-minimum.admin-data-controls--filters-2 > .admin-data-controls__utility { grid-column: 4 !important; }
+
+.admin-data-controls--content-minimum > .admin-data-controls__utility > :first-child {
+    width: max-content !important;
+    min-width: 0 !important;
+    margin-right: .35rem;
+    padding-right: 0 !important;
+}
+
+.admin-data-controls--content-minimum > .admin-data-controls__utility > :nth-child(2) {
+    width: max-content !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+}
+
+.admin-editorial-actions {
+    display: grid !important;
+    width: max-content;
+    min-width: 0;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: 0 !important;
+    align-items: center;
+}
+
+.admin-editorial-actions > .admin-action {
+    width: auto;
+    min-width: 0;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
+}
+
+.admin-data-controls--content-minimum .admin-selection {
+    display: grid;
+    width: max-content !important;
+    min-width: 0 !important;
+    grid-template-columns: max-content var(--admin-table-selection-width);
+    grid-template-rows: auto var(--admin-control-height);
+    column-gap: 0;
+    align-items: end;
+}
+
+.admin-data-controls--content-minimum .admin-selection > :is(.admin-data-control-label, .admin-control-group__label) {
+    grid-column: 1 / 3;
+    grid-row: 1;
+}
+
+.admin-data-controls--content-minimum .admin-selection__anchor {
+    width: auto;
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.admin-data-controls--content-minimum .admin-selection__trigger {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    grid-template-columns: none !important;
+    padding-inline: .35rem !important;
+    justify-content: flex-start !important;
+}
+
+.admin-data-controls--content-minimum .admin-selection > .admin-selection__count {
+    box-sizing: border-box;
+    width: 1.35rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    margin-left: 0;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    justify-self: center;
+}
+
+@container admin-workspace (max-width: 50rem) {
+    .admin-data-controls--content-minimum {
+        column-gap: .35rem;
+    }
+
+    .admin-data-controls--content-minimum.admin-data-controls--filters-1 {
+        grid-template-columns: minmax(0, 1fr) 5.25rem max-content;
+    }
+
+    .admin-data-controls--content-minimum.admin-data-controls--filters-2 {
+        grid-template-columns: minmax(0, 1fr) 4.75rem 5.75rem max-content;
+    }
+
+    .admin-data-controls--content-minimum .admin-editorial-actions {
+        grid-auto-columns: var(--admin-control-height);
+    }
+
+    .admin-data-controls--content-minimum .admin-editorial-actions > .admin-action {
+        box-sizing: border-box;
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-data-controls--content-minimum .admin-editorial-actions .admin-action__label,
+    .admin-data-controls--content-minimum .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-data-controls--content-minimum .admin-selection__trigger {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-data-controls--content-minimum .admin-selection__trigger-label {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 63.99rem) {
+    .admin-data-controls--content-minimum .admin-editorial-actions {
+        grid-auto-columns: var(--admin-control-height);
+    }
+
+    .admin-data-controls--content-minimum .admin-editorial-actions > .admin-action {
+        box-sizing: border-box;
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-data-controls--content-minimum .admin-editorial-actions .admin-action__label,
+    .admin-data-controls--content-minimum .admin-selection__trigger-text {
+        display: none !important;
+    }
+
+    .admin-data-controls--content-minimum .admin-selection__trigger {
+        width: var(--admin-control-height) !important;
+        min-width: var(--admin-control-height) !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-data-controls--content-minimum .admin-selection__trigger-label {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-data-controls--content-minimum {
+        column-gap: .2rem;
+    }
+
+    .admin-data-controls--content-minimum.admin-data-controls--filters-1 {
+        grid-template-columns: minmax(3rem, 1fr) 4.75rem max-content;
+    }
+
+    .admin-data-controls--content-minimum.admin-data-controls--filters-2 {
+        grid-template-columns: minmax(3rem, 1fr) 4.5rem 5.25rem max-content;
+    }
+
+    .admin-data-controls--content-minimum > .admin-data-controls__utility {
+        column-gap: .05rem;
+    }
+
+    .admin-data-controls--content-minimum > .admin-data-controls__utility > :first-child {
+        margin-right: .15rem;
+    }
+}
 
 /* Pages uses the same content-minimum metric-backed toolbar grammar as
  * Dashboard/Home. Search owns spare width, Type/Status keep readable minima,
