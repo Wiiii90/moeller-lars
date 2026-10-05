@@ -79,7 +79,7 @@
             $selectedCommitCanRevert = is_array($selectedCommit) && ($selectedCommit['can_revert'] ?? false) === true;
         @endphp
 
-        <x-admin.metrics :columns="6" class="activity-status-metrics" aria-label="Activity statistics">
+        <x-admin.metrics :columns="6" class="activity-status-metrics admin-metrics--six-state" aria-label="Activity statistics">
             @foreach ($workspaceMetrics as $metric)
                 @php
                     $metricRole = match ($metric['label']) {
@@ -97,9 +97,16 @@
         </x-admin.metrics>
 
         <section class="activity-atlas" aria-label="Activity timeline">
-            <div class="activity-atlas__grid admin-visual-stage" aria-label="Activity timeline">
+            <div class="activity-atlas__grid admin-visual-stage admin-focus-stage" data-active-pane="clock" aria-label="Activity timeline">
+                <x-admin.stage-switcher
+                    storage-key="admin-stage.activity"
+                    default-pane="clock"
+                    :panes="['calendar' => 'Calendar', 'clock' => 'Clock', 'publication' => 'Publication']"
+                    aria-label="Activity stage"
+                />
+
                 <div class="activity-atlas__visual admin-visual-stage__pane">
-                    <div class="activity-atlas__view activity-calendar">
+                    <div class="activity-atlas__view activity-calendar" data-admin-stage-pane="calendar">
                         <div class="activity-calendar__header">
                             <div class="activity-calendar__year-nav" aria-label="Calendar year">
                                 @if ($calendarPreviousYear !== null)
@@ -204,10 +211,11 @@
                         :hour-urls="$hourUrls"
                         :caption-label="$selectedCalendarLabel"
                         :aria-context="$timelineItemLabel.' distribution for '.$selectedCalendarLabel"
+                        data-admin-stage-pane="clock"
                     />
                 </div>
 
-                <aside class="activity-publication admin-visual-stage__pane" aria-label="Next publication">
+                <aside class="activity-publication admin-visual-stage__pane" data-admin-stage-pane="publication" aria-label="Next publication">
                     <header class="activity-publication__header">
                         <strong>Next publication</strong>
                     </header>
