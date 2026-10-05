@@ -140,8 +140,8 @@
  * Static actions size to their real icon + label content. The rail itself is
  * right-anchored and reserves only the semantic state slot that must survive a
  * label toggle (for example Publish -> Unpublish). Responsive density is global:
- * ordinary rails keep labels until Minimal table pressure; only the seven-action
- * Blog rail yields one state earlier because it is intrinsically denser. */
+ * intrinsically dense five- and seven-action rails compact at Narrow; two- to
+ * four-action rails retain labels until Minimal table pressure. */
 .admin-row-actions--stable {
     display: grid !important;
     width: var(--admin-row-actions-width);
