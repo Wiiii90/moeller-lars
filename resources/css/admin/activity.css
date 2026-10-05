@@ -525,23 +525,19 @@ a.activity-calendar__day:focus-visible {
     padding-left: 0;
 }
 
-.activity-workspace__table th:not(:first-child),
-.activity-workspace__table td:not(:first-child) {
+.activity-workspace__table th:not(:first-child):not(.admin-table__actions):not(.admin-table__selection),
+.activity-workspace__table td:not(:first-child):not(.admin-table__actions):not(.admin-table__selection) {
     padding-left: .7rem;
 }
 
-.activity-workspace__table th:not(:last-child),
-.activity-workspace__table td:not(:last-child) {
+.activity-workspace__table th:not(:last-child):not(.admin-table__actions):not(.admin-table__selection),
+.activity-workspace__table td:not(:last-child):not(.admin-table__actions):not(.admin-table__selection) {
     padding-right: .7rem;
 }
 
 .activity-workspace__table th:last-child,
 .activity-workspace__table td:last-child {
     padding-right: 0;
-}
-
-.activity-workspace__table .admin-table__actions {
-    padding-inline: .2rem !important;
 }
 
 .activity-change-cell,
