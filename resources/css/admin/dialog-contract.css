@@ -478,30 +478,6 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
     font-size: .74rem;
 }
 
-/* Feed details use the metadata row as their visible top heading. Keep the
- * Filament heading in the accessibility tree, but do not duplicate the entry
- * title above the metadata. */
-.admin-dialog--header-actions:has(.admin-detail-dialog--feed) .fi-modal-heading {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
-}
-
-.admin-dialog--header-actions:has(.admin-detail-dialog--feed) .fi-modal-header {
-    min-height: calc(var(--admin-dialog-header-action-size) + (2 * var(--admin-dialog-header-action-inset)));
-    padding: 0;
-}
-
-.admin-dialog--header-actions:has(.admin-detail-dialog--feed) .fi-modal-content {
-    padding-top: .35rem;
-}
-
 /* Confirmations share the exact same first-row header geometry as every
  * other dialog. Only their content density differs. */
 .admin-dialog--confirmation .fi-modal-content {
@@ -514,10 +490,6 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
         --admin-dialog-viewport-gutter: 1rem;
         --admin-dialog-header-action-inset: .75rem;
         --admin-dialog-content-inset: 1rem;
-    }
-
-    .admin-dialog--header-actions:has(.admin-detail-dialog--feed) .fi-modal-header {
-        padding: 0;
     }
 
 }
