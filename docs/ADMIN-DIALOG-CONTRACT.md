@@ -95,7 +95,7 @@ Dialogs align to the same six-unit desktop workspace used by the admin summary a
 - `Default`: 3/6 (`40rem`) — medium forms plus intermediate read-only/detail surfaces;
 - `Large`: 4/6 (`53.333rem`) — genuinely wide editorial edit/create forms and media/detail viewers.
 
-All sizes are capped by the viewport gutter.
+All sizes are desktop maxima. The measured admin content frame and its canonical inline padding provide the actual viewport-safe bound.
 
 ## Content layout
 
