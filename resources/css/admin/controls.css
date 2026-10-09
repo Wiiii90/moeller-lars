@@ -220,10 +220,63 @@
     outline: 0;
 }
 
+/* Boolean controls use the same field axis as line controls. Filament owns
+ * semantics/state; this layer only removes its default top offsets and applies
+ * the canonical box/label geometry. */
+.admin-control-field .fi-fo-field-label:has(> .fi-checkbox-input),
+.admin-control-field .fi-fo-field-label:has(> .fi-toggle) {
+    display: grid !important;
+    grid-template-columns: max-content minmax(0, 1fr);
+    min-height: var(--admin-control-height);
+    gap: .55rem !important;
+    align-items: center !important;
+}
+
+.admin-control-field .fi-fo-field-label > .fi-checkbox-input {
+    box-sizing: border-box;
+    width: 1rem !important;
+    height: 1rem !important;
+    margin: 0 !important;
+    border: 1px solid var(--admin-line-strong) !important;
+    border-radius: .2rem !important;
+    background-color: var(--admin-surface) !important;
+    box-shadow: none !important;
+}
+
+.admin-control-field .fi-fo-field-label > .fi-checkbox-input:checked {
+    border-color: var(--admin-accent) !important;
+    background-color: var(--admin-accent) !important;
+}
+
+.admin-control-field .fi-fo-field-label > .fi-toggle {
+    margin-block: 0 !important;
+    align-self: center;
+}
+
+.admin-control-field .fi-fo-field-label:has(> :is(.fi-checkbox-input, .fi-toggle)) .fi-fo-field-label-content {
+    align-self: center;
+    line-height: 1.2;
+}
+
 .admin-control-field .fi-fo-checkbox-list-option-label,
 .admin-control-field .fi-fo-checkbox-label,
 .admin-control-field .fi-fo-toggle-label {
     color: var(--admin-text);
+}
+
+/* Edit state is already populated. Required remains a validation rule, but the
+ * red required mark is create-time guidance and is intentionally absent from
+ * canonical edit dialogs. */
+.admin-dialog--edit .admin-control-field :is(
+    .fi-fo-field-label,
+    .fi-fo-field-label-content,
+    .fi-fo-field-wrp-label
+) > :is(
+    sup,
+    .fi-fo-field-label-required-mark,
+    .fi-fo-field-wrp-label-required-mark
+) {
+    display: none !important;
 }
 
 .admin-control-field .fi-fo-field-wrp-error-message {
