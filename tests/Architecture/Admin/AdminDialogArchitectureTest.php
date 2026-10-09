@@ -49,6 +49,9 @@ it('routes every admin dialog consumer through the shared dialog adapter', funct
         '->modalContent(',
         '->modalSubmitAction(',
         '->extraModalFooterActions(',
+        '->createOptionModalHeading(',
+        '->createOptionForm(',
+        '->createOptionAction(',
     ];
 
     foreach ($scanRoots as $scanRoot) {
