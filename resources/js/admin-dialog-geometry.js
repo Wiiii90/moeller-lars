@@ -7,7 +7,6 @@ function modalFromOpenEvent(event) {
     const modal = document.getElementById(String(id));
     if (! modal?.classList.contains('fi-modal')) return null;
     if (modal.classList.contains('fi-modal-click-through')) return null;
-    if (! modal.querySelector(':scope > .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog')) return null;
 
     return modal;
 }
@@ -46,10 +45,12 @@ function resetModalScroll(modal) {
 }
 
 function syncModalGeometry(modal, { resetScroll = false } = {}) {
-    if (! modal) return;
+    if (! modal || modal.classList.contains('fi-modal-click-through')) return;
 
     const main = activeMain(modal);
     if (! main) return;
+
+    modal.classList.add('admin-dialog-frame');
 
     const mainRect = main.getBoundingClientRect();
     const mainStyle = window.getComputedStyle(main);
@@ -82,8 +83,10 @@ function syncOpenModalGeometry() {
     }
 }
 
-// The application owns only placement geometry. Filament owns modal opening,
-// document scroll lock, focus trapping, Escape, close/destroy and lock cleanup.
+// The application owns only placement geometry. Every blocking Filament modal
+// opened over an admin Main frame receives the same measured content bounds.
+// Filament owns modal opening, document scroll lock, focus trapping, Escape,
+// close/destroy and lock cleanup.
 window.addEventListener('open-modal', (event) => {
     syncModalGeometry(modalFromOpenEvent(event));
 }, true);
