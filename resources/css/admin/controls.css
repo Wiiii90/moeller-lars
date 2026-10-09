@@ -267,15 +267,17 @@
 /* Edit state is already populated. Required remains a validation rule, but the
  * red required mark is create-time guidance and is intentionally absent from
  * canonical edit dialogs. */
+.admin-dialog--edit :is(
+    .fi-fo-field-label-required-mark,
+    .fi-fo-field-wrp-label-required-mark,
+    .fi-fieldset-label-required-mark,
+    .fi-fo-table-repeater-header-required-mark
+),
 .admin-dialog--edit .admin-control-field :is(
     .fi-fo-field-label,
     .fi-fo-field-label-content,
     .fi-fo-field-wrp-label
-) > :is(
-    sup,
-    .fi-fo-field-label-required-mark,
-    .fi-fo-field-wrp-label-required-mark
-) {
+) > sup {
     display: none !important;
 }
 
