@@ -26,9 +26,9 @@ Use `App\Filament\Support\Controls\AdminControl` for ordinary fields in admin sc
 
 The factory returns native Filament fields. Filament continues to own state, validation, accessibility and popup behavior. The factory only applies the shared admin wrapper contract.
 
-Raw core Filament fields are allowed only when a field cannot be represented by the factory or when a framework integration requires the concrete construction point. In that case call `AdminControl::decorate()` on the field so it still participates in the shared contract.
+`AdminControl::register()` is the panel-wide visual authority for ordinary Filament fields. TextInput, Textarea, Select, Checkbox, Toggle, Date/DateTime, FileUpload, MarkdownEditor, ColorPicker and OneTimeCodeInput therefore enter the same wrapper/control grammar even when a framework integration or an existing schema constructs the concrete Filament field directly.
 
-The admin panel also registers the adapter globally. This protects existing schemas while they are migrated and prevents an ordinary raw Filament field from silently falling back to a second visual language. New code should still prefer the factory because it makes ownership explicit.
+New project-owned schema code should prefer the factory helpers when they express the field clearly because ownership is explicit. Direct core Filament construction is not a second visual language and does not require a page-local styling path; use `AdminControl::decorate()` only for a field type that is outside the globally registered set.
 
 Boolean fields are part of the same grammar: Checkbox/Toggle and their labels share one vertical field axis; framework default top offsets must not create a second alignment system. Required Select fields keep validation semantics but do not allow their neutral placeholder as a selectable state. In an Edit dialog persisted required state is already populated, so the UI suppresses required-star decoration without weakening validation. Optional semantic null states such as a page parent of `Top level` remain available when the domain explicitly supports them.
 
