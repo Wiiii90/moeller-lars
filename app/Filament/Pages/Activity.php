@@ -1118,14 +1118,6 @@ final class Activity extends Page
             );
         }
 
-        if (is_string($event['url'] ?? null) && $event['url'] !== '') {
-            $actions[] = Action::make('openActivityRecord')
-                ->label('Open record')
-                ->icon(AdminIcon::OpenPublic->value)
-                ->iconButton()
-                ->color('gray')
-                ->url($event['url']);
-        }
 
         return $actions;
     }
