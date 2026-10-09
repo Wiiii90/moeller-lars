@@ -87,7 +87,7 @@ trait GalleryWorkspaceUploadSettings
                 }
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 
     public function materialPresetsAction(): Action
