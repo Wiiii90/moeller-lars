@@ -1,7 +1,7 @@
 @php
     $summary = $publication['summary'];
     $preflight = $publication['preflight'];
-    $details = app(\App\Domain\Publication\PublicationService::class)->pendingDetails();
+    $details = $publication['details'];
 @endphp
 
 <div class="admin-detail-dialog activity-publication-review">
