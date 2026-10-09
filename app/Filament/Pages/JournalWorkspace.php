@@ -611,7 +611,7 @@ final class JournalWorkspace extends Page
 
         return AdminDialog::confirm(
             $action,
-            'Delete this '.$type.'?',
+            'Delete '.$type.'?',
             'Files in Storage are preserved. Only this Journal entry and its references are removed.',
             'Delete',
             danger: true,
@@ -630,7 +630,7 @@ final class JournalWorkspace extends Page
 
         return AdminDialog::confirm(
             $action,
-            'Delete selected posts?',
+            'Delete posts?',
             'Published and scheduled posts are kept. Files in Storage are preserved.',
             'Delete',
             danger: true,
@@ -649,7 +649,7 @@ final class JournalWorkspace extends Page
 
         return AdminDialog::confirm(
             $action,
-            'Delete selected exhibitions?',
+            'Delete exhibitions?',
             'Published exhibitions are kept. Files in Storage are preserved.',
             'Delete',
             danger: true,
