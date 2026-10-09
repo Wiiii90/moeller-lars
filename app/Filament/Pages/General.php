@@ -404,7 +404,7 @@ final class General extends Page
         return AdminDialog::create(
             Action::make('addSocialLink')
                 ->label('Add social link')
-                ->modalHeading('Add social media profile')
+                ->modalHeading('Add profile')
                 ->fillForm(fn (): array => [
                     'platform' => '',
                     'url' => '',
@@ -428,7 +428,7 @@ final class General extends Page
                         ->minValue(1)
                         ->required(),
                 ]),
-            'Add social media profile',
+            'Add profile',
             AdminDialogSize::Small,
         )->action(function (array $data): void {
             $links = $this->socialLinks();
