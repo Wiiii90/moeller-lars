@@ -102,8 +102,8 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
     }
 }
 /* The modal container is positioning geometry only. The dialog content is
- * the one and only modal-internal scroller. A pre-existing document scrollbar
- * may remain visible at the viewport edge, but its scroll position is frozen. */
+ * the one and only modal-internal scroller. Document scroll locking remains
+ * entirely Filament-owned. */
 .admin-task-dialog .fi-modal-content {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--admin-muted) 48%, transparent) transparent;
