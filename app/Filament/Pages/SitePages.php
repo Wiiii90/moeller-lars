@@ -267,8 +267,7 @@ final class SitePages extends Page
         return AdminDialog::edit(
             Action::make('editPlacement')
                 ->label('Edit')
-                ->modalHeading('Edit page placement')
-                ->modalDescription('Choose whether this page is top level or belongs under another top-level page.')
+                ->modalHeading('Page placement')
                 ->fillForm(function (array $arguments): array {
                     /** @var SiteSection $section */
                     $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
@@ -351,7 +350,7 @@ final class SitePages extends Page
                 ->action(function (array $arguments): void {
                     $this->deleteSection((int) ($arguments['section'] ?? 0));
                 }),
-            heading: 'Delete this page?',
+            heading: 'Delete page?',
             description: 'The page is removed only when publication, navigation, child-page and content safety rules allow it.',
             submitLabel: 'Delete',
             danger: true,
@@ -366,7 +365,7 @@ final class SitePages extends Page
                 ->action(function (): void {
                     $this->bulkDelete();
                 }),
-            heading: 'Delete selected pages?',
+            heading: 'Delete pages?',
             description: 'Only selected pages that satisfy the current safety rules are removed. Blocked pages are kept.',
             submitLabel: 'Delete',
             danger: true,
