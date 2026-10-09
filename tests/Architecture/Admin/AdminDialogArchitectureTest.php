@@ -42,8 +42,45 @@ it('routes every admin dialog consumer through the shared dialog adapter', funct
     sort($consumers);
     sort($violations);
 
+    $rawModalConsumers = [];
+    $modalTokens = [
+        '->modalHeading(',
+        '->modalDescription(',
+        '->modalContent(',
+        '->modalSubmitAction(',
+        '->extraModalFooterActions(',
+    ];
+
+    foreach ($scanRoots as $scanRoot) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($scanRoot, FilesystemIterator::SKIP_DOTS),
+        );
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $source = file_get_contents($file->getPathname());
+            if ($source === false || str_ends_with($file->getPathname(), 'AdminDialog.php')) {
+                continue;
+            }
+
+            $usesModalApi = collect($modalTokens)->contains(
+                static fn (string $token): bool => str_contains($source, $token),
+            );
+
+            if ($usesModalApi && ! str_contains($source, 'AdminDialog::')) {
+                $rawModalConsumers[] = str_replace($root.DIRECTORY_SEPARATOR, '', $file->getPathname());
+            }
+        }
+    }
+
+    sort($rawModalConsumers);
+
     expect($consumers)->not->toBe([])
-        ->and($violations)->toBe([]);
+        ->and($violations)->toBe([])
+        ->and($rawModalConsumers)->toBe([]);
 });
 
 it('keeps editorial dialog geometry and storage preview details on the shared layout contract', function (): void {
