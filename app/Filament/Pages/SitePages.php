@@ -315,7 +315,7 @@ final class SitePages extends Page
 
                     $this->loadSections();
                 }),
-            AdminDialogSize::Default,
+            AdminDialogSize::Small,
         );
     }
 
