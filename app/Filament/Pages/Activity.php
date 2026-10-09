@@ -492,7 +492,7 @@ final class Activity extends Page
                 ->action(function (): void {
                     $this->performResetStagedChanges();
                 }),
-            heading: 'Reset staged changes?',
+            heading: 'Reset changes?',
             description: 'The working state will be restored exactly to the current LIVE version. Activity history is preserved.',
             submitLabel: 'Reset',
             icon: AdminIcon::Undo,
@@ -507,7 +507,7 @@ final class Activity extends Page
                 ->action(function (): void {
                     $this->performUndoSelectedActivity();
                 }),
-            heading: 'Undo selected changes?',
+            heading: 'Undo changes?',
             description: 'Newer selected changes are undone first. Changes without a safe Undo receipt are skipped. Activity history remains available.',
             submitLabel: 'Undo',
             icon: AdminIcon::Undo,
@@ -522,7 +522,7 @@ final class Activity extends Page
                 ->action(function (): void {
                     $this->performRestoreSelectedCommit();
                 }),
-            heading: 'Restore selected version?',
+            heading: 'Restore version?',
             description: 'The selected version will replace all current staged work. The LIVE site will not change until you commit.',
             submitLabel: 'Restore',
             icon: AdminIcon::Undo,
@@ -537,7 +537,7 @@ final class Activity extends Page
                 ->action(function (): void {
                     $this->performRevertSelectedCommit();
                 }),
-            heading: 'Revert selected LIVE commit?',
+            heading: 'Revert commit?',
             description: 'Its parent version will replace all current staged work for review. Nothing is published until you commit.',
             submitLabel: 'Revert',
             icon: AdminIcon::Undo,
@@ -591,7 +591,7 @@ final class Activity extends Page
 
                     $this->performRestoreVersion((int) $commit['id']);
                 }),
-            heading: fn (array $arguments): string => 'Restore version '.($this->commitDetails($arguments)['short_hash'] ?? '').'?',
+            heading: 'Restore version?',
             description: 'This replaces all current staged work with the selected version. The LIVE site will not change until you commit.',
             submitLabel: 'Restore',
             icon: AdminIcon::Undo,
@@ -613,7 +613,7 @@ final class Activity extends Page
 
                     $this->performRevertCurrentCommit();
                 }),
-            heading: fn (array $arguments): string => 'Revert LIVE commit '.($this->commitDetails($arguments)['short_hash'] ?? '').'?',
+            heading: 'Revert commit?',
             description: 'Its parent version will replace all current staged work for review. Nothing is published until you commit.',
             submitLabel: 'Revert',
             icon: AdminIcon::Undo,
@@ -640,7 +640,7 @@ final class Activity extends Page
         return AdminDialog::viewer(
             Action::make('publicationReview')
                 ->label('Review changes')
-                ->modalHeading('Review staged changes')
+                ->modalHeading('Review changes')
                 ->modalContent(fn (): View => view(
                     'filament.pages.partials.activity-publication-review-dialog',
                     ['publication' => $this->publicationReview()],
