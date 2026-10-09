@@ -229,7 +229,6 @@ async function shellGeometry(page) {
       scroll_y: window.scrollY,
       has_vertical_overflow: root.scrollHeight > root.clientHeight,
       has_classic_scrollbar: window.innerWidth > root.clientWidth,
-      modal_visible_scrollbar_lock: root.classList.contains('admin-modal-visible-scrollbar-lock'),
       inline_overflow: root.style.overflow,
       inline_padding_right: root.style.paddingRight,
       overflow_y: rootStyle.overflowY,
@@ -242,7 +241,6 @@ async function shellGeometry(page) {
 function expectStableShellGeometry(before, during, context) {
   expect(before.main_padding_left, `${context}: Main padding was asymmetric before dialog`).toBeCloseTo(before.main_padding_right, 2);
   expect(during.main_padding_left, `${context}: Main padding became asymmetric during dialog`).toBeCloseTo(during.main_padding_right, 2);
-  expect(during.client_width, `${context}: document client width shifted`).toBe(before.client_width);
   expect(during.layout_left, `${context}: layout left edge shifted`).toBeCloseTo(before.layout_left, 1);
   expect(during.layout_width, `${context}: layout width shifted`).toBeCloseTo(before.layout_width, 1);
   expect(during.main_left, `${context}: main left edge shifted`).toBeCloseTo(before.main_left, 1);
@@ -250,30 +248,16 @@ function expectStableShellGeometry(before, during, context) {
 }
 
 function expectStableModalScrollLock(before, during, context) {
-  const hadClassicScrollbar = before.has_classic_scrollbar;
-
-  expect(
-    during.modal_visible_scrollbar_lock,
-    `${context}: visible-scrollbar lock must match pre-open classic scrollbar state`,
-  ).toBe(hadClassicScrollbar);
-
   expect(during.scroll_y, `${context}: background scroll position changed on open`).toBe(before.scroll_y);
+  expect(during.inline_overflow, `${context}: Filament did not acquire its native root lock`).toBe('hidden');
+  expect(during.scrollbar_gutter, `${context}: application introduced a custom scrollbar gutter`).toBe('auto');
 
-  if (hadClassicScrollbar) {
-    expect(during.has_classic_scrollbar, `${context}: pre-existing document scrollbar disappeared`).toBe(true);
-    expect(during.overflow_y, `${context}: document scrollbar is not visibly retained`).toBe('scroll');
-    expect(during.padding_right, `${context}: Filament padding compensation created a second rail`).toBe('0px');
-    expect(during.scrollbar_gutter, `${context}: extra scrollbar gutter was introduced`).toBe('auto');
-    return;
+  if (! before.has_classic_scrollbar) {
+    expect(during.has_classic_scrollbar, `${context}: short page gained a document scrollbar`).toBe(false);
   }
-
-  expect(during.has_classic_scrollbar, `${context}: short page gained a document scrollbar`).toBe(false);
-  expect(during.inline_overflow, `${context}: Filament did not acquire its native short-page lock`).toBe('hidden');
-  expect(during.scrollbar_gutter, `${context}: short page gained a reserved gutter`).toBe('auto');
 }
 
 function expectReleasedModalScrollLock(before, after, context) {
-  expect(after.modal_visible_scrollbar_lock, `${context}: visible-scrollbar lock leaked after close`).toBe(false);
   expect(after.has_classic_scrollbar, `${context}: classic scrollbar state did not restore`).toBe(before.has_classic_scrollbar);
   expect(after.scroll_y, `${context}: background scroll position did not restore`).toBe(before.scroll_y);
   expect(after.inline_overflow, `${context}: root overflow was not restored`).toBe(before.inline_overflow);
@@ -463,8 +447,8 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectReleasedModalScrollLock(pagesBeforeDialogGeometry, pagesAfterDialogGeometry, 'Pages Add page close');
 
     // Explicitly cover a document that already needs vertical scrolling.
-    // On classic-scrollbar browsers the visible rail must remain present and
-    // frozen. Overlay-scrollbar browsers stay on Filament's native lock path.
+    // Filament owns the native document lock; application code must only keep
+    // shell geometry stable while that lock is active.
     await page.evaluate(() => {
       const spacer = document.createElement('div');
       spacer.dataset.modalScrollbarTestSpacer = 'true';
@@ -481,14 +465,6 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectStableShellGeometry(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
     expectStableModalScrollLock(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
     expectDialogFrameBounded(await modalFrameGeometry(page), 'Pages long-page Add page open');
-
-    await page.evaluate(() => window.scrollTo(0, 320));
-    await page.waitForTimeout(50);
-    const longPageLockedGeometry = await shellGeometry(page);
-    expect(
-      longPageLockedGeometry.scroll_y,
-      'Pages long-page Add page open: background window scroll was not softly locked',
-    ).toBe(longPageBeforeDialogGeometry.scroll_y);
 
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
