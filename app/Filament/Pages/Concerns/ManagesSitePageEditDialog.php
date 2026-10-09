@@ -87,8 +87,7 @@ trait ManagesSitePageEditDialog
                             ->numeric()
                             ->integer()
                             ->minValue(1)
-                            ->required()
-                            ->helperText('Position within the selected level. Home remains fixed at position 1.'),
+                            ->required(),
                         Checkbox::make('show_in_navigation')
                             ->label('Show in navigation')
                             ->columnSpanFull(),
