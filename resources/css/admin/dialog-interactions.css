@@ -44,14 +44,6 @@
     z-index: 12;
 }
 
-/* Activity record navigation was retired. Keep a possible Undo button in the
- * shared rail, but do not surface the stale URL action that older feed events
- * can still project. */
-.admin-dialog--header-actions:has(.admin-detail-dialog--activity)
-    .fi-modal-footer-actions > a.fi-icon-btn {
-    display: none !important;
-}
-
 /* Programmatic focus restoration during modal morphs must stay keyboard-visible
  * without looking like a phantom mouse hover when the pointer is elsewhere. */
 .admin-dialog--header-actions .fi-modal-close-btn:focus-visible {
