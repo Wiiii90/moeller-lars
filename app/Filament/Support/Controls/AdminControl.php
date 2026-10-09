@@ -94,6 +94,14 @@ final class AdminControl
      */
     public static function decorate($field)
     {
+        if ($field instanceof Select) {
+            // Required selects may still render Filament's neutral placeholder
+            // before a create value exists, but it is never a selectable state.
+            // Edit dialogs are filled from persisted state, so they cannot fall
+            // back to a selectable "Select an option" branch.
+            $field->selectablePlaceholder(fn (): bool => ! $field->isRequired());
+        }
+
         return $field->extraFieldWrapperAttributes([
             'class' => self::WRAPPER_CLASS,
             'data-admin-control' => $field->getName(),
