@@ -155,6 +155,7 @@ final class MediaAssetSelect
     ): Select {
         return $select
             ->label($label)
+            ->placeholder('Choose from Storage')
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
                 $search,
