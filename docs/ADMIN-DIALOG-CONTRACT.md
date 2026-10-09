@@ -1,6 +1,6 @@
 # Admin dialog contract
 
-Admin dialogs are native Filament Action modals with one shared presentation and lifecycle contract. The implementation lives in `App\Filament\Support\Dialogs\AdminDialog` and `resources/css/admin/dialog-contract.css`.
+Admin dialogs are native Filament Action modals with one shared presentation and lifecycle contract. Project-owned dialog semantics live in `App\Filament\Support\Dialogs\AdminDialog`; shared frame/chrome live in `resources/css/admin/dialog-contract.css` and `resources/js/admin-dialog-geometry.js`. Framework-owned blocking subdialogs (for example Filament MFA setup/recovery flows) keep their vendor workflow semantics but adopt the same measured admin content frame and globally registered control grammar. Do not copy those vendor workflows into a second project implementation.
 
 Do not create page-local modal families, custom close behavior or footer button systems. Do not use Livewire `wire:confirm` or browser-native confirmation prompts in the admin; confirmations go through `AdminDialog::confirm()`.
 
