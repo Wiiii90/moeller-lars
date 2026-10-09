@@ -31,7 +31,9 @@ Edits operate on an existing record or settings object.
 - no Save/Apply/Cancel footer exists;
 - the native Filament `X` closes the dialog and does not trigger another write;
 - text does not save per keystroke and no debounce timer is used;
-- where the current edit session has reversible receipts, an Undo changes action may appear immediately left of `X`.
+- where the current edit session has reversible receipts, an Undo changes action may appear immediately left of `X`;
+- required validation remains active, but Edit dialogs do not render red required-star decoration because persisted required fields enter the editor with a value;
+- required selects do not expose a selectable null/"Select an option" branch. Optional semantic null values such as `Top level` remain explicit options/placeholders where the domain requires them.
 
 Use `AdminDialog::edit()`.
 
@@ -123,8 +125,12 @@ The native Filament close control is always the final top-right control. Filamen
 Contextual actions are native Filament Actions lifted into the shared header rail. The shared adapter explicitly keeps modal and footer-action alignment at `Start`. Confirmation dialogs deliberately remain normal Filament modals so Filament cannot introduce a second confirmation-specific width, alignment, warning-icon, alert-role or footer-layout branch underneath the shared adapter.
 
 
+- the heading starts at the canonical content inset and occupies the same first-row vertical axis as the header actions;
 - `X` is always at the far right;
 - contextual actions sit immediately to its left in semantic order;
+- header reserve is derived from the number of actual header actions. Do not reserve a fixed empty action rail;
+- task headings are concise noun/action phrases, normally one or two words (`Edit file`, `Delete page?`, `Page settings`). Viewer headings may use the record title when identity is the point of the dialog;
+- descriptions are exceptional: keep them only for a material consequence, ambiguity or safety rule that the controls themselves do not communicate. Do not restate the heading or narrate obvious form behavior;
 - use `admin-dialog__header-action` and canonical `AdminIcon` entries;
 - commit actions use the primary treatment;
 - destructive actions use the danger treatment;
@@ -141,7 +147,7 @@ Undo must extend the existing Activity/Audit receipt architecture. Do not create
 
 ## Controls
 
-Dialog schemas use the canonical controls from `ADMIN-CONTROL-CONTRACT.md`. A dialog does not get a separate form design language.
+Dialog schemas use the canonical controls from `ADMIN-CONTROL-CONTRACT.md`. A dialog does not get a separate form design language. The panel-wide `AdminControl::register()` adapter means ordinary Filament TextInput/Select/Checkbox/Toggle/etc. instances still receive the canonical wrapper and geometry; specialized editors continue to use their named canonical control components.
 
 ## Motion
 
@@ -159,4 +165,4 @@ Width modifiers are desktop maxima, not fixed mobile widths. On narrow viewports
 
 Dialog-internal scrolling remains visibly discoverable. The shared contract styles the internal scrollbar as a narrow, low-contrast thumb with a transparent track; it must remain wheel, trackpad, touch and keyboard scrollable. Do not hide dialog scrollbars by default.
 
-Opening or closing a blocking admin task dialog must leave scroll ownership with Filament. The application must not intercept the Filament modal provider, install a second document scroll lock, restore window scroll positions from project JavaScript, or keep modal-specific global wheel/touch/key listeners. Filament owns modal state, overlay, focus trapping, Escape, the native X, animation and its native reference-counted scroll lock, including cleanup when a modal is destroyed during a Livewire update. Page-local scroll-lock workarounds are forbidden.
+Opening or closing a blocking admin task dialog keeps Filament as the lifecycle owner: modal state, focus trapping, Escape, native X, animation and the native reference-counted lock remain framework-owned. The one shared dialog-geometry companion may preserve an already-visible classic document scrollbar while freezing its scroll position so the shell does not jump; it must never create a page-local modal lifecycle or second modal component. The outer modal container is positioning geometry only; `.fi-modal-content` is the sole dialog-internal scroller. Page-local scroll-lock workarounds are forbidden.
