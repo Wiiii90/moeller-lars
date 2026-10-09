@@ -425,7 +425,7 @@ final class JournalWorkspace extends Page
                 }
             });
 
-        return AdminDialog::edit($action);
+        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 
     public function addPostAction(): Action
