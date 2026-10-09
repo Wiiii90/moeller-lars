@@ -26,3 +26,18 @@ it('keeps persistent help triggers below the Filament modal layer', function ():
         ->toContain('z-index: 20;')
         ->not->toContain('z-index: 120;');
 });
+
+it('keeps dialog headings and header actions on one shared first-row axis', function (): void {
+    $root = dirname(__DIR__, 3);
+    $contract = file_get_contents($root.'/resources/css/admin/dialog-contract.css');
+
+    expect($contract)
+        ->toContain('--admin-dialog-header-reserve')
+        ->toContain('.admin-dialog--header-actions .fi-modal-header > div:last-child')
+        ->toContain('.admin-dialog--header-actions .fi-modal-heading')
+        ->toContain('min-height: var(--admin-dialog-header-action-size);')
+        ->toContain('align-items: center;')
+        ->toContain('.admin-dialog--header-actions:has(.fi-modal-footer-actions > :first-child)')
+        ->toContain('.admin-dialog--header-actions:has(.fi-modal-footer-actions > :nth-child(4))')
+        ->not->toContain('padding-inline-end: 9rem;');
+});
