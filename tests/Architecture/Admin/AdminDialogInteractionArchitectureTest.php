@@ -39,5 +39,9 @@ it('keeps dialog headings and header actions on one shared first-row axis', func
         ->toContain('align-items: center;')
         ->toContain('.admin-dialog--header-actions:has(.fi-modal-footer-actions > :first-child)')
         ->toContain('.admin-dialog--header-actions:has(.fi-modal-footer-actions > :nth-child(4))')
-        ->not->toContain('padding-inline-end: 9rem;');
+        ->not->toContain('padding-inline-end: 9rem;')
+        ->not->toContain('padding-inline-end: 6.75rem;')
+        ->not->toContain('.admin-dialog--confirmation .fi-modal-header {')
+        ->not->toContain('.admin-dialog--confirmation .fi-modal-heading {')
+        ->not->toContain('.admin-dialog--confirmation .fi-modal-description {');
 });
