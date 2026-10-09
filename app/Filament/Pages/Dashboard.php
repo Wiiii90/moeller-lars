@@ -359,7 +359,6 @@ final class Dashboard extends Page
                     $this->deleteFeedEntry((string) ($arguments['key'] ?? ''));
                 }),
             'Delete message?',
-            'Removes the stored dashboard message.',
         );
     }
 
@@ -373,7 +372,6 @@ final class Dashboard extends Page
                     $this->bulkDelete();
                 }),
             'Delete messages?',
-            'Removes the selected contact messages and notifications.',
         );
     }
 
@@ -618,7 +616,6 @@ final class Dashboard extends Page
             $deleteAction = $this->configureConfirmation(
                 $deleteAction,
                 'Delete message?',
-                'Removes the stored dashboard message.',
             );
         }
 
@@ -630,18 +627,17 @@ final class Dashboard extends Page
         return (bool) auth()->user()?->getAttribute('dashboard_delete_without_confirmation');
     }
 
-    private function confirmationAction(Action $action, string $heading, string $description): Action
+    private function confirmationAction(Action $action, string $heading): Action
     {
-        return $this->configureConfirmation($action, $heading, $description);
+        return $this->configureConfirmation($action, $heading);
     }
 
-    private function configureConfirmation(Action $action, string $heading, string $description): Action
+    private function configureConfirmation(Action $action, string $heading): Action
     {
         return AdminDialog::confirm(
             $action,
             heading: $heading,
-            description: $description,
-            submitLabel: 'Confirm',
+            submitLabel: 'Delete',
             danger: true,
         );
     }
