@@ -9,13 +9,13 @@ use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\MediaAssetSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -81,11 +81,15 @@ class GalleryImagesRelationManager extends RelationManager
                         ->label('Add from Storage')
                         ->icon(AdminIcon::AddFromLibrary)
                         ->schema([
-                            Select::make('media_asset_id')
-                                ->label('Available media')
-                                ->options(fn (): array => $this->availableMediaOptions())
-                                ->searchable()
-                                ->required(),
+                            MediaAssetSelect::makeId(
+                                'media_asset_id',
+                                'Available media',
+                                imagesOnly: true,
+                                modifyQueryUsing: fn (Builder $query): Builder => $query->whereNotIn(
+                                    'id',
+                                    $this->usedMediaAssetIds(),
+                                ),
+                            )->required(),
                         ])
                         ->action(function (array $data): void {
                             /** @var Artwork $artwork */
@@ -142,19 +146,15 @@ class GalleryImagesRelationManager extends RelationManager
             ->emptyStateDescription('The primary artwork image remains separate. Add secondary views, details or installation images here.');
     }
 
-    /** @return array<int, string> */
-    private function availableMediaOptions(): array
+    /** @return list<int> */
+    private function usedMediaAssetIds(): array
     {
         /** @var Artwork $artwork */
         $artwork = $this->getOwnerRecord();
-        $usedIds = $artwork->artworkMedia()->pluck('media_asset_id');
 
-        return MediaAsset::query()
-            ->where('state', 'available')
-            ->whereNotIn('id', $usedIds)
-            ->orderByDesc('created_at')
-            ->limit(250)
-            ->pluck('original_filename', 'id')
+        return $artwork->artworkMedia()
+            ->pluck('media_asset_id')
+            ->map(static fn (mixed $id): int => (int) $id)
             ->all();
     }
 
