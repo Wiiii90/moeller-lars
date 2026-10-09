@@ -105,16 +105,32 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $mediaPreview = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/preview-dialog.blade.php');
     $gallerySelection = file_get_contents($root.'/app/Filament/Pages/Concerns/GalleryWorkspaceSelectionSupport.php');
     $homeRoutingDialog = file_get_contents($root.'/app/Filament/Support/HomeRoutingDialog.php');
+    $sitePages = file_get_contents($root.'/app/Filament/Pages/SitePages.php');
+    $journalWorkspace = file_get_contents($root.'/app/Filament/Pages/JournalWorkspace.php');
+    $gallerySettings = file_get_contents($root.'/app/Filament/Pages/Concerns/GalleryWorkspaceUploadSettings.php');
+    $mediaAssets = file_get_contents($root.'/app/Filament/Resources/MediaAssets/Pages/ListMediaAssets.php');
 
     expect($adapter)
         ->toContain('AdminDialogSize $size = AdminDialogSize::Large')
-        ->toContain('$size === AdminDialogSize::Small ? AdminDialogSize::Small : AdminDialogSize::Large')
+        ->toContain('self::base($action, AdminDialogType::Edit, $size)')
+        ->not->toContain('$size === AdminDialogSize::Small ? AdminDialogSize::Small : AdminDialogSize::Large')
         ->toContain('self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)')
         ->toContain('->modal($condition)')
         ->toContain('->modalAlignment(Alignment::Start)')
         ->toContain('->modalFooterActionsAlignment(Alignment::Start)')
         ->not->toContain('->requiresConfirmation(')
         ->not->toContain('AdminDialogSize::Mini');
+
+    expect($sitePages)
+        ->toContain("AdminDialogSize::Small,\n        );");
+
+    expect($journalWorkspace)
+        ->toContain('return AdminDialog::edit($action, AdminDialogSize::Default);')
+        ->toContain('return AdminDialog::edit($action, AdminDialogSize::Large);');
+
+    expect(substr_count($gallerySettings, 'AdminDialog::edit($action, AdminDialogSize::Default)'))->toBe(2);
+
+    expect(substr_count($mediaAssets, 'AdminDialog::edit($action, AdminDialogSize::Default)'))->toBe(2);
 
     expect($contract)
         ->toContain('.admin-task-dialog .fi-modal-content')
