@@ -1,40 +1,49 @@
 <?php
 
-it('routes migrated admin dialogs through the shared dialog adapter', function (): void {
+it('routes every admin dialog consumer through the shared dialog adapter', function (): void {
     $root = dirname(__DIR__, 3);
-    $files = [
-        'app/Filament/Pages/Activity.php',
-        'app/Filament/Pages/Dashboard.php',
-        'app/Filament/Pages/General.php',
-        'app/Filament/Pages/HomePresentation.php',
-        'app/Filament/Pages/JournalWorkspace.php',
-        'app/Filament/Pages/SitePages.php',
-        'app/Filament/Resources/MediaAssets/Pages/ListMediaAssets.php',
-        'app/Livewire/Admin/SiteStorageReclaimControl.php',
-        'app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php',
-        'app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php',
-        'app/Filament/Pages/Concerns/CustomPageWorkspaceComponentActions.php',
-        'app/Filament/Pages/Concerns/CustomPageWorkspaceLifecycle.php',
-        'app/Filament/Pages/Concerns/CustomPageWorkspaceListContactActions.php',
-        'app/Filament/Pages/Concerns/GalleryWorkspaceArtworkActions.php',
-        'app/Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php',
-        'app/Filament/Pages/Concerns/GalleryWorkspaceBatchActions.php',
-        'app/Filament/Pages/Concerns/GalleryWorkspaceMoveActions.php',
-        'app/Filament/Pages/Concerns/GalleryWorkspaceUploadSettings.php',
+    $scanRoots = [
+        $root.'/app/Filament',
+        $root.'/app/Livewire/Admin',
     ];
+    $consumers = [];
+    $violations = [];
 
-    foreach ($files as $file) {
-        $path = $root.'/'.$file;
+    foreach ($scanRoots as $scanRoot) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($scanRoot, FilesystemIterator::SKIP_DOTS),
+        );
 
-        expect(is_file($path), $file)->toBeTrue();
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
 
-        $source = file_get_contents($path);
-        expect($source, $file)->toBeString();
-        expect($source, $file)
-            ->toContain('AdminDialog::')
-            ->not->toContain('->modalWidth(')
-            ->not->toContain('->extraModalWindowAttributes(');
+            $source = file_get_contents($file->getPathname());
+            if ($source === false || ! str_contains($source, 'AdminDialog::')) {
+                continue;
+            }
+
+            $relative = str_replace($root.DIRECTORY_SEPARATOR, '', $file->getPathname());
+            if ($relative === 'app/Filament/Support/Dialogs/AdminDialog.php') {
+                continue;
+            }
+
+            $consumers[] = $relative;
+
+            if (str_contains($source, '->modalWidth(')
+                || str_contains($source, '->extraModalWindowAttributes(')
+                || str_contains($source, '->requiresConfirmation(')) {
+                $violations[] = $relative;
+            }
+        }
     }
+
+    sort($consumers);
+    sort($violations);
+
+    expect($consumers)->not->toBe([])
+        ->and($violations)->toBe([]);
 });
 
 it('keeps editorial dialog geometry and storage preview details on the shared layout contract', function (): void {
@@ -54,6 +63,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $homeView = file_get_contents($root.'/resources/views/filament/pages/home-presentation.blade.php');
     $artworkPreview = file_get_contents($root.'/resources/views/filament/resources/artworks/partials/preview-dialog.blade.php');
     $mediaPreview = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/preview-dialog.blade.php');
+    $gallerySelection = file_get_contents($root.'/app/Filament/Pages/Concerns/GalleryWorkspaceSelectionSupport.php');
 
     expect($adapter)
         ->toContain('AdminDialogSize $size = AdminDialogSize::Large')
@@ -67,6 +77,10 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
 
     expect($contract)
         ->toContain('.admin-task-dialog .fi-modal-content')
+        ->toContain('--admin-dialog-header-reserve')
+        ->toContain('.admin-dialog--header-actions .fi-modal-heading')
+        ->toContain('min-height: var(--admin-dialog-header-action-size);')
+        ->toContain('.admin-dialog--header-actions:has(.fi-modal-footer-actions > :nth-child(4))')
         ->toContain('scrollbar-width: thin')
         ->toContain('transform-origin: top right;')
         ->toContain('transition-duration: 200ms !important;')
@@ -192,6 +206,11 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr));')
         ->toContain('.media-file-dialog__references a,')
         ->toContain('grid-template-columns: minmax(8rem, .55fr) minmax(0, 1fr);');
+
+    expect($gallerySelection)
+        ->toContain('private array $actionArtworkCache = []')
+        ->toContain('isset($this->actionArtworkCache[$artworkId])')
+        ->toContain('return $this->actionArtworkCache[$artworkId] = $artwork;');
 });
 
 it('does not reintroduce Filament confirmation mode in admin application code', function (): void {
