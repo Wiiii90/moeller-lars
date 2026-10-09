@@ -30,6 +30,8 @@ Raw core Filament fields are allowed only when a field cannot be represented by 
 
 The admin panel also registers the adapter globally. This protects existing schemas while they are migrated and prevents an ordinary raw Filament field from silently falling back to a second visual language. New code should still prefer the factory because it makes ownership explicit.
 
+Boolean fields are part of the same grammar: Checkbox/Toggle and their labels share one vertical field axis; framework default top offsets must not create a second alignment system. Required Select fields keep validation semantics but do not allow their neutral placeholder as a selectable state. In an Edit dialog persisted required state is already populated, so the UI suppresses required-star decoration without weakening validation. Optional semantic null states such as a page parent of `Top level` remain available when the domain explicitly supports them.
+
 ## Specialized canonical controls
 
 These are intentionally specialized and remain canonical:
