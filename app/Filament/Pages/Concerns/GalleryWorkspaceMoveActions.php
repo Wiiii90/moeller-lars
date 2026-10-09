@@ -135,7 +135,7 @@ trait GalleryWorkspaceMoveActions
     {
         $action = Action::make('moveArtworkToGallery')
             ->label('Move to Gallery')
-            ->modalHeading(fn (array $arguments): string => 'Move '.$this->actionArtwork($arguments)->getAttribute('title'))
+            ->modalHeading('Move artwork')
             ->schema([
                 Select::make('target_gallery_id')
                     ->label('Destination Gallery')
@@ -153,7 +153,7 @@ trait GalleryWorkspaceMoveActions
     {
         $action = Action::make('moveSelectedToGallery')
             ->label('Move to Gallery')
-            ->modalHeading('Move selected artworks')
+            ->modalHeading('Move artworks')
             ->schema([
                 Select::make('target_gallery_id')
                     ->label('Destination Gallery')
@@ -164,7 +164,7 @@ trait GalleryWorkspaceMoveActions
                 $this->reassignSelectedArtworksTo((int) ($data['target_gallery_id'] ?? 0));
             });
 
-        return AdminDialog::command($action, 'Move selected artworks');
+        return AdminDialog::command($action, 'Move artworks');
     }
 
     private function reassignArtworkTo(int $artworkId, int $targetGalleryId): void
