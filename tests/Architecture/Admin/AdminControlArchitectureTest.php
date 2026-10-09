@@ -182,3 +182,31 @@ it('keeps dialog fields on the canonical control grammar', function (): void {
         ->toContain('.fi-fo-field-label-required-mark')
         ->toContain('display: none !important;');
 });
+
+it('keeps dialog media selection on the lazy Storage picker', function (): void {
+    $root = dirname(__DIR__, 3);
+    $picker = file_get_contents($root.'/app/Filament/Support/MediaAssetSelect.php');
+    $artwork = file_get_contents($root.'/app/Filament/Support/ArtworkEditDialog.php');
+    $galleryImages = file_get_contents($root.'/app/Filament/Resources/Artworks/RelationManagers/GalleryImagesRelationManager.php');
+
+    expect($picker)
+        ->toContain('?array $allowedMimeTypes = null')
+        ->toContain('?Closure $modifyQueryUsing = null')
+        ->toContain('searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)')
+        ->toContain("->limit(30)->get()");
+
+    expect($artwork)
+        ->toContain('MediaAssetSelect::makeId(')
+        ->toContain('allowedMimeTypes: self::primaryMimeTypes()')
+        ->not->toContain('primaryMediaOptions()')
+        ->not->toContain("Select::make('primary_media_asset_id')")
+        ->not->toContain('->preload()');
+
+    expect($galleryImages)
+        ->toContain('MediaAssetSelect::makeId(')
+        ->toContain('imagesOnly: true')
+        ->toContain('modifyQueryUsing:')
+        ->toContain('usedMediaAssetIds()')
+        ->not->toContain('availableMediaOptions()')
+        ->not->toContain("Select::make('media_asset_id')");
+});
