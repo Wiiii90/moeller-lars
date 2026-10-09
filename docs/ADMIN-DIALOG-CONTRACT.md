@@ -25,8 +25,9 @@ Exactly five semantic dialog types are supported:
 Edits operate on an existing record or settings object.
 
 - editorial edit dialogs use the `Large` width by default;
-- `Small` is reserved for deliberately compact utility editors with only a few controls;
-- `Default` is not an edit width: the shared adapter promotes it to the `Large` editorial baseline;
+- `Small` is for deliberately compact utility editors with one or a few simple controls;
+- `Default` is the real medium edit width for bounded forms that need more room than `Small` but do not benefit from the four-unit editorial surface;
+- explicit `Small` / `Default` / `Large` choices are preserved by the shared adapter; feature code must not simulate width with page-local CSS;
 - changed values persist through the canonical discrete autosave path;
 - no Save/Apply/Cancel footer exists;
 - the native Filament `X` closes the dialog and does not trigger another write;
@@ -91,8 +92,8 @@ Use `AdminDialog::viewer()`.
 Dialogs align to the same six-unit desktop workspace used by the admin summary and table geometry. Use `AdminDialogSize` rather than page-local width values:
 
 - `Small`: 2/6 (`26.667rem`) — compact commands and deliberately small utility forms;
-- `Default`: 3/6 (`40rem`) — intermediate read-only/detail surfaces;
-- `Large`: 4/6 (`53.333rem`) — editorial edit/create forms and media/detail viewers.
+- `Default`: 3/6 (`40rem`) — medium forms plus intermediate read-only/detail surfaces;
+- `Large`: 4/6 (`53.333rem`) — genuinely wide editorial edit/create forms and media/detail viewers.
 
 All sizes are capped by the viewport gutter.
 
