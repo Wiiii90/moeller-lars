@@ -19,7 +19,7 @@ trait ManagesSitePagesSettings
                 ->label('Settings')
                 ->modalHeading('Pages settings')
                 ->fillForm(fn (): array => $dialog->fill())
-                ->schema($dialog->schema())
+                ->schema(fn (): array => $dialog->schema())
                 ->action(function (array $data) use ($dialog): void {
                     $changed = $dialog->save($data);
                     $this->loadSections();
