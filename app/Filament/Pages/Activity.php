@@ -922,13 +922,6 @@ final class Activity extends Page
         $clockActivity = $clock['activity'];
         $clockPeakCount = $clock['peak_count'];
         $clockPeakHour = $clock['peak_hour'];
-        $selectedLatestAt = (clone $selectedDayQuery)->max($timestampColumn);
-        $clockIsLive = $selectedDate->isSameDay($today);
-        $clockAt = $clockIsLive
-            ? CarbonImmutable::now()
-            : ($selectedLatestAt !== null
-                ? CarbonImmutable::parse((string) $selectedLatestAt)
-                : $selectedDate->startOfDay());
 
         $calendarMaximum = max(1, ...array_values($calendarDaily ?: [0]));
         $calendarGridStart = $calendarStart->startOfWeek(CarbonInterface::MONDAY);
@@ -963,15 +956,11 @@ final class Activity extends Page
         $calendarWeeks = array_chunk($calendarDays, 7);
         $calendarWeeksPerBand = max(1, (int) ceil(count($calendarWeeks) / 2));
         $calendarBands = array_chunk($calendarWeeks, $calendarWeeksPerBand);
-        $hasTimelineActivity = $selectedLatestAt !== null;
 
         return [
             'clockActivity' => $clockActivity,
             'clockPeakHour' => $clockPeakHour,
             'clockPeakCount' => $clockPeakCount,
-            'clockAtIso' => $clockAt->toIso8601String(),
-            'clockIsLive' => $clockIsLive,
-            'clockHasActivity' => $hasTimelineActivity || $clockIsLive,
             'calendarYear' => $calendarYear,
             'calendarPreviousYear' => $calendarYear > 2000 ? $calendarYear - 1 : null,
             'calendarNextYear' => $calendarYear < $currentYear ? $calendarYear + 1 : null,
@@ -981,9 +970,6 @@ final class Activity extends Page
             'calendarMaximum' => $calendarMaximum,
             'selectedCalendarDate' => $selectedDate->format('Y-m-d'),
             'selectedCalendarLabel' => $selectedDate->format('M j, Y'),
-            'selectedClockLabel' => $clockIsLive
-                ? 'Live local time'
-                : ($hasTimelineActivity ? 'Latest activity' : 'No activity'),
             'timelineItemLabel' => 'changes',
         ];
     }
