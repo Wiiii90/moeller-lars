@@ -46,8 +46,12 @@ it('keeps the shared Activity clock live and canonical behind open dialogs', fun
         ->not->toContain('Open record');
 
     expect($interactions)
-        ->toContain('.admin-detail-dialog--activity')
-        ->toContain('> a.fi-icon-btn');
+        ->not->toContain('.admin-detail-dialog--activity')
+        ->not->toContain('> a.fi-icon-btn');
+
+    expect($activityPage)
+        ->not->toContain("Action::make('openActivityRecord')")
+        ->not->toContain("->label('Open record')");
 
     expect($activityView)
         ->toContain('<x-admin.search-input')
