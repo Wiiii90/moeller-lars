@@ -124,7 +124,7 @@ trait GalleryWorkspaceDirectUpload
         return AdminDialog::create(
             Action::make('batchAddArtworks')
                 ->label('Add artworks')
-                ->modalHeading(fn (): string => 'Add '.count($this->pendingBatchArtworkMedia).' artworks')
+                ->modalHeading('Add artworks')
                 ->fillForm(fn (): array => ['artworks' => $this->pendingBatchArtworkMedia])
                 ->schema([
                     Repeater::make('artworks')
