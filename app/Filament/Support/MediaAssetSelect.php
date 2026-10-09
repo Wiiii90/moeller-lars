@@ -44,10 +44,25 @@ final class MediaAssetSelect
             });
     }
 
-    public static function makeId(string $name, string $label, bool $imagesOnly = false): Select
-    {
-        return self::configure(Select::make($name), $label, $imagesOnly, true)
-            ->getOptionLabelUsing(function (mixed $value) use ($imagesOnly): ?string {
+    /**
+     * @param  list<string>|null  $allowedMimeTypes
+     */
+    public static function makeId(
+        string $name,
+        string $label,
+        bool $imagesOnly = false,
+        ?array $allowedMimeTypes = null,
+        ?Closure $modifyQueryUsing = null,
+    ): Select {
+        return self::configure(
+            Select::make($name),
+            $label,
+            $imagesOnly,
+            true,
+            $allowedMimeTypes,
+            $modifyQueryUsing,
+        )
+            ->getOptionLabelUsing(function (mixed $value) use ($imagesOnly, $allowedMimeTypes, $modifyQueryUsing): ?string {
                 $id = filter_var($value, FILTER_VALIDATE_INT);
                 if ($id === false) {
                     return null;
@@ -60,7 +75,7 @@ final class MediaAssetSelect
 
                 /** @var Builder<MediaAsset> $query */
                 $query = MediaAsset::query()->whereKey((int) $id);
-                self::constrainAvailable($query, $imagesOnly);
+                self::constrainAvailable($query, $imagesOnly, $allowedMimeTypes, $modifyQueryUsing);
                 $asset = $query->with('variants')->first();
                 if (! $asset instanceof MediaAsset) {
                     return null;
@@ -73,11 +88,20 @@ final class MediaAssetSelect
     }
 
     /** @return array<int, string> */
-    public static function searchOptions(string $search, bool $imagesOnly = false, bool $includeDimensions = true): array
-    {
+    /**
+     * @param  list<string>|null  $allowedMimeTypes
+     * @return array<int, string>
+     */
+    public static function searchOptions(
+        string $search,
+        bool $imagesOnly = false,
+        bool $includeDimensions = true,
+        ?array $allowedMimeTypes = null,
+        ?Closure $modifyQueryUsing = null,
+    ): array {
         /** @var Builder<MediaAsset> $query */
         $query = MediaAsset::query();
-        self::constrainAvailable($query, $imagesOnly);
+        self::constrainAvailable($query, $imagesOnly, $allowedMimeTypes, $modifyQueryUsing);
 
         $term = trim($search);
         if ($term !== '') {
@@ -117,28 +141,53 @@ final class MediaAssetSelect
             : null;
     }
 
+    /**
+     * @param  list<string>|null  $allowedMimeTypes
+     */
     private static function configure(
         Select $select,
         string|Closure $label,
         bool $imagesOnly,
         bool $includeDimensions,
+        ?array $allowedMimeTypes = null,
+        ?Closure $modifyQueryUsing = null,
     ): Select {
         return $select
             ->label($label)
             ->searchable()
-            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $imagesOnly, $includeDimensions))
+            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
+                $search,
+                $imagesOnly,
+                $includeDimensions,
+                $allowedMimeTypes,
+                $modifyQueryUsing,
+            ))
             ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
             ->searchPrompt('Search Storage by filename')
             ->noSearchResultsMessage('No matching files in Storage')
             ->allowHtml();
     }
 
-    /** @param Builder<MediaAsset> $query */
-    private static function constrainAvailable(Builder $query, bool $imagesOnly): void
-    {
+    /**
+     * @param  Builder<MediaAsset>  $query
+     * @param  list<string>|null  $allowedMimeTypes
+     */
+    private static function constrainAvailable(
+        Builder $query,
+        bool $imagesOnly,
+        ?array $allowedMimeTypes = null,
+        ?Closure $modifyQueryUsing = null,
+    ): void {
         $query->where('state', 'available');
-        if ($imagesOnly) {
+
+        if ($allowedMimeTypes !== null) {
+            $query->whereIn('mime_type', $allowedMimeTypes);
+        } elseif ($imagesOnly) {
             $query->where('mime_type', 'like', 'image/%');
+        }
+
+        if ($modifyQueryUsing instanceof Closure) {
+            $modifyQueryUsing($query);
         }
     }
 
