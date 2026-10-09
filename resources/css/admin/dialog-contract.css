@@ -169,6 +169,10 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
     --admin-dialog-header-action-gap: .5rem;
     --admin-dialog-header-action-inset: 1rem;
     --admin-dialog-content-inset: 1.35rem;
+    --admin-dialog-header-reserve: calc(
+        (2 * var(--admin-dialog-header-action-inset))
+        + var(--admin-dialog-header-action-size)
+    );
 }
 
 .admin-dialog--small { --admin-dialog-width: var(--admin-dialog-width-small); }
@@ -195,9 +199,72 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
     position: relative;
 }
 
+/* Header width is derived from the actual number of contextual actions rather
+ * than a permanent 9rem dead zone. X is always one slot; footer actions add
+ * exactly one slot each. This keeps concise headings and actions on one row. */
+.admin-dialog--header-actions:has(.fi-modal-footer-actions > :first-child) {
+    --admin-dialog-header-reserve: calc(
+        (2 * var(--admin-dialog-header-action-inset))
+        + (2 * var(--admin-dialog-header-action-size))
+        + var(--admin-dialog-header-action-gap)
+    );
+}
+
+.admin-dialog--header-actions:has(.fi-modal-footer-actions > :nth-child(2)) {
+    --admin-dialog-header-reserve: calc(
+        (2 * var(--admin-dialog-header-action-inset))
+        + (3 * var(--admin-dialog-header-action-size))
+        + (2 * var(--admin-dialog-header-action-gap))
+    );
+}
+
+.admin-dialog--header-actions:has(.fi-modal-footer-actions > :nth-child(3)) {
+    --admin-dialog-header-reserve: calc(
+        (2 * var(--admin-dialog-header-action-inset))
+        + (4 * var(--admin-dialog-header-action-size))
+        + (3 * var(--admin-dialog-header-action-gap))
+    );
+}
+
+.admin-dialog--header-actions:has(.fi-modal-footer-actions > :nth-child(4)) {
+    --admin-dialog-header-reserve: calc(
+        (2 * var(--admin-dialog-header-action-inset))
+        + (5 * var(--admin-dialog-header-action-size))
+        + (4 * var(--admin-dialog-header-action-gap))
+    );
+}
+
 .admin-dialog--header-actions .fi-modal-header {
+    box-sizing: border-box;
     min-height: calc(var(--admin-dialog-header-action-size) + (2 * var(--admin-dialog-header-action-inset)));
-    padding-inline-end: 9rem;
+    padding:
+        var(--admin-dialog-header-action-inset)
+        var(--admin-dialog-header-reserve)
+        0
+        var(--admin-dialog-content-inset) !important;
+    align-items: flex-start !important;
+}
+
+.admin-dialog--header-actions .fi-modal-header > div:last-child {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-dialog--header-actions .fi-modal-heading {
+    display: flex;
+    min-height: var(--admin-dialog-header-action-size);
+    margin: 0 !important;
+    align-items: center;
+    line-height: 1.25 !important;
+}
+
+.admin-dialog--header-actions .fi-modal-description {
+    max-width: 46rem;
+    margin: .45rem 0 0 !important;
+    color: var(--admin-muted) !important;
+    font-size: .76rem !important;
+    line-height: 1.5 !important;
 }
 
 .admin-dialog--header-actions .fi-modal-footer {
