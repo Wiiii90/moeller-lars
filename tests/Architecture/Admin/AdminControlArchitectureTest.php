@@ -170,6 +170,7 @@ it('keeps dialog fields on the canonical control grammar', function (): void {
         ->toContain('DateTimePicker::configureUsing')
         ->toContain('FileUpload::configureUsing')
         ->toContain('MarkdownEditor::configureUsing')
+        ->toContain('OneTimeCodeInput::configureUsing')
         ->toContain('ColorPicker::configureUsing')
         ->toContain('selectablePlaceholder(fn (): bool => ! $field->isRequired())');
 
@@ -180,6 +181,9 @@ it('keeps dialog fields on the canonical control grammar', function (): void {
         ->toContain('margin: 0 !important;')
         ->toContain('.admin-dialog--edit .admin-control-field')
         ->toContain('.fi-fo-field-label-required-mark')
+        ->toContain('.fi-one-time-code-input-digit')
+        ->toContain('.admin-task-dialog .fi-modal-content .fi-ac-btn-action')
+        ->toContain('.admin-task-dialog .fi-modal-content .fi-ac-link-action')
         ->toContain('display: none !important;');
 });
 
@@ -200,6 +204,8 @@ it('keeps dialog media selection on the lazy Storage picker', function (): void 
     expect($artwork)
         ->toContain('MediaAssetSelect::makeId(')
         ->toContain('allowedMimeTypes: self::primaryMimeTypes()')
+        ->toContain("->placeholder('No primary media')")
+        ->not->toContain("->placeholder('No primary media')\n                        ->selectablePlaceholder(false)")
         ->not->toContain('primaryMediaOptions()')
         ->not->toContain("Select::make('primary_media_asset_id')")
         ->not->toContain('->preload()');
