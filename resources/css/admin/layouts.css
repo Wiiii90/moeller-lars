@@ -34,21 +34,12 @@ html:not(.dark) .fi-sidebar-nav {
 }
 
 /*
- * Filament owns modal open/close/focus lifecycle. Scroll geometry has one
- * additional invariant: if the document already has a classic vertical
- * scrollbar, that exact rail stays visible while the blocking admin dialog is
- * open. The shared dialog runtime freezes the document scroll position, and
- * this class overrides only Filament's visual overflow/padding compensation.
- * Short pages receive no class and therefore never gain a scrollbar.
+ * Filament owns modal open/close/focus and document scroll locking. The admin
+ * shell keeps no permanent scrollbar gutter and does not add a second modal
+ * lock class or project-specific overflow/padding compensation.
  */
 html.fi,
 .fi-sidebar-nav {
-    scrollbar-gutter: auto !important;
-}
-
-html.fi.admin-modal-visible-scrollbar-lock {
-    overflow-y: scroll !important;
-    padding-right: 0 !important;
     scrollbar-gutter: auto !important;
 }
 
