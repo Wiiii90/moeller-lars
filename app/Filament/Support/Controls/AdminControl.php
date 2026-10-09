@@ -8,6 +8,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\OneTimeCodeInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -30,6 +31,7 @@ final class AdminControl
         DateTimePicker::configureUsing(fn (DateTimePicker $field) => self::decorate($field));
         FileUpload::configureUsing(fn (FileUpload $field) => self::decorate($field));
         MarkdownEditor::configureUsing(fn (MarkdownEditor $field) => self::decorate($field));
+        OneTimeCodeInput::configureUsing(fn (OneTimeCodeInput $field) => self::decorate($field));
         ColorPicker::configureUsing(fn (ColorPicker $field) => self::decorate($field));
     }
 
