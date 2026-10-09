@@ -42,8 +42,8 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
 
         return AdminDialog::confirm(
             $action,
-            'Free recovery storage?',
-            'This permanently clears Undo history, releases restore data for older publication checkpoints, and removes rebuildable generated thumbnails. Activity remains. The current live restore snapshot and any restore or revert source currently in use stay protected. Generated thumbnails are recreated from their canonical originals when next needed. Logical site usage updates immediately; the physical PostgreSQL file may shrink later during routine maintenance.',
+            'Free storage?',
+            'Clears Undo history, older restore data and rebuildable thumbnails. The current LIVE restore snapshot and active restore/revert sources stay protected.',
             submitLabel: 'Free storage',
             danger: true,
         );
