@@ -10,6 +10,7 @@ use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
+use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
@@ -169,6 +170,10 @@ final class HomePresentation extends Page
         'media_references' => 0,
     ];
 
+    public bool $skipHome = false;
+
+    public ?int $skipTargetSectionId = null;
+
     /** @var array<string,mixed>|null */
     public ?array $skipTarget = null;
 
@@ -294,7 +299,7 @@ final class HomePresentation extends Page
         $action = Action::make('settings')
             ->label('Settings')
             ->modalHeading('Home settings')
-            ->fillForm(fn (): array => $dialog->fill())
+            ->fillForm(fn (): array => $this->homeSettingsFormState())
             ->schema($dialog->schema())
             ->action(function (array $data) use ($dialog): void {
                 $changed = $dialog->save($data);
@@ -744,6 +749,7 @@ final class HomePresentation extends Page
         $settings = $this->settings();
         $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
         $heroConfiguration = app(HomeHeroConfigurationService::class)->configuration($settings);
+        $routingConfiguration = app(HomeRoutingSettingsService::class)->configuration($settings);
         $this->settingsId = (int) $settings->getKey();
         $this->homeSectionId = (int) $settings->getAttribute('site_section_id');
         $homeSection = $settings->relationLoaded('siteSection') ? $settings->getRelationValue('siteSection') : $settings->siteSection()->first();
@@ -768,6 +774,8 @@ final class HomePresentation extends Page
         $this->rotationIntervalUnit = $heroConfiguration['rotation_interval']['unit'];
         $this->rotationStartedAt = $heroConfiguration['rotation_started_at'];
         $this->publicSiteGate = (bool) $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'];
+        $this->skipHome = $routingConfiguration['skip_home'];
+        $this->skipTargetSectionId = $routingConfiguration['skip_target_section_id'];
 
         $this->selectionIssue = null;
         $this->currentArtwork = null;
@@ -793,6 +801,29 @@ final class HomePresentation extends Page
             HomeTemplate::SkipHome => $this->loadSkipWorkspace(),
         };
         $this->refreshMetrics();
+    }
+
+    /** @return array<string, mixed> */
+    private function homeSettingsFormState(): array
+    {
+        return [
+            'template' => $this->template,
+            'show_in_navigation' => $this->showHomeInNavigation,
+            'show_details' => $this->artworkShowDetails,
+            'show_gallery_link' => $this->artworkShowGalleryLink,
+            'group_source' => $this->heroGroupSource,
+            'display_strategy' => $this->heroDisplayStrategy,
+            'newest_by' => $this->heroNewestBy,
+            'group_size' => $this->heroGroupSize,
+            'pool_rule' => $this->heroPoolRule,
+            'pool_year' => $this->heroPoolYear,
+            'manual_include_ids' => $this->manualHeroCandidateIds,
+            'rotation_interval_count' => $this->rotationIntervalCount,
+            'rotation_interval_unit' => $this->rotationIntervalUnit,
+            'public_site_gate' => $this->publicSiteGate,
+            'skip_home' => $this->skipHome,
+            'skip_target_section_id' => $this->skipTargetSectionId,
+        ];
     }
 
     private function loadArtworkWorkspace(HomePresentationSetting $settings): void
