@@ -1079,7 +1079,7 @@ final class Activity extends Page
         return $this->commitDetailsCache[$checkpointId] = app(AdminPublicationHistory::class)->checkpoint($checkpointId);
     }
 
-    /** @return array{summary:array{total:int,groups:list<array{area:string,entity:string,count:int}>},preflight:array{status:string,label:string,blockers:list<string>}} */
+    /** @return array{summary:array{total:int,groups:list<array{area:string,entity:string,count:int}>},preflight:array{status:string,label:string,blockers:list<string>},details:array<string,mixed>} */
     private function publicationReview(): array
     {
         $publication = app(PublicationService::class);
@@ -1088,6 +1088,7 @@ final class Activity extends Page
         return [
             'summary' => $summary,
             'preflight' => $publication->preflight($summary),
+            'details' => $publication->pendingDetails(),
         ];
     }
 
