@@ -18,3 +18,21 @@ it('never live-syncs application-owned authentication fields', function (): void
             ->not->toContain('wire:model.live');
     }
 });
+
+it('keeps Filament as the MFA security workflow authority', function (): void {
+    $root = dirname(__DIR__, 3);
+    $mfa = file_get_contents($root.'/app/Filament/Auth/AdminAppAuthentication.php');
+
+    expect($mfa)
+        ->toContain('parent::getActions()')
+        ->toContain('routeNotification')
+        ->toContain("FILAMENT_NOTIFICATION_SESSION_KEY = 'filament.notifications'")
+        ->toContain('AdminNotifier::class')
+        ->not->toContain('SetUpAppAuthenticationAction')
+        ->not->toContain('RegenerateAppAuthenticationRecoveryCodesAction')
+        ->not->toContain('DisableAppAuthenticationAction')
+        ->not->toContain('saveSecret(')
+        ->not->toContain('saveRecoveryCodes(')
+        ->not->toContain("decrypt(\$arguments['encrypted'])")
+        ->not->toContain('DB::transaction');
+});
