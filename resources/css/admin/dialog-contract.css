@@ -307,6 +307,7 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
 /* Context actions and the native Filament X intentionally share the exact same
  * hit target, border, icon scale and vertical axis. */
 .admin-dialog__header-action,
+.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn,
 .admin-dialog--header-actions .fi-modal-close-btn {
     box-sizing: border-box;
     display: grid !important;
@@ -332,6 +333,8 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
 
 .admin-dialog__header-action:hover,
 .admin-dialog__header-action:focus-visible,
+.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn:hover,
+.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn:focus-visible,
 .admin-dialog--header-actions .fi-modal-close-btn:hover,
 .admin-dialog--header-actions .fi-modal-close-btn:focus-visible {
     border-color: var(--admin-text) !important;
@@ -341,6 +344,7 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
 }
 
 .admin-dialog__header-action svg,
+.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn svg,
 .admin-dialog--header-actions .fi-modal-close-btn svg {
     width: .92rem !important;
     height: .92rem !important;
