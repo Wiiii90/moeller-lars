@@ -275,6 +275,56 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('return $this->targetOptionsCache = SiteSection::query()');
 });
 
+
+it('routes every admin modal customizer through the shared dialog adapter', function (): void {
+    $root = dirname(__DIR__, 3);
+    $scanRoots = [
+        $root.'/app/Filament',
+        $root.'/app/Livewire/Admin',
+    ];
+    $modalTokens = [
+        '->modalHeading(',
+        '->modalDescription(',
+        '->modalContent(',
+        '->extraModalFooterActions(',
+        '->createOptionAction(',
+    ];
+    $violations = [];
+
+    foreach ($scanRoots as $scanRoot) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($scanRoot, FilesystemIterator::SKIP_DOTS),
+        );
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = str_replace($root.DIRECTORY_SEPARATOR, '', $file->getPathname());
+            if ($relative === 'app/Filament/Support/Dialogs/AdminDialog.php') {
+                continue;
+            }
+
+            $source = file_get_contents($file->getPathname());
+            if ($source === false) {
+                continue;
+            }
+
+            $customizesModal = collect($modalTokens)
+                ->contains(static fn (string $token): bool => str_contains($source, $token));
+
+            if ($customizesModal && ! str_contains($source, 'AdminDialog::')) {
+                $violations[] = $relative;
+            }
+        }
+    }
+
+    sort($violations);
+
+    expect($violations)->toBe([]);
+});
+
 it('does not reintroduce Filament confirmation mode in admin application code', function (): void {
     $root = dirname(__DIR__, 3);
     $scanRoots = [
