@@ -137,7 +137,7 @@ class GalleryImagesRelationManager extends RelationManager
                             $artwork = $this->getOwnerRecord();
                             app(ArtworkEditorialService::class)->detachAdditionalMedia($artwork, $record);
                         }),
-                    heading: 'Detach image',
+                    heading: 'Detach image?',
                     description: 'Removes this image from the artwork. The file remains in Storage.',
                     submitLabel: 'Detach',
                     danger: true,
