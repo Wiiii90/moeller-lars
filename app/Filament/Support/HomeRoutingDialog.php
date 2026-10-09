@@ -14,6 +14,9 @@ use Illuminate\Validation\ValidationException;
 
 final class HomeRoutingDialog
 {
+    /** @var array<int, string>|null */
+    private ?array $targetOptionsCache = null;
+
     public function __construct(
         private readonly HomePresentationResolver $resolver,
         private readonly HomeRoutingSettingsService $routing,
@@ -89,7 +92,11 @@ final class HomeRoutingDialog
     /** @return array<int, string> */
     private function targetOptions(): array
     {
-        return SiteSection::query()
+        if ($this->targetOptionsCache !== null) {
+            return $this->targetOptionsCache;
+        }
+
+        return $this->targetOptionsCache = SiteSection::query()
             ->whereNull('parent_id')
             ->where('state', 'published')
             ->where('type', '<>', SiteSectionType::Home->value)
