@@ -259,7 +259,10 @@ final class HomeSettingsDialog
             ->noSearchResultsMessage('No matching eligible artworks');
 
         if ($multiple) {
-            $select->multiple()->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
+            $select
+                ->multiple()
+                ->placeholder('No additional artworks')
+                ->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
         } else {
             $select->getOptionLabelUsing(fn (mixed $value): ?string => $this->heroArtworkOptionLabel($value));
         }
