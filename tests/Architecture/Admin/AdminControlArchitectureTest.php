@@ -150,3 +150,35 @@ it('does not make text-like Filament controls live per keystroke', function (): 
     sort($violations);
     expect($violations)->toBe([]);
 });
+
+it('keeps dialog fields on the canonical control grammar', function (): void {
+    $root = dirname(__DIR__, 3);
+    $provider = file_get_contents($root.'/app/Providers/Filament/AdminPanelProvider.php');
+    $control = file_get_contents($root.'/app/Filament/Support/Controls/AdminControl.php');
+    $css = file_get_contents($root.'/resources/css/admin/controls.css');
+
+    expect($provider)
+        ->toContain('AdminControl::register();');
+
+    expect($control)
+        ->toContain('TextInput::configureUsing')
+        ->toContain('Textarea::configureUsing')
+        ->toContain('Select::configureUsing')
+        ->toContain('Checkbox::configureUsing')
+        ->toContain('Toggle::configureUsing')
+        ->toContain('DatePicker::configureUsing')
+        ->toContain('DateTimePicker::configureUsing')
+        ->toContain('FileUpload::configureUsing')
+        ->toContain('MarkdownEditor::configureUsing')
+        ->toContain('ColorPicker::configureUsing')
+        ->toContain('selectablePlaceholder(fn (): bool => ! $field->isRequired())');
+
+    expect($css)
+        ->toContain('.admin-control-field .fi-fo-field-label:has(> .fi-checkbox-input)')
+        ->toContain('grid-template-columns: max-content minmax(0, 1fr);')
+        ->toContain('.admin-control-field .fi-fo-field-label > .fi-checkbox-input')
+        ->toContain('margin: 0 !important;')
+        ->toContain('.admin-dialog--edit .admin-control-field')
+        ->toContain('.fi-fo-field-label-required-mark')
+        ->toContain('display: none !important;');
+});
