@@ -317,7 +317,7 @@ final class HomePresentation extends Page
             Action::make('addHeroArtwork')
                 ->label('Add artwork')
                 ->schema([$this->heroArtworkSelect('artwork_id', 'Artwork')->required()])
-                ->modalHeading('Add artwork to Manual group'),
+                ->modalHeading('Add artwork'),
             'Add artwork',
             AdminDialogSize::Small,
         )->action(function (array $data): void {
@@ -418,7 +418,7 @@ final class HomePresentation extends Page
                         ->helperText('Leave off for content images. Canonical ALT text is managed in Storage.')
                         ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
                 ])
-                ->modalHeading('Add Home component'),
+                ->modalHeading('Add component'),
             'Add component',
             AdminDialogSize::Large,
         )->action(function (array $data): void {
@@ -470,7 +470,7 @@ final class HomePresentation extends Page
                     ->helperText('Leave off for content images. Canonical ALT text is managed in Storage.')
                     ->visible(fn (callable $get): bool => $get('type') === 'image'),
             ])
-            ->modalHeading('Edit Home component'), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
+            ->modalHeading('Edit component'), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
                 $current = $this->componentFromArguments($arguments);
                 $type = (string) $current['type'];
                 $editorKind = $this->editorKind($current);
@@ -504,7 +504,7 @@ final class HomePresentation extends Page
     {
         return AdminDialog::confirm(
             Action::make('removeComponent')->label('Delete')->color('danger'),
-            heading: 'Delete Home component?',
+            heading: 'Delete component?',
             description: 'The component is removed from this Home template. Other template configurations are unchanged.',
             submitLabel: 'Delete',
             danger: true,
@@ -525,7 +525,7 @@ final class HomePresentation extends Page
     {
         return AdminDialog::confirm(
             Action::make('deleteSelectedComponents')->label('Delete selected')->color('danger'),
-            heading: 'Delete selected Home components?',
+            heading: 'Delete components?',
             submitLabel: 'Delete',
             danger: true,
         )->action(function (): void {
