@@ -16,7 +16,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -86,11 +85,11 @@ final class ArtworkEditDialog
                         ->helperText('Fallback for diameter, variable dimensions or legacy/free-form notation. When set, this value is saved instead of H × W × D.')
                         ->columnSpanFull(),
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
-                    Select::make('primary_media_asset_id')
-                        ->label('Existing Media File')
-                        ->options(fn (): array => $this->primaryMediaOptions())
-                        ->searchable()
-                        ->preload()
+                    MediaAssetSelect::makeId(
+                        'primary_media_asset_id',
+                        'Existing Media File',
+                        allowedMimeTypes: self::primaryMimeTypes(),
+                    )
                         ->nullable()
                         ->helperText('Only available images and videos can be primary media. Audio is intentionally excluded.')
                         ->columnSpanFull(),
@@ -190,26 +189,6 @@ final class ArtworkEditDialog
         }
 
         return $data;
-    }
-
-    /** @return array<int, string> */
-    private function primaryMediaOptions(): array
-    {
-        /** @var EloquentCollection<int, MediaAsset> $assets */
-        $assets = MediaAsset::query()
-            ->where('state', 'available')
-            ->whereIn('mime_type', self::primaryMimeTypes())
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->limit(500)
-            ->get(['id', 'original_filename', 'mime_type']);
-
-        return $assets->mapWithKeys(static function (MediaAsset $asset): array {
-            $mime = (string) $asset->getAttribute('mime_type');
-            $kind = MediaTypePolicy::isVideo($mime) ? 'Video' : 'Image';
-
-            return [(int) $asset->getKey() => (string) $asset->getAttribute('original_filename').' · '.$kind];
-        })->all();
     }
 
     /** @return list<string> */
