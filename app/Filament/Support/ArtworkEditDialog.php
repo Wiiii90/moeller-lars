@@ -91,7 +91,6 @@ final class ArtworkEditDialog
                         allowedMimeTypes: self::primaryMimeTypes(),
                     )
                         ->placeholder('No primary media')
-                        ->selectablePlaceholder(false)
                         ->nullable()
                         ->helperText('Images and videos only.')
                         ->columnSpanFull(),
