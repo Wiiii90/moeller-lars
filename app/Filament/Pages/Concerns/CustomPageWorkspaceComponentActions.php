@@ -189,11 +189,7 @@ trait CustomPageWorkspaceComponentActions
             ->label('Edit')
             ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
             ->schema($this->componentEditorSchema(includeTypeSelect: false))
-            ->modalHeading(function (array $arguments): string {
-                $block = $this->actionComponent($arguments);
-
-                return 'Edit '.(self::COMPONENT_LABELS[(string) $block['type']] ?? 'component');
-            })
+            ->modalHeading('Edit component')
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $existing = $this->actionComponent($arguments);
