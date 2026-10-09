@@ -52,7 +52,6 @@ trait ManagesHomePagePresentation
                 ->label('Skip Home')
                 ->icon(AdminIcon::SkipHome->value)
                 ->modalHeading('Skip Home')
-                ->modalDescription('Choose whether Home redirects and where it goes. Without an explicit target, the next eligible page in the current order is used.')
                 ->fillForm(fn (): array => $dialog->fill())
                 ->schema($dialog->schema())
                 ->action(function (array $data) use ($dialog): void {
