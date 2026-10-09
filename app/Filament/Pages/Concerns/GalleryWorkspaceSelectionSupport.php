@@ -11,19 +11,27 @@ use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceSelectionSupport
 {
+    /** @var array<int, Artwork> */
+    private array $actionArtworkCache = [];
+
     private function actionArtwork(array $arguments): Artwork
     {
         $id = $arguments['artwork'] ?? null;
         abort_unless(is_numeric($id), 404);
 
+        $artworkId = (int) $id;
+        if (isset($this->actionArtworkCache[$artworkId])) {
+            return $this->actionArtworkCache[$artworkId];
+        }
+
         /** @var Artwork|null $artwork */
         $artwork = Artwork::query()
-            ->whereKey((int) $id)
+            ->whereKey($artworkId)
             ->where('artwork_category_id', (int) $this->galleryContext['id'])
             ->first();
         abort_unless($artwork instanceof Artwork, 404);
 
-        return $artwork;
+        return $this->actionArtworkCache[$artworkId] = $artwork;
     }
 
     /** @return EloquentCollection<int, Artwork> */
