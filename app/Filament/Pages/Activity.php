@@ -8,6 +8,7 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationVersionService;
+use App\Filament\Support\ActivityClockProjection;
 use App\Filament\Support\AdminActivityFeed;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminPublicationHistory;
@@ -917,16 +918,10 @@ final class Activity extends Page
             }
         }
 
-        $clockActivity = [];
-        foreach ($hourly as $hour => $count) {
-            $clockActivity[] = [
-                'hour' => (int) $hour,
-                'count' => (int) $count,
-            ];
-        }
-
-        $clockPeakCount = max($hourly);
-        $clockPeakHour = $clockPeakCount > 0 ? (int) array_search($clockPeakCount, $hourly, true) : null;
+        $clock = app(ActivityClockProjection::class)->fromHourly($hourly);
+        $clockActivity = $clock['activity'];
+        $clockPeakCount = $clock['peak_count'];
+        $clockPeakHour = $clock['peak_hour'];
         $selectedLatestAt = (clone $selectedDayQuery)->max($timestampColumn);
         $clockIsLive = $selectedDate->isSameDay($today);
         $clockAt = $clockIsLive
