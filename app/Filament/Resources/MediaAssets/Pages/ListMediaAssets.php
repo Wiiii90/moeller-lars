@@ -973,7 +973,7 @@ final class ListMediaAssets extends Page
                     ->cancelParentActions('previewEdit'),
             ]);
 
-        return AdminDialog::edit($action, AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 
     private function previewDeleteAction(int $assetId): Action
