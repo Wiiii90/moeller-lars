@@ -72,6 +72,80 @@
     line-height: 1.45;
 }
 
+/* Security/MFA code fields participate in the same field grammar. Filament
+ * owns the six-digit behavior; the admin layer owns only its chrome. */
+.admin-control-field .fi-one-time-code-input-ctn {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    gap: .35rem;
+    align-items: center;
+}
+
+.admin-control-field .fi-one-time-code-input-digit {
+    box-sizing: border-box;
+    width: 2.35rem !important;
+    height: var(--admin-control-height) !important;
+    min-height: var(--admin-control-height) !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--admin-control-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--admin-text) !important;
+    font: inherit !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: .9rem !important;
+    font-weight: 600 !important;
+    text-align: center;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+
+.admin-control-field .fi-one-time-code-input-digit:focus {
+    border-bottom-color: var(--admin-control-border-focus) !important;
+    box-shadow: inset 0 -1px 0 var(--admin-control-border-focus) !important;
+}
+
+/* Actions embedded by Filament schema components (not dialog header actions)
+ * use the same compact control chrome rather than a second default button
+ * language. This notably covers the MFA management controls in Account. */
+.admin-task-dialog .fi-modal-content .fi-ac-btn-action {
+    box-sizing: border-box;
+    min-height: var(--admin-control-height) !important;
+    padding: .38rem .58rem !important;
+    border: 1px solid transparent !important;
+    border-radius: .2rem !important;
+    background: transparent !important;
+    color: var(--admin-muted) !important;
+    font: inherit !important;
+    font-size: .76rem !important;
+    font-weight: 550 !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+}
+
+.admin-task-dialog .fi-modal-content .fi-ac-btn-action:hover,
+.admin-task-dialog .fi-modal-content .fi-ac-btn-action:focus-visible {
+    border-color: var(--admin-line-strong) !important;
+    background: var(--admin-subtle) !important;
+    color: var(--admin-text) !important;
+    outline: 0 !important;
+}
+
+.admin-task-dialog .fi-modal-content .fi-ac-link-action {
+    color: var(--admin-muted) !important;
+    font: inherit !important;
+    font-size: .76rem !important;
+    font-weight: 550 !important;
+    text-underline-offset: .16rem;
+}
+
+.admin-task-dialog .fi-modal-content .fi-ac-link-action:hover,
+.admin-task-dialog .fi-modal-content .fi-ac-link-action:focus-visible {
+    color: var(--admin-text) !important;
+}
+
 /* Filament's searchable/multi Select renders its own popover rather than a
  * native <select>. The popover is still part of the same admin control grammar.
  * Keep these selectors global to the admin theme because Filament may anchor
