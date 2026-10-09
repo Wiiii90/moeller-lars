@@ -65,7 +65,7 @@ trait ManagesSitePageCreateDialog
                             ->integer()
                             ->minValue(1)
                             ->nullable()
-                            ->helperText('Leave empty to place the page last on the selected level.'),
+                            ->placeholder('Last'),
                     ]),
             ])
             ->action(function (array $data): void {
