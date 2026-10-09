@@ -381,7 +381,7 @@ final class ListMediaAssets extends Page
     {
         $action = Action::make('edit')
             ->label('Edit')
-            ->modalHeading(fn (array $arguments): string => 'Edit '.(string) $this->actionAsset($arguments)->getAttribute('original_filename'))
+            ->modalHeading('Edit file')
             ->fillForm(fn (array $arguments): array => $this->editFormData($this->actionAsset($arguments)))
             ->schema($this->mediaEditSchema())
             ->action(function (array $data, array $arguments): void {
@@ -408,7 +408,7 @@ final class ListMediaAssets extends Page
 
         return AdminDialog::confirm(
             $action,
-            fn (array $arguments): string => 'Delete '.(string) $this->actionAsset($arguments)->getAttribute('original_filename').'?',
+            'Delete file?',
             submitLabel: 'Delete',
             danger: true,
         );
@@ -504,7 +504,7 @@ final class ListMediaAssets extends Page
 
         return AdminDialog::confirm(
             $action,
-            'Delete selected files?',
+            'Delete files?',
             submitLabel: 'Delete',
             danger: true,
         );
@@ -958,7 +958,7 @@ final class ListMediaAssets extends Page
             ->iconButton()
             ->color('gray')
             ->extraAttributes(['class' => 'admin-dialog__header-action'])
-            ->modalHeading(fn (): string => 'Edit '.(string) $this->assetById($assetId)->getAttribute('original_filename'))
+            ->modalHeading('Edit file')
             ->fillForm(fn (): array => $this->editFormData($this->assetById($assetId)))
             ->schema($this->mediaEditSchema())
             ->action(function (array $data) use ($assetId): void {
@@ -999,7 +999,7 @@ final class ListMediaAssets extends Page
 
         return AdminDialog::confirm(
             $action,
-            fn (): string => 'Delete '.(string) $this->assetById($assetId)->getAttribute('original_filename').'?',
+            'Delete file?',
             submitLabel: 'Delete',
             danger: true,
         );
