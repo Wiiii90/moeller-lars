@@ -187,15 +187,24 @@ it('keeps dialog media selection on the lazy Storage picker', function (): void 
     $root = dirname(__DIR__, 3);
     $picker = file_get_contents($root.'/app/Filament/Support/MediaAssetSelect.php');
     $artwork = file_get_contents($root.'/app/Filament/Support/ArtworkEditDialog.php');
+    $galleryCreate = file_get_contents($root.'/app/Filament/Pages/Concerns/GalleryWorkspaceFormSupport.php');
     $galleryImages = file_get_contents($root.'/app/Filament/Resources/Artworks/RelationManagers/GalleryImagesRelationManager.php');
 
     expect($picker)
         ->toContain('?array $allowedMimeTypes = null')
         ->toContain('?Closure $modifyQueryUsing = null')
+        ->toContain("->placeholder('Choose from Storage')")
         ->toContain('searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)')
         ->toContain("->limit(30)->get()");
 
     expect($artwork)
+        ->toContain('MediaAssetSelect::makeId(')
+        ->toContain('allowedMimeTypes: self::primaryMimeTypes()')
+        ->not->toContain('primaryMediaOptions()')
+        ->not->toContain("Select::make('primary_media_asset_id')")
+        ->not->toContain('->preload()');
+
+    expect($galleryCreate)
         ->toContain('MediaAssetSelect::makeId(')
         ->toContain('allowedMimeTypes: self::primaryMimeTypes()')
         ->not->toContain('primaryMediaOptions()')
