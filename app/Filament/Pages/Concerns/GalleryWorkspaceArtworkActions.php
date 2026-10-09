@@ -23,6 +23,9 @@ use Throwable;
 
 trait GalleryWorkspaceArtworkActions
 {
+    /** @var array<int, array<string, mixed>> */
+    private array $artworkPreviewDialogDataCache = [];
+
     public function removeArtworkAction(): Action
     {
         $action = Action::make('removeArtwork')
@@ -199,6 +202,11 @@ trait GalleryWorkspaceArtworkActions
     private function artworkPreviewDialogData(array $arguments): array
     {
         $artwork = $this->actionArtwork($arguments);
+        $artworkId = (int) $artwork->getKey();
+
+        if (isset($this->artworkPreviewDialogDataCache[$artworkId])) {
+            return $this->artworkPreviewDialogDataCache[$artworkId];
+        }
         $visibleRows = collect($this->artworks);
         $visibleIds = $visibleRows
             ->pluck('id')
@@ -241,7 +249,7 @@ trait GalleryWorkspaceArtworkActions
 
         $state = (string) $artwork->getAttribute('state');
 
-        return [
+        return $this->artworkPreviewDialogDataCache[$artworkId] = [
             'artwork' => [
                 'id' => (int) $artwork->getKey(),
                 'title' => (string) $artwork->getAttribute('title'),
