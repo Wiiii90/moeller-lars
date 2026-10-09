@@ -117,27 +117,13 @@ final class DashboardOverview
     private function activityOverview(): array
     {
         $overview = app(AdminActivityFeed::class)->overview(null, null, days: 30, search: '');
-        $hourly = $overview['hourly'];
-        $clockActivity = [];
-
-        foreach ($hourly as $hour => $count) {
-            $clockActivity[] = [
-                'hour' => (int) $hour,
-                'count' => (int) $count,
-            ];
-        }
-
-        $peakHour = null;
-        if (array_sum($hourly) > 0) {
-            $peakCount = max($hourly);
-            $peakHour = (int) array_search($peakCount, $hourly, true);
-        }
+        $clock = app(ActivityClockProjection::class)->fromHourly($overview['hourly']);
 
         return [
             'recent_changes' => $overview['total'],
-            'clock_activity' => $clockActivity,
-            'clock_peak_hour' => $peakHour,
-            'clock_peak_count' => $peakHour !== null ? (int) ($hourly[$peakHour] ?? 0) : 0,
+            'clock_activity' => $clock['activity'],
+            'clock_peak_hour' => $clock['peak_hour'],
+            'clock_peak_count' => $clock['peak_count'],
             'url' => Activity::getUrl(),
         ];
     }
