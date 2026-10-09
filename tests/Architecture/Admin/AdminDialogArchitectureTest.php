@@ -134,7 +134,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     expect(substr_count($mediaAssets, 'AdminDialog::edit($action, AdminDialogSize::Default)'))->toBe(2);
 
     expect($contract)
-        ->toContain('.admin-task-dialog .fi-modal-content')
+        ->toContain('.fi-modal.admin-dialog-frame .fi-modal-content')
         ->toContain('--admin-dialog-header-reserve')
         ->toContain('.admin-dialog--header-actions .fi-modal-heading')
         ->toContain('min-height: var(--admin-dialog-header-action-size);')
@@ -162,7 +162,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->not->toContain(':has(.admin-detail-dialog--feed) .fi-modal-heading')
         ->not->toContain(':has(.admin-detail-dialog--feed) .fi-modal-header')
         ->not->toContain(':has(.admin-detail-dialog) .fi-modal-heading')
-        ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
+        ->not->toContain('.fi-modal.admin-dialog-frame .fi-modal-content::-webkit-scrollbar {\n    display: none');
 
     expect($dashboardFeedCss)->not->toContain('.admin-detail-dialog');
     expect($dashboardFeedDialog)
@@ -208,6 +208,8 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->and($dialogGeometry)
         ->toContain("window.addEventListener('open-modal'")
         ->toContain("document.addEventListener('x-modal-opened'")
+        ->toContain("modal.classList.add('admin-dialog-frame')")
+        ->toContain("modal.classList.contains('fi-modal-click-through')")
         ->toContain("element.scrollTop = 0")
         ->toContain("--admin-dialog-layer-inline-start")
         ->not->toContain("modal-closed")
