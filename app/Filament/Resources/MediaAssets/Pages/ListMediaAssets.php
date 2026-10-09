@@ -388,7 +388,7 @@ final class ListMediaAssets extends Page
                 $this->saveMetadata($this->actionAsset($arguments), $data);
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 
     public function deleteAction(): Action
