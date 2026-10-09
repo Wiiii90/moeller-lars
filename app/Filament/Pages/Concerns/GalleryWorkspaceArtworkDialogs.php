@@ -70,7 +70,7 @@ trait GalleryWorkspaceArtworkDialogs
         $dialog = app(ArtworkEditDialog::class);
         $action = Action::make('editArtwork')
             ->label('Edit')
-            ->modalHeading(fn (array $arguments): string => 'Edit '.$this->actionArtwork($arguments)->getAttribute('title'))
+            ->modalHeading('Edit artwork')
             ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)))
             ->schema($dialog->schema())
             ->action(function (array $data, array $arguments) use ($dialog): void {
