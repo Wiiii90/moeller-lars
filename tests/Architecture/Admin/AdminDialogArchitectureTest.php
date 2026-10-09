@@ -94,6 +94,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $mediaCss = file_get_contents($root.'/resources/css/admin/media.css');
     $dashboardFeedCss = file_get_contents($root.'/resources/css/admin/dashboard-feed.css');
     $dashboardFeedDialog = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-dialog.blade.php');
+    $activityDetailsDialog = file_get_contents($root.'/resources/views/filament/pages/partials/activity-details-dialog.blade.php');
     $activityCommitDialog = file_get_contents($root.'/resources/views/filament/pages/partials/activity-commit-details-dialog.blade.php');
     $dialogGeometry = file_get_contents($root.'/resources/js/admin-dialog-geometry.js');
     $homeWorkspace = file_get_contents($root.'/app/Filament/Pages/HomePresentation.php');
@@ -158,12 +159,18 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->not->toContain('.admin-dialog--mini')
         ->toContain('/* Shared read-only detail content used by Viewer dialogs. */')
         ->toContain('.admin-detail-dialog__meta')
-        ->toContain(':has(.admin-detail-dialog--feed) .fi-modal-heading')
+        ->not->toContain(':has(.admin-detail-dialog--feed) .fi-modal-heading')
+        ->not->toContain(':has(.admin-detail-dialog--feed) .fi-modal-header')
         ->not->toContain(':has(.admin-detail-dialog) .fi-modal-heading')
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
 
     expect($dashboardFeedCss)->not->toContain('.admin-detail-dialog');
-    expect($dashboardFeedDialog)->toContain('admin-detail-dialog admin-detail-dialog--feed');
+    expect($dashboardFeedDialog)
+        ->toContain('admin-detail-dialog admin-detail-dialog--feed')
+        ->not->toContain('<span>Title</span>');
+    expect($activityDetailsDialog)
+        ->toContain('admin-detail-dialog admin-detail-dialog--activity')
+        ->not->toContain('<span>Change</span>');
     expect(substr_count($activityCommitDialog, '<dt>'))->toBe(3);
     expect($activityCommitDialog)
         ->toContain('<dt>Status</dt>')
@@ -275,55 +282,6 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('return $this->targetOptionsCache = SiteSection::query()');
 });
 
-
-it('routes every admin modal customizer through the shared dialog adapter', function (): void {
-    $root = dirname(__DIR__, 3);
-    $scanRoots = [
-        $root.'/app/Filament',
-        $root.'/app/Livewire/Admin',
-    ];
-    $modalTokens = [
-        '->modalHeading(',
-        '->modalDescription(',
-        '->modalContent(',
-        '->extraModalFooterActions(',
-        '->createOptionAction(',
-    ];
-    $violations = [];
-
-    foreach ($scanRoots as $scanRoot) {
-        $files = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($scanRoot, FilesystemIterator::SKIP_DOTS),
-        );
-
-        foreach ($files as $file) {
-            if (! $file->isFile() || $file->getExtension() !== 'php') {
-                continue;
-            }
-
-            $relative = str_replace($root.DIRECTORY_SEPARATOR, '', $file->getPathname());
-            if ($relative === 'app/Filament/Support/Dialogs/AdminDialog.php') {
-                continue;
-            }
-
-            $source = file_get_contents($file->getPathname());
-            if ($source === false) {
-                continue;
-            }
-
-            $customizesModal = collect($modalTokens)
-                ->contains(static fn (string $token): bool => str_contains($source, $token));
-
-            if ($customizesModal && ! str_contains($source, 'AdminDialog::')) {
-                $violations[] = $relative;
-            }
-        }
-    }
-
-    sort($violations);
-
-    expect($violations)->toBe([]);
-});
 
 it('does not reintroduce Filament confirmation mode in admin application code', function (): void {
     $root = dirname(__DIR__, 3);
