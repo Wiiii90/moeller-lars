@@ -50,6 +50,7 @@ trait CustomPageWorkspaceSecondaryForms
                             ->label('Social links from General')
                             ->options($this->availableSocialPlatforms)
                             ->multiple()
+                            ->placeholder('No social links')
                             ->default(array_keys($this->availableSocialPlatforms))
                             ->columnSpanFull(),
                     ],
