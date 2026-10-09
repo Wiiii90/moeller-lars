@@ -5,6 +5,7 @@ it('keeps the shared Activity clock live and canonical behind open dialogs', fun
     $clock = file_get_contents($root.'/resources/views/components/admin/activity-clock-visual.blade.php');
     $details = file_get_contents($root.'/resources/views/filament/pages/partials/activity-details-dialog.blade.php');
     $activityView = file_get_contents($root.'/resources/views/filament/pages/activity.blade.php');
+    $publicationReview = file_get_contents($root.'/resources/views/filament/pages/partials/activity-publication-review-dialog.blade.php');
     $activityPage = file_get_contents($root.'/app/Filament/Pages/Activity.php');
     $dashboardOverview = file_get_contents($root.'/app/Filament/Support/DashboardOverview.php');
     $projection = file_get_contents($root.'/app/Filament/Support/ActivityClockProjection.php');
@@ -51,7 +52,13 @@ it('keeps the shared Activity clock live and canonical behind open dialogs', fun
 
     expect($activityPage)
         ->not->toContain("Action::make('openActivityRecord')")
-        ->not->toContain("->label('Open record')");
+        ->not->toContain("->label('Open record')")
+        ->toContain("'details' => \$publication->pendingDetails()");
+
+    expect($publicationReview)
+        ->toContain("\$details = \$publication['details'];")
+        ->not->toContain('PublicationService::class')
+        ->not->toContain('app(');
 
     expect($activityView)
         ->toContain('<x-admin.search-input')
