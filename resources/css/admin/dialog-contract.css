@@ -12,17 +12,17 @@
     --admin-dialog-layer-padding-inline: 1rem;
 }
 
-.fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-close-overlay {
+.fi-modal.admin-dialog-frame > .fi-modal-close-overlay {
     position: fixed;
     inset: 0 !important;
     background: rgba(0, 0, 0, .42) !important;
 }
 
-html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-close-overlay {
+html.fi.dark .fi-modal.admin-dialog-frame > .fi-modal-close-overlay {
     background: rgba(0, 0, 0, .56) !important;
 }
 
-.fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-window-ctn {
+.fi-modal.admin-dialog-frame > .fi-modal-window-ctn {
     position: fixed;
     inset-block: var(--admin-dialog-layer-block-start) 0 !important;
     inset-inline: var(--admin-dialog-layer-inline-start) var(--admin-dialog-layer-inline-end) !important;
@@ -34,7 +34,7 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
     padding-inline: var(--admin-dialog-layer-padding-inline) !important;
 }
 
-.fi-modal-window.admin-task-dialog {
+.fi-modal.admin-dialog-frame > .fi-modal-window-ctn > .fi-modal-window {
     max-height: calc(100dvh - var(--admin-dialog-layer-block-start) - 2rem);
 }
 
@@ -82,7 +82,7 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
     transform: translate3d(0, 0, 0) scale(1) !important;
 }
 
-.fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-close-overlay {
+.fi-modal.admin-dialog-frame > .fi-modal-close-overlay {
     transition-duration: 260ms !important;
     transition-timing-function: cubic-bezier(.4, 0, .2, 1) !important;
 }
@@ -90,7 +90,7 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
 @media (prefers-reduced-motion: reduce) {
     .fi-modal-window.admin-task-dialog.fi-transition-enter,
     .fi-modal-window.admin-task-dialog.fi-transition-leave,
-    .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-close-overlay {
+    .fi-modal.admin-dialog-frame > .fi-modal-close-overlay {
         transition-duration: 1ms !important;
     }
 
@@ -134,22 +134,22 @@ html.fi.dark .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-
 }
 
 @supports not (height: 100dvh) {
-    .fi-modal-window.admin-task-dialog {
+    .fi-modal.admin-dialog-frame > .fi-modal-window-ctn > .fi-modal-window {
         max-height: calc(100vh - var(--admin-dialog-layer-block-start) - 2rem);
     }
 }
 
 @media (max-width: 46rem) {
-    .fi-modal:has(> .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog) > .fi-modal-window-ctn {
+    .fi-modal.admin-dialog-frame > .fi-modal-window-ctn {
         padding-block: .5rem !important;
     }
 
-    .fi-modal-window.admin-task-dialog {
+    .fi-modal.admin-dialog-frame > .fi-modal-window-ctn > .fi-modal-window {
         max-height: calc(100dvh - var(--admin-dialog-layer-block-start) - 1rem);
     }
 
     @supports not (height: 100dvh) {
-        .fi-modal-window.admin-task-dialog {
+        .fi-modal.admin-dialog-frame > .fi-modal-window-ctn > .fi-modal-window {
             max-height: calc(100vh - var(--admin-dialog-layer-block-start) - 1rem);
         }
     }
