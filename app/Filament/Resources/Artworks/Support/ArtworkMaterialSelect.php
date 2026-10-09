@@ -23,6 +23,7 @@ final class ArtworkMaterialSelect
             ->searchable()
             ->preload()
             ->native(false)
+            ->placeholder('No material')
             ->nullable()
             ->getOptionLabelUsing(static fn (mixed $value): ?string => is_string($value) && trim($value) !== '' ? $value : null)
             ->createOptionModalHeading('Add material')
