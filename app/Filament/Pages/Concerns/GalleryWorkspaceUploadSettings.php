@@ -107,7 +107,7 @@ trait GalleryWorkspaceUploadSettings
                             ->maxLength(240),
                     )
                     ->addActionLabel('Add material')
-                    ->helperText('Removing a preset only removes the suggestion. Existing artworks keep their saved Material text.'),
+                    ->helperText('Existing artwork text is unchanged.'),
             ])
             ->modalHeading('Material presets')
             ->action(function (array $data): void {
