@@ -5,7 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
-use App\Models\MediaAsset;
+use App\Filament\Support\MediaAssetSelect;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -13,7 +13,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -47,7 +46,7 @@ trait GalleryWorkspaceFormSupport
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
                     TextInput::make('dimension_width')->label('Width (W)')->numeric()->minValue(0.01)->nullable(),
-                    TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable()->helperText('Optional.'),
+                    TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable(),
                     Select::make('dimension_unit')
                         ->label('Unit')
                         ->options(['cm' => 'cm', 'mm' => 'mm', 'in' => 'in'])
@@ -60,13 +59,13 @@ trait GalleryWorkspaceFormSupport
                         ->helperText('Fallback for diameter, variable dimensions or legacy/free-form notation. When set, this value is saved instead of H × W × D.')
                         ->columnSpanFull(),
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
-                    Select::make('primary_media_asset_id')
-                        ->label('Existing Media File')
-                        ->options(fn (): array => $this->primaryMediaOptions())
-                        ->searchable()
-                        ->preload()
+                    MediaAssetSelect::makeId(
+                        'primary_media_asset_id',
+                        'Existing Media File',
+                        allowedMimeTypes: self::primaryMimeTypes(),
+                    )
                         ->nullable()
-                        ->helperText('Only available images and videos can be primary media. Audio is intentionally excluded.')
+                        ->helperText('Images and videos only.')
                         ->columnSpanFull(),
                     FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
@@ -108,26 +107,6 @@ trait GalleryWorkspaceFormSupport
         }
 
         return $data;
-    }
-
-    /** @return array<int, string> */
-    private function primaryMediaOptions(): array
-    {
-        /** @var EloquentCollection<int, MediaAsset> $assets */
-        $assets = MediaAsset::query()
-            ->where('state', 'available')
-            ->whereIn('mime_type', self::primaryMimeTypes())
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->limit(500)
-            ->get(['id', 'original_filename', 'mime_type']);
-
-        return $assets->mapWithKeys(static function (MediaAsset $asset): array {
-            $mime = (string) $asset->getAttribute('mime_type');
-            $kind = MediaTypePolicy::isVideo($mime) ? 'Video' : 'Image';
-
-            return [(int) $asset->getKey() => (string) $asset->getAttribute('original_filename').' · '.$kind];
-        })->all();
     }
 
     /** @return list<string> */
