@@ -104,6 +104,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $artworkPreview = file_get_contents($root.'/resources/views/filament/resources/artworks/partials/preview-dialog.blade.php');
     $mediaPreview = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/preview-dialog.blade.php');
     $gallerySelection = file_get_contents($root.'/app/Filament/Pages/Concerns/GalleryWorkspaceSelectionSupport.php');
+    $homeRoutingDialog = file_get_contents($root.'/app/Filament/Support/HomeRoutingDialog.php');
 
     expect($adapter)
         ->toContain('AdminDialogSize $size = AdminDialogSize::Large')
@@ -251,6 +252,11 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('private array $actionArtworkCache = []')
         ->toContain('isset($this->actionArtworkCache[$artworkId])')
         ->toContain('return $this->actionArtworkCache[$artworkId] = $artwork;');
+
+    expect($homeRoutingDialog)
+        ->toContain('private ?array $targetOptionsCache = null;')
+        ->toContain('if ($this->targetOptionsCache !== null)')
+        ->toContain('return $this->targetOptionsCache = SiteSection::query()');
 });
 
 it('does not reintroduce Filament confirmation mode in admin application code', function (): void {
