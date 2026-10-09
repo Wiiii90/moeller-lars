@@ -45,3 +45,14 @@ it('keeps dialog headings and header actions on one shared first-row axis', func
         ->not->toContain('.admin-dialog--confirmation .fi-modal-heading {')
         ->not->toContain('.admin-dialog--confirmation .fi-modal-description {');
 });
+
+it('applies canonical chrome to every icon action in the dialog header rail', function (): void {
+    $root = dirname(__DIR__, 3);
+    $contract = file_get_contents($root.'/resources/css/admin/dialog-contract.css');
+
+    expect($contract)
+        ->toContain('.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn,')
+        ->toContain('.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn:hover,')
+        ->toContain('.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn:focus-visible,')
+        ->toContain('.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn svg,');
+});
