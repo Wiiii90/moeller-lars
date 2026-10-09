@@ -20,7 +20,7 @@ trait CustomPageWorkspaceListContactActions
             ->label('Add list entry')
             ->fillForm(fn (): array => ['publication_state' => 'published'])
             ->schema($this->listEntrySchema())
-            ->modalHeading('Add list entry')
+            ->modalHeading('Add entry')
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 app(CustomPageEditorialService::class)->addListItem($this->settings(), $index, $type, $this->listItemPayload($data));
@@ -32,7 +32,7 @@ trait CustomPageWorkspaceListContactActions
                 );
             });
 
-        return AdminDialog::create($action, 'Add list entry', AdminDialogSize::Large);
+        return AdminDialog::create($action, 'Add entry', AdminDialogSize::Large);
     }
 
     public function editListEntryAction(): Action
@@ -45,7 +45,7 @@ trait CustomPageWorkspaceListContactActions
                 return [...$item, 'publication_state' => CustomPageSetting::listItemPublished($item) ? 'published' : 'unpublished'];
             })
             ->schema($this->listEntrySchema())
-            ->modalHeading(fn (array $arguments): string => 'Edit '.(string) ($this->actionListItem($arguments)['title'] ?? 'list entry'))
+            ->modalHeading('Edit entry')
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $itemIndex = $this->actionListItemIndex($arguments);
@@ -123,7 +123,7 @@ trait CustomPageWorkspaceListContactActions
                 );
             });
 
-        return AdminDialog::confirm($action, 'Delete list entry?', submitLabel: 'Delete', danger: true);
+        return AdminDialog::confirm($action, 'Delete entry?', submitLabel: 'Delete', danger: true);
     }
 
     public function addContactChildAction(): Action
@@ -138,7 +138,7 @@ trait CustomPageWorkspaceListContactActions
                 'status_text' => null,
             ])
             ->schema(fn (array $arguments): array => $this->contactChildEditorSchema(null, includeTypeSelect: true, arguments: $arguments))
-            ->modalHeading('Add contact item')
+            ->modalHeading('Add contact')
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 app(CustomPageEditorialService::class)->addContactChild(
@@ -155,7 +155,7 @@ trait CustomPageWorkspaceListContactActions
                 );
             });
 
-        return AdminDialog::create($action, 'Add contact item', AdminDialogSize::Large);
+        return AdminDialog::create($action, 'Add contact', AdminDialogSize::Large);
     }
 
     public function editContactChildAction(): Action
@@ -172,7 +172,7 @@ trait CustomPageWorkspaceListContactActions
                 ];
             })
             ->schema(fn (array $arguments): array => $this->contactChildEditorSchema($this->actionContactChildType($arguments), false, $arguments))
-            ->modalHeading(fn (array $arguments): string => 'Edit '.(self::CONTACT_CHILD_LABELS[$this->actionContactChildType($arguments)] ?? 'Contact item'))
+            ->modalHeading('Edit contact')
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $childType = $this->actionContactChildType($arguments);
@@ -254,6 +254,6 @@ trait CustomPageWorkspaceListContactActions
                 );
             });
 
-        return AdminDialog::confirm($action, 'Delete contact item?', submitLabel: 'Delete', danger: true);
+        return AdminDialog::confirm($action, 'Delete contact?', submitLabel: 'Delete', danger: true);
     }
 }
