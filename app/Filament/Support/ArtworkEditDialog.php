@@ -72,7 +72,7 @@ final class ArtworkEditDialog
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
                     TextInput::make('dimension_width')->label('Width (W)')->numeric()->minValue(0.01)->nullable(),
-                    TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable()->helperText('Optional.'),
+                    TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable(),
                     Select::make('dimension_unit')
                         ->label('Unit')
                         ->options(['cm' => 'cm', 'mm' => 'mm', 'in' => 'in'])
@@ -90,8 +90,10 @@ final class ArtworkEditDialog
                         'Existing Media File',
                         allowedMimeTypes: self::primaryMimeTypes(),
                     )
+                        ->placeholder('No primary media')
+                        ->selectablePlaceholder(false)
                         ->nullable()
-                        ->helperText('Only available images and videos can be primary media. Audio is intentionally excluded.')
+                        ->helperText('Images and videos only.')
                         ->columnSpanFull(),
                     FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
