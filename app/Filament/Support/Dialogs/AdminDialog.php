@@ -23,10 +23,9 @@ final class AdminDialog
      * blur, while select/toggle controls commit immediately. No timers or
      * hidden submit buttons participate in persistence.
      *
-     * Editorial edits use the large workspace width by default. Small is the
-     * one intentional compact utility-editor exception; older Default requests are
-     * promoted so an edit surface cannot accidentally collapse
-     * back into a narrow single-column task.
+     * Editorial edits use the large workspace width by default. Consumers may
+     * deliberately choose Default for medium forms or Small for compact utility
+     * editors; explicit canonical size choices are never silently promoted.
      *
      * @param  array<mixed>|Closure  $windowAttributes
      */
@@ -35,8 +34,6 @@ final class AdminDialog
         AdminDialogSize $size = AdminDialogSize::Large,
         array|Closure $windowAttributes = [],
     ): Action {
-        $size = $size === AdminDialogSize::Small ? AdminDialogSize::Small : AdminDialogSize::Large;
-
         $action = self::base($action, AdminDialogType::Edit, $size)
             ->modalSubmitAction(false)
             ->modalCancelAction(false)
