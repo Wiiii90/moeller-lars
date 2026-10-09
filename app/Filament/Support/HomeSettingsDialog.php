@@ -134,11 +134,9 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
                     Toggle::make('show_details')
                         ->label('Show artwork information')
-                        ->helperText('Shows title, material, dimensions and other artwork label information.')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     Toggle::make('show_gallery_link')
                         ->label('Show Gallery link')
-                        ->helperText('Shows the Gallery context button independently from artwork information.')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     Toggle::make('public_site_gate')
                         ->label('Temporarily gate the public site')
