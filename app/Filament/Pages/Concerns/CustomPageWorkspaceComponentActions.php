@@ -248,7 +248,7 @@ trait CustomPageWorkspaceComponentActions
 
         return AdminDialog::confirm(
             $action,
-            'Change component type?',
+            'Change type?',
             $description,
             'Change type',
             condition: fn (array $arguments): bool => $this->componentTypeChangeLosesContent($arguments),
@@ -303,7 +303,7 @@ trait CustomPageWorkspaceComponentActions
                 );
             });
 
-        return AdminDialog::confirm($action, 'Delete selected items?', submitLabel: 'Delete', danger: true);
+        return AdminDialog::confirm($action, 'Delete items?', submitLabel: 'Delete', danger: true);
     }
 
     public function deleteSelectedComponentsAction(): Action
