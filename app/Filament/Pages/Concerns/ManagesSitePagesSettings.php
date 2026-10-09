@@ -18,7 +18,6 @@ trait ManagesSitePagesSettings
             Action::make('pagesSettings')
                 ->label('Settings')
                 ->modalHeading('Pages settings')
-                ->modalDescription('Configure the site hierarchy and Home routing shared by the Pages workspace.')
                 ->fillForm(fn (): array => $dialog->fill())
                 ->schema($dialog->schema())
                 ->action(function (array $data) use ($dialog): void {
