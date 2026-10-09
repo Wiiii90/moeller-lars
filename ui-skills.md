@@ -477,6 +477,10 @@ Required behavior:
 
 Do not fix one broken dialog by creating a page-local fake modal. Do not use Livewire `wire:confirm` or browser-native confirm prompts for admin actions; route confirmations through `AdminDialog::confirm()`.
 
+The first dialog row is one shared axis: concise heading on the left, contextual icon actions immediately before the native X on the right. Header reserve follows the actual number of actions; never hard-code a large empty title gutter. Ordinary task headings are normally one or two words. Descriptions are used only for a real consequence/safety distinction and must not restate the heading or obvious form behavior.
+
+Dialog forms use the same globally registered `AdminControl` grammar as route forms. Checkbox/Toggle labels align on the shared field axis. Edit dialogs keep validation semantics but hide red required-star decoration, and required Select fields do not expose a selectable neutral placeholder. Optional semantic null choices remain explicit only where the domain actually supports them.
+
 Large editorial dialogs should order content according to the actual editorial task, not persistence schema order.
 
 ## 17. Rich Text editor UI
