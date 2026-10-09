@@ -67,6 +67,7 @@ final class JournalEntryEditorSchema
         }
 
         $schema[] = MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
+            ->placeholder('No cover image')
             ->nullable()
             ->columnSpanFull();
 
