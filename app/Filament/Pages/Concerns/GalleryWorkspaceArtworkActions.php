@@ -45,7 +45,7 @@ trait GalleryWorkspaceArtworkActions
 
         return AdminDialog::confirm(
             $action,
-            'Remove artwork from Gallery?',
+            'Remove artwork?',
             'The artwork becomes unassigned. Its files in Storage stay intact and reusable.',
             'Remove',
             icon: AdminIcon::Detach,
@@ -147,7 +147,7 @@ trait GalleryWorkspaceArtworkActions
 
         return AdminDialog::confirm(
             $action,
-            fn (array $arguments): string => 'Delete '.(string) $this->primaryMediaAsset($arguments)->getAttribute('original_filename').'?',
+            'Delete file?',
             submitLabel: 'Delete media file',
             danger: true,
         );
