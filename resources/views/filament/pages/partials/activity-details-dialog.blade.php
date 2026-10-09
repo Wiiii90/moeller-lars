@@ -27,11 +27,6 @@
     </dl>
 
     <div class="admin-detail-dialog__field">
-        <span>Change</span>
-        <p>{{ $event['change'] }}</p>
-    </div>
-
-    <div class="admin-detail-dialog__field">
         <span>Details</span>
         <p>{{ $event['details'] ?? '—' }}</p>
     </div>
