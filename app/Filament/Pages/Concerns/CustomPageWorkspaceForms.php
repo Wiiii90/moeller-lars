@@ -66,7 +66,9 @@ trait CustomPageWorkspaceForms
                 ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
-                MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)->nullable(),
+                MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)
+                    ->placeholder('No list image')
+                    ->nullable(),
             ],
             'divider' => [
                 Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
