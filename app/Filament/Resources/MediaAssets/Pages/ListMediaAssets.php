@@ -862,7 +862,7 @@ final class ListMediaAssets extends Page
                 ->schema([
                     TextInput::make('alt_text')
                         ->label('Default ALT text')
-                        ->helperText('For images, describe the content and function. Individual usages may override this text.')
+                        ->helperText('Describe the image content and function. Usage-specific ALT may override it.')
                         ->maxLength(500)
                         ->nullable(),
                     TextInput::make('credit')
@@ -879,13 +879,11 @@ final class ListMediaAssets extends Page
                             MediaAsset::COPYRIGHT_OVERRIDE => 'Use asset override',
                             MediaAsset::COPYRIGHT_NONE => 'No notice',
                         ])
-                        ->required()
-                        ->helperText('Inheritance is explicit. No notice suppresses the General default for this file.'),
+                        ->required(),
                     Textarea::make('copyright_notice')
                         ->label('Asset copyright override')
                         ->maxLength(500)
                         ->nullable()
-                        ->helperText('Used only when Copyright notice is set to Use asset override.')
                         ->columnSpanFull(),
                 ]),
         ];
