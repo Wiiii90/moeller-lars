@@ -68,9 +68,11 @@ final class MediaAssetSelect
                     return null;
                 }
 
-                $cached = self::cachedOptionLabel((int) $id, true);
-                if ($cached !== null) {
-                    return $cached;
+                if ($allowedMimeTypes === null && $modifyQueryUsing === null) {
+                    $cached = self::cachedOptionLabel((int) $id, true);
+                    if ($cached !== null) {
+                        return $cached;
+                    }
                 }
 
                 /** @var Builder<MediaAsset> $query */
@@ -87,7 +89,6 @@ final class MediaAssetSelect
             });
     }
 
-    /** @return array<int, string> */
     /**
      * @param  list<string>|null  $allowedMimeTypes
      * @return array<int, string>
