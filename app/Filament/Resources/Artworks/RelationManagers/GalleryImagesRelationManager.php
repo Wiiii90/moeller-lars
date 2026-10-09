@@ -24,6 +24,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 class GalleryImagesRelationManager extends RelationManager
 {
+    /** @var list<int>|null */
+    private ?array $usedMediaAssetIdsCache = null;
+
     protected static string $relationship = 'artworkMedia';
 
     protected static ?string $title = 'Gallery images';
@@ -149,10 +152,14 @@ class GalleryImagesRelationManager extends RelationManager
     /** @return list<int> */
     private function usedMediaAssetIds(): array
     {
+        if ($this->usedMediaAssetIdsCache !== null) {
+            return $this->usedMediaAssetIdsCache;
+        }
+
         /** @var Artwork $artwork */
         $artwork = $this->getOwnerRecord();
 
-        return $artwork->artworkMedia()
+        return $this->usedMediaAssetIdsCache = $artwork->artworkMedia()
             ->pluck('media_asset_id')
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
