@@ -359,7 +359,7 @@ final class Dashboard extends Page
                     $this->deleteFeedEntry((string) ($arguments['key'] ?? ''));
                 }),
             'Delete message?',
-            'This removes the stored dashboard message.',
+            'Removes the stored dashboard message.',
         );
     }
 
@@ -372,8 +372,8 @@ final class Dashboard extends Page
                 ->action(function (): void {
                     $this->bulkDelete();
                 }),
-            'Delete selected messages?',
-            'This removes the selected contact messages and notifications.',
+            'Delete messages?',
+            'Removes the selected contact messages and notifications.',
         );
     }
 
@@ -618,7 +618,7 @@ final class Dashboard extends Page
             $deleteAction = $this->configureConfirmation(
                 $deleteAction,
                 'Delete message?',
-                'This removes the stored dashboard message.',
+                'Removes the stored dashboard message.',
             );
         }
 
