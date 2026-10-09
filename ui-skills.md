@@ -481,6 +481,8 @@ The first dialog row is one shared axis: concise heading on the left, contextual
 
 Dialog forms use the same globally registered `AdminControl` grammar as route forms. Checkbox/Toggle labels align on the shared field axis. Edit dialogs keep validation semantics but hide red required-star decoration, and required Select fields do not expose a selectable neutral placeholder. Optional semantic null choices remain explicit only where the domain actually supports them.
 
+Dialog width follows task density through the existing `Small` / `Default` / `Large` formats. Small is for compact utilities, Default for bounded medium forms, and Large for genuinely wide editorial forms/viewers. The shared adapter preserves the explicit size; do not stretch a medium form to Large or emulate a fourth size with feature CSS.
+
 Large editorial dialogs should order content according to the actual editorial task, not persistence schema order.
 
 ## 17. Rich Text editor UI
