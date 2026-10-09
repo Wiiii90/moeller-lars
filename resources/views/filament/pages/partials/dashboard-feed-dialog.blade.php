@@ -49,15 +49,12 @@
         @endif
     </dl>
 
-    <div class="admin-detail-dialog__field">
-        <span>Title</span>
-        <p>{{ $title !== '' ? $title : '—' }}</p>
-    </div>
-
-    <div class="admin-detail-dialog__field">
-        <span>Message</span>
-        <p>{{ $message !== '' ? $message : '—' }}</p>
-    </div>
+    @if ($message !== '')
+        <div class="admin-detail-dialog__field">
+            <span>Message</span>
+            <p>{{ $message }}</p>
+        </div>
+    @endif
 
     @if ($entry['type'] === 'contact')
         <p class="admin-detail-dialog__context">
