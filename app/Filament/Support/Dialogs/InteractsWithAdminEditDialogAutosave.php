@@ -52,6 +52,9 @@ trait InteractsWithAdminEditDialogAutosave
             if (($this->adminEditDialogPersistedFingerprints[$key] ?? null) === $fingerprint) {
                 $action->commitDatabaseTransaction();
 
+                // A duplicate change event must not morph the open modal.
+                $this->skipRender();
+
                 return;
             }
 
@@ -66,6 +69,12 @@ trait InteractsWithAdminEditDialogAutosave
             if ($action->getStatus() === \Filament\Actions\Enums\ActionStatus::Success) {
                 $this->adminEditDialogPersistedFingerprints[$key] = $fingerprint;
                 $action->sendSuccessNotification();
+
+                // The domain action already updated server state. Rendering the
+                // entire workspace during an open edit replaces modal DOM and
+                // can replay an out-of-date open state after the user closes it.
+                // Filament handles the next render on its native close request.
+                $this->skipRender();
             } else {
                 $action->sendFailureNotification();
             }
