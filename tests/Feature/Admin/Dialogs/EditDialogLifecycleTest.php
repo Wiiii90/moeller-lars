@@ -20,11 +20,11 @@ it('persists an edit through the native action lifecycle without unmounting the 
     $component = Livewire::test(Dashboard::class)
         ->call('mountAction', 'dashboardSettings')
         ->assertSet('mountedActions.0.name', 'dashboardSettings')
-        ->set('mountedActions.0.data.notification_filter', 'unread')
+        ->set('mountedActions.0.data.notification_filter', 'success')
         ->call('callMountedAction')
         ->assertSet('mountedActions.0.name', 'dashboardSettings');
 
-    expect($user->fresh()->dashboard_notification_filter)->toBe('unread');
+    expect($user->fresh()->dashboard_notification_filter)->toBe('success');
 
     $component->call('unmountAction')->assertSet('mountedActions', []);
 });
@@ -34,11 +34,11 @@ it('closes the native dialog without executing the edit action', function (): vo
 
     Livewire::test(Dashboard::class)
         ->call('mountAction', 'dashboardSettings')
-        ->set('mountedActions.0.data.notification_filter', 'unread')
+        ->set('mountedActions.0.data.notification_filter', 'success')
         ->call('unmountAction')
         ->assertSet('mountedActions', []);
 
-    expect($user->fresh()->dashboard_notification_filter)->not->toBe('unread');
+    expect($user->fresh()->dashboard_notification_filter)->not->toBe('success');
 });
 
 it('uses one native edit commit entrypoint and no template-specific second autosave call', function (): void {
