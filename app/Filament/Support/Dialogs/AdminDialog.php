@@ -37,6 +37,11 @@ final class AdminDialog
         $action = self::base($action, AdminDialogType::Edit, $size)
             ->modalSubmitAction(false)
             ->modalCancelAction(false)
+            ->afterFormFilled(function ($livewire): void {
+                // A newly mounted edit is a new persistence session, even when
+                // its action name and record match a dialog opened earlier.
+                $livewire->resetAdminEditDialogPersistenceReceipt();
+            })
             ->extraModalWindowAttributes(['wire:change' => 'persistMountedAdminEdit'], merge: true);
 
         if ($windowAttributes instanceof Closure || $windowAttributes !== []) {
