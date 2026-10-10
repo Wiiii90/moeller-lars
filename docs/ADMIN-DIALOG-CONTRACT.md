@@ -144,6 +144,8 @@ Edit autosave must follow `ADMIN-CONTROL-CONTRACT.md`: discrete semantic changes
 
 `AdminDialog::edit()` routes discrete `wire:change` events through Filament's native `callMountedAction()` lifecycle (form validation, Action hooks and its database transaction). Its shared `after()` hook calls Filament's `Action::halt()` after successful persistence, committing the transaction while leaving the Edit modal mounted. This avoids a second project-owned Action executor. The native `X` only closes/unmounts the modal; the domain service remains responsible for comparing persisted values and recording actual changes in Activity/Audit. No separate `Save` or `Save and exit` path is added.
 
+The native Filament `X` executes only `unmountAction()`. A text input's final browser `change` on blur remains an ordinary autosave event; suppressing that event would discard the last edit. Livewire 4.4 queues non-async Actions on the same component while another Action request is active, so edit persistence and native close require no second client-side close handler, custom lock, timeout or focus-interception path. The shared Edit `after()` hook retains Filament's configured success/failure notifications before halting; domain notifications continue to be emitted by the existing canonical domain services.
+
 Undo must extend the existing Activity/Audit receipt architecture. Do not create an independent dialog snapshot/rollback system. An Undo action may only be shown for mutations that have safe current receipts; applying Undo creates inverse editorial actions through the canonical `AdminUndoService` path.
 
 ## Controls

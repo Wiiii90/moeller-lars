@@ -51,3 +51,44 @@ it('uses one native edit commit entrypoint and no template-specific second autos
         ->and($homeSettings)->not->toContain('persistMountedAdminEdit')
         ->and(file_exists(app_path('Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php')))->toBeFalse();
 });
+
+it('persists the final blur change before a subsequent native close without writing again on close', function (): void {
+    $user = auth()->user();
+
+    $component = Livewire::test(Dashboard::class)
+        ->call('mountAction', 'dashboardSettings')
+        ->set('mountedActions.0.data.notification_filter', 'success')
+        ->call('callMountedAction')
+        ->assertSet('mountedActions.0.name', 'dashboardSettings');
+
+    expect($user->fresh()->dashboard_notification_filter)->toBe('success');
+
+    $component->call('unmountAction')->assertSet('mountedActions', []);
+
+    expect($user->fresh()->dashboard_notification_filter)->toBe('success');
+});
+
+it('keeps an invalid edit mounted and never persists it', function (): void {
+    $user = auth()->user();
+    $original = $user->getAttribute('dashboard_notification_filter');
+
+    Livewire::test(Dashboard::class)
+        ->call('mountAction', 'dashboardSettings')
+        ->set('mountedActions.0.data.notification_filter', 'unsupported-filter')
+        ->call('callMountedAction')
+        ->assertHasErrors()
+        ->assertSet('mountedActions.0.name', 'dashboardSettings');
+
+    expect($user->fresh()->getAttribute('dashboard_notification_filter'))->toBe($original);
+});
+
+it('does not introduce a custom save-on-close or second edit submit button', function (): void {
+    $source = file_get_contents(app_path('Filament/Support/Dialogs/AdminDialog.php'));
+
+    expect($source)->toContain("->modalSubmitAction(false)")
+        ->and($source)->toContain("->modalCancelAction(false)")
+        ->and($source)->toContain("'wire:change' => 'callMountedAction'")
+        ->and($source)->not->toContain('unmountAction(')
+        ->and($source)->not->toContain('focusout')
+        ->and($source)->not->toContain('setTimeout');
+});

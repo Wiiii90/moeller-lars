@@ -5,6 +5,7 @@ namespace App\Filament\Support\Dialogs;
 use App\Filament\Support\AdminIcon;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Actions\Enums\ActionStatus;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\Width;
 
@@ -37,9 +38,15 @@ final class AdminDialog
         $action = self::base($action, AdminDialogType::Edit, $size)
             ->modalSubmitAction(false)
             ->modalCancelAction(false)
-            // Filament validates and runs the domain Action inside its own transaction.
-            // Halt only after a successful edit so the native modal stays open.
+            // Keep the native Action lifecycle and its configured notifications.
+            // Halting after the domain callback commits the transaction but avoids
+            // Filament's normal post-submit unmount of this autosaving Edit modal.
             ->after(static function (Action $action): void {
+                match ($action->getStatus()) {
+                    ActionStatus::Success => $action->sendSuccessNotification(),
+                    ActionStatus::Failure => $action->sendFailureNotification(),
+                };
+
                 $action->halt();
             })
             ->extraModalWindowAttributes(['wire:change' => 'callMountedAction'], merge: true);
