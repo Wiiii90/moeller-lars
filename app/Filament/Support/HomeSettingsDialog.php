@@ -70,12 +70,7 @@ final class HomeSettingsDialog
                         ->label('Template')
                         ->options(HomeTemplate::options())
                         ->required()
-                        ->live()
-                        ->afterStateUpdated(function ($livewire): void {
-                            if (method_exists($livewire, 'persistMountedAdminEdit')) {
-                                $livewire->persistMountedAdminEdit();
-                            }
-                        }),
+                        ->live(),
                     Toggle::make('show_in_navigation')
                         ->label('Show Home in navigation')
                         ->helperText('Only the public Home link changes. The Home page remains available at /.'),
