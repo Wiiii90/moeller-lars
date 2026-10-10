@@ -20,13 +20,6 @@ trait InteractsWithAdminEditDialogAutosave
     #[Locked]
     public array $adminEditDialogPersistedFingerprints = [];
 
-    public function resetAdminEditDialogPersistenceReceipt(): void
-    {
-        // Filament has just mounted a fresh edit form. Receipts from a prior
-        // opening of the same action must never suppress this session's writes.
-        $this->adminEditDialogPersistedFingerprints = [];
-    }
-
     public function persistMountedAdminEdit(): void
     {
         $action = $this->getMountedAction();
@@ -52,9 +45,6 @@ trait InteractsWithAdminEditDialogAutosave
             if (($this->adminEditDialogPersistedFingerprints[$key] ?? null) === $fingerprint) {
                 $action->commitDatabaseTransaction();
 
-                // A duplicate change event must not morph the open modal.
-                $this->skipRender();
-
                 return;
             }
 
@@ -64,20 +54,9 @@ trait InteractsWithAdminEditDialogAutosave
             $this->afterActionCalled($action);
             $action->commitDatabaseTransaction();
 
-            // Match Filament's native notification contract without calling
-            // callMountedAction(), which would unmount this autosaving dialog.
-            if ($action->getStatus() === \Filament\Actions\Enums\ActionStatus::Success) {
-                $this->adminEditDialogPersistedFingerprints[$key] = $fingerprint;
-                $action->sendSuccessNotification();
-
-                // The domain action already updated server state. Rendering the
-                // entire workspace during an open edit replaces modal DOM and
-                // can replay an out-of-date open state after the user closes it.
-                // Filament handles the next render on its native close request.
-                $this->skipRender();
-            } else {
-                $action->sendFailureNotification();
-            }
+            // Only a successfully completed domain action becomes the next
+            // no-op baseline. Validation/errors never advance this receipt.
+            $this->adminEditDialogPersistedFingerprints[$key] = $fingerprint;
         } catch (Halt $exception) {
             $exception->shouldRollbackDatabaseTransaction()
                 ? $action->rollBackDatabaseTransaction()
