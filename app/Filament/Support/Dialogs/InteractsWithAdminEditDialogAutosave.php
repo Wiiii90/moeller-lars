@@ -54,9 +54,14 @@ trait InteractsWithAdminEditDialogAutosave
             $this->afterActionCalled($action);
             $action->commitDatabaseTransaction();
 
-            // Only a successfully completed domain action becomes the next
-            // no-op baseline. Validation/errors never advance this receipt.
-            $this->adminEditDialogPersistedFingerprints[$key] = $fingerprint;
+            // Match Filament's native notification contract without calling
+            // callMountedAction(), which would unmount this autosaving dialog.
+            if ($action->getStatus() === \Filament\Actions\Enums\ActionStatus::Success) {
+                $this->adminEditDialogPersistedFingerprints[$key] = $fingerprint;
+                $action->sendSuccessNotification();
+            } else {
+                $action->sendFailureNotification();
+            }
         } catch (Halt $exception) {
             $exception->shouldRollbackDatabaseTransaction()
                 ? $action->rollBackDatabaseTransaction()
