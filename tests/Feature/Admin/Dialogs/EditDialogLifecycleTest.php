@@ -64,6 +64,7 @@ it('persists the final blur change before a subsequent native close without writ
 
     expect($user->fresh()->dashboard_notification_filter)->toBe('success');
     $notificationsAfterSave = AdminNotification::query()->count();
+    expect($notificationsAfterSave)->toBeGreaterThan(0);
 
     $component->call('unmountAction')->assertSet('mountedActions', []);
 
