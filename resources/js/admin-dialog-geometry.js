@@ -36,12 +36,11 @@ function activeMain(modal) {
 }
 
 function resetModalScroll(modal) {
-    if (! modal) return;
+    const content = modal?.querySelector('.fi-modal-content');
+    if (! content) return;
 
-    for (const element of modal.querySelectorAll('.fi-modal-window-ctn, .fi-modal-window, .fi-modal-content')) {
-        element.scrollTop = 0;
-        element.scrollLeft = 0;
-    }
+    content.scrollTop = 0;
+    content.scrollLeft = 0;
 }
 
 function syncModalGeometry(modal, { resetScroll = false } = {}) {

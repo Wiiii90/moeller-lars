@@ -120,7 +120,10 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('->modalAlignment(Alignment::Start)')
         ->toContain('->modalFooterActionsAlignment(Alignment::Start)')
         ->not->toContain('->requiresConfirmation(')
-        ->not->toContain('AdminDialogSize::Mini');
+        ->not->toContain('AdminDialogSize::Mini')
+        ->toContain("'wire:change' => 'callMountedAction'")
+        ->toContain('$action->halt();')
+        ->not->toContain('persistMountedAdminEdit');
 
     expect($sitePages)
         ->toContain("AdminDialogSize::Small,\n        );");
@@ -210,7 +213,8 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain("document.addEventListener('x-modal-opened'")
         ->toContain("modal.classList.add('admin-dialog-frame')")
         ->toContain("modal.classList.contains('fi-modal-click-through')")
-        ->toContain("element.scrollTop = 0")
+        ->toContain("content.scrollTop = 0")
+        ->not->toContain("querySelectorAll('.fi-modal-window-ctn, .fi-modal-window, .fi-modal-content')")
         ->toContain("--admin-dialog-layer-inline-start")
         ->not->toContain("modal-closed")
         ->not->toContain("window.scrollTo")
@@ -223,7 +227,8 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->not->toContain("document.documentElement.style.overflow")
         ->not->toContain("document.documentElement.style.paddingRight")
         ->and(is_file($root.'/resources/js/admin-modal-scroll.js'))->toBeFalse()
-        ->and(is_file($root.'/resources/views/filament/partials/admin-modal-bootstrap.blade.php'))->toBeFalse();
+        ->and(is_file($root.'/resources/views/filament/partials/admin-modal-bootstrap.blade.php'))->toBeFalse()
+        ->and(is_file($root.'/app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php'))->toBeFalse();
 
     expect($homeWorkspace)
         ->toContain('app(HomeSettingsDialog::class)')
@@ -233,8 +238,9 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     expect($homeSettingsDialog)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')
         ->toContain("->columns(['md' => 2])")
-        ->toContain("->afterStateUpdated(function (\$livewire): void {")
-        ->toContain("persistMountedAdminEdit");
+        ->toContain("->live(),")
+        ->not->toContain('persistMountedAdminEdit')
+        ->not->toContain('afterStateUpdated(function ($livewire)');
 
     expect($artworkEditDialog)
         ->toContain('final class ArtworkEditDialog')

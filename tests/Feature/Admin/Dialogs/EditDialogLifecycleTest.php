@@ -15,7 +15,7 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-it('persists an edit through the native action lifecycle without unmounting the dialog', function (): void {
+it('persists successive edits through Filament while keeping the dialog open', function (): void {
     $user = auth()->user();
 
     $component = Livewire::test(Dashboard::class)
@@ -27,11 +27,25 @@ it('persists an edit through the native action lifecycle without unmounting the 
 
     expect($user->fresh()->dashboard_notification_filter)->toBe('success');
 
+    $component
+        ->set('mountedActions.0.data.notification_filter', 'warning')
+        ->call('callMountedAction')
+        ->assertSet('mountedActions.0.name', 'dashboardSettings');
+
+    expect($user->fresh()->dashboard_notification_filter)->toBe('warning');
+
+    $notificationsAfterSave = AdminNotification::query()->count();
+    expect($notificationsAfterSave)->toBeGreaterThan(0);
+
     $component->call('unmountAction')->assertSet('mountedActions', []);
+
+    expect($user->fresh()->dashboard_notification_filter)->toBe('warning')
+        ->and(AdminNotification::query()->count())->toBe($notificationsAfterSave);
 });
 
-it('closes the native dialog without executing the edit action', function (): void {
+it('closes the native edit dialog without executing its action', function (): void {
     $user = auth()->user();
+    $original = $user->getAttribute('dashboard_notification_filter');
 
     Livewire::test(Dashboard::class)
         ->call('mountAction', 'dashboardSettings')
@@ -39,46 +53,16 @@ it('closes the native dialog without executing the edit action', function (): vo
         ->call('unmountAction')
         ->assertSet('mountedActions', []);
 
-    expect($user->fresh()->dashboard_notification_filter)->not->toBe('success');
+    expect($user->fresh()->getAttribute('dashboard_notification_filter'))->toBe($original);
 });
 
-it('uses one native edit commit entrypoint and no template-specific second autosave call', function (): void {
-    $adapter = file_get_contents(app_path('Filament/Support/Dialogs/AdminDialog.php'));
-    $homeSettings = file_get_contents(app_path('Filament/Support/HomeSettingsDialog.php'));
-
-    expect($adapter)->toContain("'wire:change' => 'callMountedAction'")
-        ->and($adapter)->toContain('$action->halt();')
-        ->and($adapter)->not->toContain('persistMountedAdminEdit')
-        ->and($homeSettings)->not->toContain('persistMountedAdminEdit')
-        ->and(file_exists(app_path('Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php')))->toBeFalse();
-});
-
-it('persists the final blur change before a subsequent native close without writing again on close', function (): void {
-    $user = auth()->user();
-
-    $component = Livewire::test(Dashboard::class)
-        ->call('mountAction', 'dashboardSettings')
-        ->set('mountedActions.0.data.notification_filter', 'success')
-        ->call('callMountedAction')
-        ->assertSet('mountedActions.0.name', 'dashboardSettings');
-
-    expect($user->fresh()->dashboard_notification_filter)->toBe('success');
-    $notificationsAfterSave = AdminNotification::query()->count();
-    expect($notificationsAfterSave)->toBeGreaterThan(0);
-
-    $component->call('unmountAction')->assertSet('mountedActions', []);
-
-    expect($user->fresh()->dashboard_notification_filter)->toBe('success')
-        ->and(AdminNotification::query()->count())->toBe($notificationsAfterSave);
-});
-
-it('keeps an invalid edit mounted and never persists it', function (): void {
+it('keeps an invalid edit mounted without persisting the incomplete form', function (): void {
     $user = auth()->user();
     $original = $user->getAttribute('dashboard_notification_filter');
 
     Livewire::test(Dashboard::class)
         ->call('mountAction', 'dashboardSettings')
-        ->set('mountedActions.0.data.notification_filter', 'unsupported-filter')
+        ->set('mountedActions.0.data.notification_filter', null)
         ->call('callMountedAction')
         ->assertHasErrors()
         ->assertSet('mountedActions.0.name', 'dashboardSettings');
@@ -86,13 +70,18 @@ it('keeps an invalid edit mounted and never persists it', function (): void {
     expect($user->fresh()->getAttribute('dashboard_notification_filter'))->toBe($original);
 });
 
-it('does not introduce a custom save-on-close or second edit submit button', function (): void {
-    $source = file_get_contents(app_path('Filament/Support/Dialogs/AdminDialog.php'));
+it('uses one native edit persistence path without parallel autosave or save-on-close', function (): void {
+    $adapter = file_get_contents(app_path('Filament/Support/Dialogs/AdminDialog.php'));
+    $homeSettings = file_get_contents(app_path('Filament/Support/HomeSettingsDialog.php'));
 
-    expect($source)->toContain("->modalSubmitAction(false)")
-        ->and($source)->toContain("->modalCancelAction(false)")
-        ->and($source)->toContain("'wire:change' => 'callMountedAction'")
-        ->and($source)->not->toContain('unmountAction(')
-        ->and($source)->not->toContain('focusout')
-        ->and($source)->not->toContain('setTimeout');
+    expect($adapter)->toContain("'wire:change' => 'callMountedAction'")
+        ->and($adapter)->toContain('$action->halt();')
+        ->and($adapter)->toContain('->modalSubmitAction(false)')
+        ->and($adapter)->toContain('->modalCancelAction(false)')
+        ->and($adapter)->not->toContain('persistMountedAdminEdit')
+        ->and($adapter)->not->toContain('unmountAction(')
+        ->and($adapter)->not->toContain('focusout')
+        ->and($adapter)->not->toContain('setTimeout')
+        ->and($homeSettings)->not->toContain('persistMountedAdminEdit')
+        ->and(file_exists(app_path('Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php')))->toBeFalse();
 });
