@@ -20,6 +20,13 @@ trait InteractsWithAdminEditDialogAutosave
     #[Locked]
     public array $adminEditDialogPersistedFingerprints = [];
 
+    public function resetAdminEditDialogPersistenceReceipt(): void
+    {
+        // Filament has just mounted a fresh edit form. Receipts from a prior
+        // opening of the same action must never suppress this session's writes.
+        $this->adminEditDialogPersistedFingerprints = [];
+    }
+
     public function persistMountedAdminEdit(): void
     {
         $action = $this->getMountedAction();
