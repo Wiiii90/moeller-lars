@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Pages\Dashboard;
+use App\Models\AdminNotification;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,10 +63,12 @@ it('persists the final blur change before a subsequent native close without writ
         ->assertSet('mountedActions.0.name', 'dashboardSettings');
 
     expect($user->fresh()->dashboard_notification_filter)->toBe('success');
+    $notificationsAfterSave = AdminNotification::query()->count();
 
     $component->call('unmountAction')->assertSet('mountedActions', []);
 
-    expect($user->fresh()->dashboard_notification_filter)->toBe('success');
+    expect($user->fresh()->dashboard_notification_filter)->toBe('success')
+        ->and(AdminNotification::query()->count())->toBe($notificationsAfterSave);
 });
 
 it('keeps an invalid edit mounted and never persists it', function (): void {
