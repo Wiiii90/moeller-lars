@@ -6,14 +6,12 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceComponentActions
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     public function moveComponent(int $index, string $type, string $direction): void
     {

@@ -7,7 +7,6 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
@@ -19,7 +18,6 @@ use Illuminate\Support\Facades\DB;
 
 trait CustomPageWorkspaceLifecycle
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     public function mount(int|string $section): void
     {

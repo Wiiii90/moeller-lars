@@ -11,7 +11,6 @@ use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
@@ -34,7 +33,6 @@ use UnitEnum;
  */
 final class General extends Page
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     private const PERSISTED_FIELDS = [
         'favicon_media_asset_id',

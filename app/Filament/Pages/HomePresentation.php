@@ -19,7 +19,6 @@ use App\Filament\Support\AdminRichText;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\Artwork;
@@ -45,7 +44,6 @@ use Livewire\WithFileUploads;
 
 final class HomePresentation extends Page
 {
-    use InteractsWithAdminEditDialogAutosave;
     use WithFileUploads;
 
     protected static bool $shouldRegisterNavigation = false;

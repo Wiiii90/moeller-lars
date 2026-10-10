@@ -10,7 +10,6 @@ use App\Filament\Support\AdminIcon;
 use App\Filament\Support\DashboardOverview;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -20,7 +19,6 @@ use Illuminate\Contracts\View\View;
 
 final class Dashboard extends Page
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     private const PAGE_SIZES = [25, 50, 100];
 

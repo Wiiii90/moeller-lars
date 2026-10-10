@@ -14,7 +14,6 @@ use App\Domain\Media\PublicMedia;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
@@ -43,7 +42,6 @@ use Throwable;
 
 final class JournalWorkspace extends Page
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     private const PAGE_SIZES = [25, 50, 100];
 

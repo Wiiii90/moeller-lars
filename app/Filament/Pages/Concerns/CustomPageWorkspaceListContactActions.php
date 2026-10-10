@@ -6,13 +6,11 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
 
 trait CustomPageWorkspaceListContactActions
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     public function addListEntryAction(): Action
     {

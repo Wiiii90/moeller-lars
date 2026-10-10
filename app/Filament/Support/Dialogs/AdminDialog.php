@@ -37,7 +37,12 @@ final class AdminDialog
         $action = self::base($action, AdminDialogType::Edit, $size)
             ->modalSubmitAction(false)
             ->modalCancelAction(false)
-            ->extraModalWindowAttributes(['wire:change' => 'persistMountedAdminEdit'], merge: true);
+            // Filament validates and runs the domain Action inside its own transaction.
+            // Halt only after a successful edit so the native modal stays open.
+            ->after(static function (Action $action): void {
+                $action->halt();
+            })
+            ->extraModalWindowAttributes(['wire:change' => 'callMountedAction'], merge: true);
 
         if ($windowAttributes instanceof Closure || $windowAttributes !== []) {
             $action->extraModalWindowAttributes($windowAttributes, merge: true);

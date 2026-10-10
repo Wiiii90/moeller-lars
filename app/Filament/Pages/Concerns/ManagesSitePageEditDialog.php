@@ -11,7 +11,6 @@ use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
@@ -25,7 +24,6 @@ use Illuminate\Validation\ValidationException;
 
 trait ManagesSitePageEditDialog
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     /** @var array<int, SiteSection> */
     private array $dialogSectionCache = [];

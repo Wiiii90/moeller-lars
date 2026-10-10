@@ -8,7 +8,6 @@ use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\ArtworkEditDialog;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +15,6 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 trait GalleryWorkspaceArtworkDialogs
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     public function addArtworkAction(): Action
     {

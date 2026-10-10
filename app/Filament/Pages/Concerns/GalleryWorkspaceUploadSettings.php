@@ -7,7 +7,6 @@ use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
 use Filament\Actions\Action;
@@ -20,7 +19,6 @@ use Illuminate\Support\Facades\DB;
 
 trait GalleryWorkspaceUploadSettings
 {
-    use InteractsWithAdminEditDialogAutosave;
 
     public function gallerySettingsAction(): Action
     {

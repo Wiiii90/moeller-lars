@@ -142,7 +142,7 @@ Contextual actions are native Filament Actions lifted into the shared header rai
 
 Edit autosave must follow `ADMIN-CONTROL-CONTRACT.md`: discrete semantic changes only, never timer/debounce persistence.
 
-`AdminDialog::edit()` attaches the shared native `wire:change` commit hook. Edit-dialog hosts that persist through Filament Actions use `InteractsWithAdminEditDialogAutosave`, which runs the existing Action lifecycle inside its database transaction and suppresses duplicate commits for an unchanged mounted action state. There is no atomic-submit compatibility helper or second edit persistence path.
+`AdminDialog::edit()` routes discrete `wire:change` events through Filament's native `callMountedAction()` lifecycle (form validation, Action hooks and its database transaction). Its shared `after()` hook calls Filament's `Action::halt()` after successful persistence, committing the transaction while leaving the Edit modal mounted. This avoids a second project-owned Action executor. The native `X` only closes/unmounts the modal; the domain service remains responsible for comparing persisted values and recording actual changes in Activity/Audit. No separate `Save` or `Save and exit` path is added.
 
 Undo must extend the existing Activity/Audit receipt architecture. Do not create an independent dialog snapshot/rollback system. An Undo action may only be shown for mutations that have safe current receipts; applying Undo creates inverse editorial actions through the canonical `AdminUndoService` path.
 
