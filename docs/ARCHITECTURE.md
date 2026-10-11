@@ -57,6 +57,9 @@ Protected preview media routes live below `/preview/media/...`; they permit auth
 
 `SiteNodePresentation` maps typed nodes to their canonical admin workspace. `SiteNavigation` owns the admin tree projection and active-state calculation.
 
+**Immediate navigation refresh:** Filament 5's Livewire `Sidebar` already listens to `refresh-sidebar`. The Pages editor calls `loadSections(navigationChanged: true)` only after a persisted navigation-affecting mutation, dispatching that one built-in event. The Sidebar re-renders `SiteNavigation` using the committed SiteSection order, hierarchy, publication and `show_in_navigation` state; filtered, hidden or unpublished nodes remain editable from the unfiltered Pages editor. `SiteNavigation` and `PublicNavigationService` both omit Home while the single canonical Home routing configuration has Skip Home enabled. Do not add a JS DOM synchronizer, polling, forced reload, duplicate menu tree or mutation events for mere filter/pagination/no-op requests.
+
+
 Canonical workspaces:
 
 - Dashboard — site/admin overview;
