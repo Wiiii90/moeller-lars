@@ -39,20 +39,36 @@
                     const trigger = this.$refs.trigger
                     if (! trigger) return
 
+                    const panel = this.$refs.panel
+                    if (! panel) return
+
                     const viewportMargin = 8
                     const panelGap = 6
-                    const preferredWidth = 320
-                    const panelWidth = Math.max(0, Math.min(preferredWidth, window.innerWidth - (viewportMargin * 2)))
+                    const viewportWidth = document.documentElement.clientWidth
+                    const viewportHeight = window.innerHeight
+                    const panelWidth = Math.max(0, Math.min(320, viewportWidth - 2 * viewportMargin))
                     const rect = trigger.getBoundingClientRect()
-                    const maxLeft = Math.max(viewportMargin, window.innerWidth - panelWidth - viewportMargin)
-                    const left = Math.min(Math.max(rect.left, viewportMargin), maxLeft)
-                    const below = window.innerHeight - rect.bottom - viewportMargin - panelGap
-                    const above = rect.top - viewportMargin - panelGap
+                    const left = Math.min(
+                        Math.max(rect.left, viewportMargin),
+                        Math.max(viewportMargin, viewportWidth - panelWidth - viewportMargin),
+                    )
 
-                    if (below >= 180 || below >= above) {
-                        this.panelStyle = `left:${left}px;top:${rect.bottom + panelGap}px;bottom:auto;width:${panelWidth}px;max-height:${Math.max(120, below)}px;`
+                    // Read the actual content height after the shared popover
+                    // layout becomes visible. A fixed 180px threshold cannot
+                    // distinguish a short two-filter menu from a four-filter
+                    // menu, and a forced 120px minimum can escape the viewport.
+                    const contentHeight = panel.scrollHeight + (panel.offsetHeight - panel.clientHeight)
+                    const below = Math.max(0, viewportHeight - rect.bottom - panelGap - viewportMargin)
+                    const above = Math.max(0, rect.top - panelGap - viewportMargin)
+                    const fitsBelow = contentHeight <= below
+                    const fitsAbove = contentHeight <= above
+                    const openBelow = fitsBelow || (! fitsAbove && below >= above)
+                    const availableHeight = openBelow ? below : above
+
+                    if (openBelow) {
+                        this.panelStyle = `left:${left}px;top:${rect.bottom + panelGap}px;bottom:auto;width:${panelWidth}px;max-height:${availableHeight}px;`
                     } else {
-                        this.panelStyle = `left:${left}px;top:auto;bottom:${window.innerHeight - rect.top + panelGap}px;width:${panelWidth}px;max-height:${Math.max(120, above)}px;`
+                        this.panelStyle = `left:${left}px;top:auto;bottom:${viewportHeight - rect.top + panelGap}px;width:${panelWidth}px;max-height:${availableHeight}px;`
                     }
                 },
                 syncPanelToLayout() {

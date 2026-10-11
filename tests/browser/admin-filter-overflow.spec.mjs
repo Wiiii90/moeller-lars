@@ -100,3 +100,48 @@ for (const scenario of cases) {
         }
     });
 }
+
+
+for (const scenario of cases) {
+    test(scenario.path + ': Filter popup stays in the viewport at short browser heights', async ({ page }) => {
+        await signIn(page);
+        await page.goto(scenario.path);
+
+        const owner = page.locator('.admin-data-controls--dashboard-responsive > .admin-filter-overflow').first();
+        const trigger = owner.locator(':scope > .admin-filter-overflow__trigger');
+        const panel = owner.locator(':scope > .admin-data-controls__filters');
+
+        for (const height of [420, 320]) {
+            await page.setViewportSize({ width: scenario.narrow, height });
+            await expect(trigger).toBeVisible();
+            await trigger.click();
+            await expect.poll(() => panel.evaluate((node) => getComputedStyle(node).display)).toBe('grid');
+
+            const placement = await panel.evaluate((node) => {
+                const bounds = node.getBoundingClientRect();
+                return {
+                    top: bounds.top,
+                    bottom: bounds.bottom,
+                    left: bounds.left,
+                    right: bounds.right,
+                    viewportWidth: document.documentElement.clientWidth,
+                    viewportHeight: window.innerHeight,
+                    position: getComputedStyle(node).position,
+                    contentHeight: node.scrollHeight,
+                    clientHeight: node.clientHeight,
+                };
+            });
+
+            expect(placement.position).toBe('fixed');
+            expect(placement.top, 'Filter popup top must remain visible').toBeGreaterThanOrEqual(7);
+            expect(placement.bottom, 'Filter popup bottom must remain visible')
+                .toBeLessThanOrEqual(placement.viewportHeight - 7);
+            expect(placement.left).toBeGreaterThanOrEqual(7);
+            expect(placement.right).toBeLessThanOrEqual(placement.viewportWidth - 7);
+            expect(placement.clientHeight).toBeLessThanOrEqual(placement.contentHeight + 1);
+
+            await trigger.click();
+            await expect(owner).toHaveAttribute('data-open', 'false');
+        }
+    });
+}

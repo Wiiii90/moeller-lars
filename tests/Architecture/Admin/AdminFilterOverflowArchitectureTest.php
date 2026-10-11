@@ -10,7 +10,14 @@ it('keeps Filters popovers single-column and exclusive to the compact container 
         ->toContain("this.open = false")
         ->toContain("this.panelStyle = ''")
         ->toContain('x-on:resize.window="syncPanelToLayout()"')
-        ->toContain('x-bind:aria-expanded="open.toString()"');
+        ->toContain('x-bind:aria-expanded="open.toString()"')
+        ->toContain('const contentHeight = panel.scrollHeight')
+        ->toContain('const fitsBelow = contentHeight <= below')
+        ->toContain('const fitsAbove = contentHeight <= above')
+        ->toContain('const availableHeight = openBelow ? below : above')
+        ->not->toContain('below >= 180')
+        ->not->toContain('Math.max(120, below)')
+        ->not->toContain('Math.max(120, above)');
 
     expect(substr_count($controls, '{{ $filters }}'))->toBe(1);
 
