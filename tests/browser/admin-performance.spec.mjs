@@ -230,7 +230,10 @@ async function shellGeometry(page) {
       has_vertical_overflow: root.scrollHeight > root.clientHeight,
       has_classic_scrollbar: window.innerWidth > root.clientWidth,
       inline_overflow: root.style.overflow,
+      inline_overflow_y: root.style.overflowY,
       inline_padding_right: root.style.paddingRight,
+      body_position: document.body.style.position,
+      body_top: document.body.style.top,
       overflow_y: rootStyle.overflowY,
       padding_right: rootStyle.paddingRight,
       scrollbar_gutter: rootStyle.scrollbarGutter,
@@ -249,19 +252,22 @@ function expectStableShellGeometry(before, during, context) {
 
 function expectStableModalScrollLock(before, during, context) {
   expect(during.scroll_y, `${context}: background scroll position changed on open`).toBe(before.scroll_y);
-  expect(during.inline_overflow, `${context}: Filament did not acquire its native root lock`).toBe('hidden');
+  expect(during.body_position, `${context}: Filament did not freeze the document body`).toBe('fixed');
+  expect(during.inline_overflow_y, `${context}: root scrollbar mode changed unexpectedly`)
+    .toBe(before.has_vertical_overflow ? 'scroll' : 'hidden');
+  expect(during.has_classic_scrollbar, `${context}: preexisting native scrollbar changed`)
+    .toBe(before.has_classic_scrollbar);
   expect(during.scrollbar_gutter, `${context}: application introduced a custom scrollbar gutter`).toBe('auto');
-
-  if (! before.has_classic_scrollbar) {
-    expect(during.has_classic_scrollbar, `${context}: short page gained a document scrollbar`).toBe(false);
-  }
 }
 
 function expectReleasedModalScrollLock(before, after, context) {
   expect(after.has_classic_scrollbar, `${context}: classic scrollbar state did not restore`).toBe(before.has_classic_scrollbar);
   expect(after.scroll_y, `${context}: background scroll position did not restore`).toBe(before.scroll_y);
   expect(after.inline_overflow, `${context}: root overflow was not restored`).toBe(before.inline_overflow);
+  expect(after.inline_overflow_y, `${context}: root overflow-y was not restored`).toBe(before.inline_overflow_y);
   expect(after.inline_padding_right, `${context}: root padding-right was not restored`).toBe(before.inline_padding_right);
+  expect(after.body_position, `${context}: body position was not restored`).toBe(before.body_position);
+  expect(after.body_top, `${context}: body top was not restored`).toBe(before.body_top);
   expect(after.scrollbar_gutter, `${context}: root scrollbar gutter changed after close`).toBe(before.scrollbar_gutter);
 }
 
