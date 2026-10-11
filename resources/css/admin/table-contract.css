@@ -24,6 +24,8 @@
     --admin-row-action-slot-move-up-width: 4.75rem;
     --admin-row-action-slot-move-down-width: 5.5rem;
     --admin-row-action-slot-edit-width: 3.25rem;
+    --admin-row-actions-move-edit-delete-width: 17.25rem;
+    --admin-row-actions-move-edit-delete-compact-width: 6.75rem;
     --admin-row-action-slot-delete-width: 4.25rem;
     --admin-row-action-slot-state-width: 6rem;
     --admin-row-actions-move-state-delete-width: 24.5rem;
@@ -215,7 +217,7 @@
 }
 
 .admin-row-actions--move-edit-delete {
-    --admin-row-actions-width: 17.25rem;
+    --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-width);
     --admin-row-actions-columns: max-content max-content max-content max-content;
 }
 

@@ -85,7 +85,7 @@
                             >
                         </td>
                         <td class="admin-table__actions general-social-table__actions">
-                            <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-delete">
+                            <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-edit-delete">
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                     wire:click="moveSocialLink({{ $index }}, 'up')"
@@ -97,6 +97,11 @@
                                     wire:click="moveSocialLink({{ $index }}, 'down')"
                                     :disabled="$index === count($links) - 1"
                                     aria-label="Move social link {{ $index + 1 }} down"
+                                />
+                                <x-admin.row-action
+                                    :action="\App\Filament\Support\AdminRowAction::Edit"
+                                    wire:click="mountAction('editSocialLink', { index: {{ $index }} })"
+                                    aria-label="Edit social link {{ $index + 1 }}"
                                 />
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::Delete"

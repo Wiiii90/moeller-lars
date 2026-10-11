@@ -451,6 +451,78 @@ final class General extends Page
         });
     }
 
+    /**
+     * Edit the whole profile in one validated submission. Unlike the inline
+     * field controls, this form can also move the row: autosaving its position
+     * would invalidate the positional Action argument for subsequent changes.
+     */
+    public function editSocialLinkAction(): Action
+    {
+        return AdminDialog::command(
+            Action::make('editSocialLink')
+                ->label('Edit')
+                ->modalHeading('Edit profile')
+                ->fillForm(function (array $arguments): array {
+                    $index = $this->socialLinkIndexForAction($arguments);
+                    $links = $this->socialLinks();
+                    $link = $index === null ? [] : ($links[$index] ?? []);
+
+                    return [
+                        'platform' => (string) ($link['platform'] ?? ''),
+                        'url' => (string) ($link['url'] ?? ''),
+                        'position' => $index === null ? 1 : $index + 1,
+                    ];
+                })
+                ->schema([
+                    Select::make('platform')
+                        ->label('Platform')
+                        ->options(SocialLinks::options())
+                        ->native()
+                        ->required(),
+                    TextInput::make('url')
+                        ->label('Profile URL')
+                        ->url()
+                        ->maxLength(2048)
+                        ->required(),
+                    TextInput::make('position')
+                        ->label('Position')
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1)
+                        ->required(),
+                ]),
+            'Save profile',
+            AdminDialogSize::Small,
+        )->action(function (array $data, array $arguments): void {
+            $index = $this->socialLinkIndexForAction($arguments);
+            if ($index === null) {
+                return;
+            }
+
+            $links = $this->socialLinks();
+            $platform = (string) ($data['platform'] ?? '');
+            $url = (string) ($data['url'] ?? '');
+
+            foreach ($links as $otherIndex => $link) {
+                if ($otherIndex !== $index && ($link['platform'] ?? null) === $platform) {
+                    throw ValidationException::withMessages([
+                        'platform' => 'Each social platform can only be configured once.',
+                    ]);
+                }
+            }
+
+            $links[$index] = [
+                'platform' => $platform,
+                'url' => $url,
+            ];
+            $position = max(1, min((int) ($data['position'] ?? $index + 1), count($links)));
+            $moved = array_splice($links, $index, 1);
+            array_splice($links, $position - 1, 0, $moved);
+
+            $this->saveSocialLinks($links);
+        });
+    }
+
     public function addSocialLink(): void
     {
         if (! is_array($this->data)) {
@@ -772,6 +844,14 @@ final class General extends Page
         }
 
         $this->data['social_links'] = $links;
+    }
+
+    private function socialLinkIndexForAction(array $arguments): ?int
+    {
+        $index = filter_var($arguments['index'] ?? null, FILTER_VALIDATE_INT);
+        $links = $this->socialLinks();
+
+        return $index !== false && isset($links[$index]) ? (int) $index : null;
     }
 
     private function generalSettingsRecord(): PublicContentSetting
