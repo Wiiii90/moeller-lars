@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\SitePages;
+use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
@@ -54,7 +55,7 @@ class EditArtwork extends EditRecord
     {
         $galleryId = $this->artworkRecord()->getAttribute('artwork_category_id');
         if ($galleryId !== null) {
-            $galleryUrl = ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId]);
+            $galleryUrl = GalleryWorkspace::getUrl( ['gallery' => (int) $galleryId]);
             if ($this->returnToGallery) {
                 return $galleryUrl;
             }

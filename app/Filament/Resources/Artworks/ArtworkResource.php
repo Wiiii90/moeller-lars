@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Artworks;
 
 use App\Domain\Media\MediaIngestService;
-use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
@@ -16,7 +15,6 @@ use App\Models\MediaVariant;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class ArtworkResource extends Resource
@@ -32,22 +30,6 @@ class ArtworkResource extends Resource
     protected static ?string $navigationLabel = 'All artworks';
 
     protected static ?int $navigationSort = 10;
-
-    public static function getUrl(?string $name = null, array $parameters = [], bool $isAbsolute = true, ?string $panel = null, ?Model $tenant = null, bool $shouldGuessMissingParameters = false, ?string $configuration = null): string
-    {
-        if ($name === 'gallery') {
-            return GalleryWorkspace::getUrl(
-                ['gallery' => $parameters['gallery'] ?? null],
-                $isAbsolute,
-                $panel,
-                $tenant,
-                $shouldGuessMissingParameters,
-                $configuration,
-            );
-        }
-
-        return parent::getUrl($name, $parameters, $isAbsolute, $panel, $tenant, $shouldGuessMissingParameters, $configuration);
-    }
 
     public static function getRecordTitleAttribute(): ?string
     {
@@ -69,7 +51,7 @@ class ArtworkResource extends Resource
     public static function getPages(): array
     {
         return [
-             'view' => ViewArtwork::route('/{record}'),
+            'view' => ViewArtwork::route('/{record}'),
             'edit' => EditArtwork::route('/{record}/edit'),
         ];
     }

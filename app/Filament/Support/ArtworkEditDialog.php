@@ -189,7 +189,7 @@ final class ArtworkEditDialog
 
             app(ArtworkDraftService::class)->update(
                 $artwork,
-                $this->normalizeArtworkFormData($artwork, $data, $requestedGalleryId),
+                $this->normalizeArtworkFormData($data, $requestedGalleryId),
             );
 
             $primaryMedia = app(ArtworkPrimaryMediaService::class);
@@ -233,7 +233,7 @@ final class ArtworkEditDialog
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function normalizeArtworkFormData(Artwork $artwork, array $data, ?int $galleryId): array
+    private function normalizeArtworkFormData(array $data, ?int $galleryId): array
     {
         $data['artwork_category_id'] = $galleryId;
         $data['work_date'] = $data['work_date'] ?? null;

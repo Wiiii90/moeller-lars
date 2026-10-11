@@ -13,7 +13,7 @@ use App\Filament\Support\ArtworkEditDialog;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Support\AdminActivityFeed;
-use App\Filament\Resources\Artworks\ArtworkResource;
+use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
@@ -300,7 +300,7 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
     };
     app()->instance(ArtistReportingService::class, $reporting);
 
-    $response = $this->get(ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]));
+    $response = $this->get(GalleryWorkspace::getUrl( ['gallery' => $gallery->getKey()]));
 
     $response->assertOk()
         ->assertSeeText('Artworks')
@@ -664,6 +664,27 @@ it('updates an unassigned artwork without silently attaching it to a Gallery', f
     expect($dialog->save($artwork, $form, allowGalleryAssignment: true))->toBeTrue()
         ->and($artwork->fresh()->artwork_category_id)->toBeNull()
         ->and($artwork->fresh()->title)->toBe('Updated unassigned draft');
+});
+
+it('routes the Artwork EditRecord page through the same ALT-aware editing service', function (): void {
+    $gallery = polishGallery();
+    $artwork = polishArtwork($gallery);
+    $asset = polishAsset('image/jpeg', '');
+    polishThumbnail($asset);
+    polishPrimary($artwork, $asset);
+    polishUnavailableGalleryAnalytics();
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])
+        ->fillForm([
+            ...app(ArtworkEditDialog::class)->fill($artwork),
+            'primary_alt_text' => 'A landscape painting viewed from a rocky terrace',
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
+        ->toBe('A landscape painting viewed from a rocky terrace')
+        ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
 
 it('ingests a real image through Add artwork and publishes its primary ALT description', function (): void {

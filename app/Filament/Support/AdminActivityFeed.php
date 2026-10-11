@@ -7,6 +7,7 @@ use App\Domain\Admin\AdminActionReceiptService;
 use App\Domain\Admin\AdminActivityPresentation;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\Activity;
+use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -707,7 +708,7 @@ final class AdminActivityFeed
 
         return match ($entityType) {
             'artwork' => ArtworkResource::getUrl('edit', ['record' => $entityId]),
-            'artwork_category' => ArtworkResource::getUrl('gallery', ['gallery' => $entityId]),
+            'artwork_category' => GalleryWorkspace::getUrl( ['gallery' => $entityId]),
             'site_section' => SitePages::getUrl(),
             'media_asset' => MediaAssetResource::getUrl('index'),
             'cv_entry' => SitePages::getUrl(),

@@ -734,7 +734,7 @@ final class HomePresentation extends Page
                 'status_label' => $state === 'published' ? 'Published' : 'Unpublished',
                 'published_artworks' => (int) $gallery->getAttribute('published_artworks_count'),
                 'newest_year' => $gallery->getAttribute('newest_published_year'),
-                'workspace_url' => ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]),
+                'workspace_url' => GalleryWorkspace::getUrl( ['gallery' => $gallery->getKey()]),
                 'candidates' => $galleryCandidates->take(5)->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))->values()->all(),
             ];
         })->all();
@@ -1069,7 +1069,7 @@ final class HomePresentation extends Page
             'date' => $workDate instanceof DateTimeInterface ? $workDate->format('Y-m-d') : null,
             'gallery' => $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null,
             'thumbnail_url' => ArtworkResource::thumbnailUrl($artwork),
-            'gallery_url' => $gallery instanceof ArtworkCategory ? ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]) : null,
+            'gallery_url' => $gallery instanceof ArtworkCategory ? GalleryWorkspace::getUrl( ['gallery' => $gallery->getKey()]) : null,
         ];
     }
 
