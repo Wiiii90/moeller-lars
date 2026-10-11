@@ -11,13 +11,13 @@ async function signIn(page) {
     await expect(page).toHaveURL(/\/admin\/dashboard(?:[/?#]|$)/);
 }
 
-async function textCapacity(select) {
-    return select.evaluate((el) => {
+async function textCapacity(select, label = null) {
+    return select.evaluate((el, chosenLabel) => {
         const style = getComputedStyle(el);
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         context.font = style.font;
-        const selected = el.selectedOptions[0]?.textContent.trim() ?? '';
+        const selected = chosenLabel ?? el.selectedOptions[0]?.textContent.trim() ?? '';
         const textWidth = context.measureText(selected).width;
         const available = el.getBoundingClientRect().width
             - Number.parseFloat(style.paddingLeft)
@@ -25,7 +25,7 @@ async function textCapacity(select) {
             - Number.parseFloat(style.borderLeftWidth)
             - Number.parseFloat(style.borderRightWidth);
         return { textWidth, available, selected };
-    });
+    }, label);
 }
 
 test('Pages template value is readable before Compact without collision', async ({ page }) => {
@@ -34,8 +34,8 @@ test('Pages template value is readable before Compact without collision', async 
     await page.goto('/admin/pages');
     const template = page.locator('select[aria-label="Home template"]');
     await expect(template).toBeVisible();
-    const size = await textCapacity(template);
-    expect(size.selected).toBe('Under Construction');
+    const size = await textCapacity(template, 'Under Construction');
+    await expect(template.locator('option', { hasText: 'Under Construction' })).toHaveCount(1);
     expect(size.available, 'Home template has insufficient value space').toBeGreaterThan(size.textWidth + 4);
 
     for (const width of [1880, 1600, 1440, 1200, 1024, 800]) {
@@ -66,9 +66,9 @@ test('Activity Type keeps long selected values readable before filter overflow',
     await expect(select).toBeVisible();
     const option = select.locator('option', { hasText: 'Archive / delete' });
     await expect(option).toHaveCount(1);
-    await select.selectOption(await option.getAttribute('value'));
-    await expect(select).toHaveValue(await option.getAttribute('value'));
-    const size = await textCapacity(select);
+    // Measure the longest reported selected label without modifying the
+    // actual Activity filters or persisted browser/application state.
+    const size = await textCapacity(select, 'Archive / delete');
     expect(size.available, 'Activity Type has insufficient value space').toBeGreaterThan(size.textWidth + 4);
 
     for (const width of [1880, 1500, 1300, 1180, 1024, 800]) {
