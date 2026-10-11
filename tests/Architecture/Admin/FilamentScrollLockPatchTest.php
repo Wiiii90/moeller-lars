@@ -5,6 +5,7 @@ it('maintains one version-locked Filament modal scroll lock, not an application-
     $composer = file_get_contents(base_path('composer.json'));
     $dialogGeometry = file_get_contents(resource_path('js/admin-dialog-geometry.js'));
     $shellStyles = file_get_contents(resource_path('css/admin/layouts.css'));
+    $dockerfile = file_get_contents(base_path('Dockerfile'));
 
     expect($composer)
         ->toContain('@php scripts/patch-filament-scroll-lock.php')
@@ -23,6 +24,9 @@ it('maintains one version-locked Filament modal scroll lock, not an application-
         ->toContain('window.scrollTo({left:x,top:y,behavior:"instant"})')
         ->toContain('nr++')
         ->toContain('nr--');
+
+    expect($dockerfile)
+        ->toContain('COPY --from=application /var/www/html/public/js/filament ./public/js/filament');
 
     expect($dialogGeometry)
         ->not->toContain('window.addEventListener(\'wheel\'')

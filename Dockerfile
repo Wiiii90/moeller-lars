@@ -52,6 +52,8 @@ WORKDIR /var/www/html
 COPY . .
 COPY --from=application /var/www/html/vendor ./vendor
 COPY --from=application /var/www/html/bootstrap/cache ./bootstrap/cache
+# Ship the patched single-owner Filament support runtime in production too.
+COPY --from=application /var/www/html/public/js/filament ./public/js/filament
 COPY --from=frontend /build/public/build ./public/build
 COPY --from=frontend /build/resources/views/filament/generated/analytics-world-map.blade.php ./resources/views/filament/generated/analytics-world-map.blade.php
 COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
