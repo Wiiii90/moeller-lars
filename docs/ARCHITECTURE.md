@@ -118,6 +118,8 @@ This stack is used by Blog body, Exhibition description, Custom Page Text/List r
 
 `MediaAsset` is the canonical reusable original; `MediaVariant` is a rebuildable derivative.
 
+Media ingestion owns durable Storage files and their database records independently from Artwork editing. New originals/variants must be ingested **before** the Artwork write transaction; creation/editing then changes Artwork fields, its primary media linkage and per-artwork ALT override together in one database transaction through the existing domain services. Failed Artwork validation must not roll back a successfully ingested MediaAsset while leaving physical files untracked; the file remains reusable in Storage. Do not ingest a file inside an outer Artwork database transaction.
+
 Structured consumers include Artwork media, Journal Cover/Gallery, CV direct images, Custom Image components, Home Image components and site identity. Rich Text references use `media:<id>`.
 
 Two central questions are intentionally separate:
