@@ -7,6 +7,14 @@ Two companion files are part of this contract:
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
 - [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
 
+## No workarounds — mandatory stop rule
+
+This project builds coherent, canonical systems. **Workarounds, symptom-level patches, compensating hacks and parallel implementations are prohibited by default.** The moment an agent starts considering a workaround rather than a root-cause correction, it **MUST STOP IMMEDIATELY**: do not implement it, do not commit it, and do not continue by layering additional conditions, listeners, timers, retries, CSS overrides, state flags, fallback lifecycles or alternate persistence paths.
+
+A stop means: identify the underlying owner/invariant that is failing, inspect the smallest relevant source and previously accepted implementation, and report the cause and the clean architectural correction. If the root cause cannot be established, leave the code unchanged and explicitly report the blocker. Resume implementation only once the repair directly restores the canonical owner and eliminates the defective path; **never disguise an unresolved defect by changing diagnostics, build scripts or unrelated infrastructure**.
+
+Do not preserve an obsolete implementation alongside its replacement. Remove obsolete files, hooks, imports, tests and documentation *as part of the same scoped correction*. Do not modify tests to make a broken implementation appear correct. An exceptional workaround is allowed **only if the user explicitly authorizes that specific, fully explained temporary exception**; convenience, time pressure, regressions and framework limitations do not constitute permission. This rule overrides generic instructions to “just make it work.”
+
 ## Source of truth
 
 Use, in this order:
