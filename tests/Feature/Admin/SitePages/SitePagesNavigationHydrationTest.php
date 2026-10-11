@@ -184,3 +184,19 @@ it('keeps the new sidebar draft after opening Pages again and updates its publis
     expect(navigationLabels())->toContain('Live Draft')
         ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->toContain('Live Draft');
 });
+
+
+it('removes a deleted draft from the Sidebar through the same native refresh', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $draft = app(SiteSectionEditorialService::class)->createCustomPage('Remove Draft Nav', 'remove-draft-nav');
+    expect(navigationLabels())->toContain('Remove Draft Nav');
+
+    Livewire::test(SitePages::class)
+        ->mountAction('deletePage', ['section' => $draft->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('refresh-sidebar');
+
+    expect(SiteSection::query()->whereKey($draft->getKey())->exists())->toBeFalse()
+        ->and(navigationLabels())->not->toContain('Remove Draft Nav');
+});
