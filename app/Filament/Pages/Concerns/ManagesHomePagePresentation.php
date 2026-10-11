@@ -3,15 +3,12 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Content\HomePresentationResolver;
+use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionType;
-use App\Filament\Support\AdminIcon;
-use App\Filament\Support\Dialogs\AdminDialog;
-use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\HomeRoutingDialog;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\SiteSection;
-use Filament\Actions\Action;
 use Illuminate\Validation\ValidationException;
 
 trait ManagesHomePagePresentation
@@ -43,29 +40,32 @@ trait ManagesHomePagePresentation
         $this->loadSections();
     }
 
-    public function skipHomeAction(): Action
+    public function toggleSkipHome(): void
     {
-        $dialog = app(HomeRoutingDialog::class);
+        $resolver = app(HomePresentationResolver::class);
+        $routing = app(HomeRoutingSettingsService::class);
+        $settings = $resolver->settings();
+        $enable = ! $routing->enabled($settings);
 
-        return AdminDialog::command(
-            Action::make('skipHome')
-                ->label('Skip Home')
-                ->icon(AdminIcon::SkipHome->value)
-                ->modalHeading('Skip Home')
-                ->fillForm(fn (): array => $dialog->fill())
-                ->schema($dialog->schema())
-                ->action(function (array $data) use ($dialog): void {
-                    $changed = $dialog->save($data);
-                    $this->loadSections();
-                    if ($changed) {
-                        app(AdminNotifier::class)->notification(
-                            title: 'Home routing updated',
-                            status: 'success',
-                        );
-                    }
-                }),
-            'Save Skip Home',
-            AdminDialogSize::Small,
-        );
+        try {
+            // The automatic destination is the next eligible published page.
+            // Never activate a redirect that has nowhere valid to go.
+            if ($enable && ! $resolver->skipTarget() instanceof SiteSection) {
+                throw ValidationException::withMessages([
+                    'skip_home' => 'Add or publish an eligible top-level page before enabling Skip Home.',
+                ]);
+            }
+
+            if ($routing->update($settings, $enable, null)) {
+                app(AdminNotifier::class)->notification(
+                    title: $enable ? 'Skip Home enabled' : 'Skip Home disabled',
+                    status: 'success',
+                );
+            }
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Skip Home unchanged', $exception);
+        }
+
+        $this->loadSections();
     }
 }

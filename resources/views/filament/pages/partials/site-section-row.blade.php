@@ -92,9 +92,9 @@
                     <button
                         class="admin-action admin-action--with-icon admin-pages__redirect-target"
                         type="button"
-                        wire:click="mountAction('skipHome')"
-                        title="Change Skip Home target"
-                        aria-label="Skip Home to {{ $homeState['skip_target_label'] ?: 'target page' }}"
+                        wire:click="mountAction('editHome')"
+                        title="Change Skip Home target in Home settings"
+                        aria-label="Change Skip Home target in Home settings ({{ $homeState['skip_target_label'] ?: 'next page' }})"
                     >
                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Redirect->mini()" class="admin-action__icon" />
                         <span class="admin-action__label">{{ $homeState['skip_target_label'] ?: 'Set target' }}</span>
@@ -111,9 +111,10 @@
 
                 <x-admin.row-action
                     :action="\App\Filament\Support\AdminRowAction::SkipHome"
-                    wire:click="mountAction('skipHome')"
-                    aria-label="{{ ($homeState['skip_home'] ?? false) ? 'Edit Skip Home' : 'Configure Skip Home' }}"
-                    title="{{ ($homeState['skip_home'] ?? false) ? 'Edit Skip Home' : 'Configure Skip Home' }}"
+                    :label="($homeState['skip_home'] ?? false) ? 'Show Home' : 'Skip Home'"
+                    wire:click="toggleSkipHome"
+                    wire:loading.attr="disabled"
+                    wire:target="toggleSkipHome"
                 />
 
                 <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
