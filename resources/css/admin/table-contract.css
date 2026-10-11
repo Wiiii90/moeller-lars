@@ -448,7 +448,7 @@
     grid-template-columns:
         minmax(0, 1fr)
         minmax(9rem, 10rem)
-        minmax(7rem, 9rem)
+        minmax(12.5rem, 13rem)
         calc(var(--admin-row-actions-move-state-delete-width) + var(--admin-table-selection-width));
     column-gap: 0;
 }

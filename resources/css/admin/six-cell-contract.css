@@ -152,7 +152,7 @@
 }
 
 .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
-    grid-template-columns: minmax(0, 1fr) 5.75rem 5.75rem 7.5rem 6.5rem max-content !important;
+    grid-template-columns: minmax(0, 1fr) 7rem 11rem 8.25rem 7rem max-content !important;
 }
 
 .admin-data-controls--dashboard-responsive > :first-child {
@@ -438,18 +438,15 @@
     justify-content: flex-start !important;
 }
 
-@container admin-workspace (max-width: 54rem) {
-    :is(
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-    ) {
+/* Long four-filter sets switch to their existing popover BEFORE the
+ * selected Type value becomes illegible; simpler three-filter sets keep the
+ * later Narrow threshold. Both modes use the same single filter DOM/state. */
+@container admin-workspace (max-width: 76rem) {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
         grid-template-columns: minmax(10rem, 1fr) max-content max-content !important;
     }
 
-    :is(
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-    ) > .admin-filter-overflow {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow {
         position: relative;
         display: block !important;
         min-width: 0;
@@ -458,38 +455,58 @@
         align-self: end;
     }
 
-    :is(
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-    ) > .admin-filter-overflow > .admin-filter-overflow__trigger {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow > .admin-filter-overflow__trigger {
         display: inline-flex !important;
     }
 
-    :is(
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-    ) > .admin-filter-overflow > .admin-data-controls__filters {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow > .admin-data-controls__filters {
         display: none !important;
     }
 
-    :is(
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-    ) > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
         display: grid !important;
     }
 
-    :is(
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-    ) > .admin-data-controls__utility {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-data-controls__utility {
         grid-column: 3 !important;
     }
 
-    :is(
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3,
-        .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4
-    ) > .admin-data-controls__utility--has-reset > :first-child {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-data-controls__utility--has-reset > :first-child {
+        display: none !important;
+    }
+}
+
+@container admin-workspace (max-width: 54rem) {
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
+        grid-template-columns: minmax(10rem, 1fr) max-content max-content !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-filter-overflow {
+        position: relative;
+        display: block !important;
+        min-width: 0;
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        align-self: end;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-filter-overflow > .admin-filter-overflow__trigger {
+        display: inline-flex !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-filter-overflow > .admin-data-controls__filters {
+        display: none !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
+        display: grid !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-data-controls__utility {
+        grid-column: 3 !important;
+    }
+
+    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-data-controls__utility--has-reset > :first-child {
         display: none !important;
     }
 }

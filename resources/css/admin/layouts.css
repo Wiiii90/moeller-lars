@@ -117,8 +117,11 @@ html.fi select option:disabled {
         width: 100%;
         min-width: 0;
         appearance: base-select;
+        /* The shared picker icon has its own end rail. Never paint a clipped
+         * value underneath it when a truly narrow control cannot be avoided. */
         padding-inline-end: 1.45rem !important;
         overflow: hidden;
+        text-overflow: ellipsis;
         white-space: nowrap;
     }
 

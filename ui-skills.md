@@ -540,6 +540,12 @@ If the empty state is caused by active filters, distinguish it from a genuinely 
 
 Responsive behavior is content-driven and follows semantic width states rather than device labels: **Wide**, **Compact**, **Narrow** and **Minimal**. Exact thresholds come from browser fit/acceptance; admin task components should prefer available container/workspace width, while shell-level sidebar/topbar changes may remain viewport-driven.
 
+### Native select value readability
+
+- The central native/select grammar in `layouts.css` and `task-surfaces.css` reserves the picker-icon rail and uses a one-line ellipsis only as the final fallback. Do not shrink type or overlay an arrow on the selected value to accommodate an undersized column.
+- Give columns and toolbar filter tracks enough width for the longest ordinary selected label while the control is inline: Pages Template includes “Under Construction”; Activity Type includes “Archive / delete”. Pages gives Template the necessary width in Wide and removes that supportive column at its established Compact transition. Four-filter toolbars use the **same single filter-popover mechanism** when workspace width reaches 76rem; three-filter toolbars retain their 54rem switch. Never let longer labels force row wrapping or overlap the fixed action/Selection rail.
+- Check both Light/Dark native select renderings and narrow widths after changing option labels. Do not duplicate select state or reintroduce custom select JavaScript.
+
 ### Shell/header geometry
 
 - Header controls use one shared equation: **1rem outer edge + 2rem circular control + 1rem separation to header content = 4rem control rail**.

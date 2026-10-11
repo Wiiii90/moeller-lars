@@ -345,6 +345,8 @@
 
 .admin-inline-select {
     padding-inline: var(--admin-control-text-inset);
+    text-overflow: ellipsis;
+    white-space: nowrap;
     border: 1px solid var(--admin-line-strong);
     border-radius: .2rem;
     background: transparent;
