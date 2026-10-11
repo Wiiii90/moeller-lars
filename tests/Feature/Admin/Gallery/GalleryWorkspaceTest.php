@@ -563,3 +563,48 @@ it('offers per-artwork ALT text in the Gallery create and edit dialogs without c
 
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
+
+
+it('repairs an existing media-less Gallery draft using the same Edit form and then publishes it', function (): void {
+    $gallery = polishGallery();
+    $draft = polishArtwork($gallery);
+    $asset = polishAsset('image/jpeg', '');
+    polishThumbnail($asset);
+    $dialog = app(ArtworkEditDialog::class);
+
+    $form = $dialog->fill($draft);
+    expect($form['primary_media_asset_id'])->toBeNull();
+    $form['primary_media_asset_id'] = $asset->getKey();
+    $form['primary_alt_text'] = 'Abstract oil painting in warm ochre and blue';
+
+    expect($dialog->save($draft, $form))->toBeTrue()
+        ->and((int) $draft->artworkMedia()->where('role', 'primary')->value('media_asset_id'))
+            ->toBe((int) $asset->getKey());
+
+    expect(app(ArtworkPublicationService::class)->publish($draft)->state)->toBe('published');
+});
+
+it('stores per-artwork ALT for all images in the existing batch direct-upload action', function (): void {
+    $gallery = polishGallery();
+    $asset = polishAsset('image/jpeg', '');
+    polishThumbnail($asset);
+    polishUnavailableGalleryAnalytics();
+
+    $row = ['media_asset_id' => (int) $asset->getKey(), 'title' => 'A Batch Artwork'];
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('pendingBatchArtworkMedia', [$row])
+        ->mountAction('batchAddArtworks')
+        ->fillForm([
+            'artworks' => [[
+                ...$row,
+                'primary_alt_text' => 'A painting with overlapping tree branches',
+            ]],
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $artwork = Artwork::query()->where('title', 'A Batch Artwork')->firstOrFail();
+    expect($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
+        ->toBe('A painting with overlapping tree branches');
+    expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
+});

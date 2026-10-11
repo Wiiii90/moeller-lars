@@ -32,7 +32,10 @@ it('offers primary ALT descriptions in all Gallery editors and honors overrides 
     foreach ([$create, $edit, $batch] as $source) {
         expect($source)->toContain("'primary_alt_text'");
     }
-    expect($createSave)->toContain('updatePrimaryAltOverride(');
+    expect($createSave)
+        ->toContain('DB::transaction(function () use ($payload, $asset, $data, $upload)')
+        ->toContain('app(ArtworkPrimaryMediaService::class)->attachAsset(')
+        ->toContain('updatePrimaryAltOverride(');
     expect($edit)->toContain('updatePrimaryAltOverride(');
     expect($batch)->toContain('updatePrimaryAltOverride(');
     expect($publication)
