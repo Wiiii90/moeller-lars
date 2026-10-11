@@ -89,16 +89,45 @@
         <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete admin-toolbar admin-pages__row-actions" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
             @if ($isHome)
                 @if ($homeState['skip_home'] ?? false)
-                    <button
-                        class="admin-action admin-action--with-icon admin-pages__redirect-target"
-                        type="button"
-                        wire:click="mountAction('editHome')"
-                        title="Change Skip Home target in Home settings"
-                        aria-label="Change Skip Home target in Home settings ({{ $homeState['skip_target_label'] ?: 'next page' }})"
+                    <div
+                        class="admin-pages__redirect-target admin-selection__anchor"
+                        x-data="{ open: false }"
+                        x-on:click.outside="open = false"
+                        x-on:keydown.escape.window="open = false"
                     >
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Redirect->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">{{ $homeState['skip_target_label'] ?: 'Set target' }}</span>
-                    </button>
+                        <button
+                            class="admin-action admin-action--with-icon"
+                            type="button"
+                            x-on:click="open = ! open"
+                            x-bind:aria-expanded="open.toString()"
+                            aria-haspopup="menu"
+                            aria-label="Skip Home destination: {{ $homeState['skip_target_label'] ?: 'next page' }}. Change destination"
+                            title="Change Skip Home destination"
+                        >
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Redirect->mini()" class="admin-action__icon" />
+                            <span class="admin-action__label">{{ $homeState['skip_target_label'] ?: 'Next page' }}</span>
+                        </button>
+                        <div class="admin-selection__menu" role="menu" x-cloak x-show="open">
+                            <button
+                                class="admin-action"
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked="{{ $homeState['skip_target_section_id'] === null ? 'true' : 'false' }}"
+                                wire:click="changeSkipHomeTarget('')"
+                                x-on:click="open = false"
+                            >Next page in order</button>
+                            @foreach ($homeState['skip_target_options'] as $targetId => $targetLabel)
+                                <button
+                                    class="admin-action"
+                                    type="button"
+                                    role="menuitemradio"
+                                    aria-checked="{{ (int) $homeState['skip_target_section_id'] === (int) $targetId && $homeState['skip_target_section_id'] !== null ? 'true' : 'false' }}"
+                                    wire:click="changeSkipHomeTarget('{{ (int) $targetId }}')"
+                                    x-on:click="open = false"
+                                >{{ $targetLabel }}</button>
+                            @endforeach
+                        </div>
+                    </div>
                 @else
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
@@ -110,8 +139,7 @@
                 />
 
                 <x-admin.row-action
-                    :action="\App\Filament\Support\AdminRowAction::SkipHome"
-                    :label="($homeState['skip_home'] ?? false) ? 'Show Home' : 'Skip Home'"
+                    :action="($homeState['skip_home'] ?? false) ? \App\Filament\Support\AdminRowAction::ShowHome : \App\Filament\Support\AdminRowAction::SkipHome"
                     wire:click="toggleSkipHome"
                     wire:loading.attr="disabled"
                     wire:target="toggleSkipHome"

@@ -68,4 +68,42 @@ trait ManagesHomePagePresentation
 
         $this->loadSections();
     }
+    public function changeSkipHomeTarget(string $target): void
+    {
+        $routing = app(HomeRoutingSettingsService::class);
+        $settings = app(HomePresentationResolver::class)->settings();
+
+        try {
+            if (! $routing->enabled($settings)) {
+                throw ValidationException::withMessages([
+                    'skip_target_section_id' => 'Enable Skip Home before choosing a destination.',
+                ]);
+            }
+
+            $targetId = null;
+            if ($target !== '') {
+                $targetId = filter_var($target, FILTER_VALIDATE_INT);
+                if ($targetId === false || $targetId <= 0) {
+                    throw ValidationException::withMessages([
+                        'skip_target_section_id' => 'Choose a valid destination page.',
+                    ]);
+                }
+            }
+
+            // The same domain service validates every explicit target and
+            // persists the change in the audited Home routing configuration.
+            if ($routing->update($settings, true, $targetId)) {
+                app(AdminNotifier::class)->notification(
+                    title: 'Skip Home destination updated',
+                    status: 'success',
+                );
+            }
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Skip Home destination unchanged', $exception);
+        }
+
+        $this->loadSections();
+    }
+
+
 }

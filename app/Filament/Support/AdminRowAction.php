@@ -17,6 +17,7 @@ enum AdminRowAction: string
     case Archive = 'archive';
     case Delete = 'delete';
     case SkipHome = 'skip-home';
+    case ShowHome = 'show-home';
     case Pin = 'pin';
     case Unpin = 'unpin';
     case MarkRead = 'mark-read';
@@ -38,6 +39,7 @@ enum AdminRowAction: string
             self::Archive => AdminIcon::Archive,
             self::Delete => AdminIcon::Delete,
             self::SkipHome => AdminIcon::SkipHome,
+            self::ShowHome => AdminIcon::ShowHome,
             self::Pin => AdminIcon::Pin,
             self::Unpin => AdminIcon::Pinned,
             self::MarkRead => AdminIcon::MarkRead,
@@ -62,6 +64,7 @@ enum AdminRowAction: string
             self::Archive => 'Archive',
             self::Delete => 'Delete',
             self::SkipHome => 'Skip Home',
+            self::ShowHome => 'Show Home',
             self::Pin => 'Pin',
             self::Unpin => 'Unpin',
             self::MarkRead => 'Read',
@@ -83,6 +86,7 @@ enum AdminRowAction: string
             self::CancelSchedule,
             self::Restore,
             self::SkipHome,
+            self::ShowHome,
         ], true);
     }
 

@@ -35,6 +35,7 @@ it('derives compact admin icons from central semantics with explicit solid and c
         $customIcons = [
             AdminIcon::NavigationNode->value => 'admin-node',
             AdminIcon::SkipHome->value => 'admin-skip-home',
+            AdminIcon::ShowHome->value => 'admin-show-home',
         ];
 
         if (array_key_exists($icon->value, $customIcons)) {

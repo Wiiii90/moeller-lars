@@ -74,7 +74,7 @@ final class HomeRoutingDialog
         return $this->routing->update($settings, $enabled, $enabled ? $targetId : null);
     }
 
-    /** @return array{skip_home:bool,skip_target_label:?string} */
+    /** @return array{skip_home:bool,skip_target_label:?string,skip_target_section_id:?int,skip_target_options:array<int,string>} */
     public function tableState(): array
     {
         $settings = $this->resolver->settings();
@@ -86,11 +86,13 @@ final class HomeRoutingDialog
         return [
             'skip_home' => $this->routing->enabled($settings),
             'skip_target_label' => $targetLabel !== '' ? $targetLabel : null,
+            'skip_target_section_id' => $this->routing->configuredTargetId($settings),
+            'skip_target_options' => $this->targetOptions(),
         ];
     }
 
     /** @return array<int, string> */
-    private function targetOptions(): array
+    public function targetOptions(): array
     {
         if ($this->targetOptionsCache !== null) {
             return $this->targetOptionsCache;
