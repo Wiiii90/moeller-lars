@@ -31,6 +31,7 @@ it('refreshes the existing Sidebar and reorders its data after Pages moves', fun
     $editor->updatePlacement($second, 'published', true, null);
 
     $before = navigationLabels();
+    expect($before)->toContain('First Sidebar Page', 'Second Sidebar Page');
     expect(array_search('First Sidebar Page', $before, true))
         ->toBeLessThan(array_search('Second Sidebar Page', $before, true));
 
@@ -43,6 +44,7 @@ it('refreshes the existing Sidebar and reorders its data after Pages moves', fun
         ->toBeLessThan(array_search('First Sidebar Page', $after, true));
 
     $public = app(PublicNavigationService::class)->items()->pluck('label')->all();
+    expect($public)->toContain('First Sidebar Page', 'Second Sidebar Page');
     expect(array_search('Second Sidebar Page', $public, true))
         ->toBeLessThan(array_search('First Sidebar Page', $public, true));
 });

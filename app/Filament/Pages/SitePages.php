@@ -223,7 +223,8 @@ final class SitePages extends Page
         try {
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
-            if ($navigationChanged = $this->orderService()->moveTo($section, $parentId, $position)) {
+            $navigationChanged = $this->orderService()->moveTo($section, $parentId, $position);
+            if ($navigationChanged) {
                 app(AdminNotifier::class)->notification(
                     title: 'Page order updated',
                     status: 'success',
@@ -305,7 +306,8 @@ final class SitePages extends Page
                             (bool) $section->getAttribute('show_in_navigation'),
                             $parentId,
                         );
-                        if ($navigationChanged = $updated->wasChanged()) {
+                        $navigationChanged = $updated->wasChanged();
+                        if ($navigationChanged) {
                             app(AdminNotifier::class)->notification(
                                 title: 'Page placement updated',
                                 status: 'success',
