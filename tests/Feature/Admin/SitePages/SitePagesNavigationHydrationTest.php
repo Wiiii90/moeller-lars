@@ -122,6 +122,7 @@ it('adds unpublished Pages via the real dialog and refreshes the editorial Sideb
     $cases = [
         ['type' => SiteSectionType::CustomPage->value, 'name' => 'Fresh Draft Page', 'slug' => 'fresh-draft-page'],
         ['type' => SiteSectionType::Journal->value, 'name' => 'Fresh Draft Journal', 'slug' => 'fresh-draft-journal', 'template' => 'blog'],
+        ['type' => SiteSectionType::Gallery->value, 'name' => 'Fresh Draft Gallery', 'slug' => 'fresh-draft-gallery'],
         ['type' => SiteSectionType::NavigationNode->value, 'name' => 'Fresh Draft Group'],
     ];
 
@@ -141,6 +142,23 @@ it('adds unpublished Pages via the real dialog and refreshes the editorial Sideb
             ->and(navigationLabels())->toContain($label)
             ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain($label);
     }
+});
+
+it('does not add a Sidebar entry or fire refresh when Add page validation fails', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    Livewire::test(SitePages::class)
+        ->mountAction('addPage')
+        ->fillForm([
+            'type' => SiteSectionType::CustomPage->value,
+            'name' => '',
+            'slug' => 'invalid-empty-name',
+        ])
+        ->callMountedAction()
+        ->assertHasFormErrors(['name' => 'required'])
+        ->assertNotDispatched('refresh-sidebar');
+
+    expect(SiteSection::query()->where('slug', 'invalid-empty-name')->exists())->toBeFalse();
 });
 
 it('keeps the new sidebar draft after opening Pages again and updates its published state without duplicating it', function (): void {
