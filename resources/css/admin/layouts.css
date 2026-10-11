@@ -310,8 +310,15 @@ html.fi .fi-page:has(.admin-workspace) {
         position: relative;
         inset-inline-start: calc(0rem - var(--admin-workspace-center-shift));
         padding-top: 0 !important;
-        padding-inline: var(--admin-workspace-gutter) !important;
+        padding-inline-start: var(--admin-workspace-gutter) !important;
+        /* The desktop Main owns real space for the fixed User badge. */
+        padding-inline-end: var(--admin-header-control-rail) !important;
         transform: none;
+    }
+
+    /* The persistent Notification anchors to the actual content box. */
+    html.fi .fi-main:has(.admin-workspace) .admin-workspace {
+        anchor-name: --admin-workspace-frame;
     }
 
     .fi-sidebar-nav {

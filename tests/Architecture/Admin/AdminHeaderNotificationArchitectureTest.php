@@ -45,6 +45,10 @@ it('keeps one persisted admin Notification shell runtime', function (): void {
         ->toContain('@keyframes admin-header-notification-materialize')
         ->toContain('@keyframes admin-header-notification-dematerialize')
         ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->toContain('position-anchor: --admin-workspace-frame;')
+        ->toContain('inset-inline-start: anchor(left, var(--admin-header-control-rail));')
+        ->toContain('inset-inline-end: anchor(right, var(--admin-header-control-rail));')
+        ->not->toContain('calc((100% - var(--admin-workspace-max-width)) / 2)')
         ->and($adminCss)
         ->toContain('--admin-header-notification-edge-gap: .75rem;')
         ->not->toContain('--admin-header-feedback-edge-gap')
@@ -90,4 +94,21 @@ it('reuses Activity change and details for durable Notifications', function (): 
         ->not->toContain('public function both(')
         ->not->toContain('Filament\\Notifications')
         ->not->toContain('function feedback(');
+});
+
+it('keeps the workspace as the only Header geometry owner', function (): void {
+    $layouts = file_get_contents(resource_path('css/admin/layouts.css'));
+    $notifications = file_get_contents(resource_path('css/admin/notifications.css'));
+
+    expect($layouts)
+        ->toContain('anchor-name: --admin-workspace-frame;')
+        ->toContain('padding-inline-end: var(--admin-header-control-rail) !important;')
+        ->toContain('inset-inline-start: calc(0rem - var(--admin-workspace-center-shift));')
+        ->not->toContain('width: 100vw;');
+
+    expect($notifications)
+        ->toContain('position-anchor: --admin-workspace-frame;')
+        ->toContain('inset-inline-start: anchor(left, var(--admin-header-control-rail));')
+        ->toContain('inset-inline-end: anchor(right, var(--admin-header-control-rail));')
+        ->not->toContain('calc(var(--sidebar-width) + var(--admin-workspace-gutter))');
 });

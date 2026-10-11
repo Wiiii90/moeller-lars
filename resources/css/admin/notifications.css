@@ -409,20 +409,18 @@
 
 @media (min-width: 1024px) {
     /*
-     * Desktop Notification starts on the centered workspace's left edge but
-     * remains a header surface: its right edge extends to the fixed User rail.
-     * Thus the badge keeps its 1rem separation without forcing the page itself
-     * off-center. The left-edge equation is the centered outer frame + gutter.
+     * CSS anchor positioning consumes the actual centered Workspace bounds.
+     * There is one frame owner; the Header has no independent width equation.
      */
-    .admin-header-notification {
-        width: auto;
-        max-width: none;
-        inset-inline-start: max(
-            calc(var(--sidebar-width) + var(--admin-workspace-gutter)),
-            calc((100% - var(--admin-workspace-max-width)) / 2)
-        );
-        inset-inline-end: var(--admin-header-control-rail);
-        margin-block: 0;
+    @supports (position-anchor: --admin-workspace-frame) {
+        .admin-header-notification {
+            position-anchor: --admin-workspace-frame;
+            width: auto;
+            max-width: none;
+            inset-inline-start: anchor(left, var(--admin-header-control-rail));
+            inset-inline-end: anchor(right, var(--admin-header-control-rail));
+            margin-block: 0;
+        }
     }
 
     /* Position is owned by layouts.css so Notification styling cannot
