@@ -55,7 +55,7 @@ class EditArtwork extends EditRecord
     {
         $galleryId = $this->artworkRecord()->getAttribute('artwork_category_id');
         if ($galleryId !== null) {
-            $galleryUrl = GalleryWorkspace::getUrl( ['gallery' => (int) $galleryId]);
+            $galleryUrl = GalleryWorkspace::getUrl(['gallery' => (int) $galleryId]);
             if ($this->returnToGallery) {
                 return $galleryUrl;
             }

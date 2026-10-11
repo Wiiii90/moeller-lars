@@ -666,6 +666,25 @@ it('updates an unassigned artwork without silently attaching it to a Gallery', f
         ->and($artwork->fresh()->title)->toBe('Updated unassigned draft');
 });
 
+it('rejects detaching a published artwork through the shared editor without changing its metadata', function (): void {
+    $gallery = polishGallery();
+    $artwork = polishArtwork($gallery);
+    $asset = polishAsset('image/jpeg', 'A monochrome photograph of a sculpture');
+    polishThumbnail($asset);
+    polishPrimary($artwork, $asset);
+    app(ArtworkPublicationService::class)->publish($artwork);
+
+    $form = app(ArtworkEditDialog::class)->fill($artwork->fresh());
+    $form['artwork_category_id'] = null;
+    $form['title'] = 'Must not be saved';
+
+    expect(fn () => app(ArtworkEditDialog::class)->save($artwork->fresh(), $form, allowGalleryAssignment: true))
+        ->toThrow(ValidationException::class);
+
+    expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
+        ->and($artwork->fresh()->title)->not->toBe('Must not be saved');
+});
+
 it('routes the Artwork EditRecord page through the same ALT-aware editing service', function (): void {
     $gallery = polishGallery();
     $artwork = polishArtwork($gallery);

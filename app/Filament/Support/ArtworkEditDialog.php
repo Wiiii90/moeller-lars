@@ -77,7 +77,7 @@ final class ArtworkEditDialog
                     ...($includeGalleryAssignment ? [
                         Select::make('artwork_category_id')
                             ->label('Gallery')
-                            ->relationship('category', 'name')
+                            ->options(static fn (): array => ArtworkCategory::query()->orderBy('name')->pluck('name', 'id')->all())
                             ->nullable()
                             ->searchable()
                             ->preload()

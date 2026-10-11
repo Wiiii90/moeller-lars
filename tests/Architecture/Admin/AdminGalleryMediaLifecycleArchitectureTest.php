@@ -52,6 +52,9 @@ it('uses one Artwork editing schema and writer for Gallery dialogs and deep-link
     expect($resource)->toContain('ArtworkEditDialog::class')->not->toContain('CreateArtwork::route')->not->toContain("if ($name === 'gallery')");
     expect($editor)->toContain('ArtworkEditDialog::class')->not->toContain('artwork->fill($data)');
     expect($gallery)->toContain('ArtworkEditDialog::class');
+    expect(file_get_contents(app_path('Filament/Support/ArtworkEditDialog.php')))
+        ->toContain("Select::make('artwork_category_id')")
+        ->not->toContain("->relationship('category', 'name')");
     expect(file_exists(app_path('Filament/Resources/Artworks/Pages/CreateArtwork.php')))->toBeFalse();
     expect(file_exists(app_path('Filament/Resources/Artworks/Pages/ManageGalleryArtworks.php')))->toBeFalse();
 });
