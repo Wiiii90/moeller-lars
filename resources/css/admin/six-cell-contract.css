@@ -372,13 +372,14 @@
     }
 }
 
-/* Shared filter overflow.
+/* Shared filter overflow: one set of Livewire filter controls in either
+ * inline toolbar mode or a single-column popover. CSS container queries own
+ * the mode. An Alpine open flag alone may NEVER activate popover styling after
+ * the viewport grows: presentation variables exist only at active breakpoints.
  *
- * Filter count decides WHEN overflow is allowed; actual workspace width decides
- * WHEN it activates. Three/four-filter toolbars overflow at Narrow. Two-filter
- * toolbars wait until Minimal. One-filter toolbars such as Dashboard stay inline.
- * Clear moves into the panel while overflow is active, Search remains directly
- * usable, and task/Selection controls remain terminal on the same row. */
+ * The reset slot is rendered in both structural positions by the existing
+ * Blade component, but only one is ever visible. No second filter input/state,
+ * browser resize width threshold, timer or DOM re-parenting is permitted. */
 .admin-filter-overflow__trigger {
     box-sizing: border-box;
     min-height: var(--admin-control-height);
@@ -389,37 +390,55 @@
     white-space: nowrap;
 }
 
-.admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
-    position: fixed;
+/* All popover presentation belongs to the canonical control layer. */
+.admin-data-controls--dashboard-responsive > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
+    display: var(--admin-filter-popover-display, contents) !important;
+    position: var(--admin-filter-popover-position, static);
     z-index: 120;
     box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-flow: row !important;
+    grid-auto-rows: max-content;
+    align-content: start;
+    width: 100%;
     max-width: calc(100vw - 1rem);
-    padding: .55rem;
-    gap: .55rem;
+    padding: .8rem;
+    gap: .7rem;
     overflow-y: auto;
     overscroll-behavior: contain;
     border: 1px solid var(--admin-line-strong);
     border-radius: .2rem;
-    background: var(--admin-control-popover-surface, var(--admin-surface));
-    box-shadow: 0 .55rem 1.2rem rgba(0, 0, 0, .14);
+    background: var(--admin-control-popover-surface);
+    color: var(--admin-text);
+    box-shadow: 0 .7rem 2rem rgba(0, 0, 0, .12);
 }
 
-.admin-filter-overflow[data-open="true"] > .admin-data-controls__filters > :is(
-    .admin-data-field,
-    .admin-task-field
-) {
+/* Higher specificity than the inline nth-child grid placement. These
+ * declarations are inert while the CSS container is in wide/inline mode. */
+.admin-data-controls--dashboard-responsive > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters > :is(.admin-data-field, .admin-task-field) {
+    grid-column: var(--admin-filter-popover-field-column) !important;
+    grid-row: var(--admin-filter-popover-field-row) !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     width: 100% !important;
     min-width: 0 !important;
-    grid-column: auto !important;
-    grid-row: auto !important;
-    padding-inline: 0 !important;
+    padding: 0 !important;
+    gap: .26rem;
+    align-items: start;
+    border: 0;
+}
+
+.admin-filter-overflow[data-open="true"] > .admin-data-controls__filters > :is(.admin-data-field, .admin-task-field) :is(input, select) {
+    box-sizing: border-box;
+    width: 100% !important;
+    min-width: 0;
 }
 
 .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters > .admin-filter-overflow__reset {
-    display: block !important;
-    margin-top: .1rem;
-    padding-top: .45rem;
-    border-top: 1px solid var(--admin-line);
+    display: var(--admin-filter-popover-reset-display, none) !important;
+    margin: 0;
+    padding: .15rem 0 0;
+    border: 0;
 }
 
 .admin-filter-overflow[data-open="true"] .admin-filter-overflow__reset > * {
@@ -434,19 +453,24 @@
 }
 
 .admin-filter-overflow[data-open="true"] .admin-filter-overflow__reset .admin-action {
-    width: 100% !important;
+    width: auto !important;
+    min-width: 0;
     justify-content: flex-start !important;
 }
 
-/* Long four-filter sets switch to their existing popover BEFORE the
- * selected Type value becomes illegible; simpler three-filter sets keep the
- * later Narrow threshold. Both modes use the same single filter DOM/state. */
+/* One semantic breakpoint per filter count. Mode is expressed only by the
+ * same shared CSS custom properties; popup rendering above is not copied into
+ * four separate page-specific rules. */
 @container admin-workspace (max-width: 76rem) {
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
         grid-template-columns: minmax(10rem, 1fr) max-content max-content !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow {
+        --admin-filter-popover-display: grid;
+        --admin-filter-popover-position: fixed;
+        --admin-filter-popover-reset-display: block;
+        --admin-filter-popover-field-column: 1 / -1;
+        --admin-filter-popover-field-row: auto;
         position: relative;
         display: block !important;
         min-width: 0;
@@ -454,34 +478,32 @@
         grid-row: 1 !important;
         align-self: end;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow > .admin-filter-overflow__trigger {
         display: inline-flex !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow > .admin-data-controls__filters {
         display: none !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
-        display: grid !important;
+        display: var(--admin-filter-popover-display) !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-data-controls__utility {
         grid-column: 3 !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-data-controls__utility--has-reset > :first-child {
         display: none !important;
     }
 }
-
 @container admin-workspace (max-width: 54rem) {
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 {
         grid-template-columns: minmax(10rem, 1fr) max-content max-content !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-filter-overflow {
+        --admin-filter-popover-display: grid;
+        --admin-filter-popover-position: fixed;
+        --admin-filter-popover-reset-display: block;
+        --admin-filter-popover-field-column: 1 / -1;
+        --admin-filter-popover-field-row: auto;
         position: relative;
         display: block !important;
         min-width: 0;
@@ -489,34 +511,32 @@
         grid-row: 1 !important;
         align-self: end;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-filter-overflow > .admin-filter-overflow__trigger {
         display: inline-flex !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-filter-overflow > .admin-data-controls__filters {
         display: none !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
-        display: grid !important;
+        display: var(--admin-filter-popover-display) !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-data-controls__utility {
         grid-column: 3 !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-3 > .admin-data-controls__utility--has-reset > :first-child {
         display: none !important;
     }
 }
-
 @container admin-workspace (max-width: 38rem) {
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 {
         grid-template-columns: minmax(8rem, 1fr) max-content max-content !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow {
+        --admin-filter-popover-display: grid;
+        --admin-filter-popover-position: fixed;
+        --admin-filter-popover-reset-display: block;
+        --admin-filter-popover-field-column: 1 / -1;
+        --admin-filter-popover-field-row: auto;
         position: relative;
         display: block !important;
         min-width: 0;
@@ -524,23 +544,18 @@
         grid-row: 1 !important;
         align-self: end;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow > .admin-filter-overflow__trigger {
         display: inline-flex !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow > .admin-data-controls__filters {
         display: none !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
-        display: grid !important;
+        display: var(--admin-filter-popover-display) !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-data-controls__utility {
         grid-column: 3 !important;
     }
-
     .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2 > .admin-data-controls__utility--has-reset > :first-child {
         display: none !important;
     }

@@ -41,7 +41,7 @@
 
                     const viewportMargin = 8
                     const panelGap = 6
-                    const preferredWidth = 272
+                    const preferredWidth = 320
                     const panelWidth = Math.max(0, Math.min(preferredWidth, window.innerWidth - (viewportMargin * 2)))
                     const rect = trigger.getBoundingClientRect()
                     const maxLeft = Math.max(viewportMargin, window.innerWidth - panelWidth - viewportMargin)
@@ -55,10 +55,21 @@
                         this.panelStyle = `left:${left}px;top:auto;bottom:${window.innerHeight - rect.top + panelGap}px;width:${panelWidth}px;max-height:${Math.max(120, above)}px;`
                     }
                 },
+                syncPanelToLayout() {
+                    if (! this.open) return
+                    // The CSS container, not JS width thresholds, determines
+                    // whether Filters is a popover. Close on return to inline.
+                    if (getComputedStyle(this.$refs.trigger).display === 'none') {
+                        this.open = false
+                        this.panelStyle = ''
+                        return
+                    }
+                    this.$nextTick(() => this.positionPanel())
+                },
             }"
             x-bind:data-open="open ? 'true' : 'false'"
             x-on:keydown.escape.window="open = false"
-            x-on:resize.window="if (open) $nextTick(() => positionPanel())"
+            x-on:resize.window="syncPanelToLayout()"
             x-on:scroll.window="open = false"
             x-on:click.outside="open = false"
         >
@@ -66,8 +77,8 @@
                 class="admin-action admin-action--with-icon admin-filter-overflow__trigger"
                 type="button"
                 x-ref="trigger"
-                x-on:click="open = ! open; if (open) $nextTick(() => positionPanel())"
-                x-bind:aria-expanded="open"
+                x-on:click="open = ! open; if (open) $nextTick(() => positionPanel()); else panelStyle = ''"
+                x-bind:aria-expanded="open.toString()"
                 aria-haspopup="true"
                 aria-label="Filters"
             >
