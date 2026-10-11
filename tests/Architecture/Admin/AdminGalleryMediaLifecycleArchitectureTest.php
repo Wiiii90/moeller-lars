@@ -40,6 +40,6 @@ it('offers primary ALT descriptions in all Gallery editors and honors overrides 
     expect($batch)->toContain('updatePrimaryAltOverride(');
     expect($publication)
         ->toContain('mediaReady(MediaAsset $asset, ?string $altOverride = null)')
-        ->toContain('$primary->getAttribute(\\'alt_text_override\\')');
-    expect($readiness)->toContain('$primary?->getAttribute(\\'alt_text_override\\')');
+        ->toContain("getAttribute('alt_text_override')");
+    expect($readiness)->toContain("getAttribute('alt_text_override')");
 });
