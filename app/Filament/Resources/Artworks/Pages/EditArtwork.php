@@ -53,7 +53,7 @@ class EditArtwork extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        $galleryId = $this->artworkRecord()->getAttribute('artwork_category_id');
+        $galleryId = $this->artworkRecord()->fresh()->getAttribute('artwork_category_id');
         if ($galleryId !== null) {
             $galleryUrl = GalleryWorkspace::getUrl(['gallery' => (int) $galleryId]);
             if ($this->returnToGallery) {

@@ -120,6 +120,8 @@ This stack is used by Blog body, Exhibition description, Custom Page Text/List r
 
 Media ingestion owns durable Storage files and their database records independently from Artwork editing. New originals/variants must be ingested **before** the Artwork write transaction; creation/editing then changes Artwork fields, its primary media linkage and per-artwork ALT override together in one database transaction through the existing domain services. Failed Artwork validation must not roll back a successfully ingested MediaAsset while leaving physical files untracked; the file remains reusable in Storage. Do not ingest a file inside an outer Artwork database transaction.
 
+Gallery Artwork editing has one canonical form and writer (`ArtworkEditDialog`) shared between the Gallery workspace action and the Artwork deep-link EditRecord. The latter exists to edit unassigned drafts and as the destination of admin audit/Home links; it has no separate mutation rules. Gallery assignment changes are committed only by `ArtworkGalleryAssignmentService`, never by Filament form relationship autosave. Creation is owned by the Gallery workspace; superseded `CreateArtwork` and `ManageGalleryArtworks` resource routes/pages were removed, and callers link to `GalleryWorkspace::getUrl()` directly.
+
 Structured consumers include Artwork media, Journal Cover/Gallery, CV direct images, Custom Image components, Home Image components and site identity. Rich Text references use `media:<id>`.
 
 Two central questions are intentionally separate:

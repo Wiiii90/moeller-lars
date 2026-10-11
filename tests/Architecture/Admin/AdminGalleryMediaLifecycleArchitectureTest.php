@@ -49,7 +49,7 @@ it('uses one Artwork editing schema and writer for Gallery dialogs and deep-link
     $editor = file_get_contents(app_path('Filament/Resources/Artworks/Pages/EditArtwork.php'));
     $gallery = file_get_contents(app_path('Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php'));
 
-    expect($resource)->toContain('ArtworkEditDialog::class')->not->toContain('CreateArtwork::route')->not->toContain("if ($name === 'gallery')");
+    expect($resource)->toContain('ArtworkEditDialog::class')->not->toContain('CreateArtwork::route')->not->toContain('public static function getUrl(');
     expect($editor)->toContain('ArtworkEditDialog::class')->not->toContain('artwork->fill($data)');
     expect($gallery)->toContain('ArtworkEditDialog::class');
     expect(file_get_contents(app_path('Filament/Support/ArtworkEditDialog.php')))
