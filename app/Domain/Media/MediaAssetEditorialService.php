@@ -4,6 +4,7 @@ namespace App\Domain\Media;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoContext;
+use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
@@ -28,6 +29,7 @@ class MediaAssetEditorialService
         private readonly AdminAuditService $adminAuditService,
         private readonly AdminUndoContext $undoContext,
         private readonly MediaReferenceQuery $referenceQuery,
+        private readonly ArtworkGalleryAssignmentService $galleryAssignments,
         private readonly JournalEntryMediaService $journalMedia,
         private readonly CustomPageEditorialService $customPages,
         private readonly HomePresentationEditorialService $homePresentation,
@@ -215,6 +217,14 @@ class MediaAssetEditorialService
                 (int) $artwork->getKey(),
                 ['media_asset_id' => $assetId],
             );
+
+            // The primary media cannot disappear while the artwork stays in
+            // its Gallery. This canonical deletion path is used by Storage
+            // AND by the Gallery action. Keep the artwork as an unassigned
+            // draft for audit/history instead of silently destroying metadata.
+            if ($removedPrimary && $artwork->getAttribute('artwork_category_id') !== null) {
+                $this->galleryAssignments->detach($artwork);
+            }
         }
 
         $this->journalMedia->detachAsset($asset);

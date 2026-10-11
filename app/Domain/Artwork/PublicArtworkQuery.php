@@ -3,6 +3,8 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Content\SitePreviewContext;
+use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -470,7 +472,32 @@ class PublicArtworkQuery
     private function publicQuery(): Builder
     {
         $query = Artwork::query()
-            ->with(['category.siteSection', 'artworkMedia.mediaAsset.variants']);
+            ->with(['category.siteSection', 'artworkMedia.mediaAsset.variants'])
+            // This read model drives public AND preview artwork cards. Neither
+            // can render an incomplete draft without one viable primary asset.
+            // Keep such drafts editable in the Gallery workspace instead.
+            ->whereHas('artworkMedia', fn (Builder $usages) => $usages->where('role', 'primary'), '=', 1)
+            ->whereHas('artworkMedia', function (Builder $usages): void {
+                $usages->where('role', 'primary')
+                    ->where(function (Builder $text): void {
+                        $text->whereRaw("NULLIF(BTRIM(alt_text_override), '') IS NOT NULL")
+                            ->orWhereHas('mediaAsset', fn (Builder $asset) => $asset
+                                ->whereRaw("NULLIF(BTRIM(alt_text), '') IS NOT NULL"));
+                    })
+                    ->whereHas('mediaAsset', function (Builder $asset): void {
+                        $asset->where('state', 'available')
+                            ->where(function (Builder $media): void {
+                                $media->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)
+                                    ->orWhere(function (Builder $images): void {
+                                        $images->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)
+                                            ->whereHas('variants', fn (Builder $variants) => $variants
+                                                ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
+                                                ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
+                                                ->where('state', 'available'), '=', 1);
+                                    });
+                            });
+                    });
+            });
 
         if ($this->preview->active()) {
             $query->where('state', '<>', 'archived');
