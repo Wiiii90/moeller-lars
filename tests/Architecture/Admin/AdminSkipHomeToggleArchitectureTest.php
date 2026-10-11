@@ -28,7 +28,7 @@ it('uses one direct Pages Skip Home toggle and no retired Skip Home modal', func
         ->toContain('wire:click="changeSkipHomeTarget(\'\')"')
         ->toContain('Skip Home destination:')
         ->toContain('AdminRowAction::ShowHome')
-        ->not->toContain('mountAction(\'editHome\')')
+        ->toContain("wire:click=\"mountAction('editHome')\"")
         ->not->toContain("mountAction('skipHome')");
 
     // Route details have one existing editor, not a second modal implementation.

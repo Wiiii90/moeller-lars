@@ -511,6 +511,20 @@
     align-items: center;
 }
 
+/* Very long page names may not push Edit or Skip Home off their slots. */
+.admin-pages__redirect-target > .admin-action {
+    max-width: 100%;
+    min-width: 0 !important;
+    overflow: hidden;
+}
+
+.admin-pages__redirect-target > .admin-action .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .admin-pages__redirect-target .admin-selection__menu {
     right: auto;
     left: 0;

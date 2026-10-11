@@ -68,6 +68,7 @@ trait ManagesHomePagePresentation
 
         $this->loadSections();
     }
+
     public function changeSkipHomeTarget(string $target): void
     {
         $routing = app(HomeRoutingSettingsService::class);
@@ -104,6 +105,4 @@ trait ManagesHomePagePresentation
 
         $this->loadSections();
     }
-
-
 }
