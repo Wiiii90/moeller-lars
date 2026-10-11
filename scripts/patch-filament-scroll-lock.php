@@ -55,7 +55,7 @@ var nr=0,kr=null,Ns=()=>{
         // document-height change (and a one-frame scrollbar on close).
         if(!hadVerticalScrollbar){
             root.style.overflow="hidden";
-            kr=()=>{root.style.overflow=original.rootOverflow};
+            kr=()=>{root.style.overflow=original.rootOverflow;root.style.overflowX=original.rootOverflowX;root.style.overflowY=original.rootOverflowY};
         }else{
             const holdPosition=()=>{
                 if(window.scrollX!==x||window.scrollY!==y){
