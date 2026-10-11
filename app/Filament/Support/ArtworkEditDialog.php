@@ -94,6 +94,11 @@ final class ArtworkEditDialog
                     )
                         ->placeholder('No primary media')
                         ->nullable()
+                        ->live()
+                        ->afterStateUpdated(static function (callable $set): void {
+                            // ALT belongs to the chosen Media File, not the previous primary.
+                            $set('primary_alt_text', null);
+                        })
                         ->helperText('Images and videos only.')
                         ->columnSpanFull(),
                     FileUpload::make('primary_upload')
@@ -101,6 +106,12 @@ final class ArtworkEditDialog
                         ->storeFiles(false)
                         ->acceptedFileTypes(self::primaryMimeTypes())
                         ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
+                        ->live()
+                        ->afterStateUpdated(static function (mixed $state, callable $set): void {
+                            if (filled($state)) {
+                                $set('primary_alt_text', null);
+                            }
+                        })
                         ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
                         ->columnSpanFull(),
                     Textarea::make('primary_alt_text')
