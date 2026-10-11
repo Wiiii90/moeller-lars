@@ -7,6 +7,7 @@ use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
@@ -149,19 +150,28 @@ final class ArtworkEditDialog
             $this->assertUploadIsPrimaryMedia($upload);
         }
 
-        DB::transaction(function () use ($artwork, $data, $upload, $assetId, $currentAssetId, $currentPrimary): void {
+        // Storage owns durable originals and variants. Ingest the new file
+        // before the Artwork database transaction so a later editorial failure
+        // cannot roll back the MediaAsset while leaving its files on disk.
+        // The successfully ingested file remains reusable in Storage.
+        $uploadedAsset = $upload instanceof TemporaryUploadedFile
+            ? app(MediaIngestService::class)->ingest($upload)
+            : null;
+
+        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentAssetId, $currentPrimary): void {
             app(ArtworkDraftService::class)->update($artwork, $this->normalizeArtworkFormData($artwork, $data));
 
-            if ($upload instanceof TemporaryUploadedFile) {
+            $primaryMedia = app(ArtworkPrimaryMediaService::class);
+            if ($uploadedAsset instanceof MediaAsset) {
                 $currentPrimary === null
-                    ? app(ArtworkPrimaryMediaService::class)->attachUpload($artwork, $upload)
-                    : app(ArtworkPrimaryMediaService::class)->replaceUpload($artwork, $upload);
+                    ? $primaryMedia->attachAsset($artwork, $uploadedAsset, recordIngest: true)
+                    : $primaryMedia->replaceAsset($artwork, $uploadedAsset, recordIngest: true);
             } elseif ($assetId > 0 && $assetId !== $currentAssetId) {
                 /** @var MediaAsset $asset */
                 $asset = MediaAsset::query()->findOrFail($assetId);
                 $currentPrimary === null
-                    ? app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset)
-                    : app(ArtworkPrimaryMediaService::class)->replaceAsset($artwork, $asset);
+                    ? $primaryMedia->attachAsset($artwork, $asset)
+                    : $primaryMedia->replaceAsset($artwork, $asset);
             }
 
             $primary = $artwork->artworkMedia()->where('role', 'primary')->first();

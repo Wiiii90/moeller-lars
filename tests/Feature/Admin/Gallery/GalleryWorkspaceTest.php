@@ -7,6 +7,7 @@ use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Domain\Publication\PublicationService;
@@ -21,6 +22,8 @@ use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -607,4 +610,109 @@ it('stores per-artwork ALT for all images in the existing batch direct-upload ac
     expect($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
         ->toBe('A painting with overlapping tree branches');
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
+});
+it('ingests a real image through Add artwork and publishes its primary ALT description', function (): void {
+    Storage::fake(config('media.disk'));
+    $gallery = polishGallery();
+    polishUnavailableGalleryAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('addArtwork')
+        ->fillForm([
+            'title' => 'Uploaded Artwork',
+            'slug' => 'uploaded-artwork',
+            'work_date' => null,
+            'dimension_unit' => 'cm',
+            'primary_upload' => UploadedFile::fake()->image('new-artwork.jpg', 48, 32),
+            'primary_alt_text' => 'A painting with red and blue geometric shapes',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $artwork = Artwork::query()->where('slug', 'uploaded-artwork')->firstOrFail();
+    $usage = $artwork->artworkMedia()->where('role', 'primary')->sole();
+    $asset = $usage->mediaAsset;
+    $thumbnail = $asset->variants()->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)->sole();
+
+    expect($artwork->state)->toBe('draft')
+        ->and($usage->alt_text_override)->toBe('A painting with red and blue geometric shapes')
+        ->and($asset->state)->toBe('available')
+        ->and($asset->alt_text)->toBeNull()
+        ->and($thumbnail->state)->toBe('available');
+
+    Storage::disk(config('media.disk'))->assertExists([$asset->storage_key, $thumbnail->storage_key]);
+
+    expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published')
+        ->and(app(PublicMedia::class)->altText($artwork->fresh(['artworkMedia.mediaAsset.variants'])))
+        ->toBe('A painting with red and blue geometric shapes');
+
+    $this->get(route('preview.site.section', ['section' => $gallery->slug]))
+        ->assertOk()
+        ->assertSee('Uploaded Artwork');
+});
+
+it('replaces primary media through Edit without deleting the old Storage file or carrying over its ALT', function (): void {
+    Storage::fake(config('media.disk'));
+    $gallery = polishGallery();
+    $artwork = polishArtwork($gallery);
+    $oldAsset = polishAsset('image/jpeg', 'Previous file description');
+    polishThumbnail($oldAsset);
+    $previousPrimary = polishPrimary($artwork, $oldAsset);
+    $previousPrimary->forceFill(['alt_text_override' => 'Previous artwork description'])->save();
+    polishUnavailableGalleryAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->fillForm([
+            ...app(ArtworkEditDialog::class)->fill($artwork),
+            'primary_upload' => UploadedFile::fake()->image('replacement-artwork.jpg', 40, 48),
+            'primary_alt_text' => 'A new painting with a yellow circular motif',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $usage = $artwork->artworkMedia()->where('role', 'primary')->sole();
+    $newAsset = $usage->mediaAsset;
+    $thumbnail = $newAsset->variants()->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)->sole();
+
+    expect($usage->media_asset_id)->not->toBe($oldAsset->getKey())
+        ->and($usage->alt_text_override)->toBe('A new painting with a yellow circular motif')
+        ->and($oldAsset->fresh()->state)->toBe('available')
+        ->and($newAsset->state)->toBe('available')
+        ->and($thumbnail->state)->toBe('available');
+
+    Storage::disk(config('media.disk'))->assertExists([$newAsset->storage_key, $thumbnail->storage_key]);
+
+    expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
+});
+
+it('turns a real direct Gallery upload into an editable and publishable artwork draft', function (): void {
+    Storage::fake(config('media.disk'));
+    $gallery = polishGallery();
+    polishUnavailableGalleryAnalytics();
+
+    $component = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('directPrimaryMedia', [UploadedFile::fake()->image('direct-artwork.jpg', 56, 40)])
+        ->call('processDirectPrimaryMedia')
+        ->assertHasNoErrors();
+
+    $pendingAssetId = $component->get('pendingPrimaryMediaAssetId');
+    expect($pendingAssetId)->toBeInt()->toBeGreaterThan(0);
+
+    $component->fillForm([
+        'title' => 'Direct Upload Artwork',
+        'slug' => 'direct-upload-artwork',
+        'dimension_unit' => 'cm',
+        'work_date' => null,
+        'primary_media_asset_id' => $pendingAssetId,
+        'primary_alt_text' => 'A mixed-media artwork with a bright turquoise border',
+    ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $artwork = Artwork::query()->where('slug', 'direct-upload-artwork')->firstOrFail();
+    $usage = $artwork->artworkMedia()->where('role', 'primary')->sole();
+    expect((int) $usage->media_asset_id)->toBe($pendingAssetId)
+        ->and($usage->alt_text_override)->toBe('A mixed-media artwork with a bright turquoise border')
+        ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
