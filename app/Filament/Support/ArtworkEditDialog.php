@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
+use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
@@ -40,6 +41,7 @@ final class ArtworkEditDialog
             'dimension_custom' => $dimensions['custom'],
             'description' => $artwork->getAttribute('description'),
             'primary_media_asset_id' => $primary?->getAttribute('media_asset_id'),
+            'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
             'work_year' => $artwork->getAttribute('work_year'),
             'work_date' => $artwork->getAttribute('work_date'),
             'featured_on_home' => (bool) $artwork->getAttribute('featured_on_home'),
@@ -101,6 +103,12 @@ final class ArtworkEditDialog
                         ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
                         ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
                         ->columnSpanFull(),
+                    Textarea::make('primary_alt_text')
+                        ->label('Primary media ALT text')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->helperText('Description for screen readers. Leave blank to inherit the Storage Media File ALT text.')
+                        ->columnSpanFull(),
                     DatePicker::make('work_date')->label('Exact date')->helperText('If set, the year is derived from this date.')->nullable(),
                     Toggle::make('featured_on_home')->label('Feature on home when newest year is shared')->default(false),
                 ]),
@@ -115,6 +123,7 @@ final class ArtworkEditDialog
         $before = [
             'artwork' => $artwork->getAttributes(),
             'primary_media_asset_id' => $currentAssetId,
+            'primary_alt_text' => $currentPrimary?->getAttribute('alt_text_override'),
         ];
         $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
         $upload = $data['primary_upload'] ?? null;
@@ -143,6 +152,18 @@ final class ArtworkEditDialog
                     ? app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset)
                     : app(ArtworkPrimaryMediaService::class)->replaceAsset($artwork, $asset);
             }
+
+            $primary = $artwork->artworkMedia()->where('role', 'primary')->first();
+            if ($primary !== null) {
+                app(MediaAssetEditorialService::class)->updatePrimaryAltOverride(
+                    $artwork,
+                    filled($data['primary_alt_text'] ?? null) ? (string) $data['primary_alt_text'] : null,
+                );
+            } elseif (filled($data['primary_alt_text'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'primary_alt_text' => 'Choose or upload primary media before entering ALT text.',
+                ]);
+            }
         });
 
         /** @var Artwork $freshArtwork */
@@ -151,6 +172,7 @@ final class ArtworkEditDialog
         $after = [
             'artwork' => $freshArtwork->getAttributes(),
             'primary_media_asset_id' => $freshPrimary === null ? 0 : (int) $freshPrimary->getAttribute('media_asset_id'),
+            'primary_alt_text' => $freshPrimary?->getAttribute('alt_text_override'),
         ];
 
         return $before !== $after;
@@ -185,6 +207,7 @@ final class ArtworkEditDialog
             'dimension_custom',
             'primary_media_asset_id',
             'primary_upload',
+            'primary_alt_text',
         ] as $field) {
             unset($data[$field]);
         }

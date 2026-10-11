@@ -40,7 +40,7 @@ final class ArtworkPublicationService
             || $siteSection->getAttribute('state') !== 'published'
             || ! $primary instanceof ArtworkMedia
             || ! $mediaAsset instanceof MediaAsset
-            || ! $this->mediaReady($mediaAsset)
+            || ! $this->mediaReady($mediaAsset, $primary->getAttribute('alt_text_override'))
         ) {
             throw ValidationException::withMessages(['state' => 'This artwork is not ready to publish.']);
         }
@@ -77,9 +77,9 @@ final class ArtworkPublicationService
         return $fresh->fresh(['category', 'artworkMedia.mediaAsset.variants']);
     }
 
-    public function mediaReady(MediaAsset $asset): bool
+    public function mediaReady(MediaAsset $asset, ?string $altOverride = null): bool
     {
-        if ($asset->getAttribute('state') !== 'available' || blank($asset->getAttribute('alt_text'))) {
+        if ($asset->getAttribute('state') !== 'available' || (blank($altOverride) && blank($asset->getAttribute('alt_text')))) {
             return false;
         }
 

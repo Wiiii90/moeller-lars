@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
+use App\Domain\Media\MediaAssetEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\ArtworkEditDialog;
@@ -50,6 +51,13 @@ trait GalleryWorkspaceArtworkDialogs
                     /** @var MediaAsset $asset */
                     $asset = MediaAsset::query()->findOrFail($assetId);
                     app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
+                }
+
+                if (filled($data['primary_alt_text'] ?? null)) {
+                    app(MediaAssetEditorialService::class)->updatePrimaryAltOverride(
+                        $artwork,
+                        (string) $data['primary_alt_text'],
+                    );
                 }
 
                 $this->pendingPrimaryMediaAssetId = null;

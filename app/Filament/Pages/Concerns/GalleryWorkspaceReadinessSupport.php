@@ -6,22 +6,23 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
+use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceReadinessSupport
 {
-    private function isReadyToPublish(Artwork $artwork, bool $galleryPublished, int $primaryCount, ?MediaAsset $primaryAsset): bool
+    private function isReadyToPublish(Artwork $artwork, bool $galleryPublished, int $primaryCount, ?MediaAsset $primaryAsset, ?ArtworkMedia $primary): bool
     {
         return filled($artwork->getAttribute('title'))
             && filled($artwork->getAttribute('slug'))
             && $primaryCount === 1
             && $primaryAsset instanceof MediaAsset
-            && app(ArtworkPublicationService::class)->mediaReady($primaryAsset)
+            && app(ArtworkPublicationService::class)->mediaReady($primaryAsset, $primary?->getAttribute('alt_text_override'))
             && $galleryPublished;
     }
 
-    private function readinessLabel(Artwork $artwork, bool $galleryPublished, int $primaryCount, ?MediaAsset $primaryAsset): string
+    private function readinessLabel(Artwork $artwork, bool $galleryPublished, int $primaryCount, ?MediaAsset $primaryAsset, ?ArtworkMedia $primary): string
     {
         if (! filled($artwork->getAttribute('title')) || ! filled($artwork->getAttribute('slug'))) {
             return 'Missing title or URL';
@@ -37,10 +38,10 @@ trait GalleryWorkspaceReadinessSupport
         if (! MediaTypePolicy::isImage($mime) && ! MediaTypePolicy::isVideo($mime)) {
             return 'Primary media must be image or video';
         }
-        if (! filled($primaryAsset->getAttribute('alt_text'))) {
+        if (! filled($primary?->getAttribute('alt_text_override')) && ! filled($primaryAsset->getAttribute('alt_text'))) {
             return 'ALT text required';
         }
-        if (MediaTypePolicy::isImage($mime) && ! app(ArtworkPublicationService::class)->mediaReady($primaryAsset)) {
+        if (MediaTypePolicy::isImage($mime) && ! app(ArtworkPublicationService::class)->mediaReady($primaryAsset, $primary?->getAttribute('alt_text_override'))) {
             return 'Thumbnail processing required';
         }
         if (! $galleryPublished) {

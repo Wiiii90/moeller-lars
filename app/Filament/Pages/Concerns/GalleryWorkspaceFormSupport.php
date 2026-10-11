@@ -74,6 +74,12 @@ trait GalleryWorkspaceFormSupport
                         ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
                         ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
                         ->columnSpanFull(),
+                    Textarea::make('primary_alt_text')
+                        ->label('Primary media ALT text')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->helperText('Describe this artwork image or video for screen readers. Required to publish unless its Storage file already has ALT text.')
+                        ->columnSpanFull(),
                     DatePicker::make('work_date')->label('Exact date')->helperText('If set, the year is derived from this date.')->nullable(),
                     Toggle::make('featured_on_home')->label('Feature on home when newest year is shared')->default(false),
                 ]),
@@ -102,6 +108,7 @@ trait GalleryWorkspaceFormSupport
             'dimension_custom',
             'primary_media_asset_id',
             'primary_upload',
+            'primary_alt_text',
         ] as $field) {
             unset($data[$field]);
         }

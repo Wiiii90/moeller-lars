@@ -142,6 +142,10 @@ trait GalleryWorkspaceDirectUpload
                                 ->label('Title')
                                 ->required()
                                 ->maxLength(240),
+                            TextInput::make('primary_alt_text')
+                                ->label('ALT text')
+                                ->maxLength(500)
+                                ->helperText('Required to publish unless this Media File already has ALT text.'),
                         ])
                         ->columns(3)
                         ->addable(false)
@@ -207,6 +211,9 @@ trait GalleryWorkspaceDirectUpload
                                 'work_date' => null,
                             ]);
                             app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
+                            if (filled($row['primary_alt_text'] ?? null)) {
+                                app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, (string) $row['primary_alt_text']);
+                            }
                         }
                     });
 
