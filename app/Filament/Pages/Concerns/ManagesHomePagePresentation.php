@@ -47,6 +47,7 @@ trait ManagesHomePagePresentation
         $settings = $resolver->settings();
         $enable = ! $routing->enabled($settings);
 
+        $navigationChanged = false;
         try {
             // The automatic destination is the next eligible published page.
             // Never activate a redirect that has nowhere valid to go.
@@ -57,6 +58,7 @@ trait ManagesHomePagePresentation
             }
 
             if ($routing->update($settings, $enable, null)) {
+                $navigationChanged = true;
                 app(AdminNotifier::class)->notification(
                     title: $enable ? 'Skip Home enabled' : 'Skip Home disabled',
                     status: 'success',
@@ -66,7 +68,7 @@ trait ManagesHomePagePresentation
             $this->validationNotification('Skip Home unchanged', $exception);
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $navigationChanged);
     }
 
     public function changeSkipHomeTarget(string $target): void
@@ -74,6 +76,7 @@ trait ManagesHomePagePresentation
         $routing = app(HomeRoutingSettingsService::class);
         $settings = app(HomePresentationResolver::class)->settings();
 
+        $navigationChanged = false;
         try {
             if (! $routing->enabled($settings)) {
                 throw ValidationException::withMessages([
@@ -94,6 +97,7 @@ trait ManagesHomePagePresentation
             // The same domain service validates every explicit target and
             // persists the change in the audited Home routing configuration.
             if ($routing->update($settings, true, $targetId)) {
+                $navigationChanged = true;
                 app(AdminNotifier::class)->notification(
                     title: 'Skip Home destination updated',
                     status: 'success',
@@ -103,6 +107,6 @@ trait ManagesHomePagePresentation
             $this->validationNotification('Skip Home destination unchanged', $exception);
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $navigationChanged);
     }
 }

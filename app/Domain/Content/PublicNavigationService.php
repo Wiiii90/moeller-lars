@@ -14,6 +14,7 @@ final class PublicNavigationService
     public function __construct(
         private readonly SitePreviewContext $preview,
         private readonly SiteNodeRoute $routes,
+        private readonly HomePresentationResolver $home,
     ) {}
 
     /** @return Collection<int, array<string, mixed>> */
@@ -26,6 +27,9 @@ final class PublicNavigationService
             $query->where('state', 'published');
         }
         $query->where('show_in_navigation', true);
+        if ($this->home->skipEnabled()) {
+            $query->where('type', '<>', SiteSectionType::Home->value);
+        }
         $preview = $this->preview;
         $query->with(['children' => static function (Relation $relation) use ($preview): void {
             $childQuery = $relation->getQuery();

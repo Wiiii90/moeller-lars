@@ -219,10 +219,11 @@ final class SitePages extends Page
             $parentId = (int) $groupId;
         }
 
+        $navigationChanged = false;
         try {
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
-            if ($this->orderService()->moveTo($section, $parentId, $position)) {
+            if ($navigationChanged = $this->orderService()->moveTo($section, $parentId, $position)) {
                 app(AdminNotifier::class)->notification(
                     title: 'Page order updated',
                     status: 'success',
@@ -232,7 +233,7 @@ final class SitePages extends Page
             $this->validationNotification('Page order unchanged', $exception);
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $navigationChanged);
     }
 
     public function moveSection(int $sectionId, string $direction): void
@@ -254,7 +255,7 @@ final class SitePages extends Page
                     title: 'Page order updated',
                     status: 'success',
                 );
-                $this->loadSections();
+                $this->loadSections(navigationChanged: true);
             }
         } catch (ValidationException $exception) {
             $this->validationNotification('Page order unchanged', $exception);
@@ -296,6 +297,7 @@ final class SitePages extends Page
                         ? (int) $data['parent_id']
                         : null;
 
+                    $navigationChanged = false;
                     try {
                         $updated = app(SiteSectionEditorialService::class)->updatePlacement(
                             $section,
@@ -303,7 +305,7 @@ final class SitePages extends Page
                             (bool) $section->getAttribute('show_in_navigation'),
                             $parentId,
                         );
-                        if ($updated->wasChanged()) {
+                        if ($navigationChanged = $updated->wasChanged()) {
                             app(AdminNotifier::class)->notification(
                                 title: 'Page placement updated',
                                 status: 'success',
@@ -313,7 +315,7 @@ final class SitePages extends Page
                         $this->validationNotification('Page placement unchanged', $exception);
                     }
 
-                    $this->loadSections();
+                    $this->loadSections(navigationChanged: $navigationChanged);
                 }),
             AdminDialogSize::Small,
         );
@@ -384,8 +386,10 @@ final class SitePages extends Page
             return;
         }
 
+        $navigationChanged = false;
         try {
             $this->deleteSectionRecord($section);
+            $navigationChanged = true;
             app(AdminNotifier::class)->notification(
                 title: 'Page removed',
                 status: 'success',
@@ -394,7 +398,7 @@ final class SitePages extends Page
             $this->validationNotification('Page was not removed', $exception);
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $navigationChanged);
     }
 
     public function bulkPublish(): void
@@ -430,17 +434,19 @@ final class SitePages extends Page
             }
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $deleted > 0);
         $this->bulkNotification('Delete', $deleted, $blocked);
     }
 
     public function convertSectionType(int $sectionId, string $targetType): void
     {
+        $navigationChanged = false;
         try {
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($section->nodeType()->value !== $targetType) {
                 app(SiteSectionEditorialService::class)->convertType($section, $targetType);
+                $navigationChanged = true;
                 app(AdminNotifier::class)->notification(
                     title: 'Page type updated',
                     status: 'success',
@@ -450,16 +456,18 @@ final class SitePages extends Page
             $this->validationNotification('Page type unchanged', $exception);
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $navigationChanged);
     }
 
     public function changeJournalTemplate(int $sectionId, string $template): void
     {
+        $navigationChanged = false;
         try {
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($section->journalTemplate()?->value !== $template) {
                 app(SiteSectionEditorialService::class)->updateJournalTemplate($section, $template);
+                $navigationChanged = true;
                 app(AdminNotifier::class)->notification(
                     title: 'Journal template updated',
                     status: 'success',
@@ -469,7 +477,7 @@ final class SitePages extends Page
             $this->validationNotification('Journal template unchanged', $exception);
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $navigationChanged);
     }
 
     public function startAddingPage(): void
@@ -509,7 +517,7 @@ final class SitePages extends Page
             $this->newJournalTemplate = JournalTemplate::Blog->value;
             $this->newPageParent = '';
             $this->pageNumber = 1;
-            $this->loadSections();
+            $this->loadSections(navigationChanged: true);
             app(AdminNotifier::class)->notification(
                 title: $message,
                 status: 'success',
@@ -589,7 +597,7 @@ final class SitePages extends Page
         return $parentId;
     }
 
-    private function loadSections(): void
+    private function loadSections(bool $navigationChanged = false): void
     {
         $this->orderService = app(SiteSectionOrderService::class);
         $this->nestedNavigationEnabled = PublicContentSetting::navigationNestingEnabled();
@@ -679,6 +687,11 @@ final class SitePages extends Page
         $this->selectedSectionIds = array_values(array_intersect($this->selectedIds(), $visibleIds));
         $this->reorderEnabled = ! $this->filtersActive && $this->totalGroups <= $this->perPage;
         $this->syncSelectionState();
+
+        if ($navigationChanged) {
+            // Native Filament Livewire Sidebar listens to this event.
+            $this->dispatch('refresh-sidebar');
+        }
     }
 
     /** @param list<array<string, mixed>> $groups
@@ -811,13 +824,15 @@ final class SitePages extends Page
 
     private function updatePlacement(SiteSection $section, string $state, bool $visible): void
     {
+        $navigationChanged = false;
         try {
-            app(SiteSectionEditorialService::class)->updatePlacement(
+            $updated = app(SiteSectionEditorialService::class)->updatePlacement(
                 $section,
                 $state,
                 $visible,
                 $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
             );
+            $navigationChanged = $updated->wasChanged();
             app(AdminNotifier::class)->notification(
                 title: 'Page settings updated',
                 status: 'success',
@@ -826,7 +841,7 @@ final class SitePages extends Page
             $this->validationNotification('Page settings unchanged', $exception);
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $navigationChanged);
     }
 
     private function bulkChangeState(string $state): void
@@ -861,7 +876,7 @@ final class SitePages extends Page
             }
         }
 
-        $this->loadSections();
+        $this->loadSections(navigationChanged: $changed > 0);
         $this->bulkNotification($state === 'published' ? 'Publish' : 'Unpublish', $changed, $blocked);
     }
 

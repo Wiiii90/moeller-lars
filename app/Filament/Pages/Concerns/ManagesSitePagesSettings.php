@@ -22,7 +22,7 @@ trait ManagesSitePagesSettings
                 ->schema(fn (): array => $dialog->schema())
                 ->action(function (array $data) use ($dialog): void {
                     $changed = $dialog->save($data);
-                    $this->loadSections();
+                    $this->loadSections(navigationChanged: $changed);
                     if ($changed) {
                         app(AdminNotifier::class)->notification(
                             title: 'Pages settings saved',

@@ -71,7 +71,7 @@ trait ManagesSitePageCreateDialog
             ->action(function (array $data): void {
                 $section = DB::transaction(fn (): SiteSection => $this->createPageFromDialog($data));
                 $this->pageNumber = 1;
-                $this->loadSections();
+                $this->loadSections(navigationChanged: true);
 
                 app(AdminNotifier::class)->notification(
                     title: $section->nodeType()->label().' added',

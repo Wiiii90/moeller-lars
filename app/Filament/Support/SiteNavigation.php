@@ -2,6 +2,8 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Content\HomePresentationResolver;
+use App\Domain\Content\SiteSectionType;
 use App\Models\SiteSection;
 use Filament\Navigation\NavigationItem;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -10,7 +12,10 @@ use function Filament\Support\original_request;
 
 final class SiteNavigation
 {
-    public function __construct(private readonly SiteNodePresentation $presentation) {}
+    public function __construct(
+        private readonly SiteNodePresentation $presentation,
+        private readonly HomePresentationResolver $home,
+    ) {}
 
     /** @return array<NavigationItem> */
     public function items(): array
@@ -18,6 +23,12 @@ final class SiteNavigation
         /** @var EloquentCollection<int, SiteSection> $sections */
         $sections = SiteSection::query()
             ->with('customPageSetting')
+            ->where('state', 'published')
+            ->where('show_in_navigation', true)
+            ->when(
+                $this->home->skipEnabled(),
+                static fn ($query) => $query->where('type', '<>', SiteSectionType::Home->value),
+            )
             ->orderBy('position')
             ->orderBy('id')
             ->get();

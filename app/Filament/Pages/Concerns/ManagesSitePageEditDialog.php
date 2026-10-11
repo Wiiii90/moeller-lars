@@ -96,7 +96,7 @@ trait ManagesSitePageEditDialog
                     return $this->savePageFromDialog($this->dialogSection($arguments), $data);
                 });
 
-                $this->loadSections();
+                $this->loadSections(navigationChanged: $changed);
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Page updated',
@@ -119,7 +119,7 @@ trait ManagesSitePageEditDialog
             ->schema($dialog->schema())
             ->action(function (array $data) use ($dialog): void {
                 $changed = $dialog->save($data);
-                $this->loadSections();
+                $this->loadSections(navigationChanged: $changed);
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Home settings saved',
