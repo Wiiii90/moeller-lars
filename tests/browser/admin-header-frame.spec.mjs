@@ -25,7 +25,7 @@ test('Header Notification tracks the actual content edges and User stays outside
                 n: n.getBoundingClientRect().toJSON(),
                 w: w.getBoundingClientRect().toJSON(),
                 b: b.getBoundingClientRect().toJSON(),
-                viewport: document.documentElement.clientWidth,
+                viewport: window.innerWidth,
             };
         });
         expect(bounds, 'missing Header/Workspace/User at width ' + width).not.toBeNull();

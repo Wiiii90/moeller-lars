@@ -242,8 +242,10 @@ async function shellGeometry(page) {
 }
 
 function expectStableShellGeometry(before, during, context) {
-  expect(before.main_padding_left, `${context}: Main padding was asymmetric before dialog`).toBeCloseTo(before.main_padding_right, 2);
-  expect(during.main_padding_left, `${context}: Main padding became asymmetric during dialog`).toBeCloseTo(during.main_padding_right, 2);
+  expect(before.main_padding_left, `${context}: Main leading gutter changed`).toBeCloseTo(32, 1);
+  expect(before.main_padding_right, `${context}: Main did not reserve the User rail`).toBeCloseTo(64, 1);
+  expect(during.main_padding_left, `${context}: Main leading gutter moved during dialog`).toBeCloseTo(before.main_padding_left, 1);
+  expect(during.main_padding_right, `${context}: Main User rail moved during dialog`).toBeCloseTo(before.main_padding_right, 1);
   expect(during.layout_left, `${context}: layout left edge shifted`).toBeCloseTo(before.layout_left, 1);
   expect(during.layout_width, `${context}: layout width shifted`).toBeCloseTo(before.layout_width, 1);
   expect(during.main_left, `${context}: main left edge shifted`).toBeCloseTo(before.main_left, 1);
