@@ -33,8 +33,6 @@ function syncModalGeometry(modal, { resetScroll = false } = {}) {
     const main = activeMain(modal);
     if (! main) return;
 
-    modal.classList.add('admin-dialog-frame');
-
     const mainRect = main.getBoundingClientRect();
     const mainStyle = window.getComputedStyle(main);
     const topbar = document.querySelector('.fi-topbar');
@@ -50,10 +48,13 @@ function syncModalGeometry(modal, { resetScroll = false } = {}) {
         numericPx(mainStyle.paddingRight),
     );
 
-    modal.style.setProperty('--admin-dialog-layer-inline-start', `${inlineStart}px`);
-    modal.style.setProperty('--admin-dialog-layer-inline-end', `${inlineEnd}px`);
-    modal.style.setProperty('--admin-dialog-layer-block-start', `${Math.min(window.innerHeight, topbarBottom)}px`);
-    modal.style.setProperty('--admin-dialog-layer-padding-inline', `${inlinePadding}px`);
+    // Livewire may replace a mounted Action modal after a field change.
+    // Document-owned frame variables survive that replacement.
+    const frame = document.documentElement.style;
+    frame.setProperty('--admin-dialog-layer-inline-start', `${inlineStart}px`);
+    frame.setProperty('--admin-dialog-layer-inline-end', `${inlineEnd}px`);
+    frame.setProperty('--admin-dialog-layer-block-start', `${Math.min(window.innerHeight, topbarBottom)}px`);
+    frame.setProperty('--admin-dialog-layer-padding-inline', `${inlinePadding}px`);
 
     if (resetScroll) {
         resetModalScroll(modal);
