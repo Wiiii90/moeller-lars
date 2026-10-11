@@ -252,9 +252,14 @@ function expectStableShellGeometry(before, during, context) {
 
 function expectStableModalScrollLock(before, during, context) {
   expect(during.scroll_y, `${context}: background scroll position changed on open`).toBe(before.scroll_y);
-  expect(during.body_position, `${context}: Filament did not freeze the document body`).toBe('fixed');
-  expect(during.inline_overflow_y, `${context}: root scrollbar mode changed unexpectedly`)
-    .toBe(before.has_vertical_overflow ? 'scroll' : 'hidden');
+  if (before.has_vertical_overflow) {
+    expect(during.body_position, `${context}: Filament did not freeze the scrollable document`).toBe('fixed');
+    expect(during.inline_overflow_y, `${context}: visible scrollbar mode changed`).toBe('scroll');
+  } else {
+    expect(during.body_position, `${context}: short page body was taken out of flow`).toBe(before.body_position);
+    expect(during.inline_overflow, `${context}: short page root was not locked`).toBe('hidden');
+    expect(during.inline_overflow_y, `${context}: short page scroll lock failed`).toBe('hidden');
+  }
   expect(during.has_classic_scrollbar, `${context}: preexisting native scrollbar changed`)
     .toBe(before.has_classic_scrollbar);
   expect(during.scrollbar_gutter, `${context}: application introduced a custom scrollbar gutter`).toBe('auto');

@@ -59,7 +59,26 @@ test('short pages do not gain a native scrollbar or reserved gutter', () => {
     const state = modalLock({ height: 800, viewportHeight: 800 });
     state.acquire();
     assert.equal(state.root.style.overflowY, 'hidden');
-    assert.equal(state.root.style.minHeight, '800px');
+    assert.equal(state.root.style.minHeight, '');
+    assert.equal(state.root.style.overflow, 'hidden');
+    assert.equal(state.body.style.position, '');
+    assert.equal(state.listeners.size, 0);
+    state.release();
+    assert.deepEqual(state.root.style, state.originalRoot);
+    assert.deepEqual(state.body.style, state.originalBody);
+    assert.equal(state.listeners.size, 0);
+    assert.equal(state.window.scrollY, 0);
+});
+
+test('nested short-page modals keep the body in flow until final unlock', () => {
+    const state = modalLock({ height: 700, viewportHeight: 800 });
+    state.acquire();
+    state.acquire();
+    assert.equal(state.root.style.overflow, 'hidden');
+    assert.deepEqual(state.body.style, state.originalBody);
+    assert.equal(state.listeners.size, 0);
+    state.release();
+    assert.equal(state.root.style.overflow, 'hidden');
     state.release();
     assert.deepEqual(state.root.style, state.originalRoot);
     assert.deepEqual(state.body.style, state.originalBody);

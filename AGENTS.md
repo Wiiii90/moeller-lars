@@ -7,6 +7,38 @@ Two companion files are part of this contract:
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
 - [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
 
+## Browser-accepted dialog scroll-lock contract — do not regress
+
+The admin dialog behavior accepted in browser review on 2026-10-11 is a
+**protected product invariant**, not disposable styling or a temporary workaround:
+
+- **Long pages:** Keep the existing native document scrollbar visible and in its
+  exact place during blocking dialogs; prevent background scrolling; preserve
+  document geometry and scroll position on close.
+- **Short pages:** Never manufacture a document scrollbar, right gutter, or
+  horizontal shift. Opening **and closing**, including the leave animation,
+  must not briefly flash a scrollbar. Keep the short-page body in normal flow;
+  the root overflow lock suffices when there was no document scroll range.
+- **All dialogs:** Conditional field/checkbox changes must not move the window.
+  Preserve the persistent root-owned geometry variables and declarative Filament
+  modal CSS across Livewire morphs; retain framework focus/Escape/X lifecycle.
+- **Single owner:** Filament's existing modal lock and counter remain authoritative.
+  The reviewed, version-locked build-time adjustment lives in
+  `scripts/patch-filament-scroll-lock.php`; do not remove it, revert to upstream
+  `overflow: hidden` on pages with scrollbars, add a second JS lock or wheel
+  interceptor, or substitute `scrollbar-gutter: stable` / permanent padding.
+- **Upgrade/build:** `composer.json` applies the patch before
+  `filament:upgrade` publishes assets; the Docker production image carries those
+  assets. An upgrade to Filament Support requires reviewing and adapting the
+  version guard and patch, rather than silently removing this behavior.
+- **Acceptance:** Keep the long/short/nested lifecycle tests in
+  `tests/js/filament-scroll-lock-patch.test.mjs` and the real browser checks in
+  `tests/browser/admin-dialog-regression.spec.mjs`. A passing source-level test
+  does **not** imply browser acceptance. Retain the last accepted behavior unless
+  the user explicitly changes this contract.
+
+See `docs/ADMIN-DIALOG-CONTRACT.md` and `ui-skills.md` for shared UI geometry.
+
 ## No workarounds — mandatory stop rule
 
 This project builds coherent, canonical systems. **Workarounds, symptom-level patches, compensating hacks and parallel implementations are prohibited by default.** The moment an agent starts considering a workaround rather than a root-cause correction, it **MUST STOP IMMEDIATELY**: do not implement it, do not commit it, and do not continue by layering additional conditions, listeners, timers, retries, CSS overrides, state flags, fallback lifecycles or alternate persistence paths.

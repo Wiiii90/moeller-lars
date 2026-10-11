@@ -50,31 +50,39 @@ var nr=0,kr=null,Ns=()=>{
             bodyLeft:body.style.left,
             bodyWidth:body.style.width
         };
-        const holdPosition=()=>{
-            if(window.scrollX!==x||window.scrollY!==y){
+        // On a short page there is no document scroll position to freeze.
+        // Keep the body in flow: fixing/unfixing it creates a transient
+        // document-height change (and a one-frame scrollbar on close).
+        if(!hadVerticalScrollbar){
+            root.style.overflow="hidden";
+            kr=()=>{root.style.overflow=original.rootOverflow};
+        }else{
+            const holdPosition=()=>{
+                if(window.scrollX!==x||window.scrollY!==y){
+                    window.scrollTo({left:x,top:y,behavior:"instant"});
+                }
+            };
+            root.style.minHeight=`${originalHeight}px`;
+            root.style.overflowX="hidden";
+            root.style.overflowY="scroll";
+            body.style.position="fixed";
+            body.style.top=`-${y}px`;
+            body.style.left=`-${x}px`;
+            body.style.width="100%";
+            window.addEventListener("scroll",holdPosition,{passive:true});
+            kr=()=>{
+                window.removeEventListener("scroll",holdPosition);
+                root.style.overflow=original.rootOverflow;
+                root.style.overflowX=original.rootOverflowX;
+                root.style.overflowY=original.rootOverflowY;
+                root.style.minHeight=original.rootMinHeight;
+                body.style.position=original.bodyPosition;
+                body.style.top=original.bodyTop;
+                body.style.left=original.bodyLeft;
+                body.style.width=original.bodyWidth;
                 window.scrollTo({left:x,top:y,behavior:"instant"});
-            }
-        };
-        root.style.minHeight=`${originalHeight}px`;
-        root.style.overflowX="hidden";
-        root.style.overflowY=hadVerticalScrollbar?"scroll":"hidden";
-        body.style.position="fixed";
-        body.style.top=`-${y}px`;
-        body.style.left=`-${x}px`;
-        body.style.width="100%";
-        window.addEventListener("scroll",holdPosition,{passive:true});
-        kr=()=>{
-            window.removeEventListener("scroll",holdPosition);
-            root.style.overflow=original.rootOverflow;
-            root.style.overflowX=original.rootOverflowX;
-            root.style.overflowY=original.rootOverflowY;
-            root.style.minHeight=original.rootMinHeight;
-            body.style.position=original.bodyPosition;
-            body.style.top=original.bodyTop;
-            body.style.left=original.bodyLeft;
-            body.style.width=original.bodyWidth;
-            window.scrollTo({left:x,top:y,behavior:"instant"});
-        };
+            };
+        }
     }
     nr++;
 },js=()=>{
