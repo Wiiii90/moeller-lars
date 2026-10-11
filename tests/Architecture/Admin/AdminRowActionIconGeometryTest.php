@@ -21,5 +21,16 @@ it('fixes every semantic row-action icon at Filament Small regardless of state',
     expect($pageRow)
         ->toContain('AdminRowAction::ShowHome')
         ->toContain('AdminRowAction::SkipHome')
+        ->toContain('class="admin-pages__redirect-target"')
+        ->not->toContain('admin-pages__redirect-target admin-selection__anchor')
         ->not->toContain('admin-show-home.svg');
+
+    // The ordinary toolbar selection anchor has a 2.5rem min-height. With
+    // row padding that exceeds the 3.4rem hierarchy row and changes Home's
+    // height whenever Skip Home is enabled.
+    $taskCss = file_get_contents(resource_path('css/admin/task-surfaces.css'));
+    expect($taskCss)
+        ->toContain('--admin-control-height')
+        ->toContain('min-height: var(--admin-control-height);')
+        ->toContain('min-height: 3.4rem;');
 });

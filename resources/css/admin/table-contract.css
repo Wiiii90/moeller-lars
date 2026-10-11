@@ -503,15 +503,16 @@
     padding-left: 0;
 }
 
-/* The first two ordinary row-action slots contain the direct Skip Home
- * destination picker. The existing action/menu primitives own presentation
- * and the fixed five-axis rail keeps its established Compact layout. */
+/* Home's destination menu is a regular table-row action, not a toolbar
+ * selection trigger. Use the existing menu surface, but NOT the
+ * .admin-selection__anchor toolbar container (min-height: 2.5rem): its height
+ * plus row padding exceeds the standard hierarchy row's 3.4rem minimum.
+ * No additional row height or local height compensation is necessary. */
 .admin-pages__redirect-target {
     position: relative;
     z-index: 10;
     min-width: 0;
     grid-column: span 2;
-    align-items: center;
 }
 
 /* Very long page names may not push Edit or Skip Home off their slots. */

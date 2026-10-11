@@ -90,7 +90,7 @@
             @if ($isHome)
                 @if ($homeState['skip_home'] ?? false)
                     <div
-                        class="admin-pages__redirect-target admin-selection__anchor"
+                        class="admin-pages__redirect-target"
                         x-data="{ open: false }"
                         x-on:click.outside="open = false"
                         x-on:keydown.escape.window="open = false"
