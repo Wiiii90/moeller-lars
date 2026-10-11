@@ -35,10 +35,11 @@ it('keeps General social profiles directly editable with a canonical whole-row E
     expect($socialCss)
         ->toContain('padding-inline-end: var(--admin-table-edge-inset) !important;')
         ->toContain('--admin-row-actions-width: var(--admin-row-actions-move-edit-delete-width);')
-        ->toContain('@container admin-table (max-width: 54rem)')
+        ->toContain('@container admin-table (max-width: 60rem)')
         ->toContain('--admin-row-actions-columns: repeat(4, 1.35rem);');
 
     expect($sharedTableCss)
-        ->toContain('--admin-row-actions-move-edit-delete-width: 17.25rem;')
+        ->toContain('--admin-row-actions-move-edit-delete-width: 18.5rem;')
+        ->toContain('var(--admin-row-action-slot-delete-width);')
         ->toContain('--admin-row-actions-move-edit-delete-compact-width: 6.75rem;');
 });

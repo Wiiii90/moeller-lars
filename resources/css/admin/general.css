@@ -554,7 +554,7 @@
 
 /* Four full labels yield before either direct-edit field loses usable width.
  * The common fixed icon slots remain aligned with the Actions heading. */
-@container admin-table (max-width: 54rem) {
+@container admin-table (max-width: 60rem) {
     .general-social-table .admin-row-actions--move-edit-delete,
     .general-social-table .admin-row-actions-heading {
         --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-compact-width);
