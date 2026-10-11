@@ -1,16 +1,5 @@
 const openModalSelector = '.fi-modal.fi-modal-open';
 
-function modalFromOpenEvent(event) {
-    const id = event.detail?.id;
-    if (id === undefined || id === null || id === '') return null;
-
-    const modal = document.getElementById(String(id));
-    if (! modal?.classList.contains('fi-modal')) return null;
-    if (modal.classList.contains('fi-modal-click-through')) return null;
-
-    return modal;
-}
-
 function numericPx(value) {
     const parsed = Number.parseFloat(value);
 
@@ -19,14 +8,9 @@ function numericPx(value) {
 
 function modalForEvent(event) {
     const id = event.detail?.id;
+    if (id === undefined || id === null || id === '') return null;
 
-    if (id) {
-        return document.getElementById(id);
-    }
-
-    const openModals = document.querySelectorAll(openModalSelector);
-
-    return openModals[openModals.length - 1] ?? null;
+    return document.getElementById(String(id));
 }
 
 function activeMain(modal) {
@@ -86,10 +70,9 @@ function syncOpenModalGeometry() {
 // opened over an admin Main frame receives the same measured content bounds.
 // Filament owns modal opening, document scroll lock, focus trapping, Escape,
 // close/destroy and lock cleanup.
-window.addEventListener('open-modal', (event) => {
-    syncModalGeometry(modalFromOpenEvent(event));
-}, true);
-
+// Filament may emit open-modal again when the mounted Action rerenders.
+// Only x-modal-opened represents an actual closed-to-open transition; position
+// once at that boundary, never in response to an unchanged mounted Action.
 document.addEventListener('x-modal-opened', (event) => {
     syncModalGeometry(modalForEvent(event), { resetScroll: true });
 });
