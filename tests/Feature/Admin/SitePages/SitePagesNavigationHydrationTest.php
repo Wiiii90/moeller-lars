@@ -49,7 +49,7 @@ it('refreshes the existing Sidebar and reorders its data after Pages moves', fun
         ->toBeLessThan(array_search('First Sidebar Page', $public, true));
 });
 
-it('reflects navigation visibility and publication in the Sidebar without hiding Pages rows', function (): void {
+it('keeps drafts and public-navigation-hidden pages editable in the Sidebar while the public menu follows visibility', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $editor = app(SiteSectionEditorialService::class);
     $page = $editor->createCustomPage('Navigation Visibility Target', 'navigation-visibility-target');
@@ -60,18 +60,21 @@ it('reflects navigation visibility and publication in the Sidebar without hiding
     $component->call('toggleSectionNavigation', (int) $page->getKey())
         ->assertDispatched('refresh-sidebar');
 
-    expect(navigationLabels())->not->toContain('Navigation Visibility Target')
+    expect(navigationLabels())->toContain('Navigation Visibility Target')
         ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())
         ->not->toContain('Navigation Visibility Target')
         ->and(SiteSection::query()->whereKey($page->getKey())->exists())->toBeTrue();
 
-    $component->call('toggleSectionNavigation', (int) $page->getKey());
+    $component->call('toggleSectionNavigation', (int) $page->getKey())
+        ->assertDispatched('refresh-sidebar');
     expect(navigationLabels())->toContain('Navigation Visibility Target');
 
-    Livewire::test(SitePages::class)
-        ->call('toggleSectionState', (int) $page->getKey())
+    $component->call('toggleSectionState', (int) $page->getKey())
         ->assertDispatched('refresh-sidebar');
-    expect(navigationLabels())->not->toContain('Navigation Visibility Target');
+    expect(navigationLabels())->toContain('Navigation Visibility Target')
+        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())
+        ->not->toContain('Navigation Visibility Target')
+        ->and($page->fresh()->state)->toBe('hidden');
 });
 
 it('hides Home in both navigation projections immediately on Skip Home, then restores it', function (): void {
@@ -110,4 +113,56 @@ it('does not refresh the Sidebar for filter changes or an unchanged page mutatio
     $component->set('search', '');
     $component->call('convertSectionType', (int) $page->getKey(), SiteSectionType::CustomPage->value)
         ->assertNotDispatched('refresh-sidebar');
+});
+
+
+it('adds unpublished Pages via the real dialog and refreshes the editorial Sidebar immediately', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    $cases = [
+        ['type' => SiteSectionType::CustomPage->value, 'name' => 'Fresh Draft Page', 'slug' => 'fresh-draft-page'],
+        ['type' => SiteSectionType::Journal->value, 'name' => 'Fresh Draft Journal', 'slug' => 'fresh-draft-journal', 'template' => 'blog'],
+        ['type' => SiteSectionType::NavigationNode->value, 'name' => 'Fresh Draft Group'],
+    ];
+
+    foreach ($cases as $data) {
+        $label = $data['name'];
+        expect(navigationLabels())->not->toContain($label);
+
+        Livewire::test(SitePages::class)
+            ->mountAction('addPage')
+            ->fillForm($data)
+            ->callMountedAction()
+            ->assertHasNoFormErrors()
+            ->assertDispatched('refresh-sidebar');
+
+        $created = SiteSection::query()->where('title', $label)->firstOrFail();
+        expect($created->getAttribute('state'))->toBe('hidden')
+            ->and(navigationLabels())->toContain($label)
+            ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain($label);
+    }
+});
+
+it('keeps the new sidebar draft after opening Pages again and updates its published state without duplicating it', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $editor = app(SiteSectionEditorialService::class);
+    $draft = $editor->createCustomPage('Live Draft', 'live-draft');
+
+    expect(navigationLabels())->toContain('Live Draft');
+    expect(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain('Live Draft');
+
+    Livewire::test(SitePages::class)
+        ->call('toggleSectionState', (int) $draft->getKey())
+        ->assertDispatched('refresh-sidebar');
+
+    expect(navigationLabels())->toContain('Live Draft')
+        ->and(array_count_values(navigationLabels())['Live Draft'])->toBe(1)
+        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain('Live Draft');
+
+    Livewire::test(SitePages::class)
+        ->call('toggleSectionNavigation', (int) $draft->getKey())
+        ->assertDispatched('refresh-sidebar');
+
+    expect(navigationLabels())->toContain('Live Draft')
+        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->toContain('Live Draft');
 });

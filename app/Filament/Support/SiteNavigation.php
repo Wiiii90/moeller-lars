@@ -21,10 +21,11 @@ final class SiteNavigation
     public function items(): array
     {
         /** @var EloquentCollection<int, SiteSection> $sections */
+        // The admin tree is an editorial workspace, not the public menu.
+        // Newly created drafts and pages excluded from public navigation must
+        // remain accessible here immediately after their Pages mutation.
         $sections = SiteSection::query()
             ->with('customPageSetting')
-            ->where('state', 'published')
-            ->where('show_in_navigation', true)
             ->when(
                 $this->home->skipEnabled(),
                 static fn ($query) => $query->where('type', '<>', SiteSectionType::Home->value),

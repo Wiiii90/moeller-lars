@@ -16,13 +16,15 @@ it('uses Filament built-in sidebar hydration rather than a second navigation run
     expect(substr_count($pages, "\$this->dispatch('refresh-sidebar');"))->toBe(1);
 
     expect($sidebarNavigation)
-        ->toContain("->where('state', 'published')")
-        ->toContain("->where('show_in_navigation', true)")
+        ->not->toContain("->where('state', 'published')")
+        ->not->toContain("->where('show_in_navigation', true)")
         ->toContain('$this->home->skipEnabled()')
         ->toContain("->orderBy('position')")
         ->not->toContain('wire:poll');
 
     expect($publicNavigation)
+        ->toContain("->where('show_in_navigation', true)")
+        ->toContain("->where('state', 'published')")
         ->toContain('$this->home->skipEnabled()')
         ->toContain("->where('type', '<>', SiteSectionType::Home->value)");
 
