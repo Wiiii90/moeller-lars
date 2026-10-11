@@ -6,11 +6,13 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaIngestService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
@@ -42,23 +44,38 @@ trait GalleryWorkspaceArtworkDialogs
                     $this->assertUploadIsPrimaryMedia($upload);
                 }
 
+                if (filled($data['primary_alt_text'] ?? null) && ! $upload && $assetId <= 0) {
+                    throw ValidationException::withMessages([
+                        'primary_alt_text' => 'Choose or upload primary media before entering ALT text.',
+                    ]);
+                }
+
+                // Uploads have an independent Storage lifecycle and must
+                // remain valid, reusable files if Artwork validation fails.
+                // Artwork creation, primary linkage and its ALT override are
+                // one canonical DB mutation, preventing orphan Gallery drafts.
+                $asset = $upload instanceof TemporaryUploadedFile
+                    ? app(MediaIngestService::class)->ingest($upload)
+                    : ($assetId > 0 ? MediaAsset::query()->findOrFail($assetId) : null);
                 $payload = $this->normalizeArtworkFormData($data);
-                $artwork = app(ArtworkDraftService::class)->create($payload);
 
-                if ($upload instanceof TemporaryUploadedFile) {
-                    app(ArtworkPrimaryMediaService::class)->attachUpload($artwork, $upload);
-                } elseif ($assetId > 0) {
-                    /** @var MediaAsset $asset */
-                    $asset = MediaAsset::query()->findOrFail($assetId);
-                    app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
-                }
+                DB::transaction(function () use ($payload, $asset, $data, $upload): void {
+                    $artwork = app(ArtworkDraftService::class)->create($payload);
+                    if ($asset instanceof MediaAsset) {
+                        app(ArtworkPrimaryMediaService::class)->attachAsset(
+                            $artwork,
+                            $asset,
+                            recordIngest: $upload instanceof TemporaryUploadedFile,
+                        );
+                    }
 
-                if (filled($data['primary_alt_text'] ?? null)) {
-                    app(MediaAssetEditorialService::class)->updatePrimaryAltOverride(
-                        $artwork,
-                        (string) $data['primary_alt_text'],
-                    );
-                }
+                    if (filled($data['primary_alt_text'] ?? null)) {
+                        app(MediaAssetEditorialService::class)->updatePrimaryAltOverride(
+                            $artwork,
+                            (string) $data['primary_alt_text'],
+                        );
+                    }
+                });
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
