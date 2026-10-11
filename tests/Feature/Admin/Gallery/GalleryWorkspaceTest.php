@@ -6,7 +6,9 @@ use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
+use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\PublicMedia;
+use App\Filament\Support\ArtworkEditDialog;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Support\AdminActivityFeed;
@@ -441,4 +443,123 @@ it('renders a published video artwork through the public viewer with native cont
         ->assertSee('<video', false)
         ->assertSee('controls', false)
         ->assertDontSee('autoplay', false);
+});
+
+
+it('cleans Gallery membership when a shared primary file is deleted directly from Storage', function (): void {
+    $firstGallery = polishGallery();
+    $secondGallery = polishGallery();
+    $shared = polishAsset();
+    $other = polishAsset();
+    $first = polishArtwork($firstGallery, ['position' => 0]);
+    $kept = polishArtwork($firstGallery, ['position' => 1]);
+    $second = polishArtwork($secondGallery, ['position' => 0]);
+    polishPrimary($first, $shared);
+    polishPrimary($second, $shared);
+    polishPrimary($kept, $other);
+    polishThumbnail($shared);
+    polishThumbnail($other);
+
+    app(ArtworkPublicationService::class)->publish($first);
+    app(ArtworkPublicationService::class)->publish($second);
+    app(ArtworkPublicationService::class)->publish($kept);
+
+    // This is the Storage domain entry point, not the Gallery delete Action.
+    app(MediaAssetEditorialService::class)->delete($shared);
+
+    expect($shared->fresh()->state)->toBe('deleted')
+        ->and($first->fresh()->state)->toBe('draft')
+        ->and($second->fresh()->state)->toBe('draft')
+        ->and($first->fresh()->artwork_category_id)->toBeNull()
+        ->and($second->fresh()->artwork_category_id)->toBeNull()
+        ->and(ArtworkMedia::query()->where('media_asset_id', $shared->getKey())->exists())->toBeFalse()
+        ->and($kept->fresh()->artwork_category_id)->toBe($firstGallery->getKey())
+        ->and((int) $kept->fresh()->position)->toBe(0)
+        ->and($other->fresh()->state)->toBe('available');
+
+    $this->get(route('preview.site.section', ['section' => $firstGallery->slug]))
+        ->assertOk()
+        ->assertSee($kept->title)
+        ->assertDontSee($first->title);
+});
+
+it('renders previews with incomplete drafts and invalid legacy primary rows without a 500', function (): void {
+    $gallery = polishGallery();
+    $broken = polishArtwork($gallery, ['title' => 'No primary media', 'position' => 0]);
+    $missingAlt = polishArtwork($gallery, ['title' => 'No image ALT text', 'position' => 1]);
+    $asset = polishAsset('image/jpeg', '');
+    polishThumbnail($asset);
+    polishPrimary($missingAlt, $asset);
+    $valid = polishArtwork($gallery, ['title' => 'Valid visible artwork', 'position' => 2]);
+    $video = polishAsset('video/mp4', 'Accessible moving-image description');
+    polishPrimary($valid, $video);
+
+    // Simulate a legacy published row that no longer has a primary usage.
+    $broken->forceFill(['state' => 'published'])->save();
+
+    $this->get(route('preview.site.section', ['section' => $gallery->slug]))
+        ->assertOk()
+        ->assertSee('Valid visible artwork')
+        ->assertDontSee('No primary media')
+        ->assertDontSee('No image ALT text');
+});
+
+it('edits per-artwork ALT text and publishes an uploaded image without changing shared Storage metadata', function (): void {
+    $gallery = polishGallery();
+    $artwork = polishArtwork($gallery);
+    $image = polishAsset('image/jpeg', '');
+    polishThumbnail($image);
+    polishPrimary($artwork, $image);
+    $publication = app(ArtworkPublicationService::class);
+
+    expect($publication->mediaReady($image))->toBeFalse();
+    expect(fn () => $publication->publish($artwork))->toThrow(ValidationException::class);
+
+    $dialog = app(ArtworkEditDialog::class);
+    $form = $dialog->fill($artwork);
+    expect($form['primary_alt_text'])->toBeNull();
+    $form['primary_alt_text'] = 'Oil painting depicting figures under tangled branches';
+
+    expect($dialog->save($artwork, $form))->toBeTrue()
+        ->and($dialog->save($artwork, $form))->toBeFalse()
+        ->and($image->fresh()->alt_text)->toBe('');
+
+    $primary = $artwork->artworkMedia()->where('role', 'primary')->firstOrFail();
+    expect($primary->alt_text_override)->toBe($form['primary_alt_text'])
+        ->and($publication->mediaReady($image, $primary->alt_text_override))->toBeTrue();
+
+    $published = $publication->publish($artwork);
+    expect($published->state)->toBe('published')
+        ->and(app(PublicMedia::class)->altText($published))->toBe($form['primary_alt_text']);
+
+    $this->get(route('preview.site.section', ['section' => $gallery->slug]))
+        ->assertOk()
+        ->assertSee($artwork->title);
+});
+
+it('offers per-artwork ALT text in the Gallery create and edit dialogs without changing the shared file', function (): void {
+    $gallery = polishGallery();
+    $asset = polishAsset('image/jpeg', '');
+    polishThumbnail($asset);
+    polishUnavailableGalleryAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('addArtwork')
+        ->fillForm([
+            'title' => 'New publishable draft',
+            'slug' => 'new-publishable-draft',
+            'work_date' => null,
+            'dimension_unit' => 'cm',
+            'primary_media_asset_id' => $asset->getKey(),
+            'primary_alt_text' => 'Painted landscape with bright green hills',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $artwork = Artwork::query()->where('slug', 'new-publishable-draft')->firstOrFail();
+    expect($artwork->state)->toBe('draft')
+        ->and($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
+            ->toBe('Painted landscape with bright green hills');
+
+    expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
