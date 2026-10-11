@@ -26,12 +26,12 @@
 
 @if ($href !== null)
     <a href="{{ $href }}" {{ $actionAttributes->class($classes) }}>
-        <x-filament::icon :icon="$rowAction->icon()->mini()" class="admin-action__icon" />
+        <x-filament::icon :icon="$rowAction->icon()->mini()" :size="\Filament\Support\Enums\IconSize::Small" class="admin-action__icon" />
         <span class="admin-action__label">{{ $resolvedLabel }}</span>
     </a>
 @else
     <button type="button" {{ $actionAttributes->class($classes) }} @disabled($disabled)>
-        <x-filament::icon :icon="$rowAction->icon()->mini()" class="admin-action__icon" />
+        <x-filament::icon :icon="$rowAction->icon()->mini()" :size="\Filament\Support\Enums\IconSize::Small" class="admin-action__icon" />
         <span class="admin-action__label">{{ $resolvedLabel }}</span>
     </button>
 @endif

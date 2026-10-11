@@ -134,10 +134,13 @@
     gap: .3rem;
 }
 
+/* Match Filament's IconSize::Small (size-4 = 1rem). The component
+ * explicitly owns icon size, so switching a row action's semantic Heroicon
+ * can never grow the action button or its table row. */
 .admin-action__icon {
-    width: .9rem;
-    height: .9rem;
-    flex: 0 0 .9rem;
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 1rem;
 }
 
 .admin-order-action--labeled {
