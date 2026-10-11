@@ -465,8 +465,8 @@ Required behavior:
 - the blocking backdrop covers the complete application viewport, including Topbar and Sidebar. Light and Dark may use different scrim opacity, but never different geometry. The dialog window itself is independently bounded to the current admin content frame below the topbar and stays inside that frame's canonical inline padding;
 - desktop workspace centering must never use a transformed `.fi-main` or viewport-width (`vw`) arithmetic. It is derived from the actual post-sidebar Main/scrollport width so adding or removing a classic vertical scrollbar cannot alter the content midpoint or create asymmetric inline spacing; transformed ancestors would also trap Filament's fixed modal layer and make dialog position depend on document scroll;
 - Filament alone owns blocking-dialog document scroll lock, Open/Close/Focus/Escape/Destroy and lock cleanup. Project JavaScript may measure dialog placement and reset dialog-internal scroll, but must not freeze/restore document scroll, intercept global wheel/touch/keyboard scrolling, mutate root overflow/padding or maintain another lock class/counter;
-- every open remeasures the current Main frame and resets retained modal/window/content scroll positions before interaction, so reopening after scrolling never resumes at an old internal position;
-- centered/bounded modal;
+- each actual Filament `x-modal-opened` transition measures the current Main frame once and resets the canonical `.fi-modal-content` scroller. Repeated `open-modal` signals for an already-mounted Action must never remeasure or move it;
+- horizontally centered, viewport-bounded modal with a stable top position within the admin content frame. Changing conditional fields may change dialog height, never its top position;
 - internal scrolling for long content;
 - reachable header/footer/actions;
 - Escape/close;
