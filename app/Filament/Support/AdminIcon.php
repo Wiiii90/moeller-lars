@@ -46,7 +46,7 @@ enum AdminIcon: string
     case OpenEntry = 'heroicon-o-inbox-arrow-down';
     case Redirect = 'heroicon-o-arrow-right';
     case SkipHome = 'admin-skip-home';
-    case ShowHome = 'admin-show-home';
+    case ShowHome = 'heroicon-o-no-symbol';
     case Publish = 'heroicon-o-eye';
     case Unpublish = 'heroicon-o-eye-slash';
     case Edit = 'heroicon-o-pencil-square';

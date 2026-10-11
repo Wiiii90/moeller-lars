@@ -35,7 +35,6 @@ it('derives compact admin icons from central semantics with explicit solid and c
         $customIcons = [
             AdminIcon::NavigationNode->value => 'admin-node',
             AdminIcon::SkipHome->value => 'admin-skip-home',
-            AdminIcon::ShowHome->value => 'admin-show-home',
         ];
 
         if (array_key_exists($icon->value, $customIcons)) {
@@ -48,6 +47,11 @@ it('derives compact admin icons from central semantics with explicit solid and c
         expect($icon->value)->toStartWith('heroicon-o-')
             ->and($icon->mini())->toBe(str_replace('heroicon-o-', 'heroicon-m-', $icon->value));
     }
+});
+
+it('uses the normal-sized Heroicon No Symbol for the Show Home action', function (): void {
+    expect(AdminIcon::ShowHome->value)->toBe('heroicon-o-no-symbol')
+        ->and(AdminIcon::ShowHome->mini())->toBe('heroicon-m-no-symbol');
 });
 
 it('keeps static admin navigation icons in the central registry', function (): void {
