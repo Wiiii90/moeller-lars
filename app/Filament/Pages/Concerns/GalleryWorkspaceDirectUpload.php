@@ -17,6 +17,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -142,10 +143,12 @@ trait GalleryWorkspaceDirectUpload
                                 ->label('Title')
                                 ->required()
                                 ->maxLength(240),
-                            TextInput::make('primary_alt_text')
-                                ->label('ALT text')
+                            Textarea::make('primary_alt_text')
+                                ->label('Primary media ALT text')
+                                ->rows(2)
                                 ->maxLength(500)
-                                ->helperText('Required to publish unless this Media File already has ALT text.'),
+                                ->columnSpanFull()
+                                ->helperText('Describe the image or video for screen readers. Required to publish unless the Media File already has ALT text.'),
                         ])
                         ->columns(3)
                         ->addable(false)
