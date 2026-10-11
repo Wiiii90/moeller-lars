@@ -3,32 +3,20 @@
 namespace App\Filament\Resources\Artworks;
 
 use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
-use App\Filament\Resources\Artworks\Pages\ManageGalleryArtworks;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
-use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
-use App\Filament\Support\AdminForm;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use BackedEnum;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 use UnitEnum;
 
 class ArtworkResource extends Resource
@@ -68,75 +56,7 @@ class ArtworkResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            AdminForm::section('Artwork')
-                ->schema([
-                    TextInput::make('title')
-                        ->required()
-                        ->maxLength(240)
-                        ->live(onBlur: true)
-                        ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
-                            if (blank($get('slug')) && filled($state)) {
-                                $set('slug', Str::slug($state));
-                            }
-                        }),
-                    TextInput::make('slug')
-                        ->label('Public URL slug')
-                        ->required()
-                        ->maxLength(180)
-                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                        ->unique('artworks', 'slug', ignoreRecord: true)
-                        ->disabled(fn (?Model $record): bool => $record?->getAttribute('published_at') !== null),
-                    Select::make('artwork_category_id')
-                        ->label('Gallery')
-                        ->relationship('category', 'name')
-                        ->required(fn (string $operation): bool => $operation === 'create')
-                        ->searchable()
-                        ->preload()
-                        ->helperText(fn (string $operation): ?string => $operation === 'create'
-                            ? null
-                            : 'A draft can stay unassigned after Remove from Gallery.')
-                        ->default(function (): ?int {
-                            $galleryId = request()->integer('gallery');
-                            if ($galleryId <= 0) {
-                                return null;
-                            }
-
-                            return ArtworkCategory::query()->whereKey($galleryId)->exists() ? $galleryId : null;
-                        }),
-                    ArtworkMaterialSelect::make(),
-                    TextInput::make('dimensions')->nullable()->maxLength(240),
-                    Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
-                ])
-                ->columns(2),
-            AdminForm::section('Primary media')
-                ->schema([
-                    FileUpload::make('primary_media')
-                        ->label('Primary image or video')
-                        ->storeFiles(false)
-                        ->acceptedFileTypes([...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
-                        ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
-                        ->helperText('Optional while drafting. Primary media may be JPEG, PNG, WebP, MP4 or WebM; audio is not allowed.'),
-                ])
-                ->visible(fn (string $operation): bool => $operation === 'create'),
-            AdminForm::section('Date and homepage')
-                ->schema([
-                    TextInput::make('work_year')
-                        ->label('Year')
-                        ->numeric()
-                        ->minValue(1000)
-                        ->maxValue(9999)
-                        ->nullable(),
-                    DatePicker::make('work_date')
-                        ->label('Exact date')
-                        ->helperText('If set, the year is derived from this date.')
-                        ->nullable(),
-                    Toggle::make('featured_on_home')
-                        ->label('Feature on home when newest year is shared')
-                        ->default(false),
-                ])
-                ->columns(2),
-        ]);
+        return $schema->components(app(ArtworkEditDialog::class)->schema(includeGalleryAssignment: true));
     }
 
     public static function getRelations(): array
@@ -149,9 +69,7 @@ class ArtworkResource extends Resource
     public static function getPages(): array
     {
         return [
-            'create' => CreateArtwork::route('/create'),
-            'gallery' => ManageGalleryArtworks::route('/gallery/{gallery}'),
-            'view' => ViewArtwork::route('/{record}'),
+             'view' => ViewArtwork::route('/{record}'),
             'edit' => EditArtwork::route('/{record}/edit'),
         ];
     }

@@ -611,6 +611,61 @@ it('stores per-artwork ALT for all images in the existing batch direct-upload ac
         ->toBe('A painting with overlapping tree branches');
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
+it('edits the ALT description through the Gallery Edit action while retaining shared Storage ALT', function (): void {
+    $gallery = polishGallery();
+    $artwork = polishArtwork($gallery);
+    $asset = polishAsset('image/jpeg', 'Storage-level description');
+    polishThumbnail($asset);
+    polishPrimary($artwork, $asset);
+    polishUnavailableGalleryAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->fillForm([
+            ...app(ArtworkEditDialog::class)->fill($artwork),
+            'primary_alt_text' => 'A ceramic sculpture beside a dark wall',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
+        ->toBe('A ceramic sculpture beside a dark wall')
+        ->and($asset->fresh()->alt_text)->toBe('Storage-level description')
+        ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
+});
+
+it('edits an unassigned draft and reassigns it using the shared Artwork editor', function (): void {
+    $gallery = polishGallery();
+    $artwork = polishArtwork(null);
+    $asset = polishAsset('image/jpeg', '');
+    polishThumbnail($asset);
+    polishPrimary($artwork, $asset);
+    $dialog = app(ArtworkEditDialog::class);
+
+    $form = $dialog->fill($artwork);
+    expect($form['artwork_category_id'])->toBeNull();
+    $form['artwork_category_id'] = $gallery->getKey();
+    $form['primary_alt_text'] = 'A bronze statue in profile';
+
+    expect($dialog->save($artwork, $form, allowGalleryAssignment: true))->toBeTrue()
+        ->and((int) $artwork->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
+        ->and($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
+            ->toBe('A bronze statue in profile')
+        ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
+});
+
+it('updates an unassigned artwork without silently attaching it to a Gallery', function (): void {
+    $artwork = polishArtwork(null);
+    $dialog = app(ArtworkEditDialog::class);
+
+    $form = $dialog->fill($artwork);
+    $form['title'] = 'Updated unassigned draft';
+
+    expect($dialog->save($artwork, $form, allowGalleryAssignment: true))->toBeTrue()
+        ->and($artwork->fresh()->artwork_category_id)->toBeNull()
+        ->and($artwork->fresh()->title)->toBe('Updated unassigned draft');
+});
+
 it('ingests a real image through Add artwork and publishes its primary ALT description', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = polishGallery();

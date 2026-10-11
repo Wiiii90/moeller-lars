@@ -128,7 +128,7 @@ final class ArtworkDraftService
         $payload = array_intersect_key($data, array_flip($allowed));
 
         $validator = Validator::make($payload, [
-            'artwork_category_id' => ['required', 'integer', 'min:1'],
+            'artwork_category_id' => [$artwork === null ? 'required' : 'nullable', 'integer', 'min:1'],
             'slug' => [
                 'required',
                 'string',

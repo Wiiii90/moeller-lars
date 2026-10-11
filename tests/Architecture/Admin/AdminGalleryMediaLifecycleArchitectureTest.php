@@ -43,3 +43,15 @@ it('offers primary ALT descriptions in all Gallery editors and honors overrides 
         ->toContain("getAttribute('alt_text_override')");
     expect($readiness)->toContain("getAttribute('alt_text_override')");
 });
+
+it('uses one Artwork editing schema and writer for Gallery dialogs and deep-link editor pages', function (): void {
+    $resource = file_get_contents(app_path('Filament/Resources/Artworks/ArtworkResource.php'));
+    $editor = file_get_contents(app_path('Filament/Resources/Artworks/Pages/EditArtwork.php'));
+    $gallery = file_get_contents(app_path('Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php'));
+
+    expect($resource)->toContain('ArtworkEditDialog::class')->not->toContain('CreateArtwork::route');
+    expect($editor)->toContain('ArtworkEditDialog::class')->not->toContain('artwork->fill($data)');
+    expect($gallery)->toContain('ArtworkEditDialog::class');
+    expect(file_exists(app_path('Filament/Resources/Artworks/Pages/CreateArtwork.php')))->toBeFalse();
+    expect(file_exists(app_path('Filament/Resources/Artworks/Pages/ManageGalleryArtworks.php')))->toBeFalse();
+});

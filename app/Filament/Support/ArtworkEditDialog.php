@@ -4,12 +4,14 @@ namespace App\Filament\Support;
 
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -34,6 +36,7 @@ final class ArtworkEditDialog
         return [
             'title' => $artwork->getAttribute('title'),
             'slug' => $artwork->getAttribute('slug'),
+            'artwork_category_id' => $artwork->getAttribute('artwork_category_id'),
             'medium' => $artwork->getAttribute('medium'),
             'dimension_height' => $dimensions['height'],
             'dimension_width' => $dimensions['width'],
@@ -50,7 +53,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(): array
+    public function schema(bool $includeGalleryAssignment = false): array
     {
         return [
             Grid::make()
@@ -71,6 +74,15 @@ final class ArtworkEditDialog
                         ->maxLength(180)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                         ->helperText('The URL is locked after first publication.'),
+                    ...($includeGalleryAssignment ? [
+                        Select::make('artwork_category_id')
+                            ->label('Gallery')
+                            ->relationship('category', 'name')
+                            ->nullable()
+                            ->searchable()
+                            ->preload()
+                            ->helperText('An unpublished artwork may remain unassigned. Unpublish before removing it from a Gallery.'),
+                    ] : []),
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
@@ -128,7 +140,7 @@ final class ArtworkEditDialog
     }
 
     /** @param array<string, mixed> $data */
-    public function save(Artwork $artwork, array $data): bool
+    public function save(Artwork $artwork, array $data, bool $allowGalleryAssignment = false): bool
     {
         $currentPrimary = $artwork->artworkMedia()->where('role', 'primary')->first();
         $currentAssetId = $currentPrimary === null ? 0 : (int) $currentPrimary->getAttribute('media_asset_id');
@@ -139,6 +151,11 @@ final class ArtworkEditDialog
         ];
         $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
         $upload = $data['primary_upload'] ?? null;
+        $currentGalleryId = $artwork->getAttribute('artwork_category_id');
+        $currentGalleryId = $currentGalleryId === null ? null : (int) $currentGalleryId;
+        $requestedGalleryId = $allowGalleryAssignment && filled($data['artwork_category_id'] ?? null)
+            ? (int) $data['artwork_category_id']
+            : ($allowGalleryAssignment ? null : $currentGalleryId);
 
         if ($upload !== null && ! $upload instanceof TemporaryUploadedFile) {
             throw ValidationException::withMessages(['primary_upload' => 'Choose a valid image or video file.']);
@@ -158,8 +175,22 @@ final class ArtworkEditDialog
             ? app(MediaIngestService::class)->ingest($upload)
             : null;
 
-        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentAssetId, $currentPrimary): void {
-            app(ArtworkDraftService::class)->update($artwork, $this->normalizeArtworkFormData($artwork, $data));
+        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentAssetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment): void {
+            if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
+                $assignments = app(ArtworkGalleryAssignmentService::class);
+                if ($requestedGalleryId === null) {
+                    $assignments->detach($artwork);
+                } else {
+                    /** @var ArtworkCategory $gallery */
+                    $gallery = ArtworkCategory::query()->findOrFail($requestedGalleryId);
+                    $assignments->reassign($artwork, $gallery);
+                }
+            }
+
+            app(ArtworkDraftService::class)->update(
+                $artwork,
+                $this->normalizeArtworkFormData($artwork, $data, $requestedGalleryId),
+            );
 
             $primaryMedia = app(ArtworkPrimaryMediaService::class);
             if ($uploadedAsset instanceof MediaAsset) {
@@ -202,14 +233,9 @@ final class ArtworkEditDialog
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function normalizeArtworkFormData(Artwork $artwork, array $data): array
+    private function normalizeArtworkFormData(Artwork $artwork, array $data, ?int $galleryId): array
     {
-        $galleryId = filter_var($artwork->getAttribute('artwork_category_id'), FILTER_VALIDATE_INT);
-        if ($galleryId === false || $galleryId <= 0) {
-            throw ValidationException::withMessages(['artwork' => 'Artwork must belong to a Gallery before it can be edited here.']);
-        }
-
-        $data['artwork_category_id'] = (int) $galleryId;
+        $data['artwork_category_id'] = $galleryId;
         $data['work_date'] = $data['work_date'] ?? null;
         $data['medium'] = filled($data['medium'] ?? null) ? trim((string) $data['medium']) : null;
         $data['dimensions'] = ArtworkDimensions::compose(
