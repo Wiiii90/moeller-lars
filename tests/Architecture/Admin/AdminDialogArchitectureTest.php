@@ -155,6 +155,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('background: rgba(0, 0, 0, .56) !important')
         ->toContain('inset-block: var(--admin-dialog-layer-block-start) 0 !important')
         ->toContain('min-height: 0 !important')
+        ->toContain('grid-template-rows: 0 auto minmax(0, 1fr) !important;')
         ->toContain('overflow: hidden !important;')
         ->toContain('scrollbar-gutter: auto;')
         ->toContain('width: min(var(--admin-dialog-width), 100%)')

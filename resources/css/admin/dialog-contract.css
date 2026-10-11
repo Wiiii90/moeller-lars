@@ -28,6 +28,11 @@ html.fi.dark .fi-modal.admin-dialog-frame > .fi-modal-close-overlay {
     inset-inline: var(--admin-dialog-layer-inline-start) var(--admin-dialog-layer-inline-end) !important;
     box-sizing: border-box;
     min-height: 0 !important;
+    /* Filament's 1fr/auto/3fr tracks center an auto-height window by its
+     * current height. A conditional field changes that height, moving the
+     * dialog. Keep Filament's native row 2, but anchor its top in the shared
+     * admin content frame; the last track absorbs remaining space. */
+    grid-template-rows: 0 auto minmax(0, 1fr) !important;
     overflow: hidden !important;
     overscroll-behavior: contain;
     padding-block: 1rem !important;
