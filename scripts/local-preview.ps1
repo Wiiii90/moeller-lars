@@ -17,11 +17,8 @@ if ($LASTEXITCODE) { throw 'Git SHA konnte nicht gelesen werden' }
 
 Write-Host "Building dev $($env:APP_GIT_SHA.Substring(0, 7))"
 
-docker compose --progress plain build preview
-if ($LASTEXITCODE) {
-    $PreviewBuildExitCode = $LASTEXITCODE
-    throw "Lokaler Preview-Build fehlgeschlagen (Docker Compose Exitcode $PreviewBuildExitCode). Der urspruengliche Fehler steht im Build-Log oberhalb dieser Meldung. Alter Preview-Container bleibt unangetastet."
-}
+docker compose build preview
+if ($LASTEXITCODE) { throw 'Lokaler Preview-Build fehlgeschlagen. Alter Preview-Container bleibt unangetastet.' }
 
 docker volume create moeller-lars_postgres_data | Out-Null
 if ($LASTEXITCODE) { throw 'Lokales PostgreSQL-Volume konnte nicht bereitgestellt werden.' }
