@@ -35,6 +35,28 @@ test('Header Notification tracks the actual content edges and User stays outside
         expect(bounds.b.right, 'User outside scrollport at ' + width).toBeLessThanOrEqual(bounds.viewport);
     }
 
+    // Burger shell: the header uses separate Burger/User rails, while page
+    // content below reclaims the full viewport width.
+    for (const width of [900, 640, 390]) {
+        await page.setViewportSize({ width, height: 900 });
+        const bounds = await page.evaluate(() => {
+            const n = document.querySelector('[data-admin-header-notification]');
+            const b = document.querySelector('.fi-topbar-end .fi-user-menu-trigger');
+            if (!n || !b) return null;
+            n.hidden = false;
+            n.dataset.phase = 'idle';
+            return {
+                n: n.getBoundingClientRect().toJSON(),
+                b: b.getBoundingClientRect().toJSON(),
+                viewport: window.innerWidth,
+            };
+        });
+        expect(bounds, 'missing Header/User in Burger mode at ' + width).not.toBeNull();
+        expect(bounds.n.left, 'Header entered Burger control rail at ' + width).toBeGreaterThanOrEqual(63);
+        expect(bounds.b.left - bounds.n.right, 'Header entered User control rail at ' + width).toBeGreaterThanOrEqual(15);
+        expect(bounds.b.right, 'User outside viewport at ' + width).toBeLessThanOrEqual(bounds.viewport);
+    }
+
     await page.goto('/admin/dashboard');
     await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible();
     const bounds = await page.evaluate(() => {
