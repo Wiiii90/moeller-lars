@@ -83,15 +83,21 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
                 footerRight: footer.right,
                 lineCount: first.querySelector('.artwork-label__heading').children.length,
                 actualTitle: first.querySelector('.artwork-label__title').textContent.trim(),
+                headingMinimum: getComputedStyle(first.querySelector('.artwork-label__heading')).minHeight,
+                labelPadding: parseFloat(labelStyle.paddingLeft),
+                noteStyle: getComputedStyle(first.querySelector('.artwork-label__note')).fontStyle,
             };
         });
 
         expect(state.border, 'framed label at ' + width).toBe('1px');
         expect(state.radius).toBe('0px');
         expect(parseFloat(state.padding), 'framed label padding').toBeGreaterThan(0);
-        expect(state.background).toBe('rgb(255, 255, 255)');
+        expect(state.background).toBe('rgb(255, 253, 249)');
         expect(state.actualTitle).toBe('Grüner Planet (in cooperation with Krys Ubo)');
         expect(state.lineCount).toBe(2);
+        expect(state.headingMinimum).toBe('auto');
+        expect(state.labelPadding).toBeGreaterThanOrEqual(11);
+        expect(state.noteStyle).toBe('normal');
         expect(state.actionBorder).toBe('1px');
         expect(state.actionGap).toBe('0px');
         expect(state.actionBackground).toBe('rgb(255, 255, 255)');

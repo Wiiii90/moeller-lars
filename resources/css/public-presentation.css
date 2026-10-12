@@ -23,8 +23,8 @@
     --public-muted: #777;
     --public-active: #746a60;
     --public-divider: #d8d5d2;
-    --public-artwork-line: #cbc6c1;
-    --public-artwork-line-hover: #928b84;
+    --public-artwork-line: #c7c0b5;
+    --public-artwork-line-hover: #81786f;
     --public-divider-width: 1px;
     --public-header-separator: rgba(255, 255, 255, .72);
 }
@@ -574,11 +574,11 @@ body {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    padding: .6rem .7rem .58rem;
+    padding: .74rem .85rem .7rem;
     border: 1px solid var(--public-artwork-line);
     border-radius: 0;
-    background: #fff;
-    color: #484440;
+    background: #fffdf9;
+    color: #403b36;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     line-height: 1.38;
     transition: border-color .14s ease;
@@ -597,24 +597,23 @@ body {
 .artwork-label__heading {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    min-height: 2.15rem;
-    align-items: baseline;
-    gap: .7rem;
+    align-items: start;
+    gap: .8rem;
 }
 
 .artwork-label__title {
     min-width: 0;
-    color: #3d3935;
-    font-size: .78rem;
+    color: #332f2b;
+    font-size: .8125rem;
     font-weight: 500;
-    letter-spacing: .005em;
-    line-height: 1.38;
+    letter-spacing: 0;
+    line-height: 1.4;
     overflow-wrap: break-word;
 }
 
 .artwork-label__year {
-    color: #746e69;
-    font-size: .67rem;
+    color: #746c64;
+    font-size: .6875rem;
     font-weight: 400;
     font-variant-numeric: tabular-nums;
     letter-spacing: .015em;
@@ -622,13 +621,13 @@ body {
 
 .artwork-label__facts {
     display: flex;
-    margin-top: .31rem;
+    margin-top: .48rem;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: .15rem .7rem;
-    color: #716c68;
-    font-size: .66rem;
-    line-height: 1.42;
+    gap: .15rem .8rem;
+    color: #655f59;
+    font-size: .6875rem;
+    line-height: 1.45;
 }
 
 .artwork-label__dimensions {
@@ -637,11 +636,11 @@ body {
 }
 
 .artwork-label__note {
-    margin-top: .35rem;
-    color: #726d69;
-    font-size: .64rem;
-    font-style: italic;
-    line-height: 1.48;
+    margin-top: .45rem;
+    color: #706960;
+    font-size: .6875rem;
+    font-style: normal;
+    line-height: 1.5;
 }
 
 /* The adjacent actions form one rectangular instrument with shared borders.
