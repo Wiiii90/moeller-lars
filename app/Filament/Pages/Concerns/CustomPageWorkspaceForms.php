@@ -31,21 +31,30 @@ trait CustomPageWorkspaceForms
                     ->fill())
             : Hidden::make('type')->required();
 
+        $statusField = Select::make('publication_state')
+            ->label('Status')
+            ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+            ->default('published')
+            ->required();
+
+        // Create keeps Type and Status side by side. In Edit, the hidden Type
+        // must not separate Status from the type-specific fields' two-column grid.
+        $dynamicFields = Grid::make()
+            ->columns(['md' => 2])
+            ->schema(fn (Get $get): array => [
+                ...($includeTypeSelect ? [] : [$statusField]),
+                ...$this->componentTypeFields((string) $get('type'), $includeTypeSelect),
+            ])
+            ->key('dynamicComponentFields')
+            ->columnSpanFull();
+
         return [
             Grid::make()
                 ->columns(['md' => 2])
                 ->schema([
                     $typeField,
-                    Select::make('publication_state')
-                        ->label('Status')
-                        ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                        ->default('published')
-                        ->required(),
-                    Grid::make()
-                        ->columns(['md' => 2])
-                        ->schema(fn (Get $get): array => $this->componentTypeFields((string) $get('type'), $includeTypeSelect))
-                        ->key('dynamicComponentFields')
-                        ->columnSpanFull(),
+                    ...($includeTypeSelect ? [$statusField] : []),
+                    $dynamicFields,
                 ]),
         ];
     }
