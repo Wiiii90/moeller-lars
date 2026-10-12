@@ -30,69 +30,66 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-it('shows exactly one notification and one mutation for a Home List child publication change', function (): void {
-    $settings = homeNotificationSettings([
-        ['type' => 'list', 'title' => 'CV', 'published' => true, 'items' => [
+it('persists Home List entries in the parent component editor with one notification', function (): void {
+    $settings = homeNotificationSettings([[
+        'type' => 'list', 'title' => 'CV', 'published' => true, 'items' => [
             ['title' => 'First', 'published' => true],
-        ]],
-    ]);
-    $page = Livewire::test(HomePresentation::class);
-    $beforeNotifications = AdminNotification::query()->count();
+        ],
+    ]]);
 
-    $page->call('publishHomeChild', 0, 'list', 0, false)
+    $page = Livewire::test(HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'list'])
+        ->assertMountedActionModalSee('List entries');
+    $beforeNotifications = AdminNotification::query()->count();
+    $page->fillForm([
+        'editor_kind' => 'list',
+        'list_title' => 'CV',
+        'items' => [['title' => 'First revised', 'published' => false]],
+    ])->callMountedAction()
+        ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification');
 
     $component = app(HomePresentationEditorialService::class)
         ->configuration($settings->fresh())['custom']['components'][0];
-    expect($component['items'][0]['published'])->toBeFalse()
+    expect($component['items'][0]['title'])->toBe('First revised')
+        ->and($component['items'][0]['published'])->toBeFalse()
         ->and(AdminNotification::query()->count())->toBe($beforeNotifications + 1);
 
     $activityCount = AuditEvent::query()->count();
     $notificationCount = AdminNotification::query()->count();
-    $page->call('publishHomeChild', 0, 'list', 0, false);
+    $page->callMountedAction();
     expect(AuditEvent::query()->count())->toBe($activityCount)
         ->and(AdminNotification::query()->count())->toBe($notificationCount);
 });
 
-it('notifies Home child ordering, edits and deletion through the one mutation owner', function (): void {
-    $settings = homeNotificationSettings([
-        ['type' => 'list', 'title' => 'CV', 'published' => true, 'items' => [
+it('reorders and removes Home List entries from its Edit dialog', function (): void {
+    $settings = homeNotificationSettings([[
+        'type' => 'list', 'title' => 'CV', 'published' => true, 'items' => [
             ['title' => 'First', 'published' => true],
             ['title' => 'Second', 'published' => true],
-        ]],
-    ]);
+        ],
+    ]]);
 
-    $page = Livewire::test(HomePresentation::class)
-        ->call('moveHomeChild', 0, 'list', 1, 'up')
-        ->assertDispatched('admin-header-notification');
-
-    $items = app(HomePresentationEditorialService::class)
-        ->configuration($settings->fresh())['custom']['components'][0]['items'];
-    expect($items[0]['title'])->toBe('Second');
-
-    $page->mountAction('editHomeChild', ['index' => 0, 'type' => 'list', 'child' => 0])
-        ->set('mountedActions.0.data.title', 'Second revised')
-        ->call('callMountedAction')
-        ->assertDispatched('admin-header-notification');
+    Livewire::test(HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'list'])
+        ->fillForm([
+            'editor_kind' => 'list',
+            'list_title' => 'CV',
+            'items' => [['title' => 'Second revised', 'published' => true]],
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
 
     $items = app(HomePresentationEditorialService::class)
         ->configuration($settings->fresh())['custom']['components'][0]['items'];
-    expect($items[0]['title'])->toBe('Second revised');
-
-    $page->call('unmountAction')
-        ->mountAction('deleteHomeChild', ['index' => 0, 'type' => 'list', 'child' => 1])
-        ->call('callMountedAction')
-        ->assertDispatched('admin-header-notification');
-
-    $items = app(HomePresentationEditorialService::class)
-        ->configuration($settings->fresh())['custom']['components'][0]['items'];
-    expect($items)->toHaveCount(1);
+    expect($items)->toHaveCount(1)
+        ->and($items[0]['title'])->toBe('Second revised');
 });
 
-it('notifies once when publishing a mixed Home component and child selection', function (): void {
+it('notifies once when publishing a mixed Home component and Contact child selection', function (): void {
     $settings = homeNotificationSettings([
-        ['type' => 'list', 'title' => 'CV', 'published' => true, 'items' => [
-            ['title' => 'One', 'published' => true],
+        ['type' => 'contact', 'published' => true, 'children' => [
+            ['type' => 'public_email', 'published' => true],
         ]],
         ['type' => 'divider', 'variant' => 'thin', 'published' => true],
     ]);
@@ -100,13 +97,13 @@ it('notifies once when publishing a mixed Home component and child selection', f
     $beforeNotifications = AdminNotification::query()->count();
     $page = Livewire::test(HomePresentation::class)
         ->set('selectedComponentTargets', ['1:divider'])
-        ->set('selectedHomeChildTargets', ['list:0:0'])
+        ->set('selectedHomeChildTargets', ['contact:0:public_email'])
         ->call('publishSelectedHomeItems', false)
         ->assertDispatched('admin-header-notification');
 
     $blocks = app(HomePresentationEditorialService::class)
         ->configuration($settings->fresh())['custom']['components'];
-    expect($blocks[0]['items'][0]['published'])->toBeFalse()
+    expect($blocks[0]['children'][0]['published'])->toBeFalse()
         ->and($blocks[1]['published'])->toBeFalse()
         ->and(AdminNotification::query()->count())->toBe($beforeNotifications + 1);
 
