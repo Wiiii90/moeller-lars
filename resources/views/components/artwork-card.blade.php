@@ -80,16 +80,16 @@
                 <nav class="artwork-card__actions" aria-label="Artwork navigation">
                     @if ($showCategoryLink && $category !== null)
                         <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}" aria-label="Open {{ $category->name }} gallery" title="{{ $category->name }} gallery">
-                            <span class="artwork-context-button__label">{{ $category->name }} gallery</span>
+                            <span class="artwork-context-button__label">{{ $category->name }}</span>
                         </a>
                     @endif
 
                     @if ($heroNavigation)
                         <button class="artwork-context-button artwork-context-button--step artwork-context-button--previous" type="button" data-home-hero-direction="previous" aria-label="Previous Hero artwork" title="Previous artwork">
-                            <x-public-icon name="chevron-left" /><span>Previous</span>
+                            <x-public-icon name="arrow-left" />
                         </button>
                         <button class="artwork-context-button artwork-context-button--step artwork-context-button--next" type="button" data-home-hero-direction="next" aria-label="Next Hero artwork" title="Next artwork">
-                            <span>Next</span><x-public-icon name="chevron-right" />
+                            <x-public-icon name="arrow-right" />
                         </button>
                     @endif
                 </nav>

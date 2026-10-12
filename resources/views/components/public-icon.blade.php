@@ -42,6 +42,9 @@
         @case('external-link')
             <path d="M14 4h6v6M20 4l-9 9M20 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6" />
             @break
+        @case('arrow-left')
+            <path d="M20 12H4m7-7-7 7 7 7" />
+            @break
         @case('arrow-right')
             <path d="M4 12h16m-7-7 7 7-7 7" />
             @break

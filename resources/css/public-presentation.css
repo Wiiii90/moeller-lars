@@ -404,7 +404,7 @@ body {
     font-family: var(--public-index-typeface);
     font-size: 2.05rem;
     font-weight: 400;
-    letter-spacing: -.035em;
+    letter-spacing: .045em;
     line-height: 1.1;
     text-transform: none;
     white-space: nowrap;
@@ -572,17 +572,17 @@ body {
 .artwork-card__footer,
 .artwork-detail__footer {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content;
-    margin-top: .88rem;
+    grid-template-columns: max-content minmax(0, 1fr);
+    margin-top: .78rem;
     align-items: end;
-    gap: .85rem;
+    gap: .8rem;
 }
 
 .artwork-label-trigger,
 .artwork-detail__footer > .artwork-label {
-    width: min(100%, 15.5rem);
+    width: min(100%, 14.25rem);
     min-width: 0;
-    max-width: 15.5rem;
+    max-width: 14.25rem;
     justify-self: start;
 }
 .artwork-label-trigger {
@@ -599,8 +599,8 @@ body {
     display: grid;
     width: 100%;
     min-width: 0;
-    padding: .44rem .6rem .48rem;
-    gap: .11rem;
+    padding: .4rem .52rem .44rem;
+    gap: .12rem;
     border: 1px solid var(--public-plaque-border);
     border-radius: 0;
     background: var(--public-plaque-surface);
@@ -680,21 +680,20 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
-/* Two distinct actions: a gallery return link and a separate previous/next
-   browsing row. Keep the controls unboxed and the accessible DOM order visual. */
+/* Small artwork index adjacent to its label, never floating on the far
+   edge of the image. The gallery link and browsing arrows have distinct
+   positions and purposes; no border, ornament or tooltip-only interaction. */
 .artwork-card__actions,
 .artwork-detail__actions {
     display: grid;
-    grid-template-columns: auto auto;
-    width: max-content;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 7.5rem;
     min-width: 0;
     max-width: 100%;
     grid-column: 2;
     align-items: center;
-    justify-content: space-between;
-    justify-self: end;
-    column-gap: 1rem;
-    row-gap: .18rem;
+    justify-self: start;
+    gap: .22rem 0;
     padding: 0;
     border: 0;
     background: transparent;
@@ -702,36 +701,33 @@ body {
 .artwork-context-button {
     display: inline-flex;
     min-width: 0;
-    min-height: 1.9rem;
-    padding: .22rem 0;
+    min-height: 2.25rem;
     align-items: center;
     justify-content: center;
-    gap: .3rem;
+    padding: .4rem .15rem;
     appearance: none;
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: #514a44;
+    color: #554e48;
     font-family: var(--public-typeface);
-    font-size: .72rem;
+    font-size: .8rem;
     font-weight: 400;
-    letter-spacing: 0;
-    line-height: 1.3;
+    line-height: 1.25;
     text-align: center;
     text-decoration: none;
-    text-transform: none;
-    white-space: nowrap;
     cursor: pointer;
     transition: color .14s ease;
 }
 .artwork-context-button--category {
-    max-width: 12rem;
     grid-column: 1 / -1;
-    grid-row: 1;
-    justify-self: center;
-    color: #34302d;
-    font-family: var(--public-index-typeface);
-    font-size: .94rem;
+    justify-self: start;
+    max-width: 100%;
+    min-height: 1.6rem;
+    padding: .15rem 0;
+    color: #38332e;
+    font-size: .88rem;
+    font-weight: 500;
 }
 .artwork-context-button__label {
     display: block;
@@ -740,9 +736,15 @@ body {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    text-decoration: underline;
+    text-decoration-color: rgba(65, 58, 51, .35);
+    text-decoration-thickness: 1px;
+    text-underline-offset: .25em;
 }
 .artwork-context-button--step {
-    grid-row: 2;
+    min-width: 2.4rem;
+    min-height: 2.4rem;
+    padding: .3rem;
 }
 .artwork-context-button--previous {
     grid-column: 1;
@@ -752,24 +754,22 @@ body {
     grid-column: 2;
     justify-self: end;
 }
+.artwork-context-button--step > .public-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke-width: 1.5;
+}
 .artwork-context-button:hover,
 .artwork-context-button:focus-visible {
     color: #171511;
 }
 .artwork-context-button--category:hover .artwork-context-button__label,
 .artwork-context-button--category:focus-visible .artwork-context-button__label {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: .28em;
+    text-decoration-color: currentColor;
 }
 .artwork-context-button:focus-visible {
     outline: 1px dotted #6d665f;
-    outline-offset: 2px;
-}
-.artwork-context-button--step > .public-icon {
-    width: .95rem;
-    height: .95rem;
-    stroke-width: 1.4;
+    outline-offset: 1px;
 }
 
 /* Query the actual Artwork width, not the viewport's unrelated breakpoint. */

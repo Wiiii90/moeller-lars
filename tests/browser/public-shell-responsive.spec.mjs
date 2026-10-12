@@ -25,7 +25,10 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         '<span class="artwork-label__field artwork-label__field--size"><span class="artwork-label__prompt">Size</span><span class="artwork-label__writing"><span class="artwork-label__entry">25 × 25</span></span></span>',
         '</span>',
         '</span></a><nav class="artwork-card__actions" aria-label="Artwork navigation">',
-        '<a class="artwork-context-button" href="#">Drawings →</a></nav></div>',
+        '<a class="artwork-context-button artwork-context-button--category" href="#" aria-label="Open Drawings gallery"><span class="artwork-context-button__label">Drawings</span></a>',
+        '<a class="artwork-context-button artwork-context-button--step artwork-context-button--previous" href="#" aria-label="Previous artwork">←</a>',
+        '<a class="artwork-context-button artwork-context-button--step artwork-context-button--next" href="#" aria-label="Next artwork">→</a>',
+        '</nav></div>',
         '</article><div aria-hidden="true" style="height:1400px"></div></main></body></html>',
     ].join(''));
     await page.addStyleTag({ path: 'resources/css/app.css' });
