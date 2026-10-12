@@ -80,11 +80,15 @@ it('includes every published node in public navigation regardless of its histori
         ->and(collect($groupItem['children'])->pluck('label')->all())->toContain('Visible Journal')
         ->and($items->pluck('label')->all())->not->toContain('Unpublished Journal');
 
+    $service->updatePlacement($group, 'hidden', null);
+    $items = app(PublicNavigationService::class)->items();
+
+    expect($items->pluck('label')->all())->toContain('Visible Journal')
+        ->and($items->pluck('label')->all())->not->toContain('Published Group');
+
     $service->updatePlacement($child, 'hidden', (int) $group->getKey());
     $items = app(PublicNavigationService::class)->items();
-    $groupItem = $items->firstWhere('label', 'Published Group');
-
-    expect(collect($groupItem['children'])->pluck('label')->all())->not->toContain('Visible Journal');
+    expect($items->pluck('label')->all())->not->toContain('Visible Journal');
 });
 
 it('uses committed SiteSection state as the public availability gate', function (): void {
