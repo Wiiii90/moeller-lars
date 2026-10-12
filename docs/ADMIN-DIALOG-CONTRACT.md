@@ -51,6 +51,18 @@ Edits operate on an existing record or settings object.
 
 Use `AdminDialog::edit()`.
 
+**List entry exception:** In Custom Pages and the Home Custom / Under Construction
+templates, List entries are edited within the owning component form through
+the shared `ComponentListEditor` Repeater. Repeater add/remove/reorder buttons
+change a draft collection and do not reliably emit the native `change` event
+that commits ordinary Edit fields. List components therefore use the canonical
+`AdminDialog::command()` with an explicit **Apply changes** action, committing
+the entire component and ordered entries atomically through the existing
+editorial service. Other components keep the normal autosaving Edit dialog.
+Neither surface exposes standalone List child rows or Add List Item table
+buttons. Type conversion continues through the existing confirmed conversion
+Action; the List command must not mutate on close/cancel.
+
 ### Create
 
 Creates collect a complete new object before persistence.
