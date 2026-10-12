@@ -79,27 +79,6 @@ trait CustomPageWorkspaceTargetHelpers
         return $this->componentAt($index, $type);
     }
 
-    /** @return array<string,mixed> */
-    private function componentAt(int $index, string $type): array
-    {
-        $block = $this->settings()->components()[$index] ?? null;
-        if (! is_array($block) || ($block['type'] ?? null) !== $type) {
-            throw ValidationException::withMessages(['component' => 'This component changed. Reload and try again.']);
-        }
-
-        return $block;
-    }
-
-    private function actionListItemIndex(array $arguments): int
-    {
-        $itemIndex = $arguments['itemIndex'] ?? null;
-        if (! is_numeric($itemIndex) || (int) $itemIndex < 0) {
-            throw ValidationException::withMessages(['component' => 'The selected list entry is invalid.']);
-        }
-
-        return (int) $itemIndex;
-    }
-
     /** @return array<string, mixed> */
     private function actionListItem(array $arguments): array
     {
