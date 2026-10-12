@@ -80,10 +80,6 @@ final class SitePages extends Page
 
     public bool $nestedNavigationEnabled = true;
 
-    public bool $allVisibleSelected = false;
-
-    public bool $selectionIndeterminate = false;
-
     public bool $addingPage = false;
 
     public string $newPageType = 'custom';
@@ -143,11 +139,6 @@ final class SitePages extends Page
         $this->loadSections();
     }
 
-    public function updatedSelectedSectionIds(): void
-    {
-        $this->syncSelectionState();
-    }
-
     public function resetFilters(): void
     {
         $this->search = '';
@@ -190,7 +181,6 @@ final class SitePages extends Page
         }
 
         $this->selectedSectionIds = $selected;
-        $this->syncSelectionState();
     }
 
     public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
@@ -695,7 +685,6 @@ final class SitePages extends Page
         $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
         $this->selectedSectionIds = array_values(array_intersect($this->selectedIds(), $visibleIds));
         $this->reorderEnabled = ! $this->filtersActive && $this->totalGroups <= $this->perPage;
-        $this->syncSelectionState();
 
         if ($navigationChanged) {
             // Native Filament Livewire Sidebar listens to this event.
@@ -923,16 +912,6 @@ final class SitePages extends Page
             array_map(static fn (mixed $id): int => (int) $id, $this->selectedSectionIds),
             static fn (int $id): bool => $id > 0,
         )));
-    }
-
-    private function syncSelectionState(): void
-    {
-        $selected = $this->selectedIds();
-        $visible = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
-        $visibleSelected = array_intersect($visible, $selected);
-
-        $this->allVisibleSelected = $visible !== [] && count($visibleSelected) === count($visible);
-        $this->selectionIndeterminate = $visibleSelected !== [] && ! $this->allVisibleSelected;
     }
 
     private function validationNotification(string $title, ValidationException $exception): void
