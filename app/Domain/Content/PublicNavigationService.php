@@ -6,7 +6,6 @@ use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 
 final class PublicNavigationService
@@ -22,54 +21,65 @@ final class PublicNavigationService
     {
         /** @var Builder<SiteSection> $query */
         $query = SiteSection::query();
-        $query->whereNull('parent_id');
+
         if (! $this->preview->active()) {
             $query->where('state', 'published');
         }
+
+        // Skip Home remains an explicit routing choice, not another per-page
+        // visibility flag.
         if ($this->home->skipEnabled()) {
             $query->where('type', '<>', SiteSectionType::Home->value);
         }
-        $preview = $this->preview;
-        $query->with(['children' => static function (Relation $relation) use ($preview): void {
-            $childQuery = $relation->getQuery();
-            if (! $preview->active()) {
-                $childQuery->where('state', 'published');
-            }
-            $childQuery->orderBy('position');
-            $childQuery->orderBy('id');
-        }]);
-        $query->orderBy('position');
-        $query->orderBy('id');
 
         /** @var EloquentCollection<int, SiteSection> $sections */
-        $sections = $query->get();
+        $sections = $query->orderBy('position')->orderBy('id')->get();
+        $included = $sections->keyBy(fn (SiteSection $section): int => (int) $section->getKey());
 
-        /** @var list<array<string, mixed>> $items */
-        $items = [];
+        /** @var array<int, list<SiteSection>> $children */
+        $children = [];
+        /** @var list<SiteSection> $roots */
+        $roots = [];
+
         foreach ($sections as $section) {
-            /** @var EloquentCollection<int, SiteSection> $childSections */
-            $childSections = $section->getRelation('children');
-            /** @var list<array{label:string,url:?string,current:bool}> $children */
-            $children = $childSections->map(fn (SiteSection $child): array => [
-                'label' => (string) ($child->getAttribute('navigation_label') ?: $child->getAttribute('title')),
+            $parentId = $section->getAttribute('parent_id');
+            $parentId = is_numeric($parentId) ? (int) $parentId : null;
+
+            if ($parentId !== null && $included->has($parentId)) {
+                $children[$parentId][] = $section;
+            } else {
+                // A published child does not become invisible merely because
+                // its editorial parent is unpublished or Home is skipped.
+                $roots[] = $section;
+            }
+        }
+
+        $items = [];
+        foreach ($roots as $section) {
+            $childItems = array_map(fn (SiteSection $child): array => [
+                'label' => $this->label($child),
                 'url' => $this->sectionUrl($child),
                 'current' => $this->routes->isCurrent($child),
-            ])->values()->all();
-            $childCurrent = collect($children)->contains(static fn (array $child): bool => $child['current']);
-            $current = $this->routes->isCurrent($section);
+            ], $children[(int) $section->getKey()] ?? []);
 
+            $current = $this->routes->isCurrent($section);
             $items[] = [
                 'position' => (int) $section->getAttribute('position'),
                 'tie_breaker' => (int) $section->getKey(),
-                'label' => (string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')),
+                'label' => $this->label($section),
                 'url' => $this->sectionUrl($section),
                 'current' => $current,
-                'active' => $current || $childCurrent,
-                'children' => $children,
+                'active' => $current || collect($childItems)->contains(static fn (array $item): bool => $item['current']),
+                'children' => $childItems,
             ];
         }
 
         return collect($items);
+    }
+
+    private function label(SiteSection $section): string
+    {
+        return (string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title'));
     }
 
     private function sectionUrl(SiteSection $section): ?string
