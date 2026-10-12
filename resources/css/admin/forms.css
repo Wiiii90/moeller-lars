@@ -466,6 +466,23 @@
     font-size: .7rem;
 }
 
+/* Reserve the editor's actual working height before CodeMirror hydrates.
+ * Applied to every canonical AdminRichText field; no dialog-specific jump or
+ * background scroll-lock manipulation. */
+.admin-rich-text {
+    min-height: 17rem;
+}
+
+.admin-rich-text-insert-control {
+    display: grid;
+    justify-items: start;
+    gap: .4rem;
+}
+
+.admin-rich-text-image-trigger {
+    min-height: var(--admin-control-height);
+}
+
 .admin-rich-text-image-insert {
     display: grid;
     width: min(100%, 34rem);
