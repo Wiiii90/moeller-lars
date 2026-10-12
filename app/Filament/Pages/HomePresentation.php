@@ -1495,11 +1495,10 @@ final class HomePresentation extends Page
                 throw ValidationException::withMessages(['component' => 'The selected Home child changed. Reload and try again.']);
             }
             $parts = explode(':', $target, 3);
-            if (count($parts) !== 3 || ! ctype_digit($parts[1]) || ! in_array($parts[0], ['list', 'contact'], true)) {
+            if (count($parts) !== 3 || ! ctype_digit($parts[1]) || $parts[0] !== 'contact') {
                 throw ValidationException::withMessages(['component' => 'The selected Home child is invalid.']);
             }
-            $targets[] = ['index' => (int) $parts[1], 'type' => $parts[0],
-                'child' => $parts[0] === 'list' ? (int) $parts[2] : $parts[2]];
+            $targets[] = ['index' => (int) $parts[1], 'type' => 'contact', 'child' => $parts[2]];
         }
 
         return $targets;
