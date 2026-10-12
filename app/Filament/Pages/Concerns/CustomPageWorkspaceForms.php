@@ -5,9 +5,8 @@ namespace App\Filament\Pages\Concerns;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\MediaAssetSelect;
-use Closure;
 use App\Models\PublicContentSetting;
-use Filament\Forms\Components\Hidden;
+use Closure;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -18,7 +17,7 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(bool $includeTypeSelect, ?Closure $onTypeChange = null): array
+    private function componentEditorSchema(?Closure $onTypeChange = null): array
     {
         $typeField = Select::make('type')
             ->label('Component')
