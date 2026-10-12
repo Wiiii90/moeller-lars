@@ -46,7 +46,9 @@ it('stages component type changes inside Edit until an explicit editorial commit
         ->and($home)->toContain('ComponentTypeChangeControl::make(')
         ->toContain('convertHomeComponent(')
         ->toContain('condition: true,')
-        ->and($customProjection)->toContain("'editable' => \$type !== 'legal_disclaimer'")
+        ->and($customProjection)->toContain("'editable' => in_array(\$type, array_keys(self::COMPONENT_LABELS), true)")
+        ->and($customSchema)->toContain("Placeholder::make('legal_disclaimer_note')")
+        ->and($home)->toContain("Placeholder::make('legal_disclaimer_note')")
         ->and($customRows)->toContain(':disabled="! $pageComponent[\'editable\']"')
         ->and($homeRows)->toContain(':disabled="! $homeComponent[\'editable\']"');
 });
