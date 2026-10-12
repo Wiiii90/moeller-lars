@@ -84,15 +84,65 @@
     white-space: nowrap;
 }
 
+/* CV composition and CV-specific typography have one owner. */
+.cv-section { min-width: 0; }
+
 .cv-biography {
     display: grid;
+    min-width: 0;
+    max-width: none;
     gap: 1.35rem;
 }
 
 .cv-entry {
     display: grid;
     min-width: 0;
+    margin-bottom: .85rem;
     gap: 1.4rem;
+    color: #555;
+    font-size: .8rem;
+    line-height: 1.55;
+}
+
+.cv-entry__line {
+    margin-bottom: .08rem;
+}
+
+.cv-entry__date {
+    display: inline;
+    margin-right: .35rem;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.cv-entry__content {
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.cv-entry__content > div:not(.rich-text):not(.cv-entry__line) {
+    margin: 0;
+}
+
+.cv-entry .rich-text {
+    display: block;
+    margin-top: .2rem;
+}
+
+.cv-entry a {
+    color: #555;
+    text-decoration: underline;
+}
+
+.cv-entry a:hover,
+.cv-entry a:focus-visible {
+    color: #111;
+}
+
+.cv-entry p {
+    margin: .3rem 0;
 }
 
 .cv-entry.has-image {

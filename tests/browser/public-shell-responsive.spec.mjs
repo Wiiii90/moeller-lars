@@ -186,3 +186,92 @@ test('narrowing the viewport never creates extra room for the same menu items', 
         previous = state;
     }
 });
+
+
+test('empty public pages preserve height, header and vertical spacing across widths', async ({ page }) => {
+    await page.setContent([
+        '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>',
+        '<body class="public-site">',
+        '<header class="site-header">',
+        '<h1><a href="#" class="site-title"><span class="site-title__first">Lars</span><span class="site-title__last">Möller</span></a></h1>',
+        '<div class="site-navigation"><div class="site-navigation__rail"><nav><a href="#">Home</a></nav></div></div>',
+        '</header><main id="content" class="site-content"><div class="custom-page"></div></main>',
+        '</body></html>',
+    ].join(''));
+    await page.addStyleTag({ path: 'resources/css/app.css' });
+    await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
+    await page.addStyleTag({ path: 'resources/css/custom-pages.css' });
+
+    // Both authored General values must survive responsive recomposition:
+    // height is stable; horizontal geometry remains derived from these inputs.
+    for (const settings of [
+        { width: 800, padding: 75 },
+        { width: 640, padding: 24 },
+    ]) {
+        await page.evaluate(({ width, padding }) => {
+            document.documentElement.style.setProperty('--public-shell-max', width + 'px');
+            document.documentElement.style.setProperty('--public-art-max', (width - padding * 2) + 'px');
+            document.documentElement.style.setProperty('--public-content-padding', padding + 'px');
+        }, settings);
+
+        let previous = null;
+        for (const width of [1600, 1100, 1024, 810, 770, 737, 736, 735, 545, 544, 543, 420, 360, 320]) {
+            await page.setViewportSize({ width, height: 800 });
+            const layout = await page.evaluate(() => {
+                const main = document.querySelector('#content');
+                const title = document.querySelector('.site-header h1');
+                const computed = getComputedStyle(main);
+                return {
+                    height: main.getBoundingClientRect().height,
+                    titleHeight: title.getBoundingClientRect().height,
+                    titleFont: getComputedStyle(title).fontSize,
+                    paddingTop: parseFloat(computed.paddingTop),
+                    paddingBottom: parseFloat(computed.paddingBottom),
+                    marginTop: parseFloat(computed.marginTop),
+                    marginBottom: parseFloat(computed.marginBottom),
+                    configuredPadding: getComputedStyle(document.documentElement).getPropertyValue('--public-content-padding').trim(),
+                    menuLeft: document.querySelector('.site-navigation').getBoundingClientRect().left,
+                    pageLeft: main.getBoundingClientRect().left,
+                };
+            });
+
+            expect(layout.configuredPadding).toBe(settings.padding + 'px');
+            expect(layout.height, 'empty page height at ' + width).toBeGreaterThanOrEqual(240);
+            expect(Math.abs(layout.menuLeft - layout.pageLeft), 'shell edges at ' + width).toBeLessThan(1);
+            expect(layout.marginTop).toBeCloseTo(layout.marginBottom, 2);
+            expect(layout.paddingTop).toBeCloseTo(layout.paddingBottom, 2);
+            if (previous !== null) {
+                for (const key of ['height', 'titleHeight', 'paddingTop', 'paddingBottom', 'marginTop', 'marginBottom', 'titleFont']) {
+                    if (key === 'titleFont') {
+                        expect(layout[key], key + ' at ' + width).toBe(previous[key]);
+                    } else {
+                        expect(layout[key], key + ' at ' + width).toBeCloseTo(previous[key], 1);
+                    }
+                }
+            }
+            previous = layout;
+        }
+    }
+});
+
+test('gallery item spacing does not collapse at the Minimal transition', async ({ page }) => {
+    await page.setContent([
+        '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>',
+        '<body class="public-site"><main id="content" class="site-content">',
+        '<div class="artwork-list">',
+        '<article class="artwork-card"><div class="artwork-card__image" style="height:120px"></div></article>',
+        '<article class="artwork-card"><div class="artwork-card__image" style="height:120px"></div></article>',
+        '</div></main></body></html>',
+    ].join(''));
+    await page.addStyleTag({ path: 'resources/css/app.css' });
+    await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
+    let previous = null;
+    for (const width of [1200, 800, 600, 545, 544, 543, 420, 320]) {
+        await page.setViewportSize({ width, height: 800 });
+        const gap = await page.locator('.artwork-card').first().evaluate((el) =>
+            parseFloat(getComputedStyle(el).marginBottom));
+        expect(gap).toBeGreaterThan(0);
+        if (previous !== null) expect(gap, 'gallery gap at ' + width).toBeCloseTo(previous, 2);
+        previous = gap;
+    }
+});

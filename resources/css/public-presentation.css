@@ -1,5 +1,5 @@
-/* Canonical public presentation layer. Shell, navigation, public geometry and viewer polish live here.
- * Responsive thresholds are content-fit states owned by #15, not legacy device breakpoints. */
+/* Public layout owner: shell, navigation, artwork geometry and presentation.
+ * Responsive composition changes remain local to the content that needs them. */
 
 :root {
     --public-shell-max: 800px;
@@ -7,16 +7,16 @@
     --public-gutter: clamp(.65rem, 2vw, 1.5rem);
     --public-mobile-inset: .65rem;
     --public-content-padding: 75px;
-    /* One content geometry for the scroll shell, navigation and page body. */
-    /* Keep the authored artwork width as long as the shell can fit it.
-     * Ease both insets continuously down to the minimum, never widening the
-     * navigation rail when the viewport gets narrower. */
+    /* General's configured horizontal dimensions own the menu and content.
+     * Inset yields only when the shell can no longer fit the artwork. */
     --public-content-inset: max(
         var(--public-mobile-inset),
         min(var(--public-content-padding), calc((100% - var(--public-art-max)) / 2))
     );
-    --public-content-block-inset: clamp(1.6rem, 3.3vw, 2.75rem);
-    --public-shell-gap: clamp(var(--public-mobile-inset), 1vw, .75rem);
+    --public-content-block-inset: 2rem;
+    --public-shell-gap: .75rem;
+    --public-short-page-min-height: 15rem;
+    --public-section-gap: 3.2rem;
     --public-page: #777;
     --public-surface: #fff;
     --public-ink: #555;
@@ -302,12 +302,12 @@ body {
     position: relative;
     order: 2;
     width: 100%;
-    min-height: clamp(4rem, 10vw, 4.7rem);
+    min-height: 4.7rem;
     margin: 0;
     padding: 0;
     color: #fff;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: clamp(1.3rem, 5vw, 1.75rem);
+    font-size: 1.75rem;
     font-weight: 400;
     letter-spacing: .16em;
     line-height: 1.1;
@@ -317,7 +317,7 @@ body {
 
 .site-title {
     position: absolute;
-    bottom: clamp(.82rem, 2vw, 1rem);
+    bottom: 1rem;
     left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
     display: block;
     color: inherit;
@@ -345,8 +345,10 @@ body {
     outline-offset: .45rem;
 }
 
+/* Empty and short pages retain an intentional minimum white surface.
+ * The global border-box reset includes the padding in this height. */
 #content {
-    min-height: 0;
+    min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
 }
 
@@ -415,7 +417,7 @@ body {
 
 .artwork-card,
 .artwork-detail {
-    margin-bottom: clamp(3.2rem, 6vw, 5rem);
+    margin-bottom: var(--public-section-gap);
 }
 
 .artwork-card:last-child,
@@ -614,18 +616,6 @@ body {
     line-height: 1.45;
 }
 
-.cv-biography {
-    min-width: 0;
-    max-width: none;
-}
-
-.cv-entry {
-    margin-bottom: .85rem;
-    color: #555;
-    font-size: .8rem;
-    line-height: 1.55;
-}
-
 .contact-details {
     display: grid;
     margin: 0 0 1.4rem;
@@ -822,11 +812,6 @@ body {
 /* Minimal: artwork/supporting content becomes single-surface where necessary;
  * do not shrink typography merely to preserve wider compositions. */
 @media (max-width: 34rem) {
-    .artwork-card,
-    .artwork-detail {
-        margin-bottom: var(--public-mobile-inset);
-    }
-
     .contact-details__row {
         grid-template-columns: 4.3rem minmax(0, 1fr);
     }

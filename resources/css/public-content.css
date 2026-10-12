@@ -1,6 +1,5 @@
 /* Content semantics only. Public shell/layout geometry lives in public-presentation.css. */
 
-.cv-section,
 .exhibitions-page,
 .public-contact-details,
 .contact-section,
@@ -8,36 +7,9 @@
     min-width: 0;
 }
 
-.cv-entry__line {
-    margin-bottom: .08rem;
-}
-
-.cv-entry__date {
-    display: inline;
-    margin-right: .35rem;
-    color: inherit;
-    font-size: inherit;
-    line-height: inherit;
-}
-
-.cv-entry__content {
-    color: inherit;
-    font-size: inherit;
-    line-height: inherit;
-}
-
-.cv-entry__content > div:not(.rich-text):not(.cv-entry__line) {
-    margin: 0;
-}
-
 .rich-text {
     color: inherit;
     line-height: 1.45;
-}
-
-.cv-entry .rich-text {
-    display: block;
-    margin-top: .2rem;
 }
 
 .rich-text p {
@@ -103,7 +75,6 @@
 }
 
 .rich-text a,
-.cv-entry a,
 .blog-entry a,
 .blog-post a,
 .contact-section a,
@@ -115,8 +86,6 @@
 
 .rich-text a:hover,
 .rich-text a:focus-visible,
-.cv-entry a:hover,
-.cv-entry a:focus-visible,
 .blog-entry a:hover,
 .blog-entry a:focus-visible,
 .blog-post a:hover,
@@ -130,7 +99,6 @@
     color: #111;
 }
 
-.cv-entry p,
 .public-contact-details p,
 .legal-disclaimer p {
     margin: .3rem 0;
