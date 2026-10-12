@@ -507,3 +507,61 @@ it('uses the shared toggle control and the native autosave dialog without Pages 
         ->and($controls)->toContain('Toggle::configureUsing');
 });
 
+
+
+it('persists successive Pages Edit changes while preserving the mounted form and suppressing no-op notifications', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Before Edit', 'before-edit');
+    $component = Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $section->getKey()])
+        ->assertSet('mountedActions.0.name', 'editPage');
+
+    $component->set('mountedActions.0.data.name', 'After Edit')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editPage');
+
+    expect($section->fresh()->title)->toBe('After Edit')
+        ->and($section->fresh()->navigation_label)->toBe('After Edit');
+
+    $auditCount = AuditEvent::query()->count();
+    $component->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editPage');
+
+    expect(AuditEvent::query()->count())->toBe($auditCount);
+
+    $component->set('mountedActions.0.data.show_in_navigation', true)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editPage');
+
+    expect($section->fresh()->show_in_navigation)->toBeTrue();
+
+    $component->call('unmountAction')->assertSet('mountedActions', []);
+    Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $section->getKey()])
+        ->assertSet('mountedActions.0.data.name', 'After Edit')
+        ->assertSet('mountedActions.0.data.show_in_navigation', true);
+});
+
+it('rejects invalid Pages Edit inputs without partially persisting earlier fields', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Validation Example', 'validation-example');
+    Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $section->getKey()])
+        ->set('mountedActions.0.data.name', 'Should Not Persist')
+        ->set('mountedActions.0.data.slug', 'not a valid slug')
+        ->call('callMountedAction')
+        ->assertHasFormErrors(['slug'])
+        ->assertSet('mountedActions.0.name', 'editPage');
+
+    expect($section->fresh()->title)->toBe('Validation Example')
+        ->and($section->fresh()->slug)->toBe('validation-example');
+});
