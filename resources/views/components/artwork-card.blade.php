@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'folioPosition' => null, 'folioTotal' => null])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -20,8 +20,6 @@
         :category="$category"
         :show-gallery-link="$showCategoryLink"
         :hero-navigation="$heroNavigation"
-        :folio-position="$folioPosition"
-        :folio-total="$folioTotal"
     />
 
     @if ($enableViewer)

@@ -4,8 +4,6 @@
     'heroNavigation' => false,
     'previousArtwork' => null,
     'nextArtwork' => null,
-    'folioPosition' => null,
-    'folioTotal' => null,
 ])
 
 @php
@@ -16,48 +14,45 @@
 
 @if ($hasGalleryLink || $hasSteps)
     <nav class="artwork-folio" aria-label="Artwork browsing">
+        <span class="artwork-folio__leading">
+            @if ($heroNavigation)
+                <button class="artwork-folio__step" type="button"
+                        data-home-hero-direction="previous"
+                        aria-label="Previous Hero artwork" title="Previous artwork">
+                    <x-public-icon name="arrow-left" />
+                </button>
+            @elseif ($previousArtwork !== null)
+                <a class="artwork-folio__step"
+                   href="{{ $preview->url(route('artworks.show', $previousArtwork->slug)) }}"
+                   aria-label="Previous artwork" title="Previous artwork">
+                    <x-public-icon name="arrow-left" />
+                </a>
+            @endif
+        </span>
+
         @if ($hasGalleryLink)
             <a class="artwork-folio__gallery"
                href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}"
                aria-label="Back to {{ $category->name }} gallery"
-               title="{{ $category->name }} gallery">Gallery</a>
+               title="{{ $category->name }} gallery">{{ $category->name }} Gallery</a>
+        @else
+            <span class="artwork-folio__center" aria-hidden="true"></span>
         @endif
 
-        @if ($hasSteps)
-            <div class="artwork-folio__browse">
-                @if ($folioPosition !== null && $folioTotal !== null && $folioTotal > 1)
-                    <span class="artwork-folio__position"
-                          aria-label="Artwork {{ $folioPosition }} of {{ $folioTotal }}">{{ $folioPosition }} / {{ $folioTotal }}</span>
-                @endif
-
-                @if ($heroNavigation)
-                    <button class="artwork-folio__step" type="button"
-                            data-home-hero-direction="previous"
-                            aria-label="Previous Hero artwork" title="Previous artwork">
-                        <x-public-icon name="arrow-left" />
-                    </button>
-                    <button class="artwork-folio__step" type="button"
-                            data-home-hero-direction="next"
-                            aria-label="Next Hero artwork" title="Next artwork">
-                        <x-public-icon name="arrow-right" />
-                    </button>
-                @else
-                    @if ($previousArtwork !== null)
-                        <a class="artwork-folio__step"
-                           href="{{ $preview->url(route('artworks.show', $previousArtwork->slug)) }}"
-                           aria-label="Previous artwork" title="Previous artwork">
-                            <x-public-icon name="arrow-left" />
-                        </a>
-                    @endif
-                    @if ($nextArtwork !== null)
-                        <a class="artwork-folio__step"
-                           href="{{ $preview->url(route('artworks.show', $nextArtwork->slug)) }}"
-                           aria-label="Next artwork" title="Next artwork">
-                            <x-public-icon name="arrow-right" />
-                        </a>
-                    @endif
-                @endif
-            </div>
-        @endif
+        <span class="artwork-folio__trailing">
+            @if ($heroNavigation)
+                <button class="artwork-folio__step" type="button"
+                        data-home-hero-direction="next"
+                        aria-label="Next Hero artwork" title="Next artwork">
+                    <x-public-icon name="arrow-right" />
+                </button>
+            @elseif ($nextArtwork !== null)
+                <a class="artwork-folio__step"
+                   href="{{ $preview->url(route('artworks.show', $nextArtwork->slug)) }}"
+                   aria-label="Next artwork" title="Next artwork">
+                    <x-public-icon name="arrow-right" />
+                </a>
+            @endif
+        </span>
     </nav>
 @endif

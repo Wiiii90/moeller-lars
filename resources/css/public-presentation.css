@@ -404,7 +404,7 @@ body {
     font-family: var(--public-index-typeface);
     font-size: 2.05rem;
     font-weight: 400;
-    letter-spacing: -.035em;
+    letter-spacing: .055em;
     line-height: 1.1;
     text-transform: none;
     white-space: nowrap;
@@ -426,8 +426,8 @@ body {
     bottom: 0;
 }
 
-.site-title__first { right: .32em; }
-.site-title__last { left: .32em; }
+.site-title__first { right: .16em; }
+.site-title__last { left: .16em; }
 
 .site-title:hover,
 .site-title:focus-visible {
@@ -674,56 +674,69 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
-/* Independent artwork folio: above the image, aligned to its width.
-   No frame, field styling or ornamental line connects it to the caption. */
+/* The image-width folio is a three-part navigation, not a caption toolbar.
+   Equal flexible outer columns put the category at the real horizontal center.
+   No viewport-only breakpoint: long names yield to arrows and truncate, never
+   cause horizontal overflow or displace the image width. */
 .artwork-folio {
-    display: flex;
+    display: grid;
     width: 100%;
     min-width: 0;
-    min-height: 2.25rem;
-    margin-bottom: .6rem;
+    min-height: 2.65rem;
+    margin-bottom: .45rem;
+    grid-template-columns: minmax(2.5rem, 1fr) minmax(0, max-content) minmax(2.5rem, 1fr);
     align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-    color: #5b554f;
+    gap: 0;
+    color: #55504b;
     font-family: var(--public-typeface);
 }
-.artwork-folio__gallery {
-    display: inline-block;
+.artwork-folio__leading,
+.artwork-folio__trailing {
+    display: flex;
     min-width: 0;
-    padding: .25rem 0;
-    color: inherit;
-    font-size: .78rem;
+    align-items: center;
+}
+.artwork-folio__leading {
+    grid-column: 1;
+    justify-content: flex-start;
+}
+.artwork-folio__trailing {
+    grid-column: 3;
+    justify-content: flex-end;
+}
+.artwork-folio__gallery,
+.artwork-folio__center {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    grid-column: 2;
+    overflow: hidden;
+    color: #423b35;
+    font-family: var(--public-index-typeface);
+    font-size: .92rem;
     font-weight: 400;
-    letter-spacing: .02em;
+    letter-spacing: .025em;
+    line-height: 1.25;
+    text-align: center;
     text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.artwork-folio__gallery {
+    padding: .35rem .2rem;
 }
 .artwork-folio__gallery:hover,
 .artwork-folio__gallery:focus-visible {
-    color: #292622;
+    color: #191714;
     text-decoration: underline;
+    text-decoration-thickness: 1px;
     text-underline-offset: .25em;
-}
-.artwork-folio__browse {
-    display: flex;
-    min-width: 0;
-    margin-left: auto;
-    align-items: center;
-    gap: .2rem;
-}
-.artwork-folio__position {
-    margin-right: .55rem;
-    color: #78716a;
-    font-size: .7rem;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: .07em;
-    white-space: nowrap;
 }
 .artwork-folio__step {
     display: inline-flex;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: .35rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: .55rem;
     align-items: center;
     justify-content: center;
     appearance: none;
@@ -736,9 +749,9 @@ body {
     transition: color .14s ease;
 }
 .artwork-folio__step > .public-icon {
-    width: 1.15rem;
-    height: 1.15rem;
-    stroke-width: 1.5;
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke-width: 1.45;
 }
 .artwork-folio__step:hover,
 .artwork-folio__step:focus-visible {

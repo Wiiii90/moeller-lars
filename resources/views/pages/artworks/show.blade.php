@@ -34,8 +34,6 @@
             :show-gallery-link="true"
             :previous-artwork="$previousArtwork"
             :next-artwork="$nextArtwork"
-            :folio-position="is_int($currentIndex) ? $currentIndex + 1 : null"
-            :folio-total="$sequence->count()"
         />
         <a
             class="artwork-detail__viewer-trigger"

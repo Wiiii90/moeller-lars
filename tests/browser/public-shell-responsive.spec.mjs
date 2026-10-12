@@ -17,12 +17,10 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         '<main id="content" class="site-content">',
         '<article class="artwork-card">',
         '<nav class="artwork-folio" aria-label="Artwork browsing">',
-        '<a class="artwork-folio__gallery" href="#">Gallery</a>',
-        '<div class="artwork-folio__browse">',
-        '<span class="artwork-folio__position">1 / 3</span>',
-        '<a class="artwork-folio__step" href="#" aria-label="Previous artwork">←</a>',
-        '<a class="artwork-folio__step" href="#" aria-label="Next artwork">→</a>',
-        '</div></nav><a class="artwork-card__link" href="#">',
+        '<span class="artwork-folio__leading"><a class="artwork-folio__step" href="#" aria-label="Previous artwork">←</a></span>',
+        '<a class="artwork-folio__gallery" href="#">Painting Gallery</a>',
+        '<span class="artwork-folio__trailing"><a class="artwork-folio__step" href="#" aria-label="Next artwork">→</a></span>',
+        '</nav><a class="artwork-card__link" href="#">',
         '<div class="artwork-card__image" style="aspect-ratio: 1"></div></a>',
         '<div class="artwork-card__footer"><a href="#" class="artwork-label-trigger"><span class="artwork-label">',
         '<span class="artwork-label__field artwork-label__field--title"><span class="artwork-label__prompt">Title</span><span class="artwork-label__writing"><span class="artwork-label__entry">A.G.</span></span></span>',
@@ -82,6 +80,9 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
                 header: rect('.site-header'),
                 label: rect('.artwork-label'),
                 folio: rect('.artwork-folio'),
+                previous: rect('.artwork-folio__leading .artwork-folio__step'),
+                gallery: rect('.artwork-folio__gallery'),
+                next: rect('.artwork-folio__trailing .artwork-folio__step'),
                 image: rect('.artwork-card__image'),
                 scrollWidth: scrollingElement.scrollWidth,
                 scrollClientWidth: scrollingElement.clientWidth,
@@ -99,6 +100,9 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         expect(geometry.label.top, 'label below artwork at '+width).toBeGreaterThanOrEqual(geometry.image.bottom);
         expect(geometry.folio.left, 'folio/image left alignment at '+width).toBeGreaterThanOrEqual(geometry.image.left - 1);
         expect(geometry.folio.right, 'folio/image right alignment at '+width).toBeLessThanOrEqual(geometry.image.right + 1);
+        expect(Math.abs(geometry.previous.left - geometry.image.left), 'previous starts at image left at '+width).toBeLessThan(1);
+        expect(Math.abs(geometry.next.right - geometry.image.right), 'next ends at image right at '+width).toBeLessThan(1);
+        expect(Math.abs((geometry.gallery.left + geometry.gallery.right) / 2 - (geometry.image.left + geometry.image.right) / 2), 'gallery centered over image at '+width).toBeLessThan(1);
         expect(geometry.image.width).toBeGreaterThan(0);
         expect(geometry.scrollWidth, 'horizontal overflow at '+width).toBeLessThanOrEqual(geometry.scrollClientWidth + 1);
         expect(geometry.scrollOwner, 'root scroll owner at '+width).toBe(true);
