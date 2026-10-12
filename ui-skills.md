@@ -248,6 +248,7 @@ Rules:
 - use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
 - drag is disabled when Search/filters/pagination make canonical order ambiguous;
+- a drag handle is disabled when its own sibling scope has fewer than two items; in nested Custom Page hierarchies the parent component scope and each List/Contact child scope are independent, so a single parent does not disable sorting multiple children or expose an inert parent drag target;
 - ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
 - filtered reorder must not pretend that a filtered projection is the complete canonical sequence.
 
