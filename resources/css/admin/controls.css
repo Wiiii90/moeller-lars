@@ -359,3 +359,96 @@
     color: var(--admin-danger) !important;
     font-size: .7rem !important;
 }
+
+
+/* Canonical toolbar-only interaction grammar.
+ * Fields and task buttons share one baseline; table-row, menu and dialog
+ * actions retain the ordinary .admin-action contract. Keep View / Selected
+ * states out of the generic button hover background. */
+.admin-data-controls {
+    --admin-toolbar-line-hover: var(--admin-line-strong);
+    --admin-toolbar-line-active: var(--admin-control-border-focus);
+}
+
+.admin-data-controls :is(.admin-field, .admin-data-field, .admin-task-field) :is(input, select):hover {
+    border-bottom-color: var(--admin-toolbar-line-hover);
+}
+
+.admin-data-controls :is(.admin-field, .admin-data-field, .admin-task-field):focus-within :is(input, select) {
+    border-bottom-color: var(--admin-toolbar-line-active) !important;
+}
+
+/* Exactly the actions rendered by x-admin.controls, not any .admin-action
+ * elsewhere in the workspace or in a Selection / Filters popup. */
+.admin-data-controls :is(
+    .admin-data-controls__utility > .admin-action,
+    .admin-data-controls__utility .admin-editorial-actions > .admin-action,
+    .admin-data-controls__utility .admin-task-control-actions > .admin-action,
+    .admin-data-controls__utility .admin-control-group__actions > .admin-action,
+    .admin-data-controls__utility .admin-data-control-group > .admin-action,
+    .admin-data-controls__utility .admin-task-control-group > .admin-action,
+    .admin-data-controls__utility .admin-task-control-group > div > .admin-action,
+    .admin-filter-overflow > .admin-filter-overflow__trigger,
+    .admin-selection__anchor > .admin-selection__trigger
+) {
+    border-color: transparent;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.admin-data-controls :is(
+    .admin-data-controls__utility > .admin-action,
+    .admin-data-controls__utility .admin-editorial-actions > .admin-action,
+    .admin-data-controls__utility .admin-task-control-actions > .admin-action,
+    .admin-data-controls__utility .admin-control-group__actions > .admin-action,
+    .admin-data-controls__utility .admin-data-control-group > .admin-action,
+    .admin-data-controls__utility .admin-task-control-group > .admin-action,
+    .admin-data-controls__utility .admin-task-control-group > div > .admin-action,
+    .admin-filter-overflow > .admin-filter-overflow__trigger,
+    .admin-selection__anchor > .admin-selection__trigger
+):is(:hover, :focus-visible) {
+    border-color: transparent;
+    background: transparent;
+    color: var(--admin-text);
+    box-shadow: inset 0 -1px 0 var(--admin-toolbar-line-hover);
+}
+
+.admin-data-controls :is(
+    .admin-data-controls__utility .admin-editorial-actions > .admin-action,
+    .admin-data-controls__utility .admin-task-control-actions > .admin-action,
+    .admin-filter-overflow > .admin-filter-overflow__trigger
+):is(.is-active, .is-primary, [aria-pressed="true"], [aria-expanded="true"], :focus-visible) {
+    border-color: transparent;
+    background: transparent;
+    color: var(--admin-text);
+    box-shadow: inset 0 -2px 0 var(--admin-toolbar-line-active);
+}
+
+/* Selection underlines the entire final rail, including the count badge and
+ * its reserved checkbox-alignment padding; no independent button underline. */
+.admin-data-controls .admin-selection::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1px;
+    background: var(--admin-toolbar-line-hover);
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+}
+
+.admin-data-controls .admin-selection:has(.admin-selection__trigger:not(:disabled):hover)::after {
+    opacity: 1;
+}
+
+.admin-data-controls .admin-selection:has(.admin-selection__trigger:is(:focus-visible, [aria-expanded="true"]))::after {
+    height: 2px;
+    background: var(--admin-toolbar-line-active);
+    opacity: 1;
+}
+
+.admin-data-controls .admin-selection__anchor > .admin-selection__trigger:is(:hover, :focus-visible) {
+    box-shadow: none;
+}
