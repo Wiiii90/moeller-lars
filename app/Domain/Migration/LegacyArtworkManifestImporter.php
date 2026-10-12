@@ -55,7 +55,6 @@ final class LegacyArtworkManifestImporter
                         'slug' => $categoryData['slug'],
                         'state' => 'published',
                         'position' => $categoryData['position'],
-                        'show_in_navigation' => $categoryData['show_in_navigation'],
                         'parent_id' => null,
                         'artwork_category_id' => (int) $category->getKey(),
                     ]);
@@ -194,13 +193,12 @@ final class LegacyArtworkManifestImporter
             if ($position < 0) {
                 throw new RuntimeException("Category {$slug} has a negative position.");
             }
-            $showInNavigation = $this->boolean($category, 'show_in_navigation');
-            if ($showInNavigation) {
-                if (isset($navigationPositions[$position])) {
-                    throw new RuntimeException("Duplicate public navigation position: {$position}");
-                }
-                $navigationPositions[$position] = true;
+            // All imported Galleries are published and therefore participate
+            // in public navigation; legacy menu-visibility bits are ignored.
+            if (isset($navigationPositions[$position])) {
+                throw new RuntimeException("Duplicate public navigation position: {$position}");
             }
+            $navigationPositions[$position] = true;
 
             $artworks = $this->list($category, 'artworks');
             if ($artworks === []) {
@@ -298,7 +296,6 @@ final class LegacyArtworkManifestImporter
                 'slug' => $slug,
                 'name' => $this->string($category, 'name'),
                 'position' => $position,
-                'show_in_navigation' => $showInNavigation,
                 'show_on_home' => $this->boolean($category, 'show_on_home'),
                 'description' => $this->nullableString($category, 'description'),
                 'artworks' => $validatedArtworks,
@@ -316,7 +313,6 @@ final class LegacyArtworkManifestImporter
         $occupiedNavigationPositions = SiteSection::query()
             ->whereNull('parent_id')
             ->where('state', 'published')
-            ->where('show_in_navigation', true)
             ->pluck('position')
             ->map(static fn ($position): int => (int) $position)
             ->all();
