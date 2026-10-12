@@ -56,6 +56,8 @@ Changing the Home content template does not implicitly enable, disable or retarg
 
 Artwork selection uses canonical Gallery eligibility, Artwork date and explicit tie-break semantics. Ambiguous invalid state is surfaced rather than resolved by incidental DB order.
 
+- Hero Artwork Home uses the existing resolved eligible Home group and shared `artwork-card` renderer. `show_details` controls the artwork information card; `show_gallery_link` controls the Gallery button (matching the plain category button on artwork detail, without a trailing arrow); `show_navigation` enables cyclic previous/next buttons inside that Hero group; and `enable_viewer` allows or disables clicking the Hero media to open the existing Artwork Viewer. These are independent switches in the existing Home settings, with backward-compatible defaults (navigation off, viewer on). Without viewer activation the Hero image/video is not an interactive link. When navigation is off, only the current resolved Hero member is rendered. No new publication filtering or Home selection algorithm is introduced.
+
 Home Custom/Under Construction and Custom Page share a single ordered public
 component renderer and the `CustomPageSetting` component validation contract:
 Image, Text (Heading/Rich Text), List, Divider (Thin/Subtle/Strong/Dotted),
@@ -166,7 +168,6 @@ See [MEDIA.md](MEDIA.md).
 ## SEO and metadata
 
 - indexable pages have canonical HTTPS URLs;
-- Hero Artwork Home uses the existing resolved eligible Home group and shared `artwork-card` renderer. `show_details` controls the artwork information card; `show_gallery_link` controls the Gallery button (matching the plain category button on artwork detail, without a trailing arrow); `show_navigation` enables cyclic previous/next buttons inside that Hero group; and `enable_viewer` allows or disables clicking the Hero media to open the existing Artwork Viewer. These are independent switches in the existing Home settings, with backward-compatible defaults (navigation off, viewer on). Without viewer activation the Hero image/video is not an interactive link. When navigation is off, only the current resolved Hero member is rendered. No new publication filtering or Home selection algorithm is introduced.
 - Empty Public Gallery, Exhibitions, Blog, Custom and Home surfaces are visually blank: public views do not output editorial placeholders such as “No artwork available” or “No exhibitions published”. Availability and publication filters remain unchanged; configured page headings remain independent content when enabled.
 - sitemap follows current public model and excludes admin/preview/drafts/navigation-only nodes;
 - `robots.txt` does not advertise private/admin/preview content;
