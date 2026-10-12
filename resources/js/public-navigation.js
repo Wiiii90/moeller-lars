@@ -57,9 +57,24 @@ export function restoreNavigationWindow(widths, availableWidth, activeIndex, sav
             && index >= 0 && index < widths.length
             && (offset === 0 || index === (saved.visible[offset - 1] + 1) % widths.length))
         && (saved.visible.length === 1
-            || saved.visible.reduce((sum, index) => sum + widths[index], 0) <= availableWidth)
-        && (activeIndex === -1 || saved.visible.includes(activeIndex))) {
-        return [...saved.visible];
+            || saved.visible.reduce((sum, index) => sum + widths[index], 0) <= availableWidth)) {
+        // A still-visible selection must never rearrange the current window.
+        if (activeIndex === -1 || saved.visible.includes(activeIndex)) {
+            return [...saved.visible];
+        }
+
+        // The selected parent has left the top-level window while its child
+        // menu stayed expanded. Reveal it from whichever cyclic edge is
+        // closer, retaining as much of the current window as will fit.
+        // Equal item distances favor the left edge.
+        const leftDistance = (saved.visible[0] - activeIndex + widths.length) % widths.length;
+        const rightDistance = (activeIndex - saved.visible[saved.visible.length - 1] + widths.length) % widths.length;
+        const direction = leftDistance <= rightDistance ? -1 : 1;
+        let visible = [...saved.visible];
+        while (!visible.includes(activeIndex)) {
+            visible = advanceNavigationWindow(widths, visible, availableWidth, direction);
+        }
+        return visible;
     }
 
     // Direct links have no previous window. Display the active parent/child
