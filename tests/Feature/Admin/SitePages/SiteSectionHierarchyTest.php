@@ -10,6 +10,7 @@ use App\Filament\Pages\SitePages;
 use App\Filament\Support\PagesSettingsDialog;
 use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
+use App\Models\AdminNotification;
 use App\Models\BlogPost;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
@@ -408,7 +409,7 @@ it('keeps the Pages Settings action before Add page and exposes the shared Home 
     ]);
 });
 
-it('autosaves Pages toggles and keeps the native Settings edit dialog open', function (): void {
+it('autosaves Pages toggles from field updates without a separate Action submit', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
@@ -426,28 +427,40 @@ it('autosaves Pages toggles and keeps the native Settings edit dialog open', fun
     expect($routing->enabled($home->fresh()))->toBeFalse()
         ->and(PublicContentSetting::navigationNestingEnabled())->toBeTrue();
 
-    $component
-        ->set('mountedActions.0.data.skip_home', true)
-        ->call('callMountedAction')
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
+    // A real Toggle updates Livewire state; it does not submit the modal Action.
+    $component->set('mountedActions.0.data.skip_home', true)
         ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
         ->assertSet('mountedActions.0.name', 'pagesSettings');
 
-    expect($routing->enabled($home->fresh()))->toBeTrue();
+    expect($routing->enabled($home->fresh()))->toBeTrue()
+        ->and(AuditEvent::query()->count())->toBe($auditCount + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount + 1);
 
-    $component
-        ->set('mountedActions.0.data.navigation_nesting_enabled', false)
-        ->call('callMountedAction')
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
+    $component->set('mountedActions.0.data.navigation_nesting_enabled', false)
         ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
         ->assertSet('mountedActions.0.name', 'pagesSettings');
 
     expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
         ->and($routing->enabled($home->fresh()))->toBeTrue()
-        ->and($component->get('nestedNavigationEnabled'))->toBeFalse();
+        ->and($component->get('nestedNavigationEnabled'))->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($auditCount + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount + 1);
+
+    // A duplicate browser change/submission must be a true no-op.
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
+    $component->call('callMountedAction')->assertHasNoFormErrors();
+    $component->set('mountedActions.0.data.navigation_nesting_enabled', false);
+    expect(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount);
 
     $component->call('unmountAction')->assertSet('mountedActions', []);
-
-    expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
-        ->and($routing->enabled($home->fresh()))->toBeTrue();
 
     Livewire::test(SitePages::class)
         ->call('mountAction', 'pagesSettings')
@@ -470,8 +483,8 @@ it('autosaves Skip Home destination selection and avoids duplicate mutations on 
     $routing = app(HomeRoutingSettingsService::class);
     $component = Livewire::test(SitePages::class)->call('mountAction', 'pagesSettings')
         ->set('mountedActions.0.data.skip_home', true)
-        ->call('callMountedAction')
-        ->assertHasNoFormErrors();
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
 
     $component
         ->set('mountedActions.0.data.skip_target_section_id', (string) $second->getKey())
@@ -505,26 +518,29 @@ it('immediately flattens nested pages through Settings autosave without a second
     Livewire::test(SitePages::class)
         ->call('mountAction', 'pagesSettings')
         ->set('mountedActions.0.data.navigation_nesting_enabled', false)
-        ->call('callMountedAction')
         ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
         ->assertSet('mountedActions.0.name', 'pagesSettings');
 
     expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
         ->and($child->fresh()->parent_id)->toBeNull();
 });
 
-it('closing Pages Settings without a change event does not persist altered form state', function (): void {
+it('closing an unchanged Pages Settings dialog does not create Activity or Notifications', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
     Livewire::test(SitePages::class)
         ->call('mountAction', 'pagesSettings')
-        ->set('mountedActions.0.data.navigation_nesting_enabled', false)
         ->call('unmountAction')
         ->assertSet('mountedActions', []);
 
-    expect(PublicContentSetting::navigationNestingEnabled())->toBeTrue();
+    expect(PublicContentSetting::navigationNestingEnabled())->toBeTrue()
+        ->and(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount);
 });
 
 it('uses the shared toggle control and the native autosave dialog without Pages helper copy', function (): void {
