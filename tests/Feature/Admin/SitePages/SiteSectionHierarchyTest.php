@@ -26,6 +26,42 @@ function pagesRepairAdmin(): User
     return User::factory()->admin()->create();
 }
 
+
+it('suggests a public slug from a new page name without replacing manual edits', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $component = Livewire::test(SitePages::class)
+        ->mountAction('addPage')
+        ->set('mountedActions.0.data.name', 'Über meine Arbeiten')
+        ->assertSet('mountedActions.0.data.slug', 'uber-meine-arbeiten');
+
+    $component
+        ->set('mountedActions.0.data.slug', 'my-own-url')
+        ->set('mountedActions.0.data.name', 'Anderer Titel')
+        ->assertSet('mountedActions.0.data.slug', 'my-own-url')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    expect(SiteSection::query()->where('slug', 'my-own-url')->value('title'))->toBe('Anderer Titel');
+});
+
+it('keeps generated page slugs within the allowed length and syntax', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $component = Livewire::test(SitePages::class)
+        ->mountAction('addPage')
+        ->set('mountedActions.0.data.name', str_repeat('Long Page ', 15));
+
+    $slug = $component->get('mountedActions.0.data.slug');
+    expect($slug)->toBeString()
+        ->and(strlen($slug))->toBeLessThanOrEqual(80)
+        ->and($slug)->toMatch('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
+});
+
 it('derives all six metrics from real SiteSections', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);

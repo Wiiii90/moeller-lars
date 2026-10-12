@@ -15,8 +15,11 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 trait ManagesSitePageCreateDialog
 {
@@ -46,7 +49,13 @@ trait ManagesSitePageCreateDialog
                         TextInput::make('name')
                             ->label('Name')
                             ->required()
-                            ->maxLength(160),
+                            ->maxLength(160)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
+                                if (blank($get('slug')) && filled($state)) {
+                                    $set('slug', rtrim(mb_substr(Str::slug($state), 0, 80), '-'));
+                                }
+                            }),
                         TextInput::make('slug')
                             ->label('Public slug')
                             ->maxLength(80)
