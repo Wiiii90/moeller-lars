@@ -28,8 +28,11 @@
     --public-ink-strong: #30291f;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-index-typeface: Georgia, "Times New Roman", serif;
-    --public-index-ink: #514941;
-    --public-index-rule: rgba(76, 63, 50, .22);
+    --public-index-ink: #f5f0e5;
+    --public-index-muted: #c5bfaf;
+    --public-index-surface: #292b28;
+    --public-index-select: rgba(248, 240, 220, .14);
+    --public-index-rule: rgba(248, 240, 220, .28);
     --public-ink: #555;
     --public-muted: #777;
     --public-active: #746a60;
@@ -77,13 +80,12 @@ body {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
     min-width: 0;
     margin-inline: auto;
-    background: var(--public-surface);
 }
 
 .site-navigation {
     position: relative;
     order: 1;
-    /* An inset hairline is visually a printed catalog edge, not new geometry. */
+    background: var(--public-index-surface);
     box-shadow: inset 0 -1px 0 var(--public-index-rule);
 }
 
@@ -97,7 +99,7 @@ body {
         minmax(0, min(calc(100% - 2 * var(--public-content-inset)), var(--public-art-max)))
         minmax(0, 1fr);
     align-items: stretch;
-    background: var(--public-surface);
+    background: var(--public-index-surface);
 }
 
 .site-navigation__rail > nav,
@@ -178,11 +180,11 @@ body {
     align-items: center;
     justify-content: center;
     background: transparent;
-    color: var(--public-index-ink);
+    color: var(--public-index-muted);
     font-family: var(--public-index-typeface);
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 400;
-    letter-spacing: 0;
+    letter-spacing: .005em;
     line-height: 1.15;
     text-decoration: none;
     text-transform: none;
@@ -201,7 +203,7 @@ body {
     right: 0;
     bottom: -.36em;
     left: 0;
-    height: 1px;
+    height: 2px;
     background: var(--public-index-ink);
     opacity: 0;
     transition: opacity .14s ease;
@@ -213,7 +215,8 @@ body {
 
 .site-navigation__item.is-active > .site-navigation__primary > :is(a, button, span),
 .site-header nav a[aria-current="page"] {
-    color: #332f2b;
+    color: var(--public-index-ink);
+    background: var(--public-index-select);
     box-shadow: none;
 }
 
@@ -228,7 +231,8 @@ body {
 .site-header nav .site-navigation__primary > button:hover,
 .site-header nav .site-navigation__primary > button:focus-visible,
 .site-navigation__item[data-submenu-open="true"] > .site-navigation__primary > :is(a, button) {
-    color: #302d2a;
+    color: var(--public-index-ink);
+    background: var(--public-index-select);
 }
 
 .site-header nav a:hover .site-navigation__label::after,
@@ -289,9 +293,9 @@ body {
     appearance: none;
     border: 0;
     background: transparent;
-    color: var(--public-index-ink);
+    color: var(--public-index-muted);
     font-family: var(--public-index-typeface);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 400;
     letter-spacing: 0;
     line-height: 1.15;
@@ -321,12 +325,12 @@ body {
 
 .site-navigation__back:hover,
 .site-navigation__back:focus-visible {
-    color: #302d2a;
+    color: var(--public-index-ink);
 }
 
 .site-navigation__back:hover .site-navigation__back-label,
 .site-navigation__back:focus-visible .site-navigation__back-label {
-    text-decoration-color: var(--public-active);
+    text-decoration-color: var(--public-index-ink);
 }
 
 .site-navigation__back:focus-visible {
@@ -360,7 +364,7 @@ body {
     border: 0;
     appearance: none;
     background: transparent;
-    color: var(--public-index-ink);
+    color: var(--public-index-muted);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
@@ -368,7 +372,7 @@ body {
 .site-navigation__control[data-direction="next"] { grid-column: 3; }
 .site-navigation__control:hover,
 .site-navigation__control:focus-visible {
-    color: #4a443e;
+    color: var(--public-index-ink);
     background: transparent;
 }
 .site-navigation__control > .public-icon {
@@ -444,6 +448,7 @@ body {
 #content {
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
+    background: var(--public-surface);
 }
 
 /* Only genuinely empty section pages without a configured heading fill the
