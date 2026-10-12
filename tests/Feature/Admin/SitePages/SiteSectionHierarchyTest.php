@@ -419,6 +419,43 @@ it('autosaves Pages toggles and keeps the native Settings edit dialog open', fun
         ->assertSet('mountedActions.0.data.navigation_nesting_enabled', false);
 });
 
+it('autosaves Skip Home destination selection and avoids duplicate mutations on no-op', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $pages = app(SiteSectionEditorialService::class);
+    $first = $pages->createCustomPage('Settings Default Destination', 'settings-default-destination');
+    $second = $pages->createCustomPage('Settings Selected Destination', 'settings-selected-destination');
+    $pages->updatePlacement($first, 'published', true, null);
+    $pages->updatePlacement($second, 'published', true, null);
+
+    $home = app(HomePresentationResolver::class)->settings();
+    $routing = app(HomeRoutingSettingsService::class);
+    $component = Livewire::test(SitePages::class)->call('mountAction', 'pagesSettings')
+        ->set('mountedActions.0.data.skip_home', true)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    $component
+        ->set('mountedActions.0.data.skip_target_section_id', (string) $second->getKey())
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'pagesSettings');
+
+    expect($routing->enabled($home->fresh()))->toBeTrue()
+        ->and($routing->configuredTargetId($home->fresh()))->toBe((int) $second->getKey());
+
+    $auditCount = AuditEvent::query()->count();
+    $component->call('callMountedAction')->assertHasNoFormErrors();
+    expect(AuditEvent::query()->count())->toBe($auditCount);
+
+    $component->call('unmountAction');
+    Livewire::test(SitePages::class)
+        ->call('mountAction', 'pagesSettings')
+        ->assertSet('mountedActions.0.data.skip_target_section_id', $second->getKey());
+});
+
 it('immediately flattens nested pages through Settings autosave without a second submit', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     Filament::setCurrentPanel('admin');
