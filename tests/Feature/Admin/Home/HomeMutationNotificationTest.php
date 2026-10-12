@@ -153,6 +153,29 @@ it('stages Home Heading conversion and commits only from Apply type', function (
         ->and(AdminNotification::query()->count())->toBe($notifications + 1);
 });
 
+it('recognizes a newly converted empty Heading as Heading, not Rich Text', function (): void {
+    $settings = homeNotificationSettings([[
+        'type' => 'divider', 'variant' => 'thin', 'published' => true,
+    ]]);
+
+    Livewire::test(HomePresentation::class)
+        ->mountAction('changeComponentType', [
+            'index' => 0, 'type' => 'divider', 'kind' => 'divider', 'targetKind' => 'heading',
+        ])
+        ->callMountedAction()
+        ->assertHasNoErrors();
+
+    $component = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())['custom']['components'][0];
+    expect($component['type'])->toBe('text')
+        ->and($component['text_kind'])->toBe('heading')
+        ->and($component['title'])->toBeNull();
+
+    Livewire::test(HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
+        ->assertSet('mountedActions.0.data.editor_kind', 'heading');
+});
+
 it('notifies once when publishing a mixed Home component and Contact child selection', function (): void {
     $settings = homeNotificationSettings([
         ['type' => 'contact', 'published' => true, 'children' => [
