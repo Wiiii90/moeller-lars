@@ -133,6 +133,8 @@ When bulk selection exists:
 - when sibling toolbar groups use visible role labels such as `TYPE`, `STATUS`, `FILTER` and `PAGES`, the bulk group uses the same `SELECTION` label so the toolbar hierarchy stays consistent;
 - the checkbox column itself does not receive redundant visible `Selection` text; an accessible label on the select-all checkbox is sufficient;
 - destructive bulk behavior retains the same domain safeguards as row actions.
+- the header checkbox operates on the current visible set: from **none or some**, select all visible; from **all**, clear all visible. Turning it off does not restore an earlier subset. Filtering/paging must never show a selected header for zero selected rows;
+- the header's native `checked` and `indeterminate` properties and accessible `aria-checked` state come from the same reactive visible-ID/selected-ID projection. Do not cache these states separately in server booleans or static Blade attributes; individual `wire:model.live` checkboxes have Livewire as their sole checked-state owner.
 
 This count-to-checkbox axis applies to ordinary tables and table-like hierarchies, including views that preserve the same toolbar while switching between table modes. Activity and Commits are concrete examples: both keep the same terminal Selection rail while their multi-action menu exposes only actions valid for the active history table and current selection. A contact-sheet/card surface such as Gallery, which has no single trailing table Selection column, does not invent a fake axis merely to satisfy this rule.
 
