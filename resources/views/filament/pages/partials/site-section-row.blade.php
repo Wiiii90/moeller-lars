@@ -34,7 +34,7 @@
             @endif
         </div>
 
-        <div class="admin-hierarchy__content admin-pages__page" role="cell" data-cell="page">
+        <div class="admin-hierarchy__content admin-pages__page" role="cell" data-cell="page" title="{{ $label }}">
             @if ($section['workspace_url'])
                 <a class="admin-pages__page-link" href="{{ $section['workspace_url'] }}" wire:navigate><strong>{{ $label }}</strong></a>
             @else
