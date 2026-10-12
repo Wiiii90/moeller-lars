@@ -49,7 +49,7 @@ trait ManagesSitePageEditDialog
                     ...SitePageHeading::formState($section),
                 ];
             })
-            ->schema([
+            ->schema(fn (array $arguments): array => [
                 Grid::make()
                     ->columns(['md' => 2])
                     ->schema([
@@ -89,7 +89,12 @@ trait ManagesSitePageEditDialog
                             ->minValue(1)
                             ->required(),
                     ]),
-                PageHeadingFields::schema()
+                PageHeadingFields::schema(function (string $field, mixed $value) use ($arguments): void {
+                    $section = $this->dialogSection($arguments);
+                    app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
+                    // Keep subsequent dialog saves/actions on the latest persisted row.
+                    $this->dialogSectionCache = [];
+                })
                     ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
             ])
             ->action(function (array $data, array $arguments): void {

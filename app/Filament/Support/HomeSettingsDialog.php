@@ -133,7 +133,10 @@ final class HomeSettingsDialog
                         ->label('Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
                 ]),
-            PageHeadingFields::schema(),
+            PageHeadingFields::schema(function (string $field, mixed $value): void {
+                $section = $this->homeSection($this->resolver->settings());
+                app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
+            }),
         ];
     }
 

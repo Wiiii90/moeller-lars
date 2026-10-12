@@ -23,9 +23,13 @@ Exactly five semantic dialog types are supported:
 ### Edit
 
 Pages and Home share one `PageHeadingFields` schema for the optional public
-content heading. It is saved through `SiteSectionEditorialService` and
-separate from page identity/navigation. The public heading is disabled by
-default, may use the page title or a 160-character override, and supports
+content heading. Each heading field persists through Filament's native
+`afterStateUpdated` callback directly to `SiteSectionEditorialService`:
+toggles/selects on change, text on blur. Do not rely on a modal-level
+`wire:change` event for dynamic heading fields, or on the native X closing
+the dialog to submit data. The original Edit action autosave still owns its
+other fields. Heading state is separate from page identity/navigation,
+disabled by default, and supports an optional 160-character override,
 left/center/right alignment plus none/thin/subtle/strong/dotted divider styles.
 
 

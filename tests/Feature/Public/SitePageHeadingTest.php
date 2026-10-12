@@ -97,9 +97,9 @@ it('validates heading controls and uses one schema for Pages and Home', function
     ]))->toThrow(ValidationException::class);
 
     expect(file_get_contents(app_path('Filament/Support/HomeSettingsDialog.php')))
-        ->toContain('PageHeadingFields::schema()');
+        ->toContain('PageHeadingFields::schema(');
     expect(file_get_contents(app_path('Filament/Pages/Concerns/ManagesSitePageEditDialog.php')))
-        ->toContain('PageHeadingFields::schema()');
+        ->toContain('PageHeadingFields::schema(');
     expect(file_get_contents(resource_path('views/pages/home.blade.php')))
         ->toContain('<x-public.page-heading :section="$pageSection" />');
     expect(file_get_contents(resource_path('views/pages/artworks/index.blade.php')))

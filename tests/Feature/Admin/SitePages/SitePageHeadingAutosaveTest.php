@@ -1,0 +1,123 @@
+<?php
+
+use App\Domain\Content\HomePresentationResolver;
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteSectionEditorialService;
+use App\Filament\Pages\SitePages;
+use App\Models\AuditEvent;
+use App\Models\SiteSection;
+use App\Models\User;
+use Filament\Facades\Filament;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+});
+
+it('autosaves every content heading control without submitting the Pages Edit action', function (): void {
+    $editorial = app(SiteSectionEditorialService::class);
+    $section = $editorial->createJournal('Exhibitions', 'autosave-exhibitions', JournalTemplate::Exhibitions->value);
+
+    $page = Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $section->getKey()])
+        ->assertSet('mountedActions.0.data.content_heading_enabled', false);
+
+    // Field-specific Livewire lifecycle persistence: NO callMountedAction.
+    $page->set('mountedActions.0.data.content_heading_enabled', true)
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editPage');
+    expect($section->fresh()->content_heading_enabled)->toBeTrue();
+
+    $page->set('mountedActions.0.data.content_heading_alignment', 'center')
+        ->assertHasNoFormErrors();
+    expect($section->fresh()->content_heading_alignment)->toBe('center');
+
+    $page->set('mountedActions.0.data.content_heading_divider', 'dotted')
+        ->assertHasNoFormErrors();
+    expect($section->fresh()->content_heading_divider)->toBe('dotted');
+
+    $page->set('mountedActions.0.data.content_heading_override', 'Current programme')
+        ->assertHasNoFormErrors();
+    expect($section->fresh()->content_heading_override)->toBe('Current programme');
+
+    $page->call('unmountAction')->assertSet('mountedActions', []);
+
+    Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $section->getKey()])
+        ->assertSet('mountedActions.0.data.content_heading_enabled', true)
+        ->assertSet('mountedActions.0.data.content_heading_alignment', 'center')
+        ->assertSet('mountedActions.0.data.content_heading_divider', 'dotted')
+        ->assertSet('mountedActions.0.data.content_heading_override', 'Current programme');
+
+    $this->get('/autosave-exhibitions')
+        ->assertStatus(404); // Not published; public data must still remain protected.
+
+    $editorial->updatePlacement($section->fresh(), 'published', null);
+    $this->get('/autosave-exhibitions')
+        ->assertOk()
+        ->assertSee('Current programme')
+        ->assertSee('public-page-heading--center', false)
+        ->assertSee('custom-page__divider--dotted', false);
+});
+
+it('autosaves Home heading controls and preserves existing settings and public display', function (): void {
+    $section = app(HomePresentationResolver::class)->settings()->siteSection;
+    expect($section)->toBeInstanceOf(SiteSection::class);
+
+    $dialog = Livewire::test(SitePages::class)
+        ->mountAction('editHome')
+        ->assertSet('mountedActions.0.data.content_heading_enabled', false);
+
+    $dialog->set('mountedActions.0.data.content_heading_enabled', true);
+    expect($section->fresh()->content_heading_enabled)->toBeTrue();
+
+    $dialog->set('mountedActions.0.data.content_heading_alignment', 'right')
+        ->set('mountedActions.0.data.content_heading_divider', 'thin')
+        ->set('mountedActions.0.data.content_heading_override', 'Studio')
+        ->assertHasNoFormErrors();
+    expect($section->fresh()->content_heading_alignment)->toBe('right')
+        ->and($section->fresh()->content_heading_divider)->toBe('thin')
+        ->and($section->fresh()->content_heading_override)->toBe('Studio');
+
+    $dialog->call('unmountAction');
+    Livewire::test(SitePages::class)
+        ->mountAction('editHome')
+        ->assertSet('mountedActions.0.data.content_heading_enabled', true)
+        ->assertSet('mountedActions.0.data.content_heading_alignment', 'right')
+        ->assertSet('mountedActions.0.data.content_heading_divider', 'thin')
+        ->assertSet('mountedActions.0.data.content_heading_override', 'Studio');
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Studio')
+        ->assertSee('public-page-heading--right', false);
+});
+
+it('can hide and restore a Page heading without discarding the optional style or repeating audits', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Studio Page', 'autosave-studio');
+    $page = Livewire::test(SitePages::class)->mountAction('editPage', ['section' => $section->getKey()])
+        ->set('mountedActions.0.data.content_heading_enabled', true)
+        ->set('mountedActions.0.data.content_heading_override', 'Override');
+
+    $auditCount = AuditEvent::query()->count();
+    $page->set('mountedActions.0.data.content_heading_override', 'Override');
+    expect(AuditEvent::query()->count())->toBe($auditCount);
+
+    $page->set('mountedActions.0.data.content_heading_enabled', false);
+    expect($section->fresh()->content_heading_enabled)->toBeFalse()
+        ->and($section->fresh()->content_heading_override)->toBe('Override');
+
+    $page->call('unmountAction');
+    Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $section->getKey()])
+        ->assertSet('mountedActions.0.data.content_heading_enabled', false)
+        ->set('mountedActions.0.data.content_heading_enabled', true);
+
+    expect($section->fresh()->content_heading_enabled)->toBeTrue()
+        ->and($section->fresh()->content_heading_override)->toBe('Override');
+});
