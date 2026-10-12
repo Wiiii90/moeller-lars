@@ -47,14 +47,13 @@ it('retires superseded internal Blog settings after Journal canonicalization', f
         ->and(Schema::hasTable('journal_settings'))->toBeTrue();
 });
 
-it('enforces unique visible top-level SiteSection navigation positions', function (): void {
+it('enforces unique published SiteSection positions regardless of historic menu-visibility flags', function (): void {
     $first = ArtworkCategory::create(['slug' => 'first', 'name' => 'First', 'show_on_home' => false]);
-    testGallerySection($first, ['state' => 'published', 'show_in_navigation' => true, 'position' => 200]);
+    testGallerySection($first, ['state' => 'published', 'position' => 200]);
     $second = ArtworkCategory::create(['slug' => 'second', 'name' => 'Second', 'show_on_home' => false]);
 
     expect(fn () => testGallerySection($second, [
         'state' => 'published',
-        'show_in_navigation' => true,
         'position' => 200,
     ]))->toThrow(QueryException::class);
 });
@@ -109,7 +108,6 @@ it('enforces Home as the only singleton SiteSection type', function (): void {
         'slug' => 'duplicate-home',
         'state' => 'hidden',
         'position' => 999,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
         'created_at' => now(),
@@ -117,18 +115,16 @@ it('enforces Home as the only singleton SiteSection type', function (): void {
     ]))->toThrow(QueryException::class);
 });
 
-it('keeps Home published while allowing it to be hidden from public navigation', function (): void {
+it('keeps Home published with the title as its public menu label fallback', function (): void {
     /** @var SiteSection $home */
     $home = SiteSection::query()->where('type', SiteSection::TYPE_HOME)->firstOrFail();
     $home->fill([
-        'show_in_navigation' => false,
         'navigation_label' => null,
     ]);
     $home->save();
 
     expect($home->fresh())
         ->state->toBe('published')
-        ->show_in_navigation->toBeFalse()
         ->navigation_label->toBeNull();
 
     $home->setAttribute('state', 'hidden');
