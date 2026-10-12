@@ -67,7 +67,6 @@ final class HomePresentation extends Page
 
     public int $homeSectionId = 0;
 
-    public bool $showHomeInNavigation = true;
 
     public bool $artworkShowDetails = true;
 
@@ -750,11 +749,6 @@ final class HomePresentation extends Page
         $routingConfiguration = app(HomeRoutingSettingsService::class)->configuration($settings);
         $this->settingsId = (int) $settings->getKey();
         $this->homeSectionId = (int) $settings->getAttribute('site_section_id');
-        $homeSection = $settings->relationLoaded('siteSection') ? $settings->getRelationValue('siteSection') : $settings->siteSection()->first();
-        if ($homeSection instanceof SiteSection) {
-            $this->showHomeInNavigation = (bool) $homeSection->getAttribute('show_in_navigation');
-        }
-
         $template = $settings->template();
         $this->template = $template->value;
         $this->templateLabel = $template->label();
@@ -806,7 +800,6 @@ final class HomePresentation extends Page
     {
         return [
             'template' => $this->template,
-            'show_in_navigation' => $this->showHomeInNavigation,
             'show_details' => $this->artworkShowDetails,
             'show_gallery_link' => $this->artworkShowGalleryLink,
             'group_source' => $this->heroGroupSource,
