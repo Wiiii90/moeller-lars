@@ -60,29 +60,8 @@ that commits ordinary Edit fields. List components therefore use the canonical
 the entire component and ordered entries atomically through the existing
 editorial service. Other components keep the normal autosaving Edit dialog.
 Neither surface exposes standalone List child rows or Add List Item table
-buttons. The List command must not mutate on close/cancel.
-
-**Component type changes:** In the existing Edit/Command dialog, changing the
-`Component` Select is only a staged choice. `ComponentTypeChangeControl`
-owns the shared **Apply type** action. Its field change must not propagate to
-the generic modal `wire:change` autosave or invoke the conversion service;
-the old type's editing fields are withheld while a different type is staged.
-Only **Apply type** invokes the existing transactional conversion service
-and refreshes the same Edit target with the new component; conversion that
-loses content requires confirmation. Choosing the current type is a no-op.
-Table-row type selects open the canonical confirmation Action even when no
-content would be lost: selecting a value alone never commits. Domain
-conversion and the one notifier call remain shared between table and Edit.
-This is independent of the List entry **Apply changes** command and does
-not introduce a generic Save action for other editorial fields. A Legal
-Disclaimer component also offers this Type editor: its own content is a
-read-only projection of General's canonical disclaimer and must never open an
-empty editor or persist a second copy of General's text. A Home Heading is a
-real content component rendered as an inner heading, distinct from the page
-heading configured in Settings; Home persists its optional text presentation
-discriminator so a newly converted, still-empty Heading does not silently
-reappear as Rich Text. Existing data without that discriminator continues to
-use the preexisting title/body inference.
+buttons. Type conversion continues through the existing confirmed conversion
+Action; the List command must not mutate on close/cancel.
 
 ### Create
 
@@ -211,18 +190,6 @@ success Notification. Test both form-level and field-level callbacks. See
 `ADMIN-NOTIFICATION-CONTRACT.md` and `TESTING.md`.
 
 Undo must extend the existing Activity/Audit receipt architecture. Do not create an independent dialog snapshot/rollback system. An Undo action may only be shown for mutations that have safe current receipts; applying Undo creates inverse editorial actions through the canonical `AdminUndoService` path.
-
-## Rich Text editor readiness
-
-Filament's MarkdownEditor initializes EasyMDE/CodeMirror only after its modal
-enter transition has begun. A standalone Rich Text edit window must not be
-shown with an uninitialized editor and then grow as the toolbar is added.
-The shared dialog contract gates the window's opacity on the actual
-`.CodeMirror` and `.editor-toolbar` elements; it neither reserves an
-arbitrary field height nor adds a second lifecycle timer, event listener,
-scroll lock or modal executor. Collapsed Repeater editors are excluded from
-the whole-window gate because they can initialize later on demand.
-Filament remains the sole modal lifecycle and scroll-lock owner.
 
 ## Controls
 
