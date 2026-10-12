@@ -107,17 +107,19 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return list<mixed> */
-    private function listEntrySchema(): array
+    private function listEntrySchema(bool $isNew = true): array
     {
         return [
             Grid::make()
                 ->columns(['md' => 2])
                 ->schema([
-                    Select::make('publication_state')
-                        ->label('Status')
-                        ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                        ->default('published')
-                        ->required(),
+                    ...($isNew ? [
+                        Select::make('publication_state')
+                            ->label('Status')
+                            ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                            ->default('published')
+                            ->required(),
+                    ] : [Hidden::make('publication_state')]),
                     TextInput::make('date')->label('Date / year')->maxLength(120),
                     TextInput::make('title')->label('Entry')->required()->maxLength(240),
                     TextInput::make('meta')->label('Organisation / context')->maxLength(240),

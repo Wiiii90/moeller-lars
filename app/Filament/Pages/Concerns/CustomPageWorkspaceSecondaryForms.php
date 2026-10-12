@@ -27,11 +27,13 @@ trait CustomPageWorkspaceSecondaryForms
             $fields[] = Hidden::make('child_type')->default($childType)->required();
         }
 
-        $fields[] = Select::make('publication_state')
-            ->label('Status')
-            ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-            ->default('published')
-            ->required();
+        $fields[] = $includeTypeSelect
+            ? Select::make('publication_state')
+                ->label('Status')
+                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                ->default('published')
+                ->required()
+            : Hidden::make('publication_state');
 
         $fields[] = Grid::make()
             ->columns(['md' => 2])

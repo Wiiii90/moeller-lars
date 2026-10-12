@@ -133,6 +133,9 @@ Contextual actions are native Filament Actions lifted into the shared header rai
 - header reserve is derived from the number of actual header actions. Do not reserve a fixed empty action rail;
 - task headings are concise noun/action phrases, normally one or two words (`Edit file`, `Delete page?`, `Page settings`). Viewer headings may use the record title when identity is the point of the dialog;
 - descriptions are exceptional: keep them only for a material consequence, ambiguity or safety rule that the controls themselves do not communicate. Do not restate the heading or narrate obvious form behavior;
+- use `AdminDialog::headerAction()` with the canonical `AdminRowAction` role for row-mirroring Edit/Viewer icons; domain commands and their confirmation semantics remain with their existing owners;
+- keep available contextual Edit actions in the same semantic order as the table (Move up, Move down, publication/workflow, Delete); do not duplicate the Edit action inside its own dialog or add inapplicable actions as placeholders;
+- changing a row's position while its Edit dialog is open must refresh the mounted target, never keep an outdated array index;
 - use `admin-dialog__header-action` and canonical `AdminIcon` entries;
 - commit actions use the primary treatment;
 - destructive actions use the danger treatment;

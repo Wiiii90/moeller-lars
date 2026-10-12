@@ -7,6 +7,7 @@ use App\Domain\Admin\DashboardFeed;
 use App\Domain\Admin\DashboardFeedPins;
 use App\Domain\Admin\DashboardNotificationRetention;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\DashboardOverview;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -574,6 +575,17 @@ final class Dashboard extends Page
         }
 
         $key = (string) $entry['key'];
+        $pinned = collect(app(DashboardFeedPins::class)->entries())
+            ->contains(fn (array $item): bool => ($item['key'] ?? null) === $key);
+        $pinAction = AdminDialog::headerAction(
+            'toggleDialogPin',
+            $pinned ? AdminRowAction::Unpin : AdminRowAction::Pin,
+            function () use ($key): void {
+                $this->toggleFeedPin($key);
+                unset($this->feedEntryCache[$key]);
+                $this->replaceMountedAction('feedEntry', ['key' => $key]);
+            },
+        );
         $isRead = str_starts_with((string) $entry['status'], 'Read');
         $readAction = Action::make($isRead ? 'markFeedUnread' : 'markFeedRead')
             ->label($isRead ? 'Mark unread' : 'Mark read')
@@ -617,7 +629,7 @@ final class Dashboard extends Page
             );
         }
 
-        return [$readAction, $deleteAction];
+        return [$pinAction, $readAction, $deleteAction];
     }
 
     private function deleteWithoutConfirmation(): bool

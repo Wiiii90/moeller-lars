@@ -88,3 +88,19 @@ it('only offers Home-supported editable types without expanding the public compo
         'divider' => 'Divider',
     ])->and($page->newComponentOptions)->toHaveKey('heading');
 });
+
+it('accepts the four shared Divider variants for Home and rejects invalid styles', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $settings = homeComponentTypeSettings(HomeTemplate::Custom, [['type' => 'divider']]);
+    $service = app(HomePresentationEditorialService::class);
+
+    foreach (\App\Domain\Content\DividerVariant::VALUES as $variant) {
+        expect($service->updateComponent(
+            $settings, HomeTemplate::Custom, 0, 'divider',
+            ['type' => 'divider', 'variant' => $variant],
+        ))->toBeBool();
+        expect($service->configuration($settings->fresh())['custom']['components'][0]['variant'])->toBe($variant);
+    }
+
+    expect(\App\Models\CustomPageSetting::DIVIDER_VARIANTS)->toBe(\App\Domain\Content\DividerVariant::VALUES);
+});

@@ -9,6 +9,7 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionIdentityService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HomeSettingsDialog;
@@ -232,24 +233,42 @@ trait ManagesSitePageEditDialog
     private function pageDialogHeaderActions(array $arguments): array
     {
         $section = $this->dialogSection($arguments);
-        if (! $section->nodeType()->canChangePublication()) {
-            return [];
+        $id = (int) $section->getKey();
+        $row = collect($this->filteredRows)->firstWhere('id', $id);
+        $actions = [];
+
+        // Use the same capabilities/order as the visible Pages row. Movement
+        // reopens the editor for the stable section ID to refresh Position.
+        if (($row['can_reorder'] ?? false) === true) {
+            foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+                $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($id, $direction): void {
+                    $this->moveSection($id, $direction);
+                    $this->dialogSectionCache = [];
+                    $this->replaceMountedAction('editPage', ['section' => $id]);
+                })->disabled(! $this->reorderEnabled || ! ($row['can_move_'.$direction] ?? false));
+            }
         }
 
-        $published = (string) $section->getAttribute('state') === 'published';
-        $sectionId = (int) $section->getKey();
+        if ($section->nodeType()->canChangePublication()) {
+            $published = (string) $section->getAttribute('state') === 'published';
+            $actions[] = AdminDialog::headerAction(
+                'toggleDialogPublication',
+                $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+                function () use ($id): void {
+                    $this->toggleSectionState($id);
+                    $this->dialogSectionCache = [];
+                    $this->replaceMountedAction('editPage', ['section' => $id]);
+                },
+            );
+        }
 
-        return [
-            Action::make('toggleDialogPublication')
-                ->label($published ? 'Unpublish' : 'Publish')
-                ->icon(($published ? AdminIcon::Unpublish : AdminIcon::Publish)->value)
-                ->iconButton()
-                ->color('gray')
-                ->extraAttributes(['class' => 'admin-dialog__header-action'])
-                ->action(function () use ($sectionId): void {
-                    $this->toggleSectionState($sectionId);
-                }),
-        ];
+        if (($row['can_delete'] ?? false) === true) {
+            $actions[] = AdminDialog::headerAction('dialogDeletePage', AdminRowAction::Delete, function () use ($id): void {
+                $this->replaceMountedAction('deletePage', ['section' => $id]);
+            });
+        }
+
+        return $actions;
     }
 
     /** @param array<string, mixed> $arguments */

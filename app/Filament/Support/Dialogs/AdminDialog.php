@@ -3,6 +3,7 @@
 namespace App\Filament\Support\Dialogs;
 
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\AdminRowAction;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Support\Enums\Alignment;
@@ -50,6 +51,22 @@ final class AdminDialog
         }
 
         return $action;
+    }
+
+    /**
+     * Use the same semantic icon, label and danger treatment in row actions
+     * and in the Edit/Viewer header. Callers own their domain mutation and
+     * whether a destructive action needs a confirmation.
+     */
+    public static function headerAction(string $name, AdminRowAction $role, Closure $handler): Action
+    {
+        return Action::make($name)
+            ->label($role->label())
+            ->icon($role->icon()->value)
+            ->iconButton()
+            ->color($role->isDangerAction() ? 'danger' : 'gray')
+            ->extraAttributes(['class' => 'admin-dialog__header-action'.($role->isDangerAction() ? ' is-danger' : '')])
+            ->action($handler);
     }
 
     public static function command(

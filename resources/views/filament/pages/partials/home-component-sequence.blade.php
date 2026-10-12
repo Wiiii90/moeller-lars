@@ -88,7 +88,6 @@
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::Edit"
                                     wire:click="mountAction('editComponent', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}' })"
-                                    :disabled="! $homeComponent['editable']"
                                 />
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::Delete"

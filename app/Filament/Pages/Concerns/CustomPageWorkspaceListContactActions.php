@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
@@ -42,8 +43,9 @@ trait CustomPageWorkspaceListContactActions
 
                 return [...$item, 'publication_state' => CustomPageSetting::listItemPublished($item) ? 'published' : 'unpublished'];
             })
-            ->schema($this->listEntrySchema())
+            ->schema($this->listEntrySchema(isNew: false))
             ->modalHeading('Edit entry')
+            ->extraModalFooterActions(fn (array $arguments): array => $this->listEntryEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $itemIndex = $this->actionListItemIndex($arguments);
@@ -65,6 +67,46 @@ trait CustomPageWorkspaceListContactActions
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /** @param array<string,mixed> $arguments
+     * @return list<Action>
+     */
+    private function listEntryEditHeaderActions(array $arguments): array
+    {
+        [$index, $type] = $this->actionComponentTarget($arguments);
+        $itemIndex = $this->actionListItemIndex($arguments);
+        $entry = $this->actionListItem($arguments);
+        $items = $this->componentAt($index, $type)['items'] ?? [];
+        $count = is_array($items) ? count($items) : 0;
+        $target = ['componentIndex' => $index, 'componentType' => $type, 'itemIndex' => $itemIndex];
+        $actions = [];
+
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $canMove = $this->componentReorderEnabled() && ($direction === 'up' ? $itemIndex > 0 : $itemIndex < $count - 1);
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $itemIndex, $direction): void {
+                $this->moveListEntry($index, $type, $itemIndex, $direction);
+                $this->replaceMountedAction('editListEntry', [
+                    'componentIndex' => $index, 'componentType' => $type,
+                    'itemIndex' => $itemIndex + ($direction === 'up' ? -1 : 1),
+                ]);
+            })->disabled(! $canMove);
+        }
+
+        $published = CustomPageSetting::listItemPublished($entry);
+        $actions[] = AdminDialog::headerAction(
+            'dialogTogglePublication',
+            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+            function () use ($index, $type, $itemIndex, $published, $target): void {
+                $this->setListEntryPublished($index, $type, $itemIndex, ! $published);
+                $this->replaceMountedAction('editListEntry', $target);
+            },
+        );
+        $actions[] = AdminDialog::headerAction('dialogDeleteEntry', AdminRowAction::Delete, function () use ($target): void {
+            $this->replaceMountedAction('deleteListEntry', $target);
+        });
+
+        return $actions;
     }
 
     public function setListEntryPublished(int $componentIndex, string $componentType, int $itemIndex, bool $published): void
@@ -171,6 +213,7 @@ trait CustomPageWorkspaceListContactActions
             })
             ->schema(fn (array $arguments): array => $this->contactChildEditorSchema($this->actionContactChildType($arguments), false, $arguments))
             ->modalHeading('Edit contact')
+            ->extraModalFooterActions(fn (array $arguments): array => $this->contactChildEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $childType = $this->actionContactChildType($arguments);
@@ -192,6 +235,44 @@ trait CustomPageWorkspaceListContactActions
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /** @param array<string,mixed> $arguments
+     * @return list<Action>
+     */
+    private function contactChildEditHeaderActions(array $arguments): array
+    {
+        [$index, $type] = $this->actionComponentTarget($arguments);
+        $childType = $this->actionContactChildType($arguments);
+        $child = $this->actionContactChild($arguments);
+        $children = $this->settings()->contactChildren($this->componentAt($index, $type));
+        $position = array_search($childType, array_column($children, 'type'), true);
+        $count = count($children);
+        $target = ['componentIndex' => $index, 'componentType' => $type, 'childType' => $childType];
+        $actions = [];
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $canMove = $this->componentReorderEnabled() && $position !== false
+                && ($direction === 'up' ? $position > 0 : $position < $count - 1);
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $childType, $direction, $target): void {
+                $this->moveContactChild($index, $type, $childType, $direction);
+                $this->replaceMountedAction('editContactChild', $target);
+            })->disabled(! $canMove);
+        }
+
+        $published = CustomPageSetting::contactChildPublished($child);
+        $actions[] = AdminDialog::headerAction(
+            'dialogTogglePublication',
+            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+            function () use ($index, $type, $childType, $published, $target): void {
+                $this->setContactChildPublished($index, $type, $childType, ! $published);
+                $this->replaceMountedAction('editContactChild', $target);
+            },
+        );
+        $actions[] = AdminDialog::headerAction('dialogDeleteContact', AdminRowAction::Delete, function () use ($target): void {
+            $this->replaceMountedAction('deleteContactChild', $target);
+        });
+
+        return $actions;
     }
 
     public function setContactChildPublished(int $index, string $type, string $childType, bool $published): void

@@ -30,12 +30,7 @@ final class CustomPageSetting extends Model
         'contact_form',
     ];
 
-    public const DIVIDER_VARIANTS = [
-        'thin',
-        'subtle',
-        'strong',
-        'dotted',
-    ];
+    public const DIVIDER_VARIANTS = \App\Domain\Content\DividerVariant::VALUES;
 
     protected function casts(): array
     {

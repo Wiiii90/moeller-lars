@@ -9,6 +9,7 @@ use App\Domain\Content\SocialLinks;
 use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaAssetSelect;
@@ -466,6 +467,7 @@ final class General extends Page
             Action::make('editSocialLink')
                 ->label('Edit')
                 ->modalHeading('Edit profile')
+                ->extraModalFooterActions(fn (array $arguments): array => $this->socialEditHeaderActions($arguments))
                 ->fillForm(function (array $arguments): array {
                     $index = $this->socialLinkIndexForAction($arguments);
                     $links = $this->socialLinks();
@@ -529,6 +531,45 @@ final class General extends Page
             $this->saveSocialLinks($links);
             $this->editingSocialPlatform = $platform;
         });
+    }
+
+    /** @param array<string,mixed> $arguments
+     * @return list<Action>
+     */
+    private function socialEditHeaderActions(array $arguments): array
+    {
+        $index = $this->socialLinkIndexForAction($arguments);
+        if ($index === null) {
+            return [];
+        }
+
+        $count = count($this->socialLinks());
+        $actions = [];
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $canMove = $direction === 'up' ? $index > 0 : $index < $count - 1;
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($direction): void {
+                $current = collect($this->socialLinks())->search(
+                    fn (array $link): bool => ($link['platform'] ?? null) === $this->editingSocialPlatform,
+                );
+                if ($current === false) {
+                    throw ValidationException::withMessages(['platform' => 'This social profile changed. Reopen the editor.']);
+                }
+                $this->moveSocialLink((int) $current, $direction);
+                $next = (int) $current + ($direction === 'up' ? -1 : 1);
+                $this->replaceMountedAction('editSocialLink', ['index' => $next]);
+            })->disabled(! $canMove);
+        }
+        $actions[] = AdminDialog::headerAction('dialogDeleteSocial', AdminRowAction::Delete, function (): void {
+            $current = collect($this->socialLinks())->search(
+                fn (array $link): bool => ($link['platform'] ?? null) === $this->editingSocialPlatform,
+            );
+            if ($current === false) {
+                throw ValidationException::withMessages(['platform' => 'This social profile changed. Reopen the editor.']);
+            }
+            $this->deleteSocialLink((int) $current);
+        })->cancelParentActions('editSocialLink');
+
+        return $actions;
     }
 
     public function addSocialLink(): void

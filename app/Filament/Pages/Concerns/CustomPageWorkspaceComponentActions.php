@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\DB;
@@ -188,6 +189,7 @@ trait CustomPageWorkspaceComponentActions
             ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
             ->schema($this->componentEditorSchema(includeTypeSelect: false))
             ->modalHeading('Edit component')
+            ->extraModalFooterActions(fn (array $arguments): array => $this->componentEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $existing = $this->actionComponent($arguments);
@@ -210,6 +212,42 @@ trait CustomPageWorkspaceComponentActions
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /** @param array<string,mixed> $arguments
+     * @return list<Action>
+     */
+    private function componentEditHeaderActions(array $arguments): array
+    {
+        [$index, $type] = $this->actionComponentTarget($arguments);
+        $block = $this->componentAt($index, $type);
+        $count = count($this->settings()->components());
+        $target = ['componentIndex' => $index, 'componentType' => $type];
+        $actions = [];
+
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $canMove = $this->componentReorderEnabled() && ($direction === 'up' ? $index > 0 : $index < $count - 1);
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction): void {
+                $this->moveComponent($index, $type, $direction);
+                $nextIndex = $index + ($direction === 'up' ? -1 : 1);
+                $this->replaceMountedAction('editComponent', ['componentIndex' => $nextIndex, 'componentType' => $type]);
+            })->disabled(! $canMove);
+        }
+
+        $published = \App\Models\CustomPageSetting::componentPublished($block);
+        $actions[] = AdminDialog::headerAction(
+            'dialogTogglePublication',
+            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+            function () use ($index, $type, $published, $target): void {
+                $this->setComponentPublished($index, $type, ! $published);
+                $this->replaceMountedAction('editComponent', $target);
+            },
+        );
+        $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($target): void {
+            $this->replaceMountedAction('deleteComponent', $target);
+        });
+
+        return $actions;
     }
 
     public function changeComponentTypeAction(): Action

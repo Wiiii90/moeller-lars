@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\DividerVariant;
 use App\Domain\Admin\AdminOrderingState;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\HomePresentationSetting;
@@ -199,8 +200,11 @@ final class HomePresentationEditorialService
     {
         $this->assertComponentKind($targetKind);
         $currentKind = $this->componentKind($component);
-        if ($currentKind === $targetKind || $currentKind === 'divider') {
+        if ($currentKind === $targetKind) {
             return false;
+        }
+        if ($currentKind === 'divider') {
+            return ($component['variant'] ?? 'thin') !== 'thin';
         }
         if ($currentKind === 'image') {
             return is_numeric($component['media_asset_id'] ?? null)
@@ -227,7 +231,7 @@ final class HomePresentationEditorialService
             'heading' => ['type' => 'text', 'title' => $title !== '' ? $title : null, 'body' => null],
             'rich_text' => ['type' => 'text', 'title' => null, 'body' => ($body !== '' ? $body : ($title !== '' ? $title : null))],
             'image' => ['type' => 'image', 'media_asset_id' => null, 'image_decorative' => false],
-            'divider' => ['type' => 'divider'],
+            'divider' => ['type' => 'divider', 'variant' => 'thin'],
         };
     }
 
@@ -515,6 +519,10 @@ final class HomePresentationEditorialService
             }
             if ($component['type'] === 'text') {
                 $this->validateText($component, $index);
+            }
+            if ($component['type'] === 'divider'
+                && ! in_array($component['variant'] ?? 'thin', DividerVariant::VALUES, true)) {
+                throw ValidationException::withMessages(['components' => 'Choose a supported Divider style.']);
             }
         }
     }

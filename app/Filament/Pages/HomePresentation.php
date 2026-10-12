@@ -9,6 +9,7 @@ use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
+use App\Domain\Content\DividerVariant;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\HomeTemplate;
@@ -16,6 +17,7 @@ use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -423,6 +425,9 @@ final class HomePresentation extends Page
                     Toggle::make('image_decorative')->label('Decorative image')
                         ->helperText('Leave off for content images. Canonical ALT text is managed in Storage.')
                         ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
+                    Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
+                        ->default('thin')->required(fn (callable $get): bool => $get('kind') === 'divider')
+                        ->visible(fn (callable $get): bool => $get('kind') === 'divider'),
                 ])
                 ->modalHeading('Add component'),
             'Add component',
@@ -437,7 +442,7 @@ final class HomePresentation extends Page
                     'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                     'image_decorative' => (bool) ($data['image_decorative'] ?? false),
                 ],
-                'divider' => ['type' => 'divider'],
+                'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
                 default => throw ValidationException::withMessages(['kind' => 'Choose a supported Home component.']),
             };
             app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
@@ -462,6 +467,7 @@ final class HomePresentation extends Page
                     'body' => $component['body'] ?? null,
                     'media_asset_id' => $component['media_asset_id'] ?? null,
                     'image_decorative' => (bool) ($component['image_decorative'] ?? false),
+                    'variant' => $component['variant'] ?? 'thin',
                 ];
             })
             ->schema([
@@ -476,8 +482,12 @@ final class HomePresentation extends Page
                 Toggle::make('image_decorative')->label('Decorative image')
                     ->helperText('Leave off for content images. Canonical ALT text is managed in Storage.')
                     ->visible(fn (callable $get): bool => $get('type') === 'image'),
+                Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
+                    ->required(fn (callable $get): bool => $get('type') === 'divider')
+                    ->visible(fn (callable $get): bool => $get('type') === 'divider'),
             ])
-            ->modalHeading('Edit component'), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
+            ->modalHeading('Edit component')
+            ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments)), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
                 $current = $this->componentFromArguments($arguments);
                 $type = (string) $current['type'];
                 $editorKind = $this->editorKind($current);
@@ -492,6 +502,7 @@ final class HomePresentation extends Page
                         'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                         'image_decorative' => (bool) ($data['image_decorative'] ?? false),
                     ],
+                    'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
                     default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
                 };
                 $changed = app(HomePresentationEditorialService::class)->updateComponent(
@@ -505,6 +516,32 @@ final class HomePresentation extends Page
                     );
                 }
             });
+    }
+
+    /** @param array<string,mixed> $arguments
+     * @return list<Action>
+     */
+    private function homeEditHeaderActions(array $arguments): array
+    {
+        $component = $this->componentFromArguments($arguments);
+        $index = (int) $arguments['index'];
+        $type = (string) $component['type'];
+        $count = count($this->componentDataset);
+        $actions = [];
+
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $canMove = $this->componentReorderEnabled() && ($direction === 'up' ? $index > 0 : $index < $count - 1);
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction): void {
+                $this->moveComponent($index, $type, $direction);
+                $newIndex = $index + ($direction === 'up' ? -1 : 1);
+                $this->replaceMountedAction('editComponent', ['index' => $newIndex, 'type' => $type]);
+            })->disabled(! $canMove);
+        }
+        $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($index, $type): void {
+            $this->replaceMountedAction('removeComponent', ['index' => $index, 'type' => $type]);
+        });
+
+        return $actions;
     }
 
     public function changeComponentTypeAction(): Action
@@ -999,7 +1036,7 @@ final class HomePresentation extends Page
                 ],
                 'heading' => [$title !== '' ? $title : 'Untitled heading', ''],
                 'rich_text' => [$title !== '' ? $title : (Str::limit($body, 110) ?: 'Empty Rich Text'), $title !== '' ? (Str::limit($body, 110) ?: 'No body text') : ''],
-                'divider' => ['—', ''],
+                'divider' => [DividerVariant::LABELS[$component['variant'] ?? 'thin'] ?? 'Thin', ''],
                 default => ['Unsupported component', ''],
             };
             $dataset[] = [
@@ -1013,7 +1050,7 @@ final class HomePresentation extends Page
                 'search_text' => Str::lower(implode(' ', [$typeLabel, $primary, $secondary, $title, $body])),
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $count - 1,
-                'editable' => in_array($type, ['image', 'text'], true),
+                'editable' => in_array($type, ['image', 'text', 'divider'], true),
             ];
         }
         $this->componentDataset = $dataset;

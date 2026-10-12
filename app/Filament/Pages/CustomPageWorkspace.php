@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Content\DividerVariant;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceChildOrdering;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceChildProjection;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceComponentActions;
@@ -49,12 +50,7 @@ final class CustomPageWorkspace extends Page
     ];
 
     /** @var array<string, string> */
-    private const DIVIDER_LABELS = [
-        'thin' => 'Thin',
-        'subtle' => 'Subtle',
-        'strong' => 'Strong',
-        'dotted' => 'Dotted',
-    ];
+    private const DIVIDER_LABELS = DividerVariant::LABELS;
 
     protected static bool $shouldRegisterNavigation = false;
 
