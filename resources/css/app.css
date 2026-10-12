@@ -30,9 +30,18 @@ img {
     max-width: 100%;
 }
 
+/* One scrollbar-gutter contract for the header and inner scroll region,
+ * keeping their center-aligned shell geometry identical on all viewports. */
+body.public-site .site-header,
+body.public-site .site-scroll-region {
+    scrollbar-gutter: stable both-edges;
+}
+
 body.public-site .site-header {
     position: relative;
     flex: 0 0 auto;
+    /* A stable gutter on a non-scrolling region requires overflow: hidden. */
+    overflow: hidden;
 }
 
 body.public-site .site-scroll-region {
@@ -42,7 +51,6 @@ body.public-site .site-scroll-region {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    scrollbar-gutter: stable both-edges;
     -webkit-overflow-scrolling: touch;
 }
 

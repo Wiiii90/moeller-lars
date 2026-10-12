@@ -178,6 +178,8 @@ Responsive behavior is content-driven across **Wide**, **Compact**, **Narrow** a
 - keep artwork media and authored metadata legible without horizontal page overflow;
 - prefer progressive composition changes over shrinking typography or reproducing legacy breakpoint mechanics;
 - feature-specific Journal, Custom Page, Contact and Exhibition content follows the same responsive system while preserving its own semantics;
+- Navigation and #content share the same shell width and centered containing width, including matched stable scrollbar gutters on the fixed public header and the internal scroll region. The same derived `--public-content-inset` defines the inset for the navigation content rail and page content; `--public-shell-gap` retains a positive gap below the header separator at every width. Only the public presentation stylesheet owns responsive public padding.
+- Artwork metadata and its adjacent category/detail navigation remain on one horizontal footer row at Narrow and Minimal widths; text may reflow within a control, but the controls themselves do not stack simply because of a viewport breakpoint.
 - browser acceptance includes continuous resizing through intermediate widths, not only fixed desktop/tablet/mobile presets.
 
 Reliability/accessibility/responsive improvements must not replace the artist-specific composition with generic portfolio/card templates.
