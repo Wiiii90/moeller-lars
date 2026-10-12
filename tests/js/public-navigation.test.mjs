@@ -39,5 +39,6 @@ test('keeps an overwide label as one item so the presentation can wrap its text'
 test('handles an empty navigation list and rejects invalid movement direction', () => {
     assert.deepEqual(fitNavigationWindow([], 200), []);
     assert.deepEqual(advanceNavigationWindow([], [], 200, 1), []);
+    assert.deepEqual(advanceNavigationWindow([40, 50], [0, 1], 150, 1), [0, 1]);
     assert.throws(() => advanceNavigationWindow([100], [0], 200, 0), RangeError);
 });

@@ -187,7 +187,7 @@ export function fitNavigationWindow(widths, availableWidth, startIndex = 0) {
 
     for (let step = 1; step < widths.length; step += 1) {
         const next = (start + step) % widths.length;
-        if (occupied + widths[next] > availableWidth + 0.5) break;
+        if (occupied + widths[next] > availableWidth) break;
         visible.push(next);
         occupied += widths[next];
     }
@@ -202,6 +202,7 @@ export function advanceNavigationWindow(widths, visible, availableWidth, directi
         throw new RangeError('Navigation direction must be -1 or 1.');
     }
     if (visible.length === 0) return fitNavigationWindow(widths, availableWidth);
+    if (visible.length === widths.length) return [...visible];
 
     const adjacent = direction === 1
         ? (visible[visible.length - 1] + 1) % widths.length
@@ -209,7 +210,7 @@ export function advanceNavigationWindow(widths, visible, availableWidth, directi
     const candidate = direction === 1 ? [...visible, adjacent] : [adjacent, ...visible];
     let occupied = candidate.reduce((sum, index) => sum + widths[index], 0);
 
-    while (candidate.length > 1 && occupied > availableWidth + 0.5) {
+    while (candidate.length > 1 && occupied > availableWidth) {
         const removed = direction === 1 ? candidate.shift() : candidate.pop();
         occupied -= widths[removed];
     }
@@ -219,7 +220,7 @@ export function advanceNavigationWindow(widths, visible, availableWidth, directi
     while (candidate.length < widths.length) {
         const edge = direction === 1 ? candidate[candidate.length - 1] : candidate[0];
         const adjacentIndex = (edge + direction + widths.length) % widths.length;
-        if (occupied + widths[adjacentIndex] > availableWidth + 0.5) break;
+        if (occupied + widths[adjacentIndex] > availableWidth) break;
         if (direction === 1) candidate.push(adjacentIndex);
         else candidate.unshift(adjacentIndex);
         occupied += widths[adjacentIndex];
@@ -262,7 +263,7 @@ export function initializePublicNavigation() {
 
             items.forEach((item, index) => {
                 item.hidden = !shown.has(index);
-                item.classList.toggle('is-overwide', shown.has(index) && widths[index] > availableWidth + 0.5);
+                item.classList.toggle('is-overwide', shown.has(index) && widths[index] > availableWidth);
             });
 
             // Reorder the original DOM nodes, not copies, so keyboard and
@@ -298,7 +299,7 @@ export function initializePublicNavigation() {
 
             const wasCycling = cycling;
             cycling = widths.length > 1
-                && widths.reduce((sum, width) => sum + width, 0) > scroller.clientWidth + 0.5;
+                && widths.reduce((sum, width) => sum + width, 0) > scroller.clientWidth;
             container.classList.toggle('is-overflowing', cycling);
             previous.hidden = !cycling;
             next.hidden = !cycling;
