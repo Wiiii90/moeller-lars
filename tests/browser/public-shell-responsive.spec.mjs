@@ -56,8 +56,8 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
             menu: getComputedStyle(document.querySelector('.site-navigation')).backgroundColor,
             content: getComputedStyle(document.querySelector('#content')).backgroundColor,
         }));
-        expect(surfaces.menu).toBe('rgb(251, 250, 247)');
-        expect(surfaces.content).toBe('rgb(251, 250, 247)');
+        expect(surfaces.menu).toBe('rgb(247, 244, 237)');
+        expect(surfaces.content).toBe('rgb(247, 244, 237)');
         const geometry = await page.evaluate(() => {
             const rect = (selector) => {
                 const r = document.querySelector(selector).getBoundingClientRect();
@@ -88,7 +88,7 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
             expect(Math.abs(geometry.label.bottom - geometry.action.bottom), 'footer baseline at '+width).toBeLessThan(1);
             expect(geometry.label.right, 'label / action spacing at '+width).toBeLessThan(geometry.action.left);
         } else {
-            expect(geometry.action.top, 'wrapped actions after plaque at '+width).toBeGreaterThanOrEqual(geometry.label.bottom - 1);
+            expect(geometry.action.top, 'separate actions below plaque at '+width).toBeGreaterThanOrEqual(geometry.label.bottom - 1);
         }
         expect(geometry.image.width).toBeGreaterThan(0);
         expect(geometry.scrollWidth, 'horizontal overflow at '+width).toBeLessThanOrEqual(geometry.scrollClientWidth + 1);

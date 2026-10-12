@@ -81,8 +81,8 @@
                     ><x-public-icon name="chevron-left" /></a>
                 @endif
 
-                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}">
-                    {{ $category->name }}
+                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}" title="{{ $category->name }}">
+                    <span class="artwork-context-button__label">{{ $category->name }}</span>
                 </a>
 
                 @if ($nextArtwork !== null)
