@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'eager' => false])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -16,21 +16,25 @@
 @endphp
 
 <article class="artwork-card">
-    <a
-        class="artwork-card__link"
-        href="{{ $detailUrl }}"
-        data-artwork-viewer-item
-        data-artwork-viewer-trigger
-        data-viewer-key="{{ $artwork->slug }}"
-        data-viewer-analytics-key="{{ $artwork->analytics_key }}"
-        data-viewer-kind="{{ $kind }}"
-        data-viewer-mime="{{ $mime }}"
-        data-viewer-src="{{ $originalUrl }}"
-        data-viewer-alt="{{ $altText }}"
-        data-viewer-title="{{ $artwork->title }}"
-        data-viewer-page="{{ $detailUrl }}"
-        aria-label="Open {{ $artwork->title }} in media viewer"
-    >
+    @if ($enableViewer)
+        <a
+            class="artwork-card__link"
+            href="{{ $detailUrl }}"
+            data-artwork-viewer-item
+            data-artwork-viewer-trigger
+            data-viewer-key="{{ $artwork->slug }}"
+            data-viewer-analytics-key="{{ $artwork->analytics_key }}"
+            data-viewer-kind="{{ $kind }}"
+            data-viewer-mime="{{ $mime }}"
+            data-viewer-src="{{ $originalUrl }}"
+            data-viewer-alt="{{ $altText }}"
+            data-viewer-title="{{ $artwork->title }}"
+            data-viewer-page="{{ $detailUrl }}"
+            aria-label="Open {{ $artwork->title }} in media viewer"
+        >
+    @else
+        <div class="artwork-card__link artwork-card__link--static">
+    @endif
         @if ($isVideo)
             <video
                 class="artwork-card__video"
@@ -38,7 +42,7 @@
                 aria-label="{{ $altText }}"
                 muted
                 playsinline
-                preload="metadata"
+                preload="{{ $heroNavigation && ! $eager ? 'none' : 'metadata' }}"
             ></video>
         @else
             <img
@@ -54,9 +58,13 @@
                 fetchpriority="{{ $eager ? 'high' : 'auto' }}"
             >
         @endif
-    </a>
+    @if ($enableViewer)
+        </a>
+    @else
+        </div>
+    @endif
 
-    @if ($showDetails || ($showCategoryLink && $category !== null))
+    @if ($showDetails || ($showCategoryLink && $category !== null) || $heroNavigation)
         <div class="artwork-card__footer">
             @if ($showDetails)
                 <a
@@ -68,11 +76,25 @@
                 </a>
             @endif
 
-            @if ($showCategoryLink && $category !== null)
+            @if ($heroNavigation || ($showCategoryLink && $category !== null))
                 <nav class="artwork-card__actions" aria-label="Artwork navigation">
-                    <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}">
-                        {{ $category->name }} <x-public-icon name="arrow-right" />
-                    </a>
+                    @if ($heroNavigation)
+                        <button class="artwork-context-button artwork-context-button--icon" type="button" data-home-hero-direction="previous" aria-label="Previous Hero artwork" title="Previous artwork">
+                            <x-public-icon name="chevron-left" />
+                        </button>
+                    @endif
+
+                    @if ($showCategoryLink && $category !== null)
+                        <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}">
+                            {{ $category->name }}
+                        </a>
+                    @endif
+
+                    @if ($heroNavigation)
+                        <button class="artwork-context-button artwork-context-button--icon" type="button" data-home-hero-direction="next" aria-label="Next Hero artwork" title="Next artwork">
+                            <x-public-icon name="chevron-right" />
+                        </button>
+                    @endif
                 </nav>
             @endif
         </div>

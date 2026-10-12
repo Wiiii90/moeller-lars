@@ -447,6 +447,16 @@ body {
     cursor: zoom-in;
 }
 
+.artwork-card__link--static {
+    cursor: default;
+}
+
+/* Hidden Hero members are rendered once and remain out of layout and the
+ * accessibility tree until the active member changes. */
+[data-home-hero-slide][hidden] {
+    display: none;
+}
+
 .artwork-image,
 .artwork-card__image,
 .artwork-detail__image {
@@ -560,6 +570,7 @@ body {
     display: flex;
     flex: 0 1 auto;
     min-width: 0;
+    margin-left: auto;
     align-items: stretch;
     justify-content: flex-end;
     flex-wrap: nowrap;
@@ -567,6 +578,9 @@ body {
 }
 
 .artwork-context-button {
+    appearance: none;
+    font-family: inherit;
+    cursor: pointer;
     display: inline-flex;
     min-height: 2rem;
     padding: .46rem .62rem;

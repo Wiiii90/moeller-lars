@@ -44,6 +44,8 @@ final class HomeSettingsDialog
             'template' => $settings->template()->contentTemplate()->value,
             'show_details' => $hero['show_details'],
             'show_gallery_link' => $hero['show_gallery_link'],
+            'show_navigation' => $hero['show_navigation'],
+            'enable_viewer' => $hero['enable_viewer'],
             'group_source' => $hero['group_source'],
             'display_strategy' => $hero['display_strategy'],
             'newest_by' => $hero['newest_by'],
@@ -129,6 +131,12 @@ final class HomeSettingsDialog
                     Toggle::make('show_gallery_link')
                         ->label('Show Gallery link')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    Toggle::make('show_navigation')
+                        ->label('Navigate Hero group')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    Toggle::make('enable_viewer')
+                        ->label('Open artwork viewer')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     Toggle::make('public_site_gate')
                         ->label('Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
@@ -158,6 +166,8 @@ final class HomeSettingsDialog
             $input = [
                 'show_details' => $data['show_details'] ?? $current['show_details'],
                 'show_gallery_link' => $data['show_gallery_link'] ?? $current['show_gallery_link'],
+                'show_navigation' => $data['show_navigation'] ?? $current['show_navigation'],
+                'enable_viewer' => $data['enable_viewer'] ?? $current['enable_viewer'],
                 'group_source' => $groupSource,
                 'display_strategy' => $data['display_strategy'] ?? $current['display_strategy'],
                 'newest_by' => $data['newest_by'] ?? $current['newest_by'],

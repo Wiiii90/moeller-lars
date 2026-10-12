@@ -520,3 +520,58 @@ it('uses the same canonical Hero resolver for direct domain and public Home pres
     expect($publicCurrent->getKey())->toBe($domainCurrent->getKey())
         ->and($publicCurrent->getKey())->toBe($second->getKey());
 });
+
+it('keeps the four independent Hero display options in the existing configuration and public projection', function (): void {
+    $service = app(HomeHeroConfigurationService::class);
+    $settings = heroDomainSettings();
+
+    $defaults = $service->configuration($settings);
+    expect($defaults['show_details'])->toBeTrue()
+        ->and($defaults['show_gallery_link'])->toBeTrue()
+        ->and($defaults['show_navigation'])->toBeFalse()
+        ->and($defaults['enable_viewer'])->toBeTrue();
+
+    $settings->refresh();
+    $changed = $service->updateArtworkSettings($settings, [
+        'show_details' => false,
+        'show_gallery_link' => false,
+        'show_navigation' => true,
+        'enable_viewer' => false,
+    ]);
+    expect($changed)->toBeTrue();
+    $saved = $service->configuration($settings->fresh());
+    expect($saved['show_details'])->toBeFalse()
+        ->and($saved['show_gallery_link'])->toBeFalse()
+        ->and($saved['show_navigation'])->toBeTrue()
+        ->and($saved['enable_viewer'])->toBeFalse();
+
+    $presentation = app(HomePresentationResolver::class)->presentation();
+    expect($presentation['showDetails'])->toBeFalse()
+        ->and($presentation['showGalleryLink'])->toBeFalse()
+        ->and($presentation['showNavigation'])->toBeTrue()
+        ->and($presentation['enableViewer'])->toBeFalse();
+
+    expect($service->updateArtworkSettings($settings->fresh(), [
+        'show_details' => false,
+        'show_gallery_link' => false,
+        'show_navigation' => true,
+        'enable_viewer' => false,
+    ]))->toBeFalse();
+});
+
+it('keeps the existing Hero resolution order available for optional Home navigation', function (): void {
+    $category = heroDomainCategory();
+    $first = heroDomainArtwork($category, 'Hero first', 0);
+    $second = heroDomainArtwork($category, 'Hero second', 1);
+    $settings = heroDomainSettings([
+        'group_source' => 'manual',
+        'display_strategy' => 'ordered',
+        'manual_group' => heroManualMembers($first, $second),
+        'show_navigation' => true,
+    ]);
+
+    $presentation = app(HomePresentationResolver::class)->presentation();
+    expect($presentation['heroGroup']->modelKeys())->toBe([(int) $first->getKey(), (int) $second->getKey()])
+        ->and($presentation['artwork']->getKey())->toBe($first->getKey())
+        ->and($presentation['showNavigation'])->toBeTrue();
+});

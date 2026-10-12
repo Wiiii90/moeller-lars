@@ -45,7 +45,9 @@ final class HomeHeroConfigurationService
      *     specific_year:?int,
      *     manual_include_ids:list<int>,
      *     show_details:bool,
-     *     show_gallery_link:bool
+     *     show_gallery_link:bool,
+     *     show_navigation:bool,
+     *     enable_viewer:bool
      * }
      */
     public function configuration(HomePresentationSetting $settings): array
@@ -97,6 +99,8 @@ final class HomeHeroConfigurationService
             'manual_include_ids' => $this->positiveIntList($artwork['manual_include_ids'] ?? []),
             'show_details' => (bool) ($artwork['show_details'] ?? true),
             'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? true),
+            'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
+            'enable_viewer' => (bool) ($artwork['enable_viewer'] ?? true),
         ];
     }
 
@@ -144,6 +148,8 @@ final class HomeHeroConfigurationService
             $rotationStartedAt = $current['rotation_started_at'];
             $showDetails = (bool) ($input['show_details'] ?? $current['show_details']);
             $showGalleryLink = (bool) ($input['show_gallery_link'] ?? $current['show_gallery_link']);
+            $showNavigation = (bool) ($input['show_navigation'] ?? $current['show_navigation']);
+            $enableViewer = (bool) ($input['enable_viewer'] ?? $current['enable_viewer']);
             $manualSequenceChanged = $this->manualGroupIds($manualGroup) !== $this->manualGroupIds($current['manual_group']);
             $intervalChanged = $rotationInterval !== $current['rotation_interval'];
             $sourceChanged = $groupSource !== $current['group_source'];
@@ -181,6 +187,8 @@ final class HomeHeroConfigurationService
                 && $this->sameIdSet($manualIncludeIds, $current['manual_include_ids'])
                 && $showDetails === $current['show_details']
                 && $showGalleryLink === $current['show_gallery_link']
+                && $showNavigation === $current['show_navigation']
+                && $enableViewer === $current['enable_viewer']
             ) {
                 return false;
             }
@@ -192,6 +200,8 @@ final class HomeHeroConfigurationService
 
             $artwork['show_details'] = $showDetails;
             $artwork['show_gallery_link'] = $showGalleryLink;
+            $artwork['show_navigation'] = $showNavigation;
+            $artwork['enable_viewer'] = $enableViewer;
             $artwork['group_source'] = $groupSource;
             $artwork['display_strategy'] = $displayStrategy;
             $artwork['manual_group'] = $manualGroup;

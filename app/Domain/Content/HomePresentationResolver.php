@@ -107,6 +107,9 @@ final class HomePresentationResolver
                 'media' => $this->media,
                 'showDetails' => $heroConfiguration['show_details'],
                 'showGalleryLink' => $heroConfiguration['show_gallery_link'],
+                'showNavigation' => $heroConfiguration['show_navigation'],
+                'enableViewer' => $heroConfiguration['enable_viewer'],
+                'heroGroup' => $heroResolution['group'],
                 'gateActive' => false,
             ],
             HomeTemplate::UnderConstruction => $this->componentPresentation(

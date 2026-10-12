@@ -79,6 +79,10 @@ final class HomePresentation extends Page
 
     public bool $artworkShowGalleryLink = true;
 
+    public bool $artworkShowNavigation = false;
+
+    public bool $artworkEnableViewer = true;
+
     public bool $publicSiteGate = false;
 
     public string $heroGroupSource = 'automatic';
@@ -924,6 +928,8 @@ final class HomePresentation extends Page
         $this->templateLabel = $template->label();
         $this->artworkShowDetails = $heroConfiguration['show_details'];
         $this->artworkShowGalleryLink = $heroConfiguration['show_gallery_link'];
+        $this->artworkShowNavigation = $heroConfiguration['show_navigation'];
+        $this->artworkEnableViewer = $heroConfiguration['enable_viewer'];
         $this->heroGroupSource = $heroConfiguration['group_source'];
         $this->heroDisplayStrategy = $heroConfiguration['display_strategy'];
         $this->heroNewestBy = $heroConfiguration['newest_by'];
@@ -972,6 +978,8 @@ final class HomePresentation extends Page
             'template' => $this->template,
             'show_details' => $this->artworkShowDetails,
             'show_gallery_link' => $this->artworkShowGalleryLink,
+            'show_navigation' => $this->artworkShowNavigation,
+            'enable_viewer' => $this->artworkEnableViewer,
             'group_source' => $this->heroGroupSource,
             'display_strategy' => $this->heroDisplayStrategy,
             'newest_by' => $this->heroNewestBy,

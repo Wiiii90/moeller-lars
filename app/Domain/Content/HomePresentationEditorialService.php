@@ -24,6 +24,8 @@ final class HomePresentationEditorialService
             HomeTemplate::Artwork->value => [
                 'show_details' => true,
                 'show_gallery_link' => true,
+                'show_navigation' => false,
+                'enable_viewer' => true,
                 'hero_mode' => 'automatic',
                 'fixed_artwork_id' => null,
                 'pool_rule' => 'newest',
