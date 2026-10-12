@@ -17,6 +17,7 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('--public-shell-gap:')
         ->toContain('margin-block: var(--public-shell-gap);')
         ->toContain('html:has(.artwork-viewer[open])')
+        ->toContain('scrollbar-gutter: stable;')
         ->toContain('overflow-x: clip;')
         ->not->toContain('scrollbar-gutter: auto;')
         ->toContain('padding-inline: var(--public-content-inset);')
@@ -40,7 +41,7 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('body.public-site .site-header')
         ->toContain('position: sticky;')
         ->toContain('top: 0;')
-        ->toContain('scrollbar-gutter: stable both-edges;')
+        ->not->toContain('scrollbar-gutter: stable both-edges;')
         ->not->toContain('.site-scroll-region')
         ->not->toContain('max-height: 100dvh;')
         ->not->toContain('max-width: 550px');

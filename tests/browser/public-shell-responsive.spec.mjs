@@ -56,6 +56,7 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
                 scrollable: scrollingElement.scrollHeight > window.innerHeight,
                 headerPosition: getComputedStyle(document.querySelector('.site-header')).position,
                 rootGutter: getComputedStyle(document.documentElement).scrollbarGutter,
+                bodyLeft: document.body.getBoundingClientRect().left,
             };
         });
         expect(Math.abs(geometry.menu.left - geometry.content.left), 'left edges at '+width).toBeLessThan(1);
@@ -68,7 +69,8 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         expect(geometry.scrollOwner, 'root scroll owner at '+width).toBe(true);
         expect(geometry.scrollable, 'long page scrolls at '+width).toBe(true);
         expect(geometry.headerPosition, 'header sticky at '+width).toBe('sticky');
-        expect(geometry.rootGutter, 'root reserves symmetric gutters at '+width).toContain('both-edges');
+        expect(geometry.rootGutter, 'normal root scrollbar at '+width).toBe('auto');
+        expect(Math.abs(geometry.bodyLeft), 'no reserved left gutter at '+width).toBeLessThan(1);
 
         await page.evaluate(() => window.scrollTo(0, 180));
         await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);

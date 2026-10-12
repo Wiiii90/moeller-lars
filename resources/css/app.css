@@ -5,13 +5,13 @@
 }
 
 /*
- * The document owns public scrolling. Reserve one symmetric root gutter so
- * the sticky header and page content remain aligned without nested scrollers.
+ * The document owns public scrolling. Do not reserve mirrored scrollbar
+ * gutters: normal scrollbars take space only where the browser draws them.
+ * Both the header and content are already centered in the same root viewport.
  */
 html:has(> body.public-site) {
     width: 100%;
     max-width: 100%;
-    scrollbar-gutter: stable both-edges;
 }
 
 body.public-site {
