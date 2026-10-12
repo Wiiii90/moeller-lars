@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Filament\Support\AdminRichText;
+use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use Filament\Forms\Components\Hidden;
@@ -78,6 +79,7 @@ trait CustomPageWorkspaceForms
                 MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)
                     ->placeholder('No list image')
                     ->nullable(),
+                ComponentListEditor::make(),
             ],
             'divider' => [
                 Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
