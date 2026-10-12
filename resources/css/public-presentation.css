@@ -100,10 +100,6 @@ body {
 .site-navigation__submenu.is-overflowing > nav {
     justify-content: flex-start;
 }
-.site-navigation__rail.is-measuring .site-navigation__item,
-.site-navigation__submenu.is-measuring .site-navigation__item {
-    flex: 0 0 max-content;
-}
 .site-navigation__item[hidden] { display: none; }
 .site-navigation__item.is-overwide {
     flex: 1 1 100%;
@@ -124,6 +120,26 @@ body {
     flex-direction: column;
     align-items: stretch;
     border-left: 1px solid #e4e1de;
+}
+
+/* With all pages visible, preserve their natural widths and align them left.
+ * When navigation is cyclic, distribute the remaining row width across the
+ * whole visible window, as before the no-overflow alignment change. */
+.site-navigation__rail.is-overflowing .site-navigation__item,
+.site-navigation__submenu.is-overflowing .site-navigation__item {
+    flex: 1 0 max-content;
+}
+
+.site-navigation__rail.is-overflowing .site-navigation__item.is-overwide,
+.site-navigation__submenu.is-overflowing .site-navigation__item.is-overwide {
+    flex: 1 1 100%;
+}
+
+/* Measure natural item widths even after overflow mode has been enabled.
+ * This rule must follow the flex-grow rule to prevent resize feedback. */
+.site-navigation__rail.is-measuring .site-navigation__item,
+.site-navigation__submenu.is-measuring .site-navigation__item {
+    flex: 0 0 max-content;
 }
 
 .site-navigation__item.is-last-visible {

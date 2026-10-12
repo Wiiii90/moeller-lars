@@ -11,6 +11,13 @@ export function navigationWindowParts(surface) {
     };
 }
 
+// Arrows are only necessary when the complete set exceeds the rail.
+// A single overwide label wraps in place rather than creating useless arrows.
+export function needsNavigationOverflow(widths, availableWidth) {
+    return widths.length > 1
+        && widths.reduce((total, width) => total + width, 0) > availableWidth;
+}
+
 // Both navigation levels use the same whole-item cyclic window and never scroll pixels.
 // The surface is a three-column grid: previous control, canonical content width, next control.
 function initializeNavigationWindow(surface, onWindowChange = () => {}) {
@@ -80,8 +87,7 @@ function initializeNavigationWindow(surface, onWindowChange = () => {}) {
         // Reserve the final visible item's 1px right border when fitting.
         availableWidth = Math.max(1, rail.clientWidth - 1);
         const wasCycling = cycling;
-        cycling = widths.length > 1
-            && widths.reduce((sum, width) => sum + width, 0) > availableWidth;
+        cycling = needsNavigationOverflow(widths, availableWidth);
 
         surface.classList.toggle('is-overflowing', cycling);
         previous.hidden = !cycling;

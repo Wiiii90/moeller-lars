@@ -4,6 +4,7 @@ import {
     advanceNavigationWindow,
     fitNavigationWindow,
     navigationWindowParts,
+    needsNavigationOverflow,
 } from '../../resources/js/public-navigation.js';
 
 test('fits only complete navigation items into the available rail', () => {
@@ -99,8 +100,34 @@ test('main controls never resolve to right-arrow buttons inside child submenus',
     assert.strictEqual(parts.next, next);
 });
 
-test('whole-item window leaves room unused rather than enlarging short labels', () => {
+test('arrows are absent when all pages fit, including short menus', () => {
     const widths = [62, 81, 72];
+    assert.equal(needsNavigationOverflow(widths, 320), false);
     assert.deepEqual(fitNavigationWindow(widths, 320), [0, 1, 2]);
+    assert.equal(needsNavigationOverflow(widths, 215), false);
+    assert.equal(needsNavigationOverflow(widths, 214), true);
+    assert.equal(needsNavigationOverflow(widths, 180), true);
     assert.deepEqual(fitNavigationWindow(widths, 180), [0, 1]);
+    assert.equal(needsNavigationOverflow([900], 180), false);
+});
+
+test('overflow restores smart refill on both sides after an oversized item drops out', () => {
+    const widths = [180, 40, 40, 40, 40, 40];
+    const available = 260;
+    const first = fitNavigationWindow(widths, available);
+    assert.deepEqual(first, [0, 1, 2]);
+
+    // A single click beyond the long first page pulls three more short pages
+    // from the right, rather than leaving most of the rail empty.
+    const right = advanceNavigationWindow(widths, first, available, 1);
+    assert.deepEqual(right, [1, 2, 3, 4, 5]);
+    assert.deepEqual(advanceNavigationWindow(widths, right, available, -1), first);
+
+    // Leftward movement likewise drops the long page and refills from the left.
+    const fromMiddle = fitNavigationWindow(widths, available, 2);
+    assert.deepEqual(fromMiddle, [2, 3, 4, 5]);
+    assert.deepEqual(
+        advanceNavigationWindow(widths, fromMiddle, available, -1),
+        [1, 2, 3, 4, 5],
+    );
 });
