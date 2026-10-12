@@ -186,6 +186,64 @@ it('allows canonical reorder only for a neutral complete parent sequence', funct
         ->and($sequenceSource)->not->toContain('dragstart');
 });
 
+it('persists native parent drag sorting through the canonical component order service', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('CV parent order', 'cv-parent-order');
+    $settings->update(['blocks' => customPageWorkspaceBlocks(3)]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->call('sortComponent', '2:list', 0)
+        ->assertHasNoErrors();
+
+    expect(array_column($settings->fresh()->components(), 'title'))->toBe([
+        'Component 3',
+        'Component 1',
+        'Component 2',
+    ]);
+});
+
+it('sorts CV list entries independently when their parent is the only component', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('CV list order', 'cv-list-order');
+    $settings->update(['blocks' => [[
+        'type' => 'list',
+        'published' => true,
+        'title' => 'CV',
+        'items' => [
+            ['published' => true, 'title' => 'First entry', 'date' => '2022'],
+            ['published' => true, 'title' => 'Second entry', 'date' => '2023'],
+            ['published' => true, 'title' => 'Third entry', 'date' => '2024'],
+        ],
+    ]]]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->assertSeeHtml('wire:sort="sortChild"')
+        ->assertDontSeeHtml('wire:sort="sortComponent"')
+        ->call('sortChild', 'list:0:2', 0)
+        ->assertHasNoErrors()
+        ->assertSee('Third entry');
+
+    expect(array_column($settings->fresh()->components()[0]['items'], 'title'))->toBe([
+        'Third entry',
+        'First entry',
+        'Second entry',
+    ]);
+});
+
+it('never renders a misleading active drag handle for a single component or list entry', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Single CV entry', 'single-cv-entry');
+    $settings->update(['blocks' => [[
+        'type' => 'list',
+        'published' => true,
+        'title' => 'CV',
+        'items' => [['published' => true, 'title' => 'Only entry', 'date' => '2024']],
+    ]]]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->assertDontSeeHtml('wire:sort="sortComponent"')
+        ->assertDontSeeHtml('wire:sort="sortChild"')
+        ->assertSee('At least two components are needed to reorder')
+        ->assertSee('At least two entries are needed to reorder');
+});
+
 it('edits canonical list entries directly in the Custom Page child dialog', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('List editor test', 'list-editor-test');
     $settings->update(['blocks' => [[
