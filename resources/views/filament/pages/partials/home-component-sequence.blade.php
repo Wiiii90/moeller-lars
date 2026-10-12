@@ -92,6 +92,7 @@
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::Edit"
                                     wire:click="mountAction('editComponent', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}' })"
+                                    :disabled="$homeComponent['type'] === 'legal_disclaimer'"
                                 />
                                 <x-admin.row-action
                                     :action="$homeComponent['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
@@ -160,18 +161,11 @@
                                     @endforeach
                                 </div>
                             </div>
-                        @elseif ($homeComponent['type'] === 'list')
-                            <div class="custom-page-component__children-empty">No list entries</div>
                         @elseif ($homeComponent['type'] === 'contact')
                             <div class="custom-page-component__children-empty">No contact items</div>
                         @endif
 
-                        @if ($homeComponent['type'] === 'list')
-                            <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button"
-                                wire:click="mountAction('addHomeChild', { index: {{ $homeComponent['index'] }}, type: 'list' })">
-                                <span aria-hidden="true">+</span><strong>Add list item</strong>
-                            </button>
-                        @elseif ($homeComponent['type'] === 'contact' && count($homeComponent['children']) < 3)
+                        @if ($homeComponent['type'] === 'contact' && count($homeComponent['children']) < 3)
                             <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button"
                                 wire:click="mountAction('addHomeChild', { index: {{ $homeComponent['index'] }}, type: 'contact' })">
                                 <span aria-hidden="true">+</span><strong>Add contact item</strong>
