@@ -57,9 +57,13 @@ final class AdminRichText
         // Keep the editor Alpine attribute limited to the state mutation it owns.
         // The DOM/toolbar observer lives on the dedicated insert-flow Group below so
         // Filament never has to serialize a multiline x-init block on MarkdownEditor.
+        // The CodeMirror editor synchronizes Alpine/Livewire state, but does not
+        // emit a native change event on blur. Bridge that semantic event into
+        // the existing AdminDialog::edit() handler; never autosave on keystrokes.
         $editor->extraAlpineAttributes([
             'data-admin-rich-text-editor-input' => $pickerKey,
-            'x-on:admin-rich-text-image-insert' => "const markdown = \$event.detail?.markdown; if (typeof markdown === 'string' && markdown !== '') { const current = String(state ?? '').trim(); state = current === '' ? markdown : current + '\\n\\n' + markdown; }",
+            'x-on:focusout' => "if (!\$el.contains(\$event.relatedTarget) && \$el.closest('.admin-dialog--edit')) { \$el.dispatchEvent(new Event('change', { bubbles: true })); }",
+            'x-on:admin-rich-text-image-insert' => "const markdown = \$event.detail?.markdown; if (typeof markdown === 'string' && markdown !== '') { const current = String(state ?? '').trim(); state = current === '' ? markdown : current + '\\n\\n' + markdown; if (\$el.closest('.admin-dialog--edit')) { \$nextTick(() => \$el.dispatchEvent(new Event('change', { bubbles: true }))); } }",
         ]);
 
         $picker = MediaAssetSelect::makeId($pickerName, 'Image from Storage', imagesOnly: true)
