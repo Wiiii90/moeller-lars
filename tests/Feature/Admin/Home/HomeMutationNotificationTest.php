@@ -121,6 +121,38 @@ it('edits Under Construction List entries using the same shared component commit
         ->and($items[1]['published'])->toBeFalse();
 });
 
+it('stages Home Heading conversion and commits only from Apply type', function (): void {
+    $settings = homeNotificationSettings([[
+        'type' => 'text', 'published' => true,
+        'title' => 'Content heading', 'body' => null,
+    ]]);
+    $auditCount = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+
+    $editor = Livewire::test(HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
+        ->set('mountedActions.0.data.editor_kind', 'divider')
+        ->assertMountedActionModalSee('Apply type')
+        ->assertNotDispatched('admin-header-notification');
+
+    $before = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())['custom']['components'][0];
+    expect($before['type'])->toBe('text')
+        ->and($before['title'])->toBe('Content heading')
+        ->and(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(AdminNotification::query()->count())->toBe($notifications);
+
+    $editor->mountAction('applyComponentType', [], ['schemaComponent' => 'componentTypeConversion'])
+        ->callMountedAction()
+        ->assertHasNoErrors();
+
+    $after = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())['custom']['components'][0];
+    expect($after['type'])->toBe('divider')
+        ->and(AuditEvent::query()->count())->toBe($auditCount + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+});
+
 it('notifies once when publishing a mixed Home component and Contact child selection', function (): void {
     $settings = homeNotificationSettings([
         ['type' => 'contact', 'published' => true, 'children' => [
