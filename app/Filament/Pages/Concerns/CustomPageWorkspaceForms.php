@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\MediaAssetSelect;
+use Closure;
 use App\Models\PublicContentSetting;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
@@ -17,20 +18,20 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(bool $includeTypeSelect): array
+    private function componentEditorSchema(bool $includeTypeSelect, ?Closure $onTypeChange = null): array
     {
-        $typeField = $includeTypeSelect
-            ? Select::make('type')
-                ->label('Component')
-                ->options(self::COMPONENT_LABELS)
-                ->required()
-                ->live()
-                ->afterStateUpdated(fn (Select $component) => $component
+        $typeField = Select::make('type')
+            ->label('Component')
+            ->options(self::COMPONENT_LABELS)
+            ->required()
+            ->live()
+            ->afterStateUpdated(
+                $onTypeChange ?? fn (Select $component) => $component
                     ->getContainer()
                     ->getComponent('dynamicComponentFields')
                     ->getChildSchema()
-                    ->fill())
-            : Hidden::make('type')->required();
+                    ->fill()
+            );
 
         $statusField = Select::make('publication_state')
             ->label('Status')
@@ -38,12 +39,12 @@ trait CustomPageWorkspaceForms
             ->default('published')
             ->required();
 
-        // Create keeps Type and Status side by side. In Edit, the hidden Type
-        // must not separate Status from the type-specific fields' two-column grid.
+        // Type and Status share the first row in both Create and Edit.
+        // Edit type changes use the canonical conversion Action, never a
+        // second implicit mutation in the field state callback.
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...($includeTypeSelect ? [] : [$statusField]),
                 ...$this->componentTypeFields((string) $get('type'), $includeTypeSelect),
             ])
             ->key('dynamicComponentFields')
@@ -54,7 +55,7 @@ trait CustomPageWorkspaceForms
                 ->columns(['md' => 2])
                 ->schema([
                     $typeField,
-                    ...($includeTypeSelect ? [$statusField] : []),
+                    $statusField,
                     $dynamicFields,
                 ]),
         ];
