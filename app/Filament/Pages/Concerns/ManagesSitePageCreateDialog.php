@@ -10,6 +10,7 @@ use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -134,7 +135,27 @@ trait ManagesSitePageCreateDialog
         /** @var SiteSection $fresh */
         $fresh = SiteSection::query()->findOrFail($section->getKey());
 
-        return $fresh;
+        return $this->publishNewPageIfConfigured($fresh);
+    }
+
+    /**
+     * Apply the Pages creation preference only after the record, its type
+     * configuration and final hierarchy placement exist. Publication remains
+     * subject to the canonical editorial validation and audit trail.
+     */
+    private function publishNewPageIfConfigured(SiteSection $section): SiteSection
+    {
+        if (! PublicContentSetting::pagesAutoPublish()) {
+            return $section;
+        }
+
+        $parentId = $section->getAttribute('parent_id');
+
+        return app(SiteSectionEditorialService::class)->updatePlacement(
+            $section,
+            'published',
+            $parentId === null ? null : (int) $parentId,
+        );
     }
 
     private function createGallerySection(string $name, string $slug): SiteSection
