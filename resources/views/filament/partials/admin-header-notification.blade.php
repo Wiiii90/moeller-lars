@@ -54,15 +54,17 @@
         ></span>
     </div>
 
-    <div class="admin-header-notification__meta" aria-hidden="true">
+    <div class="admin-header-notification__meta">
         <span
             class="admin-header-notification__timer"
             data-admin-header-notification-timer
+            aria-hidden="true"
         ></span>
 
         <span
             class="admin-header-notification__counter"
             data-admin-header-notification-counter
+            aria-hidden="true"
             hidden
         ></span>
         <button
