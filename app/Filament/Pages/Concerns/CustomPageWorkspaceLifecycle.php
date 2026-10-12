@@ -12,7 +12,6 @@ use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 
@@ -131,7 +130,6 @@ trait CustomPageWorkspaceLifecycle
                     'navigation_label' => (string) ($section->getAttribute('navigation_label') ?? ''),
                     'slug' => (string) $section->getAttribute('slug'),
                     'publication_state' => (string) $section->getAttribute('state') === 'published' ? 'published' : 'unpublished',
-                    'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
                     'parent_id' => $section->getAttribute('parent_id'),
                 ];
             })
@@ -157,7 +155,6 @@ trait CustomPageWorkspaceLifecycle
                             ->label('Page status')
                             ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
                             ->required(),
-                        Toggle::make('show_in_navigation')->label('Show in navigation'),
                         Select::make('parent_id')
                             ->label('Navigation parent')
                             ->options(fn (): array => $this->parentOptions())
@@ -172,7 +169,6 @@ trait CustomPageWorkspaceLifecycle
                     'navigation_label',
                     'slug',
                     'state',
-                    'show_in_navigation',
                     'parent_id',
                     'position',
                 ]);
@@ -189,7 +185,6 @@ trait CustomPageWorkspaceLifecycle
                     $service->updatePlacement(
                         $section,
                         ($data['publication_state'] ?? 'unpublished') === 'published' ? 'published' : 'hidden',
-                        (bool) ($data['show_in_navigation'] ?? false),
                         is_numeric($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null,
                     );
                 });
@@ -201,8 +196,7 @@ trait CustomPageWorkspaceLifecycle
                         'navigation_label',
                         'slug',
                         'state',
-                        'show_in_navigation',
-                        'parent_id',
+                            'parent_id',
                         'position',
                     ]);
                 $section ??= $this->section();
