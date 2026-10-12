@@ -64,10 +64,10 @@ it('includes every published node in public navigation regardless of its histori
 
     // Old data may still contain false/true legacy bits; neither controls menus.
     \Illuminate\Support\Facades\DB::table('site_sections')
-        ->whereKey($child->getKey())
+        ->where('id', $child->getKey())
         ->update(['show_in_navigation' => false]);
     \Illuminate\Support\Facades\DB::table('site_sections')
-        ->whereKey($draft->getKey())
+        ->where('id', $draft->getKey())
         ->update(['show_in_navigation' => true]);
 
     $service->updatePlacement($group, 'published', null);
