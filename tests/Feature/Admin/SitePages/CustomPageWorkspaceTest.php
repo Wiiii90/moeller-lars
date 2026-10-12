@@ -402,6 +402,20 @@ it('keeps Change type reachable when filtering makes drag sorting unavailable', 
         ->and($blocks[2]['type'])->toBe('list');
 });
 
+it('keeps Legal Disclaimer editable for type conversion without a blank editor', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Legal component', 'legal-component');
+    $settings->update(['blocks' => [[
+        'type' => 'legal_disclaimer', 'published' => true,
+    ]]]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'legal_disclaimer'])
+        ->assertMountedActionModalSee('Legal disclaimer from General')
+        ->assertMountedActionModalSee('Component');
+
+    expect($settings->fresh()->components()[0]['type'])->toBe('legal_disclaimer');
+});
+
 it('stages Custom Page component changes until Apply type commits a replacement', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Type commit test', 'type-commit-test');
     $settings->update(['blocks' => [[
