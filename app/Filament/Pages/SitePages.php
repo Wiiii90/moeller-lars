@@ -49,14 +49,14 @@ final class SitePages extends Page
     /** @var list<array<string, mixed>> */
     public array $filteredRows = [];
 
-    /** @var array{total:int,published:int,unpublished:int,top_level:int,children:int,navigation:int} */
+    /** @var array{total:int,published:int,unpublished:int,top_level:int,children:int,galleries:int} */
     public array $metrics = [
         'total' => 0,
         'published' => 0,
         'unpublished' => 0,
         'top_level' => 0,
         'children' => 0,
-        'navigation' => 0,
+        'galleries' => 0,
     ];
 
     /** @var list<int|string> */
@@ -303,7 +303,6 @@ final class SitePages extends Page
                         $updated = app(SiteSectionEditorialService::class)->updatePlacement(
                             $section,
                             (string) $section->getAttribute('state'),
-                            (bool) $section->getAttribute('show_in_navigation'),
                             $parentId,
                         );
                         $navigationChanged = $updated->wasChanged();
@@ -332,18 +331,7 @@ final class SitePages extends Page
         }
 
         $state = (string) $section->getAttribute('state') === 'published' ? 'hidden' : 'published';
-        $this->updatePlacement($section, $state, (bool) $section->getAttribute('show_in_navigation'));
-    }
-
-    public function toggleSectionNavigation(int $sectionId): void
-    {
-        /** @var SiteSection $section */
-        $section = SiteSection::query()->findOrFail($sectionId);
-        $this->updatePlacement(
-            $section,
-            (string) $section->getAttribute('state'),
-            ! (bool) $section->getAttribute('show_in_navigation'),
-        );
+        $this->updatePlacement($section, $state);
     }
 
     public function deletePageAction(): Action
@@ -355,7 +343,7 @@ final class SitePages extends Page
                     $this->deleteSection((int) ($arguments['section'] ?? 0));
                 }),
             heading: 'Delete page?',
-            description: 'The page is removed only when publication, navigation, child-page and content safety rules allow it.',
+            description: 'The page is removed only when publication, child-page and content safety rules allow it.',
             submitLabel: 'Delete',
             danger: true,
         );
@@ -669,7 +657,7 @@ final class SitePages extends Page
             'unpublished' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] !== 'published')),
             'top_level' => count($allGroups),
             'children' => count(array_filter($allRows, static fn (array $row): bool => $row['parent_id'] !== null)),
-            'navigation' => count(array_filter($allRows, static fn (array $row): bool => $row['visible'] === true)),
+            'galleries' => count(array_filter($allRows, static fn (array $row): bool => $row['type'] === SiteSectionType::Gallery->value)),
         ];
 
         $this->filtersActive = trim($this->search) !== '' || $this->typeFilter !== '' || $this->statusFilter !== '';
@@ -765,7 +753,6 @@ final class SitePages extends Page
             'navigation_label' => $navigationLabel,
             'slug' => $section->getAttribute('slug'),
             'state' => (string) $section->getAttribute('state'),
-            'visible' => (bool) $section->getAttribute('show_in_navigation'),
             'position' => (int) $section->getAttribute('position'),
             'position_label' => $positionLabel,
             'parent_id' => $section->getAttribute('parent_id'),
@@ -824,14 +811,13 @@ final class SitePages extends Page
         return $this->orderService ??= app(SiteSectionOrderService::class);
     }
 
-    private function updatePlacement(SiteSection $section, string $state, bool $visible): void
+    private function updatePlacement(SiteSection $section, string $state): void
     {
         $navigationChanged = false;
         try {
             $updated = app(SiteSectionEditorialService::class)->updatePlacement(
                 $section,
                 $state,
-                $visible,
                 $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
             );
             $navigationChanged = $updated->wasChanged();
@@ -872,7 +858,6 @@ final class SitePages extends Page
                 app(SiteSectionEditorialService::class)->updatePlacement(
                     $section,
                     $state,
-                    (bool) $section->getAttribute('show_in_navigation'),
                     $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
                 );
                 $changed++;
