@@ -143,14 +143,12 @@ trait CustomPageWorkspaceLifecycle
                             ->maxLength(160),
                         TextInput::make('navigation_label')
                             ->label('Navigation label')
-                            ->maxLength(160)
-                            ->helperText('Leave empty to use the page title.'),
+                            ->maxLength(160),
                         TextInput::make('slug')
                             ->label('Public URL slug')
                             ->required()
                             ->maxLength(80)
-                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                            ->helperText('Changing this keeps the previous public URL as a redirect.'),
+                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                         Select::make('publication_state')
                             ->label('Page status')
                             ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
