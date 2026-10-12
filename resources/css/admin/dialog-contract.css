@@ -63,24 +63,6 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     scrollbar-gutter: auto;
 }
 
-/* Filament lazily loads MarkdownEditor and deliberately waits until the
- * modal transition has begun before creating EasyMDE/CodeMirror. Revealing an
- * incomplete editor makes the whole dialog visibly grow once its toolbar is
- * inserted. Defer the WINDOW's visibility until its standalone rich-text
- * editor actually has CodeMirror; do not fake the editor's height, alter
- * Filament's open/close lifecycle, or add another timer/observer.
- *
- * Nested editors inside collapsed Repeater items are excluded: those can
- * initialize independently when an item is expanded or scrolled into view. */
-.fi-modal-window.admin-task-dialog:has(
-    .admin-rich-text .fi-fo-markdown-editor:not(.fi-fo-repeater-item *):is(
-        :not(:has(.CodeMirror)),
-        :not(:has(.editor-toolbar))
-    )
-) {
-    opacity: 0 !important;
-}
-
 /* Shared dialog motion. The window closes toward the native X in the
  * top-right corner while the overlay lingers slightly longer. */
 .fi-modal-window.admin-task-dialog {
