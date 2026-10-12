@@ -391,7 +391,6 @@
     .admin-data-controls__utility .admin-control-group__actions > .admin-action,
     .admin-data-controls__utility .admin-data-control-group > .admin-action,
     .admin-data-controls__utility .admin-task-control-group > .admin-action,
-    .admin-data-controls__utility .admin-task-control-group > .admin-task-control-actions > .admin-action,
     .admin-filter-overflow > .admin-filter-overflow__trigger
 ) {
     border-color: transparent;
@@ -407,7 +406,6 @@
     .admin-data-controls__utility .admin-control-group__actions > .admin-action,
     .admin-data-controls__utility .admin-data-control-group > .admin-action,
     .admin-data-controls__utility .admin-task-control-group > .admin-action,
-    .admin-data-controls__utility .admin-task-control-group > .admin-task-control-actions > .admin-action,
     .admin-filter-overflow > .admin-filter-overflow__trigger
 ):is(:hover, :focus-visible):not(:disabled) {
     border-bottom-color: var(--admin-toolbar-line-hover);
