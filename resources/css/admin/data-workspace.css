@@ -279,6 +279,13 @@
     background: var(--admin-subtle);
 }
 
+/* Empty content inside a table/hierarchy never owns table separators.
+ * The hierarchy header owns its lower border; the following add row (or
+ * pager) owns the next one. Applies equally to empty and filtered views. */
+.admin-table .admin-empty-state {
+    border: 0;
+}
+
 .admin-data-table > .admin-empty-state,
 .admin-table--data > .admin-empty-state {
     min-height: 5.2rem;
@@ -328,6 +335,12 @@
 .media-workspace__table-wrap:has(+ .admin-add-row),
 .admin-table--data:has(+ .admin-add-row) {
     border-bottom: 0 !important;
+}
+
+/* Outside tables (e.g. an empty Storage library), the empty state's lower
+ * border already separates content from the persistent add row. */
+.admin-empty-state + .admin-add-row {
+    border-top: 0;
 }
 
 .admin-add-row + .admin-pager {
