@@ -486,8 +486,8 @@ final class HomePresentation extends Page
         )->action(function (array $data): void {
             $kind = (string) ($data['kind'] ?? '');
             $component = match ($kind) {
-                'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
-                'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
+                'heading' => ['type' => 'text', 'text_kind' => 'heading', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
+                'rich_text' => ['type' => 'text', 'text_kind' => 'rich_text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
                 'image' => [
                     'type' => 'image',
                     'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
@@ -604,8 +604,8 @@ final class HomePresentation extends Page
                 }
                 $component = match ($type) {
                     'text' => match ($editorKind) {
-                        'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
-                        'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
+                        'heading' => ['type' => 'text', 'text_kind' => 'heading', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
+                        'rich_text' => ['type' => 'text', 'text_kind' => 'rich_text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
                         default => throw ValidationException::withMessages(['component' => 'This text component has no supported editor mode.']),
                     },
                     'image' => [
@@ -1192,7 +1192,9 @@ final class HomePresentation extends Page
             $body = is_string($component['body'] ?? null) ? trim((string) $component['body']) : '';
             $filterType = match ($type) {
                 'image' => 'image',
-                'text' => $title !== '' && $body === '' ? 'heading' : 'rich_text',
+                'text' => in_array($component['text_kind'] ?? null, ['heading', 'rich_text'], true)
+                    ? $component['text_kind']
+                    : ($title !== '' && $body === '' ? 'heading' : 'rich_text'),
                 'divider' => 'divider',
                 'list' => 'list',
                 'contact' => 'contact',
@@ -1425,6 +1427,9 @@ final class HomePresentation extends Page
     {
         if (($component['type'] ?? null) !== 'text') {
             return null;
+        }
+        if (in_array($component['text_kind'] ?? null, ['heading', 'rich_text'], true)) {
+            return $component['text_kind'];
         }
         $title = $component['title'] ?? null;
         $body = $component['body'] ?? null;
