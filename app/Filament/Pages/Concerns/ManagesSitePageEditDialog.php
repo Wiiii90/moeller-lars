@@ -134,6 +134,10 @@ trait ManagesSitePageEditDialog
     /** @param array<string, mixed> $data */
     private function savePageFromDialog(SiteSection $section, array $data): bool
     {
+        // A mounted Edit Action persists successive changes without remounting.
+        // Always compare against the latest database row, not its cached initial
+        // fill state, or later no-ops look like successful edits.
+        $section = SiteSection::query()->findOrFail($section->getKey());
         $before = $this->pageDialogPersistedState($section);
 
         $targetType = SiteSectionType::tryFrom((string) ($data['type'] ?? ''));
@@ -177,6 +181,7 @@ trait ManagesSitePageEditDialog
 
         /** @var SiteSection $fresh */
         $fresh = SiteSection::query()->findOrFail($section->getKey());
+        $this->dialogSectionCache[(int) $fresh->getKey()] = $fresh;
 
         return $before !== $this->pageDialogPersistedState($fresh);
     }
