@@ -589,6 +589,11 @@
     padding-left: 0 !important;
 }
 
+/* The navigation count occupies the third Compact slot, never a seventh Wide slot. */
+.admin-pages-workspace .pages-metric--navigation{
+    display: none !important;
+}
+
 @container admin-workspace (max-width: 64rem){
     .admin-pages-workspace .pages-metric{
         display: none !important;
