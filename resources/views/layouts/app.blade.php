@@ -12,7 +12,7 @@
             <meta name="robots" content="noindex,nofollow,noarchive">
         @endif
         @if ($faviconVariant !== null)
-            <link rel="icon" href="{{ route('media.variant', $faviconVariant) }}" type="{{ $faviconVariant->mime_type }}">
+            <link rel="icon" href="{{ app(\App\Domain\Media\PublicMedia::class)->variantUrl($faviconVariant) }}" type="{{ $faviconVariant->mime_type }}">
         @endif
         @php($matomoTracking = $isPreview ? null : app(\App\Domain\Analytics\MatomoConfiguration::class)->browserTracking())
         @if ($matomoTracking !== null)
