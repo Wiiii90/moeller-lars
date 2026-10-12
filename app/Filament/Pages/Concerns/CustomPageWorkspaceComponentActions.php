@@ -198,16 +198,17 @@ trait CustomPageWorkspaceComponentActions
             ->label('Edit')
             ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
             ->schema(fn (array $arguments): array => $this->componentEditorSchema(
-                onTypeChange: function (mixed $state) use ($arguments): void {
-                    $target = is_string($state) ? $state : '';
-                    [, $currentType] = $this->actionComponentTarget($arguments);
-                    if ($target === $currentType || ! array_key_exists($target, self::COMPONENT_LABELS)) {
-                        return;
+                originalType: $this->actionComponentTarget($arguments)[1],
+                losesContent: fn (string $target): bool => app(CustomPageEditorialService::class)
+                    ->conversionLosesContent($this->actionComponent($arguments), $target),
+                commitType: function (string $target) use ($arguments): void {
+                    [$index, $oldType] = $this->actionComponentTarget($arguments);
+                    if ($this->convertWorkspaceComponent($index, $oldType, $target)) {
+                        $this->replaceMountedAction(
+                            $target === 'list' ? 'editListComponent' : 'editComponent',
+                            ['componentIndex' => $index, 'componentType' => $target],
+                        );
                     }
-                    $this->replaceMountedAction('changeComponentType', [
-                        ...$arguments,
-                        'targetType' => $target,
-                    ]);
                 },
             ))
             ->modalHeading('Edit component')
@@ -277,6 +278,22 @@ trait CustomPageWorkspaceComponentActions
         return $actions;
     }
 
+    private function convertWorkspaceComponent(int $index, string $oldType, string $targetType): bool
+    {
+        $changed = app(CustomPageEditorialService::class)->convertBlock(
+            $this->settings(), $index, $oldType, $targetType,
+        );
+        if ($changed) {
+            $this->clearSelections();
+            $this->reloadWorkspace();
+            app(AdminNotifier::class)->notification(
+                title: 'Component type updated', status: 'success',
+            );
+        }
+
+        return $changed;
+    }
+
     public function changeComponentTypeAction(): Action
     {
         $description = function (array $arguments): string {
@@ -293,16 +310,7 @@ trait CustomPageWorkspaceComponentActions
             ->action(function (array $arguments): void {
                 [$index, $oldType] = $this->actionComponentTarget($arguments);
                 $targetType = $this->actionTargetComponentType($arguments);
-                $changed = app(CustomPageEditorialService::class)->convertBlock($this->settings(), $index, $oldType, $targetType);
-                $this->clearSelections();
-                $this->reloadWorkspace();
-
-                if ($changed) {
-                    app(AdminNotifier::class)->notification(
-                        title: 'Component type updated',
-                        status: 'success',
-                    );
-                }
+                $this->convertWorkspaceComponent($index, $oldType, $targetType);
             });
 
         return AdminDialog::confirm(
@@ -310,7 +318,7 @@ trait CustomPageWorkspaceComponentActions
             'Change type?',
             $description,
             'Change type',
-            condition: fn (array $arguments): bool => $this->componentTypeChangeLosesContent($arguments),
+            condition: true,
         );
     }
 
