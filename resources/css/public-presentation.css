@@ -22,6 +22,8 @@
     --public-surface: #f7f4ed;
     --public-plaque-surface: #faf7f1;
     --public-plaque-rule: rgba(88, 74, 56, .27);
+    --public-label-handwriting: "Segoe Print", "Bradley Hand", "Segoe Script", cursive;
+    --public-label-ink: #28394b;
     --public-ink-strong: #30291f;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-ink: #555;
@@ -576,13 +578,15 @@ body {
     cursor: pointer;
 }
 
-/* One physical-looking, preprinted Artwork label, shared by Home, Galleries
-   and Artwork detail. Its structure comes from actual fields, not ornaments. */
+/* An actual fill-in exhibition label. Small printed prompts lead into ruled
+   handwriting lines; never layout cells, a table, or decorative header bars.
+   The value ink is a separate, centralized type role for all authored fields. */
 .artwork-label {
-    display: block;
+    display: grid;
     width: 100%;
     min-width: 0;
-    padding: 0;
+    padding: .78rem .85rem .85rem;
+    gap: .22rem;
     border: 1px solid var(--public-artwork-line);
     border-radius: 0;
     background: var(--public-plaque-surface);
@@ -602,69 +606,59 @@ body {
     outline-offset: 3px;
 }
 
-.artwork-label__row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 4.45rem;
-    min-width: 0;
-    align-items: stretch;
-}
-
-.artwork-label__row--single,
-.artwork-label__row--note {
-    grid-template-columns: minmax(0, 1fr);
-}
-
-.artwork-label__row + .artwork-label__row {
-    border-top: 1px solid var(--public-plaque-rule);
-}
-
 .artwork-label__field {
     display: grid;
+    grid-template-columns: 3.7rem minmax(0, 1fr);
     min-width: 0;
-    padding: .67rem .75rem .7rem;
-    align-content: start;
-    gap: .24rem;
+    align-items: start;
+    column-gap: .35rem;
 }
 
-.artwork-label__field + .artwork-label__field {
-    padding-left: .64rem;
-    padding-right: .55rem;
-    border-left: 1px solid var(--public-plaque-rule);
-}
-
-.artwork-label__key {
+.artwork-label__prompt {
     display: block;
-    color: #766d60;
-    font-size: .58rem;
+    padding-top: .48rem;
+    color: #80766a;
+    font-size: .59rem;
     font-weight: 500;
-    letter-spacing: .115em;
-    line-height: 1.25;
+    letter-spacing: .065em;
+    line-height: 1.35;
     text-transform: uppercase;
 }
 
-.artwork-label__value {
+.artwork-label__writing {
     display: block;
     min-width: 0;
-    color: var(--public-ink-strong);
-    font-size: .755rem;
+    min-height: 1.65rem;
+    padding-inline: .12rem;
+    background-image: linear-gradient(
+        to bottom,
+        transparent calc(100% - 1px),
+        var(--public-plaque-rule) calc(100% - 1px)
+    );
+    background-size: 100% 1.65rem;
+    line-height: 1.65rem;
+}
+
+.artwork-label__entry {
+    color: var(--public-label-ink);
+    font-family: var(--public-label-handwriting);
+    font-size: .82rem;
     font-weight: 400;
     letter-spacing: 0;
-    line-height: 1.4;
+    line-height: inherit;
     overflow-wrap: break-word;
 }
 
-.artwork-label__value--title {
-    font-size: .83rem;
-    font-weight: 500;
-    line-height: 1.36;
+.artwork-label__field--title .artwork-label__entry {
+    font-size: .89rem;
 }
 
-.artwork-label__value--year,
-.artwork-label__value--dimensions {
+.artwork-label__entry--numeric {
     font-variant-numeric: tabular-nums;
 }
 
-/* Original controls remain their own rail alongside the plaque. */
+/* Artwork navigation is free-standing typography, not three boxed cells.
+   The double chevrons are specific to Artwork actions, not site navigation. */
 .artwork-card__actions,
 .artwork-detail__actions {
     display: flex;
@@ -672,47 +666,44 @@ body {
     min-width: 0;
     max-width: 100%;
     grid-column: 2;
-    align-items: stretch;
+    align-items: center;
     justify-self: end;
     flex-wrap: nowrap;
-    gap: 0;
-    border: 1px solid var(--public-artwork-line);
-    border-radius: 0;
-    background: var(--public-plaque-surface);
-    transition: border-color .14s ease;
+    gap: .24rem;
+    border: 0;
+    background: transparent;
 }
-.artwork-card__actions:hover,
-.artwork-card__actions:focus-within,
-.artwork-detail__actions:hover,
-.artwork-detail__actions:focus-within {
-    border-color: var(--public-artwork-line-hover);
-}
+
 .artwork-context-button {
     display: inline-flex;
     min-width: 0;
-    min-height: 2.15rem;
-    padding: .48rem .65rem;
+    min-height: 2.25rem;
+    padding: .35rem .25rem;
     align-items: center;
     justify-content: center;
     appearance: none;
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: #514739;
+    color: #4e4740;
     font-family: var(--public-typeface);
-    font-size: .67rem;
-    letter-spacing: .04em;
+    font-size: .82rem;
+    font-weight: 400;
+    letter-spacing: .012em;
     line-height: 1.3;
     text-align: center;
     text-decoration: none;
-    text-transform: uppercase;
+    text-transform: none;
     white-space: nowrap;
     cursor: pointer;
     transition: color .14s ease;
 }
+
 .artwork-context-button--category {
-    max-width: 8.5rem;
+    max-width: 9.5rem;
+    padding-inline: .35rem;
 }
+
 .artwork-context-button__label {
     display: block;
     min-width: 0;
@@ -721,26 +712,34 @@ body {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-.artwork-context-button + .artwork-context-button {
-    border-left: 1px solid var(--public-artwork-line);
-}
+
 .artwork-context-button:hover,
 .artwork-context-button:focus-visible {
-    color: #262017;
+    color: #18130e;
 }
+
+.artwork-context-button--category:hover .artwork-context-button__label,
+.artwork-context-button--category:focus-visible .artwork-context-button__label {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .3em;
+}
+
 .artwork-context-button:focus-visible {
     outline: 1px dotted #6d665f;
-    outline-offset: -3px;
+    outline-offset: 0;
 }
+
 .artwork-context-button--icon {
-    width: 2.15rem;
-    min-width: 2.15rem;
-    flex: 0 0 2.15rem;
-    padding-inline: 0;
+    width: 2rem;
+    min-width: 2rem;
+    flex: 0 0 2rem;
+    padding-inline: .2rem;
 }
+
 .artwork-context-button--icon > .public-icon {
-    width: 1.05rem;
-    height: 1.05rem;
+    width: 1.08rem;
+    height: 1.08rem;
     stroke-width: 1.5;
 }
 

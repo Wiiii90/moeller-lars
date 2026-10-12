@@ -80,7 +80,7 @@
                 <nav class="artwork-card__actions" aria-label="Artwork navigation">
                     @if ($heroNavigation)
                         <button class="artwork-context-button artwork-context-button--icon" type="button" data-home-hero-direction="previous" aria-label="Previous Hero artwork" title="Previous artwork">
-                            <x-public-icon name="chevron-left" />
+                            <x-public-icon name="chevrons-left" />
                         </button>
                     @endif
 
@@ -92,7 +92,7 @@
 
                     @if ($heroNavigation)
                         <button class="artwork-context-button artwork-context-button--icon" type="button" data-home-hero-direction="next" aria-label="Next Hero artwork" title="Next artwork">
-                            <x-public-icon name="chevron-right" />
+                            <x-public-icon name="chevrons-right" />
                         </button>
                     @endif
                 </nav>
