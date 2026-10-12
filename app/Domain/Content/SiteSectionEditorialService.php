@@ -37,7 +37,6 @@ final class SiteSectionEditorialService
                 'slug' => null,
                 'state' => 'hidden',
                 'position' => $this->nextSiblingPosition(null, null),
-                'show_in_navigation' => true,
                 'parent_id' => null,
                 'artwork_category_id' => null,
             ]);
@@ -63,7 +62,6 @@ final class SiteSectionEditorialService
                 'slug' => $slug,
                 'state' => 'hidden',
                 'position' => $this->nextSiblingPosition(null, null),
-                'show_in_navigation' => false,
                 'parent_id' => null,
                 'artwork_category_id' => null,
             ]);
@@ -93,7 +91,6 @@ final class SiteSectionEditorialService
                 'slug' => $slug,
                 'state' => 'hidden',
                 'position' => $this->nextSiblingPosition(null, null),
-                'show_in_navigation' => false,
                 'parent_id' => null,
                 'artwork_category_id' => null,
             ]);
@@ -119,9 +116,9 @@ final class SiteSectionEditorialService
             }
             if (
                 $type !== SiteSectionType::Journal
-                && ((string) $fresh->getAttribute('state') !== 'hidden' || (bool) $fresh->getAttribute('show_in_navigation'))
+                && (string) $fresh->getAttribute('state') !== 'hidden'
             ) {
-                throw ValidationException::withMessages(['section' => 'Unpublish the page and remove it from navigation before deleting it.']);
+                throw ValidationException::withMessages(['section' => 'Unpublish the page before deleting it.']);
             }
             if (SiteSection::query()->where('parent_id', $fresh->getKey())->exists()) {
                 throw ValidationException::withMessages(['section' => 'Move or delete child pages before deleting their parent.']);
@@ -140,19 +137,6 @@ final class SiteSectionEditorialService
             $this->audit->record($actor, 'site_section.deleted', 'site_section', $sectionId);
             $fresh->delete();
         });
-    }
-
-    public function updateGallery(
-        SiteSection $section,
-        string $state,
-        bool $showInNavigation,
-        ?int $parentSectionId,
-    ): SiteSection {
-        if ($section->nodeType() !== SiteSectionType::Gallery) {
-            throw ValidationException::withMessages(['type' => 'Only Gallery sections support Gallery placement controls.']);
-        }
-
-        return $this->updatePlacement($section, $state, $showInNavigation, $parentSectionId);
     }
 
     public function updateCustomPageIdentity(
@@ -208,7 +192,6 @@ final class SiteSectionEditorialService
     public function updatePlacement(
         SiteSection $section,
         string $state,
-        bool $showInNavigation,
         ?int $parentSectionId,
     ): SiteSection {
         if (! in_array($state, ['published', 'hidden'], true)) {
@@ -220,7 +203,7 @@ final class SiteSectionEditorialService
 
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($section, $state, $showInNavigation, $parentSectionId, $actor): SiteSection {
+        return DB::transaction(function () use ($section, $state, $parentSectionId, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             if ($fresh->nodeType() === SiteSectionType::Home && $state !== 'published') {
@@ -239,13 +222,12 @@ final class SiteSectionEditorialService
 
             $position = (int) $fresh->getAttribute('position');
             $parentChanged = $fresh->getAttribute('parent_id') !== $parentId;
-            if ($parentChanged || $this->visiblePositionConflict($fresh, $state, $showInNavigation, $parentId, $position)) {
+            if ($parentChanged || $this->publishedPositionConflict($fresh, $state, $parentId, $position)) {
                 $position = $this->nextSiblingPosition($fresh, $parentId);
             }
 
             $fresh->fill([
                 'state' => $state,
-                'show_in_navigation' => $showInNavigation,
                 'parent_id' => $parentId,
                 'position' => $position,
             ]);
@@ -436,14 +418,13 @@ final class SiteSectionEditorialService
         return $parent;
     }
 
-    private function visiblePositionConflict(
+    private function publishedPositionConflict(
         SiteSection $section,
         string $state,
-        bool $showInNavigation,
         ?int $parentId,
         int $position,
     ): bool {
-        if ($state !== 'published' || ! $showInNavigation) {
+        if ($state !== 'published') {
             return false;
         }
 
@@ -451,7 +432,6 @@ final class SiteSectionEditorialService
         $query = SiteSection::query();
         $query->whereKeyNot($section->getKey())
             ->where('state', 'published')
-            ->where('show_in_navigation', true)
             ->where('position', $position);
         $parentId === null ? $query->whereNull('parent_id') : $query->where('parent_id', $parentId);
 
