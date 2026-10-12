@@ -7,6 +7,8 @@ use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\PublicContentSetting;
 use Closure;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Support\Facades\DB;
 
@@ -60,10 +62,14 @@ final class PagesSettingsDialog
         }
 
         return [
-            $nesting,
-            ...$this->homeRouting->schema($onToggleUpdated),
-            $autoPublish,
-            $deleteWithoutConfirmation,
+            Grid::make()
+                ->columns(['md' => 2])
+                ->schema([
+                    $nesting,
+                    Group::make($this->homeRouting->schema($onToggleUpdated)),
+                    $autoPublish,
+                    $deleteWithoutConfirmation,
+                ]),
         ];
     }
 
