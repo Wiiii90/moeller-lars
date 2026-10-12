@@ -166,11 +166,17 @@
                                 <input
                                     type="checkbox"
                                     aria-label="Select all visible pages"
-                                    aria-checked="{{ $selectionIndeterminate ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
-                                    wire:click="toggleSelectAll"
-                                    @checked($allVisibleSelected)
-                                    x-data
-                                    x-effect="$el.indeterminate = {{ $selectionIndeterminate ? 'true' : 'false' }}"
+                                    wire:click.prevent="toggleSelectAll"
+                                    x-data="{}"
+                                    x-effect="
+                                        const visibleIds = $wire.filteredRows.map((row) => Number(row.id));
+                                        const selectedIds = $wire.selectedSectionIds.map(Number);
+                                        const count = visibleIds.filter((id) => selectedIds.includes(id)).length;
+                                        $el.checked = visibleIds.length > 0 && count === visibleIds.length;
+                                        $el.indeterminate = count > 0 && count < visibleIds.length;
+                                        $el.disabled = visibleIds.length === 0;
+                                        $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
+                                    "
                                 >
                             </label>
                         </div>
