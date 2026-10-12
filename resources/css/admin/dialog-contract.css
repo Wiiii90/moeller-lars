@@ -278,6 +278,13 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     line-height: 1.5 !important;
 }
 
+/* Filament renders confirm descriptions inside the header itself. The common
+ * dialog-header layout intentionally has no lower padding for form bodies;
+ * a description-only confirmation needs its own final breathing room. */
+.admin-dialog--header-actions.admin-dialog--confirmation .fi-modal-header:has(.fi-modal-description) {
+    padding-bottom: var(--admin-dialog-header-action-inset) !important;
+}
+
 .admin-dialog--header-actions .fi-modal-footer {
     position: absolute !important;
     z-index: 10;
