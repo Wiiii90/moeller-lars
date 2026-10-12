@@ -16,6 +16,7 @@
             <x-admin.metric class="pages-metric pages-metric--unpublished" label="Unpublished" :value="$metrics['unpublished']">Not public</x-admin.metric>
             <x-admin.metric class="pages-metric pages-metric--top-level" label="Top level" :value="$metrics['top_level']">Root pages</x-admin.metric>
             <x-admin.metric class="pages-metric pages-metric--children" label="Child pages" :value="$metrics['children']">Nested pages</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--navigation" label="In navigation" :value="$metrics['navigation']">Visible menu items</x-admin.metric>
             <x-admin.metric class="pages-metric pages-metric--galleries" label="Galleries" :value="$metrics['galleries']">Gallery pages</x-admin.metric>
         </x-admin.metrics>
 
