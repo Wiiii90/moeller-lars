@@ -20,6 +20,7 @@ use App\Filament\Pages\Concerns\HomePresentationChildren;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
+use App\Filament\Support\ComponentTypeChangeControl;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -542,47 +543,56 @@ final class HomePresentation extends Page
                     'items' => $component['items'] ?? [],
                 ];
             })
-            ->schema(fn (array $arguments): array => [
-                Hidden::make('type'),
-                Select::make('editor_kind')
-                    ->label('Component')
-                    ->options($this->componentTypeOptions)
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (mixed $state) use ($arguments): void {
-                        $component = $this->componentFromArguments($arguments);
-                        $currentKind = $this->editorKind($component) ?? (string) $component['type'];
-                        $targetKind = is_string($state) ? $state : '';
-                        if ($targetKind === $currentKind || ! array_key_exists($targetKind, $this->componentTypeOptions)) {
-                            return;
+            ->schema(function (array $arguments): array {
+                $current = $this->componentFromArguments($arguments);
+                $originalKind = $this->editorKind($current) ?? (string) $current['type'];
+                [$typeField, $applyType] = ComponentTypeChangeControl::make(
+                    'editor_kind',
+                    $this->componentTypeOptions,
+                    $originalKind,
+                    fn (string $target): bool => app(HomePresentationEditorialService::class)
+                        ->conversionLosesContent($this->componentFromArguments($arguments), $target),
+                    function (string $target) use ($arguments, $originalKind): void {
+                        $current = $this->componentFromArguments($arguments);
+                        if ($this->convertHomeComponent(
+                            (int) $arguments['index'], (string) $current['type'], $originalKind, $target,
+                        )) {
+                            $this->replaceMountedAction(
+                                $target === 'list' ? 'editListComponent' : 'editComponent',
+                                ['index' => (int) $arguments['index'], 'type' => $target === 'heading' || $target === 'rich_text' ? 'text' : $target],
+                            );
                         }
+                    },
+                );
 
-                        $this->replaceMountedAction('changeComponentType', [
-                            ...$arguments,
-                            'kind' => $currentKind,
-                            'targetKind' => $targetKind,
-                        ]);
-                    }),
-                TextInput::make('title')->label('Heading')->maxLength(160)
-                    ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
-                ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
-                    ->required(fn (callable $get): bool => $get('editor_kind') === 'image')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
-                Toggle::make('image_decorative')->label('Decorative image')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
-                Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
-                    ->required(fn (callable $get): bool => $get('editor_kind') === 'divider')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'divider'),
-                TextInput::make('list_title')->label('List heading')->maxLength(160)
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
-                MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
+                return [
+                    Hidden::make('type'),
+                    $typeField,
+                    $applyType,
+                    TextInput::make('title')->label('Heading')->maxLength(160)
+                        ->required()
+                        ->visible(fn (callable $get): bool => $originalKind === 'heading' && $get('editor_kind') === $originalKind),
+                    ...($originalKind === 'rich_text'
+                        ? $this->homeRichTextFields('editor_kind', 'rich_text', required: true)
+                        : []),
+                    MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
+                        ->required()
+                        ->visible(fn (callable $get): bool => $originalKind === 'image' && $get('editor_kind') === $originalKind),
+                    Toggle::make('image_decorative')->label('Decorative image')
+                        ->visible(fn (callable $get): bool => $originalKind === 'image' && $get('editor_kind') === $originalKind),
+                    Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
+                        ->required()
+                        ->visible(fn (callable $get): bool => $originalKind === 'divider' && $get('editor_kind') === $originalKind),
+                    TextInput::make('list_title')->label('List heading')->maxLength(160)
+                        ->visible(fn (callable $get): bool => $originalKind === 'list' && $get('editor_kind') === $originalKind),
+                    MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
                         ->nullable()->placeholder('No list image')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
-                ComponentListEditor::make()
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
-            ])
+                        ->visible(fn (callable $get): bool => $originalKind === 'list' && $get('editor_kind') === $originalKind),
+                    ...($originalKind === 'list'
+                        ? [ComponentListEditor::make()->visible(fn (callable $get): bool => $get('editor_kind') === $originalKind)]
+                        : []),
+                ];
+            })
             ->modalHeading('Edit component')
             ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments, $actionName))
             ->action(function (array $data, array $arguments): void {
@@ -675,6 +685,23 @@ final class HomePresentation extends Page
         }
     }
 
+    private function convertHomeComponent(
+        int $index, string $expectedType, string $expectedKind, string $targetKind,
+    ): bool {
+        $changed = app(HomePresentationEditorialService::class)->convertComponent(
+            $this->settings(), $this->componentTemplate(),
+            $index, $expectedType, $expectedKind, $targetKind,
+        );
+        if ($changed) {
+            $this->reloadWorkspace();
+            app(AdminNotifier::class)->notification(
+                title: 'Home component type updated', status: 'success',
+            );
+        }
+
+        return $changed;
+    }
+
     public function changeComponentTypeAction(): Action
     {
         $targetComponent = function (array $arguments): array {
@@ -695,29 +722,19 @@ final class HomePresentation extends Page
                 ->label('Change component type')
                 ->action(function (array $arguments) use ($targetComponent): void {
                     $component = $targetComponent($arguments);
-                    $changed = app(HomePresentationEditorialService::class)->convertComponent(
-                        $this->settings(),
-                        $this->componentTemplate(),
+                    $this->convertHomeComponent(
                         (int) $arguments['index'],
                         (string) $component['type'],
                         (string) $arguments['kind'],
                         (string) $arguments['targetKind'],
                     );
-                    $this->reloadWorkspace();
-                    if ($changed) {
-                        app(AdminNotifier::class)->notification(
-                            title: 'Home component type updated',
-                            status: 'success',
-                        );
-                    }
                 }),
             'Change type?',
             fn (array $arguments): string => 'Changing to '
                 .($this->componentTypeOptions[(string) $arguments['targetKind']] ?? 'another type')
                 .' removes content that cannot be kept.',
             'Change type',
-            condition: fn (array $arguments): bool => app(HomePresentationEditorialService::class)
-                ->conversionLosesContent($targetComponent($arguments), (string) $arguments['targetKind']),
+            condition: true,
         );
     }
 
