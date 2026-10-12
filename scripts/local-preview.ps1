@@ -2,42 +2,40 @@ $ErrorActionPreference = 'Stop'
 
 Set-Location 'P:\moeller-lars'
 
-if (git status --porcelain) {
-    throw 'Lokale Git-Aenderungen vorhanden. Erst committen, stashen oder verwerfen.'
-}
+$Changes = git status --porcelain
+if ($LASTEXITCODE) { throw 'Git-Status fehlgeschlagen.' }
+if ($Changes) { throw 'Lokale Git-Aenderungen vorhanden. Erst committen, stashen oder verwerfen.' }
 
 git switch dev
-if ($LASTEXITCODE) { throw 'git switch fehlgeschlagen' }
+if ($LASTEXITCODE) { throw 'git switch fehlgeschlagen.' }
 
-git pull --ff-only origin dev
-if ($LASTEXITCODE) { throw 'git pull fehlgeschlagen' }
+Write-Host '[1/3] Git dev aktualisieren'
+foreach ($Attempt in 1..4) {
+    git fetch origin dev
+    if ($LASTEXITCODE -eq 0) { break }
+    if ($Attempt -eq 4) { throw 'Git-Fetch nach vier Versuchen fehlgeschlagen.' }
+    Write-Warning "Git-Fetch fehlgeschlagen ($Attempt/4), erneuter Versuch in 2 Sekunden."
+    Start-Sleep -Seconds 2
+}
+git merge --ff-only FETCH_HEAD
+if ($LASTEXITCODE) { throw 'Git-Fast-Forward fehlgeschlagen.' }
 
 $env:APP_GIT_SHA = (git rev-parse HEAD).Trim()
-if ($LASTEXITCODE) { throw 'Git SHA konnte nicht gelesen werden' }
+if ($LASTEXITCODE) { throw 'Git SHA konnte nicht gelesen werden.' }
 
-Write-Host "Building dev $($env:APP_GIT_SHA.Substring(0, 7))"
+$AnalyticsDemo = 'storage\app\analytics-demo.php'
+if (-not (Test-Path $AnalyticsDemo)) { throw "Lokale Analytics-Demo fehlt: $AnalyticsDemo" }
 
+Write-Host "[2/3] Preview-Image bauen ($($env:APP_GIT_SHA.Substring(0, 7)))"
 docker compose build preview
 if ($LASTEXITCODE) { throw 'Lokaler Preview-Build fehlgeschlagen. Alter Preview-Container bleibt unangetastet.' }
 
 docker volume create moeller-lars_postgres_data | Out-Null
 if ($LASTEXITCODE) { throw 'Lokales PostgreSQL-Volume konnte nicht bereitgestellt werden.' }
 
-$ExistingPreview = docker ps -aq --filter 'name=^/moeller-lars-local-web$'
-if ($LASTEXITCODE) { throw 'Bestehender Preview-Container konnte nicht ermittelt werden.' }
-
-if ($ExistingPreview) {
-    docker rm -f $ExistingPreview | Out-Null
-    if ($LASTEXITCODE) { throw 'Alter Preview-Container konnte nicht ersetzt werden.' }
-}
-
+Write-Host '[3/3] Preview starten und Analytics laden'
 docker compose up -d --no-build --wait preview
 if ($LASTEXITCODE) { throw 'Lokaler Preview-Container konnte nicht gestartet werden.' }
-
-$AnalyticsDemo = 'storage\app\analytics-demo.php'
-if (-not (Test-Path $AnalyticsDemo)) {
-    throw 'Lokale Analytics-Demo fehlt: storage\app\analytics-demo.php'
-}
 
 docker cp $AnalyticsDemo moeller-lars-local-web:/var/www/html/storage/app/analytics-demo.php
 if ($LASTEXITCODE) { throw 'Lokale Analytics-Demo konnte nicht in den Preview-Container kopiert werden.' }
