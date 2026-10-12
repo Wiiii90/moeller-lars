@@ -181,7 +181,8 @@ it('owns Notification delivery without framework notification objects or paralle
     $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
 
     expect($provider)
-        ->toContain('PanelsRenderHook::BODY_START')
+        ->toContain('PanelsRenderHook::BODY_END')
+        ->toContain("view('filament.partials.admin-header-notification')")
         ->not->toContain('PanelsRenderHook::TOPBAR_START')
         ->and($notifier)
         ->toContain("dispatch('admin-header-notification'")
