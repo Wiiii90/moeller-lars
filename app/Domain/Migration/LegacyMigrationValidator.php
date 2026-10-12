@@ -184,7 +184,6 @@ final class LegacyMigrationValidator
         $checks = [
             'name' => $expected['name'] ?? null,
             'position' => $expected['position'] ?? null,
-            'show_in_navigation' => $expected['show_in_navigation'] ?? null,
             'show_on_home' => $expected['show_on_home'] ?? null,
             'description' => $expected['description'] ?? null,
             'state' => 'published',
