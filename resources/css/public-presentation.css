@@ -252,36 +252,60 @@ body {
     grid-row: auto;
 }
 
-/* Breadcrumb-level return is a quiet editorial index tab, not a third arrow.
-   The hairline is purely presentational; the cyclic controls keep their own rail. */
+/* The parent-specific return is visually distinct from the cyclic chevrons.
+   Both the label and icon share one accessible button; long names truncate
+   rather than consuming the child navigation's available width. */
 .site-navigation__back {
-    display: flex;
+    display: inline-flex;
     min-height: 2.95rem;
-    flex: 0 0 auto;
+    min-width: 0;
+    max-width: min(38%, 10rem);
+    flex: 0 1 auto;
     margin: 0;
-    padding: .9rem .2rem .82rem 0;
+    padding: .7rem 0;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    gap: .38rem;
     appearance: none;
     border: 0;
     background: transparent;
-    color: #726e69;
+    color: #68625d;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 11px;
     font-weight: 400;
-    letter-spacing: .11em;
+    letter-spacing: .095em;
     line-height: 1.15;
+    cursor: pointer;
+    transition: color .14s ease;
+}
+
+.site-navigation__back > .public-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: 0 0 auto;
+    stroke-width: 1.45;
+}
+
+.site-navigation__back-label {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     text-decoration-line: underline;
     text-decoration-color: transparent;
     text-decoration-thickness: 1px;
     text-underline-offset: .5em;
-    cursor: pointer;
-    transition: color .14s ease, text-decoration-color .14s ease;
+    transition: text-decoration-color .14s ease;
 }
 
 .site-navigation__back:hover,
 .site-navigation__back:focus-visible {
     color: #302d2a;
+}
+
+.site-navigation__back:hover .site-navigation__back-label,
+.site-navigation__back:focus-visible .site-navigation__back-label {
     text-decoration-color: var(--public-active);
 }
 
@@ -296,7 +320,7 @@ body {
     flex: 0 0 1px;
     width: 1px;
     height: 1.05rem;
-    margin: 0 .55rem 0 .65rem;
+    margin: 0 .65rem;
     background: #dad5d0;
     pointer-events: none;
 }

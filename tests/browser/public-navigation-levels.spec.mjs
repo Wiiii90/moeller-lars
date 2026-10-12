@@ -29,7 +29,10 @@ function fixture(path) {
             <div class="site-navigation__submenu" id="child-about" data-navigation-submenu ${withinAbout ? '' : 'hidden'}>
               <button type="button" class="site-navigation__control" data-direction="previous" aria-label="Previous subpage" hidden>‹</button>
               <div class="site-navigation__content" data-navigation-content>
-                <button class="site-navigation__back" type="button" data-navigation-back aria-label="Return to main navigation">INDEX</button>
+                <button class="site-navigation__back" type="button" data-navigation-back aria-label="Return to main navigation from About" title="Return to main navigation">
+                    <svg class="public-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 14 4 9l5-5M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                    <span class="site-navigation__back-label">ABOUT</span>
+                </button>
                 <span class="site-navigation__breadcrumb-separator" aria-hidden="true"></span>
                 <nav aria-label="About subnavigation" data-navigation-window-scroll>
                   ${link('ABOUT', '/about', path === '/about')}
@@ -56,7 +59,7 @@ test.beforeEach(async ({ page }) => {
     });
 });
 
-test('parent switches levels without a second row, with a distinct text-only return', async ({ page }) => {
+test('parent switches levels without a second row, with a contextual icon return', async ({ page }) => {
     await page.setViewportSize({ width: 1200, height: 700 });
     await page.goto('https://navigation.test/');
     const header = page.locator('.site-navigation');
@@ -68,7 +71,9 @@ test('parent switches levels without a second row, with a distinct text-only ret
 
     await expect(page.locator('[data-navigation-main]')).toBeHidden();
     await expect(page.locator('#child-about')).toBeVisible();
-    await expect(page.locator('[data-navigation-back]')).toHaveText('INDEX');
+    await expect(page.locator('[data-navigation-back] .site-navigation__back-label')).toHaveText('ABOUT');
+    await expect(page.locator('[data-navigation-back] .public-icon path')).toHaveAttribute('d', 'M9 14 4 9l5-5M20 20v-7a4 4 0 0 0-4-4H4');
+    await expect(page.locator('[data-navigation-back]')).toHaveAttribute('aria-label', 'Return to main navigation from About');
     const separator = await page.locator('.site-navigation__breadcrumb-separator').evaluate((element) => {
         const style = getComputedStyle(element);
         const bounds = element.getBoundingClientRect();
@@ -86,7 +91,7 @@ test('parent switches levels without a second row, with a distinct text-only ret
     await expect(page.locator('#child-about')).toBeVisible();
     await expect(page.locator('#child-about a[href="/about"]')).toHaveAttribute('aria-current', 'page');
 
-    await page.getByRole('button', { name: 'Return to main navigation' }).click();
+    await page.getByRole('button', { name: 'Return to main navigation from About' }).click();
     await expect(page.locator('[data-navigation-main]')).toBeVisible();
     await expect(page.locator('#child-about')).toBeHidden();
 });
@@ -106,7 +111,7 @@ test('direct child routes remain in the one-row child level; Escape returns to m
     expect(geometry.leftGap).toBeLessThan(1);
     expect(geometry.rightGap).toBeLessThan(1);
 
-    await page.getByRole('button', { name: 'Return to main navigation' }).focus();
+    await page.getByRole('button', { name: 'Return to main navigation from About' }).focus();
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-navigation-main]')).toBeVisible();
     await expect(page.locator('#child-about')).toBeHidden();

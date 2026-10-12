@@ -95,7 +95,10 @@
                                     <x-public-icon name="chevron-left" />
                                 </button>
                                 <div class="site-navigation__content" data-navigation-content>
-                                    <button class="site-navigation__back" type="button" data-navigation-back aria-label="Return to main navigation">INDEX</button>
+                                    <button class="site-navigation__back" type="button" data-navigation-back aria-label="Return to main navigation from {{ $navigationItem['label'] }}" title="Return to main navigation">
+                                        <x-public-icon name="corner-up-left" />
+                                        <span class="site-navigation__back-label">{{ $navigationItem['label'] }}</span>
+                                    </button>
                                     <span class="site-navigation__breadcrumb-separator" aria-hidden="true"></span>
                                     <nav aria-label="{{ $navigationItem['label'] }} subnavigation" data-navigation-window-scroll>
                                         @if ($navigationItem['url'] !== null)
