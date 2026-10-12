@@ -12,7 +12,9 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('@media (max-width: 34rem)')
         ->toContain('.site-navigation__rail > nav')
         ->toContain('.site-navigation,')
-        ->toContain('--public-content-inset:')
+        ->toContain('--public-content-inset: max(')
+        ->toContain('calc((100% - var(--public-art-max)) / 2)')
+        ->toContain('min(var(--public-content-padding)')
         ->toContain('--public-content-block-inset:')
         ->toContain('--public-shell-gap:')
         ->toContain('margin-block: var(--public-shell-gap);')
@@ -34,6 +36,11 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->not->toContain('max-width: 550px')
         ->not->toContain('max-width: 980px')
         ->not->toContain('max-width: 1400px');
+
+    // One geometric owner: no parallel width, label-size or heading rules
+    // changing the shell at the arbitrary 46rem threshold.
+    expect(substr_count($presentation, '--public-content-inset:'))->toBe(1);
+    expect(substr_count($presentation, '.site-header h1 {'))->toBe(1);
 
     expect($foundation)
         ->toContain('@media (max-width: 40rem)')

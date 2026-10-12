@@ -8,7 +8,13 @@
     --public-mobile-inset: .65rem;
     --public-content-padding: 75px;
     /* One content geometry for the scroll shell, navigation and page body. */
-    --public-content-inset: clamp(var(--public-mobile-inset), var(--public-content-padding), 20vw);
+    /* Keep the authored artwork width as long as the shell can fit it.
+     * Ease both insets continuously down to the minimum, never widening the
+     * navigation rail when the viewport gets narrower. */
+    --public-content-inset: max(
+        var(--public-mobile-inset),
+        min(var(--public-content-padding), calc((100% - var(--public-art-max)) / 2))
+    );
     --public-content-block-inset: clamp(1.6rem, 3.3vw, 2.75rem);
     --public-shell-gap: clamp(var(--public-mobile-inset), 1vw, .75rem);
     --public-page: #777;
@@ -53,8 +59,7 @@ body {
     border-bottom: 2px solid var(--public-header-separator);
 }
 
-/* Public header and content share one shell geometry. The scroll foundation
- * reserves matching scrollbar gutters for both regions. */
+/* Header navigation and page content share one centered shell geometry. */
 .site-navigation,
 #content {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
@@ -297,12 +302,12 @@ body {
     position: relative;
     order: 2;
     width: 100%;
-    min-height: 4.7rem;
+    min-height: clamp(4rem, 10vw, 4.7rem);
     margin: 0;
     padding: 0;
     color: #fff;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 28px;
+    font-size: clamp(1.3rem, 5vw, 1.75rem);
     font-weight: 400;
     letter-spacing: .16em;
     line-height: 1.1;
@@ -312,7 +317,7 @@ body {
 
 .site-title {
     position: absolute;
-    bottom: 1rem;
+    bottom: clamp(.82rem, 2vw, 1rem);
     left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
     display: block;
     color: inherit;
@@ -782,41 +787,13 @@ body {
     }
 }
 
-/* Narrow: the shell uses the full useful width, navigation remains a horizontal
- * touch/keyboard surface, and feature layouts deliberately reduce columns. */
+/* Narrow: only the Exhibition composition changes. Shared shell,
+ * navigation controls, padding and title do not switch geometry here. */
 @media (max-width: 46rem) {
-    :root {
-        --public-gutter: var(--public-mobile-inset);
-        --public-content-inset: var(--public-mobile-inset);
-        --public-content-block-inset: var(--public-mobile-inset);
-    }
-
-    .site-header nav a,
-    .site-header nav .site-navigation__primary > button {
-        min-height: 2.8rem;
-        padding: .84rem .78rem .78rem;
-        font-size: 11px;
-    }
-
-    .site-navigation__control {
-        min-height: 2.8rem;
-        width: 1.75rem;
-    }
-
-    .site-header h1 {
-        min-height: 4rem;
-        font-size: clamp(1.3rem, 5vw, 1.6rem);
-    }
-
-    .site-title {
-        bottom: .82rem;
-    }
-
     .exhibition-entry {
         grid-template-columns: 6.1rem minmax(0, 1fr);
         gap: .9rem;
     }
-
 }
 
 /* Minimal: artwork/supporting content becomes single-surface where necessary;

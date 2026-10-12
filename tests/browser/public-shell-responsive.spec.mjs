@@ -90,3 +90,99 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         expect(Math.abs(bottomGap - topGap), 'equal outer content gaps at '+width).toBeLessThan(1);
     }
 });
+
+
+test('narrowing the viewport never creates extra room for the same menu items', async ({ page }) => {
+    await page.setContent([
+        '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>',
+        '<body class="public-site"><header class="site-header">',
+        '<h1><a class="site-title" href="#"><span class="site-title__first">Lars</span><span class="site-title__last">Möller</span></a></h1>',
+        '<div class="site-navigation" data-site-navigation><div class="site-navigation__rail" data-navigation-main>',
+        '<button type="button" data-direction="previous" hidden>Previous</button>',
+        '<nav aria-label="Main navigation" data-navigation-window-scroll>',
+        ...['Home', 'Painting', 'Drawings', 'Nav', 'Prints', 'Exhibitions', 'More', 'Longer page name']
+            .map((label, index) => '<div class="site-navigation__item" data-navigation-item data-navigation-key="' + index + '">'
+                + '<div class="site-navigation__primary"><a href="#">' + label + '</a></div></div>'),
+        '</nav><button type="button" data-direction="next" hidden>Next</button>',
+        '</div><div data-navigation-submenu-region><div data-navigation-submenu-region-inner></div></div></div>',
+        '</header><main id="content" class="site-content">',
+        '<div class="artwork-list"><div class="artwork-card__image" style="aspect-ratio:1"></div></div>',
+        '</main></body></html>',
+    ].join(''));
+    await page.addStyleTag({ path: 'resources/css/app.css' });
+    await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
+    await page.evaluate(() => {
+        document.documentElement.style.setProperty('--public-shell-max', '800px');
+        document.documentElement.style.setProperty('--public-art-max', '520px');
+        document.documentElement.style.setProperty('--public-content-padding', '75px');
+    });
+    const navigationSource = (await import('node:fs')).readFileSync(
+        new URL('../../resources/js/public-navigation.js', import.meta.url), 'utf8',
+    );
+    await page.addScriptTag({
+        content: navigationSource.replace(/^export /gm, '')
+            + '\nwindow.initializePublicNavigation = initializePublicNavigation;',
+    });
+    await page.evaluate(() => window.initializePublicNavigation());
+
+    let previous = null;
+    for (const width of [810, 770, 745, 740, 737, 736, 735, 727, 720, 700, 660, 620, 540, 500, 420, 320]) {
+        await page.setViewportSize({ width, height: 820 });
+        // Wait for the real ResizeObserver to settle after every width change.
+        await page.waitForFunction(() => {
+            const nav = document.querySelector('[data-navigation-window-scroll]');
+            const items = Array.from(nav.querySelectorAll('[data-navigation-item]'));
+            return items.length > 0 && items.some((item) => !item.hidden);
+        });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(
+            () => requestAnimationFrame(resolve),
+        )));
+        const state = await page.evaluate(() => {
+            const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
+            const items = Array.from(document.querySelectorAll(
+                '[data-navigation-main] > nav > [data-navigation-item]',
+            ));
+            const nav = document.querySelector('[data-navigation-window-scroll]');
+            const title = document.querySelector('.site-header h1');
+            return {
+                railWidth: rect('[data-navigation-window-scroll]').width,
+                artWidth: rect('.artwork-list').width,
+                navItemFont: getComputedStyle(items[0].querySelector('a')).fontSize,
+                headerHeight: title.getBoundingClientRect().height,
+                visibleCount: items.filter((item) => !item.hidden).length,
+                hasArrows: !document.querySelector(
+                    '[data-navigation-main] > button[data-direction="next"]',
+                ).hidden,
+                totalNaturalWidth: items.reduce((sum, item) => {
+                    const box = item.getBoundingClientRect();
+                    return sum + box.width;
+                }, 0),
+                inlinePadding: getComputedStyle(document.querySelector('#content')).paddingLeft,
+                shellLeft: rect('.site-navigation').left,
+                contentLeft: rect('#content').left,
+                bodyScrollWidth: document.documentElement.scrollWidth,
+                windowWidth: document.documentElement.clientWidth,
+                navWidth: nav.clientWidth,
+            };
+        });
+        expect(state.railWidth, 'positive navigation rail at '+width).toBeGreaterThan(0);
+        expect(Math.abs(state.shellLeft - state.contentLeft), 'shared shell at '+width).toBeLessThan(1);
+        expect(state.bodyScrollWidth, 'no horizontal page overflow at '+width).toBeLessThanOrEqual(state.windowWidth + 1);
+        if (previous !== null) {
+            expect(state.railWidth, 'rail cannot widen when viewport narrows to '+width)
+                .toBeLessThanOrEqual(previous.railWidth + 1);
+            expect(state.artWidth, 'artwork cannot widen when viewport narrows to '+width)
+                .toBeLessThanOrEqual(previous.artWidth + 1);
+            expect(state.visibleCount, 'visible pages cannot increase due to a narrower viewport at '+width)
+                .toBeLessThanOrEqual(previous.visibleCount);
+            if (previous.hasArrows) {
+                expect(state.hasArrows, 'overflow controls cannot disappear as width narrows to '+width).toBe(true);
+            }
+        }
+        if (width === 727) {
+            expect(state.navItemFont).toBe('12px');
+            expect(Math.abs(state.headerHeight - 72.7)).toBeLessThan(2);
+        }
+        previous = state;
+    }
+});
