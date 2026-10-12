@@ -30,6 +30,8 @@ use LogicException;
     'public_page_width',
     'public_content_padding',
     'navigation_nesting_enabled',
+    'pages_auto_publish',
+    'pages_delete_without_confirmation',
 ])]
 #[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
@@ -54,6 +56,8 @@ class PublicContentSetting extends Model
             'public_page_width' => 'integer',
             'public_content_padding' => 'integer',
             'navigation_nesting_enabled' => 'boolean',
+            'pages_auto_publish' => 'boolean',
+            'pages_delete_without_confirmation' => 'boolean',
         ];
     }
 
@@ -89,6 +93,16 @@ class PublicContentSetting extends Model
         $value = self::general()->getAttribute('navigation_nesting_enabled');
 
         return $value === null ? true : (bool) $value;
+    }
+
+    public static function pagesAutoPublish(): bool
+    {
+        return (bool) self::general()->getAttribute('pages_auto_publish');
+    }
+
+    public static function pagesDeleteWithoutConfirmation(): bool
+    {
+        return (bool) self::general()->getAttribute('pages_delete_without_confirmation');
     }
 
     /** @return BelongsTo<MediaAsset, $this> */
