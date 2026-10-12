@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // CSS/geometry regressions using the real shared public stylesheet; no Laravel data.
-test('open artwork captions preserve information hierarchy and a stable exhibition rhythm', async ({ page }) => {
+test('framed artwork labels preserve gallery semantics and stable exhibition rhythm', async ({ page }) => {
     await page.setContent([
         '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>',
         '<body class="public-site"><header class="site-header"><h1>',
@@ -69,10 +69,10 @@ test('open artwork captions preserve information hierarchy and a stable exhibiti
             };
         });
 
-        expect(state.border, 'caption without borders at ' + width).toBe('0px');
+        expect(state.border, 'framed label at ' + width).toBe('1px');
         expect(state.radius).toBe('0px');
-        expect(state.padding).toBe('0px');
-        expect(state.background).toBe('rgba(0, 0, 0, 0)');
+        expect(parseFloat(state.padding), 'framed label padding').toBeGreaterThan(0);
+        expect(state.background).toBe('rgb(255, 255, 255)');
         expect(state.titleSize, 'title hierarchy').toBeGreaterThan(state.factSize);
         expect(state.captionGap).toBeGreaterThanOrEqual(12);
         expect(state.artworkGap).toBeCloseTo(state.marginGap, 1);
