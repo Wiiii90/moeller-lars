@@ -16,50 +16,6 @@ trait CustomPageWorkspaceChildProjection
     ): array {
         $type = $block['type'] ?? null;
 
-        if ($type === 'list') {
-            $items = is_array($block['items'] ?? null) ? array_values($block['items']) : [];
-            $children = [];
-            $count = count($items);
-            foreach ($items as $itemIndex => $item) {
-                if (! is_array($item)) {
-                    continue;
-                }
-                $published = CustomPageSetting::listItemPublished($item);
-                $detail = implode(' · ', array_values(array_filter([
-                    is_string($item['meta'] ?? null) ? trim($item['meta']) : '',
-                    is_string($item['location'] ?? null) ? trim($item['location']) : '',
-                    $this->contentExcerpt($item['body'] ?? null, 110),
-                ], static fn (string $value): bool => $value !== '')));
-
-                $children[] = [
-                    'kind' => 'list',
-                    'key' => 'list-'.$itemIndex,
-                    'target' => 'list:'.$componentIndex.':'.$itemIndex,
-                    'position' => $itemIndex + 1,
-                    'date' => is_string($item['date'] ?? null) ? $item['date'] : '',
-                    'entry' => is_string($item['title'] ?? null) ? $item['title'] : '',
-                    'detail' => $detail,
-                    'status' => $published ? 'Published' : 'Unpublished',
-                    'published' => $published,
-                    'parent_published' => $parentPublished,
-                    'item_index' => $itemIndex,
-                    'can_move_up' => $reorderEnabled && $itemIndex > 0,
-                    'can_move_down' => $reorderEnabled && $itemIndex < $count - 1,
-                    'search_text' => implode(' ', array_filter([
-                        $item['date'] ?? null,
-                        $item['title'] ?? null,
-                        $item['meta'] ?? null,
-                        $item['location'] ?? null,
-                        $item['body'] ?? null,
-                        $item['url'] ?? null,
-                        $published ? 'Published' : 'Unpublished',
-                    ], static fn (mixed $value): bool => is_string($value) && trim($value) !== '')),
-                ];
-            }
-
-            return $children;
-        }
-
         if ($type === 'contact') {
             $children = [];
             $contactChildren = $settings->contactChildren($block);
