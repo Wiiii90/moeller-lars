@@ -621,23 +621,6 @@
     cursor: pointer;
 }
 
-.media-workspace__view-option:hover,
-.media-workspace__view-option:focus-visible {
-    border-color: var(--admin-line-strong);
-    background: var(--admin-subtle);
-    color: var(--admin-text);
-}
-
-.media-workspace__view-option.is-active {
-    background: var(--admin-subtle);
-    color: var(--admin-text);
-}
-
-.media-workspace__view-option.is-active:hover,
-.media-workspace__view-option.is-active:focus-visible {
-    border-color: var(--admin-line-strong);
-}
-
 .media-workspace__view-icon,
 .media-workspace__action-icon {
     width: 1rem;
@@ -731,10 +714,6 @@
 .storage-media-dialog .media-file-dialog__references > div {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 1.2rem;
-}
-
-.media-workspace__view-option.is-active {
-    border-color: var(--admin-line-strong);
 }
 
 .media-workspace__table .media-workspace__actions > .admin-toolbar {
