@@ -252,33 +252,37 @@ body {
     grid-row: auto;
 }
 
-.site-navigation__back,
-.site-navigation__breadcrumb-separator {
+/* Breadcrumb-level return is a quiet editorial index tab, not a third arrow.
+   The hairline is purely presentational; the cyclic controls keep their own rail. */
+.site-navigation__back {
     display: flex;
     min-height: 2.95rem;
     flex: 0 0 auto;
+    margin: 0;
+    padding: .9rem .2rem .82rem 0;
     align-items: center;
     justify-content: center;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    line-height: 1.15;
-}
-
-.site-navigation__back {
     appearance: none;
-    margin: 0;
-    padding: .9rem .6rem .82rem 0;
     border: 0;
     background: transparent;
-    color: var(--public-muted);
+    color: #726e69;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 11px;
     font-weight: 400;
-    letter-spacing: .095em;
+    letter-spacing: .11em;
+    line-height: 1.15;
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .5em;
     cursor: pointer;
+    transition: color .14s ease, text-decoration-color .14s ease;
 }
 
 .site-navigation__back:hover,
 .site-navigation__back:focus-visible {
     color: #302d2a;
+    text-decoration-color: var(--public-active);
 }
 
 .site-navigation__back:focus-visible {
@@ -287,9 +291,14 @@ body {
 }
 
 .site-navigation__breadcrumb-separator {
-    color: #b3aeaa;
-    font-size: 11px;
-    user-select: none;
+    display: block;
+    align-self: center;
+    flex: 0 0 1px;
+    width: 1px;
+    height: 1.05rem;
+    margin: 0 .55rem 0 .65rem;
+    background: #dad5d0;
+    pointer-events: none;
 }
 
 .site-navigation__control {

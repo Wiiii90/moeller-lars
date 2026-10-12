@@ -95,8 +95,8 @@
                                     <x-public-icon name="chevron-left" />
                                 </button>
                                 <div class="site-navigation__content" data-navigation-content>
-                                    <button class="site-navigation__back" type="button" data-navigation-back aria-label="Return to main navigation">MENU</button>
-                                    <span class="site-navigation__breadcrumb-separator" aria-hidden="true">/</span>
+                                    <button class="site-navigation__back" type="button" data-navigation-back aria-label="Return to main navigation">INDEX</button>
+                                    <span class="site-navigation__breadcrumb-separator" aria-hidden="true"></span>
                                     <nav aria-label="{{ $navigationItem['label'] }} subnavigation" data-navigation-window-scroll>
                                         @if ($navigationItem['url'] !== null)
                                             <div class="site-navigation__item @if ($navigationItem['current']) is-active @endif" data-navigation-item data-navigation-key="{{ $navigationItem['tie_breaker'] }}:parent">

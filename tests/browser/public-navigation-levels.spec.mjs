@@ -29,8 +29,8 @@ function fixture(path) {
             <div class="site-navigation__submenu" id="child-about" data-navigation-submenu ${withinAbout ? '' : 'hidden'}>
               <button type="button" class="site-navigation__control" data-direction="previous" aria-label="Previous subpage" hidden>‹</button>
               <div class="site-navigation__content" data-navigation-content>
-                <button class="site-navigation__back" type="button" data-navigation-back aria-label="Return to main navigation">MENU</button>
-                <span class="site-navigation__breadcrumb-separator" aria-hidden="true">/</span>
+                <button class="site-navigation__back" type="button" data-navigation-back aria-label="Return to main navigation">INDEX</button>
+                <span class="site-navigation__breadcrumb-separator" aria-hidden="true"></span>
                 <nav aria-label="About subnavigation" data-navigation-window-scroll>
                   ${link('ABOUT', '/about', path === '/about')}
                   ${link('BIOGRAPHY', '/biography', path === '/biography')}
@@ -68,7 +68,15 @@ test('parent switches levels without a second row, with a distinct text-only ret
 
     await expect(page.locator('[data-navigation-main]')).toBeHidden();
     await expect(page.locator('#child-about')).toBeVisible();
-    await expect(page.locator('[data-navigation-back]')).toHaveText('MENU');
+    await expect(page.locator('[data-navigation-back]')).toHaveText('INDEX');
+    const separator = await page.locator('.site-navigation__breadcrumb-separator').evaluate((element) => {
+        const style = getComputedStyle(element);
+        const bounds = element.getBoundingClientRect();
+        return { width: bounds.width, height: bounds.height, background: style.backgroundColor };
+    });
+    expect(separator.width).toBeCloseTo(1, 1);
+    expect(separator.height).toBeGreaterThan(10);
+    expect(separator.background).not.toBe('rgba(0, 0, 0, 0)');
     expect(await header.evaluate((element) => element.getBoundingClientRect().height)).toBeCloseTo(originalHeight, 1);
     expect(await page.locator('[data-navigation-main]:visible, [data-navigation-submenu]:visible').count()).toBe(1);
 
