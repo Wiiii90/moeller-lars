@@ -150,22 +150,83 @@ it('resets paging on filters and keeps root groups intact across pagination', fu
         ->and($component->get('reorderEnabled'))->toBeFalse();
 });
 
-it('selects only the currently visible hierarchy rows with correct mixed state', function (): void {
+it('selects all visible Pages from none or mixed, and clears them from all', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     app(SiteSectionEditorialService::class)->createCustomPage('Alpha Selection', 'alpha-selection');
     app(SiteSectionEditorialService::class)->createCustomPage('Beta Selection', 'beta-selection');
 
     $component = Livewire::test(SitePages::class);
     $visibleIds = collect($component->get('filteredRows'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    expect(count($visibleIds))->toBeGreaterThan(2)
+        ->and($component->get('selectedSectionIds'))->toBe([]);
+
+    // Screenshot sequence: All -> uncheck one -> All -> clear All.
+    $component->call('toggleSelectAll');
+    expect(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($visibleIds);
+
+    $component->set('selectedSectionIds', array_slice($visibleIds, 0, -1));
+    expect(count($component->get('selectedSectionIds')))->toBe(count($visibleIds) - 1);
 
     $component->call('toggleSelectAll');
-    expect(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($visibleIds)
-        ->and($component->get('allVisibleSelected'))->toBeTrue()
-        ->and($component->get('selectionIndeterminate'))->toBeFalse();
+    expect(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($visibleIds);
 
+    $component->call('toggleSelectAll');
+    expect($component->get('selectedSectionIds'))->toBe([]);
+
+    // A preselected subset is included by select-all, not remembered/restored
+    // when deselecting that complete visible selection.
     $component->set('selectedSectionIds', [$visibleIds[0]]);
-    expect($component->get('allVisibleSelected'))->toBeFalse()
-        ->and($component->get('selectionIndeterminate'))->toBeTrue();
+    $component->call('toggleSelectAll');
+    expect(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($visibleIds);
+    $component->call('toggleSelectAll');
+    expect($component->get('selectedSectionIds'))->toBe([]);
+
+    // Repeated clicks must not leave a phantom checked header after zero rows.
+    $component->call('toggleSelectAll');
+    $component->call('toggleSelectAll');
+    expect($component->get('selectedSectionIds'))->toBe([]);
+
+    // Selection always follows the currently visible filtered set.
+    $component->call('toggleSelectAll');
+    $component->set('search', 'Alpha Selection');
+    $filtered = collect($component->get('filteredRows'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    expect($filtered)->toHaveCount(1)
+        ->and(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($filtered);
+
+    $component->set('search', 'Beta Selection');
+    expect($component->get('selectedSectionIds'))->toBe([]);
+    $component->set('search', 'no matching page exists');
+    $component->call('toggleSelectAll');
+    expect($component->get('selectedSectionIds'))->toBe([]);
+});
+
+it('uses one reactive checkbox state owner for Pages and Dashboard selection', function (): void {
+    $pages = file_get_contents(resource_path('views/filament/pages/site-pages.blade.php'));
+    $pagesRow = file_get_contents(resource_path('views/filament/pages/partials/site-section-row.blade.php'));
+    $dashboard = file_get_contents(resource_path('views/filament/pages/partials/dashboard-feed.blade.php'));
+    $dashboardRow = file_get_contents(resource_path('views/filament/pages/partials/dashboard-feed-row.blade.php'));
+    $pagesLogic = file_get_contents(app_path('Filament/Pages/SitePages.php'));
+
+    expect($pages)->toContain('wire:click.prevent="toggleSelectAll"')
+        ->toContain('$wire.filteredRows.map(')
+        ->toContain('$wire.selectedSectionIds.map(Number)')
+        ->toContain('$el.checked =')
+        ->toContain('$el.indeterminate =')
+        ->toContain("$el.setAttribute('aria-checked',")
+        ->not->toContain('@checked($allVisibleSelected)')
+        ->not->toContain('$selectionIndeterminate')
+        ->and($dashboard)->toContain('wire:click.prevent="toggleSelectAll"')
+        ->toContain('data-visible-keys=')
+        ->toContain('$wire.selectedFeedKeys')
+        ->toContain('$el.indeterminate =')
+        ->not->toContain('@checked($allVisibleSelected)')
+        ->not->toContain('$selectionIndeterminate')
+        ->and($pagesRow)->toContain('wire:model.live="selectedSectionIds"')
+        ->not->toContain('@checked($selected)')
+        ->and($dashboardRow)->toContain('wire:model.live="selectedFeedKeys"')
+        ->not->toContain('@checked($selected)')
+        ->and($pagesLogic)->not->toContain('syncSelectionState()')
+        ->not->toContain('public bool $allVisibleSelected');
 });
 
 it('keeps root reorder and child reorder canonical', function (): void {
