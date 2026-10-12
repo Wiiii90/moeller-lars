@@ -58,7 +58,7 @@ The runtime owns only presentation state:
 - status;
 - remaining visible lifetime.
 
-It does not own persistence. Navigation must not restart the visible lifetime. Queue order must survive normal SPA navigation.
+It does not own persistence. Navigation must not restart the visible lifetime. Queue order must survive normal SPA navigation. The visible Header Notification has one dismiss control after its timer and queued-message count. Dismissing the current message starts the existing leave lifecycle and advances the same bounded FIFO queue. This is presentation-only: it neither marks nor deletes the durable Dashboard mailbox entry. The dismiss button stays on the Header layer above blocking dialog backdrops, without changing Filament's modal open/close or scroll-lock ownership.
 
 Local `setTimeout` callbacks may drive the active presentation/countdown. Do not introduce polling, intervals, requestAnimationFrame loops, observers or periodic Livewire requests for Notification persistence or delivery.
 
