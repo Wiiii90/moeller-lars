@@ -570,18 +570,18 @@ final class HomePresentation extends Page
                     $typeField,
                     $applyType,
                     TextInput::make('title')->label('Heading')->maxLength(160)
-                        ->required()
+                        ->required(fn (callable $get): bool => $originalKind === 'heading' && $get('editor_kind') === $originalKind)
                         ->visible(fn (callable $get): bool => $originalKind === 'heading' && $get('editor_kind') === $originalKind),
                     ...($originalKind === 'rich_text'
                         ? $this->homeRichTextFields('editor_kind', 'rich_text', required: true)
                         : []),
                     MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
-                        ->required()
+                        ->required(fn (callable $get): bool => $originalKind === 'image' && $get('editor_kind') === $originalKind)
                         ->visible(fn (callable $get): bool => $originalKind === 'image' && $get('editor_kind') === $originalKind),
                     Toggle::make('image_decorative')->label('Decorative image')
                         ->visible(fn (callable $get): bool => $originalKind === 'image' && $get('editor_kind') === $originalKind),
                     Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
-                        ->required()
+                        ->required(fn (callable $get): bool => $originalKind === 'divider' && $get('editor_kind') === $originalKind)
                         ->visible(fn (callable $get): bool => $originalKind === 'divider' && $get('editor_kind') === $originalKind),
                     TextInput::make('list_title')->label('List heading')->maxLength(160)
                         ->visible(fn (callable $get): bool => $originalKind === 'list' && $get('editor_kind') === $originalKind),
