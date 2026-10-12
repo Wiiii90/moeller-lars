@@ -8,7 +8,9 @@
     inset-block-end: auto;
     inset-inline-start: var(--admin-header-control-rail);
     inset-inline-end: var(--admin-header-control-rail);
-    z-index: 35;
+    /* The dismiss control remains interactive above the native modal backdrop;
+     * the modal window itself starts below the topbar. */
+    z-index: 60;
     box-sizing: border-box;
     display: grid;
     height: var(--admin-header-control-size);
@@ -229,6 +231,44 @@
 .admin-header-notification__counter {
     min-width: 1.55rem;
     color: var(--admin-text);
+}
+
+.admin-header-notification__dismiss {
+    box-sizing: border-box;
+    display: inline-grid;
+    width: 1.42rem;
+    min-width: 1.42rem;
+    height: 1.42rem;
+    padding: .23rem;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--admin-line-strong) 72%, transparent);
+    border-radius: .22rem;
+    background: color-mix(in srgb, var(--admin-text) 5%, transparent);
+    color: var(--admin-muted);
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.admin-header-notification__dismiss svg {
+    width: .85rem;
+    height: .85rem;
+}
+
+.admin-header-notification__dismiss:hover,
+.admin-header-notification__dismiss:focus-visible {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+.admin-header-notification__dismiss:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.admin-header-notification__dismiss:disabled {
+    cursor: default;
+    pointer-events: none;
 }
 
 @keyframes admin-header-notification-materialize {
