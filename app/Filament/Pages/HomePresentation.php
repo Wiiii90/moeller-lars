@@ -19,6 +19,7 @@ use App\Domain\Content\SitePreviewContext;
 use App\Filament\Pages\Concerns\HomePresentationChildren;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
+use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -475,6 +476,8 @@ final class HomePresentation extends Page
                     MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
                         ->nullable()->placeholder('No list image')
                         ->visible(fn (callable $get): bool => $get('kind') === 'list'),
+                    ComponentListEditor::make()
+                        ->visible(fn (callable $get): bool => $get('kind') === 'list'),
                 ])
                 ->modalHeading('Add component'),
             'Add component',
@@ -492,7 +495,7 @@ final class HomePresentation extends Page
                 'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
                 'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
                     'media_asset_id' => is_numeric($data['list_media_asset_id'] ?? null) ? (int) $data['list_media_asset_id'] : null,
-                    'items' => []],
+                    'items' => is_array($data['items'] ?? null) ? array_values($data['items']) : []],
                 'contact' => ['type' => 'contact', 'children' => [
                     ['type' => 'public_email', 'published' => true],
                     ['type' => 'social_links', 'published' => true, 'social_platforms' => array_column(SocialLinks::visible(PublicContentSetting::general()->getAttribute('social_links')), 'platform')],
@@ -526,6 +529,7 @@ final class HomePresentation extends Page
                     'variant' => $component['variant'] ?? 'thin',
                     'list_title' => $component['title'] ?? null,
                     'list_media_asset_id' => $component['media_asset_id'] ?? null,
+                    'items' => $component['items'] ?? [],
                 ];
             })
             ->schema([
@@ -547,6 +551,8 @@ final class HomePresentation extends Page
                 MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
                         ->nullable()->placeholder('No list image')
                     ->visible(fn (callable $get): bool => $get('type') === 'list'),
+                ComponentListEditor::make()
+                    ->visible(fn (callable $get): bool => $get('type') === 'list'),
             ])
             ->modalHeading('Edit component')
             ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments)), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
@@ -566,7 +572,8 @@ final class HomePresentation extends Page
                     ],
                     'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
                     'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
-                        'media_asset_id' => is_numeric($data['list_media_asset_id'] ?? null) ? (int) $data['list_media_asset_id'] : null],
+                        'media_asset_id' => is_numeric($data['list_media_asset_id'] ?? null) ? (int) $data['list_media_asset_id'] : null,
+                        'items' => is_array($data['items'] ?? null) ? array_values($data['items']) : ($current['items'] ?? [])],
                     'contact' => ['type' => 'contact'],
                     'legal_disclaimer' => ['type' => 'legal_disclaimer'],
                     default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
