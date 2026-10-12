@@ -42,7 +42,7 @@
                             : 'Choose platform';
                     @endphp
                     <tr
-                        wire:key="general-social-link-{{ $index }}"
+                        wire:key="general-social-link-{{ $platform }}"
                         wire:sort:item="{{ $index }}"
                     >
                         <td class="admin-table__position general-social-table__position-cell">
