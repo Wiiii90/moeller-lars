@@ -184,7 +184,17 @@ trait CustomPageWorkspaceComponentActions
 
     public function editComponentAction(): Action
     {
-        $action = Action::make('editComponent')
+        return $this->componentEditingAction('editComponent', committed: false);
+    }
+
+    public function editListComponentAction(): Action
+    {
+        return $this->componentEditingAction('editListComponent', committed: true);
+    }
+
+    private function componentEditingAction(string $actionName, bool $committed): Action
+    {
+        $action = Action::make($actionName)
             ->label('Edit')
             ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
             ->schema(fn (array $arguments): array => $this->componentEditorSchema(
@@ -202,7 +212,7 @@ trait CustomPageWorkspaceComponentActions
                 },
             ))
             ->modalHeading('Edit component')
-            ->extraModalFooterActions(fn (array $arguments): array => $this->componentEditHeaderActions($arguments))
+            ->extraModalFooterActions(fn (array $arguments): array => $this->componentEditHeaderActions($arguments, $actionName))
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $existing = $this->actionComponent($arguments);
@@ -227,13 +237,15 @@ trait CustomPageWorkspaceComponentActions
                 }
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Large);
+        return $committed
+            ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
+            : AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     /** @param array<string,mixed> $arguments
      * @return list<Action>
      */
-    private function componentEditHeaderActions(array $arguments): array
+    private function componentEditHeaderActions(array $arguments, string $actionName): array
     {
         [$index, $type] = $this->actionComponentTarget($arguments);
         $block = $this->componentAt($index, $type);
@@ -243,10 +255,10 @@ trait CustomPageWorkspaceComponentActions
 
         foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
             $canMove = $this->componentReorderEnabled() && ($direction === 'up' ? $index > 0 : $index < $count - 1);
-            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction): void {
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction, $actionName): void {
                 $this->moveComponent($index, $type, $direction);
                 $nextIndex = $index + ($direction === 'up' ? -1 : 1);
-                $this->replaceMountedAction('editComponent', ['componentIndex' => $nextIndex, 'componentType' => $type]);
+                $this->replaceMountedAction($actionName, ['componentIndex' => $nextIndex, 'componentType' => $type]);
             })->disabled(! $canMove);
         }
 
@@ -254,9 +266,9 @@ trait CustomPageWorkspaceComponentActions
         $actions[] = AdminDialog::headerAction(
             'dialogTogglePublication',
             $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-            function () use ($index, $type, $published, $target): void {
+            function () use ($index, $type, $published, $target, $actionName): void {
                 $this->setComponentPublished($index, $type, ! $published);
-                $this->replaceMountedAction('editComponent', $target);
+                $this->replaceMountedAction($actionName, $target);
             },
         );
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($target): void {
