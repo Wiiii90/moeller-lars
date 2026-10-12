@@ -39,6 +39,7 @@ use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -591,6 +592,20 @@ final class HomePresentation extends Page
                     ...($originalKind === 'list'
                         ? [ComponentListEditor::make()->visible(fn (callable $get): bool => $get('editor_kind') === $originalKind)]
                         : []),
+                    Placeholder::make('contact_note')
+                        ->label('Contact items')
+                        ->content('Contact items are managed in the child rows below.')
+                        ->visible(fn (callable $get): bool => $originalKind === 'contact' && $get('editor_kind') === $originalKind),
+                    Placeholder::make('legal_disclaimer_note')
+                        ->label('Legal disclaimer from General')
+                        ->content(function (): string {
+                            $value = PublicContentSetting::general()->getAttribute('legal_disclaimer');
+
+                            return is_string($value) && trim($value) !== ''
+                                ? $value
+                                : 'No legal disclaimer is configured in General.';
+                        })
+                        ->visible(fn (callable $get): bool => $originalKind === 'legal_disclaimer' && $get('editor_kind') === $originalKind),
                 ];
             })
             ->modalHeading('Edit component')
@@ -1249,7 +1264,7 @@ final class HomePresentation extends Page
                 ])),
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $count - 1,
-                'editable' => $type !== 'legal_disclaimer' && in_array($type, CustomPageSetting::COMPONENT_TYPES, true),
+                'editable' => in_array($type, CustomPageSetting::COMPONENT_TYPES, true),
             ];
         }
         $this->componentDataset = $dataset;
