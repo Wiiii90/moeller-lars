@@ -187,12 +187,28 @@ trait CustomPageWorkspaceComponentActions
         $action = Action::make('editComponent')
             ->label('Edit')
             ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
-            ->schema($this->componentEditorSchema(includeTypeSelect: false))
+            ->schema(fn (array $arguments): array => $this->componentEditorSchema(
+                includeTypeSelect: true,
+                onTypeChange: function (mixed $state) use ($arguments): void {
+                    $target = is_string($state) ? $state : '';
+                    [, $currentType] = $this->actionComponentTarget($arguments);
+                    if ($target === $currentType || ! array_key_exists($target, self::COMPONENT_LABELS)) {
+                        return;
+                    }
+                    $this->replaceMountedAction('changeComponentType', [
+                        ...$arguments,
+                        'targetType' => $target,
+                    ]);
+                },
+            ))
             ->modalHeading('Edit component')
             ->extraModalFooterActions(fn (array $arguments): array => $this->componentEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $existing = $this->actionComponent($arguments);
+                if (($data['type'] ?? null) !== $type) {
+                    return; // A type change is handled by changeComponentType.
+                }
 
                 $changed = app(CustomPageEditorialService::class)->updateBlock(
                     $this->settings(),
