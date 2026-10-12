@@ -407,7 +407,7 @@
     .admin-data-controls__utility .admin-task-control-group > div > .admin-action,
     .admin-filter-overflow > .admin-filter-overflow__trigger,
     .admin-selection__anchor > .admin-selection__trigger
-):is(:hover, :focus-visible) {
+):is(:hover, :focus-visible):not(:disabled) {
     border-color: transparent;
     background: transparent;
     color: var(--admin-text);
