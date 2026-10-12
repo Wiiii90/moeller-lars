@@ -20,7 +20,6 @@ use Illuminate\Validation\ValidationException;
     'slug',
     'state',
     'position',
-    'show_in_navigation',
     'parent_id',
     'artwork_category_id',
 ])]
@@ -51,7 +50,6 @@ final class SiteSection extends Model
     {
         return [
             'position' => 'integer',
-            'show_in_navigation' => 'boolean',
             'parent_id' => 'integer',
             'artwork_category_id' => 'integer',
         ];
@@ -133,10 +131,12 @@ final class SiteSection extends Model
                 }
             }
 
-            if ((bool) $section->getAttribute('show_in_navigation')) {
-                $label = $section->getAttribute('navigation_label');
+            // Publication is the only menu eligibility state. Home and other
+            // sections may use their title when no separate label is configured.
+            if ((string) $section->getAttribute('state') === 'published') {
+                $label = $section->getAttribute('navigation_label') ?: $section->getAttribute('title');
                 if (! is_string($label) || trim($label) === '') {
-                    throw ValidationException::withMessages(['navigation_label' => 'A navigation label is required while this site node is shown in navigation.']);
+                    throw ValidationException::withMessages(['navigation_label' => 'A published page requires a navigation label or title.']);
                 }
             }
 
