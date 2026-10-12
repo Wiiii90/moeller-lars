@@ -39,8 +39,8 @@ it('builds navigation from published SiteSections and keeps navigation groups ro
     $page = $service->createCustomPage('Biography', 'biography-architecture');
     $hidden = $service->createCustomPage('Hidden', 'hidden-architecture');
 
-    $service->updatePlacement($group, 'published', true, null);
-    $service->updatePlacement($page, 'published', true, (int) $group->getKey());
+    $service->updatePlacement($group, 'published', null);
+    $service->updatePlacement($page, 'published', (int) $group->getKey());
 
     $items = app(PublicNavigationService::class)->items();
     $studio = $items->firstWhere('label', 'Studio');
@@ -62,13 +62,13 @@ it('uses committed SiteSection state as the public availability gate', function 
 
     $this->get('/statement-architecture')->assertNotFound();
 
-    $service->updatePlacement($page, 'published', false, null);
+    $service->updatePlacement($page, 'published', null);
     $this->get('/statement-architecture')->assertNotFound();
 
     app(PublicationService::class)->commit($actor);
     $this->get('/statement-architecture')->assertSuccessful();
 
-    $service->updatePlacement($page, 'hidden', false, null);
+    $service->updatePlacement($page, 'hidden', null);
     $this->get('/statement-architecture')->assertSuccessful();
 
     app(PublicationService::class)->commit($actor);
@@ -89,7 +89,6 @@ it('does not create Activity for an unchanged page placement', function (): void
     $result = $service->updatePlacement(
         $page,
         (string) $page->getAttribute('state'),
-        (bool) $page->getAttribute('show_in_navigation'),
         null,
     );
 
@@ -116,8 +115,8 @@ it('rejects level three trees without introducing type pairing rules', function 
     $child = $service->createNavigationGroup('Child Group');
     $journal = $service->createJournal('Journal', 'journal-architecture', JournalTemplate::Blog->value);
 
-    $service->updatePlacement($child, 'hidden', false, (int) $parent->getKey());
+    $service->updatePlacement($child, 'hidden', (int) $parent->getKey());
 
-    expect(fn () => $service->updatePlacement($journal, 'hidden', false, (int) $child->getKey()))
+    expect(fn () => $service->updatePlacement($journal, 'hidden', (int) $child->getKey()))
         ->toThrow(ValidationException::class, 'The parent must be a top-level page.');
 });
