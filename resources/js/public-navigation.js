@@ -18,7 +18,7 @@ export function needsNavigationOverflow(widths, availableWidth) {
         && widths.reduce((total, width) => total + width, 0) > availableWidth;
 }
 
-// Navigation is server-rendered. A single-use destination-scoped handoff
+// Navigation is server-rendered. A destination-scoped session handoff
 // preserves the exact visible window when an internal navigation link reloads
 // the page. No URL parameters, duplicate renderer or background polling.
 const NAVIGATION_HANDOFF_KEY = 'moeller:public-navigation-handoff';
@@ -141,6 +141,10 @@ function initializeNavigationWindow(surface, restoredWindows, onWindowChange = (
 
         // Reserve the final visible item's 1px right border when fitting.
         availableWidth = Math.max(1, rail.clientWidth - 1);
+        // ResizeObserver delivers an initial notification even without a size
+        // change. Mark the measured width now, or that callback would re-fit
+        // and shift an exactly restored cyclic window immediately after load.
+        observedWidth = rail.getBoundingClientRect().width;
         const wasCycling = cycling;
         cycling = needsNavigationOverflow(widths, availableWidth);
 
