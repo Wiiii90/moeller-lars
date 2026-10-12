@@ -232,8 +232,8 @@ final class HomePresentationEditorialService
         return [
             'published' => $published,
             ...match ($targetKind) {
-                'heading' => ['type' => 'text', 'title' => $title !== '' ? $title : null, 'body' => null],
-                'rich_text' => ['type' => 'text', 'title' => null, 'body' => ($body !== '' ? $body : ($title !== '' ? $title : null))],
+                'heading' => ['type' => 'text', 'text_kind' => 'heading', 'title' => $title !== '' ? $title : null, 'body' => null],
+                'rich_text' => ['type' => 'text', 'text_kind' => 'rich_text', 'title' => null, 'body' => ($body !== '' ? $body : ($title !== '' ? $title : null))],
                 'image' => ['type' => 'image', 'media_asset_id' => null, 'image_decorative' => false],
                 'divider' => ['type' => 'divider', 'variant' => 'thin'],
                 'list' => ['type' => 'list', 'title' => null, 'media_asset_id' => null, 'items' => []],
@@ -248,6 +248,12 @@ final class HomePresentationEditorialService
     {
         $type = $component['type'] ?? null;
         if ($type === 'text') {
+            $kind = $component['text_kind'] ?? null;
+            if (in_array($kind, ['heading', 'rich_text'], true)) {
+                return $kind;
+            }
+
+            // Older Home content inferred the presentation from populated data.
             return filled($component['title'] ?? null) && blank($component['body'] ?? null) ? 'heading' : 'rich_text';
         }
 
