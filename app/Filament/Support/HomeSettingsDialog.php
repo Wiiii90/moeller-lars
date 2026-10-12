@@ -42,7 +42,6 @@ final class HomeSettingsDialog
 
         return [
             'template' => $settings->template()->contentTemplate()->value,
-            'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
             'show_details' => $hero['show_details'],
             'show_gallery_link' => $hero['show_gallery_link'],
             'group_source' => $hero['group_source'],
@@ -71,9 +70,6 @@ final class HomeSettingsDialog
                         ->options(HomeTemplate::options())
                         ->required()
                         ->live(),
-                    Toggle::make('show_in_navigation')
-                        ->label('Show Home in navigation')
-                        ->helperText('Only the public Home link changes. The Home page remains available at /.'),
                     ...$this->routingDialog->schema(),
                     Select::make('group_source')
                         ->label('Group source')
@@ -203,11 +199,10 @@ final class HomeSettingsDialog
         $section = app(SiteSectionEditorialService::class)->updatePlacement(
             $section,
             'published',
-            (bool) ($data['show_in_navigation'] ?? false),
             null,
         );
 
-        return $section->wasChanged(['state', 'show_in_navigation', 'parent_id', 'position']) || $changed;
+        return $section->wasChanged(['state', 'parent_id', 'position']) || $changed;
     }
 
     public function changeTemplate(HomeTemplate $template): bool
