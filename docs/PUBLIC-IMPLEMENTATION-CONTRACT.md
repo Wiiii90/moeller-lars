@@ -37,6 +37,8 @@ A canonical media **reference** does not automatically mean the asset is publicl
 
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
+Public navigation overflow is a cyclic window of complete top-level Site Node items, not a pixel-scroll strip. Arrow activation adds the adjacent complete item in the requested direction, evicts whole items from the opposite edge as necessary and reuses free room for additional complete items. Navigation wraps in both directions; a single overwide label may wrap its own text rather than be clipped. The viewport composition changes at actual content-fit boundaries, retaining keyboard and screen-reader order. Child-menu interaction is a separate presentation concern.
+
 The public visual composition remains artist-specific rather than adopting a generic CMS theme.
 
 ## Home presentation

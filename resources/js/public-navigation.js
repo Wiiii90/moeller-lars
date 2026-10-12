@@ -1,5 +1,4 @@
 const SUBMENU_TRANSITION_MS = 180;
-const DRAG_THRESHOLD_PX = 4;
 
 function submenuControls(item) {
     const parentLink = item.querySelector('[data-navigation-parent-link]');
@@ -178,20 +177,55 @@ function initializeSubmenus(container) {
     return closeActive;
 }
 
-function shiftByOneItem(scroller, direction) {
-    const items = Array.from(scroller.querySelectorAll('[data-navigation-item]'))
-        .filter((item) => item instanceof HTMLElement);
-    if (items.length === 0) return;
+// The visible menu is a cyclic window of complete Site Node items.
+export function fitNavigationWindow(widths, availableWidth, startIndex = 0) {
+    if (widths.length === 0) return [];
 
-    const currentLeft = scroller.scrollLeft;
-    let index = items.findIndex((item) => item.offsetLeft + item.offsetWidth > currentLeft + 2);
-    if (index < 0) index = items.length - 1;
+    const start = ((startIndex % widths.length) + widths.length) % widths.length;
+    const visible = [start];
+    let occupied = widths[start];
 
-    if (direction > 0 && items[index].offsetLeft <= currentLeft + 2) index += 1;
-    if (direction < 0 && items[index].offsetLeft >= currentLeft - 2) index -= 1;
+    for (let step = 1; step < widths.length; step += 1) {
+        const next = (start + step) % widths.length;
+        if (occupied + widths[next] > availableWidth + 0.5) break;
+        visible.push(next);
+        occupied += widths[next];
+    }
 
-    index = Math.max(0, Math.min(items.length - 1, index));
-    scroller.scrollTo({ left: items[index].offsetLeft, behavior: 'smooth' });
+    // Even an overwide label stays whole as one item; CSS wraps its text.
+    return visible;
+}
+
+export function advanceNavigationWindow(widths, visible, availableWidth, direction) {
+    if (widths.length === 0) return [];
+    if (direction !== -1 && direction !== 1) {
+        throw new RangeError('Navigation direction must be -1 or 1.');
+    }
+    if (visible.length === 0) return fitNavigationWindow(widths, availableWidth);
+
+    const adjacent = direction === 1
+        ? (visible[visible.length - 1] + 1) % widths.length
+        : (visible[0] - 1 + widths.length) % widths.length;
+    const candidate = direction === 1 ? [...visible, adjacent] : [adjacent, ...visible];
+    let occupied = candidate.reduce((sum, index) => sum + widths[index], 0);
+
+    while (candidate.length > 1 && occupied > availableWidth + 0.5) {
+        const removed = direction === 1 ? candidate.shift() : candidate.pop();
+        occupied -= widths[removed];
+    }
+
+    // A former long label may have occupied the whole rail. Refill unused
+    // space with following/preceding whole items in the chosen direction.
+    while (candidate.length < widths.length) {
+        const edge = direction === 1 ? candidate[candidate.length - 1] : candidate[0];
+        const adjacentIndex = (edge + direction + widths.length) % widths.length;
+        if (occupied + widths[adjacentIndex] > availableWidth + 0.5) break;
+        if (direction === 1) candidate.push(adjacentIndex);
+        else candidate.unshift(adjacentIndex);
+        occupied += widths[adjacentIndex];
+    }
+
+    return candidate;
 }
 
 export function initializePublicNavigation() {
@@ -206,101 +240,96 @@ export function initializePublicNavigation() {
             return;
         }
 
+        const items = Array.from(scroller.querySelectorAll('[data-navigation-item]'))
+            .filter((item) => item instanceof HTMLElement);
+        const activeIndex = items.findIndex((item) => item.classList.contains('is-active'));
         const closeSubmenus = initializeSubmenus(container);
-        let dragCandidate = false;
-        let dragging = false;
-        let dragged = false;
-        let dragPointerId = null;
-        let dragStartX = 0;
-        let dragStartScroll = 0;
+        let widths = [];
+        let availableWidth = 0;
+        let visible = [];
+        let cycling = false;
+
+        const render = (indices) => {
+            const sameWindow = visible.length === indices.length
+                && visible.every((index, position) => index === indices[position]);
+            if (!sameWindow) closeSubmenus();
+
+            const shown = new Set(indices);
+            const focused = document.activeElement;
+            const focusedItem = focused instanceof Element
+                ? focused.closest('[data-navigation-item]')
+                : null;
+
+            items.forEach((item, index) => {
+                item.hidden = !shown.has(index);
+                item.classList.toggle('is-overwide', shown.has(index) && widths[index] > availableWidth + 0.5);
+            });
+
+            // Reorder the original DOM nodes, not copies, so keyboard and
+            // screen-reader order agrees with the visual cyclic order.
+            const ordered = [
+                ...indices.map((index) => items[index]),
+                ...items.filter((_, index) => !shown.has(index)),
+            ];
+            if (ordered.some((item, position) => scroller.children[position] !== item)) {
+                scroller.append(...ordered);
+            }
+
+            visible = indices;
+            if (focusedItem && focused instanceof HTMLElement) {
+                if (shown.has(items.indexOf(focusedItem))) {
+                    focused.focus({ preventScroll: true });
+                } else if (cycling) {
+                    previous.focus({ preventScroll: true });
+                }
+            }
+        };
 
         const update = () => {
-            const overflow = scroller.scrollWidth > scroller.clientWidth + 2;
-            container.classList.toggle('is-overflowing', overflow);
-            previous.hidden = !overflow;
-            next.hidden = !overflow;
+            // Measure intrinsic label widths, including currently hidden items.
+            // The synchronous read/write pass completes before the next paint.
+            container.classList.add('is-measuring');
+            items.forEach((item) => {
+                item.hidden = false;
+                item.classList.remove('is-overwide');
+            });
+            widths = items.map((item) => item.getBoundingClientRect().width);
+            container.classList.remove('is-measuring');
 
-            if (!overflow) {
-                scroller.scrollLeft = 0;
-                previous.disabled = true;
-                next.disabled = true;
+            const wasCycling = cycling;
+            cycling = widths.length > 1
+                && widths.reduce((sum, width) => sum + width, 0) > scroller.clientWidth + 0.5;
+            container.classList.toggle('is-overflowing', cycling);
+            previous.hidden = !cycling;
+            next.hidden = !cycling;
+
+            const style = getComputedStyle(scroller);
+            availableWidth = Math.max(
+                1,
+                scroller.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+            );
+
+            if (!cycling) {
+                render(items.map((_, index) => index));
                 return;
             }
 
-            const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
-            previous.disabled = scroller.scrollLeft <= 1;
-            next.disabled = scroller.scrollLeft >= maxScroll - 1;
+            let fitted = fitNavigationWindow(widths, availableWidth, wasCycling && visible.length ? visible[0] : 0);
+            const keepActive = activeIndex >= 0 && (!wasCycling || visible.includes(activeIndex));
+            // Reveal the currently active page on first load and retain it
+            // when a smaller viewport forces the window to contract.
+            for (let step = 0; keepActive && !fitted.includes(activeIndex) && step < items.length; step += 1) {
+                fitted = advanceNavigationWindow(widths, fitted, availableWidth, 1);
+            }
+            render(fitted);
         };
 
         previous.addEventListener('click', () => {
-            closeSubmenus();
-            shiftByOneItem(scroller, -1);
+            if (cycling) render(advanceNavigationWindow(widths, visible, availableWidth, -1));
         });
         next.addEventListener('click', () => {
-            closeSubmenus();
-            shiftByOneItem(scroller, 1);
+            if (cycling) render(advanceNavigationWindow(widths, visible, availableWidth, 1));
         });
-
-        scroller.addEventListener('scroll', update, { passive: true });
-        scroller.addEventListener('pointerdown', (event) => {
-            if (event.pointerType !== 'mouse'
-                || event.button !== 0
-                || !container.classList.contains('is-overflowing')) {
-                return;
-            }
-
-            dragCandidate = true;
-            dragging = false;
-            dragged = false;
-            dragPointerId = event.pointerId;
-            dragStartX = event.clientX;
-            dragStartScroll = scroller.scrollLeft;
-        });
-
-        scroller.addEventListener('pointermove', (event) => {
-            if (!dragCandidate || event.pointerId !== dragPointerId) return;
-
-            const delta = event.clientX - dragStartX;
-            if (!dragging) {
-                if (Math.abs(delta) <= DRAG_THRESHOLD_PX) return;
-
-                dragging = true;
-                dragged = true;
-                container.classList.add('is-dragging');
-                closeSubmenus();
-                scroller.setPointerCapture?.(event.pointerId);
-            }
-
-            scroller.scrollLeft = dragStartScroll - delta;
-        });
-
-        const finishDrag = (event) => {
-            if ((!dragCandidate && !dragging) || event.pointerId !== dragPointerId) return;
-
-            dragCandidate = false;
-            const wasDragging = dragging;
-            dragging = false;
-            dragPointerId = null;
-            container.classList.remove('is-dragging');
-            if (wasDragging && scroller.hasPointerCapture?.(event.pointerId)) {
-                scroller.releasePointerCapture(event.pointerId);
-            }
-            update();
-        };
-
-        scroller.addEventListener('pointerup', finishDrag);
-        scroller.addEventListener('pointercancel', finishDrag);
-        scroller.addEventListener('pointerleave', (event) => {
-            if (dragCandidate && !dragging && event.pointerId === dragPointerId) {
-                dragCandidate = false;
-                dragPointerId = null;
-            }
-        });
-        scroller.addEventListener('click', (event) => {
-            if (!dragged) return;
-            event.preventDefault();
-            dragged = false;
-        }, true);
 
         if ('ResizeObserver' in window) {
             new ResizeObserver(update).observe(scroller);
