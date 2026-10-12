@@ -7,6 +7,7 @@ use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
+use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\SiteSection;
@@ -79,7 +80,7 @@ trait ManagesSitePageCreateDialog
                 );
             });
 
-        return AdminDialog::create($action, 'Create page', AdminDialogSize::Large);
+        return AdminDialog::create($action, 'Create page', AdminDialogSize::Large, AdminIcon::Pages);
     }
 
     /** @param array<string, mixed> $data */
