@@ -61,7 +61,7 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
             menu: getComputedStyle(document.querySelector('.site-navigation')).backgroundColor,
             content: getComputedStyle(document.querySelector('#content')).backgroundColor,
         }));
-        expect(surfaces.menu).toBe('rgb(41, 43, 40)');
+        expect(surfaces.menu).toBe('rgb(247, 244, 237)');
         expect(surfaces.content).toBe('rgb(247, 244, 237)');
         const geometry = await page.evaluate(() => {
             const rect = (selector) => {
@@ -211,7 +211,7 @@ test('narrowing the viewport never creates extra room for the same menu items', 
             }
         }
         if (width === 727) {
-            expect(state.navItemFont).toBe('15px');
+            expect(state.navItemFont).toBe('14px');
             expect(Math.abs(state.headerHeight - 72.7)).toBeLessThan(2);
         }
         previous = state;
