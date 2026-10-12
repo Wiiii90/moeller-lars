@@ -26,7 +26,6 @@ final class PublicNavigationService
         if (! $this->preview->active()) {
             $query->where('state', 'published');
         }
-        $query->where('show_in_navigation', true);
         if ($this->home->skipEnabled()) {
             $query->where('type', '<>', SiteSectionType::Home->value);
         }
@@ -36,7 +35,6 @@ final class PublicNavigationService
             if (! $preview->active()) {
                 $childQuery->where('state', 'published');
             }
-            $childQuery->where('show_in_navigation', true);
             $childQuery->orderBy('position');
             $childQuery->orderBy('id');
         }]);
@@ -53,7 +51,7 @@ final class PublicNavigationService
             $childSections = $section->getRelation('children');
             /** @var list<array{label:string,url:?string,current:bool}> $children */
             $children = $childSections->map(fn (SiteSection $child): array => [
-                'label' => (string) $child->getAttribute('navigation_label'),
+                'label' => (string) ($child->getAttribute('navigation_label') ?: $child->getAttribute('title')),
                 'url' => $this->sectionUrl($child),
                 'current' => $this->routes->isCurrent($child),
             ])->values()->all();
@@ -63,7 +61,7 @@ final class PublicNavigationService
             $items[] = [
                 'position' => (int) $section->getAttribute('position'),
                 'tie_breaker' => (int) $section->getKey(),
-                'label' => (string) $section->getAttribute('navigation_label'),
+                'label' => (string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')),
                 'url' => $this->sectionUrl($section),
                 'current' => $current,
                 'active' => $current || $childCurrent,
