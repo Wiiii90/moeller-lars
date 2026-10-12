@@ -521,7 +521,7 @@ final class HomePresentation extends Page
 
                 return [
                     'type' => $component['type'],
-                    'editor_kind' => $this->editorKind($component),
+                    'editor_kind' => $this->editorKind($component) ?? $component['type'],
                     'title' => $component['title'] ?? null,
                     'body' => $component['body'] ?? null,
                     'media_asset_id' => $component['media_asset_id'] ?? null,
@@ -532,33 +532,55 @@ final class HomePresentation extends Page
                     'items' => $component['items'] ?? [],
                 ];
             })
-            ->schema([
-                Hidden::make('type'), Hidden::make('editor_kind'),
+            ->schema(fn (array $arguments): array => [
+                Hidden::make('type'),
+                Select::make('editor_kind')
+                    ->label('Component')
+                    ->options($this->componentTypeOptions)
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state) use ($arguments): void {
+                        $component = $this->componentFromArguments($arguments);
+                        $currentKind = $this->editorKind($component) ?? (string) $component['type'];
+                        $targetKind = is_string($state) ? $state : '';
+                        if ($targetKind === $currentKind || ! array_key_exists($targetKind, $this->componentTypeOptions)) {
+                            return;
+                        }
+
+                        $this->replaceMountedAction('changeComponentType', [
+                            ...$arguments,
+                            'kind' => $currentKind,
+                            'targetKind' => $targetKind,
+                        ]);
+                    }),
                 TextInput::make('title')->label('Heading')->maxLength(160)
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
                 ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
                 MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
-                    ->required(fn (callable $get): bool => $get('type') === 'image')
-                    ->visible(fn (callable $get): bool => $get('type') === 'image'),
+                    ->required(fn (callable $get): bool => $get('editor_kind') === 'image')
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Toggle::make('image_decorative')->label('Decorative image')
-                    ->visible(fn (callable $get): bool => $get('type') === 'image'),
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
-                    ->required(fn (callable $get): bool => $get('type') === 'divider')
-                    ->visible(fn (callable $get): bool => $get('type') === 'divider'),
+                    ->required(fn (callable $get): bool => $get('editor_kind') === 'divider')
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'divider'),
                 TextInput::make('list_title')->label('List heading')->maxLength(160)
-                    ->visible(fn (callable $get): bool => $get('type') === 'list'),
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
                 MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
                         ->nullable()->placeholder('No list image')
-                    ->visible(fn (callable $get): bool => $get('type') === 'list'),
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
                 ComponentListEditor::make()
-                    ->visible(fn (callable $get): bool => $get('type') === 'list'),
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
             ])
             ->modalHeading('Edit component')
             ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments)), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
                 $current = $this->componentFromArguments($arguments);
                 $type = (string) $current['type'];
-                $editorKind = $this->editorKind($current);
+                $editorKind = $this->editorKind($current) ?? $type;
+                if (($data['editor_kind'] ?? null) !== $editorKind) {
+                    return; // Conversion is committed by changeComponentType.
+                }
                 $component = match ($type) {
                     'text' => match ($editorKind) {
                         'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
