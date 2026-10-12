@@ -165,12 +165,11 @@ body.public-site #content {
     outline-offset: 3px;
 }
 
-.artwork-viewer__page-link {
-    font-size: 1.2rem;
-}
-
-.artwork-viewer__close {
-    font-size: 1.55rem !important;
+.artwork-viewer__page-link .public-icon,
+.artwork-viewer__close .public-icon,
+.artwork-viewer__controls .public-icon {
+    width: 1.2rem;
+    height: 1.2rem;
 }
 
 .artwork-viewer__stage {

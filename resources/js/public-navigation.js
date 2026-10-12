@@ -1,95 +1,194 @@
 const SUBMENU_TRANSITION_MS = 180;
 
+// Both navigation levels use the same whole-item cyclic window and never scroll pixels.
+// The surface is a three-column grid: previous control, canonical content width, next control.
+function initializeNavigationWindow(surface, onWindowChange = () => {}) {
+    const rail = surface.querySelector('[data-navigation-window-scroll]');
+    const previous = surface.querySelector('[data-direction="previous"]');
+    const next = surface.querySelector('[data-direction="next"]');
+    if (!(rail instanceof HTMLElement)
+        || !(previous instanceof HTMLButtonElement)
+        || !(next instanceof HTMLButtonElement)) {
+        throw new Error('Public navigation window is missing required controls.');
+    }
+
+    const items = Array.from(rail.children).filter((item) => item.matches('[data-navigation-item]'));
+    const activeIndex = items.findIndex((item) => item.classList.contains('is-active'));
+    let widths = [];
+    let visible = [];
+    let availableWidth = 0;
+    let cycling = false;
+    let observedWidth = -1;
+
+    const render = (indices) => {
+        const changed = visible.length !== indices.length
+            || visible.some((index, position) => indices[position] !== index);
+        if (changed) onWindowChange();
+
+        const shown = new Set(indices);
+        const focused = document.activeElement;
+        const focusedItem = focused instanceof Element
+            ? focused.closest('[data-navigation-item]')
+            : null;
+
+        items.forEach((item, index) => {
+            item.hidden = !shown.has(index);
+            item.classList.toggle('is-overwide', shown.has(index) && widths[index] > availableWidth);
+            item.classList.toggle('is-last-visible', index === indices[indices.length - 1]);
+        });
+
+        // Reorder existing DOM nodes, not copies, to match the cyclic visual,
+        // focus and screen-reader order when the sequence wraps around.
+        const ordered = [
+            ...indices.map((index) => items[index]),
+            ...items.filter((_, index) => !shown.has(index)),
+        ];
+        if (ordered.some((item, position) => rail.children[position] !== item)) {
+            rail.append(...ordered);
+        }
+
+        visible = indices;
+        if (focusedItem && focused instanceof HTMLElement) {
+            if (shown.has(items.indexOf(focusedItem))) {
+                focused.focus({ preventScroll: true });
+            } else if (cycling) {
+                previous.focus({ preventScroll: true });
+            }
+        }
+    };
+
+    const refresh = () => {
+        if (surface.hidden) return;
+
+        surface.classList.add('is-measuring');
+        items.forEach((item) => {
+            item.hidden = false;
+            item.classList.remove('is-overwide', 'is-last-visible');
+        });
+        widths = items.map((item) => item.getBoundingClientRect().width);
+        surface.classList.remove('is-measuring');
+
+        // Reserve the final visible item's 1px right border when fitting.
+        availableWidth = Math.max(1, rail.clientWidth - 1);
+        const wasCycling = cycling;
+        cycling = widths.length > 1
+            && widths.reduce((sum, width) => sum + width, 0) > availableWidth;
+
+        surface.classList.toggle('is-overflowing', cycling);
+        previous.hidden = !cycling;
+        next.hidden = !cycling;
+
+        if (!cycling) {
+            render(items.map((_, index) => index));
+            return;
+        }
+
+        let fitted = fitNavigationWindow(widths, availableWidth, wasCycling && visible.length ? visible[0] : 0);
+        const keepActive = activeIndex >= 0 && (!wasCycling || visible.includes(activeIndex));
+        for (let step = 0; keepActive && !fitted.includes(activeIndex) && step < items.length; step += 1) {
+            fitted = advanceNavigationWindow(widths, fitted, availableWidth, 1);
+        }
+        render(fitted);
+    };
+
+    const shift = (direction) => {
+        if (!cycling) return;
+        render(advanceNavigationWindow(widths, visible, availableWidth, direction));
+    };
+    previous.addEventListener('click', () => shift(-1));
+    next.addEventListener('click', () => shift(1));
+
+    if ('ResizeObserver' in window) {
+        new ResizeObserver(() => {
+            const width = rail.getBoundingClientRect().width;
+            if (Math.abs(observedWidth - width) > 0.5) {
+                observedWidth = width;
+                refresh();
+            }
+        }).observe(rail);
+    } else {
+        window.addEventListener('resize', refresh, { passive: true });
+    }
+
+    return { items, refresh, previous, next };
+}
+
 function submenuControls(item) {
     const parentLink = item.querySelector('[data-navigation-parent-link]');
     const submenu = item.querySelector('[data-navigation-submenu]');
-
-    if (!(parentLink instanceof HTMLAnchorElement)
-        || !(submenu instanceof HTMLElement)) {
-        return null;
-    }
-
+    if (!(parentLink instanceof HTMLElement)
+        || !(submenu instanceof HTMLElement)) return null;
     return { parentLink, submenu };
 }
 
-function setExpanded(controls, expanded) {
-    controls.parentLink.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-}
-
-function initializeSubmenus(container) {
+function initializeSubmenus(container, topLevelItems) {
     const region = container.querySelector('[data-navigation-submenu-region]');
     const regionInner = container.querySelector('[data-navigation-submenu-region-inner]');
-    if (!(region instanceof HTMLElement) || !(regionInner instanceof HTMLElement)) {
-        return () => {};
-    }
+    if (!(region instanceof HTMLElement) || !(regionInner instanceof HTMLElement)) return () => {};
 
-    const entries = Array.from(container.querySelectorAll('[data-navigation-item]'))
-        .filter((item) => item instanceof HTMLElement)
+    const entries = topLevelItems
         .map((item) => ({ item, controls: submenuControls(item) }))
-        .filter((entry) => entry.controls !== null);
-
-    entries.forEach(({ controls }) => regionInner.append(controls.submenu));
+        .filter((entry) => entry.controls !== null)
+        .map((entry) => {
+            regionInner.append(entry.controls.submenu);
+            return {
+                ...entry,
+                window: initializeNavigationWindow(entry.controls.submenu),
+            };
+        });
 
     let activeEntry = null;
+    let suppressFocusOpen = false;
     let closeTimer = null;
     let hideTimer = null;
-
     const clearCloseTimer = () => {
         if (closeTimer !== null) {
             window.clearTimeout(closeTimer);
             closeTimer = null;
         }
     };
-
     const clearHideTimer = () => {
         if (hideTimer !== null) {
             window.clearTimeout(hideTimer);
             hideTimer = null;
         }
     };
-
     const hideEntryImmediately = (entry) => {
-        setExpanded(entry.controls, false);
+        entry.controls.parentLink.setAttribute('aria-expanded', 'false');
         entry.item.dataset.submenuOpen = 'false';
         entry.controls.submenu.hidden = true;
     };
-
     const closeActive = (restoreFocus = false) => {
         clearCloseTimer();
         clearHideTimer();
         if (activeEntry === null) return;
 
-        const closingEntry = activeEntry;
+        const closing = activeEntry;
         activeEntry = null;
-        setExpanded(closingEntry.controls, false);
-        closingEntry.item.dataset.submenuOpen = 'false';
+        closing.controls.parentLink.setAttribute('aria-expanded', 'false');
+        closing.item.dataset.submenuOpen = 'false';
         region.dataset.open = 'false';
-
         hideTimer = window.setTimeout(() => {
-            closingEntry.controls.submenu.hidden = true;
+            closing.controls.submenu.hidden = true;
             hideTimer = null;
         }, SUBMENU_TRANSITION_MS);
-
         if (restoreFocus) {
-            closingEntry.controls.parentLink.focus();
+            suppressFocusOpen = true;
+            closing.controls.parentLink.focus({ preventScroll: true });
+            suppressFocusOpen = false;
         }
     };
-
     const openEntry = (entry) => {
         clearCloseTimer();
         clearHideTimer();
-
-        if (activeEntry !== null && activeEntry !== entry) {
-            hideEntryImmediately(activeEntry);
-        }
-
+        if (activeEntry !== null && activeEntry !== entry) hideEntryImmediately(activeEntry);
         activeEntry = entry;
         entry.controls.submenu.hidden = false;
-        setExpanded(entry.controls, true);
+        entry.controls.parentLink.setAttribute('aria-expanded', 'true');
         entry.item.dataset.submenuOpen = 'true';
         region.dataset.open = 'true';
+        entry.window.refresh();
     };
-
     const scheduleClose = (entry) => {
         clearCloseTimer();
         closeTimer = window.setTimeout(() => {
@@ -97,9 +196,7 @@ function initializeSubmenus(container) {
                 || entry.controls.submenu.contains(document.activeElement);
             const hoverInside = entry.item.matches(':hover')
                 || entry.controls.submenu.matches(':hover');
-            if (!focusInside && !hoverInside && activeEntry === entry) {
-                closeActive();
-            }
+            if (!focusInside && !hoverInside && activeEntry === entry) closeActive();
             closeTimer = null;
         }, 150);
     };
@@ -107,6 +204,8 @@ function initializeSubmenus(container) {
     entries.forEach((entry) => {
         const { item, controls } = entry;
         const { parentLink, submenu } = controls;
+        let openAtPointerDown = false;
+        let lastPointerType = null;
 
         item.addEventListener('pointerenter', (event) => {
             if (event.pointerType === 'mouse') openEntry(entry);
@@ -118,32 +217,43 @@ function initializeSubmenus(container) {
         submenu.addEventListener('pointerleave', (event) => {
             if (event.pointerType === 'mouse') scheduleClose(entry);
         });
-
-        item.addEventListener('focusin', () => openEntry(entry));
-        item.addEventListener('focusout', () => {
-            window.setTimeout(() => {
-                if (!item.contains(document.activeElement)
-                    && !submenu.contains(document.activeElement)
-                    && activeEntry === entry) {
-                    closeActive();
-                }
-            }, 0);
+        item.addEventListener('focusin', () => {
+            if (!suppressFocusOpen) openEntry(entry);
         });
-        submenu.addEventListener('focusout', () => {
-            window.setTimeout(() => {
-                if (!item.contains(document.activeElement)
-                    && !submenu.contains(document.activeElement)
-                    && activeEntry === entry) {
-                    closeActive();
-                }
-            }, 0);
+        const scheduleFocusClose = () => window.setTimeout(() => {
+            if (!item.contains(document.activeElement)
+                && !submenu.contains(document.activeElement)
+                && activeEntry === entry) closeActive();
+        }, 0);
+        item.addEventListener('focusout', scheduleFocusClose);
+        submenu.addEventListener('focusout', scheduleFocusClose);
+
+        parentLink.addEventListener('pointerdown', (event) => {
+            openAtPointerDown = activeEntry === entry;
+            lastPointerType = event.pointerType;
+        });
+        parentLink.addEventListener('click', (event) => {
+            const coarsePointer = lastPointerType === 'touch' || lastPointerType === 'pen';
+            lastPointerType = null;
+            if (parentLink instanceof HTMLButtonElement) {
+                event.preventDefault();
+                if (openAtPointerDown) closeActive(true);
+                else openEntry(entry);
+                return;
+            }
+            // A coarse-pointer user can reveal child links on the first tap
+            // and follow the parent URL on the second. Desktop links still work.
+            if (coarsePointer && !openAtPointerDown) {
+                event.preventDefault();
+                openEntry(entry);
+            }
         });
 
         parentLink.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowDown') {
                 event.preventDefault();
                 openEntry(entry);
-                const firstLink = submenu.querySelector('a');
+                const firstLink = submenu.querySelector('.site-navigation__item:not([hidden]) a');
                 if (firstLink instanceof HTMLAnchorElement) firstLink.focus();
             } else if (event.key === 'Escape') {
                 event.preventDefault();
@@ -157,23 +267,27 @@ function initializeSubmenus(container) {
                 closeActive(true);
                 return;
             }
-            if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
-
-            const links = Array.from(submenu.querySelectorAll('a'))
-                .filter((link) => link instanceof HTMLAnchorElement);
+            if (!['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].includes(event.key)) return;
+            const links = Array.from(submenu.querySelectorAll('.site-navigation__item:not([hidden]) a'));
             const current = links.indexOf(document.activeElement);
             if (current === -1 || links.length === 0) return;
-
             event.preventDefault();
-            const offset = event.key === 'ArrowDown' ? 1 : -1;
-            links[(current + offset + links.length) % links.length].focus();
+            const offset = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+            const destination = current + offset;
+            if (destination >= 0 && destination < links.length) {
+                links[destination].focus();
+            } else {
+                const control = offset > 0 ? entry.window.next : entry.window.previous;
+                if (!control.hidden) control.click();
+                const updated = Array.from(submenu.querySelectorAll('.site-navigation__item:not([hidden]) a'));
+                (offset > 0 ? updated[updated.length - 1] : updated[0])?.focus();
+            }
         });
     });
 
     document.addEventListener('pointerdown', (event) => {
         if (event.target instanceof Node && !container.contains(event.target)) closeActive();
     });
-
     return closeActive;
 }
 
@@ -231,113 +345,12 @@ export function advanceNavigationWindow(widths, visible, availableWidth, directi
 
 export function initializePublicNavigation() {
     document.querySelectorAll('[data-site-navigation]').forEach((container) => {
-        const scroller = container.querySelector('[data-site-navigation-scroll]');
-        const previous = container.querySelector('[data-direction="previous"]');
-        const next = container.querySelector('[data-direction="next"]');
+        const mainSurface = container.querySelector('[data-navigation-main]');
+        if (!(mainSurface instanceof HTMLElement)) return;
 
-        if (!(scroller instanceof HTMLElement)
-            || !(previous instanceof HTMLButtonElement)
-            || !(next instanceof HTMLButtonElement)) {
-            return;
-        }
-
-        const items = Array.from(scroller.querySelectorAll('[data-navigation-item]'))
-            .filter((item) => item instanceof HTMLElement);
-        const activeIndex = items.findIndex((item) => item.classList.contains('is-active'));
-        const closeSubmenus = initializeSubmenus(container);
-        let widths = [];
-        let availableWidth = 0;
-        let visible = [];
-        let cycling = false;
-
-        const render = (indices) => {
-            const sameWindow = visible.length === indices.length
-                && visible.every((index, position) => index === indices[position]);
-            if (!sameWindow) closeSubmenus();
-
-            const shown = new Set(indices);
-            const focused = document.activeElement;
-            const focusedItem = focused instanceof Element
-                ? focused.closest('[data-navigation-item]')
-                : null;
-
-            items.forEach((item, index) => {
-                item.hidden = !shown.has(index);
-                item.classList.toggle('is-overwide', shown.has(index) && widths[index] > availableWidth);
-            });
-
-            // Reorder the original DOM nodes, not copies, so keyboard and
-            // screen-reader order agrees with the visual cyclic order.
-            const ordered = [
-                ...indices.map((index) => items[index]),
-                ...items.filter((_, index) => !shown.has(index)),
-            ];
-            if (ordered.some((item, position) => scroller.children[position] !== item)) {
-                scroller.append(...ordered);
-            }
-
-            visible = indices;
-            if (focusedItem && focused instanceof HTMLElement) {
-                if (shown.has(items.indexOf(focusedItem))) {
-                    focused.focus({ preventScroll: true });
-                } else if (cycling) {
-                    previous.focus({ preventScroll: true });
-                }
-            }
-        };
-
-        const update = () => {
-            // Measure intrinsic label widths, including currently hidden items.
-            // The synchronous read/write pass completes before the next paint.
-            container.classList.add('is-measuring');
-            items.forEach((item) => {
-                item.hidden = false;
-                item.classList.remove('is-overwide');
-            });
-            widths = items.map((item) => item.getBoundingClientRect().width);
-            container.classList.remove('is-measuring');
-
-            const wasCycling = cycling;
-            cycling = widths.length > 1
-                && widths.reduce((sum, width) => sum + width, 0) > scroller.clientWidth;
-            container.classList.toggle('is-overflowing', cycling);
-            previous.hidden = !cycling;
-            next.hidden = !cycling;
-
-            const style = getComputedStyle(scroller);
-            availableWidth = Math.max(
-                1,
-                scroller.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
-            );
-
-            if (!cycling) {
-                render(items.map((_, index) => index));
-                return;
-            }
-
-            let fitted = fitNavigationWindow(widths, availableWidth, wasCycling && visible.length ? visible[0] : 0);
-            const keepActive = activeIndex >= 0 && (!wasCycling || visible.includes(activeIndex));
-            // Reveal the currently active page on first load and retain it
-            // when a smaller viewport forces the window to contract.
-            for (let step = 0; keepActive && !fitted.includes(activeIndex) && step < items.length; step += 1) {
-                fitted = advanceNavigationWindow(widths, fitted, availableWidth, 1);
-            }
-            render(fitted);
-        };
-
-        previous.addEventListener('click', () => {
-            if (cycling) render(advanceNavigationWindow(widths, visible, availableWidth, -1));
-        });
-        next.addEventListener('click', () => {
-            if (cycling) render(advanceNavigationWindow(widths, visible, availableWidth, 1));
-        });
-
-        if ('ResizeObserver' in window) {
-            new ResizeObserver(update).observe(scroller);
-        } else {
-            window.addEventListener('resize', update, { passive: true });
-        }
-
-        update();
+        let closeSubmenus = () => {};
+        const main = initializeNavigationWindow(mainSurface, () => closeSubmenus());
+        closeSubmenus = initializeSubmenus(container, main.items);
+        main.refresh();
     });
 }

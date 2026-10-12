@@ -49,69 +49,62 @@
             </h1>
             @unless ($__env->hasSection('hide_navigation'))
                 <div class="site-navigation" data-site-navigation>
-                    <div class="site-navigation__rail">
-                        <button
-                            class="site-navigation__control"
-                            type="button"
-                            data-direction="previous"
-                            aria-label="Previous navigation item"
-                            hidden
-                        >‹</button>
-                        <nav aria-label="Main navigation" data-site-navigation-scroll>
+                    <div class="site-navigation__rail" data-navigation-main>
+                        <button class="site-navigation__control" type="button" data-direction="previous" aria-label="Previous page" hidden>
+                            <x-public-icon name="chevron-left" />
+                        </button>
+                        <nav aria-label="Main navigation" data-navigation-window-scroll>
                             @foreach ($navigationItems as $navigationItem)
                                 @php($submenuId = 'site-navigation-submenu-'.$navigationItem['tie_breaker'])
                                 <div class="site-navigation__item @if ($navigationItem['active']) is-active @endif" data-navigation-item>
                                     <div class="site-navigation__primary">
                                         @if ($navigationItem['url'] !== null)
-                                            <a
-                                                href="{{ $navigationItem['url'] }}"
+                                            <a href="{{ $navigationItem['url'] }}"
                                                 @if ($navigationItem['current']) aria-current="page" @endif
                                                 @if ($navigationItem['children'] !== [])
-                                                    aria-haspopup="true"
-                                                    aria-expanded="false"
-                                                    aria-controls="{{ $submenuId }}"
-                                                    data-navigation-parent-link
+                                                    aria-haspopup="true" aria-expanded="false"
+                                                    aria-controls="{{ $submenuId }}" data-navigation-parent-link
                                                 @endif
                                             >{{ $navigationItem['label'] }}</a>
                                         @else
-                                            <a
-                                                role="button"
-                                                tabindex="0"
-                                                @if ($navigationItem['children'] !== [])
-                                                    aria-haspopup="true"
-                                                    aria-expanded="false"
-                                                    aria-controls="{{ $submenuId }}"
-                                                    data-navigation-parent-link
-                                                @endif
-                                            >{{ $navigationItem['label'] }}</a>
+                                            @if ($navigationItem['children'] !== [])
+                                                <button type="button" aria-haspopup="true" aria-expanded="false"
+                                                    aria-controls="{{ $submenuId }}" data-navigation-parent-link
+                                                >{{ $navigationItem['label'] }}</button>
+                                            @else
+                                                <span class="site-navigation__text">{{ $navigationItem['label'] }}</span>
+                                            @endif
                                         @endif
                                     </div>
                                     @if ($navigationItem['children'] !== [])
-                                        <div
-                                            id="{{ $submenuId }}"
-                                            class="site-navigation__submenu"
-                                            data-navigation-submenu
-                                            hidden
-                                        >
-                                            @foreach ($navigationItem['children'] as $child)
-                                                @if ($child['url'] !== null)
-                                                    <a href="{{ $child['url'] }}"@if ($child['current']) aria-current="page"@endif>{{ $child['label'] }}</a>
-                                                @else
-                                                    <span>{{ $child['label'] }}</span>
-                                                @endif
-                                            @endforeach
+                                        <div id="{{ $submenuId }}" class="site-navigation__submenu" data-navigation-submenu hidden>
+                                            <button class="site-navigation__control" type="button" data-direction="previous" aria-label="Previous subpage" hidden>
+                                                <x-public-icon name="chevron-left" />
+                                            </button>
+                                            <nav aria-label="{{ $navigationItem['label'] }} subnavigation" data-navigation-window-scroll>
+                                                @foreach ($navigationItem['children'] as $child)
+                                                    <div class="site-navigation__item @if ($child['current']) is-active @endif" data-navigation-item>
+                                                        <div class="site-navigation__primary">
+                                                            @if ($child['url'] !== null)
+                                                                <a href="{{ $child['url'] }}" @if ($child['current']) aria-current="page" @endif>{{ $child['label'] }}</a>
+                                                            @else
+                                                                <span class="site-navigation__text">{{ $child['label'] }}</span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </nav>
+                                            <button class="site-navigation__control" type="button" data-direction="next" aria-label="Next subpage" hidden>
+                                                <x-public-icon name="chevron-right" />
+                                            </button>
                                         </div>
                                     @endif
                                 </div>
                             @endforeach
                         </nav>
-                        <button
-                            class="site-navigation__control"
-                            type="button"
-                            data-direction="next"
-                            aria-label="Next navigation item"
-                            hidden
-                        >›</button>
+                        <button class="site-navigation__control" type="button" data-direction="next" aria-label="Next page" hidden>
+                            <x-public-icon name="chevron-right" />
+                        </button>
                     </div>
                     <div class="site-navigation__submenu-region" data-navigation-submenu-region>
                         <div class="site-navigation__submenu-region-inner" data-navigation-submenu-region-inner></div>

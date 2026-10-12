@@ -42,3 +42,37 @@ test('handles an empty navigation list and rejects invalid movement direction', 
     assert.deepEqual(advanceNavigationWindow([40, 50], [0, 1], 150, 1), [0, 1]);
     assert.throws(() => advanceNavigationWindow([100], [0], 200, 0), RangeError);
 });
+
+test('child navigation shares the cyclic complete-item contract', () => {
+    const widths = [126, 186, 74, 124, 208];
+    const available = 330;
+    let visible = fitNavigationWindow(widths, available);
+
+    assert.deepEqual(visible, [0, 1]);
+    visible = advanceNavigationWindow(widths, visible, available, 1);
+    assert.deepEqual(visible, [1, 2]);
+    visible = advanceNavigationWindow(widths, visible, available, 1);
+    assert.deepEqual(visible, [2, 3]);
+    visible = advanceNavigationWindow(widths, visible, available, -1);
+    assert.deepEqual(visible, [1, 2]);
+});
+
+test('navigation windows never duplicate items or exceed the available width', () => {
+    for (let count = 2; count <= 9; count += 1) {
+        const widths = Array.from({ length: count }, (_, index) => 30 + ((index * 41 + count * 17) % 130));
+
+        for (let limit = 48; limit <= 420; limit += 19) {
+            let visible = fitNavigationWindow(widths, limit);
+            for (let step = 0; step < count * 3; step += 1) {
+                const direction = step % 4 === 0 ? -1 : 1;
+                visible = advanceNavigationWindow(widths, visible, limit, direction);
+                assert.equal(visible.length, new Set(visible).size);
+                assert.ok(visible.every((index) => index >= 0 && index < count));
+                assert.ok(visible.length === 1
+                    || visible.reduce((sum, index) => sum + widths[index], 0) <= limit);
+                assert.ok(visible.every((index, position) =>
+                    position === 0 || index === (visible[position - 1] + 1) % count));
+            }
+        }
+    }
+});

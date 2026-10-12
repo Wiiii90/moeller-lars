@@ -78,7 +78,7 @@
                         href="{{ $preview->url(route('artworks.show', $previousArtwork->slug)) }}"
                         aria-label="Previous artwork"
                         title="Previous artwork"
-                    >‹</a>
+                    ><x-public-icon name="chevron-left" /></a>
                 @endif
 
                 <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}">
@@ -91,7 +91,7 @@
                         href="{{ $preview->url(route('artworks.show', $nextArtwork->slug)) }}"
                         aria-label="Next artwork"
                         title="Next artwork"
-                    >›</a>
+                    ><x-public-icon name="chevron-right" /></a>
                 @endif
             </nav>
         </div>
