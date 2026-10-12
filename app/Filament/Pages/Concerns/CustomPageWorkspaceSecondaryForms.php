@@ -147,20 +147,6 @@ trait CustomPageWorkspaceSecondaryForms
     }
 
     /** @return array<string,mixed> */
-    private function listItemPayload(array $data): array
-    {
-        return [
-            'published' => ($data['publication_state'] ?? 'published') === 'published',
-            'date' => $data['date'] ?? null,
-            'title' => $data['title'] ?? null,
-            'meta' => $data['meta'] ?? null,
-            'location' => $data['location'] ?? null,
-            'url' => $data['url'] ?? null,
-            'body' => $data['body'] ?? null,
-        ];
-    }
-
-    /** @return array<string,mixed> */
     private function contactChildPayload(array $data): array
     {
         $type = $data['child_type'] ?? null;
