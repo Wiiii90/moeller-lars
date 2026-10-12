@@ -581,6 +581,15 @@
     margin-inline: auto;
 }
 
+/* The flexible identity yields to Page Type and the fixed Actions rail.
+ * Keep the full accessible label but truncate its painted line. */
+.admin-pages__page {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .admin-pages__page-link {
     color: inherit;
     text-decoration: none;
