@@ -163,3 +163,32 @@ test('Header dismisses one current Notification at a time and advances its queue
     await dismiss.click();
     await expect(header).toBeHidden();
 });
+
+
+test('Header dismiss remains clickable while the native Edit modal is open', async ({ page }) => {
+    const email = process.env.PLAYWRIGHT_ADMIN_EMAIL;
+    const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD;
+    test.skip(!email || !password, 'Local admin credentials are required');
+
+    await page.goto('/admin/login');
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).toHaveURL(/\/admin\/dashboard(?:[/?#]|$)/);
+    await page.getByRole('button', { name: 'Settings', exact: true }).first().click();
+
+    const modal = page.locator('.fi-modal.fi-modal-open').last();
+    await expect(modal.getByRole('heading', { name: 'Dashboard settings', exact: true })).toBeVisible();
+
+    await page.evaluate(() => {
+        window.dispatchEvent(new CustomEvent('admin-header-notification', {
+            detail: { id: 'modal-dismiss-regression', title: 'Dismiss through dialog', status: 'success' },
+        }));
+    });
+
+    const header = page.locator('[data-admin-header-notification]');
+    await expect(header.locator('[data-admin-header-notification-title]')).toHaveText('Dismiss through dialog');
+    await header.getByRole('button', { name: 'Dismiss notification' }).click();
+    await expect(header).toBeHidden();
+    await expect(modal).toBeVisible();
+});
