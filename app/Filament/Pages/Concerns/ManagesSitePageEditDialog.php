@@ -15,7 +15,6 @@ use App\Filament\Support\HomeSettingsDialog;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
@@ -44,7 +43,6 @@ trait ManagesSitePageEditDialog
                     'slug' => $section->getAttribute('slug'),
                     'parent_id' => $section->getAttribute('parent_id'),
                     'position' => $this->dialogDisplayPosition($section),
-                    'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
                 ];
             })
             ->schema([
@@ -86,9 +84,6 @@ trait ManagesSitePageEditDialog
                             ->integer()
                             ->minValue(1)
                             ->required(),
-                        Checkbox::make('show_in_navigation')
-                            ->label('Show in navigation')
-                            ->columnSpanFull(),
                     ]),
             ])
             ->action(function (array $data, array $arguments): void {
@@ -167,7 +162,6 @@ trait ManagesSitePageEditDialog
         $section = $editorial->updatePlacement(
             $section,
             (string) $section->getAttribute('state'),
-            (bool) ($data['show_in_navigation'] ?? false),
             $parentId,
         );
 
@@ -187,7 +181,7 @@ trait ManagesSitePageEditDialog
     }
 
     /**
-     * @return array{type:string,template:?string,title:string,navigation_label:?string,slug:?string,parent_id:?int,position:int,show_in_navigation:bool}
+     * @return array{type:string,template:?string,title:string,navigation_label:?string,slug:?string,parent_id:?int,position:int}
      */
     private function pageDialogPersistedState(SiteSection $section): array
     {
@@ -204,7 +198,6 @@ trait ManagesSitePageEditDialog
             'slug' => $slug === null ? null : (string) $slug,
             'parent_id' => $parentId === null ? null : (int) $parentId,
             'position' => (int) $section->getAttribute('position'),
-            'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
         ];
     }
 
