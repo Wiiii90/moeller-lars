@@ -75,6 +75,8 @@ When a search/filter/control row directly precedes a table or hierarchy header, 
 
 Do not add a second bottom border to the controls row and do not compensate for duplicate separators with page-local margins, overlays or matching colors. The shared table contract removes that duplicate boundary for canonical task controls.
 
+The shared table empty state is **content**, not another framed surface. Inside `x-admin.table` or its hierarchy, `x-admin.empty-state` adds **no top or bottom borders**: the table header owns the top separator and the next `x-admin.add-row` or pager owns the lower transition. This applies equally to truly empty and filtered-empty tables (Custom Page, Pages, Dashboard, Home, Journal, General, Activity and Analytics). Outside tables, standalone empty states may keep their own borders; when such a state directly precedes `x-admin.add-row` (for example empty Storage), the add row suppresses its duplicate top border. These boundaries are implemented centrally in `resources/css/admin/data-workspace.css`, not with feature-local border or spacing overrides.
+
 ## Position and Add Row
 
 The Position indicator and the leading `+` square of `x-admin.add-row` share one canonical square geometry and leading inset.
