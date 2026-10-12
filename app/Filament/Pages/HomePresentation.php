@@ -1204,10 +1204,18 @@ final class HomePresentation extends Page
                 'content' => ['primary' => $primary, 'secondary' => $secondary],
                 'published' => CustomPageSetting::componentPublished($component),
                 'children' => $this->homeChildProjection($component, $index),
-                'search_text' => Str::lower(implode(' ', [$typeLabel, $primary, $secondary, $title, $body])),
+                'search_text' => Str::lower(implode(' ', [$typeLabel, $primary, $secondary, $title, $body,
+                    $type === 'list' ? collect($component['items'] ?? [])
+                        ->filter('is_array')
+                        ->flatMap(static fn (array $item): array => array_filter([
+                            $item['date'] ?? null, $item['title'] ?? null, $item['meta'] ?? null,
+                            $item['location'] ?? null, $item['body'] ?? null, $item['url'] ?? null,
+                        ], 'is_string'))
+                        ->implode(' ') : '',
+                ])),
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $count - 1,
-                'editable' => in_array($type, CustomPageSetting::COMPONENT_TYPES, true),
+                'editable' => $type !== 'legal_disclaimer' && in_array($type, CustomPageSetting::COMPONENT_TYPES, true),
             ];
         }
         $this->componentDataset = $dataset;
