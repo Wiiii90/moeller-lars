@@ -54,6 +54,39 @@ it('builds navigation from published SiteSections and keeps navigation groups ro
         ->and($hidden->state)->toBe('hidden');
 });
 
+it('includes every published node in public navigation regardless of its historical menu flag', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $service = app(SiteSectionEditorialService::class);
+
+    $group = $service->createNavigationGroup('Published Group');
+    $child = $service->createJournal('Visible Journal', 'visible-journal', JournalTemplate::Blog->value);
+    $draft = $service->createJournal('Unpublished Journal', 'unpublished-journal', JournalTemplate::Blog->value);
+
+    // Old data may still contain false/true legacy bits; neither controls menus.
+    \Illuminate\Support\Facades\DB::table('site_sections')
+        ->whereKey($child->getKey())
+        ->update(['show_in_navigation' => false]);
+    \Illuminate\Support\Facades\DB::table('site_sections')
+        ->whereKey($draft->getKey())
+        ->update(['show_in_navigation' => true]);
+
+    $service->updatePlacement($group, 'published', null);
+    $service->updatePlacement($child, 'published', (int) $group->getKey());
+
+    $items = app(PublicNavigationService::class)->items();
+    $groupItem = $items->firstWhere('label', 'Published Group');
+
+    expect($groupItem)->not->toBeNull()
+        ->and(collect($groupItem['children'])->pluck('label')->all())->toContain('Visible Journal')
+        ->and($items->pluck('label')->all())->not->toContain('Unpublished Journal');
+
+    $service->updatePlacement($child, 'hidden', (int) $group->getKey());
+    $items = app(PublicNavigationService::class)->items();
+    $groupItem = $items->firstWhere('label', 'Published Group');
+
+    expect(collect($groupItem['children'])->pluck('label')->all())->not->toContain('Visible Journal');
+});
+
 it('uses committed SiteSection state as the public availability gate', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
