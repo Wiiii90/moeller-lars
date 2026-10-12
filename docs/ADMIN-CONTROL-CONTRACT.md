@@ -60,11 +60,14 @@ change ordinary table row Actions, Selection popup actions or dialog buttons.
   Hover emphasizes that baseline, while focus (including an opened native
   dropdown) uses `--admin-control-border-focus`.
 - Toolbar actions (Settings, Add, Preview, Clear, View and the shared Filters
-  trigger) use a neutral underline on hover, not button background/border fill.
-  Active View and expanded Filters controls use the accent underline.
+  trigger) use the same **single 1px bottom border** as Search and native
+  filter fields: neutral on hover, accented for active View, focused actions
+  and expanded Filters. Never simulate a second or thicker underline using
+  box shadows, backgrounds or additional pseudo-elements.
 - Selection underlines the **whole group**, including Selected, count badge and
-  the final table-selection padding/rail. It is not an independent underline
-  below the button that stops short of the count.
+  the final table-selection padding/rail, using exactly one 1px pseudo-element.
+  Its button must not draw another underline; the open/focus state changes
+  color, never thickness.
 - Disabled task actions do not gain a hover underline. The active/expanded
   underline is presentation-only; state remains with the existing Livewire or
   Alpine owner. No new click or persistence mechanism is allowed.
