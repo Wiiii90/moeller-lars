@@ -22,6 +22,7 @@ it('keeps one persisted admin Notification shell runtime', function (): void {
         ->toContain('data-admin-header-notification-initial')
         ->toContain('data-admin-header-notification-title')
         ->toContain('data-admin-header-notification-timer')
+        ->toContain('data-admin-header-notification-dismiss')
         ->not->toContain('x-data=')
         ->not->toContain('x-on:admin-header-notification')
         ->and($runtime)
@@ -32,6 +33,8 @@ it('keeps one persisted admin Notification shell runtime', function (): void {
         ->toContain("window.addEventListener('admin-header-notification'")
         ->toContain('queue.push(normalized)')
         ->toContain('queue.shift()')
+        ->toContain("dismiss.addEventListener('click'")
+        ->toContain("beginLeave(String(current.id ?? ''))")
         ->toContain('window.setTimeout')
         ->toContain('window.clearTimeout')
         ->not->toContain('setInterval')
@@ -98,6 +101,7 @@ it('reuses Activity change and details for durable Notifications', function (): 
 });
 
 it('keeps the workspace as the only Header geometry owner', function (): void {
+    $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
     $layouts = file_get_contents(resource_path('css/admin/layouts.css'));
     $notifications = file_get_contents(resource_path('css/admin/notifications.css'));
 
