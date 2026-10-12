@@ -100,13 +100,6 @@
                                 <div class="custom-page-component__children admin-hierarchy__children">
                                     <div class="custom-page-component__children-rows admin-hierarchy__children-rows" @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort="sortChild" @endif>
                                         @foreach ($pageComponent['children'] as $child)
-                                            @php
-                                                $childKindLabel = match ($child['kind']) {
-                                                    'list' => 'List item',
-                                                    'contact' => 'Contact item',
-                                                    default => ucfirst((string) $child['kind']),
-                                                };
-                                            @endphp
                                             <div
                                                 class="custom-page-child-row admin-hierarchy__row is-child {{ ($child['parent_published'] ?? true) ? '' : 'is-parent-unpublished' }}"
                                                 wire:key="child-{{ $pageComponent['target'] }}-{{ $child['key'] }}"
@@ -120,54 +113,16 @@
 
                                                 <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}" title="{{ ! $reorderEnabled ? 'Clear filters and show all components to reorder' : (count($pageComponent['children']) < 2 ? 'At least two entries are needed to reorder' : 'Drag to reorder') }}">⋮⋮</button>
 
-                                                <span class="custom-page-child-row__kind">{{ $childKindLabel }}</span>
+                                                <span class="custom-page-child-row__kind">Contact item</span>
 
                                                 <div class="custom-page-child-row__content admin-hierarchy__content">
-                                                    @if ($child['kind'] === 'list')
-                                                        <strong>
-                                                            @if ($child['date'] !== '')
-                                                                <span class="custom-page-child-row__date">{{ $child['date'] }}</span> ·
-                                                            @endif
-                                                            {{ $child['entry'] }}
-                                                        </strong>
-                                                        @if ($child['detail'] !== '')
-                                                            <small>{{ $child['detail'] }}</small>
-                                                        @endif
-                                                    @else
                                                         <strong>{{ $child['entry'] }}</strong>
                                                         @if ($child['detail'] !== '')
                                                             <small>{{ $child['detail'] }}</small>
                                                         @endif
-                                                    @endif
                                                 </div>
 
                                                 <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete custom-page-row-actions custom-page-child-row__actions admin-toolbar">
-                                                    @if ($child['kind'] === 'list')
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::MoveUp"
-                                                            wire:click="moveListEntry({{ $pageComponent['index'] }}, 'list', {{ $child['item_index'] }}, 'up')"
-                                                            :disabled="! $child['can_move_up']"
-                                                            aria-label="Move list entry up"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::MoveDown"
-                                                            wire:click="moveListEntry({{ $pageComponent['index'] }}, 'list', {{ $child['item_index'] }}, 'down')"
-                                                            :disabled="! $child['can_move_down']"
-                                                            aria-label="Move list entry down"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::Edit"
-                                                            wire:click="mountAction('editListEntry', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'list', itemIndex: {{ $child['item_index'] }} })"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="$child['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
-                                                            wire:click="setListEntryPublished({{ $pageComponent['index'] }}, 'list', {{ $child['item_index'] }}, {{ $child['published'] ? 'false' : 'true' }})"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::Delete"
-                                                            wire:click="mountAction('deleteListEntry', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'list', itemIndex: {{ $child['item_index'] }} })"
-                                                        />
-                                                    @elseif ($child['kind'] === 'contact')
                                                         <x-admin.row-action
                                                             :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                             wire:click="moveContactChild({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', 'up')"
@@ -192,7 +147,6 @@
                                                             :action="\App\Filament\Support\AdminRowAction::Delete"
                                                             wire:click="mountAction('deleteContactChild', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'contact', childType: '{{ $child['child_type'] }}' })"
                                                         />
-                                                    @endif
                                                 </div>
 
                                                 <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select {{ $child['entry'] }}">
