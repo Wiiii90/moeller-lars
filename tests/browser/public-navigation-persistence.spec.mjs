@@ -1,17 +1,17 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
-// The production navigation module runs against a self-contained DOM fixture.
-// No application server, real content database, or additional navigation logic.
-test('expanded child navigation persists until an explicit top-level selection', async ({ page }) => {
+// Production navigation module against a self-contained DOM fixture. No app server or DB.
+test('one-row child level persists through outside interactions and exits only explicitly', async ({ page }) => {
     await page.setContent([
         '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">',
-        '<style> [hidden] { display: none !important; }',
-        'nav[data-navigation-window-scroll] { display: flex; width: 170px; }',
+        '<style>[hidden] { display: none !important; }',
+        'nav[data-navigation-window-scroll] { display: flex; width: 240px; }',
         '[data-navigation-item] { flex: 0 0 90px; }',
+        '[data-navigation-content] { display: flex; }',
         '</style></head><body>',
         '<div data-site-navigation>',
-        '  <div data-navigation-main>',
+        '  <div data-navigation-main hidden>',
         '    <button type="button" data-direction="previous" hidden>Previous</button>',
         '    <nav data-navigation-window-scroll>',
         '      <div data-navigation-item data-navigation-key="a" class="is-active">',
@@ -27,27 +27,31 @@ test('expanded child navigation persists until an explicit top-level selection',
         '    </nav>',
         '    <button type="button" data-direction="next" hidden>Next</button>',
         '  </div>',
-        '  <div data-navigation-submenu-region data-open="true">',
-        '    <div data-navigation-submenu-region-inner>',
-        '      <div id="sub-a" data-navigation-submenu>',
-        '        <button type="button" data-direction="previous" hidden>Previous child</button>',
-        '        <nav data-navigation-window-scroll>',
-        '          <div data-navigation-item data-navigation-key="a1" class="is-active">',
-        '            <div class="site-navigation__primary"><a href="#child-a" aria-current="page">A1</a></div>',
-        '          </div>',
-        '        </nav>',
-        '        <button type="button" data-direction="next" hidden>Next child</button>',
-        '      </div>',
-        '      <div id="sub-b" data-navigation-submenu hidden>',
-        '        <button type="button" data-direction="previous" hidden>Previous child</button>',
-        '        <nav data-navigation-window-scroll>',
-        '          <div data-navigation-item data-navigation-key="b1">',
-        '            <div class="site-navigation__primary"><a href="#child-b">B1</a></div>',
-        '          </div>',
-        '        </nav>',
-        '        <button type="button" data-direction="next" hidden>Next child</button>',
-        '      </div>',
+        '  <div id="sub-a" data-navigation-submenu>',
+        '    <button type="button" data-direction="previous" hidden>Previous child</button>',
+        '    <div data-navigation-content>',
+        '      <button type="button" data-navigation-back>MENU</button>',
+        '      <span aria-hidden="true">/</span>',
+        '      <nav data-navigation-window-scroll>',
+        '        <div data-navigation-item data-navigation-key="a1" class="is-active">',
+        '          <div class="site-navigation__primary"><a href="#child-a" aria-current="page">A1</a></div>',
+        '        </div>',
+        '      </nav>',
         '    </div>',
+        '    <button type="button" data-direction="next" hidden>Next child</button>',
+        '  </div>',
+        '  <div id="sub-b" data-navigation-submenu hidden>',
+        '    <button type="button" data-direction="previous" hidden>Previous child</button>',
+        '    <div data-navigation-content>',
+        '      <button type="button" data-navigation-back>MENU</button>',
+        '      <span aria-hidden="true">/</span>',
+        '      <nav data-navigation-window-scroll>',
+        '        <div data-navigation-item data-navigation-key="b1">',
+        '          <div class="site-navigation__primary"><a href="#child-b">B1</a></div>',
+        '        </div>',
+        '      </nav>',
+        '    </div>',
+        '    <button type="button" data-direction="next" hidden>Next child</button>',
         '  </div>',
         '</div>',
         '<button type="button" id="outside">Outside content</button>',
@@ -63,28 +67,35 @@ test('expanded child navigation persists until an explicit top-level selection',
     });
     await page.evaluate(() => window.initializePublicNavigation());
 
+    const main = page.locator('[data-navigation-main]');
     const first = page.locator('#sub-a');
     const second = page.locator('#sub-b');
+    await expect(main).toBeHidden();
     await expect(first).toBeVisible();
     await expect(second).toBeHidden();
 
-    // Leaving the child with the keyboard and clicking the content must not
-    // dismiss it, even if the current child was selected on the server.
+    // Outside focus and clicks must not mutate the selected child branch.
     await first.locator('a').focus();
     await page.locator('#outside').focus();
     await page.locator('#outside').click();
     await expect(first).toBeVisible();
 
-    // Cycling the top-level WINDOW is not a top-level PAGE selection.
-    await page.locator('[data-navigation-main] > button[data-direction="next"]').click();
-    await expect(first).toBeVisible();
-
-    // Deliberately selecting another top-level group replaces the child level.
-    await page.locator('[data-navigation-parent-link][aria-controls="sub-b"]').click();
+    // A named, non-arrow return exposes the original top-level window.
+    await first.locator('[data-navigation-back]').click();
+    await expect(main).toBeVisible();
     await expect(first).toBeHidden();
-    await expect(second).toBeVisible();
 
-    // Selecting that same parent button again explicitly closes its children.
+    // A different navigation-only parent switches into its own single-row level.
     await page.locator('[data-navigation-parent-link][aria-controls="sub-b"]').click();
+    await expect(main).toBeHidden();
+    await expect(second).toBeVisible();
+    await expect(first).toBeHidden();
+    await expect(page.locator('[data-navigation-main]:visible, [data-navigation-submenu]:visible')).toHaveCount(1);
+
+    // Escape is the other deliberate exit, restoring focus to the parent.
+    await second.locator('[data-navigation-back]').focus();
+    await page.keyboard.press('Escape');
+    await expect(main).toBeVisible();
     await expect(second).toBeHidden();
+    await expect(page.locator('[data-navigation-parent-link][aria-controls="sub-b"]')).toBeFocused();
 });

@@ -80,6 +80,17 @@ test('navigation windows never duplicate items or exceed the available width', (
     }
 });
 
+test('child level finds its own rail inside the breadcrumb content, not the main rail', () => {
+    const node = (selector) => ({ matches: (query) => query === selector });
+    const previous = node('button[data-direction="previous"]');
+    const next = node('button[data-direction="next"]');
+    const back = node('button[data-navigation-back]');
+    const rail = node('nav[data-navigation-window-scroll]');
+    const content = { ...node('[data-navigation-content]'), children: [back, rail] };
+    const surface = { children: [previous, content, next] };
+    assert.deepEqual(navigationWindowParts(surface), { rail, previous, next });
+});
+
 test('main controls never resolve to right-arrow buttons inside child submenus', () => {
     const node = (selector) => ({ matches: (query) => query === selector });
     const previous = node('button[data-direction="previous"]');

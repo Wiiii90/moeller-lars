@@ -1,11 +1,11 @@
-const SUBMENU_TRANSITION_MS = 180;
-
 // Resolve only immediate children: otherwise the main navigation could bind
 // its right arrow to a descendant submenu's right arrow.
 export function navigationWindowParts(surface) {
     const direct = Array.from(surface.children);
+    const content = direct.find((element) => element.matches('[data-navigation-content]'));
+    const railChildren = content ? Array.from(content.children) : direct;
     return {
-        rail: direct.find((element) => element.matches('nav[data-navigation-window-scroll]')),
+        rail: railChildren.find((element) => element.matches('nav[data-navigation-window-scroll]')),
         previous: direct.find((element) => element.matches('button[data-direction="previous"]')),
         next: direct.find((element) => element.matches('button[data-direction="next"]')),
     };
@@ -191,30 +191,36 @@ function initializeNavigationWindow(surface, restoredWindows) {
 
     return {
         items, refresh, previous, next,
-        snapshot: () => initialized && visible.length
-            ? { keys, visible: [...visible], width: availableWidth }
-            : null,
+        snapshot: () => {
+            if (initialized && visible.length) {
+                return { keys, visible: [...visible], width: availableWidth };
+            }
+            // Preserve the main window while a child level is server-rendered.
+            const saved = restoredWindows?.[surfaceKey];
+            return saved && Array.isArray(saved.keys) && Array.isArray(saved.visible)
+                && saved.keys.length === keys.length
+                && keys.every((key, index) => key === saved.keys[index])
+                ? saved : null;
+        },
         key: surfaceKey,
     };
 }
 
-function submenuControls(item, region) {
+function submenuControls(item, container) {
     const parentLink = item.querySelector('[data-navigation-parent-link]');
     const submenuId = parentLink?.getAttribute('aria-controls');
     const submenu = submenuId ? document.getElementById(submenuId) : null;
+    const back = submenu?.querySelector('[data-navigation-back]');
     if (!(parentLink instanceof HTMLElement)
         || !(submenu instanceof HTMLElement)
-        || !region.contains(submenu)) return null;
-    return { parentLink, submenu };
+        || !(back instanceof HTMLButtonElement)
+        || !container.contains(submenu)) return null;
+    return { parentLink, submenu, back };
 }
 
-function initializeSubmenus(container, topLevelItems, restoredWindows, windows) {
-    const region = container.querySelector('[data-navigation-submenu-region]');
-    const regionInner = container.querySelector('[data-navigation-submenu-region-inner]');
-    if (!(region instanceof HTMLElement) || !(regionInner instanceof HTMLElement)) return;
-
-    const entries = topLevelItems
-        .map((item) => ({ item, controls: submenuControls(item, region) }))
+function initializeNavigationLevels(container, mainSurface, main, restoredWindows, windows) {
+    const entries = main.items
+        .map((item) => ({ item, controls: submenuControls(item, container) }))
         .filter((entry) => entry.controls !== null)
         .map((entry) => ({
             ...entry,
@@ -222,80 +228,64 @@ function initializeSubmenus(container, topLevelItems, restoredWindows, windows) 
         }));
     windows.push(...entries.map((entry) => entry.window));
 
-    let activeEntry = null;
-    let hideTimer = null;
+    let activeEntry = entries.find(({ controls }) => !controls.submenu.hidden) ?? null;
 
-    const clearHideTimer = () => {
-        if (hideTimer !== null) {
-            window.clearTimeout(hideTimer);
-            hideTimer = null;
+    const showMain = (restoreFocus = false) => {
+        if (activeEntry === null) return;
+        const previous = activeEntry;
+        activeEntry = null;
+        previous.controls.submenu.hidden = true;
+        previous.controls.parentLink.setAttribute('aria-expanded', 'false');
+        previous.item.dataset.submenuOpen = 'false';
+        mainSurface.hidden = false;
+        main.refresh();
+
+        if (restoreFocus) {
+            const target = previous.item.hidden
+                ? (main.previous.hidden
+                    ? main.items.find((item) => !item.hidden)?.querySelector('a, button')
+                    : main.previous)
+                : previous.controls.parentLink;
+            target?.focus({ preventScroll: true });
         }
     };
-    const hideEntryImmediately = (entry) => {
-        entry.controls.parentLink.setAttribute('aria-expanded', 'false');
-        entry.item.dataset.submenuOpen = 'false';
-        entry.controls.submenu.hidden = true;
-    };
-    const closeActive = (restoreFocus = false) => {
-        clearHideTimer();
-        if (activeEntry === null) return;
 
-        const closing = activeEntry;
-        activeEntry = null;
-        closing.controls.parentLink.setAttribute('aria-expanded', 'false');
-        closing.item.dataset.submenuOpen = 'false';
-        region.dataset.open = 'false';
-        hideTimer = window.setTimeout(() => {
-            closing.controls.submenu.hidden = true;
-            hideTimer = null;
-        }, SUBMENU_TRANSITION_MS);
-        if (restoreFocus) closing.controls.parentLink.focus({ preventScroll: true });
-    };
-    const openEntry = (entry) => {
-        clearHideTimer();
-        if (activeEntry === entry) return;
-        if (activeEntry !== null) hideEntryImmediately(activeEntry);
+    const showChildren = (entry, focusBack = false) => {
+        if (activeEntry !== null && activeEntry !== entry) {
+            activeEntry.controls.submenu.hidden = true;
+            activeEntry.controls.parentLink.setAttribute('aria-expanded', 'false');
+            activeEntry.item.dataset.submenuOpen = 'false';
+        }
         activeEntry = entry;
+        mainSurface.hidden = true;
         entry.controls.submenu.hidden = false;
         entry.controls.parentLink.setAttribute('aria-expanded', 'true');
         entry.item.dataset.submenuOpen = 'true';
-        region.dataset.open = 'true';
         entry.window.refresh();
+        if (focusBack) entry.controls.back.focus({ preventScroll: true });
     };
 
-    entries.forEach((entry) => {
-        const { item, controls } = entry;
-        const { parentLink, submenu } = controls;
+    for (const entry of entries) {
+        const { parentLink, submenu, back } = entry.controls;
+        back.addEventListener('click', () => showMain(true));
 
-        // No hover/focus-open side channel: parent activation owns the submenu.
-        // If a parent has its own URL, first activation opens its children,
-        // subsequent activation follows the URL.
         parentLink.addEventListener('click', (event) => {
-            if (activeEntry !== entry) {
-                event.preventDefault();
-                openEntry(entry);
-            } else if (parentLink instanceof HTMLButtonElement) {
-                event.preventDefault();
-                closeActive(true);
-            }
+            if (event.button !== 0 || event.ctrlKey || event.metaKey
+                || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            showChildren(entry, true);
         });
-
         parentLink.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                openEntry(entry);
-                const firstLink = submenu.querySelector('.site-navigation__item:not([hidden]) a');
-                if (firstLink instanceof HTMLAnchorElement) firstLink.focus();
-            } else if (event.key === 'Escape') {
-                event.preventDefault();
-                closeActive(true);
-            }
+            if (event.key !== 'ArrowDown') return;
+            event.preventDefault();
+            showChildren(entry);
+            submenu.querySelector('.site-navigation__item:not([hidden]) a')?.focus({ preventScroll: true });
         });
 
         submenu.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 event.preventDefault();
-                closeActive(true);
+                showMain(true);
                 return;
             }
             if (!['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].includes(event.key)) return;
@@ -314,14 +304,10 @@ function initializeSubmenus(container, topLevelItems, restoredWindows, windows) 
                 (offset > 0 ? updated[updated.length - 1] : updated[0])?.focus();
             }
         });
-    });
+    }
 
-    // The selected child is part of the current route, not a transient hover
-    // menu. Reopen its parent on direct URLs and after navigation handoff.
-    const selected = entries.find(({ controls }) =>
-        controls.submenu.querySelector('[data-navigation-item].is-active'));
-    if (selected) openEntry(selected);
-
+    // Blade already places an active branch into the same row before JS runs.
+    if (activeEntry) showChildren(activeEntry);
 }
 
 // The visible menu is a cyclic window of complete Site Node items.
@@ -386,7 +372,7 @@ export function initializePublicNavigation() {
         const main = initializeNavigationWindow(mainSurface, restoredWindows);
         windows.push(main);
         main.refresh();
-        initializeSubmenus(container, main.items, restoredWindows, windows);
+        initializeNavigationLevels(container, mainSurface, main, restoredWindows, windows);
 
         container.addEventListener('click', (event) => {
             if (event.defaultPrevented || event.button !== 0
