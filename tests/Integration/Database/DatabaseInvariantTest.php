@@ -47,15 +47,19 @@ it('retires superseded internal Blog settings after Journal canonicalization', f
         ->and(Schema::hasTable('journal_settings'))->toBeTrue();
 });
 
-it('enforces unique published SiteSection positions regardless of historic menu-visibility flags', function (): void {
+it('allocates a unique published position through canonical placement without invalidating old snapshots', function (): void {
+    $this->actingAs(\App\Models\User::factory()->admin()->create(), 'web');
     $first = ArtworkCategory::create(['slug' => 'first', 'name' => 'First', 'show_on_home' => false]);
-    testGallerySection($first, ['state' => 'published', 'position' => 200]);
+    $firstSection = testGallerySection($first, ['state' => 'published', 'position' => 200]);
     $second = ArtworkCategory::create(['slug' => 'second', 'name' => 'Second', 'show_on_home' => false]);
+    $secondSection = testGallerySection($second, ['state' => 'hidden', 'position' => 200]);
 
-    expect(fn () => testGallerySection($second, [
-        'state' => 'published',
-        'position' => 200,
-    ]))->toThrow(QueryException::class);
+    $updated = app(\App\Domain\Content\SiteSectionEditorialService::class)
+        ->updatePlacement($secondSection, 'published', null);
+
+    expect($updated->state)->toBe('published')
+        ->and((int) $updated->position)->not->toBe((int) $firstSection->position)
+        ->and((int) $firstSection->fresh()->position)->toBe(200);
 });
 
 it('enforces one primary media usage per artwork', function (): void {
