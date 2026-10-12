@@ -11,16 +11,20 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
         '<a href="#" class="artwork-card__link"><div class="artwork-card__image" style="height:300px"></div></a>',
         '<div class="artwork-card__footer"><a href="#" class="artwork-label-trigger">',
         '<span class="artwork-label"><span class="artwork-label__heading">',
-        '<span class="artwork-label__title"><span class="artwork-label__title-main">Grüner Planet</span></span><span class="artwork-label__year">2023</span>',
+        '<span class="artwork-label__title">Grüner Planet (in cooperation with Krys Ubo)</span><span class="artwork-label__year">2023</span>',
         '</span><span class="artwork-label__facts"><span>Oil on canvas</span>',
         '<span class="artwork-label__dimensions">50 × 40</span></span>',
         '<span class="artwork-label__note">An authored short description.</span></span></a>',
-        '<nav class="artwork-card__actions"><a class="artwork-context-button" href="#">Paintings</a></nav>',
+        '<nav class="artwork-card__actions" aria-label="Artwork navigation">',
+        '<button class="artwork-context-button artwork-context-button--icon" type="button" aria-label="Previous artwork">‹</button>',
+        '<a class="artwork-context-button artwork-context-button--category" href="#">Paintings</a>',
+        '<button class="artwork-context-button artwork-context-button--icon" type="button" aria-label="Next artwork">›</button>',
+        '</nav>',
         '</div></article>',
         '<article class="artwork-card"><div class="artwork-card__image" style="height:180px"></div>',
         '<div class="artwork-card__footer"><a href="#" class="artwork-label-trigger">',
         '<span class="artwork-label"><span class="artwork-label__heading">',
-        '<span class="artwork-label__title"><span class="artwork-label__title-main">A longer, deliberately varied artwork title</span></span>',
+        '<span class="artwork-label__title">A longer, deliberately varied artwork title</span>',
         '<span class="artwork-label__year">2021</span></span>',
         '<span class="artwork-label__facts"><span>Mixed media</span><span>100 × 70 cm</span></span>',
         '</span></a></div></article>',
@@ -66,6 +70,16 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
                 headerCenter: (rootTitle.left + rootTitle.right) / 2,
                 menuShellLeft: document.querySelector('#content').getBoundingClientRect().left,
                 docOverflow: document.scrollingElement.scrollWidth > document.scrollingElement.clientWidth + 1,
+                actionBorder: getComputedStyle(first.querySelector('.artwork-card__actions')).borderTopWidth,
+                actionGap: getComputedStyle(first.querySelector('.artwork-card__actions')).gap,
+                actionBackground: getComputedStyle(first.querySelector('.artwork-card__actions')).backgroundColor,
+                actionButtonBorders: Array.from(first.querySelectorAll('.artwork-context-button')).map((item) => getComputedStyle(item).borderTopWidth),
+                actionSeparators: Array.from(first.querySelectorAll('.artwork-context-button')).map((item) => getComputedStyle(item).borderLeftWidth),
+                actionLeft: context.left,
+                actionRight: context.right,
+                footerRight: footer.right,
+                lineCount: first.querySelector('.artwork-label__heading').children.length,
+                actualTitle: first.querySelector('.artwork-label__title').textContent.trim(),
             };
         });
 
@@ -73,6 +87,14 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
         expect(state.radius).toBe('0px');
         expect(parseFloat(state.padding), 'framed label padding').toBeGreaterThan(0);
         expect(state.background).toBe('rgb(255, 255, 255)');
+        expect(state.actualTitle).toBe('Grüner Planet (in cooperation with Krys Ubo)');
+        expect(state.lineCount).toBe(2);
+        expect(state.actionBorder).toBe('1px');
+        expect(state.actionGap).toBe('0px');
+        expect(state.actionBackground).toBe('rgb(255, 255, 255)');
+        expect(state.actionButtonBorders).toEqual(['0px', '0px', '0px']);
+        expect(state.actionSeparators).toEqual(['0px', '1px', '1px']);
+        expect(state.actionRight).toBeLessThanOrEqual(state.footerRight + 1);
         expect(state.titleSize, 'title hierarchy').toBeGreaterThan(state.factSize);
         expect(state.captionGap).toBeGreaterThanOrEqual(12);
         expect(state.artworkGap).toBeCloseTo(state.marginGap, 1);

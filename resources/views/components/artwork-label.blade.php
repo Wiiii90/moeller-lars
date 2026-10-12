@@ -1,21 +1,8 @@
 @props(['artwork', 'showDescription' => true])
 
-@php
-    $title = trim((string) $artwork->title);
-    $titleMain = $title;
-    $titleQualifier = null;
-
-    if (preg_match('/^(.*?)(?:\s+)(\([^()]+\))$/u', $title, $matches) === 1) {
-        $titleMain = trim($matches[1]);
-        $titleQualifier = $matches[2];
-    }
-@endphp
-
 <span class="artwork-label">
     <span class="artwork-label__heading">
-        <span class="artwork-label__title">
-            <span class="artwork-label__title-main">{{ $titleMain }}</span>@if ($titleQualifier !== null)<span class="artwork-label__title-qualifier">&nbsp;{{ $titleQualifier }}</span>@endif
-        </span>
+        <span class="artwork-label__title">{{ trim((string) $artwork->title) }}</span>
         @if ($artwork->work_year !== null)
             <span class="artwork-label__year">{{ $artwork->work_year }}</span>
         @endif

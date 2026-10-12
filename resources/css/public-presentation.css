@@ -23,6 +23,8 @@
     --public-muted: #777;
     --public-active: #746a60;
     --public-divider: #d8d5d2;
+    --public-artwork-line: #cbc6c1;
+    --public-artwork-line-hover: #928b84;
     --public-divider-width: 1px;
     --public-header-separator: rgba(255, 255, 255, .72);
 }
@@ -520,9 +522,11 @@ body {
 }
 
 /* Open exhibition caption; one shared treatment for gallery, Home and artwork detail. */
+/* A single framed gallery-label grammar for Home, galleries, and artwork detail. */
 .artwork-label-trigger {
     display: block;
     min-width: 0;
+    max-width: 100%;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
@@ -530,20 +534,22 @@ body {
 
 .artwork-label {
     display: grid;
-    width: min(16.5rem, 100%);
+    width: min(17rem, 100%);
+    min-width: 0;
     max-width: 100%;
-    padding: .5rem .62rem .48rem;
-    border: 1px solid #dedbd8;
+    padding: .6rem .7rem .58rem;
+    border: 1px solid var(--public-artwork-line);
+    border-radius: 0;
     background: #fff;
-    color: #4f4f4f;
-    line-height: 1.3;
-    transition: border-color .14s ease, color .14s ease;
+    color: #484440;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    line-height: 1.38;
+    transition: border-color .14s ease;
 }
 
 .artwork-label-trigger:hover .artwork-label,
 .artwork-label-trigger:focus-visible .artwork-label {
-    border-color: #918b85;
-    color: #2f2f2f;
+    border-color: var(--public-artwork-line-hover);
 }
 
 .artwork-label-trigger:focus-visible {
@@ -560,37 +566,31 @@ body {
 
 .artwork-label__title {
     min-width: 0;
-    color: #424242;
-    font-size: .72rem;
+    color: #3d3935;
+    font-size: .78rem;
     font-weight: 500;
-    letter-spacing: .018em;
-    line-height: 1.28;
-}
-
-.artwork-label__title-qualifier {
-    color: #676767;
-    font-size: .68rem;
-    font-weight: 400;
-    letter-spacing: .025em;
+    letter-spacing: .005em;
+    line-height: 1.38;
+    overflow-wrap: break-word;
 }
 
 .artwork-label__year {
-    color: #7b7b7b;
-    font-size: .62rem;
+    color: #746e69;
+    font-size: .67rem;
     font-weight: 400;
     font-variant-numeric: tabular-nums;
-    letter-spacing: .025em;
+    letter-spacing: .015em;
 }
 
 .artwork-label__facts {
     display: flex;
-    margin-top: .27rem;
+    margin-top: .31rem;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: .12rem .8rem;
-    color: #747474;
-    font-size: .61rem;
-    line-height: 1.35;
+    gap: .15rem .7rem;
+    color: #716c68;
+    font-size: .66rem;
+    line-height: 1.42;
 }
 
 .artwork-label__dimensions {
@@ -599,13 +599,15 @@ body {
 }
 
 .artwork-label__note {
-    margin-top: .3rem;
-    color: #777;
-    font-size: .59rem;
+    margin-top: .35rem;
+    color: #726d69;
+    font-size: .64rem;
     font-style: italic;
-    line-height: 1.38;
+    line-height: 1.48;
 }
 
+/* The adjacent actions form one rectangular instrument with shared borders.
+   No controls are cloned or made dependent on the Hero display toggles. */
 .artwork-card__actions,
 .artwork-detail__actions {
     display: flex;
@@ -615,47 +617,71 @@ body {
     align-items: stretch;
     justify-content: flex-end;
     flex-wrap: nowrap;
-    gap: .36rem;
+    gap: 0;
+    border: 1px solid var(--public-artwork-line);
+    border-radius: 0;
+    background: #fff;
+    transition: border-color .14s ease;
+}
+
+.artwork-card__actions:hover,
+.artwork-card__actions:focus-within,
+.artwork-detail__actions:hover,
+.artwork-detail__actions:focus-within {
+    border-color: var(--public-artwork-line-hover);
 }
 
 .artwork-context-button {
-    appearance: none;
-    font-family: inherit;
-    cursor: pointer;
     display: inline-flex;
-    min-height: 2rem;
-    padding: .46rem .62rem;
+    flex: 0 1 auto;
+    min-width: 0;
+    min-height: 2.15rem;
+    padding: .48rem .65rem;
     align-items: center;
     justify-content: center;
-    border: 1px solid #d1cecb;
-    background: #fff;
-    color: #68635f;
+    appearance: none;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #67615d;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: .64rem;
-    font-weight: 500;
-    letter-spacing: .045em;
-    line-height: 1;
+    font-weight: 400;
+    letter-spacing: .055em;
+    line-height: 1.3;
+    text-align: center;
     text-decoration: none;
     text-transform: uppercase;
-    transition: border-color .14s ease, color .14s ease;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+    transition: color .14s ease;
+}
+
+.artwork-context-button + .artwork-context-button {
+    border-left: 1px solid var(--public-artwork-line);
 }
 
 .artwork-context-button:hover,
 .artwork-context-button:focus-visible {
-    border-color: #97908a;
-    color: #33302d;
+    color: #302d2a;
 }
 
 .artwork-context-button:focus-visible {
     outline: 1px dotted #777;
-    outline-offset: 2px;
+    outline-offset: -3px;
 }
 
 .artwork-context-button--icon {
-    width: 2rem;
+    width: 2.15rem;
+    min-width: 2.15rem;
+    flex: 0 0 2.15rem;
     padding-inline: 0;
-    font-size: 1rem;
-    font-weight: 400;
-    text-transform: none;
+}
+
+.artwork-context-button--icon > .public-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    stroke-width: 1.5;
 }
 
 .artwork-detail__narrative {
