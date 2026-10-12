@@ -67,6 +67,7 @@ Confirmation dialogs guard a concrete action without editable form state.
 
 - all confirmations use the shared `Small` width; feature code does not override confirmation width;
 - confirmation is an application-level semantic over a normal Filament Action modal; `requiresConfirmation()` is not used;
+- when a confirmation includes a description, the shared dialog header supplies bottom breathing room after the final line, even though Filament renders that description inside the header rather than the modal body; no consumer-specific spacing rules;
 - the optional dialog condition controls whether the modal opens; when false, Filament executes the Action directly instead of opening a modal;
 - the header confirmation icon executes the action;
 - destructive confirmations use the danger treatment and canonical Delete icon;
