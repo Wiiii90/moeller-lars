@@ -125,7 +125,7 @@
                                             <button class="admin-drag-handle custom-page-child-row__drag" type="button"
                                                 @if ($reorderEnabled && count($homeComponent['children']) > 1) wire:sort:handle @else disabled @endif
                                                 aria-label="Drag {{ $child['title'] }} to reorder">⋮⋮</button>
-                                            <span class="custom-page-child-row__kind">{{ $child['kind'] === 'list' ? 'List item' : 'Contact item' }}</span>
+                                            <span class="custom-page-child-row__kind">Contact item</span>
                                             <div class="custom-page-child-row__content admin-hierarchy__content">
                                                 <strong>{{ $child['title'] }}</strong>
                                                 @if ($child['detail'] !== '') <small>{{ $child['detail'] }}</small> @endif
