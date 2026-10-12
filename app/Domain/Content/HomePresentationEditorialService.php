@@ -163,6 +163,92 @@ final class HomePresentationEditorialService
         });
     }
 
+    /**
+     * Home presents Heading and Rich Text as separate choices although both
+     * persist as text components. Keep conversion in the editorial mutation
+     * owner so target checks, validation and audit remain transactional.
+     */
+    public function convertComponent(
+        HomePresentationSetting $settings,
+        HomeTemplate $mode,
+        int $index,
+        string $expectedType,
+        string $expectedKind,
+        string $targetKind,
+    ): bool {
+        $this->assertComponentKind($targetKind);
+
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $expectedKind, $targetKind): array {
+            $this->assertTarget($components, $index, $expectedType);
+            $component = $components[$index];
+            if ($this->componentKind($component) !== $expectedKind) {
+                throw ValidationException::withMessages(['component' => 'This Home component changed. Reload and try again.']);
+            }
+            if ($expectedKind === $targetKind) {
+                return $components;
+            }
+
+            $components[$index] = $this->convertedComponent($component, $targetKind);
+
+            return $components;
+        });
+    }
+
+    /** @param array<string, mixed> $component */
+    public function conversionLosesContent(array $component, string $targetKind): bool
+    {
+        $this->assertComponentKind($targetKind);
+        $currentKind = $this->componentKind($component);
+        if ($currentKind === $targetKind || $currentKind === 'divider') {
+            return false;
+        }
+        if ($currentKind === 'image') {
+            return is_numeric($component['media_asset_id'] ?? null)
+                || (bool) ($component['image_decorative'] ?? false);
+        }
+        if ($currentKind === 'heading') {
+            // Heading becomes the Rich Text body with no lost content.
+            return $targetKind !== 'rich_text' && filled($component['title'] ?? null);
+        }
+
+        // Rich Text becomes Heading only with its existing title retained;
+        // its body is lost. All other destinations discard both.
+        return filled($component['body'] ?? null)
+            || ($targetKind !== 'heading' && filled($component['title'] ?? null));
+    }
+
+    /** @param array<string, mixed> $component */
+    private function convertedComponent(array $component, string $targetKind): array
+    {
+        $title = is_string($component['title'] ?? null) ? trim($component['title']) : '';
+        $body = is_string($component['body'] ?? null) ? trim($component['body']) : '';
+
+        return match ($targetKind) {
+            'heading' => ['type' => 'text', 'title' => $title !== '' ? $title : null, 'body' => null],
+            'rich_text' => ['type' => 'text', 'title' => null, 'body' => ($body !== '' ? $body : ($title !== '' ? $title : null))],
+            'image' => ['type' => 'image', 'media_asset_id' => null, 'image_decorative' => false],
+            'divider' => ['type' => 'divider'],
+        };
+    }
+
+    /** @param array<string, mixed> $component */
+    private function componentKind(array $component): string
+    {
+        $type = $component['type'] ?? null;
+        if ($type === 'text') {
+            return filled($component['title'] ?? null) && blank($component['body'] ?? null) ? 'heading' : 'rich_text';
+        }
+
+        return in_array($type, ['image', 'divider'], true) ? $type : 'unknown';
+    }
+
+    private function assertComponentKind(string $kind): void
+    {
+        if (! in_array($kind, ['image', 'heading', 'rich_text', 'divider'], true)) {
+            throw ValidationException::withMessages(['component' => 'Choose a supported Home component type.']);
+        }
+    }
+
     public function moveComponent(
         HomePresentationSetting $settings,
         HomeTemplate $mode,

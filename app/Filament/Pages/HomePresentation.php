@@ -146,6 +146,7 @@ final class HomePresentation extends Page
     /** @var array<string,string> */
     public array $newComponentOptions = [
         'image' => 'Image',
+        'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
     ];
@@ -412,6 +413,9 @@ final class HomePresentation extends Page
             Action::make('addComponent')->label('Add component')
                 ->schema([
                     Select::make('kind')->label('Component')->options($this->newComponentOptions)->required()->live(),
+                    TextInput::make('title')->label('Heading')->maxLength(160)
+                        ->required(fn (callable $get): bool => $get('kind') === 'heading')
+                        ->visible(fn (callable $get): bool => $get('kind') === 'heading'),
                     ...$this->homeRichTextFields('kind', 'rich_text', required: true),
                     MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
                         ->required(fn (callable $get): bool => $get('kind') === 'image')
@@ -426,6 +430,7 @@ final class HomePresentation extends Page
         )->action(function (array $data): void {
             $kind = (string) ($data['kind'] ?? '');
             $component = match ($kind) {
+                'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
                 'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
                 'image' => [
                     'type' => 'image',
@@ -500,6 +505,52 @@ final class HomePresentation extends Page
                     );
                 }
             });
+    }
+
+    public function changeComponentTypeAction(): Action
+    {
+        $targetComponent = function (array $arguments): array {
+            $component = $this->componentFromArguments($arguments);
+            $expectedKind = (string) ($arguments['kind'] ?? '');
+            $targetKind = (string) ($arguments['targetKind'] ?? '');
+            if (! array_key_exists($expectedKind, $this->componentTypeOptions)
+                || ! array_key_exists($targetKind, $this->componentTypeOptions)
+                || (($component['type'] === 'text' ? $this->editorKind($component) : $component['type']) !== $expectedKind)) {
+                throw ValidationException::withMessages(['component' => 'This Home component changed. Reload and try again.']);
+            }
+
+            return $component;
+        };
+
+        return AdminDialog::confirm(
+            Action::make('changeComponentType')
+                ->label('Change component type')
+                ->action(function (array $arguments) use ($targetComponent): void {
+                    $component = $targetComponent($arguments);
+                    $changed = app(HomePresentationEditorialService::class)->convertComponent(
+                        $this->settings(),
+                        $this->componentTemplate(),
+                        (int) $arguments['index'],
+                        (string) $component['type'],
+                        (string) $arguments['kind'],
+                        (string) $arguments['targetKind'],
+                    );
+                    $this->reloadWorkspace();
+                    if ($changed) {
+                        app(AdminNotifier::class)->notification(
+                            title: 'Home component type updated',
+                            status: 'success',
+                        );
+                    }
+                }),
+            'Change type?',
+            fn (array $arguments): string => 'Changing to '
+                .($this->componentTypeOptions[(string) $arguments['targetKind']] ?? 'another type')
+                .' removes content that cannot be kept.',
+            'Change type',
+            condition: fn (array $arguments): bool => app(HomePresentationEditorialService::class)
+                ->conversionLosesContent($targetComponent($arguments), (string) $arguments['targetKind']),
+        );
     }
 
     public function removeComponentAction(): Action
@@ -948,7 +999,7 @@ final class HomePresentation extends Page
                 ],
                 'heading' => [$title !== '' ? $title : 'Untitled heading', ''],
                 'rich_text' => [$title !== '' ? $title : (Str::limit($body, 110) ?: 'Empty Rich Text'), $title !== '' ? (Str::limit($body, 110) ?: 'No body text') : ''],
-                'divider' => ['Divider', 'Editorial divider'],
+                'divider' => ['—', ''],
                 default => ['Unsupported component', ''],
             };
             $dataset[] = [

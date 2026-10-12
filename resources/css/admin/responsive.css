@@ -213,12 +213,6 @@
 
 }
 
-/* Home Component's shared four-action rail is already icon-only at 70rem.
- * Return its surplus Wide allocation to Content as soon as it compacts. */
-@container admin-table (max-width: 70rem){
-    .home-components-table__col-actions{ width: var(--admin-row-actions-move-edit-delete-compact-width) !important; }
-}
-
 @container admin-table (max-width: 54rem){
     .home-source-table :is(.home-source-table__candidates, .home-source-table__artworks, .home-source-table__year, .home-source-table__col-candidates, .home-source-table__col-artworks, .home-source-table__col-year){
         display: none !important;
@@ -233,29 +227,6 @@
 /* Table-specific Narrow reduction for the already-reviewed Home table.
  * Storage and Activity have their own single authority later in this file. */
 @container admin-table (max-width: 54rem){
-    /* Home components protect Content and the labeled action rail; Component
-     * kind folds into responsive metadata first. */
-    .home-components-table .home-components-table__type,
-    .home-components-table .home-components-table__col-type{
-        display: none;
-    }
-
-    .home-components-table__col-position{
-        width: 3rem !important;
-    }
-
-    .home-components-table__col-drag{
-        width: 2rem !important;
-    }
-
-    .home-components-table__col-content{
-        width: auto !important;
-    }
-
-    .home-components-table .admin-responsive-meta{
-        display: block;
-    }
-
     .admin-responsive-meta--minimal{
         display: none !important;
     }
@@ -333,22 +304,6 @@
 
     .home-source-table .admin-responsive-meta{
         display: block;
-    }
-
-    .home-components-table__col-drag{
-        width: 1.75rem !important;
-    }
-
-    .home-components-table__col-content{
-        width: auto !important;
-    }
-
-    .home-components-table__col-actions{
-        width: 6.75rem !important;
-    }
-
-    .home-components-table .admin-row-actions-heading{
-        --admin-row-actions-width: 6.75rem;
     }
 
 }

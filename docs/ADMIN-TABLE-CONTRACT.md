@@ -85,6 +85,15 @@ This gives ranked tables a stable left axis from header through rows to the pers
 
 Do not compensate this alignment with page-local margins or padding.
 
+## Component sequences
+
+Custom Page and Home (Custom / Under Construction) use the same hierarchy row
+primitives: **Position / Drag / Component / Content / Actions / Selection**.
+Component is a permanent editable select, even when filters disable drag
+ordering or at narrow widths. Never repeat its type in Content as responsive
+metadata. Content alone absorbs remaining space; Home keeps its distinct
+four-action rail instead of inventing a separate table layout.
+
 ## Action order
 
 Use a stable semantic order when the actions exist:

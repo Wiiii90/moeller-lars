@@ -8,34 +8,29 @@
     padding-bottom: var(--admin-section-gap);
 }
 
-/* Home ordinary tables follow the same six-unit ruler as the metric strip.
- * Hero source data owns the first four units. Component templates mirror the
- * accepted Custom Page split. Actions + terminal Selection own the final two.
- * Shared stable rails own the button geometry and right anchoring. */
+/* Home source galleries remain an ordinary table. The Custom and Under
+ * Construction component templates reuse Custom Page's hierarchy geometry,
+ * including a permanent editable Component column and flexible Content. */
 .home-source-table {
     --admin-row-actions-width: var(--admin-row-actions-state-open-width);
 }
 
-.home-components-table {
+.home-source-table__col-actions {
+    width: calc(var(--admin-row-actions-state-open-width) + .5rem);
+}
+
+/* Only the semantic action count differs from Custom Page: Home has four
+ * actions and no independent per-component publication state. */
+.custom-page-component-sequence.home-component-sequence {
+    --admin-hierarchy-actions-column: var(--admin-row-actions-move-edit-delete-width);
     --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-width);
 }
 
-.home-source-table__col-actions { width: calc(var(--admin-row-actions-state-open-width) + .5rem); }
-
 @container admin-table (max-width: 70rem) {
-    .home-components-table .admin-row-actions-heading {
+    .custom-page-component-sequence.home-component-sequence {
+        --admin-hierarchy-actions-column: var(--admin-row-actions-move-edit-delete-compact-width);
         --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-compact-width);
     }
-}
-
-.home-components-table__col-actions {
-    width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
-}
-
-.home-components-table__col-content {
-    /* Position + Drag use the same fixed 3rem + 2rem rails as Journal.
-     * Content absorbs that fixed width so Actions still begin exactly at 4/6. */
-    width: calc(50% - 5rem);
 }
 
 .home-skip-tools {
