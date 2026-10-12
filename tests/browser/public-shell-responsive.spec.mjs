@@ -352,3 +352,54 @@ test('only empty non-Home section pages without headings stretch to the viewport
         }
     }
 });
+
+test('typographic navigation keeps text-only underlines and stable rail geometry', async ({ page }) => {
+    await page.setContent([
+        '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>',
+        '<body class="public-site"><header class="site-header">',
+        '<div class="site-navigation"><div class="site-navigation__rail"><nav aria-label="Main navigation">',
+        '<div class="site-navigation__item is-active"><div class="site-navigation__primary"><a href="#" aria-current="page"><span class="site-navigation__label">Paintings</span></a></div></div>',
+        '<div class="site-navigation__item"><div class="site-navigation__primary"><a href="#"><span class="site-navigation__label">Drawings</span></a></div></div>',
+        '<div class="site-navigation__item"><div class="site-navigation__primary"><a href="#"><span class="site-navigation__label">Prints</span></a></div></div>',
+        '</nav></div></div></header><main id="content" class="site-content"></main></body></html>',
+    ].join(''));
+    await page.addStyleTag({ path: 'resources/css/app.css' });
+    await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
+
+    for (const width of [1200, 480, 320]) {
+        await page.setViewportSize({ width, height: 800 });
+        const before = await page.evaluate(() => {
+            const menu = document.querySelector('.site-navigation').getBoundingClientRect();
+            const content = document.querySelector('#content').getBoundingClientRect();
+            const active = document.querySelector('.site-navigation__item.is-active .site-navigation__label');
+            const inactive = document.querySelector('.site-navigation__item:not(.is-active) .site-navigation__label');
+            const item = document.querySelector('.site-navigation__item:not(.is-active)');
+            return {
+                menuLeft: menu.left, menuRight: menu.right,
+                contentLeft: content.left, contentRight: content.right,
+                itemWidth: item.getBoundingClientRect().width,
+                border: getComputedStyle(item).borderLeftWidth,
+                activeUnderline: getComputedStyle(active).textDecorationColor,
+                inactiveUnderline: getComputedStyle(inactive).textDecorationColor,
+                underlineLine: getComputedStyle(active).textDecorationLine,
+                scrollWidth: document.scrollingElement.scrollWidth,
+                clientWidth: document.scrollingElement.clientWidth,
+            };
+        });
+
+        expect(Math.abs(before.menuLeft - before.contentLeft)).toBeLessThan(1);
+        expect(Math.abs(before.menuRight - before.contentRight)).toBeLessThan(1);
+        expect(before.border).toBe('0px');
+        expect(before.underlineLine).toBe('underline');
+        expect(before.inactiveUnderline).toBe('rgba(0, 0, 0, 0)');
+        expect(before.activeUnderline).not.toBe(before.inactiveUnderline);
+        expect(before.scrollWidth).toBeLessThanOrEqual(before.clientWidth + 1);
+
+        await page.locator('.site-navigation__item:not(.is-active) a').first().hover();
+        await expect.poll(() => page.locator('.site-navigation__item:not(.is-active) .site-navigation__label').first()
+            .evaluate((el) => getComputedStyle(el).textDecorationColor)).toBe(before.activeUnderline);
+        const hoveredWidth = await page.locator('.site-navigation__item:not(.is-active)').first()
+            .evaluate((el) => el.getBoundingClientRect().width);
+        expect(Math.abs(hoveredWidth - before.itemWidth)).toBeLessThan(.5);
+    }
+});

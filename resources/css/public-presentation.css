@@ -123,7 +123,6 @@ body {
     flex: 0 0 max-content;
     flex-direction: column;
     align-items: stretch;
-    border-left: 1px solid #e4e1de;
 }
 
 /* With all pages visible, preserve their natural widths and align them left.
@@ -146,10 +145,6 @@ body {
     flex: 0 0 max-content;
 }
 
-.site-navigation__item.is-last-visible {
-    border-right: 1px solid #e4e1de;
-}
-
 .site-navigation__primary {
     position: relative;
     display: flex;
@@ -158,25 +153,6 @@ body {
     height: 100%;
     align-items: stretch;
     justify-content: center;
-}
-
-.site-navigation__primary::after {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    height: 2px;
-    background: transparent;
-    content: "";
-    pointer-events: none;
-    transition: background-color .14s ease;
-}
-
-.site-navigation__item.is-active > .site-navigation__primary::after,
-.site-navigation__item:hover > .site-navigation__primary::after,
-.site-navigation__item:focus-within > .site-navigation__primary::after,
-.site-navigation__item[data-submenu-open="true"] > .site-navigation__primary::after {
-    background: var(--public-active);
 }
 
 .site-header nav a,
@@ -189,25 +165,41 @@ body {
     justify-content: center;
     background: transparent;
     color: var(--public-muted);
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 12.5px;
     font-weight: 400;
-    letter-spacing: .025em;
+    letter-spacing: .095em;
     line-height: 1.15;
     text-decoration: none;
     text-transform: uppercase;
     white-space: nowrap;
-    transition: color .14s ease, opacity .14s ease;
+    transition: color .14s ease;
+}
+
+/* The underline belongs to the text, never the width of its clickable rail cell. */
+.site-navigation__label {
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .55em;
+    text-decoration-skip-ink: auto;
+    transition: text-decoration-color .14s ease;
 }
 
 .site-navigation__primary > :is(a, button, span) {
     width: 100%;
 }
 
-.site-navigation__item.is-active > .site-navigation__primary > :is(a, button),
+.site-navigation__item.is-active > .site-navigation__primary > :is(a, button, span),
 .site-header nav a[aria-current="page"] {
     color: #393532;
     box-shadow: none;
+}
+
+.site-navigation__item.is-active > .site-navigation__primary .site-navigation__label,
+.site-header nav a[aria-current="page"] .site-navigation__label,
+.site-navigation__item[data-submenu-open="true"] > .site-navigation__primary .site-navigation__label {
+    text-decoration-color: var(--public-active);
 }
 
 .site-header nav a:hover,
@@ -216,7 +208,13 @@ body {
 .site-header nav .site-navigation__primary > button:focus-visible,
 .site-navigation__item[data-submenu-open="true"] > .site-navigation__primary > :is(a, button) {
     color: #302d2a;
-    opacity: 1;
+}
+
+.site-header nav a:hover .site-navigation__label,
+.site-header nav a:focus-visible .site-navigation__label,
+.site-header nav .site-navigation__primary > button:hover .site-navigation__label,
+.site-header nav .site-navigation__primary > button:focus-visible .site-navigation__label {
+    text-decoration-color: var(--public-active);
 }
 
 .site-header nav a:focus-visible,
@@ -870,7 +868,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
     .site-navigation__submenu-region,
-    .site-navigation__primary::after,
     .site-header nav,
     .site-navigation__control > .public-icon {
         transition: none !important;

@@ -106,7 +106,6 @@ function initializeNavigationWindow(surface, restoredWindows) {
         items.forEach((item, index) => {
             item.hidden = !shown.has(index);
             item.classList.toggle('is-overwide', shown.has(index) && widths[index] > availableWidth);
-            item.classList.toggle('is-last-visible', index === indices[indices.length - 1]);
         });
 
         // Reorder existing DOM nodes, not copies, to match the cyclic visual,
@@ -135,13 +134,13 @@ function initializeNavigationWindow(surface, restoredWindows) {
         surface.classList.add('is-measuring');
         items.forEach((item) => {
             item.hidden = false;
-            item.classList.remove('is-overwide', 'is-last-visible');
+            item.classList.remove('is-overwide');
         });
         widths = items.map((item) => item.getBoundingClientRect().width);
         surface.classList.remove('is-measuring');
 
-        // Reserve the final visible item's 1px right border when fitting.
-        availableWidth = Math.max(1, rail.clientWidth - 1);
+        // Text-only navigation has no item borders to reserve.
+        availableWidth = Math.max(1, rail.clientWidth);
         // ResizeObserver delivers an initial notification even without a size
         // change. Mark the measured width now, or that callback would re-fit
         // and shift an exactly restored cyclic window immediately after load.

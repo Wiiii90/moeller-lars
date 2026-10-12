@@ -67,14 +67,14 @@
                                                     aria-haspopup="true" aria-expanded="{{ $selectedChildParent ? 'true' : 'false' }}"
                                                     aria-controls="{{ $submenuId }}" data-navigation-parent-link
                                                 @endif
-                                            >{{ $navigationItem['label'] }}</a>
+                                            ><span class="site-navigation__label">{{ $navigationItem['label'] }}</span></a>
                                         @else
                                             @if ($navigationItem['children'] !== [])
                                                 <button type="button" aria-haspopup="true" aria-expanded="{{ $selectedChildParent ? 'true' : 'false' }}"
                                                     aria-controls="{{ $submenuId }}" data-navigation-parent-link
-                                                >{{ $navigationItem['label'] }}</button>
+                                                ><span class="site-navigation__label">{{ $navigationItem['label'] }}</span></button>
                                             @else
-                                                <span class="site-navigation__text">{{ $navigationItem['label'] }}</span>
+                                                <span class="site-navigation__text"><span class="site-navigation__label">{{ $navigationItem['label'] }}</span></span>
                                             @endif
                                         @endif
                                     </div>
@@ -100,9 +100,9 @@
                                                     <div class="site-navigation__item @if ($child['current']) is-active @endif" data-navigation-item data-navigation-key="{{ $loop->index }}:{{ $child['url'] ?? $child['label'] }}">
                                                         <div class="site-navigation__primary">
                                                             @if ($child['url'] !== null)
-                                                                <a href="{{ $child['url'] }}" @if ($child['current']) aria-current="page" @endif>{{ $child['label'] }}</a>
+                                                                <a href="{{ $child['url'] }}" @if ($child['current']) aria-current="page" @endif><span class="site-navigation__label">{{ $child['label'] }}</span></a>
                                                             @else
-                                                                <span class="site-navigation__text">{{ $child['label'] }}</span>
+                                                                <span class="site-navigation__text"><span class="site-navigation__label">{{ $child['label'] }}</span></span>
                                                             @endif
                                                         </div>
                                                     </div>
