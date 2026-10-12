@@ -166,7 +166,7 @@ trait CustomPageWorkspaceComponentActions
                 'variant' => 'thin',
                 'media_asset_id' => null,
             ])
-            ->schema($this->componentEditorSchema(includeTypeSelect: true))
+            ->schema($this->componentEditorSchema())
             ->modalHeading('Add component')
             ->action(function (array $data): void {
                 app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
@@ -198,7 +198,6 @@ trait CustomPageWorkspaceComponentActions
             ->label('Edit')
             ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
             ->schema(fn (array $arguments): array => $this->componentEditorSchema(
-                includeTypeSelect: true,
                 onTypeChange: function (mixed $state) use ($arguments): void {
                     $target = is_string($state) ? $state : '';
                     [, $currentType] = $this->actionComponentTarget($arguments);
