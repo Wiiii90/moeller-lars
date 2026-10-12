@@ -62,7 +62,7 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         expect(Math.abs(geometry.menu.left - geometry.content.left), 'left edges at '+width).toBeLessThan(1);
         expect(Math.abs(geometry.menu.right - geometry.content.right), 'right edges at '+width).toBeLessThan(1);
         expect(geometry.content.top - geometry.header.bottom, 'header gap at '+width).toBeGreaterThan(8);
-        expect(Math.abs(geometry.label.top - geometry.action.top), 'footer row at '+width).toBeLessThan(1);
+        expect(Math.abs(geometry.label.bottom - geometry.action.bottom), 'footer baseline at '+width).toBeLessThan(1);
         expect(geometry.label.right, 'label / action spacing at '+width).toBeLessThan(geometry.action.left);
         expect(geometry.image.width).toBeGreaterThan(0);
         expect(geometry.scrollWidth, 'horizontal overflow at '+width).toBeLessThanOrEqual(geometry.scrollClientWidth + 1);

@@ -516,17 +516,21 @@ body {
 .artwork-detail__footer {
     display: flex;
     margin-top: .88rem;
-    align-items: flex-start;
+    align-items: flex-end;
     justify-content: space-between;
     gap: clamp(.35rem, 1.8vw, 1rem);
 }
 
-/* Open exhibition caption; one shared treatment for gallery, Home and artwork detail. */
-/* A single framed gallery-label grammar for Home, galleries, and artwork detail. */
-.artwork-label-trigger {
-    display: block;
+/* Stable gallery-label width and a common footer baseline on every surface. */
+.artwork-label-trigger,
+.artwork-detail__footer > .artwork-label {
+    flex: 0 1 19rem;
     min-width: 0;
     max-width: 100%;
+}
+
+.artwork-label-trigger {
+    display: block;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
@@ -534,7 +538,7 @@ body {
 
 .artwork-label {
     display: grid;
-    width: min(17rem, 100%);
+    width: 100%;
     min-width: 0;
     max-width: 100%;
     padding: .6rem .7rem .58rem;
@@ -560,6 +564,7 @@ body {
 .artwork-label__heading {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 2.15rem;
     align-items: baseline;
     gap: .7rem;
 }

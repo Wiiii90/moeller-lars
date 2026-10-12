@@ -62,8 +62,11 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
                 captionGap: footer.top - image.bottom,
                 artworkGap: next.top - card.bottom,
                 marginGap: parseFloat(getComputedStyle(first).marginBottom),
-                actionsAligned: Math.abs(context.top - footer.top),
+                actionsAligned: Math.abs(context.bottom - footer.bottom),
                 noOverlap: box.right <= context.left,
+                labelWidth: box.width,
+                secondLabelWidth: second.querySelector('.artwork-label').getBoundingClientRect().width,
+                captionBottomAligned: Math.abs(box.bottom - footer.bottom),
                 rootTitleHeight: rootTitle.height,
                 headerTitleLeft: siteTitle.left,
                 headerTitleCenter: (siteTitle.left + siteTitle.right) / 2,
@@ -98,7 +101,14 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
         expect(state.titleSize, 'title hierarchy').toBeGreaterThan(state.factSize);
         expect(state.captionGap).toBeGreaterThanOrEqual(12);
         expect(state.artworkGap).toBeCloseTo(state.marginGap, 1);
-        expect(state.actionsAligned).toBeLessThan(1);
+        expect(state.actionsAligned, 'action rail shares label bottom baseline at '+width).toBeLessThan(1);
+        expect(state.captionBottomAligned, 'label shares footer bottom baseline at '+width).toBeLessThan(1);
+        if (width >= 546) {
+            expect(Math.abs(state.labelWidth - state.secondLabelWidth), 'same full-size label width at '+width).toBeLessThan(1);
+        } else {
+            // At phone widths the action rail takes its legitimate share.
+            expect(state.labelWidth, 'responsive label width at '+width).toBeLessThanOrEqual(state.secondLabelWidth + 1);
+        }
         expect(state.noOverlap, 'caption and actions are separate at ' + width).toBe(true);
         expect(state.rootTitleHeight).toBeCloseTo(75.2, 0);
         expect(state.docOverflow).toBe(false);
