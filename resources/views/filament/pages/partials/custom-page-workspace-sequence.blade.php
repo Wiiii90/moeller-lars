@@ -25,12 +25,12 @@
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else
-                <div class="custom-page-component-sequence__rows" @if ($reorderEnabled) wire:sort="sortComponent" @endif>
+                <div class="custom-page-component-sequence__rows" @if ($reorderEnabled && count($components) > 1) wire:sort="sortComponent" @endif>
                     @foreach ($components as $pageComponent)
                         <article
                             class="custom-page-component admin-hierarchy__group"
                             wire:key="custom-component-{{ $pageComponent['target'] }}"
-                            @if ($reorderEnabled) wire:sort:item="{{ $pageComponent['target'] }}" @endif
+                            @if ($reorderEnabled && count($components) > 1) wire:sort:item="{{ $pageComponent['target'] }}" @endif
                         >
                             <div class="custom-page-component__header admin-hierarchy__row">
                                 <div class="admin-hierarchy__position-cell">
@@ -39,7 +39,7 @@
                                     </span>
                                 </div>
 
-                                <button class="admin-drag-handle custom-page-component__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $pageComponent['type_label'] }}">⋮⋮</button>
+                                <button class="admin-drag-handle custom-page-component__drag" type="button" @if ($reorderEnabled && count($components) > 1) wire:sort:handle @else disabled @endif aria-label="Drag {{ $pageComponent['type_label'] }}" title="{{ ! $reorderEnabled ? 'Clear filters and show all components to reorder' : (count($components) < 2 ? 'At least two components are needed to reorder' : 'Drag to reorder') }}">⋮⋮</button>
 
                                 <div class="custom-page-component__type">
                                     <select
@@ -99,7 +99,7 @@
 
                             @if ($pageComponent['children'] !== [])
                                 <div class="custom-page-component__children admin-hierarchy__children">
-                                    <div class="custom-page-component__children-rows admin-hierarchy__children-rows" @if ($reorderEnabled) wire:sort="sortChild" @endif>
+                                    <div class="custom-page-component__children-rows admin-hierarchy__children-rows" @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort="sortChild" @endif>
                                         @foreach ($pageComponent['children'] as $child)
                                             @php
                                                 $childKindLabel = match ($child['kind']) {
@@ -111,7 +111,7 @@
                                             <div
                                                 class="custom-page-child-row admin-hierarchy__row is-child {{ ($child['parent_published'] ?? true) ? '' : 'is-parent-unpublished' }}"
                                                 wire:key="child-{{ $pageComponent['target'] }}-{{ $child['key'] }}"
-                                                @if ($reorderEnabled) wire:sort:item="{{ $child['target'] }}" @endif
+                                                @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:item="{{ $child['target'] }}" @endif
                                             >
                                                 <div class="admin-hierarchy__position-cell">
                                                     <span class="admin-position" aria-label="Position {{ $child['position'] }}">
@@ -119,7 +119,7 @@
                                                     </span>
                                                 </div>
 
-                                                <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}">⋮⋮</button>
+                                                <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}" title="{{ ! $reorderEnabled ? 'Clear filters and show all components to reorder' : (count($pageComponent['children']) < 2 ? 'At least two entries are needed to reorder' : 'Drag to reorder') }}">⋮⋮</button>
 
                                                 <span class="custom-page-child-row__kind">{{ $childKindLabel }}</span>
 
