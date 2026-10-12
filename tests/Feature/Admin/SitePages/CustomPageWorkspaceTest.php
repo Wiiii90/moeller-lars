@@ -85,8 +85,7 @@ it('paginates parent components in 25 50 and 100 unit pages without splitting ch
     expect($pageOne)->toHaveCount(25)
         ->and($pageOne[0]['position'])->toBe(1)
         ->and($pageOne[24]['position'])->toBe(25)
-        ->and($pageOne[24]['children'])->toHaveCount(4)
-        ->and(array_column($pageOne[24]['children'], 'position'))->toBe([1, 2, 3, 4]);
+        ->and($pageOne[24]['children'])->toBe([]);
 
     $component
         ->set('selectedComponentTargets', ['0:list'])
@@ -101,7 +100,7 @@ it('paginates parent components in 25 50 and 100 unit pages without splitting ch
     expect($pageTwo)->toHaveCount(5)
         ->and($pageTwo[0]['position'])->toBe(26)
         ->and($pageTwo[4]['position'])->toBe(30)
-        ->and($pageTwo[4]['children'])->toHaveCount(1);
+        ->and($pageTwo[4]['children'])->toBe([]);
 
     $component
         ->set('pageSize', 50)
@@ -145,7 +144,7 @@ it('resets pagination for search type and page size changes and prunes invisible
         ->set('selectedChildTargets', ['list:24:0', 'list:29:0'])
         ->call('setComponentPublished', 0, 'list', false)
         ->assertSet('selectedComponentTargets', ['0:list'])
-        ->assertSet('selectedChildTargets', ['list:24:0']);
+        ->assertSet('selectedChildTargets', []);
 });
 
 it('allows canonical reorder only for a neutral complete parent sequence', function (): void {
@@ -201,12 +200,10 @@ it('persists native parent drag sorting through the canonical component order se
     ]);
 });
 
-it('sorts CV list entries independently when their parent is the only component', function (): void {
+it('edits and reorders List entries only through the owning component dialog', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('CV list order', 'cv-list-order');
     $settings->update(['blocks' => [[
-        'type' => 'list',
-        'published' => true,
-        'title' => 'CV',
+        'type' => 'list', 'published' => true, 'title' => 'CV',
         'items' => [
             ['published' => true, 'title' => 'First entry', 'date' => '2022'],
             ['published' => true, 'title' => 'Second entry', 'date' => '2023'],
@@ -214,69 +211,65 @@ it('sorts CV list entries independently when their parent is the only component'
         ],
     ]]]);
 
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->assertSeeHtml('wire:sort="sortChild"')
-        ->assertDontSeeHtml('wire:sort="sortComponent"')
-        ->call('sortChild', 'list:0:2', 0)
-        ->assertHasNoErrors()
-        ->assertSee('Third entry');
+    $page = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
+    expect($page->get('components')[0]['children'])->toBe([]);
+    $page->assertDontSee('Add list item')
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'list'])
+        ->assertMountedActionModalSee('List entries')
+        ->fillForm([
+            'type' => 'list',
+            'publication_state' => 'published',
+            'title' => 'CV',
+            'items' => [
+                ['published' => true, 'title' => 'Third entry', 'date' => '2024'],
+                ['published' => true, 'title' => 'First entry', 'date' => '2022'],
+                ['published' => true, 'title' => 'Second entry', 'date' => '2023'],
+            ],
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
 
     expect(array_column($settings->fresh()->components()[0]['items'], 'title'))->toBe([
-        'Third entry',
-        'First entry',
-        'Second entry',
+        'Third entry', 'First entry', 'Second entry',
     ]);
 });
 
-it('never renders a misleading active drag handle for a single component or list entry', function (): void {
+it('keeps List entries out of row drag handles and child selection', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Single CV entry', 'single-cv-entry');
     $settings->update(['blocks' => [[
-        'type' => 'list',
-        'published' => true,
-        'title' => 'CV',
+        'type' => 'list', 'published' => true, 'title' => 'CV',
         'items' => [['published' => true, 'title' => 'Only entry', 'date' => '2024']],
     ]]]);
 
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->assertDontSeeHtml('wire:sort="sortComponent"')
         ->assertDontSeeHtml('wire:sort="sortChild"')
-        ->assertSee('At least two components are needed to reorder')
-        ->assertSee('At least two entries are needed to reorder');
+        ->assertDontSee('Add list item')
+        ->assertSee('At least two components are needed to reorder');
 });
 
-it('edits canonical list entries directly in the Custom Page child dialog', function (): void {
+it('persists List entry details and publication through the component Edit dialog', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('List editor test', 'list-editor-test');
     $settings->update(['blocks' => [[
-        'type' => 'list',
-        'published' => true,
-        'title' => 'CV',
-        'media_asset_id' => null,
+        'type' => 'list', 'published' => true, 'title' => 'CV', 'media_asset_id' => null,
         'items' => [[
-            'published' => true,
-            'date' => '2024',
-            'title' => 'First entry',
-            'meta' => 'Old context',
-            'location' => 'Berlin',
-            'url' => null,
+            'published' => true, 'date' => '2024', 'title' => 'First entry',
+            'meta' => 'Old context', 'location' => 'Berlin', 'url' => null,
             'body' => 'First details',
         ]],
     ]]]);
 
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editListEntry', [
-            'componentIndex' => 0,
-            'componentType' => 'list',
-            'itemIndex' => 0,
-        ])
-        ->assertMountedActionModalSee('First entry')
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'list'])
         ->fillForm([
-            'publication_state' => 'unpublished',
-            'date' => '2026',
-            'title' => 'First entry updated',
-            'meta' => 'Museum',
-            'location' => 'Hamburg',
-            'url' => 'https://example.com/entry',
-            'body' => 'Updated details',
+            'type' => 'list',
+            'publication_state' => 'published',
+            'title' => 'CV',
+            'items' => [[
+                'published' => false, 'date' => '2026', 'title' => 'First entry updated',
+                'meta' => 'Museum', 'location' => 'Hamburg',
+                'url' => 'https://example.com/entry', 'body' => 'Updated details',
+            ]],
         ])
         ->callMountedAction()
         ->assertHasNoFormErrors();
@@ -291,8 +284,7 @@ it('edits canonical list entries directly in the Custom Page child dialog', func
         ->and($item['body'])->toBe('Updated details');
 
     $workspace = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
-    $children = $workspace->get('components')[0]['children'];
-    expect(array_column($children, 'entry'))->toBe(['First entry updated']);
+    expect($workspace->get('components')[0]['children'])->toBe([]);
 });
 
 it('updates Custom Page identity placement and flat public path through the canonical page settings action', function (): void {
