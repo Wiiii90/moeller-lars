@@ -18,9 +18,9 @@
     --public-short-page-min-height: 15rem;
     --public-section-gap: 3.55rem;
     --public-page: #777;
-    /* One editorial paper palette owned by the public shell. */
-    --public-surface: #f7f4ed;
-    --public-plaque-surface: #fffdf7;
+    /* Neutral presentation surfaces; no tinted 'paper' treatment. */
+    --public-surface: #fff;
+    --public-plaque-surface: #fff;
     --public-plaque-rule: rgba(88, 74, 56, .24);
     --public-plaque-border: rgba(88, 74, 56, .19);
     --public-label-handwriting: "Segoe Print", "Bradley Hand", "Segoe Script", cursive;
@@ -401,12 +401,12 @@ body {
     margin: 0;
     padding: 0;
     color: #fff;
-    font-family: var(--public-typeface);
-    font-size: 1.75rem;
+    font-family: var(--public-index-typeface);
+    font-size: 2.05rem;
     font-weight: 400;
-    letter-spacing: .125em;
+    letter-spacing: -.035em;
     line-height: 1.1;
-    text-transform: uppercase;
+    text-transform: none;
     white-space: nowrap;
 }
 

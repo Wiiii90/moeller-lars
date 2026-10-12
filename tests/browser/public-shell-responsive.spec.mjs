@@ -52,17 +52,18 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
                 headerPosition: getComputedStyle(document.querySelector('.site-title')).position,
             };
         });
-        for (const family of [type.artist, type.artwork, type.action]) {
+        for (const family of [type.artwork, type.action]) {
             expect(family).toBe(type.body);
         }
+        expect(type.artist).toContain('Georgia');
         expect(type.navigation).toContain('Georgia');
         expect(type.headerPosition).toBe('absolute');
         const surfaces = await page.evaluate(() => ({
             menu: getComputedStyle(document.querySelector('.site-navigation')).backgroundColor,
             content: getComputedStyle(document.querySelector('#content')).backgroundColor,
         }));
-        expect(surfaces.menu).toBe('rgb(247, 244, 237)');
-        expect(surfaces.content).toBe('rgb(247, 244, 237)');
+        expect(surfaces.menu).toBe('rgb(255, 255, 255)');
+        expect(surfaces.content).toBe('rgb(255, 255, 255)');
         const geometry = await page.evaluate(() => {
             const rect = (selector) => {
                 const r = document.querySelector(selector).getBoundingClientRect();
