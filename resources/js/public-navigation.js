@@ -45,23 +45,26 @@ export function restoreNavigationWindow(widths, availableWidth, activeIndex, sav
         return widths.map((_, index) => index);
     }
 
-    // A handoff is usable only for the identical ordered Site Node tree and
-    // matching rail width. Reordering/editing nodes or resizing invalidates it.
+    // Only the Site Node order determines whether a handoff is still valid.
+    // A scrollbar appearing or disappearing may change rail width without
+    // changing the user's window selection.
     if (saved && Array.isArray(saved.keys) && Array.isArray(saved.visible)
         && saved.keys.length === keys.length
         && keys.every((key, index) => key === saved.keys[index])
-        && Math.abs(saved.width - availableWidth) < 1
         && saved.visible.length > 0
         && new Set(saved.visible).size === saved.visible.length
         && saved.visible.every((index, offset) => Number.isInteger(index)
             && index >= 0 && index < widths.length
-            && (offset === 0 || index === (saved.visible[offset - 1] + 1) % widths.length))
-        && (saved.visible.length === 1
-            || saved.visible.reduce((sum, index) => sum + widths[index], 0) <= availableWidth)) {
-        // Selection changes only the active item, never the menu window.
-        // Its parent can remain outside this visible stack until an arrow
-        // explicitly brings it back into view.
-        return [...saved.visible];
+            && (offset === 0 || index === (saved.visible[offset - 1] + 1) % widths.length))) {
+        const occupied = saved.visible.reduce((sum, index) => sum + widths[index], 0);
+        if (saved.visible.length === 1 || occupied <= availableWidth) {
+            // Even a hidden selected parent cannot rearrange a fitting stack.
+            return [...saved.visible];
+        }
+
+        // Only the changed available space may shrink the visible stack.
+        // Refit from its original first item, never from the selected parent.
+        return fitNavigationWindow(widths, availableWidth, saved.visible[0]);
     }
 
     // A direct URL has no previous window to preserve. Start with the

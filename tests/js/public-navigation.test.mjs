@@ -166,7 +166,7 @@ test('stale or oversized handoffs do not override canonical menu ordering', () =
 
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, saved, keys), [2, 3]);
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, saved, ['a', 'b', 'changed', 'd', 'e']), [3, 4]);
-    assert.deepEqual(restoreNavigationWindow(widths, 170, 3, saved, keys), [3]);
+    assert.deepEqual(restoreNavigationWindow(widths, 170, 3, saved, keys), [2]);
     assert.deepEqual(restoreNavigationWindow(widths, 220, 4, saved, keys), [2, 3]);
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, {
         keys, visible: [2, 2], width: 220,
@@ -220,4 +220,18 @@ test('a long hidden parent does not displace visible neighbors on child selectio
         advanceNavigationWindow(widths, visible, 260, -1),
         [3, 4, 5],
     );
+});
+
+
+test('scrollbar appearing or disappearing cannot make selection move a fitting window', () => {
+    const widths = [70, 90, 65, 75, 90];
+    const keys = widths.map((_, index) => String(index));
+    const saved = { keys, visible: [1, 2, 3], width: 245 };
+
+    // Neither of these selections is inside the saved window.
+    assert.deepEqual(restoreNavigationWindow(widths, 240, 0, saved, keys), [1, 2, 3]);
+    assert.deepEqual(restoreNavigationWindow(widths, 260, 4, saved, keys), [1, 2, 3]);
+
+    // Actual insufficient width may evict an item; retain the left edge.
+    assert.deepEqual(restoreNavigationWindow(widths, 165, 4, saved, keys), [1, 2]);
 });
