@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
@@ -50,13 +51,14 @@ final class SitePages extends Page
     /** @var list<array<string, mixed>> */
     public array $filteredRows = [];
 
-    /** @var array{total:int,published:int,unpublished:int,top_level:int,children:int,galleries:int} */
+    /** @var array{total:int,published:int,unpublished:int,top_level:int,children:int,navigation:int,galleries:int} */
     public array $metrics = [
         'total' => 0,
         'published' => 0,
         'unpublished' => 0,
         'top_level' => 0,
         'children' => 0,
+        'navigation' => 0,
         'galleries' => 0,
     ];
 
@@ -662,12 +664,18 @@ final class SitePages extends Page
             $this->parentOptions[(int) $group['id']] = (string) ($group['navigation_label'] ?: $group['title']);
         }
 
+        // Match public navigation's publication/Skip Home rules. A published
+        // child remains visible even when its editorial parent is a draft.
+        $skipHome = app(HomePresentationResolver::class)->skipEnabled();
         $this->metrics = [
             'total' => count($allRows),
             'published' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] === 'published')),
             'unpublished' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] !== 'published')),
             'top_level' => count($allGroups),
             'children' => count(array_filter($allRows, static fn (array $row): bool => $row['parent_id'] !== null)),
+            'navigation' => count(array_filter($allRows, static fn (array $row): bool =>
+                $row['state'] === 'published' && (! $skipHome || $row['type'] !== SiteSectionType::Home->value)
+            )),
             'galleries' => count(array_filter($allRows, static fn (array $row): bool => $row['type'] === SiteSectionType::Gallery->value)),
         ];
 
