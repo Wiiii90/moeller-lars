@@ -20,7 +20,6 @@
     --public-page: #777;
     /* One editorial paper palette owned by the public shell. */
     --public-surface: #f7f4ed;
-    --public-paper-grid: rgba(75, 65, 49, .075);
     --public-plaque-surface: #faf7f1;
     --public-plaque-rule: rgba(88, 74, 56, .27);
     --public-ink-strong: #30291f;
@@ -427,15 +426,9 @@ body {
 }
 
 /* All pages keep their normal content-driven height by default. */
-/* A static drafting-paper grid: no DOM, texture asset or shader. */
 #content {
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
-    background-color: var(--public-surface);
-    background-image:
-        linear-gradient(to right, var(--public-paper-grid) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--public-paper-grid) 1px, transparent 1px);
-    background-size: 5rem 5rem;
 }
 
 /* Only genuinely empty section pages without a configured heading fill the
