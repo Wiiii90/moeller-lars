@@ -20,7 +20,7 @@ PostgreSQL is authoritative for editorial state. Canonical uploaded originals ar
 
 `SiteSection` is the persisted public-site/navigation tree projection.
 
-Persisted concepts include typed node kind, optional Journal template, title/navigation label, optional public slug, publication/navigation visibility, explicit position, optional parent and optional Gallery persistence reference.
+Persisted concepts include typed node kind, optional Journal template, title/navigation label, optional public slug, publication state, explicit position, optional parent and optional Gallery persistence reference.
 
 Supported runtime node types:
 
@@ -65,7 +65,7 @@ The SiteSection's Journal template determines the active Blog/Exhibitions worksp
 
 Persistence model: `ArtworkCategory`; application concept: **Gallery**.
 
-A Gallery has one matching Gallery SiteSection, which owns placement, hierarchy, publication/navigation state and site order.
+A Gallery has one matching Gallery SiteSection, which owns placement, hierarchy, publication state and site order.
 
 ### `artworks`
 
