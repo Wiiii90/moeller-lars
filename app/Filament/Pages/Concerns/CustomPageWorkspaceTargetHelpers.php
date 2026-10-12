@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Content\CustomPageEditorialService;
 use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceTargetHelpers
@@ -60,12 +61,37 @@ trait CustomPageWorkspaceTargetHelpers
         return $type;
     }
 
+    private function componentTypeChangeLosesContent(array $arguments): bool
+    {
+        return app(CustomPageEditorialService::class)->conversionLosesContent(
+            $this->actionComponent($arguments),
+            $this->actionTargetComponentType($arguments),
+        );
+    }
+
     /** @return array<string, mixed> */
     private function actionComponent(array $arguments): array
     {
         [$index, $type] = $this->actionComponentTarget($arguments);
 
         return $this->componentAt($index, $type);
+    }
+
+    /** @return array<string, mixed> */
+    private function actionListItem(array $arguments): array
+    {
+        $block = $this->actionComponent($arguments);
+        if (($block['type'] ?? null) !== 'list') {
+            throw ValidationException::withMessages(['component' => 'The selected component is not a List.']);
+        }
+        $itemIndex = $this->actionListItemIndex($arguments);
+        $items = is_array($block['items'] ?? null) ? array_values($block['items']) : [];
+        $item = $items[$itemIndex] ?? null;
+        if (! is_array($item)) {
+            throw ValidationException::withMessages(['component' => 'This list entry changed. Reload and try again.']);
+        }
+
+        return $item;
     }
 
     private function actionContactChildType(array $arguments): string
