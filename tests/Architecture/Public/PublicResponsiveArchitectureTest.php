@@ -44,7 +44,7 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('.artwork-label__tail {')
         ->toContain('--public-label-handwriting:')
         ->toContain('.artwork-label__writing {')
-        ->toContain('background-size: 100% 1.4rem;')
+        ->toContain('background-size: 100% 1.27rem;')
         ->not->toContain('.artwork-label__row {')
         ->toContain('align-items: start;')
         ->toContain('align-items: end;')

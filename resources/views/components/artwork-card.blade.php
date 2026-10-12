@@ -78,21 +78,18 @@
 
             @if ($heroNavigation || ($showCategoryLink && $category !== null))
                 <nav class="artwork-card__actions" aria-label="Artwork navigation">
-                    @if ($heroNavigation)
-                        <button class="artwork-context-button artwork-context-button--icon" type="button" data-home-hero-direction="previous" aria-label="Previous Hero artwork" title="Previous artwork">
-                            <x-public-icon name="chevrons-left" />
-                        </button>
-                    @endif
-
                     @if ($showCategoryLink && $category !== null)
-                        <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}" title="{{ $category->name }}">
-                            <span class="artwork-context-button__label">{{ $category->name }}</span>
+                        <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}" aria-label="Open {{ $category->name }} gallery" title="{{ $category->name }} gallery">
+                            <span class="artwork-context-button__label">{{ $category->name }} gallery</span>
                         </a>
                     @endif
 
                     @if ($heroNavigation)
-                        <button class="artwork-context-button artwork-context-button--icon" type="button" data-home-hero-direction="next" aria-label="Next Hero artwork" title="Next artwork">
-                            <x-public-icon name="chevrons-right" />
+                        <button class="artwork-context-button artwork-context-button--step artwork-context-button--previous" type="button" data-home-hero-direction="previous" aria-label="Previous Hero artwork" title="Previous artwork">
+                            <x-public-icon name="chevron-left" /><span>Previous</span>
+                        </button>
+                        <button class="artwork-context-button artwork-context-button--step artwork-context-button--next" type="button" data-home-hero-direction="next" aria-label="Next Hero artwork" title="Next artwork">
+                            <span>Next</span><x-public-icon name="chevron-right" />
                         </button>
                     @endif
                 </nav>
