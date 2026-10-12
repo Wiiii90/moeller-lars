@@ -14,7 +14,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -103,7 +102,6 @@ final class HomeSettingsDialog
                         ->required(fn (callable $get): bool => $get('pool_rule') === 'year')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic' && $get('pool_rule') === 'year'),
                     $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
-                        ->helperText('Adds eligible artworks outside a Specific Year filter before Group size is applied.')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic')
                         ->columnSpanFull(),
                     Select::make('display_strategy')
@@ -131,13 +129,7 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     Toggle::make('public_site_gate')
                         ->label('Temporarily gate the public site')
-                        ->helperText('Normal public content URLs return to Home while Under Construction is active. Admin and protected Preview stay available.')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-                    Placeholder::make('custom_components')
-                        ->label('Custom composition')
-                        ->content('Components are edited in the Home workspace.')
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value)
-                        ->columnSpanFull(),
                 ]),
         ];
     }

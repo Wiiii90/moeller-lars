@@ -6,8 +6,6 @@ use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\PublicContentSetting;
-use App\Models\SiteSection;
-use Filament\Forms\Components\Placeholder;
 use Illuminate\Support\Facades\DB;
 
 final class PagesSettingsDialog
@@ -30,17 +28,10 @@ final class PagesSettingsDialog
     /** @return list<mixed> */
     public function schema(): array
     {
-        $childCount = SiteSection::query()->whereNotNull('parent_id')->count();
-
         return [
             AdminControl::toggle('navigation_nesting_enabled', 'Allow nested pages')
                 ->live(),
-            Placeholder::make('navigation_nesting_warning')
-                ->label('Flatten nested pages')
-                ->content('Turning this off immediately moves '.$childCount.' child '.($childCount === 1 ? 'page' : 'pages').' to the top level. Re-enabling nesting does not restore the previous parents.')
-                ->visible(fn (callable $get): bool => $childCount > 0 && (bool) $get('navigation_nesting_enabled'))
-                ->columnSpanFull(),
-            ...$this->homeRouting->schema(showHelperText: false),
+            ...$this->homeRouting->schema(),
         ];
     }
 

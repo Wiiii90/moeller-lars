@@ -40,17 +40,15 @@ final class HomeRoutingDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $showHelperText = true): array
+    public function schema(): array
     {
         return [
             AdminControl::toggle('skip_home', 'Skip Home')
-                ->helperText($showHelperText ? 'Redirect the public root instead of showing Home.' : null)
                 ->live(),
             Select::make('skip_target_section_id')
                 ->label('Skip to')
                 ->options(fn (): array => $this->targetOptions())
                 ->placeholder('Next page in order')
-                ->helperText($showHelperText ? 'Leave this on Next page in order to follow the current page order automatically.' : null)
                 ->visible(fn (callable $get): bool => (bool) $get('skip_home'))
                 ->native()
                 ->nullable(),

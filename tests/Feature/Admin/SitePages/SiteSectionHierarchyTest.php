@@ -500,13 +500,28 @@ it('uses the shared toggle control and the native autosave dialog without Pages 
     expect($action)->toContain('AdminDialog::edit(')->not->toContain('AdminDialog::command(')
         ->and($action)->not->toContain("'Save settings'")
         ->and($pages)->toContain("AdminControl::toggle('navigation_nesting_enabled'")
-        ->and($pages)->toContain('schema(showHelperText: false)')
+        ->and($pages)->toContain('$this->homeRouting->schema()')
+        ->and($pages)->not->toContain('Placeholder::make(')
         ->and($pages)->not->toContain('Allow one child level below top-level pages')
-        ->and($pages)->toContain("->visible(fn (callable \$get): bool => \$childCount > 0 && (bool) \$get('navigation_nesting_enabled'))")
         ->and($routing)->toContain("AdminControl::toggle('skip_home'")
+        ->and($routing)->not->toContain('->helperText(')
         ->and($controls)->toContain('Toggle::configureUsing');
 });
 
+
+
+it('keeps Home Settings free of explanatory placeholders and field help text', function (): void {
+    $home = file_get_contents(app_path('Filament/Support/HomeSettingsDialog.php'));
+    $routing = file_get_contents(app_path('Filament/Support/HomeRoutingDialog.php'));
+
+    expect($home)->toContain("Select::make('template')")
+        ->and($home)->toContain("Toggle::make('public_site_gate')")
+        ->and($home)->not->toContain('Placeholder::make(')
+        ->and($home)->not->toContain('->helperText(')
+        ->and($routing)->toContain("AdminControl::toggle('skip_home'")
+        ->and($routing)->toContain("Select::make('skip_target_section_id')")
+        ->and($routing)->not->toContain('->helperText(');
+});
 
 
 it('persists successive Pages Edit changes while preserving the mounted form and suppressing no-op notifications', function (): void {
