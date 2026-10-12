@@ -34,9 +34,10 @@ it('keeps publication snapshot column parity while indexing published navigation
 
     expect($migration)
         ->toContain("['public', 'committed']")
-        ->toContain('site_sections_published_root_position_unique')
-        ->toContain('site_sections_published_child_position_unique')
+        ->toContain('site_sections_published_root_position_index')
+        ->toContain('site_sections_published_child_position_index')
         ->toContain("WHERE parent_id IS NULL AND state = 'published'")
+        ->not->toContain('CREATE UNIQUE INDEX site_sections_published_')
         ->not->toContain('DROP COLUMN')
         ->and($version)
         ->toContain('schemaHash()');
