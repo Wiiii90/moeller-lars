@@ -409,3 +409,40 @@ it('keeps Change type reachable when filtering makes drag sorting unavailable', 
         ->and($blocks[0]['type'])->toBe('list')
         ->and($blocks[2]['type'])->toBe('list');
 });
+
+it('persists consecutive component edits without closing the autosaving dialog', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Edit component', 'edit-component');
+    $settings->update(['blocks' => [[
+        'type' => 'text',
+        'published' => true,
+        'title' => 'Original heading',
+        'body' => 'Original content',
+    ]]]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->fillForm([
+            'publication_state' => 'unpublished',
+            'title' => 'Revised heading',
+            'body' => 'Revised content',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertMountedActionModalSee('Edit component');
+
+    $first = $settings->fresh()->components()[0];
+    expect($first['published'])->toBeFalse()
+        ->and($first['title'])->toBe('Revised heading')
+        ->and($first['body'])->toBe('Revised content');
+
+    $editor->fillForm([
+        'publication_state' => 'unpublished',
+        'title' => 'Revised heading',
+        'body' => 'Later rich text',
+    ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertMountedActionModalSee('Edit component');
+
+    expect($settings->fresh()->components()[0]['body'])->toBe('Later rich text');
+});
