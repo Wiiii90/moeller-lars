@@ -31,7 +31,7 @@ final class ComponentTypeChangeControl
             ->live()
             // Only stage the selected kind. Keep the modal's generic
             // wire:change autosave from treating this as a content edit.
-            ->extraFieldWrapperAttributes(['x-on:change.stop' => '']);
+            ->extraFieldWrapperAttributes(['x-on:change.stop' => 'void 0']);
 
         $action = Action::make('applyComponentType')
             ->label('Apply type')
@@ -54,6 +54,7 @@ final class ComponentTypeChangeControl
         return [
             $select,
             Actions::make([$action])
+                ->key('componentTypeConversion')
                 ->columnSpanFull(),
         ];
     }
