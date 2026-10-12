@@ -478,7 +478,7 @@ a.activity-calendar__day:focus-visible {
 }
 
 .activity-commits-table {
-    --admin-row-actions-width: 14.25rem;
+    --admin-row-actions-width: 15.5rem;
 }
 
 .activity-events-table table {
@@ -659,7 +659,7 @@ a.activity-calendar__day:focus-visible {
 }
 
 .activity-commits-table .activity-commit-col--actions {
-    width: 14.75rem;
+    width: 16rem;
 }
 
 .activity-commits-table .activity-commit-col--who {

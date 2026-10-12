@@ -3,8 +3,12 @@
 .admin-dashboard .admin-data-row { cursor: default; }
 .admin-dashboard__feed-table { overflow-x: hidden; }
 .admin-dashboard__feed-table {
-    --admin-row-actions-width: 17rem;
-    --admin-row-actions-columns: 3.25rem 3.75rem 4.25rem 4.25rem;
+    --admin-row-actions-width: 18.5rem;
+    --admin-row-actions-columns:
+        minmax(3.75rem, max-content)
+        minmax(4.25rem, max-content)
+        minmax(4.25rem, max-content)
+        minmax(4.75rem, max-content);
     --admin-row-actions-gap: .5rem;
     --admin-row-action-padding: 0rem;
 }
@@ -115,7 +119,7 @@
 }
 
 .admin-dashboard__feed-table col.admin-dashboard__col-actions {
-    width: 17rem;
+    width: 18.5rem;
 }
 
 /* Dashboard supplies only its four semantic slot widths. Shared stable-rail
@@ -132,7 +136,7 @@
     .admin-dashboard__feed-table col.admin-dashboard__col-time { width: 4.5rem !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-sender { width: 5rem !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 17rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 18.5rem !important; }
 }
 
 @container admin-table (max-width: 50rem) {
@@ -167,7 +171,7 @@
 
     .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 17rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 18.5rem !important; }
 
     .admin-dashboard__feed-meta {
         display: flex;
@@ -212,7 +216,7 @@
     .admin-dashboard__feed-table .admin-dashboard__col-position { width: 3rem !important; }
     .admin-dashboard__feed-table .admin-dashboard__col-drag { width: 1.75rem !important; }
     .admin-dashboard__feed-table col.admin-dashboard__col-title { width: auto !important; }
-    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 17rem !important; }
+    .admin-dashboard__feed-table col.admin-dashboard__col-actions { width: 18.5rem !important; }
 
     .admin-dashboard__feed-meta {
         display: flex;

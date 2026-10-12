@@ -21,16 +21,33 @@
     /* Stable row-action rail geometry. Shared semantic slots are sized for
      * their longest legitimate label; consumers never squeeze the button text
      * into a smaller slot or compensate page by page. */
-    --admin-row-action-slot-move-up-width: 4.75rem;
-    --admin-row-action-slot-move-down-width: 5.5rem;
-    --admin-row-action-slot-edit-width: 3.25rem;
-    --admin-row-actions-move-edit-delete-width: 18.5rem;
+    /* Every slot reserves its longest semantic label plus icon and padding.
+     * The corresponding rail widths are derived from these exact slot tokens. */
+    --admin-row-action-slot-move-up-width: 5rem;
+    --admin-row-action-slot-move-down-width: 6.25rem;
+    --admin-row-action-slot-edit-width: 3.75rem;
+    --admin-row-action-slot-delete-width: 4.75rem;
+    --admin-row-action-slot-state-width: 7rem;
+    --admin-row-action-slot-journal-state-width: 9rem; /* Cancel schedule */
+    --admin-row-action-slot-schedule-width: 5.75rem;
+    --admin-row-action-slot-archive-width: 5rem;
+    --admin-row-actions-move-edit-delete-width: calc(
+        var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
+        + var(--admin-row-action-slot-edit-width) + var(--admin-row-action-slot-delete-width) + .75rem
+    );
     --admin-row-actions-move-edit-delete-compact-width: 6.75rem;
-    --admin-row-action-slot-delete-width: 4.25rem;
-    --admin-row-action-slot-state-width: 6rem;
-    --admin-row-actions-move-state-delete-width: 24.5rem;
+    --admin-row-actions-move-state-delete-width: calc(
+        var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
+        + var(--admin-row-action-slot-edit-width) + var(--admin-row-action-slot-state-width)
+        + var(--admin-row-action-slot-delete-width) + .75rem
+    );
     --admin-row-actions-move-state-delete-compact-width: 8.55rem;
-    --admin-row-actions-journal-blog-width: 34.5rem;
+    --admin-row-actions-journal-blog-width: calc(
+        var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
+        + var(--admin-row-action-slot-edit-width) + var(--admin-row-action-slot-journal-state-width)
+        + var(--admin-row-action-slot-schedule-width) + var(--admin-row-action-slot-archive-width)
+        + var(--admin-row-action-slot-delete-width) + 1.08rem
+    );
     --admin-row-actions-journal-blog-compact-width: 12.15rem;
 
     /* Shared semantic typography for ordinary table/control surfaces. Feature
@@ -222,40 +239,40 @@
 .admin-row-actions--move-edit-delete {
     --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-width);
     --admin-row-actions-columns:
-        var(--admin-row-action-slot-move-up-width)
-        var(--admin-row-action-slot-move-down-width)
-        var(--admin-row-action-slot-edit-width)
-        var(--admin-row-action-slot-delete-width);
+        minmax(var(--admin-row-action-slot-move-up-width), max-content)
+        minmax(var(--admin-row-action-slot-move-down-width), max-content)
+        minmax(var(--admin-row-action-slot-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-delete-width), max-content);
 }
 
 .admin-row-actions--move-state-delete {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
     --admin-row-actions-columns:
-        var(--admin-row-action-slot-move-up-width)
-        var(--admin-row-action-slot-move-down-width)
-        var(--admin-row-action-slot-edit-width)
-        var(--admin-row-action-slot-state-width)
-        var(--admin-row-action-slot-delete-width);
+        minmax(var(--admin-row-action-slot-move-up-width), max-content)
+        minmax(var(--admin-row-action-slot-move-down-width), max-content)
+        minmax(var(--admin-row-action-slot-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-state-width), max-content)
+        minmax(var(--admin-row-action-slot-delete-width), max-content);
     --admin-row-actions-gap: .1875rem;
     --admin-row-state-slot: 0;
 }
 
 .admin-row-actions--state-open {
-    --admin-row-actions-width: 11.5rem;
-    --admin-row-actions-columns: minmax(6.25rem, max-content) max-content;
-    --admin-row-state-slot: 6.25rem;
+    --admin-row-actions-width: 14.5rem;
+    --admin-row-actions-columns: minmax(7rem, max-content) minmax(7.25rem, max-content);
+    --admin-row-state-slot: 7rem;
 }
 
 .admin-row-actions--journal-blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
     --admin-row-actions-columns:
-        var(--admin-row-action-slot-move-up-width)
-        var(--admin-row-action-slot-move-down-width)
-        var(--admin-row-action-slot-edit-width)
-        7.1rem
-        4.5rem
-        4rem
-        var(--admin-row-action-slot-delete-width);
+        minmax(var(--admin-row-action-slot-move-up-width), max-content)
+        minmax(var(--admin-row-action-slot-move-down-width), max-content)
+        minmax(var(--admin-row-action-slot-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-journal-state-width), max-content)
+        minmax(var(--admin-row-action-slot-schedule-width), max-content)
+        minmax(var(--admin-row-action-slot-archive-width), max-content)
+        minmax(var(--admin-row-action-slot-delete-width), max-content);
     --admin-row-actions-gap: .18rem;
     --admin-row-state-slot: 0;
 }
@@ -266,12 +283,12 @@
 }
 
 .admin-row-actions--three-static {
-    --admin-row-actions-width: 14.25rem;
+    --admin-row-actions-width: 15.5rem;
     --admin-row-actions-columns: max-content max-content max-content;
 }
 
 .admin-row-actions--four-static {
-    --admin-row-actions-width: 19rem;
+    --admin-row-actions-width: 20.5rem;
     --admin-row-actions-columns: max-content max-content max-content max-content;
 }
 
@@ -293,6 +310,50 @@
     min-width: 0;
 }
 
+/* Seven-action Blog rows have an independent longest state label:
+ * "Cancel schedule". Yield labels before its semantic columns become crowded. */
+@container admin-table (max-width: 74rem) {
+    .admin-row-actions--journal-blog {
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
+        --admin-row-actions-columns: repeat(7, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    .admin-row-actions--journal-blog .admin-action {
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        gap: 0 !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-row-actions--journal-blog .admin-action__label {
+        display: none !important;
+    }
+}
+
+/* Shared four-action movement rail, including General and Home: icon density
+ * begins before the complete labeled rail could overrun its six-cell track. */
+@container admin-table (max-width: 70rem) {
+    .admin-row-actions--move-edit-delete {
+        --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-compact-width);
+        --admin-row-actions-columns: repeat(4, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    .admin-row-actions--move-edit-delete .admin-action {
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        gap: 0 !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+
+    .admin-row-actions--move-edit-delete .admin-action__label {
+        display: none !important;
+    }
+}
+
 @container admin-table (max-width: 64rem) {
     .admin-row-actions--move-state-delete {
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
@@ -300,13 +361,7 @@
         --admin-row-actions-gap: .45rem;
     }
 
-    .admin-row-actions--journal-blog {
-        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
-        --admin-row-actions-columns: repeat(7, 1.35rem);
-        --admin-row-actions-gap: .45rem;
-    }
-
-    :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action {
+    .admin-row-actions--move-state-delete .admin-action {
         width: 1.35rem !important;
         min-width: 1.35rem !important;
         grid-template-columns: 1fr;
@@ -315,7 +370,7 @@
         justify-items: center;
     }
 
-    :is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action__label {
+    .admin-row-actions--move-state-delete .admin-action__label {
         display: none !important;
     }
 }
@@ -323,7 +378,6 @@
 @container admin-table (max-width: 38rem) {
     :is(
         .admin-row-actions--move-delete,
-        .admin-row-actions--move-edit-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
@@ -338,7 +392,6 @@
     }
 
     .admin-row-actions--move-delete { --admin-row-action-count: 3; }
-    .admin-row-actions--move-edit-delete { --admin-row-action-count: 4; }
     .admin-row-actions--state-open { --admin-row-action-count: 2; }
     .admin-row-actions--two-static { --admin-row-action-count: 2; }
     .admin-row-actions--three-static { --admin-row-action-count: 3; }
@@ -346,7 +399,6 @@
 
     :is(
         .admin-row-actions--move-delete,
-        .admin-row-actions--move-edit-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
@@ -361,7 +413,6 @@
 
     :is(
         .admin-row-actions--move-delete,
-        .admin-row-actions--move-edit-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,

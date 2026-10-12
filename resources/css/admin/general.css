@@ -548,29 +548,11 @@
     display: block;
 }
 
-/* Four full labels yield before either direct-edit field loses usable width.
- * The common fixed icon slots remain aligned with the Actions heading. */
-@container admin-table (max-width: 60rem) {
-    .general-social-table .admin-row-actions--move-edit-delete,
+/* Header follows the shared four-action compact threshold. General no longer
+ * owns its own row-action sizing or label-hiding implementation. */
+@container admin-table (max-width: 70rem) {
     .general-social-table .admin-row-actions-heading {
         --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-compact-width);
-    }
-
-    .general-social-table .admin-row-actions--move-edit-delete {
-        --admin-row-actions-columns: repeat(4, 1.35rem);
-        --admin-row-actions-gap: .45rem;
-    }
-
-    .general-social-table .admin-row-actions--move-edit-delete .admin-action {
-        width: 1.35rem !important;
-        min-width: 1.35rem !important;
-        gap: 0 !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-
-    .general-social-table .admin-row-actions--move-edit-delete .admin-action__label {
-        display: none !important;
     }
 }
 

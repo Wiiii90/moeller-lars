@@ -241,6 +241,12 @@
 
 }
 
+/* Home Component's shared four-action rail is already icon-only at 70rem.
+ * Return its surplus Wide allocation to Content as soon as it compacts. */
+@container admin-table (max-width: 70rem){
+    .home-components-table__col-actions{ width: var(--admin-row-actions-move-edit-delete-compact-width) !important; }
+}
+
 @container admin-table (max-width: 54rem){
     .home-source-table :is(.home-source-table__candidates, .home-source-table__artworks, .home-source-table__year, .home-source-table__col-candidates, .home-source-table__col-artworks, .home-source-table__col-year){
         display: none !important;
@@ -248,7 +254,7 @@
 
     .home-source-table__col-gallery{ width: auto !important; }
     .home-source-table__col-status{ width: 7rem !important; }
-    .home-source-table__col-actions{ width: 11.75rem !important; }
+    .home-source-table__col-actions{ width: 14.75rem !important; }
     .home-source-table .admin-responsive-meta{ display: block; }
 }
 
@@ -272,10 +278,6 @@
 
     .home-components-table__col-content{
         width: auto !important;
-    }
-
-    .home-components-table__col-actions{
-        width: 17.75rem !important;
     }
 
     .home-components-table .admin-responsive-meta{
@@ -789,10 +791,9 @@
     width: 2rem !important;
 }
 
-/* Blog and Exhibitions both use dense action rails. Compact switches those
- * rails to icons and removes Publication/Schedule first. The shared cover
- * preview remains visible; operational Status/Timing yields only at Minimal. */
-@container admin-table (max-width: 64rem){
+/* Blog's longer, seven-action vocabulary yields earlier than Exhibitions.
+ * Both still preserve the complete action/selection order and icon axes. */
+@container admin-table (max-width: 74rem){
     .journal-table col.journal-table__actions--blog{
         width: var(--admin-row-actions-journal-blog-compact-width) !important;
     }
@@ -800,7 +801,9 @@
     .journal-table--blog .admin-row-actions-heading{
         --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
     }
+}
 
+@container admin-table (max-width: 64rem){
     .journal-table col.journal-table__actions--exhibitions{
         width: var(--admin-row-actions-move-state-delete-compact-width) !important;
     }
