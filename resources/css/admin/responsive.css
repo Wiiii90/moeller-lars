@@ -950,10 +950,8 @@
 /* ---------- Storage table ---------- */
 @container admin-table (max-width: 64rem){
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview{ width: 4.5rem !important; }
-    .admin-storage .media-workspace__col-media{ width: auto !important; }
     .admin-storage .media-workspace__col-type{ width: 6rem !important; }
     .admin-storage .media-workspace__col-size{ width: 5rem !important; }
-    .admin-storage .media-workspace__col-status{ width: 7.5rem !important; }
     .admin-storage .media-workspace__col-selection{ width: var(--admin-table-selection-width) !important; }
 }
 
@@ -963,7 +961,6 @@
     }
 
     .admin-storage .media-workspace__table-wrap:not(.is-dense) .media-workspace__col-preview{ width: 4rem !important; }
-    .admin-storage .media-workspace__col-media{ width: auto !important; }
     .admin-storage .media-workspace__col-actions{ width: 6.75rem !important; }
 
     .admin-storage .media-workspace__actions-head .admin-row-actions-heading{

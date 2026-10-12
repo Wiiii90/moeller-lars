@@ -502,10 +502,9 @@
     justify-content: center;
 }
 
-/* Six-cell table contract: the first two metric cells are Preview + Media,
- * the middle two cells follow the same 72-subtrack starts as the Storage
- * filters (Type, Size, Usage/Used in, Status), and Actions begins exactly at
- * 4/6. Selection keeps the shared fixed trailing checkbox rail. */
+/* The trailing Actions + Selection rails follow the shared action contract.
+ * Status reserves room for complete labels; Media absorbs the remaining
+ * width in both List and Dense modes, without a parallel fixed-width rule. */
 .admin-storage .media-workspace__table {
     --admin-row-actions-width: var(--admin-row-actions-four-static-width);
     min-width: 0;
@@ -515,7 +514,6 @@
 
 .admin-storage .media-workspace__col-preview { width: 5.555556%; }
 .admin-storage .media-workspace__col-media { width: auto; }
-.admin-storage .media-workspace__table-wrap.is-dense .media-workspace__col-media { width: 33.333333%; }
 .admin-storage .media-workspace__col-type { width: 9.722222%; }
 .admin-storage .media-workspace__col-size { width: 8.333333%; }
 .admin-storage .media-workspace__col-usage { width: 9.722222%; }
