@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-// CSS geometry regression with the real stylesheet files; it does not require
-// a server, application database, or a persistent browser session.
-test('public shell, navigation, header gap and artwork footer stay aligned', async ({ page }) => {
+// CSS geometry regression with real public styles but no application server,
+// database, or persistent browser profile.
+test('document scrollbar, sticky header, symmetric page gap and artwork footer', async ({ page }) => {
     await page.setContent([
         '<!doctype html><html lang="en"><head>',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
@@ -14,7 +14,7 @@ test('public shell, navigation, header gap and artwork footer stay aligned', asy
         '<div class="site-navigation__item"><div class="site-navigation__primary"><a href="#">Painting</a></div></div>',
         '<div class="site-navigation__item"><div class="site-navigation__primary"><a href="#">Drawings</a></div></div>',
         '</nav></div></div></header>',
-        '<div class="site-scroll-region"><main id="content" class="site-content">',
+        '<main id="content" class="site-content">',
         '<article class="artwork-card"><a class="artwork-card__link" href="#">',
         '<div class="artwork-card__image" style="aspect-ratio: 1"></div></a>',
         '<div class="artwork-card__footer"><a href="#" class="artwork-label-trigger"><div class="artwork-label">',
@@ -22,7 +22,7 @@ test('public shell, navigation, header gap and artwork footer stay aligned', asy
         '<div class="artwork-label__facts"><span>drawing</span><span>25 × 25</span></div>',
         '</div></a><nav class="artwork-card__actions" aria-label="Artwork navigation">',
         '<a class="artwork-context-button" href="#">Drawings →</a></nav></div>',
-        '</article></main></div></body></html>',
+        '</article><div aria-hidden="true" style="height:1400px"></div></main></body></html>',
     ].join(''));
     await page.addStyleTag({ path: 'resources/css/app.css' });
     await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
@@ -36,12 +36,13 @@ test('public shell, navigation, header gap and artwork footer stay aligned', asy
 
     for (const width of [1600, 1009, 706, 506, 420, 320]) {
         await page.setViewportSize({ width, height: 800 });
+        await page.evaluate(() => window.scrollTo(0, 0));
         const geometry = await page.evaluate(() => {
             const rect = (selector) => {
                 const r = document.querySelector(selector).getBoundingClientRect();
                 return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width };
             };
-            const scroll = document.querySelector('.site-scroll-region');
+            const scrollingElement = document.scrollingElement;
             return {
                 menu: rect('.site-navigation'),
                 content: rect('#content'),
@@ -49,8 +50,12 @@ test('public shell, navigation, header gap and artwork footer stay aligned', asy
                 label: rect('.artwork-label'),
                 action: rect('.artwork-card__actions'),
                 image: rect('.artwork-card__image'),
-                scrollWidth: scroll.scrollWidth,
-                scrollClientWidth: scroll.clientWidth,
+                scrollWidth: scrollingElement.scrollWidth,
+                scrollClientWidth: scrollingElement.clientWidth,
+                scrollOwner: scrollingElement === document.documentElement,
+                scrollable: scrollingElement.scrollHeight > window.innerHeight,
+                headerPosition: getComputedStyle(document.querySelector('.site-header')).position,
+                rootGutter: getComputedStyle(document.documentElement).scrollbarGutter,
             };
         });
         expect(Math.abs(geometry.menu.left - geometry.content.left), 'left edges at '+width).toBeLessThan(1);
@@ -60,5 +65,26 @@ test('public shell, navigation, header gap and artwork footer stay aligned', asy
         expect(geometry.label.right, 'label / action spacing at '+width).toBeLessThan(geometry.action.left);
         expect(geometry.image.width).toBeGreaterThan(0);
         expect(geometry.scrollWidth, 'horizontal overflow at '+width).toBeLessThanOrEqual(geometry.scrollClientWidth + 1);
+        expect(geometry.scrollOwner, 'root scroll owner at '+width).toBe(true);
+        expect(geometry.scrollable, 'long page scrolls at '+width).toBe(true);
+        expect(geometry.headerPosition, 'header sticky at '+width).toBe('sticky');
+        expect(geometry.rootGutter, 'root reserves symmetric gutters at '+width).toContain('both-edges');
+
+        await page.evaluate(() => window.scrollTo(0, 180));
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+        const stickyTop = await page.locator('.site-header').evaluate((el) => el.getBoundingClientRect().top);
+        expect(Math.abs(stickyTop), 'sticky header stays at viewport top at '+width).toBeLessThan(1);
+
+        // At the document's real end, the trailing gap must equal the gap
+        // between header divider and content, including Minimal viewports.
+        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        await expect.poll(() => page.evaluate(() => {
+            const doc = document.documentElement;
+            return Math.abs(window.scrollY - (doc.scrollHeight - window.innerHeight));
+        })).toBeLessThan(1);
+        const bottomGap = await page.locator('#content').evaluate((el) =>
+            window.innerHeight - el.getBoundingClientRect().bottom);
+        const topGap = geometry.content.top - geometry.header.bottom;
+        expect(Math.abs(bottomGap - topGap), 'equal outer content gaps at '+width).toBeLessThan(1);
     }
 });

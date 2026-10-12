@@ -24,22 +24,22 @@
 
 html {
     max-width: 100%;
-    overflow-x: hidden;
-    scrollbar-gutter: stable;
+    /* clip does not create a scroll container that would break sticky. */
+    overflow-x: clip;
 }
 
 body {
     width: 100%;
     min-height: 100vh;
     margin: 0;
-    overflow-x: hidden;
+    overflow-x: clip;
     background: var(--public-page);
     color: var(--public-ink);
     font-family: Arial, Helvetica, sans-serif;
     font-size: 14px;
 }
 
-/* Header geometry only. The non-scrolling shell contract lives in app.css. */
+/* Header geometry only. Document scroll and sticky positioning live in app.css. */
 .site-header {
     z-index: 40;
     display: flex;
@@ -342,7 +342,7 @@ body {
 
 #content {
     min-height: 0;
-    margin-block-start: var(--public-shell-gap);
+    margin-block: var(--public-shell-gap);
 }
 
 .site-content {
@@ -872,8 +872,8 @@ body {
 }
 
 html:has(.artwork-viewer[open]) {
+    /* The modal locks root scroll while the reserved gutter prevents jumps. */
     overflow: hidden;
-    scrollbar-gutter: auto;
 }
 
 .artwork-viewer[open] {

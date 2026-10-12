@@ -119,11 +119,9 @@
                 </div>
             @endunless
         </header>
-        <div class="site-scroll-region" data-site-scroll-region>
-            <main id="content" class="site-content">
-                @yield('content')
-            </main>
-        </div>
+        <main id="content" class="site-content">
+            @yield('content')
+        </main>
         <x-artwork-viewer />
     </body>
 </html>

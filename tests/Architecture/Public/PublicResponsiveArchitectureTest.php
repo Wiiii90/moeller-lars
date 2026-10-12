@@ -15,7 +15,10 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('--public-content-inset:')
         ->toContain('--public-content-block-inset:')
         ->toContain('--public-shell-gap:')
-        ->toContain('margin-block-start: var(--public-shell-gap);')
+        ->toContain('margin-block: var(--public-shell-gap);')
+        ->toContain('html:has(.artwork-viewer[open])')
+        ->toContain('overflow-x: clip;')
+        ->not->toContain('scrollbar-gutter: auto;')
         ->toContain('padding-inline: var(--public-content-inset);')
         ->toContain('padding-block: var(--public-content-block-inset);')
         ->toContain('flex: 0 0 max-content;')
@@ -33,8 +36,13 @@ it('uses the current content-fit public responsive contract', function (): void 
 
     expect($foundation)
         ->toContain('@media (max-width: 40rem)')
+        ->toContain('html:has(> body.public-site)')
         ->toContain('body.public-site .site-header')
+        ->toContain('position: sticky;')
+        ->toContain('top: 0;')
         ->toContain('scrollbar-gutter: stable both-edges;')
+        ->not->toContain('.site-scroll-region')
+        ->not->toContain('max-height: 100dvh;')
         ->not->toContain('max-width: 550px');
 
     expect($customPages)
