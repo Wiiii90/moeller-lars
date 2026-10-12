@@ -18,8 +18,10 @@
     --public-short-page-min-height: 15rem;
     --public-section-gap: 3.55rem;
     --public-page: #777;
-    --public-surface: #fff;
-    --public-content-surface: #fbfaf7;
+    --public-surface: #fbfaf7;
+    --public-plaque-surface: #fffdf9;
+    --public-artwork-title-typeface: Georgia, "Times New Roman", serif;
+    --public-ink-strong: #332f2b;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-ink: #555;
     --public-muted: #777;
@@ -426,7 +428,7 @@ body {
 #content {
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
-    background: var(--public-content-surface);
+    background: var(--public-surface);
 }
 
 /* Only genuinely empty section pages without a configured heading fill the
@@ -554,15 +556,17 @@ body {
     margin-top: .88rem;
     align-items: flex-end;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: clamp(.35rem, 1.8vw, 1rem);
 }
 
-/* Stable gallery-label width and a common footer baseline on every surface. */
+/* The plaque yields to complete action labels, then wraps as a unit when
+   there is no longer space for two independent pieces. */
 .artwork-label-trigger,
 .artwork-detail__footer > .artwork-label {
-    flex: 0 1 19rem;
-    min-width: 0;
-    max-width: 100%;
+    flex: 1 1 19rem;
+    min-width: min(100%, 12.5rem);
+    max-width: 19rem;
 }
 
 .artwork-label-trigger {
@@ -580,7 +584,7 @@ body {
     padding: .74rem .85rem .7rem;
     border: 1px solid var(--public-artwork-line);
     border-radius: 0;
-    background: #fffdf9;
+    background: var(--public-plaque-surface);
     color: #403b36;
     font-family: var(--public-typeface);
     line-height: 1.38;
@@ -606,11 +610,12 @@ body {
 
 .artwork-label__title {
     min-width: 0;
-    color: #332f2b;
-    font-size: .8125rem;
-    font-weight: 500;
-    letter-spacing: 0;
-    line-height: 1.4;
+    color: var(--public-ink-strong);
+    font-family: var(--public-artwork-title-typeface);
+    font-size: .9375rem;
+    font-weight: 400;
+    letter-spacing: -.01em;
+    line-height: 1.34;
     overflow-wrap: break-word;
 }
 
@@ -651,8 +656,9 @@ body {
 .artwork-card__actions,
 .artwork-detail__actions {
     display: flex;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
+    max-width: 100%;
     margin-left: auto;
     align-items: stretch;
     justify-content: flex-end;
@@ -660,7 +666,7 @@ body {
     gap: 0;
     border: 1px solid var(--public-artwork-line);
     border-radius: 0;
-    background: #fff;
+    background: var(--public-plaque-surface);
     transition: border-color .14s ease;
 }
 
@@ -692,9 +698,18 @@ body {
     text-align: center;
     text-decoration: none;
     text-transform: uppercase;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
     cursor: pointer;
     transition: color .14s ease;
+}
+
+/* Truncate unusually long category names instead of splitting words or arrows. */
+.artwork-context-button--category {
+    min-width: 0;
+    max-width: 12rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .artwork-context-button + .artwork-context-button {

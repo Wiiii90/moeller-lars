@@ -63,7 +63,8 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
                 artworkGap: next.top - card.bottom,
                 marginGap: parseFloat(getComputedStyle(first).marginBottom),
                 actionsAligned: Math.abs(context.bottom - footer.bottom),
-                noOverlap: box.right <= context.left,
+                noOverlap: context.top >= box.bottom - 1 || box.right <= context.left + 1,
+                controlsOnNextRow: context.top >= box.bottom - 1,
                 labelWidth: box.width,
                 secondLabelWidth: second.querySelector('.artwork-label').getBoundingClientRect().width,
                 captionBottomAligned: Math.abs(box.bottom - footer.bottom),
@@ -86,6 +87,11 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
                 headingMinimum: getComputedStyle(first.querySelector('.artwork-label__heading')).minHeight,
                 labelPadding: parseFloat(labelStyle.paddingLeft),
                 noteStyle: getComputedStyle(first.querySelector('.artwork-label__note')).fontStyle,
+                categoryWhiteSpace: getComputedStyle(first.querySelector('.artwork-context-button--category')).whiteSpace,
+                categoryLineHeight: parseFloat(getComputedStyle(first.querySelector('.artwork-context-button--category')).lineHeight),
+                categoryHeight: first.querySelector('.artwork-context-button--category').getBoundingClientRect().height,
+                serifTitle: getComputedStyle(title).fontFamily,
+                actionsOverflow: context.width > footer.width + 1,
             };
         });
 
@@ -100,7 +106,10 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
         expect(state.noteStyle).toBe('normal');
         expect(state.actionBorder).toBe('1px');
         expect(state.actionGap).toBe('0px');
-        expect(state.actionBackground).toBe('rgb(255, 255, 255)');
+        expect(state.actionBackground).toBe('rgb(255, 253, 249)');
+        expect(state.categoryWhiteSpace).toBe('nowrap');
+        expect(state.serifTitle.toLowerCase()).toContain('georgia');
+        expect(state.actionsOverflow).toBe(false);
         expect(state.actionButtonBorders).toEqual(['0px', '0px', '0px']);
         expect(state.actionSeparators).toEqual(['0px', '1px', '1px']);
         expect(state.actionRight).toBeLessThanOrEqual(state.footerRight + 1);
@@ -108,7 +117,9 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
         expect(state.captionGap).toBeGreaterThanOrEqual(12);
         expect(state.artworkGap).toBeCloseTo(state.marginGap, 1);
         expect(state.actionsAligned, 'action rail shares label bottom baseline at '+width).toBeLessThan(1);
-        expect(state.captionBottomAligned, 'label shares footer bottom baseline at '+width).toBeLessThan(1);
+        if (!state.controlsOnNextRow) {
+            expect(state.captionBottomAligned, 'label shares footer bottom baseline at '+width).toBeLessThan(1);
+        }
         if (width >= 546) {
             expect(Math.abs(state.labelWidth - state.secondLabelWidth), 'same full-size label width at '+width).toBeLessThan(1);
         } else {
@@ -122,5 +133,66 @@ test('framed artwork labels preserve gallery semantics and stable exhibition rhy
         else expect(Math.abs(state.headerTitleCenter - state.headerCenter)).toBeLessThan(1);
         if (previousGap !== null) expect(state.marginGap).toBeCloseTo(previousGap, 2);
         previousGap = state.marginGap;
+    }
+});
+
+
+test('a 440px Artwork preserves a complete PAINTING control alongside its plaque', async ({ page }) => {
+    await page.setContent([
+        '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>',
+        '<body class="public-site"><header class="site-header"><h1>Lars Möller</h1></header>',
+        '<main id="content" class="site-content"><article class="artwork-card">',
+        '<div class="artwork-card__image" style="width:100%;height:260px"></div>',
+        '<div class="artwork-card__footer">',
+        '<a href="#" class="artwork-label-trigger"><span class="artwork-label">',
+        '<span class="artwork-label__heading"><span class="artwork-label__title">Genesis (in cooperation with Krys Ubo)</span>',
+        '<span class="artwork-label__year">2022</span></span>',
+        '<span class="artwork-label__facts"><span>oil and acrylic on canvas</span>',
+        '<span class="artwork-label__dimensions">15 × 20</span></span></span></a>',
+        '<nav class="artwork-card__actions" aria-label="Artwork navigation">',
+        '<button class="artwork-context-button artwork-context-button--icon" aria-label="Previous">‹</button>',
+        '<a class="artwork-context-button artwork-context-button--category" href="#">PAINTING</a>',
+        '<button class="artwork-context-button artwork-context-button--icon" aria-label="Next">›</button>',
+        '</nav></div></article></main></body></html>',
+    ].join(''));
+    await page.addStyleTag({ path: 'resources/css/app.css' });
+    await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
+    await page.evaluate(() => {
+        document.documentElement.style.setProperty('--public-shell-max', '640px');
+        document.documentElement.style.setProperty('--public-art-max', '440px');
+        document.documentElement.style.setProperty('--public-content-padding', '100px');
+    });
+
+    for (const width of [1100, 420, 320]) {
+        await page.setViewportSize({ width, height: 820 });
+        const geometry = await page.evaluate(() => {
+            const footer = document.querySelector('.artwork-card__footer').getBoundingClientRect();
+            const label = document.querySelector('.artwork-label').getBoundingClientRect();
+            const nav = document.querySelector('.artwork-card__actions').getBoundingClientRect();
+            const category = document.querySelector('.artwork-context-button--category');
+            const categoryBox = category.getBoundingClientRect();
+            return {
+                artWidth: document.querySelector('.artwork-card__image').getBoundingClientRect().width,
+                footer,
+                label,
+                nav,
+                categoryBox,
+                categoryWhiteSpace: getComputedStyle(category).whiteSpace,
+                categoryText: category.textContent.trim(),
+                docOverflow: document.scrollingElement.scrollWidth > document.scrollingElement.clientWidth + 1,
+            };
+        });
+        expect(geometry.categoryText).toBe('PAINTING');
+        expect(geometry.categoryWhiteSpace).toBe('nowrap');
+        expect(geometry.nav.right, 'nav inside artwork at '+width).toBeLessThanOrEqual(geometry.footer.right + 1);
+        expect(geometry.label.left, 'label inside artwork at '+width).toBeGreaterThanOrEqual(geometry.footer.left - 1);
+        expect(geometry.docOverflow).toBe(false);
+        const overlapX = geometry.label.left < geometry.nav.right && geometry.label.right > geometry.nav.left;
+        const overlapY = geometry.label.top < geometry.nav.bottom && geometry.label.bottom > geometry.nav.top;
+        expect(overlapX && overlapY, 'separate plaque and actions at '+width).toBe(false);
+        if (width === 1100) {
+            expect(Math.abs(geometry.artWidth - 440)).toBeLessThan(1);
+            expect(Math.abs(geometry.label.bottom - geometry.nav.bottom)).toBeLessThan(1);
+        }
     }
 });
