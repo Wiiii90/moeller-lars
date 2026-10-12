@@ -21,13 +21,14 @@
     /* Stable row-action rail geometry. Shared semantic slots are sized for
      * their longest legitimate label; consumers never squeeze the button text
      * into a smaller slot or compensate page by page. */
-    /* Every slot reserves its longest semantic label plus icon and padding.
-     * The corresponding rail widths are derived from these exact slot tokens. */
+    /* Each fixed slot budgets its longest semantic label without spare rails.
+     * The minmax(..., max-content) tracks below protect genuinely wider fonts;
+     * shorter variants retain a small intentional gap for stable icon axes. */
     --admin-row-action-slot-move-up-width: 5rem;
     --admin-row-action-slot-move-down-width: 6.25rem;
     --admin-row-action-slot-edit-width: 3.75rem;
     --admin-row-action-slot-delete-width: 4.75rem;
-    --admin-row-action-slot-state-width: 7rem;
+    --admin-row-action-slot-state-width: 6rem; /* Unpublish / Show Home */
     --admin-row-action-slot-journal-state-width: 9rem; /* Cancel schedule */
     --admin-row-action-slot-schedule-width: 5.75rem;
     --admin-row-action-slot-archive-width: 5rem;

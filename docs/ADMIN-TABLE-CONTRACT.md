@@ -99,7 +99,7 @@ Rules:
 
 - movement comes first because it belongs to ordering;
 - Delete is last;
-- state/workflow actions keep stable slots where row-state variation would otherwise make controls jump;
+- state/workflow actions keep stable slots where row-state variation would otherwise make controls jump. Reserve only the longest real label (including icon and padding), not arbitrary spare width: shorter labels necessarily leave some whitespace so their icon axis and subsequent Delete axis stay aligned across rows;
 - desktop may use icon + label when space supports it;
 - compact responsive modes may hide action labels while retaining the same DOM/action order, icon, accessible label and keyboard order;
 - action labels are never made smaller on one feature to force them into their slots.
