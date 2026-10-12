@@ -515,7 +515,17 @@ final class HomePresentation extends Page
 
     public function editComponentAction(): Action
     {
-        return AdminDialog::edit(Action::make('editComponent')->label('Edit')
+        return $this->homeComponentEditingAction('editComponent', committed: false);
+    }
+
+    public function editListComponentAction(): Action
+    {
+        return $this->homeComponentEditingAction('editListComponent', committed: true);
+    }
+
+    private function homeComponentEditingAction(string $actionName, bool $committed): Action
+    {
+        $action = Action::make($actionName)->label('Edit')
             ->fillForm(function (array $arguments): array {
                 $component = $this->componentFromArguments($arguments);
 
@@ -574,7 +584,8 @@ final class HomePresentation extends Page
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
             ])
             ->modalHeading('Edit component')
-            ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments)), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
+            ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments, $actionName))
+            ->action(function (array $data, array $arguments): void {
                 $current = $this->componentFromArguments($arguments);
                 $type = (string) $current['type'];
                 $editorKind = $this->editorKind($current) ?? $type;
@@ -611,12 +622,16 @@ final class HomePresentation extends Page
                     );
                 }
             });
+
+        return $committed
+            ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
+            : AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     /** @param array<string,mixed> $arguments
      * @return list<Action>
      */
-    private function homeEditHeaderActions(array $arguments): array
+    private function homeEditHeaderActions(array $arguments, string $actionName): array
     {
         $component = $this->componentFromArguments($arguments);
         $index = (int) $arguments['index'];
@@ -626,18 +641,18 @@ final class HomePresentation extends Page
 
         foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
             $canMove = $this->componentReorderEnabled() && ($direction === 'up' ? $index > 0 : $index < $count - 1);
-            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction): void {
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction, $actionName): void {
                 $this->moveComponent($index, $type, $direction);
                 $newIndex = $index + ($direction === 'up' ? -1 : 1);
-                $this->replaceMountedAction('editComponent', ['index' => $newIndex, 'type' => $type]);
+                $this->replaceMountedAction($actionName, ['index' => $newIndex, 'type' => $type]);
             })->disabled(! $canMove);
         }
         $published = CustomPageSetting::componentPublished($component);
         $actions[] = AdminDialog::headerAction('dialogTogglePublication',
             $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-            function () use ($index, $type, $published): void {
+            function () use ($index, $type, $published, $actionName): void {
                 $this->setComponentPublished($index, $type, ! $published);
-                $this->replaceMountedAction('editComponent', ['index' => $index, 'type' => $type]);
+                $this->replaceMountedAction($actionName, ['index' => $index, 'type' => $type]);
             });
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($index, $type): void {
             $this->replaceMountedAction('removeComponent', ['index' => $index, 'type' => $type]);
