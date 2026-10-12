@@ -466,44 +466,6 @@
     font-size: .7rem;
 }
 
-.admin-add-row {
-    display: inline-grid;
-    grid-template-columns: 1.8rem auto;
-    min-height: 2rem;
-    margin-top: .55rem;
-    padding: 0;
-    align-items: center;
-    border: 0;
-    background: transparent;
-    color: var(--admin-muted);
-    font: inherit;
-    font-size: .76rem;
-    font-weight: 550;
-    cursor: pointer;
-}
-
-.admin-add-row__mark {
-    display: grid;
-    width: 1.8rem;
-    height: 1.8rem;
-    margin-right: .5rem;
-    place-items: center;
-    border: 1px solid var(--admin-line-strong);
-    color: var(--admin-text);
-    font-size: 1rem;
-    line-height: 1;
-}
-
-.admin-add-row:hover,
-.admin-add-row:focus-visible {
-    color: var(--admin-text);
-}
-
-.admin-add-row:focus-visible {
-    outline: 1px solid var(--admin-text);
-    outline-offset: 2px;
-}
-
 .admin-rich-text-image-insert {
     display: grid;
     width: min(100%, 34rem);

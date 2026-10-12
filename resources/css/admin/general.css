@@ -548,10 +548,6 @@
     display: block;
 }
 
-.general-social-table + .admin-add-row {
-    margin-top: 0;
-}
-
 /* Four full labels yield before either direct-edit field loses usable width.
  * The common fixed icon slots remain aligned with the Actions heading. */
 @container admin-table (max-width: 60rem) {

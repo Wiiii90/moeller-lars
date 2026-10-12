@@ -560,6 +560,7 @@
     display: flex;
     width: 100%;
     min-height: 2.8rem;
+    margin: 0;
     padding: .35rem .5rem;
     padding-inline-start: var(--admin-add-row-inset, .5rem);
     align-items: center;
@@ -599,6 +600,12 @@
     border-radius: .2rem;
     font-size: 1rem;
     line-height: 1;
+}
+
+/* Preserve the established Add-row mark geometry in its shared owner. */
+.admin-add-row__mark {
+    margin-inline-end: .5rem;
+    color: var(--admin-text);
 }
 
 .admin-add-row > span:last-child,
