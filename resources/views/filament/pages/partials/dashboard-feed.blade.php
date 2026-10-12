@@ -2,9 +2,6 @@
     @php
         $selectedCount = count($selectedFeedKeys);
         $selectableFeedKeys = collect($feed)->pluck('key')->values()->all();
-        $selectedVisibleKeys = array_values(array_intersect($selectableFeedKeys, $selectedFeedKeys));
-        $allVisibleSelected = $selectableFeedKeys !== [] && count($selectedVisibleKeys) === count($selectableFeedKeys);
-        $selectionIndeterminate = count($selectedVisibleKeys) > 0 && ! $allVisibleSelected;
         $feedHasRecords = $feedPagination['total'] > 0 || (trim($feedSearch) !== '' || $feedType !== 'all' || $notificationFilter !== 'all')
             && app(\App\Domain\Admin\DashboardFeed::class)->paginate('', 'all', 1, 25)['total'] > 0;
         $pinnedFeed = collect($feed)->filter(fn (array $item): bool => ($item['pinned'] ?? false) === true)->values();
@@ -108,12 +105,18 @@
                         <input
                             type="checkbox"
                             aria-label="Select all visible feed entries"
-                            aria-checked="{{ $selectionIndeterminate ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
-                            wire:click="toggleSelectAll"
-                            @checked($allVisibleSelected)
-                            @disabled($selectableFeedKeys === [])
-                            x-data
-                            x-effect="$el.indeterminate = {{ $selectionIndeterminate ? 'true' : 'false' }}"
+                            wire:click.prevent="toggleSelectAll"
+                            data-visible-keys='@json($selectableFeedKeys)'
+                            x-data="{}"
+                            x-effect="
+                                const visibleKeys = JSON.parse($el.dataset.visibleKeys);
+                                const selectedKeys = $wire.selectedFeedKeys;
+                                const count = visibleKeys.filter((key) => selectedKeys.includes(key)).length;
+                                $el.checked = visibleKeys.length > 0 && count === visibleKeys.length;
+                                $el.indeterminate = count > 0 && count < visibleKeys.length;
+                                $el.disabled = visibleKeys.length === 0;
+                                $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
+                            "
                         >
                     </th>
                 </tr>
