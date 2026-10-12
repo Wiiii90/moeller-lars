@@ -366,3 +366,46 @@ it('changes hierarchy placement without inventing a hierarchical Custom Page URL
         ->and((int) $section->parent_id)->toBe((int) $parent->id)
         ->and(Redirect::query()->count())->toBe($beforeRedirects);
 });
+
+
+it('preserves the editable Component column and distinct Content at every responsive state', function (): void {
+    $sequence = file_get_contents(resource_path('views/filament/pages/partials/custom-page-workspace-sequence.blade.php'));
+    $responsive = file_get_contents(resource_path('css/admin/responsive.css'));
+    $projection = file_get_contents(app_path('Filament/Pages/Concerns/CustomPageWorkspacePresentationHelpers.php'));
+
+    expect($sequence)
+        ->toContain('class="custom-page-component__type"')
+        ->toContain('class="admin-inline-select custom-page-component__type-select"')
+        ->toContain("wire:change=\"mountAction('changeComponentType'")
+        ->not->toContain('@disabled(! $reorderEnabled)')
+        ->not->toContain('<small class="admin-responsive-meta">{{ $pageComponent[\'type_label\'] }}</small>')
+        ->not->toContain('<small class="admin-responsive-meta">{{ $childKindLabel }}</small>')
+        ->and($responsive)
+        ->not->toContain(".custom-page-component__type,\n")
+        ->not->toContain(".custom-page-component-sequence .admin-responsive-meta")
+        ->toContain('var(--admin-hierarchy-component-column)')
+        ->and($projection)
+        ->toContain("return ['primary' => \$count.' '.(\$count === 1 ? 'item' : 'items'), 'secondary' => '', 'meta' => ''];");
+});
+
+it('keeps Change type reachable when filtering makes drag sorting unavailable', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Filtered type conversion', 'filtered-type-conversion');
+    $settings->update(['blocks' => customPageWorkspaceBlocks(3)]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->set('componentSearch', 'Component 2')
+        ->assertSeeHtml('class="admin-inline-select custom-page-component__type-select"')
+        ->assertDontSeeHtml('wire:sort="sortComponent"')
+        ->mountAction('changeComponentType', [
+            'componentIndex' => 1,
+            'componentType' => 'list',
+            'targetType' => 'divider',
+        ])
+        ->callMountedAction()
+        ->assertHasNoErrors();
+
+    $blocks = $settings->fresh()->components();
+    expect($blocks[1]['type'])->toBe('divider')
+        ->and($blocks[0]['type'])->toBe('list')
+        ->and($blocks[2]['type'])->toBe('list');
+});

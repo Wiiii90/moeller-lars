@@ -180,10 +180,6 @@
         flex-wrap: nowrap !important;
     }
 
-    .custom-page-component-sequence .admin-responsive-meta{
-        display: block;
-    }
-
     .general-live-preview__preset{
         display: none;
     }
@@ -232,19 +228,15 @@
         --admin-hierarchy-position-column: 2.5rem;
         --admin-hierarchy-drag-column: 2rem;
         --admin-hierarchy-actions-column: minmax(9rem, 34%);
+        --admin-hierarchy-component-column: clamp(7.5rem, 18%, 9rem);
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
+            var(--admin-hierarchy-component-column)
             minmax(0, 1fr)
             var(--admin-hierarchy-actions-column)
             var(--admin-table-selection-width);
         overflow-x: clip !important;
-    }
-
-    .custom-page-component-sequence__header > :nth-child(2),
-.custom-page-component__type,
-.custom-page-child-row__kind{
-        display: none;
     }
 
 }
@@ -761,30 +753,24 @@
 }
 
 /* ---------- Custom Page hierarchy ---------- */
-/* Compact folds supportive Component identity into Content while the shared
- * five-action rail compacts centrally. Minimal only tightens ordering rails. */
+/* Component type is an editorial control, not a supportive identity label.
+ * Keep Component / Kind and Content in distinct columns at every width.
+ * Compact may shrink the column and the shared action rail, never hide type. */
 @container admin-table (max-width: 64rem){
     .custom-page-component-sequence{
         --admin-hierarchy-position-column: 3rem;
         --admin-hierarchy-drag-column: 2rem;
         --admin-hierarchy-actions-column: var(--admin-row-actions-move-state-delete-compact-width);
+        --admin-hierarchy-component-column: clamp(7.5rem, 18%, 9rem);
         --admin-hierarchy-columns:
             var(--admin-hierarchy-position-column)
             var(--admin-hierarchy-drag-column)
+            var(--admin-hierarchy-component-column)
             minmax(0, 1fr)
             var(--admin-hierarchy-actions-column)
             var(--admin-table-selection-width);
     }
 
-    .custom-page-component-sequence__header > :nth-child(2),
-    .custom-page-component__type,
-    .custom-page-child-row__kind{
-        display: none !important;
-    }
-
-    .custom-page-component-sequence .admin-responsive-meta{
-        display: block !important;
-    }
 }
 
 @container admin-table (max-width: 38rem){

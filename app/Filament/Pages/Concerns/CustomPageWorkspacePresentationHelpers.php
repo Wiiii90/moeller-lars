@@ -44,7 +44,7 @@ trait CustomPageWorkspacePresentationHelpers
         if ($type === 'contact') {
             $count = count($settings->contactChildren($block));
 
-            return ['primary' => 'Contact', 'secondary' => '', 'meta' => $count.' '.($count === 1 ? 'item' : 'items')];
+            return ['primary' => $count.' '.($count === 1 ? 'item' : 'items'), 'secondary' => '', 'meta' => ''];
         }
         if ($type === 'legal_disclaimer') {
             $text = PublicContentSetting::general()->getAttribute('legal_disclaimer');

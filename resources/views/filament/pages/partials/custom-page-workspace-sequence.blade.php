@@ -45,7 +45,6 @@
                                     <select
                                         class="admin-inline-select custom-page-component__type-select"
                                         aria-label="Component type"
-                                        @disabled(! $reorderEnabled)
                                         wire:change="mountAction('changeComponentType', { componentIndex: {{ $pageComponent['index'] }}, componentType: '{{ $pageComponent['type'] }}', targetType: $event.target.value })"
                                     >
                                         @foreach ($componentTypeOptions as $value => $label)
@@ -56,7 +55,6 @@
 
                                 <div class="custom-page-component__content admin-hierarchy__content">
                                     <strong>{{ $pageComponent['content']['primary'] }}</strong>
-                                    <small class="admin-responsive-meta">{{ $pageComponent['type_label'] }}</small>
                                     @if ($pageComponent['content']['secondary'] !== '')
                                         <span>{{ $pageComponent['content']['secondary'] }}</span>
                                     @endif
@@ -124,7 +122,6 @@
                                                 <span class="custom-page-child-row__kind">{{ $childKindLabel }}</span>
 
                                                 <div class="custom-page-child-row__content admin-hierarchy__content">
-                                                    <small class="admin-responsive-meta">{{ $childKindLabel }}</small>
                                                     @if ($child['kind'] === 'list')
                                                         <strong>
                                                             @if ($child['date'] !== '')
