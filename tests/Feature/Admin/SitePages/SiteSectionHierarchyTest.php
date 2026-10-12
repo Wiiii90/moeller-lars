@@ -31,7 +31,7 @@ it('derives all six metrics from real SiteSections', function (): void {
     $service = app(SiteSectionEditorialService::class);
     $parent = $service->createCustomPage('Metric Parent', 'metric-parent');
     $child = $service->createJournal('Metric Child', 'metric-child', JournalTemplate::Blog->value);
-    $service->updatePlacement($parent, 'published', true, null);
+    $service->updatePlacement($parent, 'published', null);
     app(SiteSectionOrderService::class)->moveTo($child, (int) $parent->getKey(), 0);
 
     $metrics = Livewire::test(SitePages::class)->get('metrics');
@@ -42,7 +42,7 @@ it('derives all six metrics from real SiteSections', function (): void {
         'unpublished' => SiteSection::query()->where('state', '!=', 'published')->count(),
         'top_level' => SiteSection::query()->whereNull('parent_id')->count(),
         'children' => SiteSection::query()->whereNotNull('parent_id')->count(),
-        'navigation' => SiteSection::query()->where('show_in_navigation', true)->count(),
+        'galleries' => SiteSection::query()->where('type', SiteSectionType::Gallery->value)->count(),
     ]);
 });
 
@@ -200,7 +200,7 @@ it('keeps Home fixed at the top level and preserves its publication delete and c
     expect($home->refresh()->parent_id)->toBeNull()
         ->and($home->state)->toBe('published');
 
-    expect(fn () => $service->updatePlacement($home, 'hidden', false, (int) $parent->getKey()))
+    expect(fn () => $service->updatePlacement($home, 'hidden', (int) $parent->getKey()))
         ->toThrow(ValidationException::class, 'Home is always published.')
         ->and(fn () => $service->convertType($home, SiteSectionType::CustomPage->value))
         ->toThrow(ValidationException::class, 'Home cannot be converted')
@@ -379,7 +379,7 @@ it('autosaves Pages toggles and keeps the native Settings edit dialog open', fun
 
     $sections = app(SiteSectionEditorialService::class);
     $destination = $sections->createCustomPage('Autosave Destination', 'autosave-destination');
-    $sections->updatePlacement($destination, 'published', true, null);
+    $sections->updatePlacement($destination, 'published', null);
     $routing = app(HomeRoutingSettingsService::class);
     $home = app(HomePresentationResolver::class)->settings();
 
@@ -427,8 +427,8 @@ it('autosaves Skip Home destination selection and avoids duplicate mutations on 
     $pages = app(SiteSectionEditorialService::class);
     $first = $pages->createCustomPage('Settings Default Destination', 'settings-default-destination');
     $second = $pages->createCustomPage('Settings Selected Destination', 'settings-selected-destination');
-    $pages->updatePlacement($first, 'published', true, null);
-    $pages->updatePlacement($second, 'published', true, null);
+    $pages->updatePlacement($first, 'published', null);
+    $pages->updatePlacement($second, 'published', null);
 
     $home = app(HomePresentationResolver::class)->settings();
     $routing = app(HomeRoutingSettingsService::class);
@@ -534,18 +534,10 @@ it('persists successive Pages Edit changes while preserving the mounted form and
 
     expect(AuditEvent::query()->count())->toBe($auditCount);
 
-    $component->set('mountedActions.0.data.show_in_navigation', true)
-        ->call('callMountedAction')
-        ->assertHasNoFormErrors()
-        ->assertSet('mountedActions.0.name', 'editPage');
-
-    expect($section->fresh()->show_in_navigation)->toBeTrue();
-
     $component->call('unmountAction')->assertSet('mountedActions', []);
     Livewire::test(SitePages::class)
         ->mountAction('editPage', ['section' => $section->getKey()])
-        ->assertSet('mountedActions.0.data.name', 'After Edit')
-        ->assertSet('mountedActions.0.data.show_in_navigation', true);
+        ->assertSet('mountedActions.0.data.name', 'After Edit');
 });
 
 it('rejects invalid Pages Edit inputs without partially persisting earlier fields', function (): void {
