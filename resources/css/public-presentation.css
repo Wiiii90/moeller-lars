@@ -21,10 +21,8 @@
     /* One editorial paper palette owned by the public shell. */
     --public-surface: #f7f4ed;
     --public-paper-grid: rgba(75, 65, 49, .075);
-    --public-plaque-surface: #f1e8da;
-    --public-plaque-accent: #75614c;
+    --public-plaque-surface: #faf7f1;
     --public-plaque-rule: rgba(88, 74, 56, .27);
-    --public-artwork-title-typeface: Georgia, "Times New Roman", serif;
     --public-ink-strong: #30291f;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-ink: #555;
@@ -585,14 +583,14 @@ body {
     cursor: pointer;
 }
 
-/* A physical-looking archive card, not a generic UI rectangle. */
+/* One physical-looking, preprinted Artwork label, shared by Home, Galleries
+   and Artwork detail. Its structure comes from actual fields, not ornaments. */
 .artwork-label {
-    display: grid;
+    display: block;
     width: 100%;
     min-width: 0;
-    padding: .96rem 1rem .88rem;
+    padding: 0;
     border: 1px solid var(--public-artwork-line);
-    border-top: 3px solid var(--public-plaque-accent);
     border-radius: 0;
     background: var(--public-plaque-surface);
     color: var(--public-ink-strong);
@@ -600,70 +598,77 @@ body {
     line-height: 1.4;
     transition: border-color .14s ease;
 }
-.artwork-label::before {
-    content: "ARTWORK";
-    display: block;
-    margin-bottom: .62rem;
-    color: var(--public-plaque-accent);
-    font-size: .6rem;
-    font-weight: 500;
-    letter-spacing: .18em;
-    line-height: 1.2;
-}
+
 .artwork-label-trigger:hover .artwork-label,
 .artwork-label-trigger:focus-visible .artwork-label {
     border-color: var(--public-artwork-line-hover);
-    border-top-color: var(--public-plaque-accent);
 }
+
 .artwork-label-trigger:focus-visible {
-    outline: 1px dotted var(--public-plaque-accent);
+    outline: 1px dotted var(--public-artwork-line-hover);
     outline-offset: 3px;
 }
-.artwork-label__heading {
+
+.artwork-label__row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: .85rem;
+    grid-template-columns: minmax(0, 1fr) 4.45rem;
+    min-width: 0;
+    align-items: stretch;
 }
-.artwork-label__title {
+
+.artwork-label__row--single,
+.artwork-label__row--note {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.artwork-label__row + .artwork-label__row {
+    border-top: 1px solid var(--public-plaque-rule);
+}
+
+.artwork-label__field {
+    display: grid;
+    min-width: 0;
+    padding: .67rem .75rem .7rem;
+    align-content: start;
+    gap: .24rem;
+}
+
+.artwork-label__field + .artwork-label__field {
+    padding-left: .64rem;
+    padding-right: .55rem;
+    border-left: 1px solid var(--public-plaque-rule);
+}
+
+.artwork-label__key {
+    display: block;
+    color: #766d60;
+    font-size: .58rem;
+    font-weight: 500;
+    letter-spacing: .115em;
+    line-height: 1.25;
+    text-transform: uppercase;
+}
+
+.artwork-label__value {
+    display: block;
     min-width: 0;
     color: var(--public-ink-strong);
-    font-family: var(--public-artwork-title-typeface);
-    font-size: 1.06rem;
+    font-size: .755rem;
     font-weight: 400;
-    letter-spacing: -.015em;
-    line-height: 1.3;
+    letter-spacing: 0;
+    line-height: 1.4;
     overflow-wrap: break-word;
 }
-.artwork-label__year {
-    padding-top: .19rem;
-    color: var(--public-plaque-accent);
-    font-size: .7rem;
+
+.artwork-label__value--title {
+    font-size: .83rem;
+    font-weight: 500;
+    line-height: 1.36;
+}
+
+.artwork-label__value--year,
+.artwork-label__value--dimensions {
     font-variant-numeric: tabular-nums;
-    letter-spacing: .035em;
-}
-.artwork-label__facts {
-    display: flex;
-    margin-top: .85rem;
-    padding-top: .65rem;
-    border-top: 1px solid var(--public-plaque-rule);
-    align-items: baseline;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: .24rem .85rem;
-    color: #5d5245;
-    font-size: .73rem;
-    line-height: 1.45;
-}
-.artwork-label__dimensions {
-    margin-left: auto;
-    font-variant-numeric: tabular-nums;
-}
-.artwork-label__note {
-    margin-top: .62rem;
-    color: #5d5245;
-    font-size: .73rem;
-    line-height: 1.5;
 }
 
 /* Original controls remain their own rail alongside the plaque. */
