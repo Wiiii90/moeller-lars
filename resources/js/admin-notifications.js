@@ -11,6 +11,7 @@ if (shell) {
     const body = shell.querySelector('[data-admin-header-notification-body]')
     const timer = shell.querySelector('[data-admin-header-notification-timer]')
     const counter = shell.querySelector('[data-admin-header-notification-counter]')
+    const dismiss = shell.querySelector('[data-admin-header-notification-dismiss]')
     const icons = Array.from(shell.querySelectorAll('[data-admin-header-notification-icon]'))
 
     let current = null
@@ -58,6 +59,7 @@ if (shell) {
             timer.textContent = ''
             counter.textContent = ''
             counter.hidden = true
+            dismiss.disabled = true
 
             for (const icon of icons) icon.hidden = true
 
@@ -72,6 +74,8 @@ if (shell) {
         separator.hidden = bodyText === ''
 
         timer.textContent = `${secondsRemaining}s`
+
+        dismiss.disabled = phase === 'leaving'
 
         const pendingCount = queue.length
         counter.textContent = pendingCount > 0 ? `+${pendingCount}` : ''
@@ -218,6 +222,14 @@ if (shell) {
         queue.push(normalized)
         render()
     }
+
+    dismiss.addEventListener('click', () => {
+        if (current === null || phase === 'leaving') return
+
+        // Dismiss only the active presentation. The durable mailbox is untouched.
+        // The existing leave lifecycle advances the bounded queue in FIFO order.
+        beginLeave(String(current.id ?? ''))
+    })
 
     window.addEventListener('admin-header-notification', (event) => {
         accept(event.detail?.notification ?? event.detail)
