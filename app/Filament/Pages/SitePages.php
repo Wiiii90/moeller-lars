@@ -346,6 +346,7 @@ final class SitePages extends Page
             description: 'The page is removed only when publication, child-page and content safety rules allow it.',
             submitLabel: 'Delete',
             danger: true,
+            condition: fn (): bool => ! PublicContentSetting::pagesDeleteWithoutConfirmation(),
         );
     }
 
@@ -361,6 +362,7 @@ final class SitePages extends Page
             description: 'Only selected pages that satisfy the current safety rules are removed. Blocked pages are kept.',
             submitLabel: 'Delete',
             danger: true,
+            condition: fn (): bool => ! PublicContentSetting::pagesDeleteWithoutConfirmation(),
         );
     }
 
@@ -492,13 +494,13 @@ final class SitePages extends Page
 
         try {
             $parentId = $this->newParentId();
-            $message = match ($type) {
+            $message = \Illuminate\Support\Facades\DB::transaction(fn (): string => match ($type) {
                 SiteSectionType::NavigationNode => $this->createNavigationGroup($parentId),
                 SiteSectionType::CustomPage => $this->createCustomPage($parentId),
                 SiteSectionType::Journal => $this->createJournal($parentId),
                 SiteSectionType::Gallery => $this->createGallery($parentId),
                 default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Group Node.']),
-            };
+            });
 
             $this->addingPage = false;
             $this->newPageTitle = '';
@@ -521,16 +523,18 @@ final class SitePages extends Page
     {
         $section = app(SiteSectionEditorialService::class)->createNavigationGroup($this->newPageTitle);
         $this->placeCreatedSection($section, $parentId);
+        $section = $this->publishNewPageIfConfigured($section->fresh());
 
-        return 'Group Node added';
+        return $section->getAttribute('state') === 'published' ? 'Group Node added as published' : 'Group Node added';
     }
 
     private function createCustomPage(?int $parentId): string
     {
         $section = app(SiteSectionEditorialService::class)->createCustomPage($this->newPageTitle, $this->newPageSlug);
         $this->placeCreatedSection($section, $parentId);
+        $section = $this->publishNewPageIfConfigured($section->fresh());
 
-        return 'Custom Page added as unpublished';
+        return $section->getAttribute('state') === 'published' ? 'Custom Page added as published' : 'Custom Page added as unpublished';
     }
 
     private function createJournal(?int $parentId): string
@@ -541,21 +545,27 @@ final class SitePages extends Page
             $this->newJournalTemplate,
         );
         $this->placeCreatedSection($section, $parentId);
+        $section = $this->publishNewPageIfConfigured($section->fresh());
 
-        return 'Journal added as unpublished';
+        return $section->getAttribute('state') === 'published' ? 'Journal added as published' : 'Journal added as unpublished';
     }
 
     private function createGallery(?int $parentId): string
     {
-        app(GalleryEditorialService::class)->create([
+        $gallery = app(GalleryEditorialService::class)->create([
             'name' => $this->newPageTitle,
             'slug' => $this->newPageSlug,
             'parent_section_id' => $parentId,
             'description' => null,
             'show_on_home' => false,
         ]);
+        $section = SiteSection::query()
+            ->where('type', SiteSectionType::Gallery->value)
+            ->where('artwork_category_id', $gallery->getKey())
+            ->firstOrFail();
+        $section = $this->publishNewPageIfConfigured($section);
 
-        return 'Gallery added as unpublished';
+        return $section->getAttribute('state') === 'published' ? 'Gallery added as published' : 'Gallery added as unpublished';
     }
 
     private function placeCreatedSection(SiteSection $section, ?int $parentId): void
