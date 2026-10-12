@@ -84,7 +84,7 @@ Use discrete semantic commits:
 
 - text / email / URL / numeric input: normal change or blur; Enter may explicitly commit where supported;
 - textarea: normal change or blur;
-- select / checkbox / toggle: discrete selection/state change; a Component-type Select in an existing editor is a deliberate exception: it stages a different object type, then the visible Apply type action commits the replacement (with content-loss confirmation where needed). The table's Component-type select must also open a confirm action instead of writing immediately;
+- select / checkbox / toggle: discrete selection/state change;
 - date / datetime: completed picker change;
 - Media File selection: completed asset selection/removal;
 - color: completed color value change, never each intermediate drag sample;
