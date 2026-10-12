@@ -249,7 +249,6 @@ it('updates Custom Page identity placement and flat public path through the cano
             'navigation_label' => 'Short label',
             'slug' => 'updated-page-slug',
             'publication_state' => 'published',
-            'show_in_navigation' => true,
             'parent_id' => $parent->id,
         ])
         ->callMountedAction()
@@ -261,7 +260,6 @@ it('updates Custom Page identity placement and flat public path through the cano
         ->and($fresh->navigation_label)->toBe('Short label')
         ->and($fresh->slug)->toBe('updated-page-slug')
         ->and($fresh->state)->toBe('published')
-        ->and($fresh->show_in_navigation)->toBeTrue()
         ->and((int) $fresh->parent_id)->toBe((int) $parent->id)
         ->and(app(SiteNodeRoute::class)->path($fresh))->toBe('/updated-page-slug');
 });
@@ -269,7 +267,7 @@ it('updates Custom Page identity placement and flat public path through the cano
 it('retains old Custom Page slugs as direct 301 redirects collapses chains and protects redirect sources from loops', function (): void {
     $service = app(SiteSectionEditorialService::class);
     [$section] = customPageWorkspaceRecord('Redirect page', 'redirect-a');
-    $service->updatePlacement($section, 'published', false, null);
+    $service->updatePlacement($section, 'published', null);
 
     $section = $service->updateCustomPageIdentity($section, 'Redirect page', null, 'redirect-b');
     $section = $service->updateCustomPageIdentity($section, 'Redirect page', null, 'redirect-c');
@@ -303,7 +301,7 @@ it('changes hierarchy placement without inventing a hierarchical Custom Page URL
     $beforePath = $route->path($section);
     $beforeRedirects = Redirect::query()->count();
 
-    $section = $service->updatePlacement($section, 'published', true, $parent->id);
+    $section = $service->updatePlacement($section, 'published', $parent->id);
 
     expect($route->path($section))->toBe('/flat-route-page')
         ->and($route->path($section))->toBe($beforePath)
