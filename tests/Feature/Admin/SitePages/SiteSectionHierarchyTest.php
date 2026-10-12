@@ -79,8 +79,11 @@ it('derives all six metrics from real SiteSections', function (): void {
         'unpublished' => SiteSection::query()->where('state', '!=', 'published')->count(),
         'top_level' => SiteSection::query()->whereNull('parent_id')->count(),
         'children' => SiteSection::query()->whereNotNull('parent_id')->count(),
+        'navigation' => SiteSection::query()->where('state', 'published')->count(),
         'galleries' => SiteSection::query()->where('type', SiteSectionType::Gallery->value)->count(),
     ]);
+
+    Livewire::test(SitePages::class)->assertSee('In navigation');
 });
 
 it('keeps parent context when a child matches a filter and disables reorder', function (): void {
