@@ -360,11 +360,9 @@ body {
 
 .artwork-card,
 .artwork-detail,
-.cv-page,
 .exhibitions-page,
 .blog-page,
-.blog-post,
-.contact-page {
+.blog-post {
     width: min(100%, var(--public-art-max));
     min-width: 0;
     margin-right: auto;
@@ -575,14 +573,6 @@ body {
     line-height: 1.45;
 }
 
-.cv-legacy-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(165px, 30%);
-    gap: clamp(1.4rem, 3vw, 2.2rem);
-    align-items: start;
-}
-
-.cv-legacy-copy,
 .cv-biography {
     min-width: 0;
     max-width: none;
@@ -593,39 +583,6 @@ body {
     color: #555;
     font-size: .8rem;
     line-height: 1.55;
-}
-
-.cv-portrait {
-    display: block;
-    width: 100%;
-    max-width: 260px;
-    height: auto;
-    margin: 0;
-    justify-self: end;
-    outline: 1px solid rgba(50, 47, 44, .14);
-    outline-offset: -1px;
-}
-
-.cv-contact-area,
-.cv-text-blocks,
-.cv-bottom-disclaimer {
-    margin-top: 2.6rem;
-    padding-top: 1.2rem;
-    border-top: var(--public-divider-width) solid var(--public-divider);
-}
-
-.cv-contact-area .contact-section {
-    margin: 0;
-}
-
-.cv-contact-area .category-heading {
-    width: auto;
-    margin: 0 0 .95rem;
-    color: #504b47;
-}
-
-.cv-contact-area .contact-status {
-    margin-bottom: 1rem;
 }
 
 .contact-details {
@@ -659,109 +616,6 @@ body {
 .contact-details a:hover,
 .contact-details a:focus-visible {
     color: #222;
-}
-
-.cv-contact-area .contact-form {
-    display: grid;
-    width: min(100%, 31rem);
-    margin: 0;
-    gap: .9rem;
-}
-
-.cv-contact-area .contact-form__field {
-    margin: 0;
-}
-
-.cv-contact-area .contact-form label {
-    display: block;
-    margin: 0 0 .27rem;
-    color: #706a65;
-    font-size: .66rem;
-    font-weight: 500;
-    letter-spacing: .065em;
-    text-transform: uppercase;
-}
-
-.cv-contact-area .contact-form input,
-.cv-contact-area .contact-form textarea {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    padding: .58rem .64rem;
-    appearance: none;
-    -webkit-appearance: none;
-    border: 1px solid #d0ccc8;
-    border-radius: 0;
-    background: #fff;
-    color: #444;
-    font: inherit;
-    line-height: 1.4;
-    box-shadow: none;
-    transition: border-color .14s ease;
-}
-
-.cv-contact-area .contact-form textarea {
-    min-height: 126px;
-    resize: vertical;
-}
-
-.cv-contact-area .contact-form input:focus-visible,
-.cv-contact-area .contact-form textarea:focus-visible {
-    border-color: #8d857e;
-    outline: 1px solid #8d857e;
-    outline-offset: 1px;
-}
-
-.cv-contact-area .contact-form button {
-    width: fit-content;
-    min-width: 0;
-    min-height: 0;
-    margin: .1rem 0 0;
-    padding: .54rem .88rem;
-    border: 1px solid #9a938d;
-    border-radius: 0;
-    background: #fff;
-    color: #555;
-    font: inherit;
-    font-size: .7rem;
-    font-weight: 500;
-    letter-spacing: .045em;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-.cv-contact-area .contact-form button:hover:not(:disabled),
-.cv-contact-area .contact-form button:focus-visible:not(:disabled) {
-    border-color: #625d58;
-    color: #222;
-}
-
-.cv-text-blocks {
-    display: grid;
-    gap: 1.15rem;
-}
-
-.cv-text-block {
-    max-width: 42rem;
-}
-
-.cv-text-block h2,
-.cv-bottom-disclaimer h2 {
-    margin: 0 0 .42rem;
-    color: #625d58;
-    font-size: .7rem;
-    font-weight: 500;
-    letter-spacing: .045em;
-    text-transform: none;
-}
-
-.cv-text-block p,
-.cv-bottom-disclaimer p {
-    margin: 0;
-    color: #777;
-    font-size: .69rem;
-    line-height: 1.55;
-    white-space: pre-line;
 }
 
 .exhibitions-page {
@@ -824,16 +678,6 @@ body {
     min-width: 0;
 }
 
-.exhibition-entry__eyebrow {
-    margin: 0 0 .28rem;
-    color: #8a837d;
-    font-size: .59rem;
-    font-weight: 500;
-    letter-spacing: .09em;
-    line-height: 1.25;
-    text-transform: uppercase;
-}
-
 .exhibition-entry__content h3 {
     display: block;
     max-width: 38rem;
@@ -886,48 +730,6 @@ body {
     line-height: 1.62;
 }
 
-.exhibition-entry__description-preview {
-    margin: 0;
-}
-
-.exhibition-entry__description-details {
-    margin-top: .8rem;
-}
-
-.exhibition-entry__description-details summary {
-    display: inline-flex;
-    align-items: baseline;
-    gap: .55rem;
-    color: #66605b;
-    cursor: pointer;
-    list-style: none;
-}
-
-.exhibition-entry__description-details summary::-webkit-details-marker {
-    display: none;
-}
-
-.exhibition-entry__description-details summary::after {
-    content: "Read more";
-    color: #706a65;
-    font-size: .66rem;
-    font-weight: 500;
-    letter-spacing: .025em;
-    white-space: nowrap;
-}
-
-.exhibition-entry__description-details[open] summary::after {
-    content: "Hide";
-}
-
-.exhibition-entry__description-details[open] .exhibition-entry__description-preview {
-    display: none;
-}
-
-.exhibition-entry__description-full {
-    margin-top: .65rem;
-}
-
 .exhibition-entry__links {
     display: flex;
     margin-top: .8rem;
@@ -944,42 +746,6 @@ body {
 .exhibition-entry__links a:hover,
 .exhibition-entry__links a:focus-visible {
     color: #222;
-}
-
-.exhibition-media {
-    display: grid;
-    width: 100%;
-    max-width: none;
-    margin-top: 1.05rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: .68rem;
-}
-
-.exhibition-media__item,
-.exhibition-media__item[data-role="hero"] {
-    width: 100%;
-    max-width: none;
-    margin: 0;
-}
-
-.exhibition-media__item[data-role="hero"] {
-    grid-column: 1 / -1;
-}
-
-.exhibition-media__item img {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    outline: 1px solid rgba(50, 47, 44, .12);
-    outline-offset: -1px;
-}
-
-.exhibition-media__item figcaption {
-    margin-top: .3rem;
-    color: #85807b;
-    font-size: .64rem;
-    line-height: 1.35;
 }
 
 /* Compact: preserve the desktop composition but simplify title geometry before
@@ -1056,32 +822,11 @@ body {
         padding: var(--public-mobile-inset);
     }
 
-    .cv-legacy-layout {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .cv-legacy-copy {
-        order: 2;
-    }
-
-    .cv-portrait {
-        order: 1;
-        width: auto;
-        max-width: min(190px, 48vw);
-        margin: 0 0 .25rem auto;
-        align-self: flex-end;
-    }
-
     .exhibition-entry {
         grid-template-columns: 6.1rem minmax(0, 1fr);
         gap: .9rem;
     }
 
-    .exhibition-media {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
 }
 
 /* Minimal: artwork/supporting content becomes single-surface where necessary;
@@ -1120,10 +865,6 @@ body {
         grid-template-columns: 4.3rem minmax(0, 1fr);
     }
 
-    .cv-contact-area .contact-form {
-        width: 100%;
-    }
-
     .exhibition-entry {
         display: block;
         padding: 1rem 0 1.1rem;
@@ -1148,14 +889,6 @@ body {
         grid-template-columns: 3.5rem minmax(0, 1fr);
     }
 
-    .exhibition-media {
-        grid-template-columns: 1fr;
-        gap: .6rem;
-    }
-
-    .exhibition-media__item[data-role="hero"] {
-        grid-column: auto;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
