@@ -103,4 +103,9 @@ it('accepts the four shared Divider variants for Home and rejects invalid styles
     }
 
     expect(\App\Models\CustomPageSetting::DIVIDER_VARIANTS)->toBe(\App\Domain\Content\DividerVariant::VALUES);
+
+    expect(fn () => $service->updateComponent(
+        $settings, HomeTemplate::Custom, 0, 'divider',
+        ['type' => 'divider', 'variant' => 'diagonal'],
+    ))->toThrow(ValidationException::class);
 });
