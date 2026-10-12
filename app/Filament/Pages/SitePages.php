@@ -835,10 +835,13 @@ final class SitePages extends Page
                 $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
             );
             $navigationChanged = $updated->wasChanged();
-            app(AdminNotifier::class)->notification(
-                title: 'Page settings updated',
-                status: 'success',
-            );
+            if ($navigationChanged) {
+                unset($this->dialogSectionCache[(int) $section->getKey()]);
+                app(AdminNotifier::class)->notification(
+                    title: 'Page settings updated',
+                    status: 'success',
+                );
+            }
         } catch (ValidationException $exception) {
             $this->validationNotification('Page settings unchanged', $exception);
         }
