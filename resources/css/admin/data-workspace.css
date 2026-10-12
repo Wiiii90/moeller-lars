@@ -290,7 +290,6 @@
 .admin-table--data > .admin-empty-state {
     min-height: 5.2rem;
     padding: 1.35rem .6rem;
-    border: 0;
 }
 
 .admin-table .admin-table__empty-cell {
@@ -300,7 +299,6 @@
 .admin-table__empty-cell > .admin-empty-state {
     min-height: 5.2rem;
     padding: 1.35rem .6rem;
-    border: 0;
 }
 
 .admin-table__identity {
