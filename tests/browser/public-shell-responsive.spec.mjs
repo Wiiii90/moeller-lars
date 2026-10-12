@@ -37,6 +37,21 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
     for (const width of [1600, 1009, 706, 506, 420, 320]) {
         await page.setViewportSize({ width, height: 800 });
         await page.evaluate(() => window.scrollTo(0, 0));
+        const type = await page.evaluate(() => {
+            const family = (selector) => getComputedStyle(document.querySelector(selector)).fontFamily;
+            return {
+                body: family('body.public-site'),
+                artist: family('.site-header h1'),
+                navigation: family('.site-navigation__primary a'),
+                artwork: family('.artwork-label'),
+                action: family('.artwork-context-button'),
+                headerPosition: getComputedStyle(document.querySelector('.site-title')).position,
+            };
+        });
+        for (const family of [type.artist, type.navigation, type.artwork, type.action]) {
+            expect(family).toBe(type.body);
+        }
+        expect(type.headerPosition).toBe('absolute');
         const geometry = await page.evaluate(() => {
             const rect = (selector) => {
                 const r = document.querySelector(selector).getBoundingClientRect();

@@ -19,6 +19,7 @@
     --public-section-gap: 3.55rem;
     --public-page: #777;
     --public-surface: #fff;
+    --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-ink: #555;
     --public-muted: #777;
     --public-active: #746a60;
@@ -42,7 +43,7 @@ body {
     overflow-x: clip;
     background: var(--public-page);
     color: var(--public-ink);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--public-typeface);
     font-size: 14px;
 }
 
@@ -165,11 +166,11 @@ body {
     align-items: center;
     justify-content: center;
     background: transparent;
-    color: var(--public-muted);
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #6c665f;
+    font-family: var(--public-typeface);
     font-size: 12.5px;
     font-weight: 400;
-    letter-spacing: .095em;
+    letter-spacing: .07em;
     line-height: 1.15;
     text-decoration: none;
     text-transform: uppercase;
@@ -193,7 +194,7 @@ body {
 
 .site-navigation__item.is-active > .site-navigation__primary > :is(a, button, span),
 .site-header nav a[aria-current="page"] {
-    color: #393532;
+    color: #332f2b;
     box-shadow: none;
 }
 
@@ -270,10 +271,10 @@ body {
     border: 0;
     background: transparent;
     color: #68625d;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--public-typeface);
     font-size: 11px;
     font-weight: 400;
-    letter-spacing: .095em;
+    letter-spacing: .07em;
     line-height: 1.15;
     cursor: pointer;
     transition: color .14s ease;
@@ -381,10 +382,10 @@ body {
     margin: 0;
     padding: 0;
     color: #fff;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--public-typeface);
     font-size: 1.75rem;
     font-weight: 400;
-    letter-spacing: .14em;
+    letter-spacing: .125em;
     line-height: 1.1;
     text-transform: uppercase;
     white-space: nowrap;
@@ -579,7 +580,7 @@ body {
     border-radius: 0;
     background: #fffdf9;
     color: #403b36;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--public-typeface);
     line-height: 1.38;
     transition: border-color .14s ease;
 }
@@ -680,11 +681,11 @@ body {
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: #67615d;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: .64rem;
+    color: #615a54;
+    font-family: var(--public-typeface);
+    font-size: .67rem;
     font-weight: 400;
-    letter-spacing: .055em;
+    letter-spacing: .04em;
     line-height: 1.3;
     text-align: center;
     text-decoration: none;
