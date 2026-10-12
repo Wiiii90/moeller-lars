@@ -20,7 +20,7 @@
     --public-page: #777;
     /* One editorial paper palette owned by the public shell. */
     --public-surface: #f7f4ed;
-    --public-plaque-surface: #faf7f1;
+    --public-plaque-surface: #fffdf7;
     --public-plaque-rule: rgba(88, 74, 56, .24);
     --public-plaque-border: rgba(88, 74, 56, .19);
     --public-label-handwriting: "Segoe Print", "Bradley Hand", "Segoe Script", cursive;
@@ -584,9 +584,9 @@ body {
 
 .artwork-label-trigger,
 .artwork-detail__footer > .artwork-label {
-    width: min(100%, 16.25rem);
+    width: min(100%, 15rem);
     min-width: 0;
-    max-width: 16.25rem;
+    max-width: 15rem;
     justify-self: start;
 }
 .artwork-label-trigger {
@@ -596,14 +596,15 @@ body {
     cursor: pointer;
 }
 
-/* One shared, intentionally compact handwritten exhibition label.
-   A quiet physical edge encloses printed prompts and ruled writing lines. */
+/* A compact, preprinted gallery slip: a ruled title and medium, followed
+   by a short shared year/size line. The irregular field rhythm belongs to
+   the artist's actual data, not a four-row CMS form. */
 .artwork-label {
     display: grid;
     width: 100%;
     min-width: 0;
-    padding: .53rem .63rem .56rem;
-    gap: .08rem;
+    padding: .66rem .78rem .7rem;
+    gap: .28rem;
     border: 1px solid var(--public-plaque-border);
     border-radius: 0;
     background: var(--public-plaque-surface);
@@ -622,52 +623,65 @@ body {
 }
 .artwork-label__field {
     display: grid;
-    grid-template-columns: 3.15rem minmax(0, 1fr);
+    grid-template-columns: 3.1rem minmax(0, 1fr);
     min-width: 0;
     align-items: start;
-    column-gap: .32rem;
+    column-gap: .28rem;
 }
 .artwork-label__prompt {
     display: block;
-    padding-top: .27rem;
-    color: #776e62;
+    padding-top: .29rem;
+    color: #746a5e;
     font-size: .56rem;
     font-weight: 500;
-    letter-spacing: .07em;
+    letter-spacing: .045em;
     line-height: 1.35;
     text-transform: uppercase;
 }
 .artwork-label__writing {
     display: block;
     min-width: 0;
-    min-height: 1.43rem;
+    min-height: 1.4rem;
     padding-inline: .12rem;
     background-image: linear-gradient(
         to bottom,
         transparent calc(100% - 1px),
         var(--public-plaque-rule) calc(100% - 1px)
     );
-    background-size: 100% 1.43rem;
-    line-height: 1.43rem;
+    background-size: 100% 1.4rem;
+    line-height: 1.4rem;
 }
 .artwork-label__entry {
     color: var(--public-label-ink);
     font-family: var(--public-label-handwriting);
-    font-size: .76rem;
+    font-size: .77rem;
     font-weight: 400;
     letter-spacing: 0;
     line-height: inherit;
     overflow-wrap: break-word;
 }
 .artwork-label__field--title .artwork-label__entry {
-    font-size: .83rem;
+    font-size: .84rem;
+}
+.artwork-label__tail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: .55rem;
+}
+.artwork-label__tail--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+.artwork-label__tail .artwork-label__field {
+    grid-template-columns: 1.85rem minmax(0, 1fr);
+    column-gap: .1rem;
 }
 .artwork-label__entry--numeric {
     font-variant-numeric: tabular-nums;
 }
 
-/* A separate typographic work index, grounded by one quiet upper rule.
-   Controls keep native links and accessible labels; no boxed cells. */
+/* An independently clickable work-index pointer: arrow, gallery, arrow.
+   No input-box imitation, baseline floating above the controls or fake button
+   surface. Space and emphasis come from typographic composition. */
 .artwork-card__actions,
 .artwork-detail__actions {
     display: flex;
@@ -678,24 +692,23 @@ body {
     align-items: center;
     justify-self: end;
     flex-wrap: nowrap;
-    gap: .08rem;
-    padding: .12rem 0 .06rem;
+    gap: .15rem;
+    padding: 0;
     border: 0;
-    border-top: 1px solid var(--public-plaque-rule);
     background: transparent;
 }
 .artwork-context-button {
     display: inline-flex;
     min-width: 0;
-    min-height: 2.25rem;
-    padding: .32rem .12rem;
+    min-height: 2.3rem;
+    padding: .36rem .14rem;
     align-items: center;
     justify-content: center;
     appearance: none;
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: #4f463c;
+    color: #534b43;
     font-family: var(--public-typeface);
     font-size: .8rem;
     font-weight: 400;
@@ -709,11 +722,14 @@ body {
     transition: color .14s ease;
 }
 .artwork-context-button--category {
-    max-width: 8rem;
+    max-width: 7.5rem;
     padding-inline: .32rem;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: .9rem;
-    letter-spacing: -.01em;
+    border-bottom: 1px solid var(--public-plaque-rule);
+    color: #332f2b;
+    font-family: var(--public-index-typeface);
+    font-size: 1.06rem;
+    font-style: italic;
+    letter-spacing: -.014em;
 }
 .artwork-context-button__label {
     display: block;
@@ -725,28 +741,26 @@ body {
 }
 .artwork-context-button:hover,
 .artwork-context-button:focus-visible {
-    color: #211b15;
+    color: #171511;
 }
-.artwork-context-button--category:hover .artwork-context-button__label,
-.artwork-context-button--category:focus-visible .artwork-context-button__label {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: .33em;
+.artwork-context-button--category:hover,
+.artwork-context-button--category:focus-visible {
+    border-bottom-color: #514b42;
 }
 .artwork-context-button:focus-visible {
     outline: 1px dotted #6d665f;
     outline-offset: 0;
 }
 .artwork-context-button--icon {
-    width: 1.85rem;
-    min-width: 1.85rem;
-    flex: 0 0 1.85rem;
-    padding-inline: .16rem;
+    width: 1.65rem;
+    min-width: 1.65rem;
+    flex: 0 0 1.65rem;
+    padding-inline: .13rem;
 }
 .artwork-context-button--icon > .public-icon {
-    width: .95rem;
-    height: .95rem;
-    stroke-width: 1.35;
+    width: 1.02rem;
+    height: 1.02rem;
+    stroke-width: 1.45;
 }
 
 /* Query the actual Artwork width, not the viewport's unrelated breakpoint. */
