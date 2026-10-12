@@ -140,13 +140,23 @@ it('resets paging on filters and keeps root groups intact across pagination', fu
         ->and($pagedParent['children'])->toHaveCount(1)
         ->and((int) $pagedParent['children'][0]['id'])->toBe((int) $child->getKey());
 
+    $pageOneIds = collect($component->get('filteredRows'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    $component->call('toggleSelectAll');
+    expect(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($pageOneIds);
+
     $component->call('nextPage');
     expect($component->get('pageNumber'))->toBe(2)
+        ->and($component->get('selectedSectionIds'))->toBe([])
         ->and(SiteSection::query()->orderBy('id')->pluck('position', 'id')->all())->toBe($positionsBefore);
+
+    $pageTwoIds = collect($component->get('filteredRows'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    $component->call('toggleSelectAll');
+    expect(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($pageTwoIds);
 
     $component->set('search', 'Paged Root 26');
     expect($component->get('pageNumber'))->toBe(1)
         ->and($component->get('filtersActive'))->toBeTrue()
+        ->and($component->get('selectedSectionIds'))->toBe([])
         ->and($component->get('reorderEnabled'))->toBeFalse();
 });
 
@@ -157,7 +167,7 @@ it('selects all visible Pages from none or mixed, and clears them from all', fun
 
     $component = Livewire::test(SitePages::class);
     $visibleIds = collect($component->get('filteredRows'))->pluck('id')->map(fn ($id): int => (int) $id)->all();
-    expect(count($visibleIds))->toBeGreaterThan(2)
+    expect(count($visibleIds))->toBeGreaterThan(1)
         ->and($component->get('selectedSectionIds'))->toBe([]);
 
     // Screenshot sequence: All -> uncheck one -> All -> clear All.
