@@ -35,7 +35,7 @@ A canonical media **reference** does not automatically mean the asset is publicl
 
 ## Site navigation
 
-Navigation is generated from canonical Site Node tree and persisted order/visibility, not hard-coded page arrays/legacy category assumptions.
+Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
 The public visual composition remains artist-specific rather than adopting a generic CMS theme.
 

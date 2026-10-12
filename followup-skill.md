@@ -4,6 +4,40 @@ Use this file when a long orchestration/review chat is becoming too large and th
 
 The goal is a lossless operational handoff, not a summary for casual reading.
 
+## Active parallel-`dev` continuation mode (2026-10-12)
+
+The current user has explicitly requested **two separate continuation chats at
+the same time**, one admin-facing, one public-facing. This mode takes precedence
+over the older worker-branch examples below until the user changes it.
+
+- Prepare **two complete, standalone copyable prompts** when requested. The
+  admin prompt resumes iterative admin browser/functional repair; the public
+  prompt starts by auditing the public routing/controllers/Blade/CSS/JS,
+  responsiveness, legacy runtime and public/admin boundaries before repairing
+  justified public defects. Each prompt must name the other concurrent chat.
+- Both chats use `Wiiii90/moeller-lars`, directly on shared `dev` only:
+  **no side branches, worktrees, PR integration, CI reads/runs/dispatches/logs,
+  or deployment**. The public chat must not import admin-only layout rules as
+  public visual specifications; both reuse one Domain/media/publication stack.
+- Every chat records its initial head but **never assumes it remains current**.
+  Before each commit, re-read remote `dev`, inspect changes since its previous
+  base (especially shared files), adapt the patch/verify its net diff, then
+  commit against the updated head using an expected-SHA atomic ref update.
+  Retry conflicts only after inspection; no force push, reset, rebase or silent
+  overwrite of the other chat.
+- Repository documents are portable; local `P:\moeller-lars` is a user Windows
+  checkout, not necessarily mounted in the new ChatGPT runtime. Discover GitHub
+  tools first when that checkout is absent. Do not invent a browser session,
+  test run, Docker mount, command output or acceptance evidence.
+- Respect the user's productive **direct audit + implementation + independent
+  diff review** workflow: do not convert it to worker-only delegation just
+  because a historical section mentions worker prompts. Limit the scope to
+  the chat's surface and its genuinely needed shared Domain dependencies.
+- State the exact repository head from the moment of handoff, then instruct
+  both sessions to refresh it immediately. State any outstanding runtime/browser
+  acceptance separately from confirmed source work; current user feedback
+  supersedes stale test/source claims.
+
 ## 1. Core requirement
 
 The next chat must be able to continue the work without asking the user to reconstruct:
@@ -175,13 +209,17 @@ If the General chat itself consumed substantial context by loading long source/d
 
 State the branch strategy explicitly and identify the next worker as Audit, Implementation, or an explicitly bounded combined Audit+Implementation worker.
 
-For parallel workers:
+For historical parallel branch workers (only when that different mode is expressly authorized):
 
 - one exact shared base;
 - one side branch each;
 - do not let all workers push to the combined branch;
 - do not mutate historical feature branches;
 - no rebase/merge/deploy unless requested.
+
+**This branch-worker workflow does not apply to the active two-chat shared-`dev` mode.**
+In that mode, both independent chats commit directly to `dev` after
+pre-commit HEAD reconciliation and expected-SHA fast-forward updates.
 
 For sequential workers:
 
@@ -275,6 +313,11 @@ When the user asks for a follow-up prompt, normally deliver:
 1. a short statement of any docs/state updates completed first;
 2. a local `git pull --ff-only` command only when the next chat/user actually needs the local checkout; do not make that command a prerequisite for repository-only work;
 3. the **entire follow-up prompt as one contiguous fenced code block**.
+
+When the user requests two distinct chats, deliver **two separate, complete
+one-block prompts**, each self-contained and individually copyable. Neither
+prompt may rely on the reader having seen the other prompt or the original
+conversation. Explicitly identify which scope each chat owns.
 
 The prompt should start with the mission and portable repository identity, then state how to continue if the local checkout is unavailable. Do not front-load local path assumptions before the next chat has had a chance to use its repository connector.
 

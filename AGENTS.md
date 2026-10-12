@@ -73,37 +73,62 @@ Use the current artist-facing concepts:
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
 
+## Active two-chat direct-`dev` collaboration (2026-10-12)
+
+The user is deliberately working with **two simultaneous ChatGPT chats on the same `dev` branch**:
+one owns admin/editorial UI and operational bug fixes; the other owns the public
+homepage's Blade/CSS/JS, public-facing UX, architecture, legacy cleanup and
+responsiveness. This is the **active, explicitly authorized execution mode**
+until the user changes it. Both chats may inspect shared Domain code, but each
+must minimize edits outside its assigned public/admin surface; coordinate any
+shared-file or cross-boundary change against the latest actual `dev` tree.
+
+Hard restrictions in both chats:
+
+- **Commit directly to `dev` only.** Never create side/worker/integration/review
+  branches, worktrees or duplicate local checkouts. Never merge/push to `main`,
+  start a release or deploy unless the user expressly authorizes a separate task.
+- **No CI interaction whatsoever:** do not run, dispatch, monitor, read status,
+  inspect jobs, fetch logs, retry, cancel or troubleshoot GitHub Actions/CI.
+  Local targeted tests and source checks are distinct from CI and may be run
+  only where an appropriate isolated environment exists; never claim tests or
+  browser review ran when they did not.
+- **Every write is concurrency-aware.** Read `dev` and record its exact HEAD
+  at the start. Immediately before building a commit, read HEAD again. If
+  another chat advanced it, compare old HEAD -> new HEAD, inspect changed paths,
+  reconcile overlapping edits from the new source, and re-review the intended
+  net diff. Only then create a commit whose parent is the newest HEAD and
+  advance `refs/heads/dev` using an atomic expected-SHA lease/fast-forward.
+  On lease failure, re-read and reconcile again; never force-push, reset,
+  rewrite shared history, discard someone else's changes or blindly retry.
+  Single-file GitHub Contents API updates also require a current blob SHA and
+  HEAD reconciliation; for multi-file changes prefer one atomic tree commit.
+- Avoid concurrent writes to the same file where possible. Shared Domain
+  contracts, public/admin layout boundaries and root documentation need
+  special attention. Distinguish **source-verified**, **tests actually run**,
+  **browser-reviewed** and **user-accepted** states.
+- No symptom hacks or parallel UI/persistence/notification systems. Follow
+  the root-cause stop rule above; do not weaken tests to force passing results.
+
+`dev` remains the working integration branch; `main` remains protected. The
+older orchestration/worker/PR/CI procedures elsewhere in this document are
+historical or optional **future** modes, not permission to override this direct
+`dev`/no-CI instruction. Change execution modes only on explicit user request.
+
 ## Current orchestration model
 
-`dev` is the daily integration branch. `main` is the protected acceptance/release branch.
-Only `main` and `dev` are permanent. Worker branches use `feat/<scope>`, `fix/<scope>`,
-`chore/<scope>` or `docs/<scope>` and are deleted immediately after integration into `dev`.
-Do not create archive branches/tags or persistent repair/reconcile/integration/browser branches.
+For this accepted direct browser-repair cycle, both chats act as scoped
+Audit + Implementation + Diff-Review sessions without delegated worker branches.
+Admin and public are parallel tasks, **not parallel implementations of a
+feature**. Reuse the existing Domain/persistence services and shared media,
+publication, routing and Rich Text contracts. A public-only change must not
+fork those services; an admin-only change must not reshape public presentation
+without verifying the impact. The user can supply screenshots and feedback in
+either session; a passing source check is not browser acceptance.
 
-Normal flow: named scope branch -> source review -> `dev` -> browser/product acceptance
-and release qualification -> `main`. Integration does not itself establish browser acceptance.
-
-Promotion from `dev` to `main` must never use permanent `dev` itself as the pull-request head.
-Create a temporary branch such as `chore/promote-<short-dev-sha>-to-main` from the exact accepted
-`dev` SHA, open the PR from that temporary branch to `main`, and delete only that temporary
-branch after merge. This keeps repository auto-delete behavior away from permanent `dev`.
-Immediately after promotion, verify that both permanent branches still exist and that every
-intended `dev` commit is reachable from the resulting `main`. Never force/reset `dev` to repair
-a promotion; if either branch advanced concurrently, reconcile the histories without dropping
-those commits.
-
-Remote workers start from the exact `dev` SHA named in their prompt and use only their
-assigned branch. They never push to `main` or deploy Validation without explicit instruction.
-For parallel workers, freeze one shared dev base, review each base-to-head net diff, then
-integrate into the latest dev deliberately. Resolve shared files as a union; delete each
-integrated worker branch. Do not create another combined reconciliation branch.
-
-Keep browser-accepted presentation unchanged during source reconciliation unless the
-current task explicitly changes it. Repeated visual defects require inspection of the
-actual browser DOM/computed styles when available; do not claim measurements without a browser.
-
-Do not rebase public history, merge to `main`, deploy Production or retarget PRs unless
-explicitly authorized. Keep `dev` and the current task base distinct when dev advances.
+When an actual release to `main` is later requested, follow the protected
+promotion contract in `docs/RELEASE.md` under a **new, explicit authorization**.
+Until then there is no branch choreography, CI handoff or deployment step.
 
 ## Orchestrator and worker roles
 
@@ -521,9 +546,11 @@ After browser/product acceptance, audit the accepted change for source it create
 
 Preserve still-required compatibility and domain behavior. Audit references, call sites, routes and tests before deletion; never delete from naming alone. This cleanup scope covers only artifacts made obsolete by the accepted change; unrelated cleanup remains out of scope.
 
-Run required CI/final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. In the normal flow above, release qualification follows only after applicable cleanup and final verification.
+Run authorized final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. In the active two-chat mode above **CI is prohibited**, including reads and dispatches; a later release qualification is a separate user-authorized workflow.
 
 ## CI ownership and log handoff
+
+**Not applicable in the active two-chat direct-to-`dev` mode:** CI is fully forbidden, even read-only metadata/status access. This section documents optional future modes only after the user explicitly lifts that restriction.
 
 CI handling depends on branch ownership. The default assumption for `dev` is that it is shared by multiple chats/workers. Treat `dev` as exclusive only when the user explicitly says that one worker owns it for the current cycle.
 
