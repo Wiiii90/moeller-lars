@@ -55,12 +55,12 @@ final class AdminRichText
             return [$editor];
         }
 
-        // Keep the editor Alpine attribute limited to the state mutation it owns.
-        // The DOM/toolbar observer lives on the dedicated insert-flow Group below so
-        // Filament never has to serialize a multiline x-init block on MarkdownEditor.
-        // The CodeMirror editor synchronizes Alpine/Livewire state, but does not
-        // emit a native change event on blur. Bridge that semantic event into
-        // the existing AdminDialog::edit() handler; never autosave on keystrokes.
+        // Keep the editor Alpine behavior limited to inserting a canonical
+        // image reference and committing an edit on blur. The image picker has
+        // an explicit neighboring trigger; there are no observers, timers or
+        // interception of Filament's native attachment command.
+        // CodeMirror does not emit a native change on blur; bridge that
+        // semantic event into AdminDialog::edit(), never on keystrokes.
         $editor->extraAlpineAttributes([
             'data-admin-rich-text-editor-input' => $pickerKey,
             'x-on:focusout' => "if (!\$el.contains(\$event.relatedTarget) && \$el.closest('.admin-dialog--edit')) { \$el.dispatchEvent(new Event('change', { bubbles: true })); }",
