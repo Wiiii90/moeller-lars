@@ -50,7 +50,7 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('align-items: center;')
         ->toContain('.artwork-card__footer,')
         ->toContain('.artwork-detail__footer {')
-        ->toContain('/* Independent artwork folio: above the image')
+        ->toContain('/* The image-width folio is a three-part navigation')
         ->not->toContain('.artwork-context-button + .artwork-context-button')
         ->not->toContain('.artwork-label__title-qualifier')
         ->not->toContain('margin-bottom: var(--public-mobile-inset);')
