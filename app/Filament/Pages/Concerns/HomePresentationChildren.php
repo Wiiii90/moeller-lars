@@ -5,7 +5,6 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\SocialLinks;
-use App\Filament\Support\AdminRichText;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -67,14 +66,12 @@ trait HomePresentationChildren
     {
         $component = $this->componentFromArguments($arguments);
         $kind = (string) ($arguments['type'] ?? '');
-        if (! in_array($kind, ['list', 'contact'], true) || $component['type'] !== $kind) {
+        if ($kind !== 'contact' || $component['type'] !== $kind) {
             throw ValidationException::withMessages(['component' => 'This Home component changed. Reload and try again.']);
         }
-        $children = $kind === 'list' ? ($component['items'] ?? []) : (new CustomPageSetting)->contactChildren($component);
-        $key = $kind === 'list'
-            ? filter_var($arguments['child'] ?? null, FILTER_VALIDATE_INT)
-            : (string) ($arguments['child'] ?? '');
-        $index = $kind === 'list' ? $key : array_search($key, array_column($children, 'type'), true);
+        $children = (new CustomPageSetting)->contactChildren($component);
+        $key = (string) ($arguments['child'] ?? '');
+        $index = array_search($key, array_column($children, 'type'), true);
         if ($index === false || ! isset($children[$index])) {
             throw ValidationException::withMessages(['component' => 'This Home child changed. Reload and try again.']);
         }
@@ -116,61 +113,22 @@ trait HomePresentationChildren
         }
     }
 
-    /** @return list<mixed> */
-    private function homeListEntryFields(bool $creating): array
-    {
-        return [
-            Grid::make()->columns(['md' => 2])->schema([
-                ...($creating ? [Select::make('publication_state')->label('Status')
-                    ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])->default('published')->required()] : [Hidden::make('publication_state')]),
-                TextInput::make('date')->label('Date / year')->maxLength(120),
-                TextInput::make('title')->label('Entry')->required()->maxLength(240),
-                TextInput::make('meta')->label('Organisation / context')->maxLength(240),
-                TextInput::make('location')->maxLength(240),
-                TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
-                ...AdminRichText::schema('body', 'Details', 10000),
-            ]),
-        ];
-    }
-
-    /** @param array<string,mixed> $data */
-    private function homeListPayload(array $data): array
-    {
-        return [
-            'date' => $data['date'] ?? null,
-            'title' => $data['title'] ?? null,
-            'meta' => $data['meta'] ?? null,
-            'location' => $data['location'] ?? null,
-            'url' => $data['url'] ?? null,
-            'body' => $data['body'] ?? null,
-            'published' => ($data['publication_state'] ?? 'published') === 'published',
-        ];
-    }
-
     public function addHomeChildAction(): Action
     {
         return AdminDialog::create(Action::make('addHomeChild')
             ->label('Add child')
             ->fillForm(function (array $arguments): array {
-                if (($arguments['type'] ?? null) !== 'contact') {
-                    return ['publication_state' => 'published'];
-                }
                 $parent = $this->componentFromArguments($arguments);
                 $existing = array_column((new CustomPageSetting)->contactChildren($parent), 'type');
                 $available = array_values(array_diff(CustomPageSetting::CONTACT_CHILD_TYPES, $existing));
 
                 return ['child_type' => $available[0] ?? null, 'publication_state' => 'published'];
             })
-            ->schema(fn (array $arguments): array => ($arguments['type'] ?? null) === 'contact'
-                ? $this->homeContactFields(true, $arguments)
-                : $this->homeListEntryFields(true))
+            ->schema(fn (array $arguments): array => $this->homeContactFields(true, $arguments))
             ->action(function (array $data, array $arguments): void {
                 $args = $this->homeChildArgs($arguments);
                 $this->componentFromArguments($args);
-                $payload = $args['type'] === 'list'
-                    ? $this->homeListPayload($data)
-                    : $this->homeContactPayload($data);
-                $this->persistHomeChild($args, 'add', $payload);
+                $this->persistHomeChild($args, 'add', $this->homeContactPayload($data));
             }), 'Add item', AdminDialogSize::Large);
     }
 
@@ -185,16 +143,12 @@ trait HomePresentationChildren
                     'publication_state' => CustomPageSetting::contactChildPublished($child) ? 'published' : 'unpublished',
                 ];
             })
-            ->schema(fn (array $arguments): array => ($arguments['type'] ?? null) === 'contact'
-                ? $this->homeContactFields(false, $arguments)
-                : $this->homeListEntryFields(false))
+            ->schema(fn (array $arguments): array => $this->homeContactFields(false, $arguments))
             ->extraModalFooterActions(fn (array $arguments): array => $this->homeChildHeaderActions($arguments))
             ->action(function (array $data, array $arguments): void {
                 [, , $child] = $this->homeActionChild($arguments);
                 $args = $this->homeChildArgs($arguments);
-                $payload = $args['type'] === 'list'
-                    ? $this->homeListPayload($data)
-                    : $this->homeContactPayload([...$data, 'child_type' => $child['type']]);
+                $payload = $this->homeContactPayload([...$data, 'child_type' => $child['type']]);
                 $payload['published'] = CustomPageSetting::contactChildPublished($child);
                 $this->persistHomeChild($args, 'update', $payload);
             });
@@ -209,17 +163,14 @@ trait HomePresentationChildren
     {
         [$parent, $key, $child] = $this->homeActionChild($arguments);
         $args = $this->homeChildArgs($arguments);
-        $children = $args['type'] === 'list' ? ($parent['items'] ?? []) : (new CustomPageSetting)->contactChildren($parent);
-        $index = $args['type'] === 'list' ? (int) $key : array_search($key, array_column($children, 'type'), true);
+        $children = (new CustomPageSetting)->contactChildren($parent);
+        $index = array_search($key, array_column($children, 'type'), true);
         $actions = [];
         foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
             $valid = $this->componentReorderEnabled() && ($direction === 'up' ? $index > 0 : $index < count($children) - 1);
             $actions[] = AdminDialog::headerAction('homeChildMove'.ucfirst($direction), $role, function () use ($args, $direction): void {
                 $this->persistHomeChild($args, 'move_'.$direction);
-                $child = $args['type'] === 'list'
-                    ? ((int) $args['child'] + ($direction === 'up' ? -1 : 1))
-                    : $args['child'];
-                $this->replaceMountedAction('editHomeChild', [...$args, 'child' => $child]);
+                $this->replaceMountedAction('editHomeChild', $args);
             })->disabled(! $valid);
         }
         $published = CustomPageSetting::contactChildPublished($child);
@@ -251,11 +202,10 @@ trait HomePresentationChildren
             return;
         }
         $parts = explode(':', $target, 3);
-        if (count($parts) !== 3 || ! in_array($parts[0], ['list', 'contact'], true) || ! ctype_digit($parts[1])) {
+        if (count($parts) !== 3 || $parts[0] !== 'contact' || ! ctype_digit($parts[1])) {
             throw ValidationException::withMessages(['component' => 'This Home child changed. Reload and try again.']);
         }
-        $args = ['index' => (int) $parts[1], 'type' => $parts[0],
-            'child' => $parts[0] === 'list' ? (int) $parts[2] : $parts[2]];
+        $args = ['index' => (int) $parts[1], 'type' => 'contact', 'child' => $parts[2]];
         $this->homeActionChild($args);
         $this->persistHomeChild($args, 'reposition', ['position' => $position]);
     }
