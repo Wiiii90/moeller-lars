@@ -11,9 +11,9 @@ use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\DashboardOverview;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\Controls\AdminControl;
 use App\Models\User;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
 use Illuminate\Contracts\View\View;
@@ -315,8 +315,7 @@ final class Dashboard extends Page
                     ->label('Keep notification history')
                     ->options(DashboardNotificationRetention::options())
                     ->required(),
-                Checkbox::make('delete_without_confirmation')
-                    ->label('Delete messages without confirmation'),
+                AdminControl::toggle('delete_without_confirmation', 'Delete messages without confirmation'),
             ]), AdminDialogSize::Small)->action(function (array $data): void {
                 $user = auth()->user();
                 if (! $user instanceof User) {
