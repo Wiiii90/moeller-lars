@@ -21,7 +21,8 @@
     /* One editorial paper palette owned by the public shell. */
     --public-surface: #f7f4ed;
     --public-plaque-surface: #faf7f1;
-    --public-plaque-rule: rgba(88, 74, 56, .27);
+    --public-plaque-rule: rgba(88, 74, 56, .24);
+    --public-plaque-border: rgba(88, 74, 56, .19);
     --public-label-handwriting: "Segoe Print", "Bradley Hand", "Segoe Script", cursive;
     --public-label-ink: #28394b;
     --public-ink-strong: #30291f;
@@ -566,9 +567,9 @@ body {
 
 .artwork-label-trigger,
 .artwork-detail__footer > .artwork-label {
-    width: min(100%, 19rem);
+    width: min(100%, 16.25rem);
     min-width: 0;
-    max-width: 19rem;
+    max-width: 16.25rem;
     justify-self: start;
 }
 .artwork-label-trigger {
@@ -578,16 +579,15 @@ body {
     cursor: pointer;
 }
 
-/* An actual fill-in exhibition label. Small printed prompts lead into ruled
-   handwriting lines; never layout cells, a table, or decorative header bars.
-   The value ink is a separate, centralized type role for all authored fields. */
+/* One shared, intentionally compact handwritten exhibition label.
+   A quiet physical edge encloses printed prompts and ruled writing lines. */
 .artwork-label {
     display: grid;
     width: 100%;
     min-width: 0;
-    padding: .78rem .85rem .85rem;
-    gap: .22rem;
-    border: 1px solid var(--public-artwork-line);
+    padding: .53rem .63rem .56rem;
+    gap: .08rem;
+    border: 1px solid var(--public-plaque-border);
     border-radius: 0;
     background: var(--public-plaque-surface);
     color: var(--public-ink-strong);
@@ -595,70 +595,62 @@ body {
     line-height: 1.4;
     transition: border-color .14s ease;
 }
-
 .artwork-label-trigger:hover .artwork-label,
 .artwork-label-trigger:focus-visible .artwork-label {
     border-color: var(--public-artwork-line-hover);
 }
-
 .artwork-label-trigger:focus-visible {
     outline: 1px dotted var(--public-artwork-line-hover);
     outline-offset: 3px;
 }
-
 .artwork-label__field {
     display: grid;
-    grid-template-columns: 3.7rem minmax(0, 1fr);
+    grid-template-columns: 3.15rem minmax(0, 1fr);
     min-width: 0;
     align-items: start;
-    column-gap: .35rem;
+    column-gap: .32rem;
 }
-
 .artwork-label__prompt {
     display: block;
-    padding-top: .48rem;
-    color: #80766a;
-    font-size: .59rem;
+    padding-top: .27rem;
+    color: #776e62;
+    font-size: .56rem;
     font-weight: 500;
-    letter-spacing: .065em;
+    letter-spacing: .07em;
     line-height: 1.35;
     text-transform: uppercase;
 }
-
 .artwork-label__writing {
     display: block;
     min-width: 0;
-    min-height: 1.65rem;
+    min-height: 1.43rem;
     padding-inline: .12rem;
     background-image: linear-gradient(
         to bottom,
         transparent calc(100% - 1px),
         var(--public-plaque-rule) calc(100% - 1px)
     );
-    background-size: 100% 1.65rem;
-    line-height: 1.65rem;
+    background-size: 100% 1.43rem;
+    line-height: 1.43rem;
 }
-
 .artwork-label__entry {
     color: var(--public-label-ink);
     font-family: var(--public-label-handwriting);
-    font-size: .82rem;
+    font-size: .76rem;
     font-weight: 400;
     letter-spacing: 0;
     line-height: inherit;
     overflow-wrap: break-word;
 }
-
 .artwork-label__field--title .artwork-label__entry {
-    font-size: .89rem;
+    font-size: .83rem;
 }
-
 .artwork-label__entry--numeric {
     font-variant-numeric: tabular-nums;
 }
 
-/* Artwork navigation is free-standing typography, not three boxed cells.
-   The double chevrons are specific to Artwork actions, not site navigation. */
+/* A separate typographic work index, grounded by one quiet upper rule.
+   Controls keep native links and accessible labels; no boxed cells. */
 .artwork-card__actions,
 .artwork-detail__actions {
     display: flex;
@@ -669,28 +661,29 @@ body {
     align-items: center;
     justify-self: end;
     flex-wrap: nowrap;
-    gap: .24rem;
+    gap: .08rem;
+    padding: .12rem 0 .06rem;
     border: 0;
+    border-top: 1px solid var(--public-plaque-rule);
     background: transparent;
 }
-
 .artwork-context-button {
     display: inline-flex;
     min-width: 0;
     min-height: 2.25rem;
-    padding: .35rem .25rem;
+    padding: .32rem .12rem;
     align-items: center;
     justify-content: center;
     appearance: none;
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: #4e4740;
+    color: #4f463c;
     font-family: var(--public-typeface);
-    font-size: .82rem;
+    font-size: .8rem;
     font-weight: 400;
-    letter-spacing: .012em;
-    line-height: 1.3;
+    letter-spacing: 0;
+    line-height: 1.25;
     text-align: center;
     text-decoration: none;
     text-transform: none;
@@ -698,12 +691,13 @@ body {
     cursor: pointer;
     transition: color .14s ease;
 }
-
 .artwork-context-button--category {
-    max-width: 9.5rem;
-    padding-inline: .35rem;
+    max-width: 8rem;
+    padding-inline: .32rem;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: .9rem;
+    letter-spacing: -.01em;
 }
-
 .artwork-context-button__label {
     display: block;
     min-width: 0;
@@ -712,35 +706,30 @@ body {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-
 .artwork-context-button:hover,
 .artwork-context-button:focus-visible {
-    color: #18130e;
+    color: #211b15;
 }
-
 .artwork-context-button--category:hover .artwork-context-button__label,
 .artwork-context-button--category:focus-visible .artwork-context-button__label {
     text-decoration: underline;
     text-decoration-thickness: 1px;
-    text-underline-offset: .3em;
+    text-underline-offset: .33em;
 }
-
 .artwork-context-button:focus-visible {
     outline: 1px dotted #6d665f;
     outline-offset: 0;
 }
-
 .artwork-context-button--icon {
-    width: 2rem;
-    min-width: 2rem;
-    flex: 0 0 2rem;
-    padding-inline: .2rem;
+    width: 1.85rem;
+    min-width: 1.85rem;
+    flex: 0 0 1.85rem;
+    padding-inline: .16rem;
 }
-
 .artwork-context-button--icon > .public-icon {
-    width: 1.08rem;
-    height: 1.08rem;
-    stroke-width: 1.5;
+    width: .95rem;
+    height: .95rem;
+    stroke-width: 1.35;
 }
 
 /* Query the actual Artwork width, not the viewport's unrelated breakpoint. */
