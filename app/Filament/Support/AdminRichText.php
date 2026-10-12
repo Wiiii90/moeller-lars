@@ -28,9 +28,10 @@ final class AdminRichText
             ['undo', 'redo'],
         ];
 
-        if ($allowEmbeddedMedia) {
-            $toolbar[2][] = 'attachFiles';
-        }
+        // Images are inserted through the canonical Storage/reference picker
+        // below. Filament's attachFiles command invokes its own uploader even
+        // when fileAttachments(false) is set, and can hit Flysystem with a
+        // null location before the project's media service is involved.
 
         $pickerKey = substr(sha1($name), 0, 12);
         $pickerName = '__rich_text_media_'.$pickerKey;
@@ -103,16 +104,24 @@ final class AdminRichText
                 $livewire->dispatch('admin-rich-text-image-close', key: $pickerKey);
             });
 
-        $insertFlow = Group::make([
+        $pickerContent = Group::make([
             View::make('filament.support.rich-text-image-insert'),
             $picker,
         ])
-            ->columnSpanFull()
             ->extraAttributes([
                 'class' => 'admin-rich-text-image-insert',
-                'data-admin-rich-text-image-insert' => $pickerKey,
                 'x-cloak' => true,
                 'x-show' => 'open',
+            ]);
+
+        $insertFlow = Group::make([
+            View::make('filament.support.rich-text-image-trigger'),
+            $pickerContent,
+        ])
+            ->columnSpanFull()
+            ->extraAttributes([
+                'class' => 'admin-rich-text-insert-control',
+                'data-admin-rich-text-image-insert' => $pickerKey,
                 'x-data' => <<<JS
                     {
                         key: '{$pickerKey}',
@@ -153,34 +162,6 @@ final class AdminRichText
                         },
                     }
                 JS,
-                'x-init' => <<<JS
-                    const scope = \$el.closest('.fi-modal-window, form, .fi-page') ?? document
-                    const bindImageToolbarAction = () => {
-                        const editor = scope.querySelector('[data-admin-rich-text-editor-input="{$pickerKey}"]')
-                        const toolbarButton = editor?.querySelector('.editor-toolbar .upload-image')
-                        if (! toolbarButton || toolbarButton.dataset.adminImageBound === 'true') return false
-
-                        toolbarButton.dataset.adminImageBound = 'true'
-                        toolbarButton.setAttribute('title', 'Insert image')
-                        toolbarButton.setAttribute('aria-label', 'Insert image')
-                        toolbarButton.addEventListener('click', (event) => {
-                            event.preventDefault()
-                            event.stopImmediatePropagation()
-                            \$el.dispatchEvent(new CustomEvent('admin-rich-text-image-open'))
-                        }, true)
-
-                        return true
-                    }
-
-                    if (! bindImageToolbarAction()) {
-                        const observer = new MutationObserver(() => {
-                            if (bindImageToolbarAction()) observer.disconnect()
-                        })
-                        observer.observe(scope === document ? document.body : scope, { childList: true, subtree: true })
-                        setTimeout(() => observer.disconnect(), 3000)
-                    }
-                JS,
-                'x-on:admin-rich-text-image-open' => "open = true; source = 'media'; externalError = ''; \$nextTick(() => \$el.querySelector('[role=\"combobox\"]')?.focus())",
                 'x-on:admin-rich-text-image-close.window' => "if (\$event.detail.key === key) { open = false; externalUrl = ''; externalError = ''; }",
                 'x-on:click.outside' => 'open = false',
                 'x-on:keydown.escape.window' => 'open = false',
