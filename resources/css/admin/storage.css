@@ -507,20 +507,20 @@
  * filters (Type, Size, Usage/Used in, Status), and Actions begins exactly at
  * 4/6. Selection keeps the shared fixed trailing checkbox rail. */
 .admin-storage .media-workspace__table {
-    --admin-row-actions-width: 20.5rem;
+    --admin-row-actions-width: var(--admin-row-actions-four-static-width);
     min-width: 0;
     max-width: 100%;
     table-layout: fixed;
 }
 
 .admin-storage .media-workspace__col-preview { width: 5.555556%; }
-.admin-storage .media-workspace__col-media { width: 27.777777%; }
+.admin-storage .media-workspace__col-media { width: auto; }
 .admin-storage .media-workspace__table-wrap.is-dense .media-workspace__col-media { width: 33.333333%; }
 .admin-storage .media-workspace__col-type { width: 9.722222%; }
 .admin-storage .media-workspace__col-size { width: 8.333333%; }
 .admin-storage .media-workspace__col-usage { width: 9.722222%; }
-.admin-storage .media-workspace__col-status { width: 5.555556%; }
-.admin-storage .media-workspace__col-actions { width: 21rem; }
+.admin-storage .media-workspace__col-status { width: 7.5rem; }
+.admin-storage .media-workspace__col-actions { width: calc(var(--admin-row-actions-four-static-width) + .5rem); }
 .admin-storage .media-workspace__col-selection { width: 2.5rem; }
 
 .admin-storage .media-workspace__identity,

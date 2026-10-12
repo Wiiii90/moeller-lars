@@ -32,6 +32,20 @@
     --admin-row-action-slot-journal-state-width: 9rem; /* Cancel schedule */
     --admin-row-action-slot-schedule-width: 5.75rem;
     --admin-row-action-slot-archive-width: 5rem;
+
+    /* Four fixed Storage labels: one shared recipe for rail, column and header. */
+    --admin-row-action-slot-details-width: 4.75rem;
+    --admin-row-action-slot-static-edit-width: 3.625rem;
+    --admin-row-action-slot-download-width: 5.75rem;
+    --admin-row-action-slot-static-delete-width: 4.25rem;
+    --admin-row-actions-four-static-width: calc(
+        var(--admin-row-action-slot-details-width) + var(--admin-row-action-slot-static-edit-width)
+        + var(--admin-row-action-slot-download-width) + var(--admin-row-action-slot-static-delete-width)
+        + .75rem
+    );
+    --admin-row-actions-two-static-width: 9.5rem;
+    --admin-row-actions-three-static-width: 15.5rem;
+    --admin-row-actions-state-open-width: 14.5rem;
     --admin-row-actions-move-edit-delete-width: calc(
         var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
         + var(--admin-row-action-slot-edit-width) + var(--admin-row-action-slot-delete-width) + .75rem
@@ -171,22 +185,6 @@
     justify-content: flex-start !important;
 }
 
-.admin-row-actions--three,
-.admin-row-actions--four {
-    display: grid !important;
-    width: 100%;
-    gap: .25rem;
-}
-
-.admin-row-actions--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.admin-row-actions--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-
-.admin-row-actions--three .admin-action,
-.admin-row-actions--four .admin-action {
-    min-width: 0;
-    justify-content: center;
-}
-
 /* Canonical stable row-action rail.
  *
  * Every semantic action owns one stable slot. Wide uses complete labels; the
@@ -219,22 +217,12 @@
     overflow: visible;
 }
 
-.admin-row-actions--stable .admin-action--state {
-    width: max-content;
-    min-width: 0;
-}
-
 .admin-row-actions--stable .admin-action__label {
     min-width: 0;
     overflow: visible;
     text-align: center;
     text-overflow: clip;
     white-space: nowrap;
-}
-
-.admin-row-actions--move-delete {
-    --admin-row-actions-width: 13.75rem;
-    --admin-row-actions-columns: max-content max-content max-content;
 }
 
 .admin-row-actions--move-edit-delete {
@@ -255,13 +243,11 @@
         minmax(var(--admin-row-action-slot-state-width), max-content)
         minmax(var(--admin-row-action-slot-delete-width), max-content);
     --admin-row-actions-gap: .1875rem;
-    --admin-row-state-slot: 0;
 }
 
 .admin-row-actions--state-open {
-    --admin-row-actions-width: 14.5rem;
+    --admin-row-actions-width: var(--admin-row-actions-state-open-width);
     --admin-row-actions-columns: minmax(7rem, max-content) minmax(7.25rem, max-content);
-    --admin-row-state-slot: 7rem;
 }
 
 .admin-row-actions--journal-blog {
@@ -275,41 +261,28 @@
         minmax(var(--admin-row-action-slot-archive-width), max-content)
         minmax(var(--admin-row-action-slot-delete-width), max-content);
     --admin-row-actions-gap: .18rem;
-    --admin-row-state-slot: 0;
 }
 
 .admin-row-actions--two-static {
-    --admin-row-actions-width: 9.5rem;
+    --admin-row-actions-width: var(--admin-row-actions-two-static-width);
     --admin-row-actions-columns: max-content max-content;
 }
 
 .admin-row-actions--three-static {
-    --admin-row-actions-width: 15.5rem;
+    --admin-row-actions-width: var(--admin-row-actions-three-static-width);
     --admin-row-actions-columns: max-content max-content max-content;
 }
 
 .admin-row-actions--four-static {
-    --admin-row-actions-width: 20.5rem;
-    --admin-row-actions-columns: max-content max-content max-content max-content;
+    --admin-row-actions-width: var(--admin-row-actions-four-static-width);
+    --admin-row-actions-columns:
+        minmax(var(--admin-row-action-slot-details-width), max-content)
+        minmax(var(--admin-row-action-slot-static-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-download-width), max-content)
+        minmax(var(--admin-row-action-slot-static-delete-width), max-content);
 }
 
-/* Dense action recipes use fixed semantic slots in Wide. Buttons stay
- * content-sized and start on the slot axis: Pin may be narrower than Unpin,
- * Publish narrower than Unpublish, and the freed width remains between actions
- * instead of being stuffed into the smaller button. */
-:is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action {
-    display: inline-flex !important;
-    width: max-content;
-    min-width: 0;
-    gap: .3rem;
-    padding-inline: .35rem;
-    justify-self: start;
-}
-
-:is(.admin-row-actions--move-state-delete, .admin-row-actions--journal-blog) .admin-action--state {
-    width: max-content;
-    min-width: 0;
-}
+/* Stable action buttons share the base style; semantic slots set axes. */
 
 /* Seven-action Blog rows have an independent longest state label:
  * "Cancel schedule". Yield labels before its semantic columns become crowded. */
@@ -378,7 +351,6 @@
 
 @container admin-table (max-width: 38rem) {
     :is(
-        .admin-row-actions--move-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
@@ -392,14 +364,12 @@
         );
     }
 
-    .admin-row-actions--move-delete { --admin-row-action-count: 3; }
     .admin-row-actions--state-open { --admin-row-action-count: 2; }
     .admin-row-actions--two-static { --admin-row-action-count: 2; }
     .admin-row-actions--three-static { --admin-row-action-count: 3; }
     .admin-row-actions--four-static { --admin-row-action-count: 4; }
 
     :is(
-        .admin-row-actions--move-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
@@ -413,7 +383,6 @@
     }
 
     :is(
-        .admin-row-actions--move-delete,
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,

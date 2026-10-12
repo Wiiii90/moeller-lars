@@ -93,34 +93,6 @@
     }
 }
 
-@container admin-table (max-width: 38rem){
-    :is(.admin-row-actions--three, .admin-row-actions--four) .admin-action__label{
-        display: none !important;
-    }
-
-    .admin-row-actions--three{
-        width: max-content !important;
-        grid-template-columns: repeat(3, 1.35rem) !important;
-        gap: .45rem !important;
-        justify-content: start !important;
-    }
-
-    .admin-row-actions--four{
-        width: max-content !important;
-        grid-template-columns: repeat(4, 1.35rem) !important;
-        gap: .45rem !important;
-        justify-content: start !important;
-    }
-
-    :is(.admin-row-actions--three, .admin-row-actions--four) .admin-action{
-        box-sizing: border-box;
-        width: 1.35rem !important;
-        min-width: 1.35rem !important;
-        padding-inline: 0 !important;
-        justify-content: center !important;
-    }
-}
-
 /* Narrow workspace: toolbar remains exactly one row. Metrics and feature
  * stages may recompose here, but control bars never wrap into another row. */
 @container admin-workspace (max-width: 54rem){
@@ -981,7 +953,7 @@
     .admin-storage .media-workspace__col-media{ width: auto !important; }
     .admin-storage .media-workspace__col-type{ width: 6rem !important; }
     .admin-storage .media-workspace__col-size{ width: 5rem !important; }
-    .admin-storage .media-workspace__col-status{ width: 5.5rem !important; }
+    .admin-storage .media-workspace__col-status{ width: 7.5rem !important; }
     .admin-storage .media-workspace__col-selection{ width: var(--admin-table-selection-width) !important; }
 }
 
