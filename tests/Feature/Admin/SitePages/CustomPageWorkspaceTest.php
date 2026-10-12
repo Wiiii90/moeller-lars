@@ -402,6 +402,35 @@ it('keeps Change type reachable when filtering makes drag sorting unavailable', 
         ->and($blocks[2]['type'])->toBe('list');
 });
 
+it('stages Custom Page component changes until Apply type commits a replacement', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Type commit test', 'type-commit-test');
+    $settings->update(['blocks' => [[
+        'type' => 'text', 'published' => true,
+        'title' => 'Existing text', 'body' => 'Existing content',
+    ]]]);
+
+    $auditCount = \App\Models\AuditEvent::query()->count();
+    $notificationCount = \App\Models\AdminNotification::query()->count();
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->set('mountedActions.0.data.type', 'divider')
+        ->assertMountedActionModalSee('Apply type')
+        ->assertNotDispatched('admin-header-notification');
+
+    expect($settings->fresh()->components()[0]['type'])->toBe('text')
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($auditCount)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notificationCount);
+
+    $editor->mountAction('applyComponentType', [], ['schemaComponent' => 'componentTypeConversion'])
+        ->callMountedAction()
+        ->assertHasNoErrors();
+
+    $newBlock = $settings->fresh()->components()[0];
+    expect($newBlock['type'])->toBe('divider')
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($auditCount + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notificationCount + 1);
+});
+
 it('persists consecutive component edits without closing the autosaving dialog', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Edit component', 'edit-component');
     $settings->update(['blocks' => [[
