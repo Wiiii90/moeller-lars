@@ -529,9 +529,34 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
         ->assertSet('mountedActions.0.data.pages_auto_publish', true)
         ->assertSet('mountedActions.0.data.pages_delete_without_confirmation', true);
 
+    // The shared two-column Grid keeps all four toggles in row-major
+    // order; Skip Home owns its optional destination in one stable cell.
     $schema = app(PagesSettingsDialog::class)->schema();
-    expect(array_map(static fn ($field): string => $field->getName(), array_filter($schema, static fn ($field): bool => method_exists($field, 'getName'))))
-        ->toBe(['navigation_nesting_enabled', 'skip_home', 'skip_target_section_id', 'pages_auto_publish', 'pages_delete_without_confirmation']);
+    expect($schema)->toHaveCount(1)
+        ->and($schema[0])->toBeInstanceOf(\Filament\Schemas\Components\Grid::class);
+
+    $cells = $schema[0]->getChildComponents();
+    expect($cells)->toHaveCount(4)
+        ->and($cells[1])->toBeInstanceOf(\Filament\Schemas\Components\Group::class);
+
+    $fieldNames = [];
+    foreach ($cells as $cell) {
+        if ($cell instanceof \Filament\Schemas\Components\Group) {
+            foreach ($cell->getChildComponents() as $field) {
+                $fieldNames[] = $field->getName();
+            }
+        } else {
+            $fieldNames[] = $cell->getName();
+        }
+    }
+
+    expect($fieldNames)->toBe([
+        'navigation_nesting_enabled',
+        'skip_home',
+        'skip_target_section_id',
+        'pages_auto_publish',
+        'pages_delete_without_confirmation',
+    ]);
 });
 
 it('creates Pages as drafts by default and publishes each supported type when configured', function (): void {
