@@ -31,9 +31,7 @@ trait CustomPageWorkspaceTargetHelpers
         $targets = [];
         foreach (array_values(array_unique($this->selectedChildTargets)) as $target) {
             $parts = explode(':', $target);
-            if ($parts[0] === 'list' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && ctype_digit($parts[2])) {
-                $targets[] = ['kind' => 'list', 'component_index' => (int) $parts[1], 'item_index' => (int) $parts[2]];
-            } elseif ($parts[0] === 'contact' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && array_key_exists($parts[2], self::CONTACT_CHILD_LABELS)) {
+            if ($parts[0] === 'contact' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && array_key_exists($parts[2], self::CONTACT_CHILD_LABELS)) {
                 $targets[] = ['kind' => 'contact', 'component_index' => (int) $parts[1], 'child_type' => $parts[2]];
             }
         }
