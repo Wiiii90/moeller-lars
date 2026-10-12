@@ -4,6 +4,7 @@ namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
 use App\Models\HomePresentationSetting;
+use App\Models\PublicContentSetting;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
@@ -141,6 +142,16 @@ final class HomePresentationResolver
                     $ids[] = (int) $component['media_asset_id'];
                 }
 
+                if (($component['type'] ?? null) === 'list') {
+                    if (is_numeric($component['media_asset_id'] ?? null)) {
+                        $ids[] = (int) $component['media_asset_id'];
+                    }
+                    foreach (($component['items'] ?? []) as $item) {
+                        if (is_array($item) && is_string($item['body'] ?? null)) {
+                            $ids = array_merge($ids, RichTextMediaReference::ids($item['body']));
+                        }
+                    }
+                }
                 if (($component['type'] ?? null) === 'text' && is_string($component['body'] ?? null)) {
                     $ids = array_merge($ids, RichTextMediaReference::ids($component['body']));
                 }
@@ -213,7 +224,7 @@ final class HomePresentationResolver
     private function componentPresentation(HomeTemplate $template, array $components, bool $gateActive): array
     {
         $ids = collect($components)
-            ->filter(fn (array $component): bool => ($component['type'] ?? null) === 'image'
+            ->filter(fn (array $component): bool => in_array($component['type'] ?? null, ['image', 'list'], true)
                 && is_numeric($component['media_asset_id'] ?? null))
             ->map(fn (array $component): int => (int) $component['media_asset_id'])
             ->unique()
@@ -232,6 +243,8 @@ final class HomePresentationResolver
             'assets' => $assets,
             'media' => $this->media,
             'richText' => $this->richText,
+            'generalSettings' => PublicContentSetting::general(),
+            'isPreview' => $this->preview->active(),
             'gateActive' => $gateActive && ! $this->preview->active(),
         ];
     }

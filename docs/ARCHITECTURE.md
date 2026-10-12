@@ -150,7 +150,12 @@ See [MEDIA.md](MEDIA.md).
 
 Artwork mode resolves deterministic candidates from eligible public Gallery/Artwork data with explicit tie-break state when needed. Under Construction and Custom use ordered structured components. Heading and Rich Text share canonical storage type `text`; editor-only subtype state controls which editing UI is shown without creating another persisted component type.
 
-Home direct/Rich Text media participate in the same canonical MediaAsset/reference/publication systems.
+Home and Custom Page share one public component renderer and component
+validation contract. The Home editor offers Image, Heading/Rich Text, List,
+Divider, Contact and Legal Disclaimer, with independently publishable
+components and List/Contact children. Public presentation uses canonical
+Divider variants, filters unpublished content and resolves List direct media
+and embedded Rich Text references through the same MediaAsset system.
 
 ## Journals
 

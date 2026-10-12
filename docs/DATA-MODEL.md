@@ -43,7 +43,12 @@ Supported templates:
 - Skip Home;
 - Custom.
 
-Under Construction/Custom configuration stores ordered components. Direct image components reference `MediaAsset` IDs; text components may contain canonical Rich Text `media:<id>` references.
+Under Construction/Custom configuration stores ordered components following
+the shared Custom Page component contract, including List/Contact children,
+canonical Divider variants and per-level publication state. Image/List media
+references point to `MediaAsset` IDs; Text/List body fields may contain
+canonical Rich Text `media:<id>` references. The active template still owns
+its configuration independently of other Home templates.
 
 Heading and Rich Text intentionally share persisted component type `text`; editor-only subtype state must not become another storage format.
 

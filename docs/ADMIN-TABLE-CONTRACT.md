@@ -91,8 +91,10 @@ Custom Page and Home (Custom / Under Construction) use the same hierarchy row
 primitives: **Position / Drag / Component / Content / Actions / Selection**.
 Component is a permanent editable select, even when filters disable drag
 ordering or at narrow widths. Never repeat its type in Content as responsive
-metadata. Content alone absorbs remaining space; Home keeps its distinct
-four-action rail instead of inventing a separate table layout.
+metadata. Content alone absorbs remaining space. Home and Custom Page
+share the five-action row grammar (Move up, Move down, Edit,
+Publish/Unpublish, Delete) and a nested List/Contact hierarchy. Nested rows
+support reorder, editorial actions and selection through the owning service.
 
 ## Action order
 

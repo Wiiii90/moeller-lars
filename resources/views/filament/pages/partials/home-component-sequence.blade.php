@@ -5,17 +5,21 @@
             <span>Component</span>
             <span>Content</span>
             <span class="admin-row-actions-heading">Actions</span>
-            <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select all visible Home components">
+            <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select all visible Home items">
                 <input
                     type="checkbox"
                     x-data
                     wire:click.prevent="toggleVisibleComponentSelection"
                     x-effect="
                         const targets = @js($visibleComponentTargets);
+                        const childTargets = @js($visibleHomeChildTargets);
                         const selected = $wire.selectedComponentTargets;
-                        const count = targets.filter((target) => selected.includes(target)).length;
-                        $el.checked = targets.length > 0 && count === targets.length;
-                        $el.indeterminate = count > 0 && count < targets.length;
+                        const childSelected = $wire.selectedHomeChildTargets;
+                        const count = targets.filter((target) => selected.includes(target)).length
+                            + childTargets.filter((target) => childSelected.includes(target)).length;
+                        $el.checked = (targets.length + childTargets.length) > 0
+                            && count === (targets.length + childTargets.length);
+                        $el.indeterminate = count > 0 && count < (targets.length + childTargets.length);
                     "
                     @disabled($visibleComponentTargets === [])
                 >
@@ -72,7 +76,7 @@
                                 @endif
                             </div>
 
-                            <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-edit-delete custom-page-component__actions admin-toolbar">
+                            <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete custom-page-component__actions admin-toolbar">
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                     wire:click="moveComponent({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', 'up')"
@@ -90,6 +94,10 @@
                                     wire:click="mountAction('editComponent', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}' })"
                                 />
                                 <x-admin.row-action
+                                    :action="$homeComponent['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                    wire:click="setComponentPublished({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', {{ $homeComponent['published'] ? 'false' : 'true' }})"
+                                />
+                                <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::Delete"
                                     wire:click="mountAction('removeComponent', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}' })"
                                 />
@@ -99,6 +107,76 @@
                                 <input type="checkbox" value="{{ $homeComponent['target'] }}" wire:model.live="selectedComponentTargets">
                             </label>
                         </div>
+
+                        @if ($homeComponent['children'] !== [])
+                            <div class="custom-page-component__children admin-hierarchy__children">
+                                <div class="custom-page-component__children-rows admin-hierarchy__children-rows"
+                                    @if ($reorderEnabled && count($homeComponent['children']) > 1) wire:sort="sortHomeChild" @endif>
+                                    @foreach ($homeComponent['children'] as $child)
+                                        <div
+                                            class="custom-page-child-row admin-hierarchy__row is-child {{ $child['parent_published'] ? '' : 'is-parent-unpublished' }}"
+                                            wire:key="home-child-{{ $homeComponent['target'] }}-{{ $child['kind'] }}-{{ $child['key'] }}"
+                                            @if ($reorderEnabled && count($homeComponent['children']) > 1) wire:sort:item="{{ $child['target'] }}" @endif
+                                        >
+                                            <div class="admin-hierarchy__position-cell">
+                                                <span class="admin-position">{{ str_pad((string) $child['position'], 2, '0', STR_PAD_LEFT) }}</span>
+                                            </div>
+                                            <button class="admin-drag-handle custom-page-child-row__drag" type="button"
+                                                @if ($reorderEnabled && count($homeComponent['children']) > 1) wire:sort:handle @else disabled @endif
+                                                aria-label="Drag {{ $child['title'] }} to reorder">⋮⋮</button>
+                                            <span class="custom-page-child-row__kind">{{ $child['kind'] === 'list' ? 'List item' : 'Contact item' }}</span>
+                                            <div class="custom-page-child-row__content admin-hierarchy__content">
+                                                <strong>{{ $child['title'] }}</strong>
+                                                @if ($child['detail'] !== '') <small>{{ $child['detail'] }}</small> @endif
+                                            </div>
+                                            <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete custom-page-child-row__actions admin-toolbar">
+                                                <x-admin.row-action
+                                                    :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                                                    :disabled="! $reorderEnabled || ! $child['can_move_up']"
+                                                    wire:click="moveHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), 'up')"
+                                                />
+                                                <x-admin.row-action
+                                                    :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                                                    :disabled="! $reorderEnabled || ! $child['can_move_down']"
+                                                    wire:click="moveHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), 'down')"
+                                                />
+                                                <x-admin.row-action
+                                                    :action="\App\Filament\Support\AdminRowAction::Edit"
+                                                    wire:click="mountAction('editHomeChild', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', child: @js($child['key']) })"
+                                                />
+                                                <x-admin.row-action
+                                                    :action="$child['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                                    wire:click="publishHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), {{ $child['published'] ? 'false' : 'true' }})"
+                                                />
+                                                <x-admin.row-action
+                                                    :action="\App\Filament\Support\AdminRowAction::Delete"
+                                                    wire:click="mountAction('deleteHomeChild', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', child: @js($child['key']) })"
+                                                />
+                                            </div>
+                                            <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select {{ $child['title'] }}">
+                                                <input type="checkbox" value="{{ $child['target'] }}" wire:model.live="selectedHomeChildTargets">
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @elseif ($homeComponent['type'] === 'list')
+                            <div class="custom-page-component__children-empty">No list entries</div>
+                        @elseif ($homeComponent['type'] === 'contact')
+                            <div class="custom-page-component__children-empty">No contact items</div>
+                        @endif
+
+                        @if ($homeComponent['type'] === 'list')
+                            <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button"
+                                wire:click="mountAction('addHomeChild', { index: {{ $homeComponent['index'] }}, type: 'list' })">
+                                <span aria-hidden="true">+</span><strong>Add list item</strong>
+                            </button>
+                        @elseif ($homeComponent['type'] === 'contact' && count($homeComponent['children']) < 3)
+                            <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button"
+                                wire:click="mountAction('addHomeChild', { index: {{ $homeComponent['index'] }}, type: 'contact' })">
+                                <span aria-hidden="true">+</span><strong>Add contact item</strong>
+                            </button>
+                        @endif
                     </article>
                 @endforeach
             </div>

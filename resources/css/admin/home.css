@@ -19,20 +19,8 @@
     width: calc(var(--admin-row-actions-state-open-width) + .5rem);
 }
 
-/* Only the semantic action count differs from Custom Page: Home has four
- * actions and no independent per-component publication state. */
-.custom-page-component-sequence.home-component-sequence {
-    --admin-hierarchy-actions-column: var(--admin-row-actions-move-edit-delete-width);
-    --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-width);
-}
-
-@container admin-table (max-width: 70rem) {
-    .custom-page-component-sequence.home-component-sequence {
-        --admin-hierarchy-actions-column: var(--admin-row-actions-move-edit-delete-compact-width);
-        --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-compact-width);
-    }
-}
-
+/* Home component and nested-child sequences now use the same canonical
+ * five-action rails as Custom Page, including publication state. */
 .home-skip-tools {
     padding: .85rem 0;
 }

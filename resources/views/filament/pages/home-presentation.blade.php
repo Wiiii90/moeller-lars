@@ -323,6 +323,8 @@
             @php
                 $reorderEnabled = trim($componentSearch) === '' && $componentType === 'any';
                 $visibleComponentTargets = collect($components)->pluck('target')->values()->all();
+                $visibleHomeChildTargets = collect($components)->flatMap(fn (array $component) => collect($component['children'] ?? [])->pluck('target'))->values()->all();
+                $homeSelectionCount = count($selectedComponentTargets) + count($selectedHomeChildTargets);
                 $componentFiltersActive = trim($componentSearch) !== '' || $componentType !== 'any';
             @endphp
 
@@ -375,16 +377,18 @@
                     <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
                         <span class="admin-data-control-label">Selection</span>
                         <div class="admin-selection__anchor">
-                            <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedComponentTargets === [])>
+                            <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($homeSelectionCount === 0)>
                                 <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected up</button>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected down</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(true)" x-on:click="open = false">Publish selected</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(false)" x-on:click="open = false">Unpublish selected</button>
                                 <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false">Delete selected</button>
                             </div>
                         </div>
-                        <span class="admin-selection__count" aria-label="{{ count($selectedComponentTargets) }} selected">{{ count($selectedComponentTargets) }}</span>
+                        <span class="admin-selection__count" aria-label="{{ $homeSelectionCount }} selected">{{ $homeSelectionCount }}</span>
                     </div>
                 </x-slot:selection>
             </x-admin.controls>

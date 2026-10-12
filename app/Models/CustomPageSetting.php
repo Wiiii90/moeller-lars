@@ -56,6 +56,12 @@ final class CustomPageSetting extends Model
         $this->validateBlocks(requirePublicMedia: true);
     }
 
+    /** Shared editorial validation for Custom Page and Home component sequences. */
+    public function assertEditableComponents(): void
+    {
+        $this->validateBlocks(requirePublicMedia: false);
+    }
+
     /** @return list<array<string, mixed>> */
     public function components(): array
     {

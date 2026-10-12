@@ -143,6 +143,27 @@ it('renders the Custom preview through the same shared component renderer', func
         ->assertSee('custom-page__divider', false);
 });
 
+it('renders Home List and Dotted Divider while hiding unpublished parents and children', function (): void {
+    homePreviewSetting('custom', [
+        ['type' => 'text', 'title' => 'Public Home component', 'body' => null, 'published' => true],
+        ['type' => 'text', 'title' => 'Hidden Home component', 'body' => null, 'published' => false],
+        ['type' => 'list', 'title' => 'Home CV', 'media_asset_id' => null, 'published' => true, 'items' => [
+            ['title' => 'Public list entry', 'published' => true],
+            ['title' => 'Hidden list entry', 'published' => false],
+        ]],
+        ['type' => 'divider', 'variant' => 'dotted', 'published' => true],
+    ]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Public Home component')
+        ->assertDontSee('Hidden Home component')
+        ->assertSee('Home CV')
+        ->assertSee('Public list entry')
+        ->assertDontSee('Hidden list entry')
+        ->assertSee('custom-page__divider--dotted', false);
+});
+
 it('keeps Home source preference while effective eligibility follows Gallery publication', function (): void {
     $category = homeSourceCategory(true);
     homeSourceArtwork($category);

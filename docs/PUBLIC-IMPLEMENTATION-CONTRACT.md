@@ -55,7 +55,16 @@ Changing the Home content template does not implicitly enable, disable or retarg
 
 Artwork selection uses canonical Gallery eligibility, Artwork date and explicit tie-break semantics. Ambiguous invalid state is surfaced rather than resolved by incidental DB order.
 
-Home direct/Rich Text media use the same canonical MediaAsset/public/preview contracts as other consumers.
+Home Custom/Under Construction and Custom Page share a single ordered public
+component renderer and the `CustomPageSetting` component validation contract:
+Image, Text (Heading/Rich Text), List, Divider (Thin/Subtle/Strong/Dotted),
+Contact and Legal Disclaimer. Published state is independent per component
+and per List/Contact child. Preview may show unpublished rows; normal public
+requests suppress them. Contact form submissions are permitted when a
+published enabled Contact Form belongs to an active, non-skipped Home
+presentation or an eligible published Custom Page. Home and Custom media
+references (including List media and child Rich Text) use the canonical
+MediaAsset reference/publication contracts.
 
 ## Gallery and Artwork ordering
 
@@ -91,7 +100,8 @@ Embedded Storage media images use canonical `media:<id>` references resolved by 
 
 Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type.
 
-Contact is a reusable Custom Page component, not a standalone runtime page type.
+Contact is a reusable structured component on Custom Page and Home,
+not a standalone runtime page type.
 
 Public Contact workflow validates server-side, enforces honeypot/rate-limit controls, delivers to configured private recipient, uses visitor email as Reply-To rather than forged From, exposes safe outcome and fails in controlled fashion when delivery unavailable.
 

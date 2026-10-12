@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Contact\ContactDeliveryReadiness;
+use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Publication\CommittedRead;
 use App\Mail\WebsiteContactMessage;
 use App\Models\ContactMessage;
 use App\Models\CustomPageSetting;
+use App\Models\HomePresentationSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,6 +94,10 @@ class PublicContactController extends Controller
 
     private function publishedContactFormExists(): bool
     {
+        if ($this->publishedHomeContactFormExists()) {
+            return true;
+        }
+
         return CustomPageSetting::query()
             ->whereHas('siteSection', static fn ($query) => $query
                 ->where('type', SiteSectionType::CustomPage->value)
@@ -114,5 +120,37 @@ class PublicContactController extends Controller
 
                 return false;
             });
+    }
+
+    private function publishedHomeContactFormExists(): bool
+    {
+        $home = HomePresentationSetting::query()
+            ->whereHas('siteSection', static fn ($query) => $query->where('type', SiteSectionType::Home->value))
+            ->first();
+        if (! $home instanceof HomePresentationSetting) {
+            return false;
+        }
+
+        $template = $home->template()->contentTemplate();
+        if (! in_array($template, [HomeTemplate::Custom, HomeTemplate::UnderConstruction], true)
+            || (bool) $home->getAttribute('skip_home')) {
+            return false;
+        }
+
+        $schema = new CustomPageSetting;
+        foreach ($home->components($template) as $block) {
+            if (($block['type'] ?? null) !== 'contact' || ! CustomPageSetting::componentPublished($block)) {
+                continue;
+            }
+            foreach ($schema->contactChildren($block) as $child) {
+                if (($child['type'] ?? null) === 'contact_form'
+                    && CustomPageSetting::contactChildPublished($child)
+                    && ($child['form_state'] ?? 'enabled') === 'enabled') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

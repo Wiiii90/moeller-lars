@@ -3,11 +3,10 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Content\DividerVariant;
 use App\Domain\Admin\AdminOrderingState;
 use App\Domain\Artwork\PublicArtworkQuery;
+use App\Models\CustomPageSetting;
 use App\Models\HomePresentationSetting;
-use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -15,7 +14,6 @@ final class HomePresentationEditorialService
 {
     public function __construct(
         private readonly AdminAuditService $audit,
-        private readonly SafeRichTextRenderer $richText,
         private readonly PublicArtworkQuery $artworks,
     ) {}
 
@@ -203,8 +201,8 @@ final class HomePresentationEditorialService
         if ($currentKind === $targetKind) {
             return false;
         }
-        if ($currentKind === 'divider') {
-            return ($component['variant'] ?? 'thin') !== 'thin';
+        if (in_array($currentKind, ['divider', 'list', 'contact', 'legal_disclaimer'], true)) {
+            return true;
         }
         if ($currentKind === 'image') {
             return is_numeric($component['media_asset_id'] ?? null)
@@ -227,12 +225,20 @@ final class HomePresentationEditorialService
         $title = is_string($component['title'] ?? null) ? trim($component['title']) : '';
         $body = is_string($component['body'] ?? null) ? trim($component['body']) : '';
 
-        return match ($targetKind) {
-            'heading' => ['type' => 'text', 'title' => $title !== '' ? $title : null, 'body' => null],
-            'rich_text' => ['type' => 'text', 'title' => null, 'body' => ($body !== '' ? $body : ($title !== '' ? $title : null))],
-            'image' => ['type' => 'image', 'media_asset_id' => null, 'image_decorative' => false],
-            'divider' => ['type' => 'divider', 'variant' => 'thin'],
-        };
+        $published = CustomPageSetting::componentPublished($component);
+
+        return [
+            'published' => $published,
+            ...match ($targetKind) {
+                'heading' => ['type' => 'text', 'title' => $title !== '' ? $title : null, 'body' => null],
+                'rich_text' => ['type' => 'text', 'title' => null, 'body' => ($body !== '' ? $body : ($title !== '' ? $title : null))],
+                'image' => ['type' => 'image', 'media_asset_id' => null, 'image_decorative' => false],
+                'divider' => ['type' => 'divider', 'variant' => 'thin'],
+                'list' => ['type' => 'list', 'title' => null, 'media_asset_id' => null, 'items' => []],
+                'contact' => ['type' => 'contact', 'children' => []],
+                'legal_disclaimer' => ['type' => 'legal_disclaimer'],
+            },
+        ];
     }
 
     /** @param array<string, mixed> $component */
@@ -243,14 +249,157 @@ final class HomePresentationEditorialService
             return filled($component['title'] ?? null) && blank($component['body'] ?? null) ? 'heading' : 'rich_text';
         }
 
-        return in_array($type, ['image', 'divider'], true) ? $type : 'unknown';
+        return in_array($type, ['image', 'divider', 'list', 'contact', 'legal_disclaimer'], true) ? $type : 'unknown';
     }
 
     private function assertComponentKind(string $kind): void
     {
-        if (! in_array($kind, ['image', 'heading', 'rich_text', 'divider'], true)) {
+        if (! in_array($kind, ['image', 'heading', 'rich_text', 'divider', 'list', 'contact', 'legal_disclaimer'], true)) {
             throw ValidationException::withMessages(['component' => 'Choose a supported Home component type.']);
         }
+    }
+
+    public function setComponentPublished(
+        HomePresentationSetting $settings, HomeTemplate $mode, int $index, string $expectedType, bool $published,
+    ): bool {
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $published): array {
+            $this->assertTarget($components, $index, $expectedType);
+            $components[$index]['published'] = $published;
+
+            return $components;
+        });
+    }
+
+    /**
+     * Ordered children share one transactional mutation path with the Home
+     * component sequence and Custom Page validation. Contact targets use
+     * stable type keys; List entries use explicit order indices.
+     *
+     * @param array<string,mixed> $payload
+     */
+    public function mutateChild(
+        HomePresentationSetting $settings, HomeTemplate $mode,
+        int $index, string $expectedType, string $operation,
+        int|string|null $childKey = null, array $payload = [],
+    ): bool {
+        if (! in_array($expectedType, ['list', 'contact'], true)
+            || ! in_array($operation, ['add', 'update', 'publish', 'move_up', 'move_down', 'reposition', 'delete'], true)) {
+            throw ValidationException::withMessages(['component' => 'Unsupported Home child action.']);
+        }
+
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $operation, $childKey, $payload): array {
+            $this->assertTarget($components, $index, $expectedType);
+            $field = $expectedType === 'list' ? 'items' : 'children';
+            $children = $components[$index][$field] ?? [];
+            $children = is_array($children) && array_is_list($children) ? $children : [];
+
+            if ($operation === 'add') {
+                if ($expectedType === 'contact'
+                    && (! in_array($payload['type'] ?? null, CustomPageSetting::CONTACT_CHILD_TYPES, true)
+                        || in_array($payload['type'], array_column($children, 'type'), true))) {
+                    throw ValidationException::withMessages(['component' => 'That Contact item already exists or is not supported.']);
+                }
+                $children[] = $payload;
+            } else {
+                $position = $expectedType === 'list'
+                    ? (is_int($childKey) ? $childKey : -1)
+                    : array_search($childKey, array_column($children, 'type'), true);
+                if (! is_int($position) || ! isset($children[$position])) {
+                    throw ValidationException::withMessages(['component' => 'This Home child changed. Reload and try again.']);
+                }
+                if ($operation === 'update') {
+                    $children[$position] = [
+                        ...$payload,
+                        'published' => CustomPageSetting::listItemPublished($children[$position]),
+                    ];
+                    if ($expectedType === 'contact') {
+                        $children[$position]['type'] = $childKey;
+                    }
+                } elseif ($operation === 'publish') {
+                    $children[$position]['published'] = ($payload['published'] ?? false) === true;
+                } elseif ($operation === 'delete') {
+                    array_splice($children, $position, 1);
+                } elseif ($operation === 'reposition') {
+                    $moved = array_splice($children, $position, 1);
+                    $newPosition = max(0, min((int) ($payload['position'] ?? 0), count($children)));
+                    array_splice($children, $newPosition, 0, $moved);
+                } else {
+                    $target = $position + ($operation === 'move_up' ? -1 : 1);
+                    if (isset($children[$target])) {
+                        [$children[$position], $children[$target]] = [$children[$target], $children[$position]];
+                    }
+                }
+            }
+
+            $components[$index][$field] = $children;
+
+            return $components;
+        }, ordering: str_starts_with($operation, 'move_') || $operation === 'reposition');
+    }
+
+    /**
+     * Atomically apply selection commands to Home parent components and their
+     * List/Contact children. Stale targets fail before any mutation is saved.
+     *
+     * @param list<array{index:int,type:string}> $parents
+     * @param list<array{index:int,type:string,child:int|string}> $children
+     */
+    public function changeSelection(
+        HomePresentationSetting $settings, HomeTemplate $mode,
+        array $parents, array $children, string $operation,
+    ): bool {
+        if (! in_array($operation, ['publish', 'unpublish', 'delete'], true)) {
+            throw ValidationException::withMessages(['component' => 'Invalid selected Home action.']);
+        }
+
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($parents, $children, $operation): array {
+            $parentIndices = $this->validatedIndices($components, $parents);
+            $positionsByParent = [];
+            foreach ($children as $target) {
+                $index = $target['index'];
+                $type = $target['type'];
+                $this->assertTarget($components, $index, $type);
+                if (! in_array($type, ['list', 'contact'], true)) {
+                    throw ValidationException::withMessages(['component' => 'The selected Home child is invalid.']);
+                }
+                $field = $type === 'list' ? 'items' : 'children';
+                $items = $components[$index][$field] ?? [];
+                $position = $type === 'list' ? $target['child'] : array_search($target['child'], array_column($items, 'type'), true);
+                if (! is_int($position) || ! isset($items[$position])) {
+                    throw ValidationException::withMessages(['component' => 'The selected Home child changed. Reload and try again.']);
+                }
+                if (in_array($index, $parentIndices, true)) {
+                    continue;
+                }
+                $positionsByParent[$index][$field][] = $position;
+            }
+
+            foreach ($positionsByParent as $index => $fieldGroups) {
+                foreach ($fieldGroups as $field => $positions) {
+                    $positions = array_values(array_unique($positions));
+                    if ($operation === 'delete') {
+                        rsort($positions);
+                    }
+                    foreach ($positions as $position) {
+                        if ($operation === 'delete') {
+                            array_splice($components[$index][$field], $position, 1);
+                        } else {
+                            $components[$index][$field][$position]['published'] = $operation === 'publish';
+                        }
+                    }
+                }
+            }
+
+            foreach ($parentIndices as $index) {
+                if ($operation === 'delete') {
+                    unset($components[$index]);
+                } else {
+                    $components[$index]['published'] = $operation === 'publish';
+                }
+            }
+
+            return array_values($components);
+        });
     }
 
     public function moveComponent(
@@ -500,89 +649,14 @@ final class HomePresentationEditorialService
     private function validateComponents(mixed $components): void
     {
         if (! is_array($components) || ! array_is_list($components)) {
-            throw ValidationException::withMessages([
-                'components' => 'Home components must be an ordered list.',
-            ]);
+            throw ValidationException::withMessages(['components' => 'Home components must be an ordered list.']);
         }
 
-        foreach ($components as $index => $component) {
-            if (! is_array($component)
-                || ! is_string($component['type'] ?? null)
-                || ! in_array($component['type'], ['image', 'text', 'divider'], true)) {
-                throw ValidationException::withMessages([
-                    'components' => 'Home supports Image, Text and Divider components.',
-                ]);
-            }
-
-            if ($component['type'] === 'image') {
-                $this->validateImage($component);
-            }
-            if ($component['type'] === 'text') {
-                $this->validateText($component, $index);
-            }
-            if ($component['type'] === 'divider'
-                && ! in_array($component['variant'] ?? 'thin', DividerVariant::VALUES, true)) {
-                throw ValidationException::withMessages(['components' => 'Choose a supported Divider style.']);
-            }
-        }
-    }
-
-    /** @param array<string, mixed> $component */
-    private function validateImage(array $component): void
-    {
-        if (! is_bool($component['image_decorative'] ?? false)) {
-            throw ValidationException::withMessages([
-                'components' => 'Home image presentation settings are invalid.',
-            ]);
-        }
-
-        $mediaId = $component['media_asset_id'] ?? null;
-        if ($mediaId === null) {
-            return;
-        }
-
-        $id = filter_var($mediaId, FILTER_VALIDATE_INT);
-        /** @var MediaAsset|null $asset */
-        $asset = $id === false ? null : MediaAsset::query()->find((int) $id);
-        if (! $asset instanceof MediaAsset
-            || (string) $asset->getAttribute('state') !== 'available'
-            || ! str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')) {
-            throw ValidationException::withMessages([
-                'components' => 'Home images must reference an available image from Storage.',
-            ]);
-        }
-
-        if (! (bool) ($component['image_decorative'] ?? false)) {
-            $alt = $asset->getAttribute('alt_text');
-            if (! is_string($alt) || trim($alt) === '') {
-                throw ValidationException::withMessages([
-                    'components' => 'Non-decorative Home images need canonical ALT text in Storage.',
-                ]);
-            }
-        }
-    }
-
-    /** @param array<string, mixed> $component */
-    private function validateText(array $component, int $index): void
-    {
-        $title = $component['title'] ?? null;
-        if ($title !== null && (! is_string($title) || mb_strlen($title) > 160)) {
-            throw ValidationException::withMessages([
-                'components' => 'Home component headings must be short text.',
-            ]);
-        }
-
-        $body = $component['body'] ?? null;
-        if ($body === null || $body === '') {
-            return;
-        }
-        if (! is_string($body) || mb_strlen($body) > 20000) {
-            throw ValidationException::withMessages([
-                'components.'.$index.'.body' => 'Home rich text is too long.',
-            ]);
-        }
-
-        $this->richText->assertValid($body, allowEmbeddedMedia: true);
+        // One canonical validator for both editorial component surfaces.
+        // No second Home-only whitelist for List / Contact / Legal Disclaimer.
+        $schema = new CustomPageSetting;
+        $schema->setAttribute('blocks', $components);
+        $schema->assertEditableComponents();
     }
 
     /**

@@ -10,11 +10,13 @@ use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\DividerVariant;
+use App\Domain\Content\SocialLinks;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
+use App\Filament\Pages\Concerns\HomePresentationChildren;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\AdminRowAction;
@@ -24,6 +26,8 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\Artwork;
+use App\Models\CustomPageSetting;
+use App\Models\PublicContentSetting;
 use App\Models\ArtworkCategory;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
@@ -47,6 +51,7 @@ use Livewire\WithFileUploads;
 final class HomePresentation extends Page
 {
     use WithFileUploads;
+    use HomePresentationChildren;
 
     protected static bool $shouldRegisterNavigation = false;
 
@@ -143,6 +148,9 @@ final class HomePresentation extends Page
         'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
+        'list' => 'List',
+        'contact' => 'Contact',
+        'legal_disclaimer' => 'Legal Disclaimer',
     ];
 
     /** @var array<string,string> */
@@ -151,6 +159,9 @@ final class HomePresentation extends Page
         'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
+        'list' => 'List',
+        'contact' => 'Contact',
+        'legal_disclaimer' => 'Legal Disclaimer',
     ];
 
     public string $componentSearch = '';
@@ -159,6 +170,9 @@ final class HomePresentation extends Page
 
     /** @var list<string> */
     public array $selectedComponentTargets = [];
+
+    /** @var list<string> */
+    public array $selectedHomeChildTargets = [];
 
     /** @var array{components:int,images:int,headings:int,rich_text:int,dividers:int,media_references:int} */
     public array $componentStats = [
@@ -278,19 +292,21 @@ final class HomePresentation extends Page
 
     public function toggleVisibleComponentSelection(): void
     {
-        $visibleTargets = collect($this->components)->pluck('target')->filter()->values()->all();
-        if ($visibleTargets === []) {
-            return;
-        }
-        $selected = collect($this->selectedComponentTargets)->filter()->unique()->values();
-        if ($selected->intersect($visibleTargets)->count() === count($visibleTargets)) {
-            $this->selectedComponentTargets = $selected
-                ->reject(static fn (string $target): bool => in_array($target, $visibleTargets, true))
-                ->values()->all();
+        $visible = collect($this->components);
+        $parents = $visible->pluck('target')->filter()->values()->all();
+        $children = $visible->flatMap(fn (array $component): array => collect($component['children'] ?? [])
+            ->pluck('target')->filter()->values()->all())->values()->all();
+        $complete = count(array_intersect($parents, $this->selectedComponentTargets)) === count($parents)
+            && count(array_intersect($children, $this->selectedHomeChildTargets)) === count($children);
+
+        if ($complete) {
+            $this->selectedComponentTargets = array_values(array_diff($this->selectedComponentTargets, $parents));
+            $this->selectedHomeChildTargets = array_values(array_diff($this->selectedHomeChildTargets, $children));
 
             return;
         }
-        $this->selectedComponentTargets = $selected->merge($visibleTargets)->unique()->values()->all();
+        $this->selectedComponentTargets = array_values(array_unique([...$this->selectedComponentTargets, ...$parents]));
+        $this->selectedHomeChildTargets = array_values(array_unique([...$this->selectedHomeChildTargets, ...$children]));
     }
 
     public function settingsAction(): Action
@@ -423,11 +439,15 @@ final class HomePresentation extends Page
                         ->required(fn (callable $get): bool => $get('kind') === 'image')
                         ->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Toggle::make('image_decorative')->label('Decorative image')
-                        ->helperText('Leave off for content images. Canonical ALT text is managed in Storage.')
                         ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
                         ->default('thin')->required(fn (callable $get): bool => $get('kind') === 'divider')
                         ->visible(fn (callable $get): bool => $get('kind') === 'divider'),
+                    TextInput::make('list_title')->label('List heading')->maxLength(160)
+                        ->visible(fn (callable $get): bool => $get('kind') === 'list'),
+                    MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
+                        ->nullable()->placeholder('No list image')
+                        ->visible(fn (callable $get): bool => $get('kind') === 'list'),
                 ])
                 ->modalHeading('Add component'),
             'Add component',
@@ -443,6 +463,15 @@ final class HomePresentation extends Page
                     'image_decorative' => (bool) ($data['image_decorative'] ?? false),
                 ],
                 'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
+                'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
+                    'media_asset_id' => is_numeric($data['list_media_asset_id'] ?? null) ? (int) $data['list_media_asset_id'] : null,
+                    'items' => []],
+                'contact' => ['type' => 'contact', 'children' => [
+                    ['type' => 'public_email', 'published' => true],
+                    ['type' => 'social_links', 'published' => true, 'social_platforms' => array_column(SocialLinks::configured(PublicContentSetting::general()->getAttribute('social_links')), 'platform')],
+                    ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
+                ]],
+                'legal_disclaimer' => ['type' => 'legal_disclaimer'],
                 default => throw ValidationException::withMessages(['kind' => 'Choose a supported Home component.']),
             };
             app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
@@ -468,6 +497,8 @@ final class HomePresentation extends Page
                     'media_asset_id' => $component['media_asset_id'] ?? null,
                     'image_decorative' => (bool) ($component['image_decorative'] ?? false),
                     'variant' => $component['variant'] ?? 'thin',
+                    'list_title' => $component['title'] ?? null,
+                    'list_media_asset_id' => $component['media_asset_id'] ?? null,
                 ];
             })
             ->schema([
@@ -480,11 +511,15 @@ final class HomePresentation extends Page
                     ->required(fn (callable $get): bool => $get('type') === 'image')
                     ->visible(fn (callable $get): bool => $get('type') === 'image'),
                 Toggle::make('image_decorative')->label('Decorative image')
-                    ->helperText('Leave off for content images. Canonical ALT text is managed in Storage.')
                     ->visible(fn (callable $get): bool => $get('type') === 'image'),
                 Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
                     ->required(fn (callable $get): bool => $get('type') === 'divider')
                     ->visible(fn (callable $get): bool => $get('type') === 'divider'),
+                TextInput::make('list_title')->label('List heading')->maxLength(160)
+                    ->visible(fn (callable $get): bool => $get('type') === 'list'),
+                MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
+                        ->nullable()->placeholder('No list image')
+                    ->visible(fn (callable $get): bool => $get('type') === 'list'),
             ])
             ->modalHeading('Edit component')
             ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments)), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
@@ -503,10 +538,14 @@ final class HomePresentation extends Page
                         'image_decorative' => (bool) ($data['image_decorative'] ?? false),
                     ],
                     'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
+                    'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
+                        'media_asset_id' => is_numeric($data['list_media_asset_id'] ?? null) ? (int) $data['list_media_asset_id'] : null],
+                    'contact' => ['type' => 'contact'],
+                    'legal_disclaimer' => ['type' => 'legal_disclaimer'],
                     default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
                 };
                 $changed = app(HomePresentationEditorialService::class)->updateComponent(
-                    $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, $component,
+                    $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, [...$current, ...$component],
                 );
                 $this->reloadWorkspace();
                 if ($changed) {
@@ -537,11 +576,32 @@ final class HomePresentation extends Page
                 $this->replaceMountedAction('editComponent', ['index' => $newIndex, 'type' => $type]);
             })->disabled(! $canMove);
         }
+        $published = CustomPageSetting::componentPublished($component);
+        $actions[] = AdminDialog::headerAction('dialogTogglePublication',
+            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+            function () use ($index, $type, $published): void {
+                $this->setComponentPublished($index, $type, ! $published);
+                $this->replaceMountedAction('editComponent', ['index' => $index, 'type' => $type]);
+            });
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($index, $type): void {
             $this->replaceMountedAction('removeComponent', ['index' => $index, 'type' => $type]);
         });
 
         return $actions;
+    }
+
+    public function setComponentPublished(int $index, string $type, bool $published): void
+    {
+        $changed = app(HomePresentationEditorialService::class)->setComponentPublished(
+            $this->settings(), $this->componentTemplate(), $index, $type, $published,
+        );
+        $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(
+                $published ? 'Home component published' : 'Home component unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function changeComponentTypeAction(): Action
@@ -620,18 +680,34 @@ final class HomePresentation extends Page
             danger: true,
         )->action(function (): void {
             $targets = $this->selectedComponentTargetData();
-            if ($targets === []) {
+            $children = $this->selectedHomeChildTargetData();
+            if ($targets === [] && $children === []) {
                 return;
             }
-            app(HomePresentationEditorialService::class)->deleteComponents($this->settings(), $this->componentTemplate(), $targets);
-            $count = count($targets);
+            app(HomePresentationEditorialService::class)->changeSelection(
+                $this->settings(), $this->componentTemplate(), $targets, $children, 'delete',
+            );
+            $count = count($targets) + count($children);
             $this->reloadWorkspace();
             app(AdminNotifier::class)->notification(
-                title: 'Selected Home components deleted',
-                body: $count.' component'.($count === 1 ? '' : 's').' deleted.',
+                title: 'Selected Home items deleted',
+                body: $count.' selected item'.($count === 1 ? '' : 's').' updated.',
                 status: 'success',
             );
         });
+    }
+
+    public function publishSelectedHomeItems(bool $published): void
+    {
+        $parents = $this->selectedComponentTargetData();
+        $children = $this->selectedHomeChildTargetData();
+        if ($parents === [] && $children === []) {
+            return;
+        }
+        app(HomePresentationEditorialService::class)->changeSelection(
+            $this->settings(), $this->componentTemplate(), $parents, $children, $published ? 'publish' : 'unpublish',
+        );
+        $this->reloadWorkspace();
     }
 
     public function moveComponent(int $index, string $expectedType, string $direction): void
@@ -1020,14 +1096,24 @@ final class HomePresentation extends Page
                 'image' => 'image',
                 'text' => $title !== '' && $body === '' ? 'heading' : 'rich_text',
                 'divider' => 'divider',
+                'list' => 'list',
+                'contact' => 'contact',
+                'legal_disclaimer' => 'legal_disclaimer',
                 default => 'unknown',
             };
             $typeLabel = $this->componentTypeOptions[$filterType] ?? 'Component';
-            if ($type === 'image' && $assetId !== null && $assetId > 0) {
+            if (in_array($type, ['image', 'list'], true) && $assetId !== null && $assetId > 0) {
                 $referenceIds[] = $assetId;
             }
             if ($type === 'text' && $body !== '') {
                 $referenceIds = array_merge($referenceIds, RichTextMediaReference::ids($body));
+            }
+            if ($type === 'list') {
+                foreach (($component['items'] ?? []) as $item) {
+                    if (is_array($item) && is_string($item['body'] ?? null)) {
+                        $referenceIds = array_merge($referenceIds, RichTextMediaReference::ids($item['body']));
+                    }
+                }
             }
             [$primary, $secondary] = match ($filterType) {
                 'image' => [
@@ -1037,6 +1123,9 @@ final class HomePresentation extends Page
                 'heading' => [$title !== '' ? $title : 'Untitled heading', ''],
                 'rich_text' => [$title !== '' ? $title : (Str::limit($body, 110) ?: 'Empty Rich Text'), $title !== '' ? (Str::limit($body, 110) ?: 'No body text') : ''],
                 'divider' => [DividerVariant::LABELS[$component['variant'] ?? 'thin'] ?? 'Thin', ''],
+                'list' => [$title !== '' ? $title : 'List', count($component['items'] ?? []).' entries'],
+                'contact' => ['Contact', count($component['children'] ?? []).' items'],
+                'legal_disclaimer' => ['General legal disclaimer', ''],
                 default => ['Unsupported component', ''],
             };
             $dataset[] = [
@@ -1047,10 +1136,12 @@ final class HomePresentation extends Page
                 'filter_type' => $filterType,
                 'type_label' => $typeLabel,
                 'content' => ['primary' => $primary, 'secondary' => $secondary],
+                'published' => CustomPageSetting::componentPublished($component),
+                'children' => $this->homeChildProjection($component, $index),
                 'search_text' => Str::lower(implode(' ', [$typeLabel, $primary, $secondary, $title, $body])),
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $count - 1,
-                'editable' => in_array($type, ['image', 'text', 'divider'], true),
+                'editable' => in_array($type, CustomPageSetting::COMPONENT_TYPES, true),
             ];
         }
         $this->componentDataset = $dataset;
@@ -1318,16 +1409,40 @@ final class HomePresentation extends Page
             throw ValidationException::withMessages(['component' => 'The Home component target is invalid.']);
         }
         [$index, $type] = explode(':', $target, 2);
-        if (! ctype_digit($index) || ! in_array($type, ['image', 'text', 'divider'], true)) {
+        if (! ctype_digit($index) || ! in_array($type, CustomPageSetting::COMPONENT_TYPES, true)) {
             throw ValidationException::withMessages(['component' => 'The Home component target is invalid.']);
         }
 
         return ['index' => (int) $index, 'type' => $type];
     }
 
+    /** @return list<array{index:int,type:string,child:int|string}> */
+    private function selectedHomeChildTargetData(): array
+    {
+        $valid = collect($this->componentDataset)->flatMap(
+            static fn (array $component): array => collect($component['children'] ?? [])
+                ->pluck('target')->filter()->values()->all(),
+        )->all();
+        $targets = [];
+        foreach (array_values(array_unique($this->selectedHomeChildTargets)) as $target) {
+            if (! in_array($target, $valid, true)) {
+                throw ValidationException::withMessages(['component' => 'The selected Home child changed. Reload and try again.']);
+            }
+            $parts = explode(':', $target, 3);
+            if (count($parts) !== 3 || ! ctype_digit($parts[1]) || ! in_array($parts[0], ['list', 'contact'], true)) {
+                throw ValidationException::withMessages(['component' => 'The selected Home child is invalid.']);
+            }
+            $targets[] = ['index' => (int) $parts[1], 'type' => $parts[0],
+                'child' => $parts[0] === 'list' ? (int) $parts[2] : $parts[2]];
+        }
+
+        return $targets;
+    }
+
     private function clearComponentSelection(): void
     {
         $this->selectedComponentTargets = [];
+        $this->selectedHomeChildTargets = [];
     }
 
     private function clearSourceSelection(): void
