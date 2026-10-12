@@ -16,7 +16,7 @@
     --public-content-block-inset: 2rem;
     --public-shell-gap: .75rem;
     --public-short-page-min-height: 15rem;
-    --public-section-gap: 3.2rem;
+    --public-section-gap: 3.55rem;
     --public-page: #777;
     --public-surface: #fff;
     --public-ink: #555;
@@ -513,15 +513,17 @@ body {
 .artwork-card__footer,
 .artwork-detail__footer {
     display: flex;
-    margin-top: .72rem;
+    margin-top: .88rem;
     align-items: flex-start;
     justify-content: space-between;
     gap: clamp(.35rem, 1.8vw, 1rem);
 }
 
+/* Open exhibition caption; one shared treatment for gallery, Home and artwork detail. */
 .artwork-label-trigger {
     display: block;
     min-width: 0;
+    max-width: 100%;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
@@ -529,20 +531,20 @@ body {
 
 .artwork-label {
     display: grid;
-    width: min(16.5rem, 100%);
-    max-width: 100%;
-    padding: .5rem .62rem .48rem;
-    border: 1px solid #dedbd8;
-    background: #fff;
-    color: #4f4f4f;
-    line-height: 1.3;
-    transition: border-color .14s ease, color .14s ease;
+    width: fit-content;
+    max-width: min(19rem, 100%);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #55514e;
+    line-height: 1.4;
 }
 
-.artwork-label-trigger:hover .artwork-label,
-.artwork-label-trigger:focus-visible .artwork-label {
-    border-color: #918b85;
-    color: #2f2f2f;
+.artwork-label-trigger:hover .artwork-label__title-main,
+.artwork-label-trigger:focus-visible .artwork-label__title-main {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: .25em;
 }
 
 .artwork-label-trigger:focus-visible {
@@ -551,58 +553,59 @@ body {
 }
 
 .artwork-label__heading {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
+    min-width: 0;
     align-items: baseline;
-    gap: .7rem;
+    flex-wrap: wrap;
+    gap: .1rem .7rem;
 }
 
 .artwork-label__title {
     min-width: 0;
-    color: #424242;
-    font-size: .72rem;
+    color: #3c3936;
+    font-size: .8rem;
     font-weight: 500;
-    letter-spacing: .018em;
-    line-height: 1.28;
+    letter-spacing: .008em;
+    line-height: 1.38;
+    overflow-wrap: anywhere;
 }
 
 .artwork-label__title-qualifier {
-    color: #676767;
-    font-size: .68rem;
+    color: #706b67;
+    font-size: .73rem;
     font-weight: 400;
-    letter-spacing: .025em;
+    letter-spacing: .008em;
 }
 
 .artwork-label__year {
-    color: #7b7b7b;
-    font-size: .62rem;
+    color: #77716c;
+    font-size: .7rem;
     font-weight: 400;
     font-variant-numeric: tabular-nums;
-    letter-spacing: .025em;
+    letter-spacing: .015em;
 }
 
 .artwork-label__facts {
     display: flex;
-    margin-top: .27rem;
-    justify-content: space-between;
+    margin-top: .22rem;
+    justify-content: flex-start;
     flex-wrap: wrap;
-    gap: .12rem .8rem;
-    color: #747474;
-    font-size: .61rem;
-    line-height: 1.35;
+    gap: .12rem 1rem;
+    color: #79736e;
+    font-size: .69rem;
+    line-height: 1.48;
 }
 
 .artwork-label__dimensions {
-    margin-left: auto;
     font-variant-numeric: tabular-nums;
 }
 
 .artwork-label__note {
-    margin-top: .3rem;
-    color: #777;
-    font-size: .59rem;
+    margin-top: .33rem;
+    color: #716c68;
+    font-size: .67rem;
     font-style: italic;
-    line-height: 1.38;
+    line-height: 1.5;
 }
 
 .artwork-card__actions,

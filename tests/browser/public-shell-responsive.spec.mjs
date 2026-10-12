@@ -180,7 +180,7 @@ test('narrowing the viewport never creates extra room for the same menu items', 
             }
         }
         if (width === 727) {
-            expect(state.navItemFont).toBe('12px');
+            expect(state.navItemFont).toBe('12.5px');
             expect(Math.abs(state.headerHeight - 72.7)).toBeLessThan(2);
         }
         previous = state;

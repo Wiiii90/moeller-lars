@@ -56,7 +56,7 @@ Changing the Home content template does not implicitly enable, disable or retarg
 
 Artwork selection uses canonical Gallery eligibility, Artwork date and explicit tie-break semantics. Ambiguous invalid state is surfaced rather than resolved by incidental DB order.
 
-- Hero Artwork Home uses the existing resolved eligible Home group and shared `artwork-card` renderer. `show_details` controls the artwork information card; `show_gallery_link` controls the Gallery button (matching the plain category button on artwork detail, without a trailing arrow); `show_navigation` enables cyclic previous/next buttons inside that Hero group; and `enable_viewer` allows or disables clicking the Hero media to open the existing Artwork Viewer. These are independent switches in the existing Home settings, with backward-compatible defaults (information on, Gallery link off when unset, navigation off, viewer on). Without viewer activation the Hero image/video is not an interactive link. When navigation is off, only the current resolved Hero member is rendered. No new publication filtering or Home selection algorithm is introduced.
+- Hero Artwork Home uses the existing resolved eligible Home group and shared `artwork-card` renderer. `show_details` controls the artwork information caption; `show_gallery_link` controls the Gallery button (matching the plain category button on artwork detail, without a trailing arrow); `show_navigation` enables cyclic previous/next buttons inside that Hero group; and `enable_viewer` allows or disables clicking the Hero media to open the existing Artwork Viewer. These are independent switches in the existing Home settings, with backward-compatible defaults (information on, Gallery link off when unset, navigation off, viewer on). Without viewer activation the Hero image/video is not an interactive link. When navigation is off, only the current resolved Hero member is rendered. No new publication filtering or Home selection algorithm is introduced.
 
 Home Custom/Under Construction and Custom Page share a single ordered public
 component renderer and the `CustomPageSetting` component validation contract:
@@ -90,6 +90,8 @@ Canonical originals remain authoritative; missing/corrupt/unavailable required m
 Informative public images require canonical ALT; explicit Artwork usage override takes precedence only where that consumer supports it.
 
 Gallery Artwork primary media may be image or supported video. Video uses manual/native controls/no autoplay and shares close/sequence context without image-specific zoom/pan.
+
+Artwork cards, Home Hero Artworks and Artwork detail pages share the same open, borderless caption. Title/year lead; material/dimensions follow as quiet metadata, with authored notes preserved. The caption remains a direct link to Artwork detail, independent of whether clicking the media opens the viewer. The media-to-caption gap and spacing between successive Artworks use stable shared public presentation values, with no viewport-dependent discontinuities. Context actions stay alongside the caption and must not overlap it.
 
 The image viewer supports close/Escape, visible zoom, wheel/trackpad zoom, touch pinch/pan where supported, pointer pan when enlarged, previous/next with boundaries, viewport recalculation, loading/error state and correct accessibility/focus behavior.
 
