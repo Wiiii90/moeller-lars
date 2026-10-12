@@ -10,7 +10,10 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('@media (max-width: 64rem)')
         ->toContain('@media (max-width: 46rem)')
         ->toContain('@media (max-width: 34rem)')
-        ->toContain('overflow-x: auto')
+        ->toContain('.site-navigation__rail > nav')
+        ->toContain('flex: 0 0 max-content;')
+        ->toContain('.site-navigation__item[hidden]')
+        ->not->toContain('overflow-x: auto')
         ->not->toContain('max-width: 550px')
         ->not->toContain('max-width: 980px')
         ->not->toContain('max-width: 1400px');

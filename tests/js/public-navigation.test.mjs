@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
     advanceNavigationWindow,
     fitNavigationWindow,
+    navigationWindowParts,
 } from '../../resources/js/public-navigation.js';
 
 test('fits only complete navigation items into the available rail', () => {
@@ -75,4 +76,31 @@ test('navigation windows never duplicate items or exceed the available width', (
             }
         }
     }
+});
+
+test('main controls never resolve to right-arrow buttons inside child submenus', () => {
+    const node = (selector) => ({ matches: (query) => query === selector });
+    const previous = node('button[data-direction="previous"]');
+    const next = node('button[data-direction="next"]');
+    const childNext = node('button[data-direction="next"]');
+    const rail = {
+        ...node('nav[data-navigation-window-scroll]'),
+        children: [childNext],
+    };
+    const surface = {
+        children: [previous, rail, next],
+        // A descendant-wide query would incorrectly return the child arrow.
+        querySelector: () => childNext,
+    };
+
+    const parts = navigationWindowParts(surface);
+    assert.strictEqual(parts.rail, rail);
+    assert.strictEqual(parts.previous, previous);
+    assert.strictEqual(parts.next, next);
+});
+
+test('whole-item window leaves room unused rather than enlarging short labels', () => {
+    const widths = [62, 81, 72];
+    assert.deepEqual(fitNavigationWindow(widths, 320), [0, 1, 2]);
+    assert.deepEqual(fitNavigationWindow(widths, 180), [0, 1]);
 });

@@ -1,11 +1,20 @@
 const SUBMENU_TRANSITION_MS = 180;
 
+// Resolve only immediate children: otherwise the main navigation could bind
+// its right arrow to a descendant submenu's right arrow.
+export function navigationWindowParts(surface) {
+    const direct = Array.from(surface.children);
+    return {
+        rail: direct.find((element) => element.matches('nav[data-navigation-window-scroll]')),
+        previous: direct.find((element) => element.matches('button[data-direction="previous"]')),
+        next: direct.find((element) => element.matches('button[data-direction="next"]')),
+    };
+}
+
 // Both navigation levels use the same whole-item cyclic window and never scroll pixels.
 // The surface is a three-column grid: previous control, canonical content width, next control.
 function initializeNavigationWindow(surface, onWindowChange = () => {}) {
-    const rail = surface.querySelector('[data-navigation-window-scroll]');
-    const previous = surface.querySelector('[data-direction="previous"]');
-    const next = surface.querySelector('[data-direction="next"]');
+    const { rail, previous, next } = navigationWindowParts(surface);
     if (!(rail instanceof HTMLElement)
         || !(previous instanceof HTMLButtonElement)
         || !(next instanceof HTMLButtonElement)) {
@@ -138,15 +147,8 @@ function initializeSubmenus(container, topLevelItems) {
         });
 
     let activeEntry = null;
-    let suppressFocusOpen = false;
-    let closeTimer = null;
     let hideTimer = null;
-    const clearCloseTimer = () => {
-        if (closeTimer !== null) {
-            window.clearTimeout(closeTimer);
-            closeTimer = null;
-        }
-    };
+
     const clearHideTimer = () => {
         if (hideTimer !== null) {
             window.clearTimeout(hideTimer);
@@ -159,7 +161,6 @@ function initializeSubmenus(container, topLevelItems) {
         entry.controls.submenu.hidden = true;
     };
     const closeActive = (restoreFocus = false) => {
-        clearCloseTimer();
         clearHideTimer();
         if (activeEntry === null) return;
 
@@ -172,16 +173,12 @@ function initializeSubmenus(container, topLevelItems) {
             closing.controls.submenu.hidden = true;
             hideTimer = null;
         }, SUBMENU_TRANSITION_MS);
-        if (restoreFocus) {
-            suppressFocusOpen = true;
-            closing.controls.parentLink.focus({ preventScroll: true });
-            suppressFocusOpen = false;
-        }
+        if (restoreFocus) closing.controls.parentLink.focus({ preventScroll: true });
     };
     const openEntry = (entry) => {
-        clearCloseTimer();
         clearHideTimer();
-        if (activeEntry !== null && activeEntry !== entry) hideEntryImmediately(activeEntry);
+        if (activeEntry === entry) return;
+        if (activeEntry !== null) hideEntryImmediately(activeEntry);
         activeEntry = entry;
         entry.controls.submenu.hidden = false;
         entry.controls.parentLink.setAttribute('aria-expanded', 'true');
@@ -189,65 +186,31 @@ function initializeSubmenus(container, topLevelItems) {
         region.dataset.open = 'true';
         entry.window.refresh();
     };
-    const scheduleClose = (entry) => {
-        clearCloseTimer();
-        closeTimer = window.setTimeout(() => {
-            const focusInside = entry.item.contains(document.activeElement)
-                || entry.controls.submenu.contains(document.activeElement);
-            const hoverInside = entry.item.matches(':hover')
-                || entry.controls.submenu.matches(':hover');
-            if (!focusInside && !hoverInside && activeEntry === entry) closeActive();
-            closeTimer = null;
-        }, 150);
-    };
 
     entries.forEach((entry) => {
         const { item, controls } = entry;
         const { parentLink, submenu } = controls;
-        let openAtPointerDown = false;
-        let lastPointerType = null;
 
-        item.addEventListener('pointerenter', (event) => {
-            if (event.pointerType === 'mouse') openEntry(entry);
+        // No hover/focus-open side channel: parent activation owns the submenu.
+        // If a parent has its own URL, first activation opens its children,
+        // subsequent activation follows the URL.
+        parentLink.addEventListener('click', (event) => {
+            if (activeEntry !== entry) {
+                event.preventDefault();
+                openEntry(entry);
+            } else if (parentLink instanceof HTMLButtonElement) {
+                event.preventDefault();
+                closeActive(true);
+            }
         });
-        item.addEventListener('pointerleave', (event) => {
-            if (event.pointerType === 'mouse') scheduleClose(entry);
-        });
-        submenu.addEventListener('pointerenter', clearCloseTimer);
-        submenu.addEventListener('pointerleave', (event) => {
-            if (event.pointerType === 'mouse') scheduleClose(entry);
-        });
-        item.addEventListener('focusin', () => {
-            if (!suppressFocusOpen) openEntry(entry);
-        });
-        const scheduleFocusClose = () => window.setTimeout(() => {
+
+        const closeOnFocusLeave = () => window.setTimeout(() => {
             if (!item.contains(document.activeElement)
                 && !submenu.contains(document.activeElement)
                 && activeEntry === entry) closeActive();
         }, 0);
-        item.addEventListener('focusout', scheduleFocusClose);
-        submenu.addEventListener('focusout', scheduleFocusClose);
-
-        parentLink.addEventListener('pointerdown', (event) => {
-            openAtPointerDown = activeEntry === entry;
-            lastPointerType = event.pointerType;
-        });
-        parentLink.addEventListener('click', (event) => {
-            const coarsePointer = lastPointerType === 'touch' || lastPointerType === 'pen';
-            lastPointerType = null;
-            if (parentLink instanceof HTMLButtonElement) {
-                event.preventDefault();
-                if (openAtPointerDown) closeActive(true);
-                else openEntry(entry);
-                return;
-            }
-            // A coarse-pointer user can reveal child links on the first tap
-            // and follow the parent URL on the second. Desktop links still work.
-            if (coarsePointer && !openAtPointerDown) {
-                event.preventDefault();
-                openEntry(entry);
-            }
-        });
+        item.addEventListener('focusout', closeOnFocusLeave);
+        submenu.addEventListener('focusout', closeOnFocusLeave);
 
         parentLink.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowDown') {
