@@ -101,7 +101,6 @@
             wire:model.live="selectedFeedKeys"
             value="{{ $item['key'] }}"
             aria-label="Select {{ $item['type_label'] }} entry {{ $item['title'] }}"
-            @checked($selected)
         >
     </td>
 </tr>
