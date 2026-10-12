@@ -27,21 +27,19 @@ trait HomePresentationChildren
     private function homeChildProjection(array $component, int $componentIndex): array
     {
         $type = (string) ($component['type'] ?? '');
-        if (! in_array($type, ['list', 'contact'], true)) {
+        if ($type !== 'contact') {
             return [];
         }
-        $children = $type === 'list'
-            ? ($component['items'] ?? [])
-            : (new CustomPageSetting)->contactChildren($component);
+        $children = (new CustomPageSetting)->contactChildren($component);
         $children = is_array($children) ? array_values($children) : [];
         $result = [];
         foreach ($children as $position => $child) {
             if (! is_array($child)) {
                 continue;
             }
-            $kind = $type === 'list' ? 'list' : 'contact';
-            $key = $kind === 'list' ? $position : (string) ($child['type'] ?? '');
-            $label = $kind === 'list' ? (string) ($child['title'] ?? 'List entry') : match ($key) {
+            $kind = 'contact';
+            $key = (string) ($child['type'] ?? '');
+            $label = match ($key) {
                 'public_email' => 'Public Email', 'social_links' => 'Social Media Links', 'contact_form' => 'Contact Form',
                 default => 'Contact item',
             };
@@ -51,9 +49,7 @@ trait HomePresentationChildren
                 'target' => $kind.':'.$componentIndex.':'.$key,
                 'position' => $position + 1,
                 'title' => $label,
-                'detail' => $kind === 'list'
-                    ? implode(' · ', array_filter([(string) ($child['date'] ?? ''), (string) ($child['meta'] ?? ''), (string) ($child['location'] ?? '')]))
-                    : ($key === 'contact_form' ? (string) ($child['form_state'] ?? 'enabled') : ''),
+                'detail' => $key === 'contact_form' ? (string) ($child['form_state'] ?? 'enabled') : '',
                 'published' => CustomPageSetting::contactChildPublished($child),
                 'can_move_up' => $position > 0,
                 'can_move_down' => $position < count($children) - 1,
