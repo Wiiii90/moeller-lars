@@ -9,8 +9,8 @@ it('keeps General social profiles directly editable with a canonical whole-row E
 
     expect($general)
         ->toContain('public function editSocialLinkAction(): Action')
-        ->toContain('AdminDialog::command(')
-        ->toContain("'Save profile'")
+        ->toContain('AdminDialog::edit(')
+        ->not->toContain("'Save profile'")
         ->toContain("->modalHeading('Edit profile')")
         ->toContain("'position' => \$index === null ? 1 : \$index + 1")
         ->toContain('->numeric()')
@@ -18,7 +18,9 @@ it('keeps General social profiles directly editable with a canonical whole-row E
         ->toContain('->maxLength(2048)')
         ->toContain('if ($otherIndex !== $index && ($link[\'platform\'] ?? null) === $platform)')
         ->toContain('array_splice($links, $position - 1, 0, $moved);')
-        ->toContain('$this->saveSocialLinks($links);');
+        ->toContain('$this->saveSocialLinks($links);')
+        ->toContain('$this->editingSocialPlatform = $platform;')
+        ->not->toContain('Autosaving its position would invalidate');
 
     expect($view)
         ->toContain('admin-row-actions--move-edit-delete')
