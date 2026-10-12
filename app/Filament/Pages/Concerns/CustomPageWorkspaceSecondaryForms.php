@@ -124,7 +124,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'published' => $published,
                 'title' => $data['title'] ?? null,
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
-                'items' => is_array($existing['items'] ?? null) ? array_values($existing['items']) : [],
+                'items' => is_array($data['items'] ?? null) ? array_values($data['items']) : (is_array($existing['items'] ?? null) ? array_values($existing['items']) : []),
             ],
             'divider' => [
                 'type' => 'divider',
