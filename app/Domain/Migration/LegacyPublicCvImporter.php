@@ -93,7 +93,6 @@ final class LegacyPublicCvImporter
                     ->where('type', $type)
                     ->update([
                         'state' => 'published',
-                        'show_in_navigation' => true,
                         'updated_at' => $now,
                     ]);
                 if ($updated !== 1) {
