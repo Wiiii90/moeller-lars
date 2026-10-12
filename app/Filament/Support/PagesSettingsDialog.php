@@ -52,15 +52,18 @@ final class PagesSettingsDialog
             $nesting->afterStateUpdated($onToggleUpdated);
         }
 
+        $autoPublish = AdminControl::toggle('pages_auto_publish', 'Auto-publish new pages')->live();
+        $deleteWithoutConfirmation = AdminControl::toggle('pages_delete_without_confirmation', 'Delete pages without confirmation')->live();
+        if ($onToggleUpdated !== null) {
+            $autoPublish->afterStateUpdated($onToggleUpdated);
+            $deleteWithoutConfirmation->afterStateUpdated($onToggleUpdated);
+        }
+
         return [
             $nesting,
             ...$this->homeRouting->schema($onToggleUpdated),
-            AdminControl::toggle('pages_auto_publish', 'Auto-publish new pages')
-                ->live()
-                ->afterStateUpdated($onToggleUpdated ?? static function (): void {}),
-            AdminControl::toggle('pages_delete_without_confirmation', 'Delete pages without confirmation')
-                ->live()
-                ->afterStateUpdated($onToggleUpdated ?? static function (): void {}),
+            $autoPublish,
+            $deleteWithoutConfirmation,
         ];
     }
 
