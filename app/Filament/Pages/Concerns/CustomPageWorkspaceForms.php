@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
+use App\Filament\Support\ComponentTypeChangeControl;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use Closure;
@@ -17,20 +18,28 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(?Closure $onTypeChange = null): array
-    {
-        $typeField = Select::make('type')
-            ->label('Component')
-            ->options(self::COMPONENT_LABELS)
-            ->required()
-            ->live()
-            ->afterStateUpdated(
-                $onTypeChange ?? fn (Select $component) => $component
+    private function componentEditorSchema(
+        ?string $originalType = null,
+        ?Closure $losesContent = null,
+        ?Closure $commitType = null,
+    ): array {
+        $applyType = null;
+        if ($originalType !== null && $losesContent !== null && $commitType !== null) {
+            [$typeField, $applyType] = ComponentTypeChangeControl::make(
+                'type', self::COMPONENT_LABELS, $originalType, $losesContent, $commitType,
+            );
+        } else {
+            $typeField = Select::make('type')
+                ->label('Component')
+                ->options(self::COMPONENT_LABELS)
+                ->required()
+                ->live()
+                ->afterStateUpdated(fn (Select $component) => $component
                     ->getContainer()
                     ->getComponent('dynamicComponentFields')
                     ->getChildSchema()
-                    ->fill()
-            );
+                    ->fill());
+        }
 
         $statusField = Select::make('publication_state')
             ->label('Status')
@@ -38,15 +47,16 @@ trait CustomPageWorkspaceForms
             ->default('published')
             ->required();
 
-        // Type and Status share the first row in both Create and Edit.
-        // Edit type changes use the canonical conversion Action, never a
-        // second implicit mutation in the field state callback.
+        // In Edit the type selector stages a conversion; the old fields are
+        // unavailable until Apply type has atomically replaced the component.
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
-            ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null),
-            ])
+            ->schema(fn (Get $get): array => $this->componentTypeFields(
+                $originalType ?? (string) $get('type'),
+                $originalType === null,
+            ))
             ->key('dynamicComponentFields')
+            ->visible(fn (Get $get): bool => $originalType === null || $get('type') === $originalType)
             ->columnSpanFull();
 
         return [
@@ -55,6 +65,7 @@ trait CustomPageWorkspaceForms
                 ->schema([
                     $typeField,
                     $statusField,
+                    ...($applyType === null ? [] : [$applyType]),
                     $dynamicFields,
                 ]),
         ];
