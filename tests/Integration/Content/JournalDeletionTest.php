@@ -14,7 +14,7 @@ beforeEach(function (): void {
 it('deletes an empty Journal blocks Journals with entries and allows recreation', function (): void {
     $sections = app(SiteSectionEditorialService::class);
     $empty = $sections->createJournal('Disposable Blog', 'disposable-blog', JournalTemplate::Blog->value);
-    $sections->updatePlacement($empty, 'published', true, null);
+    $sections->updatePlacement($empty, 'published', null);
 
     $sections->deleteConfigurableSection($empty);
 
