@@ -88,6 +88,39 @@ it('reorders and removes Home List entries from its Edit dialog', function (): v
         ->and($items[0]['title'])->toBe('Second revised');
 });
 
+it('edits Under Construction List entries using the same shared component commit', function (): void {
+    $settings = homeNotificationSettings([]);
+    $configuration = $settings->getAttribute('configuration');
+    $configuration[HomeTemplate::UnderConstruction->value]['components'] = [[
+        'type' => 'list', 'title' => 'Roadmap', 'published' => true,
+        'items' => [['title' => 'Existing', 'published' => true]],
+    ]];
+    $settings->setAttribute('template', HomeTemplate::UnderConstruction->value);
+    $settings->setAttribute('configuration', $configuration);
+    $settings->save();
+
+    $page = Livewire::test(HomePresentation::class)
+        ->assertSet('template', HomeTemplate::UnderConstruction->value)
+        ->assertDontSee('Add list item')
+        ->mountAction('editListComponent', ['index' => 0, 'type' => 'list'])
+        ->fillForm([
+            'editor_kind' => 'list',
+            'list_title' => 'Roadmap',
+            'items' => [
+                ['title' => 'New first', 'published' => true],
+                ['title' => 'Existing', 'published' => false],
+            ],
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    $items = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())[HomeTemplate::UnderConstruction->value]['components'][0]['items'];
+    expect(array_column($items, 'title'))->toBe(['New first', 'Existing'])
+        ->and($items[1]['published'])->toBeFalse();
+});
+
 it('notifies once when publishing a mixed Home component and Contact child selection', function (): void {
     $settings = homeNotificationSettings([
         ['type' => 'contact', 'published' => true, 'children' => [
