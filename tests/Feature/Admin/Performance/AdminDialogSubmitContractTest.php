@@ -34,3 +34,17 @@ it('keeps committed dialog submit actions separate from their parent action', fu
     expect($direct->isConfirmationRequired())->toBeFalse()
         ->and($direct->hasModal())->toBeFalse();
 });
+
+
+it('uses the Pages toolbar icon for the Add page create submit but keeps the canonical default for other creates', function (): void {
+    $pages = AdminDialog::create(
+        Action::make('addPage'),
+        'Create page',
+        \App\Filament\Support\Dialogs\AdminDialogSize::Large,
+        \App\Filament\Support\AdminIcon::Pages,
+    );
+    $default = AdminDialog::create(Action::make('addProfile'), 'Add profile');
+
+    expect($pages->getModalSubmitAction()?->getIcon())->toBe(\App\Filament\Support\AdminIcon::Pages->value)
+        ->and($default->getModalSubmitAction()?->getIcon())->toBe(\App\Filament\Support\AdminIcon::DialogSubmit->value);
+});
