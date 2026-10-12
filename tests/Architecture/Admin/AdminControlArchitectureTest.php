@@ -15,18 +15,19 @@ it('uses one shared read-only live-search transport and keeps persistence event-
     $root = dirname(__DIR__, 3);
     $searchInput = file_get_contents($root.'/resources/views/components/admin/search-input.blade.php');
     $dialog = file_get_contents($root.'/app/Filament/Support/Dialogs/AdminDialog.php');
-    $autosave = file_get_contents($root.'/app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php');
+
 
     expect($searchInput)
         ->toContain('wire:model.live.debounce.300ms="{{ $model }}"')
         ->toContain('x-on:keydown.enter.prevent');
 
     expect($dialog)
-        ->toContain("'wire:change' => 'persistMountedAdminEdit'");
+        ->toContain("'wire:change' => 'callMountedAction'")
+        ->toContain('$action->halt();')
+        ->not->toContain('persistMountedAdminEdit');
 
-    expect($autosave)
-        ->toContain('public function persistMountedAdminEdit(): void')
-        ->toContain('adminEditDialogPersistedFingerprints');
+    expect(file_exists($root.'/app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php'))
+        ->toBeFalse();
 
     $rawSearchInputs = [];
     $unexpectedDebounces = [];
