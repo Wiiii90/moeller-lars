@@ -74,7 +74,15 @@ Table-row type selects open the canonical confirmation Action even when no
 content would be lost: selecting a value alone never commits. Domain
 conversion and the one notifier call remain shared between table and Edit.
 This is independent of the List entry **Apply changes** command and does
-not introduce a generic Save action for other editorial fields.
+not introduce a generic Save action for other editorial fields. A Legal
+Disclaimer component also offers this Type editor: its own content is a
+read-only projection of General's canonical disclaimer and must never open an
+empty editor or persist a second copy of General's text. A Home Heading is a
+real content component rendered as an inner heading, distinct from the page
+heading configured in Settings; Home persists its optional text presentation
+discriminator so a newly converted, still-empty Heading does not silently
+reappear as Rich Text. Existing data without that discriminator continues to
+use the preexisting title/body inference.
 
 ### Create
 
