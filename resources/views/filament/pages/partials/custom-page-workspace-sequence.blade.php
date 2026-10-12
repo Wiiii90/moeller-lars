@@ -79,6 +79,7 @@
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::Edit"
                                         wire:click="mountAction('editComponent', { componentIndex: {{ $pageComponent['index'] }}, componentType: '{{ $pageComponent['type'] }}' })"
+                                        :disabled="$pageComponent['type'] === 'legal_disclaimer'"
                                     />
                                     <x-admin.row-action
                                         :action="$pageComponent['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
@@ -201,18 +202,11 @@
                                         @endforeach
                                     </div>
                                 </div>
-                            @elseif ($pageComponent['is_list'])
-                                <div class="custom-page-component__children-empty">No list entries</div>
                             @elseif ($pageComponent['is_contact'])
                                 <div class="custom-page-component__children-empty">No contact items</div>
                             @endif
 
-                            @if ($pageComponent['is_list'])
-                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addListEntry', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'list' })">
-                                    <span aria-hidden="true">+</span>
-                                    <strong>Add list item</strong>
-                                </button>
-                            @elseif ($pageComponent['is_contact'] && $pageComponent['contact_child_count'] < 3)
+                            @if ($pageComponent['is_contact'] && $pageComponent['contact_child_count'] < 3)
                                 <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addContactChild', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'contact' })">
                                     <span aria-hidden="true">+</span>
                                     <strong>Add contact item</strong>
