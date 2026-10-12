@@ -22,7 +22,14 @@ test('Pages toolbar uses underline hover and field focus without restyling table
 
     const search = page.getByRole('searchbox', { name: /search/i }).first();
     await search.focus();
-    const accent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--admin-accent').trim());
+    const accent = await page.evaluate(() => {
+        const probe = document.createElement('span');
+        probe.style.color = 'var(--admin-accent)';
+        document.body.append(probe);
+        const computed = getComputedStyle(probe).color;
+        probe.remove();
+        return computed;
+    });
     await expect(search).toHaveCSS('border-bottom-color', accent);
 
     const type = page.getByRole('combobox', { name: 'Filter by page type' });
