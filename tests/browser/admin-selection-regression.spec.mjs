@@ -12,9 +12,10 @@ test.beforeEach(async ({ page }) => {
     await expect(page).toHaveURL(/\/admin\/dashboard(?:[/?#]|$)/);
 });
 
-async function expectSelection(header, rows, selected, total) {
+async function expectSelection(header, rows, countBadge, selected, total) {
     await expect.poll(async () => rows.evaluateAll((inputs) => inputs.filter((input) => input.checked).length))
         .toBe(selected);
+    await expect(countBadge).toHaveText(String(selected));
     await expect(header).toHaveJSProperty('checked', selected === total);
     await expect(header).toHaveJSProperty('indeterminate', selected > 0 && selected < total);
     await expect(header).toHaveAttribute(
@@ -27,43 +28,45 @@ test('Pages select-all stays synchronized after mixed selection and repeated cli
     await page.goto('/admin/pages');
     const header = page.getByRole('checkbox', { name: 'Select all visible pages' });
     const rows = page.locator('.admin-pages__row input[type="checkbox"]');
+    const countBadge = page.locator('.admin-pages__selection .admin-selection__count');
     const total = await rows.count();
     test.skip(total < 2, 'Requires at least two visible Pages for a mixed-selection test');
 
-    await expectSelection(header, rows, 0, total);
+    await expectSelection(header, rows, countBadge, 0, total);
     await header.click();
-    await expectSelection(header, rows, total, total);
+    await expectSelection(header, rows, countBadge, total, total);
 
     await rows.first().uncheck();
-    await expectSelection(header, rows, total - 1, total);
+    await expectSelection(header, rows, countBadge, total - 1, total);
 
     // Mixed -> all; all -> none. A remembered partial selection is not restored.
     await header.click();
-    await expectSelection(header, rows, total, total);
+    await expectSelection(header, rows, countBadge, total, total);
     await header.click();
-    await expectSelection(header, rows, 0, total);
+    await expectSelection(header, rows, countBadge, 0, total);
 
     await rows.first().check();
-    await expectSelection(header, rows, 1, total);
+    await expectSelection(header, rows, countBadge, 1, total);
     await header.click();
-    await expectSelection(header, rows, total, total);
+    await expectSelection(header, rows, countBadge, total, total);
     await header.click();
-    await expectSelection(header, rows, 0, total);
+    await expectSelection(header, rows, countBadge, 0, total);
 });
 
 test('Dashboard select-all follows the same native three-state selection contract', async ({ page }) => {
     const header = page.getByRole('checkbox', { name: 'Select all visible feed entries' });
     const rows = page.locator('.admin-dashboard__feed-table tbody input[type="checkbox"]');
+    const countBadge = page.locator('.admin-dashboard__selection .admin-selection__count');
     const total = await rows.count();
     test.skip(total < 2, 'Requires at least two visible feed entries for a mixed-selection test');
 
-    await expectSelection(header, rows, 0, total);
+    await expectSelection(header, rows, countBadge, 0, total);
     await header.click();
-    await expectSelection(header, rows, total, total);
+    await expectSelection(header, rows, countBadge, total, total);
     await rows.first().uncheck();
-    await expectSelection(header, rows, total - 1, total);
+    await expectSelection(header, rows, countBadge, total - 1, total);
     await header.click();
-    await expectSelection(header, rows, total, total);
+    await expectSelection(header, rows, countBadge, total, total);
     await header.click();
-    await expectSelection(header, rows, 0, total);
+    await expectSelection(header, rows, countBadge, 0, total);
 });
