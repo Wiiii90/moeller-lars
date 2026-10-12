@@ -27,6 +27,9 @@
     --public-label-ink: #28394b;
     --public-ink-strong: #30291f;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --public-index-typeface: Georgia, "Times New Roman", serif;
+    --public-index-ink: #514941;
+    --public-index-rule: rgba(76, 63, 50, .22);
     --public-ink: #555;
     --public-muted: #777;
     --public-active: #746a60;
@@ -80,6 +83,8 @@ body {
 .site-navigation {
     position: relative;
     order: 1;
+    /* An inset hairline is visually a printed catalog edge, not new geometry. */
+    box-shadow: inset 0 -1px 0 var(--public-index-rule);
 }
 
 .site-navigation__rail,
@@ -169,30 +174,37 @@ body {
 .site-header nav .site-navigation__text {
     display: flex;
     min-height: 2.95rem;
-    padding: .9rem 1rem .82rem;
+    padding: .9rem .89rem .82rem;
     align-items: center;
     justify-content: center;
     background: transparent;
-    color: #6c665f;
-    font-family: var(--public-typeface);
-    font-size: 12.5px;
+    color: var(--public-index-ink);
+    font-family: var(--public-index-typeface);
+    font-size: 14px;
     font-weight: 400;
-    letter-spacing: .07em;
+    letter-spacing: 0;
     line-height: 1.15;
     text-decoration: none;
-    text-transform: uppercase;
+    text-transform: none;
     white-space: nowrap;
     transition: color .14s ease;
 }
 
-/* The underline belongs to the text, never the width of its clickable rail cell. */
+/* The printed active marker belongs to ink width rather than a flex slot. */
 .site-navigation__label {
-    text-decoration-line: underline;
-    text-decoration-color: transparent;
-    text-decoration-thickness: 1px;
-    text-underline-offset: .55em;
-    text-decoration-skip-ink: auto;
-    transition: text-decoration-color .14s ease;
+    position: relative;
+    text-decoration: none;
+}
+.site-navigation__label::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: -.36em;
+    left: 0;
+    height: 1px;
+    background: var(--public-index-ink);
+    opacity: 0;
+    transition: opacity .14s ease;
 }
 
 .site-navigation__primary > :is(a, button, span) {
@@ -205,10 +217,10 @@ body {
     box-shadow: none;
 }
 
-.site-navigation__item.is-active > .site-navigation__primary .site-navigation__label,
-.site-header nav a[aria-current="page"] .site-navigation__label,
-.site-navigation__item[data-submenu-open="true"] > .site-navigation__primary .site-navigation__label {
-    text-decoration-color: var(--public-active);
+.site-navigation__item.is-active > .site-navigation__primary .site-navigation__label::after,
+.site-header nav a[aria-current="page"] .site-navigation__label::after,
+.site-navigation__item[data-submenu-open="true"] > .site-navigation__primary .site-navigation__label::after {
+    opacity: 1;
 }
 
 .site-header nav a:hover,
@@ -219,11 +231,11 @@ body {
     color: #302d2a;
 }
 
-.site-header nav a:hover .site-navigation__label,
-.site-header nav a:focus-visible .site-navigation__label,
-.site-header nav .site-navigation__primary > button:hover .site-navigation__label,
-.site-header nav .site-navigation__primary > button:focus-visible .site-navigation__label {
-    text-decoration-color: var(--public-active);
+.site-header nav a:hover .site-navigation__label::after,
+.site-header nav a:focus-visible .site-navigation__label::after,
+.site-header nav .site-navigation__primary > button:hover .site-navigation__label::after,
+.site-header nav .site-navigation__primary > button:focus-visible .site-navigation__label::after {
+    opacity: 1;
 }
 
 .site-header nav a:focus-visible,
@@ -277,11 +289,11 @@ body {
     appearance: none;
     border: 0;
     background: transparent;
-    color: #68625d;
-    font-family: var(--public-typeface);
-    font-size: 11px;
+    color: var(--public-index-ink);
+    font-family: var(--public-index-typeface);
+    font-size: 13px;
     font-weight: 400;
-    letter-spacing: .07em;
+    letter-spacing: 0;
     line-height: 1.15;
     cursor: pointer;
     transition: color .14s ease;
@@ -303,7 +315,7 @@ body {
     text-decoration-line: underline;
     text-decoration-color: transparent;
     text-decoration-thickness: 1px;
-    text-underline-offset: .5em;
+    text-underline-offset: .42em;
     transition: text-decoration-color .14s ease;
 }
 
@@ -329,7 +341,7 @@ body {
     width: 1px;
     height: 1.05rem;
     margin: 0 .65rem;
-    background: #dad5d0;
+    background: var(--public-index-rule);
     pointer-events: none;
 }
 
@@ -348,7 +360,7 @@ body {
     border: 0;
     appearance: none;
     background: transparent;
-    color: #77716b;
+    color: var(--public-index-ink);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
@@ -362,7 +374,7 @@ body {
 .site-navigation__control > .public-icon {
     width: 1.2rem;
     height: 1.2rem;
-    stroke-width: 1.55;
+    stroke-width: 1.3;
     transition: transform .16s ease-out;
 }
 @media (hover: hover) and (pointer: fine) {
@@ -1004,6 +1016,10 @@ body {
     .site-navigation__control:hover > .public-icon,
     .site-navigation__control:focus-visible > .public-icon {
         transform: none;
+    }
+
+    .site-navigation__label::after {
+        transition: none;
     }
 }
 

@@ -50,9 +50,10 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
                 headerPosition: getComputedStyle(document.querySelector('.site-title')).position,
             };
         });
-        for (const family of [type.artist, type.navigation, type.artwork, type.action]) {
+        for (const family of [type.artist, type.artwork, type.action]) {
             expect(family).toBe(type.body);
         }
+        expect(type.navigation).toContain('Georgia');
         expect(type.headerPosition).toBe('absolute');
         const surfaces = await page.evaluate(() => ({
             menu: getComputedStyle(document.querySelector('.site-navigation')).backgroundColor,
@@ -208,7 +209,7 @@ test('narrowing the viewport never creates extra room for the same menu items', 
             }
         }
         if (width === 727) {
-            expect(state.navItemFont).toBe('12.5px');
+            expect(state.navItemFont).toBe('14px');
             expect(Math.abs(state.headerHeight - 72.7)).toBeLessThan(2);
         }
         previous = state;
