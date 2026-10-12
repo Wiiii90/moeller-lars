@@ -45,7 +45,7 @@ trait CustomPageWorkspaceForms
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $includeTypeSelect),
+                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null),
             ])
             ->key('dynamicComponentFields')
             ->columnSpanFull();
