@@ -104,6 +104,20 @@ trait CustomPageWorkspaceProjectionState
                 $reorderEnabled,
             );
             $parentSearch = mb_strtolower($this->componentParentSearchText($settings, $block, $imageName));
+            if ($type === 'list') {
+                // List entries are edited within the parent, but remain
+                // searchable without creating phantom child rows.
+                foreach (is_array($block['items'] ?? null) ? $block['items'] : [] as $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+                    foreach (['date', 'title', 'meta', 'location', 'body', 'url'] as $field) {
+                        if (is_string($item[$field] ?? null)) {
+                            $parentSearch .= ' '.mb_strtolower($item[$field]);
+                        }
+                    }
+                }
+            }
 
             if ($needle !== '') {
                 $parentMatches = str_contains($parentSearch, $needle);
