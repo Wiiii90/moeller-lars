@@ -65,6 +65,15 @@
             data-admin-header-notification-counter
             hidden
         ></span>
+        <button
+            class="admin-header-notification__dismiss"
+            type="button"
+            data-admin-header-notification-dismiss
+            aria-label="Dismiss notification"
+            title="Dismiss notification"
+        >
+            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Remove->mini()" />
+        </button>
     </div>
 </div>
 @endpersist
