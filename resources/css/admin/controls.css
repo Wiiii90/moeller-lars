@@ -381,7 +381,7 @@
 /* The toolbar is the sole owner of its action underline. Unlike row,
  * popup and dialog actions, task controls draw a 1px bottom BORDER: this is
  * the same line and the same height as Search / inline filter controls.
- * Selection is not part of this list: its full-width rail has one owner below. */
+ * Selection must be explicitly excluded because Pages places it inside an\n * admin-task-control-group, which also matches a general action branch.\n * Its full-width rail has one owner below. */
 .admin-data-controls :is(
     .admin-data-controls__utility > .admin-action,
     .admin-data-controls__utility .admin-editorial-actions > .admin-action,
@@ -391,7 +391,7 @@
     .admin-data-controls__utility .admin-task-control-group > .admin-action,
     .admin-data-controls__utility .admin-task-control-group > div > .admin-action,
     .admin-filter-overflow > .admin-filter-overflow__trigger
-) {
+):not(.admin-selection__trigger) {
     border-color: transparent;
     border-radius: 0;
     background: transparent;
@@ -407,7 +407,7 @@
     .admin-data-controls__utility .admin-task-control-group > .admin-action,
     .admin-data-controls__utility .admin-task-control-group > div > .admin-action,
     .admin-filter-overflow > .admin-filter-overflow__trigger
-):is(:hover, :focus-visible):not(:disabled) {
+):not(.admin-selection__trigger):is(:hover, :focus-visible):not(:disabled) {
     border-bottom-color: var(--admin-toolbar-line-hover);
     background: transparent;
     color: var(--admin-text);
@@ -417,7 +417,7 @@
     .admin-data-controls__utility .admin-editorial-actions > .admin-action,
     .admin-data-controls__utility .admin-task-control-actions > .admin-action,
     .admin-filter-overflow > .admin-filter-overflow__trigger
-):is(.is-active, .is-primary, [aria-pressed="true"], [aria-expanded="true"], :focus-visible) {
+):not(.admin-selection__trigger):is(.is-active, .is-primary, [aria-pressed="true"], [aria-expanded="true"], :focus-visible) {
     border-bottom-color: var(--admin-toolbar-line-active);
     background: transparent;
     color: var(--admin-text);
