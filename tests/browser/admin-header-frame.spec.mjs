@@ -71,3 +71,58 @@ test('Header Notification tracks the actual content edges and User stays outside
     expect(Math.abs(bounds.n.left - bounds.w.left)).toBeLessThan(1);
     expect(Math.abs(bounds.n.right - bounds.w.right)).toBeLessThan(1);
 });
+
+test('Header Notification retains workspace width under native modal body scroll lock', async ({ page }) => {
+    const email = process.env.PLAYWRIGHT_ADMIN_EMAIL;
+    const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD;
+    test.skip(!email || !password, 'Local admin credentials are required');
+
+    // A scrollable page forces Filament's native body-fixed locking path.
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await page.goto('/admin/login');
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).toHaveURL(/\/admin\/dashboard(?:[/?#]|$)/);
+
+    await page.getByRole('button', { name: 'Settings', exact: true }).first().click();
+    const modal = page.locator('.fi-modal.fi-modal-open').last();
+    await expect(modal.getByRole('heading', { name: 'Dashboard settings', exact: true })).toBeVisible();
+
+    try {
+        await expect.poll(() => page.evaluate(() => document.body.style.position)).toBe('fixed');
+
+        for (const width of [1900, 1600, 1440, 1200, 1100, 1024]) {
+            await page.setViewportSize({ width, height: 600 });
+            const bounds = await page.evaluate(() => {
+                const notification = document.querySelector('[data-admin-header-notification]');
+                const workspace = document.querySelector('.fi-main .admin-workspace');
+                const user = document.querySelector('.fi-topbar-end .fi-user-menu-trigger');
+                if (!notification || !workspace || !user) return null;
+
+                // Geometry only: no synthetic Notification and no queue/timer changes.
+                notification.hidden = false;
+                notification.dataset.phase = 'idle';
+
+                return {
+                    notification: notification.getBoundingClientRect().toJSON(),
+                    workspace: workspace.getBoundingClientRect().toJSON(),
+                    user: user.getBoundingClientRect().toJSON(),
+                    order: Boolean(workspace.compareDocumentPosition(notification)
+                        & Node.DOCUMENT_POSITION_FOLLOWING),
+                    bodyFixed: getComputedStyle(document.body).position === 'fixed',
+                };
+            });
+
+            expect(bounds, 'Missing Header/Workspace/User at width ' + width).not.toBeNull();
+            expect(bounds.order, 'Notification must follow its anchor in document order').toBe(true);
+            expect(bounds.bodyFixed, 'Modal must exercise Filament body-fixed lock').toBe(true);
+            expect(Math.abs(bounds.notification.left - bounds.workspace.left), 'Left edge at ' + width).toBeLessThan(1);
+            expect(Math.abs(bounds.notification.right - bounds.workspace.right), 'Right edge at ' + width).toBeLessThan(1);
+            expect(bounds.user.left - bounds.workspace.right, 'User collision at ' + width).toBeGreaterThanOrEqual(15);
+        }
+    } finally {
+        await page.keyboard.press('Escape');
+        await expect(modal).toBeHidden();
+    }
+});

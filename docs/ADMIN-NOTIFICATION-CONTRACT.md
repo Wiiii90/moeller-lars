@@ -45,7 +45,7 @@ When a successful admin mutation produced Activity in the same request, `AdminAc
 
 ## Header shell
 
-The header surface is a persisted SPA-shell element rendered through the panel-level `BODY_START` hook. It is deliberately outside Livewire page/topbar components so Livewire `@persist` can keep the same DOM while the one-time `admin-notifications.js` controller keeps queue, timer and remaining-lifetime state across `wire:navigate` visits.
+The header surface is a persisted SPA-shell element rendered through the panel-level `BODY_END` hook, **after** the page's `.admin-workspace` element in document order. It is deliberately outside Livewire page/topbar components so Livewire `@persist` can keep the same DOM while the one-time `admin-notifications.js` controller keeps queue, timer and remaining-lifetime state across `wire:navigate` visits. This order is required for CSS anchor positioning: Filament's native scroll lock fixes the document body for scrollable pages with an open dialog, and an earlier fixed Notification cannot anchor to a later workspace in that state. Neither the scroll-lock owner nor Notification sizing/animation has an alternate modal-specific path.
 
 Its only ingress is the project-owned `admin-header-notification` event plus the bounded session queue used for real full-document/redirect boundaries.
 
@@ -124,6 +124,6 @@ Coverage should prove at least:
 - background delivery persists without requiring a browser session;
 - mailbox reads/mutations remain user-scoped;
 - Activity-backed success Notifications use canonical Activity presentation/context;
-- the header surface is rendered at `BODY_START`, outside Livewire page components, and uses `@persist`;
+- the header surface is rendered at `BODY_END`, **after the workspace DOM**, outside Livewire page components, and uses `@persist`;
 - the header queue and remaining lifetime survive SPA navigation;
 - no parallel notifier API or framework notification renderer remains.

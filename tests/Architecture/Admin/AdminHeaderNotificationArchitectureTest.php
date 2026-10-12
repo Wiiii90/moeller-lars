@@ -12,8 +12,9 @@ it('keeps one persisted admin Notification shell runtime', function (): void {
     $icons = file_get_contents(app_path('Filament/Support/AdminIcon.php'));
 
     expect($provider)
-        ->toContain('PanelsRenderHook::BODY_START')
+        ->toContain('PanelsRenderHook::BODY_END')
         ->toContain("view('filament.partials.admin-header-notification')")
+        ->not->toContain('PanelsRenderHook::BODY_START')
         ->not->toContain("view('filament.partials.admin-modal-bootstrap')")
         ->and($view)
         ->toContain("@persist('admin-header-notification')")
@@ -105,6 +106,11 @@ it('keeps the workspace as the only Header geometry owner', function (): void {
         ->toContain('padding-inline-end: var(--admin-header-control-rail) !important;')
         ->toContain('inset-inline-start: calc(0rem - var(--admin-workspace-center-shift));')
         ->not->toContain('width: 100vw;');
+
+    expect($provider)
+        ->toContain('PanelsRenderHook::BODY_END')
+        ->toContain("view('filament.partials.admin-header-notification')")
+        ->not->toContain('PanelsRenderHook::BODY_START');
 
     expect($notifications)
         ->toContain('position-anchor: --admin-workspace-frame;')
