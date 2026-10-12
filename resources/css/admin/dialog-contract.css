@@ -73,7 +73,10 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
  * Nested editors inside collapsed Repeater items are excluded: those can
  * initialize independently when an item is expanded or scrolled into view. */
 .fi-modal-window.admin-task-dialog:has(
-    .admin-rich-text .fi-fo-markdown-editor:not(.fi-fo-repeater-item *):not(:has(.CodeMirror))
+    .admin-rich-text .fi-fo-markdown-editor:not(.fi-fo-repeater-item *):is(
+        :not(:has(.CodeMirror)),
+        :not(:has(.editor-toolbar))
+    )
 ) {
     opacity: 0 !important;
 }
