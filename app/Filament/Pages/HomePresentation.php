@@ -20,7 +20,6 @@ use App\Filament\Pages\Concerns\HomePresentationChildren;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
-use App\Filament\Support\ComponentTypeChangeControl;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -39,7 +38,6 @@ use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -487,8 +485,8 @@ final class HomePresentation extends Page
         )->action(function (array $data): void {
             $kind = (string) ($data['kind'] ?? '');
             $component = match ($kind) {
-                'heading' => ['type' => 'text', 'text_kind' => 'heading', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
-                'rich_text' => ['type' => 'text', 'text_kind' => 'rich_text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
+                'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
+                'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
                 'image' => [
                     'type' => 'image',
                     'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
@@ -544,70 +542,47 @@ final class HomePresentation extends Page
                     'items' => $component['items'] ?? [],
                 ];
             })
-            ->schema(function (array $arguments): array {
-                $current = $this->componentFromArguments($arguments);
-                $originalKind = $this->editorKind($current) ?? (string) $current['type'];
-                [$typeField, $applyType] = ComponentTypeChangeControl::make(
-                    'editor_kind',
-                    $this->componentTypeOptions,
-                    $originalKind,
-                    fn (string $target): bool => app(HomePresentationEditorialService::class)
-                        ->conversionLosesContent($this->componentFromArguments($arguments), $target),
-                    function (string $target) use ($arguments, $originalKind): void {
-                        $current = $this->componentFromArguments($arguments);
-                        if ($this->convertHomeComponent(
-                            (int) $arguments['index'], (string) $current['type'], $originalKind, $target,
-                        )) {
-                            $this->replaceMountedAction(
-                                $target === 'list' ? 'editListComponent' : 'editComponent',
-                                ['index' => (int) $arguments['index'], 'type' => $target === 'heading' || $target === 'rich_text' ? 'text' : $target],
-                            );
+            ->schema(fn (array $arguments): array => [
+                Hidden::make('type'),
+                Select::make('editor_kind')
+                    ->label('Component')
+                    ->options($this->componentTypeOptions)
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state) use ($arguments): void {
+                        $component = $this->componentFromArguments($arguments);
+                        $currentKind = $this->editorKind($component) ?? (string) $component['type'];
+                        $targetKind = is_string($state) ? $state : '';
+                        if ($targetKind === $currentKind || ! array_key_exists($targetKind, $this->componentTypeOptions)) {
+                            return;
                         }
-                    },
-                );
 
-                return [
-                    Hidden::make('type'),
-                    $typeField,
-                    $applyType,
-                    TextInput::make('title')->label('Heading')->maxLength(160)
-                        ->required(fn (callable $get): bool => $originalKind === 'heading' && $get('editor_kind') === $originalKind)
-                        ->visible(fn (callable $get): bool => $originalKind === 'heading' && $get('editor_kind') === $originalKind),
-                    ...($originalKind === 'rich_text'
-                        ? $this->homeRichTextFields('editor_kind', 'rich_text', required: true)
-                        : []),
-                    MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
-                        ->required(fn (callable $get): bool => $originalKind === 'image' && $get('editor_kind') === $originalKind)
-                        ->visible(fn (callable $get): bool => $originalKind === 'image' && $get('editor_kind') === $originalKind),
-                    Toggle::make('image_decorative')->label('Decorative image')
-                        ->visible(fn (callable $get): bool => $originalKind === 'image' && $get('editor_kind') === $originalKind),
-                    Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
-                        ->required(fn (callable $get): bool => $originalKind === 'divider' && $get('editor_kind') === $originalKind)
-                        ->visible(fn (callable $get): bool => $originalKind === 'divider' && $get('editor_kind') === $originalKind),
-                    TextInput::make('list_title')->label('List heading')->maxLength(160)
-                        ->visible(fn (callable $get): bool => $originalKind === 'list' && $get('editor_kind') === $originalKind),
-                    MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
+                        $this->replaceMountedAction('changeComponentType', [
+                            ...$arguments,
+                            'kind' => $currentKind,
+                            'targetKind' => $targetKind,
+                        ]);
+                    }),
+                TextInput::make('title')->label('Heading')->maxLength(160)
+                    ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
+                ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
+                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
+                    ->required(fn (callable $get): bool => $get('editor_kind') === 'image')
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
+                Toggle::make('image_decorative')->label('Decorative image')
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
+                Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
+                    ->required(fn (callable $get): bool => $get('editor_kind') === 'divider')
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'divider'),
+                TextInput::make('list_title')->label('List heading')->maxLength(160)
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
+                MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
                         ->nullable()->placeholder('No list image')
-                        ->visible(fn (callable $get): bool => $originalKind === 'list' && $get('editor_kind') === $originalKind),
-                    ...($originalKind === 'list'
-                        ? [ComponentListEditor::make()->visible(fn (callable $get): bool => $get('editor_kind') === $originalKind)]
-                        : []),
-                    Placeholder::make('contact_note')
-                        ->label('Contact items')
-                        ->content('Contact items are managed in the child rows below.')
-                        ->visible(fn (callable $get): bool => $originalKind === 'contact' && $get('editor_kind') === $originalKind),
-                    Placeholder::make('legal_disclaimer_note')
-                        ->label('Legal disclaimer from General')
-                        ->content(function (): string {
-                            $value = PublicContentSetting::general()->getAttribute('legal_disclaimer');
-
-                            return is_string($value) && trim($value) !== ''
-                                ? $value
-                                : 'No legal disclaimer is configured in General.';
-                        })
-                        ->visible(fn (callable $get): bool => $originalKind === 'legal_disclaimer' && $get('editor_kind') === $originalKind),
-                ];
-            })
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
+                ComponentListEditor::make()
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
+            ])
             ->modalHeading('Edit component')
             ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments, $actionName))
             ->action(function (array $data, array $arguments): void {
@@ -619,8 +594,8 @@ final class HomePresentation extends Page
                 }
                 $component = match ($type) {
                     'text' => match ($editorKind) {
-                        'heading' => ['type' => 'text', 'text_kind' => 'heading', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
-                        'rich_text' => ['type' => 'text', 'text_kind' => 'rich_text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
+                        'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
+                        'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
                         default => throw ValidationException::withMessages(['component' => 'This text component has no supported editor mode.']),
                     },
                     'image' => [
@@ -700,23 +675,6 @@ final class HomePresentation extends Page
         }
     }
 
-    private function convertHomeComponent(
-        int $index, string $expectedType, string $expectedKind, string $targetKind,
-    ): bool {
-        $changed = app(HomePresentationEditorialService::class)->convertComponent(
-            $this->settings(), $this->componentTemplate(),
-            $index, $expectedType, $expectedKind, $targetKind,
-        );
-        if ($changed) {
-            $this->reloadWorkspace();
-            app(AdminNotifier::class)->notification(
-                title: 'Home component type updated', status: 'success',
-            );
-        }
-
-        return $changed;
-    }
-
     public function changeComponentTypeAction(): Action
     {
         $targetComponent = function (array $arguments): array {
@@ -737,19 +695,29 @@ final class HomePresentation extends Page
                 ->label('Change component type')
                 ->action(function (array $arguments) use ($targetComponent): void {
                     $component = $targetComponent($arguments);
-                    $this->convertHomeComponent(
+                    $changed = app(HomePresentationEditorialService::class)->convertComponent(
+                        $this->settings(),
+                        $this->componentTemplate(),
                         (int) $arguments['index'],
                         (string) $component['type'],
                         (string) $arguments['kind'],
                         (string) $arguments['targetKind'],
                     );
+                    $this->reloadWorkspace();
+                    if ($changed) {
+                        app(AdminNotifier::class)->notification(
+                            title: 'Home component type updated',
+                            status: 'success',
+                        );
+                    }
                 }),
             'Change type?',
             fn (array $arguments): string => 'Changing to '
                 .($this->componentTypeOptions[(string) $arguments['targetKind']] ?? 'another type')
                 .' removes content that cannot be kept.',
             'Change type',
-            condition: true,
+            condition: fn (array $arguments): bool => app(HomePresentationEditorialService::class)
+                ->conversionLosesContent($targetComponent($arguments), (string) $arguments['targetKind']),
         );
     }
 
@@ -1207,9 +1175,7 @@ final class HomePresentation extends Page
             $body = is_string($component['body'] ?? null) ? trim((string) $component['body']) : '';
             $filterType = match ($type) {
                 'image' => 'image',
-                'text' => in_array($component['text_kind'] ?? null, ['heading', 'rich_text'], true)
-                    ? $component['text_kind']
-                    : ($title !== '' && $body === '' ? 'heading' : 'rich_text'),
+                'text' => $title !== '' && $body === '' ? 'heading' : 'rich_text',
                 'divider' => 'divider',
                 'list' => 'list',
                 'contact' => 'contact',
@@ -1264,7 +1230,7 @@ final class HomePresentation extends Page
                 ])),
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $count - 1,
-                'editable' => in_array($type, CustomPageSetting::COMPONENT_TYPES, true),
+                'editable' => $type !== 'legal_disclaimer' && in_array($type, CustomPageSetting::COMPONENT_TYPES, true),
             ];
         }
         $this->componentDataset = $dataset;
@@ -1442,9 +1408,6 @@ final class HomePresentation extends Page
     {
         if (($component['type'] ?? null) !== 'text') {
             return null;
-        }
-        if (in_array($component['text_kind'] ?? null, ['heading', 'rich_text'], true)) {
-            return $component['text_kind'];
         }
         $title = $component['title'] ?? null;
         $body = $component['body'] ?? null;
