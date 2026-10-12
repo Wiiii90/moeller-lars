@@ -63,7 +63,7 @@ it('keeps generated page slugs within the allowed length and syntax', function (
         ->and($slug)->toMatch('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
 });
 
-it('derives all six metrics from real SiteSections', function (): void {
+it('derives the six wide metrics and compact navigation count from real SiteSections', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $parent = $service->createCustomPage('Metric Parent', 'metric-parent');
@@ -84,6 +84,16 @@ it('derives all six metrics from real SiteSections', function (): void {
     ]);
 
     Livewire::test(SitePages::class)->assertSee('In navigation');
+
+    // Skip Home hides Home from the public navigation, not from Published.
+    app(HomeRoutingSettingsService::class)->update(
+        app(HomePresentationResolver::class)->settings(),
+        true,
+        null,
+    );
+    $skipHomeMetrics = Livewire::test(SitePages::class)->get('metrics');
+    expect($skipHomeMetrics['published'])->toBe($metrics['published'])
+        ->and($skipHomeMetrics['navigation'])->toBe($metrics['navigation'] - 1);
 });
 
 it('keeps parent context when a child matches a filter and disables reorder', function (): void {
