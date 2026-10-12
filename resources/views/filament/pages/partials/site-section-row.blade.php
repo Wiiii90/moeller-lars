@@ -1,6 +1,5 @@
 @php
     $label = $section['navigation_label'] ?: $section['title'];
-    $selected = in_array((int) $section['id'], array_map('intval', $selectedSectionIds), true);
     $isChild = (int) $section['depth'] === 1;
     $isHome = $section['type'] === \App\Domain\Content\SiteSectionType::Home->value;
     $homeState = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->tableState() : null;
@@ -191,7 +190,7 @@
         </div>
 
         <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="cell" data-cell="selection">
-            <input type="checkbox" aria-label="Select {{ $label }}" value="{{ $section['id'] }}" wire:model.live="selectedSectionIds" @checked($selected)>
+            <input type="checkbox" aria-label="Select {{ $label }}" value="{{ $section['id'] }}" wire:model.live="selectedSectionIds">
         </label>
     </div>
 
