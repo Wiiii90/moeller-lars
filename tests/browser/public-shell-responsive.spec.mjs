@@ -275,3 +275,50 @@ test('gallery item spacing does not collapse at the Minimal transition', async (
         previous = gap;
     }
 });
+
+
+test('empty public pages fill to the viewport end without creating a scrollbar', async ({ page }) => {
+    for (const template of ['gallery', 'exhibitions', 'blog', 'custom', 'home']) {
+        await page.setContent([
+            '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>',
+            '<body class="public-site">',
+            '<header class="site-header">',
+            '<h1><a href="#" class="site-title"><span class="site-title__first">Lars</span><span class="site-title__last">Möller</span></a></h1>',
+            '<div class="site-navigation"><div class="site-navigation__rail"><nav>',
+            '<a href="#">Home</a></nav></div></div>',
+            '</header>',
+            '<main id="content" class="site-content">',
+            '<div class="' + (template === 'gallery' ? 'artwork-list' : template === 'exhibitions'
+                ? 'exhibitions-page' : template === 'blog' ? 'blog-page' : 'custom-page') + '"></div>',
+            '</main></body></html>',
+        ].join(''));
+        await page.addStyleTag({ path: 'resources/css/app.css' });
+        await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
+
+        for (const width of [1440, 768, 540, 375, 320]) {
+            await page.setViewportSize({ width, height: 960 });
+            const geometry = await page.evaluate(() => {
+                const header = document.querySelector('.site-header').getBoundingClientRect();
+                const content = document.querySelector('#content').getBoundingClientRect();
+                const documentHeight = document.documentElement.scrollHeight;
+                const pageGap = parseFloat(getComputedStyle(document.querySelector('#content')).marginBottom);
+                return {
+                    headerBottom: header.bottom,
+                    contentTop: content.top,
+                    contentBottom: content.bottom,
+                    documentHeight,
+                    viewportHeight: window.innerHeight,
+                    scrollY: window.scrollY,
+                    pageGap,
+                };
+            });
+            expect(geometry.documentHeight, template + ' root scroll at ' + width)
+                .toBeLessThanOrEqual(geometry.viewportHeight + 1);
+            expect(Math.abs(geometry.contentBottom + geometry.pageGap - geometry.viewportHeight),
+                template + ' fills height at ' + width).toBeLessThan(1);
+            expect(Math.abs(geometry.contentTop - geometry.headerBottom - geometry.pageGap),
+                template + ' equal outer margins at ' + width).toBeLessThan(1);
+            expect(geometry.scrollY).toBe(0);
+        }
+    }
+});

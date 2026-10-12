@@ -6,6 +6,4 @@
         :show-category-link="$showGalleryLink"
         :eager="true"
     />
-@else
-    <p class="public-empty-state">No artwork is available for the homepage yet.</p>
 @endif

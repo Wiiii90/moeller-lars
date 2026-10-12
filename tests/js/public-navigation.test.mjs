@@ -167,7 +167,7 @@ test('stale or oversized handoffs do not override canonical menu ordering', () =
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, saved, keys), [2, 3]);
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, saved, ['a', 'b', 'changed', 'd', 'e']), [3, 4]);
     assert.deepEqual(restoreNavigationWindow(widths, 170, 3, saved, keys), [3]);
-    assert.deepEqual(restoreNavigationWindow(widths, 220, 4, saved, keys), [3, 4]);
+    assert.deepEqual(restoreNavigationWindow(widths, 220, 4, saved, keys), [2, 3]);
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, {
         keys, visible: [2, 2], width: 220,
     }, keys), [3, 4]);
@@ -187,38 +187,37 @@ test('cyclic wraparound window survives a selected-item page load unchanged', ()
 });
 
 
-test('a selected child reveals its hidden parent at the nearest cyclic edge', () => {
+test('selection never moves an intact top-level window, even if its parent is hidden', () => {
     const widths = Array(8).fill(80);
     const keys = widths.map((_, index) => String(index));
-    const restore = (visible, activeIndex) => restoreNavigationWindow(
-        widths, 240, activeIndex, { keys, visible, width: 240 }, keys,
-    );
+    const windows = [
+        [2, 3, 4],
+        [0, 1, 2],
+        [5, 6, 7],
+        [6, 7, 0],
+    ];
 
-    assert.deepEqual(restore([2, 3, 4], 1), [1, 2, 3]); // immediately left
-    assert.deepEqual(restore([2, 3, 4], 5), [3, 4, 5]); // immediately right
-    assert.deepEqual(restore([0, 1, 2], 7), [7, 0, 1]); // left across wrap
-    assert.deepEqual(restore([5, 6, 7], 0), [6, 7, 0]); // right across wrap
-    assert.deepEqual(restore([1, 2, 3], 6), [6, 7, 0]); // tie favors left
-});
-
-test('selection never rearranges an already visible parent, including wrapped windows', () => {
-    const widths = Array(8).fill(80);
-    const keys = widths.map((_, index) => String(index));
-    const visible = [6, 7, 0];
-    for (const selected of visible) {
-        assert.deepEqual(restoreNavigationWindow(
-            widths, 240, selected, { keys, visible, width: 240 }, keys,
-        ), visible);
+    for (const visible of windows) {
+        for (const selected of [0, 1, 3, 5, 7]) {
+            assert.deepEqual(restoreNavigationWindow(
+                widths, 240, selected, { keys, visible, width: 240 }, keys,
+            ), visible);
+        }
     }
 });
 
-test('revealing a long hidden parent reuses whole-item eviction and refill', () => {
+test('a long hidden parent does not displace visible neighbors on child selection', () => {
     const widths = [40, 40, 40, 180, 40, 40, 40, 40];
     const keys = widths.map((_, index) => String(index));
     const visible = [4, 5, 6, 7, 0, 1];
-    const restored = restoreNavigationWindow(
+
+    assert.deepEqual(restoreNavigationWindow(
         widths, 260, 3, { keys, visible, width: 260 }, keys,
+    ), visible);
+
+    // Only explicit arrow activation is allowed to shift the stack.
+    assert.deepEqual(
+        advanceNavigationWindow(widths, visible, 260, -1),
+        [3, 4, 5],
     );
-    assert.deepEqual(restored, [3, 4, 5]);
-    assert.equal(restored.reduce((total, index) => total + widths[index], 0), 260);
 });

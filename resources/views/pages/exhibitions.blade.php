@@ -7,7 +7,7 @@
 @section('content')
     <x-public.page-heading :section="$section" />
     <section class="exhibitions-page" aria-label="Exhibitions">
-        @forelse ($exhibitions as $exhibition)
+        @foreach ($exhibitions as $exhibition)
             @php
                 $timing = $exhibition->temporalState(now());
                 $cover = $exhibition->mediaUsages->firstWhere('role', \App\Models\JournalEntryMedia::ROLE_COVER);
@@ -79,8 +79,6 @@
                     @endif
                 </div>
             </article>
-        @empty
-            <p class="public-empty-state">No exhibitions are currently published.</p>
-        @endforelse
+        @endforeach
     </section>
 @endsection

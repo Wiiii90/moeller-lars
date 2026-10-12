@@ -7,10 +7,8 @@
 @section('content')
     <x-public.page-heading :section="$section" />
     <div class="artwork-list" data-artwork-viewer-sequence>
-        @forelse ($artworks as $artwork)
+        @foreach ($artworks as $artwork)
             <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->index < 5" />
-        @empty
-            <p class="public-empty-state">No artwork is currently available.</p>
-        @endforelse
+        @endforeach
     </div>
 @endsection

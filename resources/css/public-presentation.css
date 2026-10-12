@@ -345,9 +345,10 @@ body {
     outline-offset: .45rem;
 }
 
-/* Empty and short pages retain an intentional minimum white surface.
- * The global border-box reset includes the padding in this height. */
+/* Short public pages occupy the remaining viewport; long pages grow with
+ * their content. Both use the same outer spacing and responsive shell. */
 #content {
+    flex: 1 0 auto;
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
 }

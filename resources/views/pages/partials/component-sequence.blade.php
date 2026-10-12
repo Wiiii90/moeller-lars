@@ -1,7 +1,4 @@
     <div class="custom-page{{ $isHome ? ' home-components' : '' }}" aria-label="{{ $label }}">
-        @if ($isHome && $blocks === [])
-            <p class="public-empty-state">This Home presentation does not have content yet.</p>
-        @endif
         @foreach ($blocks as $blockIndex => $block)
             @php
                 $type = is_array($block) ? ($block['type'] ?? null) : null;

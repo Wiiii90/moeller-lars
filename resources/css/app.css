@@ -14,12 +14,16 @@ html:has(> body.public-site) {
     max-width: 100%;
 }
 
+/* The document stays the only scroll container. Flex layout lets a short
+ * public page fill the available viewport without a height calculation or
+ * affecting the sticky header and naturally scrolling long pages. */
 body.public-site {
-    display: flow-root;
+    display: flex;
     width: 100%;
     min-height: 100vh;
     min-height: 100dvh;
     margin: 0;
+    flex-direction: column;
     overflow-x: clip;
 }
 
