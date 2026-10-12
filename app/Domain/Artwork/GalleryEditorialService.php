@@ -39,7 +39,6 @@ final class GalleryEditorialService
                 'slug' => (string) $gallery->getAttribute('slug'),
                 'state' => 'hidden',
                 'position' => $this->nextSectionPosition($parentSectionId),
-                'show_in_navigation' => false,
                 'parent_id' => $parentSectionId,
                 'artwork_category_id' => (int) $gallery->getKey(),
             ]);
