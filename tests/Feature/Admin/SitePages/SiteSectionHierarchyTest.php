@@ -1,6 +1,8 @@
 <?php
 
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\HomePresentationResolver;
+use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
@@ -12,6 +14,7 @@ use App\Models\BlogPost;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -368,3 +371,101 @@ it('keeps the Pages Settings action before Add page and exposes the shared Home 
         'skip_target_section_id',
     ]);
 });
+
+it('autosaves Pages toggles and keeps the native Settings edit dialog open', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $sections = app(SiteSectionEditorialService::class);
+    $destination = $sections->createCustomPage('Autosave Destination', 'autosave-destination');
+    $sections->updatePlacement($destination, 'published', true, null);
+    $routing = app(HomeRoutingSettingsService::class);
+    $home = app(HomePresentationResolver::class)->settings();
+
+    $component = Livewire::test(SitePages::class)
+        ->call('mountAction', 'pagesSettings')
+        ->assertSet('mountedActions.0.name', 'pagesSettings');
+
+    expect($routing->enabled($home->fresh()))->toBeFalse()
+        ->and(PublicContentSetting::navigationNestingEnabled())->toBeTrue();
+
+    $component
+        ->set('mountedActions.0.data.skip_home', true)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'pagesSettings');
+
+    expect($routing->enabled($home->fresh()))->toBeTrue();
+
+    $component
+        ->set('mountedActions.0.data.navigation_nesting_enabled', false)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'pagesSettings');
+
+    expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
+        ->and($routing->enabled($home->fresh()))->toBeTrue()
+        ->and($component->get('nestedNavigationEnabled'))->toBeFalse();
+
+    $component->call('unmountAction')->assertSet('mountedActions', []);
+
+    expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
+        ->and($routing->enabled($home->fresh()))->toBeTrue();
+
+    Livewire::test(SitePages::class)
+        ->call('mountAction', 'pagesSettings')
+        ->assertSet('mountedActions.0.data.skip_home', true)
+        ->assertSet('mountedActions.0.data.navigation_nesting_enabled', false);
+});
+
+it('immediately flattens nested pages through Settings autosave without a second submit', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $pages = app(SiteSectionEditorialService::class);
+    $parent = $pages->createCustomPage('Autosave Parent', 'autosave-parent');
+    $child = $pages->createCustomPage('Autosave Child', 'autosave-child');
+    app(SiteSectionOrderService::class)->moveTo($child, (int) $parent->getKey(), 0);
+
+    Livewire::test(SitePages::class)
+        ->call('mountAction', 'pagesSettings')
+        ->set('mountedActions.0.data.navigation_nesting_enabled', false)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'pagesSettings');
+
+    expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
+        ->and($child->fresh()->parent_id)->toBeNull();
+});
+
+it('closing Pages Settings without a change event does not persist altered form state', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    Livewire::test(SitePages::class)
+        ->call('mountAction', 'pagesSettings')
+        ->set('mountedActions.0.data.navigation_nesting_enabled', false)
+        ->call('unmountAction')
+        ->assertSet('mountedActions', []);
+
+    expect(PublicContentSetting::navigationNestingEnabled())->toBeTrue();
+});
+
+it('uses the shared toggle control and the native autosave dialog without Pages helper copy', function (): void {
+    $action = file_get_contents(app_path('Filament/Pages/Concerns/ManagesSitePagesSettings.php'));
+    $pages = file_get_contents(app_path('Filament/Support/PagesSettingsDialog.php'));
+    $routing = file_get_contents(app_path('Filament/Support/HomeRoutingDialog.php'));
+    $controls = file_get_contents(app_path('Filament/Support/Controls/AdminControl.php'));
+
+    expect($action)->toContain('AdminDialog::edit(')->not->toContain('AdminDialog::command(')
+        ->and($action)->not->toContain("'Save settings'")
+        ->and($pages)->toContain("AdminControl::toggle('navigation_nesting_enabled'")
+        ->and($pages)->toContain('schema(showHelperText: false)')
+        ->and($pages)->not->toContain('Allow one child level below top-level pages')
+        ->and($routing)->toContain("AdminControl::toggle('skip_home'")
+        ->and($controls)->toContain('Toggle::configureUsing');
+});
+

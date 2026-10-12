@@ -4,10 +4,10 @@ namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionOrderService;
+use App\Filament\Support\Controls\AdminControl;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Toggle;
 use Illuminate\Support\Facades\DB;
 
 final class PagesSettingsDialog
@@ -33,16 +33,14 @@ final class PagesSettingsDialog
         $childCount = SiteSection::query()->whereNotNull('parent_id')->count();
 
         return [
-            Toggle::make('navigation_nesting_enabled')
-                ->label('Allow nested pages')
-                ->helperText('Allow one child level below top-level pages in the site navigation.')
+            AdminControl::toggle('navigation_nesting_enabled', 'Allow nested pages')
                 ->live(),
             Placeholder::make('navigation_nesting_warning')
                 ->label('Flatten nested pages')
                 ->content('Turning nesting off moves '.$childCount.' child '.($childCount === 1 ? 'page' : 'pages').' to the top level in canonical order. Example: 4, 4.1, 4.2, 5 becomes 4, 5, 6, 7. Re-enabling nesting later does not restore previous parents automatically.')
                 ->visible(fn (callable $get): bool => $childCount > 0 && ! (bool) $get('navigation_nesting_enabled'))
                 ->columnSpanFull(),
-            ...$this->homeRouting->schema(),
+            ...$this->homeRouting->schema(showHelperText: false),
         ];
     }
 

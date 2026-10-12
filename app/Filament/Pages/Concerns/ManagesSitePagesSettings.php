@@ -14,7 +14,7 @@ trait ManagesSitePagesSettings
     {
         $dialog = app(PagesSettingsDialog::class);
 
-        return AdminDialog::command(
+        return AdminDialog::edit(
             Action::make('pagesSettings')
                 ->label('Settings')
                 ->modalHeading('Pages settings')
@@ -30,7 +30,6 @@ trait ManagesSitePagesSettings
                         );
                     }
                 }),
-            'Save settings',
             AdminDialogSize::Default,
         );
     }

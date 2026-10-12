@@ -5,11 +5,11 @@ namespace App\Filament\Support;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\SiteSectionType;
+use App\Filament\Support\Controls\AdminControl;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Toggle;
 use Illuminate\Validation\ValidationException;
 
 final class HomeRoutingDialog
@@ -40,18 +40,17 @@ final class HomeRoutingDialog
     }
 
     /** @return list<mixed> */
-    public function schema(): array
+    public function schema(bool $showHelperText = true): array
     {
         return [
-            Toggle::make('skip_home')
-                ->label('Skip Home')
-                ->helperText('Redirect the public root instead of showing Home.')
+            AdminControl::toggle('skip_home', 'Skip Home')
+                ->helperText($showHelperText ? 'Redirect the public root instead of showing Home.' : null)
                 ->live(),
             Select::make('skip_target_section_id')
                 ->label('Skip to')
                 ->options(fn (): array => $this->targetOptions())
                 ->placeholder('Next page in order')
-                ->helperText('Leave this on Next page in order to follow the current page order automatically.')
+                ->helperText($showHelperText ? 'Leave this on Next page in order to follow the current page order automatically.' : null)
                 ->visible(fn (callable $get): bool => (bool) $get('skip_home'))
                 ->native()
                 ->nullable(),
