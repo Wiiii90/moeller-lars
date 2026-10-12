@@ -146,7 +146,7 @@ final class AdminRichText
                             }
 
                             const source = parsed.href.replaceAll('(', '%28').replaceAll(')', '%29')
-                            const scope = element.closest('.fi-modal-window, form, .fi-page') ?? document
+                            const scope = element.closest('.fi-fo-repeater-item, .fi-modal-window, form, .fi-page') ?? document
                             const editor = scope.querySelector('[data-admin-rich-text-editor-input="' + this.key + '"]')
                             if (! editor) {
                                 this.externalError = 'The editor is not available.'
