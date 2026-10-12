@@ -71,6 +71,10 @@ final class General extends Page
 
     public string $previewDevice = 'desktop';
 
+    // Edit Action identity is the unique social platform, not a mutable row index.
+    // Autosaved reordering must not redirect later field edits to another profile.
+    public ?string $editingSocialPlatform = null;
+
     public function mount(): void
     {
         $data = $this->generalSettingsRecord()->only(self::PERSISTED_FIELDS);
@@ -452,13 +456,13 @@ final class General extends Page
     }
 
     /**
-     * Edit the whole profile in one validated submission. Unlike the inline
-     * field controls, this form can also move the row: autosaving its position
-     * would invalidate the positional Action argument for subsequent changes.
+     * Autosave every semantic change using the canonical Edit dialog. The
+     * persisted platform is the editor's stable identity across reordering;
+     * the Action's original row index is only used to mount a fresh form.
      */
     public function editSocialLinkAction(): Action
     {
-        return AdminDialog::command(
+        return AdminDialog::edit(
             Action::make('editSocialLink')
                 ->label('Edit')
                 ->modalHeading('Edit profile')
@@ -466,6 +470,7 @@ final class General extends Page
                     $index = $this->socialLinkIndexForAction($arguments);
                     $links = $this->socialLinks();
                     $link = $index === null ? [] : ($links[$index] ?? []);
+                    $this->editingSocialPlatform = $index === null ? null : (string) ($link['platform'] ?? '');
 
                     return [
                         'platform' => (string) ($link['platform'] ?? ''),
@@ -491,15 +496,17 @@ final class General extends Page
                         ->minValue(1)
                         ->required(),
                 ]),
-            'Save profile',
             AdminDialogSize::Small,
-        )->action(function (array $data, array $arguments): void {
-            $index = $this->socialLinkIndexForAction($arguments);
-            if ($index === null) {
-                return;
-            }
-
+        )->action(function (array $data): void {
             $links = $this->socialLinks();
+            $index = collect($links)->search(
+                fn (array $link): bool => ($link['platform'] ?? null) === $this->editingSocialPlatform,
+            );
+            if ($index === false) {
+                throw ValidationException::withMessages([
+                    'platform' => 'This social profile no longer exists. Reopen the editor.',
+                ]);
+            }
             $platform = (string) ($data['platform'] ?? '');
             $url = (string) ($data['url'] ?? '');
 
@@ -520,6 +527,7 @@ final class General extends Page
             array_splice($links, $position - 1, 0, $moved);
 
             $this->saveSocialLinks($links);
+            $this->editingSocialPlatform = $platform;
         });
     }
 
