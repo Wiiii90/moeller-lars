@@ -92,7 +92,7 @@
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::Edit"
                                     wire:click="mountAction('{{ $homeComponent['type'] === 'list' ? 'editListComponent' : 'editComponent' }}', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}' })"
-                                    :disabled="$homeComponent['type'] === 'legal_disclaimer'"
+                                    :disabled="! $homeComponent['editable']"
                                 />
                                 <x-admin.row-action
                                     :action="$homeComponent['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
