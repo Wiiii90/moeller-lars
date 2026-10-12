@@ -9,6 +9,7 @@ use App\Filament\Support\Controls\AdminControl;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
+use Closure;
 use Filament\Forms\Components\Select;
 use Illuminate\Validation\ValidationException;
 
@@ -40,11 +41,15 @@ final class HomeRoutingDialog
     }
 
     /** @return list<mixed> */
-    public function schema(): array
+    public function schema(?Closure $onToggleUpdated = null): array
     {
+        $skipHome = AdminControl::toggle('skip_home', 'Skip Home')->live();
+        if ($onToggleUpdated !== null) {
+            $skipHome->afterStateUpdated($onToggleUpdated);
+        }
+
         return [
-            AdminControl::toggle('skip_home', 'Skip Home')
-                ->live(),
+            $skipHome,
             Select::make('skip_target_section_id')
                 ->label('Skip to')
                 ->options(fn (): array => $this->targetOptions())
