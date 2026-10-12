@@ -143,7 +143,7 @@ trait CustomPageWorkspaceProjectionState
                 'status' => $published ? 'Published' : 'Unpublished',
                 'published' => $published,
                 'target' => $index.':'.$type,
-                'editable' => in_array($type, array_keys(self::COMPONENT_LABELS), true),
+                'editable' => $type !== 'legal_disclaimer',
                 'can_move_up' => $reorderEnabled && $index > 0,
                 'can_move_down' => $reorderEnabled && $index < count($blocks) - 1,
                 'is_list' => $type === 'list',
