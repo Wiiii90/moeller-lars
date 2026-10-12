@@ -811,3 +811,45 @@ it('turns a real direct Gallery upload into an editable and publishable artwork 
         ->and($usage->alt_text_override)->toBe('A mixed-media artwork with a bright turquoise border')
         ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
+
+it('notifies only when a Gallery publication action actually changes the artwork state', function (): void {
+    $gallery = polishGallery();
+    $artwork = polishArtwork($gallery);
+    polishPrimary($artwork, polishAsset('video/mp4'));
+    $arguments = ['artwork' => $artwork->getKey()];
+    $params = ['gallery' => $gallery->getKey()];
+
+    Livewire::test(GalleryWorkspace::class, $params)
+        ->mountAction('publishArtwork', $arguments)
+        ->callMountedAction()
+        ->assertDispatched('admin-header-notification');
+
+    expect($artwork->fresh()->state)->toBe('published');
+    $notificationCount = \App\Models\AdminNotification::query()->count();
+    $auditCount = AuditEvent::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, $params)
+        ->mountAction('publishArtwork', $arguments)
+        ->callMountedAction()
+        ->assertNotDispatched('admin-header-notification');
+
+    expect(\App\Models\AdminNotification::query()->count())->toBe($notificationCount)
+        ->and(AuditEvent::query()->count())->toBe($auditCount);
+
+    Livewire::test(GalleryWorkspace::class, $params)
+        ->mountAction('unpublishArtwork', $arguments)
+        ->callMountedAction()
+        ->assertDispatched('admin-header-notification');
+
+    expect($artwork->fresh()->state)->toBe('draft');
+    $notificationCount = \App\Models\AdminNotification::query()->count();
+    $auditCount = AuditEvent::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, $params)
+        ->mountAction('unpublishArtwork', $arguments)
+        ->callMountedAction()
+        ->assertNotDispatched('admin-header-notification');
+
+    expect(\App\Models\AdminNotification::query()->count())->toBe($notificationCount)
+        ->and(AuditEvent::query()->count())->toBe($auditCount);
+});
