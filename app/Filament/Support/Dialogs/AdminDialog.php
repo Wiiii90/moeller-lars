@@ -14,8 +14,9 @@ final class AdminDialog
         Action $action,
         string $submitLabel,
         AdminDialogSize $size = AdminDialogSize::Small,
+        ?AdminIcon $submitIcon = null,
     ): Action {
-        return self::committedTask($action, AdminDialogType::Create, $submitLabel, $size);
+        return self::committedTask($action, AdminDialogType::Create, $submitLabel, $size, $submitIcon);
     }
 
     /**
@@ -100,11 +101,12 @@ final class AdminDialog
         AdminDialogType $type,
         string $submitLabel,
         AdminDialogSize $size,
+        ?AdminIcon $submitIcon = null,
     ): Action {
         return self::base($action, $type, $size)
             ->modalSubmitAction(fn (Action $action): Action => $action
                 ->label($submitLabel)
-                ->icon(AdminIcon::DialogSubmit->value)
+                ->icon(($submitIcon ?? AdminIcon::DialogSubmit)->value)
                 ->iconButton()
                 ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
             ->modalCancelAction(false);
