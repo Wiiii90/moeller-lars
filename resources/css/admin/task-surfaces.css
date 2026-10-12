@@ -503,7 +503,7 @@
     font-size: var(--admin-font-size-table-support);
 }
 
-.admin-hierarchy__row.is-child:hover { background: var(--admin-subtle); }
+.admin-hierarchy__row:hover { background: var(--admin-subtle); }
 .admin-hierarchy__children-rows { display: grid; }
 
 .admin-hierarchy__content {
