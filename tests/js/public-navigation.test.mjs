@@ -5,6 +5,7 @@ import {
     fitNavigationWindow,
     navigationWindowParts,
     needsNavigationOverflow,
+    restoreNavigationWindow,
 } from '../../resources/js/public-navigation.js';
 
 test('fits only complete navigation items into the available rail', () => {
@@ -130,4 +131,57 @@ test('overflow restores smart refill on both sides after an oversized item drops
         advanceNavigationWindow(widths, fromMiddle, available, -1),
         [1, 2, 3, 4, 5],
     );
+});
+
+
+test('selection reload preserves exact main window including its cyclic order', () => {
+    const widths = [110, 60, 125, 80, 90, 115];
+    const keys = ['home', 'prints', 'painting', 'cv', 'navigation', 'exhibitions'];
+    const saved = { keys, visible: [2, 3, 4], width: 300 };
+
+    // The current page changes, but its selected index stays in the same slot
+    // instead of advancing repeatedly until that item reaches the right edge.
+    assert.deepEqual(restoreNavigationWindow(widths, 300, 3, saved, keys), [2, 3, 4]);
+    assert.deepEqual(restoreNavigationWindow(widths, 300, 4, saved, keys), [2, 3, 4]);
+});
+
+test('selected child retains its whole-item window on reload', () => {
+    const widths = [110, 140, 105, 120, 100];
+    const keys = ['first', 'second', 'third', 'fourth', 'fifth'];
+    const saved = { keys, visible: [1, 2], width: 250 };
+    assert.deepEqual(restoreNavigationWindow(widths, 250, 2, saved, keys), [1, 2]);
+});
+
+test('direct entries select the parent or child without advancing it to the right edge', () => {
+    const widths = [110, 110, 110, 110, 110, 110];
+    const keys = ['0', '1', '2', '3', '4', '5'];
+    assert.deepEqual(restoreNavigationWindow(widths, 250, 4, null, keys), [4, 5]);
+    assert.deepEqual(restoreNavigationWindow(widths, 250, 1, null, keys), [0, 1]);
+});
+
+test('stale or oversized handoffs do not override canonical menu ordering', () => {
+    const widths = [130, 90, 130, 90, 130];
+    const keys = ['a', 'b', 'c', 'd', 'e'];
+    const saved = { keys, visible: [2, 3], width: 220 };
+
+    assert.deepEqual(restoreNavigationWindow(widths, 220, 3, saved, keys), [2, 3]);
+    assert.deepEqual(restoreNavigationWindow(widths, 220, 3, saved, ['a', 'b', 'changed', 'd', 'e']), [3, 4]);
+    assert.deepEqual(restoreNavigationWindow(widths, 170, 3, saved, keys), [3]);
+    assert.deepEqual(restoreNavigationWindow(widths, 220, 4, saved, keys), [4]);
+    assert.deepEqual(restoreNavigationWindow(widths, 220, 3, {
+        keys, visible: [2, 2], width: 220,
+    }, keys), [3, 4]);
+
+    // A menu fitting in its entirety never needs a stored subset.
+    assert.deepEqual(restoreNavigationWindow([60, 50], 200, 1,
+        { keys: ['a', 'b'], visible: [1], width: 200 }, ['a', 'b']), [0, 1]);
+});
+
+
+test('cyclic wraparound window survives a selected-item page load unchanged', () => {
+    const keys = ['one', 'two', 'three', 'four', 'five', 'six'];
+    const widths = [75, 75, 75, 75, 75, 75];
+    const saved = { keys, width: 225, visible: [4, 5, 0] };
+    assert.deepEqual(restoreNavigationWindow(widths, 225, 0, saved, keys), [4, 5, 0]);
+    assert.deepEqual(restoreNavigationWindow(widths, 225, 5, saved, keys), [4, 5, 0]);
 });

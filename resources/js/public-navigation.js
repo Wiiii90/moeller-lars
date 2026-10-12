@@ -18,9 +18,61 @@ export function needsNavigationOverflow(widths, availableWidth) {
         && widths.reduce((total, width) => total + width, 0) > availableWidth;
 }
 
+// Navigation is server-rendered. A single-use destination-scoped handoff
+// preserves the exact visible window when an internal navigation link reloads
+// the page. No URL parameters, duplicate renderer or background polling.
+const NAVIGATION_HANDOFF_KEY = 'moeller:public-navigation-handoff';
+
+function navigationDestination(url) {
+    return url.pathname + url.search;
+}
+
+function readNavigationHandoff() {
+    try {
+        const handoff = JSON.parse(window.sessionStorage.getItem(NAVIGATION_HANDOFF_KEY) ?? 'null');
+        return handoff?.destination === navigationDestination(window.location)
+            && handoff.windows && typeof handoff.windows === 'object'
+            ? handoff.windows
+            : null;
+    } catch {
+        // Storage can be disabled; direct-entry navigation still works.
+        return null;
+    }
+}
+
+export function restoreNavigationWindow(widths, availableWidth, activeIndex, saved, keys) {
+    if (!needsNavigationOverflow(widths, availableWidth)) {
+        return widths.map((_, index) => index);
+    }
+
+    // A handoff is usable only for the identical ordered Site Node tree and
+    // matching rail width. Reordering/editing nodes or resizing invalidates it.
+    if (saved && Array.isArray(saved.keys) && Array.isArray(saved.visible)
+        && saved.keys.length === keys.length
+        && keys.every((key, index) => key === saved.keys[index])
+        && Math.abs(saved.width - availableWidth) < 1
+        && saved.visible.length > 0
+        && new Set(saved.visible).size === saved.visible.length
+        && saved.visible.every((index, offset) => Number.isInteger(index)
+            && index >= 0 && index < widths.length
+            && (offset === 0 || index === (saved.visible[offset - 1] + 1) % widths.length))
+        && (saved.visible.length === 1
+            || saved.visible.reduce((sum, index) => sum + widths[index], 0) <= availableWidth)
+        && (activeIndex === -1 || saved.visible.includes(activeIndex))) {
+        return [...saved.visible];
+    }
+
+    // Direct links have no previous window. Display the active parent/child
+    // without cycling forward until it reaches the right-hand edge.
+    const initial = fitNavigationWindow(widths, availableWidth);
+    return activeIndex === -1 || initial.includes(activeIndex)
+        ? initial
+        : fitNavigationWindow(widths, availableWidth, activeIndex);
+}
+
 // Both navigation levels use the same whole-item cyclic window and never scroll pixels.
 // The surface is a three-column grid: previous control, canonical content width, next control.
-function initializeNavigationWindow(surface, onWindowChange = () => {}) {
+function initializeNavigationWindow(surface, restoredWindows, onWindowChange = () => {}) {
     const { rail, previous, next } = navigationWindowParts(surface);
     if (!(rail instanceof HTMLElement)
         || !(previous instanceof HTMLButtonElement)
@@ -30,6 +82,9 @@ function initializeNavigationWindow(surface, onWindowChange = () => {}) {
 
     const items = Array.from(rail.children).filter((item) => item.matches('[data-navigation-item]'));
     const activeIndex = items.findIndex((item) => item.classList.contains('is-active'));
+    const keys = items.map((item) => item.dataset.navigationKey);
+    const surfaceKey = surface.hasAttribute('data-navigation-main') ? 'main' : surface.id;
+    let initialized = false;
     let widths = [];
     let visible = [];
     let availableWidth = 0;
@@ -39,7 +94,7 @@ function initializeNavigationWindow(surface, onWindowChange = () => {}) {
     const render = (indices) => {
         const changed = visible.length !== indices.length
             || visible.some((index, position) => indices[position] !== index);
-        if (changed) onWindowChange();
+        if (changed) onWindowChange(indices);
 
         const shown = new Set(indices);
         const focused = document.activeElement;
@@ -94,15 +149,23 @@ function initializeNavigationWindow(surface, onWindowChange = () => {}) {
         next.hidden = !cycling;
 
         if (!cycling) {
+            initialized = true;
             render(items.map((_, index) => index));
             return;
         }
 
-        let fitted = fitNavigationWindow(widths, availableWidth, wasCycling && visible.length ? visible[0] : 0);
-        const keepActive = activeIndex >= 0 && (!wasCycling || visible.includes(activeIndex));
-        for (let step = 0; keepActive && !fitted.includes(activeIndex) && step < items.length; step += 1) {
-            fitted = advanceNavigationWindow(widths, fitted, availableWidth, 1);
+        let fitted;
+        if (!initialized) {
+            fitted = restoreNavigationWindow(
+                widths, availableWidth, activeIndex, restoredWindows?.[surfaceKey], keys,
+            );
+        } else {
+            fitted = fitNavigationWindow(widths, availableWidth, visible[0] ?? 0);
+            if (activeIndex !== -1 && visible.includes(activeIndex) && !fitted.includes(activeIndex)) {
+                fitted = fitNavigationWindow(widths, availableWidth, activeIndex);
+            }
         }
+        initialized = true;
         render(fitted);
     };
 
@@ -125,32 +188,38 @@ function initializeNavigationWindow(surface, onWindowChange = () => {}) {
         window.addEventListener('resize', refresh, { passive: true });
     }
 
-    return { items, refresh, previous, next };
+    return {
+        items, refresh, previous, next,
+        snapshot: () => initialized && visible.length
+            ? { keys, visible: [...visible], width: availableWidth }
+            : null,
+        key: surfaceKey,
+    };
 }
 
-function submenuControls(item) {
+function submenuControls(item, region) {
     const parentLink = item.querySelector('[data-navigation-parent-link]');
-    const submenu = item.querySelector('[data-navigation-submenu]');
+    const submenuId = parentLink?.getAttribute('aria-controls');
+    const submenu = submenuId ? document.getElementById(submenuId) : null;
     if (!(parentLink instanceof HTMLElement)
-        || !(submenu instanceof HTMLElement)) return null;
+        || !(submenu instanceof HTMLElement)
+        || !region.contains(submenu)) return null;
     return { parentLink, submenu };
 }
 
-function initializeSubmenus(container, topLevelItems) {
+function initializeSubmenus(container, topLevelItems, restoredWindows, windows) {
     const region = container.querySelector('[data-navigation-submenu-region]');
     const regionInner = container.querySelector('[data-navigation-submenu-region-inner]');
     if (!(region instanceof HTMLElement) || !(regionInner instanceof HTMLElement)) return () => {};
 
     const entries = topLevelItems
-        .map((item) => ({ item, controls: submenuControls(item) }))
+        .map((item) => ({ item, controls: submenuControls(item, region) }))
         .filter((entry) => entry.controls !== null)
-        .map((entry) => {
-            regionInner.append(entry.controls.submenu);
-            return {
-                ...entry,
-                window: initializeNavigationWindow(entry.controls.submenu),
-            };
-        });
+        .map((entry) => ({
+            ...entry,
+            window: initializeNavigationWindow(entry.controls.submenu, restoredWindows),
+        }));
+    windows.push(...entries.map((entry) => entry.window));
 
     let activeEntry = null;
     let hideTimer = null;
@@ -257,6 +326,12 @@ function initializeSubmenus(container, topLevelItems) {
     document.addEventListener('pointerdown', (event) => {
         if (event.target instanceof Node && !container.contains(event.target)) closeActive();
     });
+    // The selected child is part of the current route, not a transient hover
+    // menu. Reopen its parent on direct URLs and after navigation handoff.
+    const selected = entries.find(({ controls }) =>
+        controls.submenu.querySelector('[data-navigation-item].is-active'));
+    if (selected) openEntry(selected);
+
     return closeActive;
 }
 
@@ -317,9 +392,47 @@ export function initializePublicNavigation() {
         const mainSurface = container.querySelector('[data-navigation-main]');
         if (!(mainSurface instanceof HTMLElement)) return;
 
+        const restoredWindows = readNavigationHandoff();
+        const windows = [];
         let closeSubmenus = () => {};
-        const main = initializeNavigationWindow(mainSurface, () => closeSubmenus());
-        closeSubmenus = initializeSubmenus(container, main.items);
+        // Keep a selected child's parent expanded while its window is visible.
+        const selectedParentIndex = Array.from(
+            mainSurface.querySelectorAll(':scope > nav > [data-navigation-item]'),
+        ).findIndex((item) => item.classList.contains('is-active')
+            && !item.querySelector(':scope > .site-navigation__primary [aria-current="page"]'));
+
+        const main = initializeNavigationWindow(mainSurface, restoredWindows, (indices) => {
+            if (selectedParentIndex === -1 || !indices.includes(selectedParentIndex)) {
+                closeSubmenus();
+            }
+        });
+        windows.push(main);
         main.refresh();
+        closeSubmenus = initializeSubmenus(container, main.items, restoredWindows, windows);
+
+        container.addEventListener('click', (event) => {
+            if (event.defaultPrevented || event.button !== 0
+                || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey
+                || !(event.target instanceof Element)) return;
+
+            const link = event.target.closest('a[href]');
+            if (!(link instanceof HTMLAnchorElement) || !container.contains(link)
+                || (link.target && link.target !== '_self') || link.hasAttribute('download')) return;
+
+            const target = new URL(link.href);
+            if (target.origin !== window.location.origin) return;
+
+            const snapshots = Object.fromEntries(
+                windows.map((entry) => [entry.key, entry.snapshot()]).filter(([, value]) => value),
+            );
+            try {
+                window.sessionStorage.setItem(NAVIGATION_HANDOFF_KEY, JSON.stringify({
+                    destination: navigationDestination(target),
+                    windows: snapshots,
+                }));
+            } catch {
+                // Continue normal navigation when session storage is unavailable.
+            }
+        });
     });
 }
