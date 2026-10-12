@@ -6,6 +6,7 @@
     --public-art-max: 650px;
     --public-gutter: clamp(.65rem, 2vw, 1.5rem);
     --public-mobile-inset: .65rem;
+    --public-content-padding: 75px;
     --public-page: #777;
     --public-surface: #fff;
     --public-ink: #555;
@@ -333,7 +334,8 @@ body {
 }
 
 .site-content {
-    padding: clamp(1.6rem, 3.3vw, 2.75rem) clamp(1rem, 4.4vw, 3.8rem);
+    padding-block: clamp(1.6rem, 3.3vw, 2.75rem);
+    padding-inline: clamp(var(--public-mobile-inset), var(--public-content-padding), 20vw);
     border: 0;
     overflow-wrap: break-word;
 }

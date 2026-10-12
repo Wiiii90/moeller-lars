@@ -9,7 +9,6 @@ export default defineConfig({
                 'resources/css/admin.css',
                 'resources/css/public-content.css',
                 'resources/css/public-presentation.css',
-                'resources/css/public-layout-settings.css',
                 'resources/css/custom-pages.css',
                 'resources/js/app.js',
                 'resources/js/admin-viz.js',
