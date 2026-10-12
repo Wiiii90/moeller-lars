@@ -30,7 +30,7 @@ it('stores Home skip routing independently from the content template', function 
 
     $sections = app(SiteSectionEditorialService::class);
     $target = $sections->createCustomPage('Skip Target', 'skip-target');
-    $target = $sections->updatePlacement($target, 'published', true, null);
+    $target = $sections->updatePlacement($target, 'published', null);
 
     app(HomeRoutingSettingsService::class)->update($settings, true, (int) $target->getKey());
 
@@ -50,7 +50,7 @@ it('uses the next published top-level page when the routing dialog keeps its aut
     $sections = app(SiteSectionEditorialService::class);
 
     $target = $sections->createCustomPage('Next Page', 'next-page');
-    $target = $sections->updatePlacement($target, 'published', true, null);
+    $target = $sections->updatePlacement($target, 'published', null);
     app(SiteSectionOrderService::class)->moveTo($target, null, 1);
 
     $dialog = app(HomeRoutingDialog::class);
@@ -85,9 +85,9 @@ it('changes an explicit Skip Home target through the routing dialog', function (
     $sections = app(SiteSectionEditorialService::class);
 
     $first = $sections->createCustomPage('First Target', 'first-target');
-    $first = $sections->updatePlacement($first, 'published', true, null);
+    $first = $sections->updatePlacement($first, 'published', null);
     $second = $sections->createCustomPage('Second Target', 'second-target');
-    $second = $sections->updatePlacement($second, 'published', true, null);
+    $second = $sections->updatePlacement($second, 'published', null);
 
     $dialog = app(HomeRoutingDialog::class);
     $dialog->save([
@@ -119,7 +119,7 @@ it('does not pin the automatic Skip Home target when the Home template changes',
     $sections = app(SiteSectionEditorialService::class);
 
     $target = $sections->createCustomPage('Automatic Target', 'automatic-target');
-    $target = $sections->updatePlacement($target, 'published', true, null);
+    $target = $sections->updatePlacement($target, 'published', null);
     app(SiteSectionOrderService::class)->moveTo($target, null, 1);
 
     app(HomeRoutingDialog::class)->save([
