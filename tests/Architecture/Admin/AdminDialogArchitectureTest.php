@@ -359,3 +359,21 @@ it('does not use browser-native Livewire confirmation prompts in admin views', f
 
     expect($violations)->toBe([]);
 });
+
+
+it('keeps confirmation description spacing in the one shared dialog chrome', function (): void {
+    $dialog = file_get_contents(app_path('Filament/Support/Dialogs/AdminDialog.php'));
+    $style = file_get_contents(resource_path('css/admin/dialog-contract.css'));
+    $customStyle = file_get_contents(resource_path('css/admin/custom-page.css'));
+    $action = file_get_contents(app_path('Filament/Pages/Concerns/CustomPageWorkspaceComponentActions.php'));
+
+    expect($action)
+        ->toContain("return AdminDialog::confirm(")
+        ->and($dialog)
+        ->toContain("'admin-dialog--confirmation'")
+        ->and($style)
+        ->toContain('.admin-dialog--header-actions.admin-dialog--confirmation .fi-modal-header:has(.fi-modal-description)')
+        ->toContain('padding-bottom: var(--admin-dialog-header-action-inset) !important;')
+        ->and($customStyle)
+        ->not->toContain('admin-dialog--confirmation');
+});
