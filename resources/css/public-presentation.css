@@ -259,16 +259,32 @@ body {
     justify-self: center;
     place-items: center;
     border: 0;
+    appearance: none;
     background: transparent;
     color: #77716b;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 .site-navigation__control[data-direction="previous"] { grid-column: 1; }
 .site-navigation__control[data-direction="next"] { grid-column: 3; }
 .site-navigation__control:hover,
 .site-navigation__control:focus-visible {
-    color: #302d2a;
-    background: rgba(0, 0, 0, .035);
+    color: #4a443e;
+    background: transparent;
+}
+.site-navigation__control > .public-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke-width: 1.55;
+    transition: transform .16s ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+    .site-navigation__control:hover > .public-icon {
+        transform: scale(1.13);
+    }
+}
+.site-navigation__control:focus-visible > .public-icon {
+    transform: scale(1.13);
 }
 .site-navigation__control[hidden] { display: none; }
 .public-icon {
@@ -883,8 +899,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .site-navigation__submenu-region,
     .site-navigation__primary::after,
-    .site-header nav {
+    .site-header nav,
+    .site-navigation__control > .public-icon {
         transition: none !important;
+    }
+
+    .site-navigation__control:hover > .public-icon,
+    .site-navigation__control:focus-visible > .public-icon {
+        transform: none;
     }
 }
 
