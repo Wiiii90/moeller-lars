@@ -22,6 +22,7 @@ use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use UnitEnum;
 
@@ -494,7 +495,7 @@ final class SitePages extends Page
 
         try {
             $parentId = $this->newParentId();
-            $message = \Illuminate\Support\Facades\DB::transaction(fn (): string => match ($type) {
+            $message = DB::transaction(fn (): string => match ($type) {
                 SiteSectionType::NavigationNode => $this->createNavigationGroup($parentId),
                 SiteSectionType::CustomPage => $this->createCustomPage($parentId),
                 SiteSectionType::Journal => $this->createJournal($parentId),
@@ -523,7 +524,7 @@ final class SitePages extends Page
     {
         $section = app(SiteSectionEditorialService::class)->createNavigationGroup($this->newPageTitle);
         $this->placeCreatedSection($section, $parentId);
-        $section = $this->publishNewPageIfConfigured($section->fresh());
+        $section = $this->publishNewPageIfConfigured(SiteSection::query()->findOrFail($section->getKey()));
 
         return $section->getAttribute('state') === 'published' ? 'Group Node added as published' : 'Group Node added';
     }
@@ -532,7 +533,7 @@ final class SitePages extends Page
     {
         $section = app(SiteSectionEditorialService::class)->createCustomPage($this->newPageTitle, $this->newPageSlug);
         $this->placeCreatedSection($section, $parentId);
-        $section = $this->publishNewPageIfConfigured($section->fresh());
+        $section = $this->publishNewPageIfConfigured(SiteSection::query()->findOrFail($section->getKey()));
 
         return $section->getAttribute('state') === 'published' ? 'Custom Page added as published' : 'Custom Page added as unpublished';
     }
@@ -545,7 +546,7 @@ final class SitePages extends Page
             $this->newJournalTemplate,
         );
         $this->placeCreatedSection($section, $parentId);
-        $section = $this->publishNewPageIfConfigured($section->fresh());
+        $section = $this->publishNewPageIfConfigured(SiteSection::query()->findOrFail($section->getKey()));
 
         return $section->getAttribute('state') === 'published' ? 'Journal added as published' : 'Journal added as unpublished';
     }
