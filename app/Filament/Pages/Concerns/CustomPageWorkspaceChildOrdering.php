@@ -19,23 +19,6 @@ trait CustomPageWorkspaceChildOrdering
 
         $parts = explode(':', $target);
         $kind = $parts[0];
-        if ($kind === 'list' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && ctype_digit($parts[2])) {
-            $changed = app(CustomPageEditorialService::class)->sortListItem(
-                $this->settings(),
-                (int) $parts[1],
-                'list',
-                (int) $parts[2],
-                $position,
-            );
-            $this->clearSelections();
-            $this->loadComponentProjection();
-            if ($changed) {
-                app(AdminNotifier::class)->notification('List entry order updated', status: 'success');
-            }
-
-            return;
-        }
-
         if ($kind === 'contact' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && array_key_exists($parts[2], self::CONTACT_CHILD_LABELS)) {
             $changed = app(CustomPageEditorialService::class)->sortContactChild(
                 $this->settings(),
@@ -113,25 +96,11 @@ trait CustomPageWorkspaceChildOrdering
     private function applySelectedChildPublication(array $targets, bool $published): bool
     {
         $changed = false;
-        $listGroups = [];
         $contactGroups = [];
-
         foreach ($targets as $target) {
-            if ($target['kind'] === 'list') {
-                $listGroups[$target['component_index']][] = $target['item_index'];
-            } elseif ($target['kind'] === 'contact') {
+            if ($target['kind'] === 'contact') {
                 $contactGroups[$target['component_index']][] = $target['child_type'];
             }
-        }
-
-        foreach ($listGroups as $componentIndex => $indices) {
-            $changed = app(CustomPageEditorialService::class)->setListItemsPublished(
-                $this->settings(),
-                (int) $componentIndex,
-                'list',
-                $indices,
-                $published,
-            ) || $changed;
         }
         foreach ($contactGroups as $componentIndex => $types) {
             $changed = app(CustomPageEditorialService::class)->setContactChildrenPublished(
@@ -150,28 +119,10 @@ trait CustomPageWorkspaceChildOrdering
     private function moveSelectedChildTargets(array $targets, string $direction): bool
     {
         $changed = false;
-        $listGroups = [];
         $contactGroups = [];
-
         foreach ($targets as $target) {
-            if ($target['kind'] === 'list') {
-                $listGroups[$target['component_index']][] = $target['item_index'];
-            } elseif ($target['kind'] === 'contact') {
+            if ($target['kind'] === 'contact') {
                 $contactGroups[$target['component_index']][] = $target['child_type'];
-            }
-        }
-
-        foreach ($listGroups as $componentIndex => $indices) {
-            $indices = array_values(array_unique(array_map('intval', $indices)));
-            $direction === 'up' ? sort($indices) : rsort($indices);
-            foreach ($indices as $itemIndex) {
-                $changed = app(CustomPageEditorialService::class)->moveListItem(
-                    $this->settings(),
-                    (int) $componentIndex,
-                    'list',
-                    $itemIndex,
-                    $direction,
-                ) || $changed;
             }
         }
 
@@ -215,22 +166,11 @@ trait CustomPageWorkspaceChildOrdering
             $parentKeys[$parent['index'].':'.$parent['type']] = true;
         }
 
-        $listGroups = [];
         $contactGroups = [];
         foreach ($children as $target) {
-            if ($target['kind'] === 'list') {
-                if (! isset($parentKeys[$target['component_index'].':list'])) {
-                    $listGroups[$target['component_index']][] = $target['item_index'];
-                }
-            } elseif ($target['kind'] === 'contact') {
-                if (! isset($parentKeys[$target['component_index'].':contact'])) {
-                    $contactGroups[$target['component_index']][] = $target['child_type'];
-                }
+            if ($target['kind'] === 'contact' && ! isset($parentKeys[$target['component_index'].':contact'])) {
+                $contactGroups[$target['component_index']][] = $target['child_type'];
             }
-        }
-
-        foreach ($listGroups as $componentIndex => $indices) {
-            app(CustomPageEditorialService::class)->deleteListItems($this->settings(), (int) $componentIndex, 'list', $indices);
         }
         foreach ($contactGroups as $componentIndex => $types) {
             app(CustomPageEditorialService::class)->deleteContactChildren($this->settings(), (int) $componentIndex, 'contact', $types);
