@@ -72,7 +72,7 @@ export function restoreNavigationWindow(widths, availableWidth, activeIndex, sav
 
 // Both navigation levels use the same whole-item cyclic window and never scroll pixels.
 // The surface is a three-column grid: previous control, canonical content width, next control.
-function initializeNavigationWindow(surface, restoredWindows, onWindowChange = () => {}) {
+function initializeNavigationWindow(surface, restoredWindows) {
     const { rail, previous, next } = navigationWindowParts(surface);
     if (!(rail instanceof HTMLElement)
         || !(previous instanceof HTMLButtonElement)
@@ -92,10 +92,6 @@ function initializeNavigationWindow(surface, restoredWindows, onWindowChange = (
     let observedWidth = -1;
 
     const render = (indices) => {
-        const changed = visible.length !== indices.length
-            || visible.some((index, position) => indices[position] !== index);
-        if (changed) onWindowChange(indices);
-
         const shown = new Set(indices);
         const focused = document.activeElement;
         const focusedItem = focused instanceof Element
@@ -214,7 +210,7 @@ function submenuControls(item, region) {
 function initializeSubmenus(container, topLevelItems, restoredWindows, windows) {
     const region = container.querySelector('[data-navigation-submenu-region]');
     const regionInner = container.querySelector('[data-navigation-submenu-region-inner]');
-    if (!(region instanceof HTMLElement) || !(regionInner instanceof HTMLElement)) return () => {};
+    if (!(region instanceof HTMLElement) || !(regionInner instanceof HTMLElement)) return;
 
     const entries = topLevelItems
         .map((item) => ({ item, controls: submenuControls(item, region) }))
@@ -283,14 +279,6 @@ function initializeSubmenus(container, topLevelItems, restoredWindows, windows) 
             }
         });
 
-        const closeOnFocusLeave = () => window.setTimeout(() => {
-            if (!item.contains(document.activeElement)
-                && !submenu.contains(document.activeElement)
-                && activeEntry === entry) closeActive();
-        }, 0);
-        item.addEventListener('focusout', closeOnFocusLeave);
-        submenu.addEventListener('focusout', closeOnFocusLeave);
-
         parentLink.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowDown') {
                 event.preventDefault();
@@ -327,16 +315,12 @@ function initializeSubmenus(container, topLevelItems, restoredWindows, windows) 
         });
     });
 
-    document.addEventListener('pointerdown', (event) => {
-        if (event.target instanceof Node && !container.contains(event.target)) closeActive();
-    });
     // The selected child is part of the current route, not a transient hover
     // menu. Reopen its parent on direct URLs and after navigation handoff.
     const selected = entries.find(({ controls }) =>
         controls.submenu.querySelector('[data-navigation-item].is-active'));
     if (selected) openEntry(selected);
 
-    return closeActive;
 }
 
 // The visible menu is a cyclic window of complete Site Node items.
@@ -398,21 +382,10 @@ export function initializePublicNavigation() {
 
         const restoredWindows = readNavigationHandoff();
         const windows = [];
-        let closeSubmenus = () => {};
-        // Keep a selected child's parent expanded while its window is visible.
-        const selectedParentIndex = Array.from(
-            mainSurface.querySelectorAll(':scope > nav > [data-navigation-item]'),
-        ).findIndex((item) => item.classList.contains('is-active')
-            && !item.querySelector(':scope > .site-navigation__primary [aria-current="page"]'));
-
-        const main = initializeNavigationWindow(mainSurface, restoredWindows, (indices) => {
-            if (selectedParentIndex === -1 || !indices.includes(selectedParentIndex)) {
-                closeSubmenus();
-            }
-        });
+        const main = initializeNavigationWindow(mainSurface, restoredWindows);
         windows.push(main);
         main.refresh();
-        closeSubmenus = initializeSubmenus(container, main.items, restoredWindows, windows);
+        initializeSubmenus(container, main.items, restoredWindows, windows);
 
         container.addEventListener('click', (event) => {
             if (event.defaultPrevented || event.button !== 0
