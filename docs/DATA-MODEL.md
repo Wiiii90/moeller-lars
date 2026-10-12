@@ -20,6 +20,16 @@ PostgreSQL is authoritative for editorial state. Canonical uploaded originals ar
 
 `SiteSection` is the persisted public-site/navigation tree projection.
 
+Every public SiteSection, including Home, may independently enable a content
+heading. The common fields are `content_heading_enabled`,
+`content_heading_override` (nullable), `content_heading_alignment`
+(left/center/right) and `content_heading_divider`
+(none/thin/subtle/strong/dotted). All pages start without a content heading.
+The separate `committed.site_sections` schema mirrors the new columns for
+publication, restore and audit comparison. Changing a content heading never
+changes the navigation label, title, slug or publication state.
+
+
 Persisted concepts include typed node kind, optional Journal template, title/navigation label, optional public slug, publication state, explicit position, optional parent and optional Gallery persistence reference.
 
 Supported runtime node types:

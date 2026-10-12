@@ -22,6 +22,10 @@ use Illuminate\Validation\ValidationException;
     'position',
     'parent_id',
     'artwork_category_id',
+    'content_heading_enabled',
+    'content_heading_override',
+    'content_heading_alignment',
+    'content_heading_divider',
 ])]
 #[Guarded(['id'])]
 final class SiteSection extends Model
@@ -52,6 +56,7 @@ final class SiteSection extends Model
             'position' => 'integer',
             'parent_id' => 'integer',
             'artwork_category_id' => 'integer',
+            'content_heading_enabled' => 'boolean',
         ];
     }
 
@@ -68,6 +73,16 @@ final class SiteSection extends Model
                 if ($originalType === SiteSectionType::Home || $nodeType === SiteSectionType::Home) {
                     throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
                 }
+            }
+
+            $heading = \App\Domain\Content\SitePageHeading::validated([
+                'content_heading_enabled' => (bool) $section->getAttribute('content_heading_enabled'),
+                'content_heading_override' => $section->getAttribute('content_heading_override'),
+                'content_heading_alignment' => $section->getAttribute('content_heading_alignment') ?: 'left',
+                'content_heading_divider' => $section->getAttribute('content_heading_divider') ?: 'none',
+            ]);
+            if (trim((string) ($section->getAttribute('content_heading_override') ?? '')) !== ($heading['content_heading_override'] ?? '')) {
+                $section->setAttribute('content_heading_override', $heading['content_heading_override']);
             }
 
             $template = $section->getAttribute('template');

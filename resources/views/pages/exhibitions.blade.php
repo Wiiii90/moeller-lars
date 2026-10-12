@@ -5,8 +5,8 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($siteNodeRoute->path($section)))
 
 @section('content')
-    <section class="exhibitions-page" aria-labelledby="exhibitions-heading">
-        <h2 id="exhibitions-heading" class="category-heading">{{ $section->title }}</h2>
+    <x-public.page-heading :section="$section" />
+    <section class="exhibitions-page" aria-label="Exhibitions">
         @forelse ($exhibitions as $exhibition)
             @php
                 $timing = $exhibition->temporalState(now());

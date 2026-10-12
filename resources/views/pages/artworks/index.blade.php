@@ -5,6 +5,7 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/'.$category->slug))
 
 @section('content')
+    <x-public.page-heading :section="$section" />
     <div class="artwork-list" data-artwork-viewer-sequence>
         @forelse ($artworks as $artwork)
             <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->index < 5" />

@@ -53,6 +53,7 @@ class PublicArtworkController extends Controller
 
         return view('pages.artworks.index', [
             'category' => $categoryRecord,
+            'section' => $section,
             'artworks' => $this->artworks->category($category),
             'media' => $this->media,
         ]);

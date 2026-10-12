@@ -124,6 +124,7 @@ final class HomePresentationResolver
 
         return [
             ...$presentation,
+            'pageSection' => $settings->getRelation('siteSection'),
             'skipHome' => $skipHome,
             'target' => $target,
             'targetUrl' => $targetUrl,

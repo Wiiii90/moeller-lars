@@ -6,8 +6,8 @@
 
 @section('content')
     @php $preview = app(\App\Domain\Content\SitePreviewContext::class); @endphp
-    <section class="blog-page" aria-labelledby="blog-heading">
-        <h2 id="blog-heading" class="category-heading">{{ $section->title }}</h2>
+    <x-public.page-heading :section="$section" />
+    <section class="blog-page" aria-label="Blog">
         @foreach ($posts as $post)
             @php
                 $postUrl = $preview->url(route('journal.show', ['section' => $section->slug, 'slug' => $post->slug]));

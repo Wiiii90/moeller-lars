@@ -9,6 +9,7 @@
 @endif
 
 @section('content')
+    <x-public.page-heading :section="$pageSection" />
     @if ($template === \App\Domain\Content\HomeTemplate::Artwork)
         @include('pages.home.artwork')
     @elseif (in_array($template, [\App\Domain\Content\HomeTemplate::UnderConstruction, \App\Domain\Content\HomeTemplate::Custom], true))

@@ -5,6 +5,7 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($siteNodeRoute->path($section)))
 
 @section('content')
+    <x-public.page-heading :section="$section" />
     @php
         $isPreview = app(\App\Domain\Content\SitePreviewContext::class)->active();
     @endphp

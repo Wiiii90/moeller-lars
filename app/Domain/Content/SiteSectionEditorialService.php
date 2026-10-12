@@ -23,6 +23,36 @@ final class SiteSectionEditorialService
         private readonly SiteSectionPathPolicy $pathPolicy,
     ) {}
 
+    /**
+     * Update the visible content-heading only. Page identity/navigation and
+     * publication remain owned by their existing services.
+     *
+     * @param array<string,mixed> $data
+     */
+    public function updatePageHeading(SiteSection $section, array $data): SiteSection
+    {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($section, $data, $actor): SiteSection {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if (! $fresh->nodeType()->hasPublicPage() && $fresh->nodeType() !== SiteSectionType::Home) {
+                throw ValidationException::withMessages(['content_heading_enabled' => 'This navigation-only node has no public content heading.']);
+            }
+            $values = SitePageHeading::validated([
+                ...SitePageHeading::formState($fresh),
+                ...$data,
+            ]);
+            $fresh->fill($values);
+            if ($fresh->isDirty()) {
+                $fresh->save();
+                $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
+            }
+
+            return $fresh;
+        });
+    }
+
     public function createNavigationGroup(string $title): SiteSection
     {
         $title = $this->validatedTitle($title);

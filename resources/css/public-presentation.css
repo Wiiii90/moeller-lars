@@ -368,6 +368,29 @@ body {
     text-transform: uppercase;
 }
 
+/* One optional content heading for every public SiteSection template.
+ * An absent heading adds no border, spacing, or wrapper before the content. */
+.public-page-heading {
+    width: min(100%, var(--public-art-max));
+    min-width: 0;
+    margin: 0 auto 1.35rem;
+}
+
+.public-page-heading > .category-heading {
+    width: 100%;
+    margin: 0;
+    text-align: inherit;
+}
+
+.public-page-heading--left { text-align: left; }
+.public-page-heading--center { text-align: center; }
+.public-page-heading--right { text-align: right; }
+
+.public-page-heading > .public-page-heading__divider {
+    width: 100%;
+    margin: 1.3rem 0 0;
+}
+
 .artwork-list {
     display: block;
     width: min(100%, var(--public-art-max));

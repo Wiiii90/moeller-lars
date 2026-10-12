@@ -25,6 +25,7 @@ Protected media equivalents live below `/preview/media/...`; authenticated previ
 Only publicly eligible content appears in public rendering/navigation/sitemap/viewer sequences.
 
 - Home is public according to its active presentation/gate behavior;
+- content headings are opt-in on Home, Gallery, Journal (Blog and Exhibitions) and Custom Page. The same public component renders the inherited or overridden heading, alignment and optional divider. Journal index templates must not inject a second title or an implicit divider before their first item;
 - Gallery/Journal/Custom availability follows Site Node publication state;
 - Navigation Nodes have no content page;
 - Journal entries satisfy active template + lifecycle requirements;

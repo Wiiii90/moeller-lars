@@ -9,6 +9,7 @@ use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SitePageHeading;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -54,6 +55,7 @@ final class HomeSettingsDialog
             'rotation_interval_unit' => $hero['rotation_interval']['unit'],
             'public_site_gate' => (bool) ($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? false),
             ...$this->routingDialog->fill($settings),
+            ...SitePageHeading::formState($section),
         ];
     }
 
@@ -131,6 +133,7 @@ final class HomeSettingsDialog
                         ->label('Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
                 ]),
+            PageHeadingFields::schema(),
         ];
     }
 
@@ -188,11 +191,11 @@ final class HomeSettingsDialog
         $changed = $this->routingDialog->save($data) || $changed;
 
         $section = $this->homeSection($settings);
-        $section = app(SiteSectionEditorialService::class)->updatePlacement(
-            $section,
-            'published',
-            null,
-        );
+        $editorial = app(SiteSectionEditorialService::class);
+        $beforeHeading = SitePageHeading::formState($section);
+        $section = $editorial->updatePageHeading($section, $data);
+        $changed = SitePageHeading::formState($section) !== $beforeHeading || $changed;
+        $section = $editorial->updatePlacement($section, 'published', null);
 
         return $section->wasChanged(['state', 'parent_id', 'position']) || $changed;
     }

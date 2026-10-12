@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionIdentityService;
 use App\Domain\Content\SiteSectionType;
@@ -13,6 +14,7 @@ use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HomeSettingsDialog;
+use App\Filament\Support\PageHeadingFields;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
@@ -44,6 +46,7 @@ trait ManagesSitePageEditDialog
                     'slug' => $section->getAttribute('slug'),
                     'parent_id' => $section->getAttribute('parent_id'),
                     'position' => $this->dialogDisplayPosition($section),
+                    ...SitePageHeading::formState($section),
                 ];
             })
             ->schema([
@@ -86,6 +89,8 @@ trait ManagesSitePageEditDialog
                             ->minValue(1)
                             ->required(),
                     ]),
+                PageHeadingFields::schema()
+                    ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
             ])
             ->action(function (array $data, array $arguments): void {
                 $changed = DB::transaction(function () use ($data, $arguments): bool {
@@ -166,6 +171,10 @@ trait ManagesSitePageEditDialog
             $parentId,
         );
 
+        if ($section->nodeType()->hasPublicPage()) {
+            $section = $editorial->updatePageHeading($section, $data);
+        }
+
         $position = $this->dialogPosition($data['position'] ?? null);
         if ($position !== null) {
             if ($parentId === null) {
@@ -182,7 +191,7 @@ trait ManagesSitePageEditDialog
     }
 
     /**
-     * @return array{type:string,template:?string,title:string,navigation_label:?string,slug:?string,parent_id:?int,position:int}
+     * @return array<string, mixed>
      */
     private function pageDialogPersistedState(SiteSection $section): array
     {
@@ -199,6 +208,7 @@ trait ManagesSitePageEditDialog
             'slug' => $slug === null ? null : (string) $slug,
             'parent_id' => $parentId === null ? null : (int) $parentId,
             'position' => (int) $section->getAttribute('position'),
+            ...SitePageHeading::formState($section),
         ];
     }
 

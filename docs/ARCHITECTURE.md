@@ -20,6 +20,15 @@ Accepted stack: PHP 8.3+, Laravel 13, Blade public rendering, Filament 5 for `/a
 
 ## Site structure
 
+Public content-heading presentation is owned by `SitePageHeading` and the
+shared `x-public.page-heading` component across Home, Gallery, Journal and
+Custom Page. It is stored on the canonical `SiteSection`, edited through
+the shared Filament `PageHeadingFields`, and written by
+`SiteSectionEditorialService`. Content headings are independent of
+navigation/title identity and off by default; Journal index titles are no
+longer hard-coded in separate public templates.
+
+
 The persisted site/navigation tree is represented by `SiteSection`; application behavior is defined by typed domain concepts.
 
 `App\Domain\Content\SiteSectionType` defines five runtime node types:

@@ -22,6 +22,13 @@ Exactly five semantic dialog types are supported:
 
 ### Edit
 
+Pages and Home share one `PageHeadingFields` schema for the optional public
+content heading. It is saved through `SiteSectionEditorialService` and
+separate from page identity/navigation. The public heading is disabled by
+default, may use the page title or a 160-character override, and supports
+left/center/right alignment plus none/thin/subtle/strong/dotted divider styles.
+
+
 Edits operate on an existing record or settings object.
 
 - editorial edit dialogs use the `Large` width by default;
