@@ -6,6 +6,8 @@ use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\PublicContentSetting;
+use Closure;
+use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Support\Facades\DB;
 
 final class PagesSettingsDialog
@@ -26,12 +28,29 @@ final class PagesSettingsDialog
     }
 
     /** @return list<mixed> */
-    public function schema(): array
+    public function schema(?Closure $persistOnToggle = null): array
     {
+        // Filament's live toggles update their own state, but the shared
+        // modal wire:change handler does not reliably submit that update.
+        // Use the same mutation owner as the native dialog action.
+        $onToggleUpdated = $persistOnToggle === null
+            ? null
+            : static function (Get $get) use ($persistOnToggle): void {
+                $persistOnToggle([
+                    'navigation_nesting_enabled' => $get('navigation_nesting_enabled'),
+                    'skip_home' => $get('skip_home'),
+                    'skip_target_section_id' => $get('skip_target_section_id'),
+                ]);
+            };
+
+        $nesting = AdminControl::toggle('navigation_nesting_enabled', 'Allow nested pages')->live();
+        if ($onToggleUpdated !== null) {
+            $nesting->afterStateUpdated($onToggleUpdated);
+        }
+
         return [
-            AdminControl::toggle('navigation_nesting_enabled', 'Allow nested pages')
-                ->live(),
-            ...$this->homeRouting->schema(),
+            $nesting,
+            ...$this->homeRouting->schema($onToggleUpdated),
         ];
     }
 
