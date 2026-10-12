@@ -345,12 +345,23 @@ body {
     outline-offset: .45rem;
 }
 
-/* Short public pages occupy the remaining viewport; long pages grow with
- * their content. Both use the same outer spacing and responsive shell. */
+/* All pages keep their normal content-driven height by default. */
 #content {
-    flex: 1 0 auto;
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
+}
+
+/* Only genuinely empty section pages without a configured heading fill the
+ * remaining viewport. Match rendered element children, not whitespace text:
+ * unpublished or absent entries produce no elements. Home components are
+ * explicitly excluded and retain the normal content-driven height. */
+#content:not(:has(> .public-page-heading)):has(
+    > .artwork-list:not(:has(> *)),
+    > .exhibitions-page:not(:has(> *)),
+    > .blog-page:not(:has(> *)),
+    > .custom-page:not(.home-components):not(:has(> *))
+) {
+    flex: 1 0 auto;
 }
 
 .site-content {

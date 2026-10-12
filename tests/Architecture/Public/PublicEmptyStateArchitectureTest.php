@@ -31,3 +31,27 @@ it('renders empty Public sections without editorial placeholder messages', funct
         ->toContain('@foreach ($exhibitions as $exhibition)')
         ->not->toContain('@forelse');
 });
+
+
+it('reserves full-height growth for empty non-Home sections without page headings', function (): void {
+    $root = dirname(__DIR__, 3);
+    $presentation = file_get_contents($root.'/resources/css/public-presentation.css');
+    $foundation = file_get_contents($root.'/resources/css/app.css');
+
+    expect($foundation)
+        ->toContain('display: flex;')
+        ->toContain('flex-direction: column;');
+
+    expect($presentation)
+        ->toContain('#content {')
+        ->toContain('min-height: var(--public-short-page-min-height);')
+        ->toContain('#content:not(:has(> .public-page-heading)):has(')
+        ->toContain('> .artwork-list:not(:has(> *))')
+        ->toContain('> .exhibitions-page:not(:has(> *))')
+        ->toContain('> .blog-page:not(:has(> *))')
+        ->toContain('> .custom-page:not(.home-components):not(:has(> *))')
+        ->toContain('flex: 1 0 auto;');
+
+    // Growth is conditional, not a default inherited by Home and populated pages.
+    expect(substr_count($presentation, 'flex: 1 0 auto;'))->toBe(1);
+});

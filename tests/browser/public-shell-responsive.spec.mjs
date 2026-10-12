@@ -277,8 +277,26 @@ test('gallery item spacing does not collapse at the Minimal transition', async (
 });
 
 
-test('empty public pages fill to the viewport end without creating a scrollbar', async ({ page }) => {
-    for (const template of ['gallery', 'exhibitions', 'blog', 'custom', 'home']) {
+test('only empty non-Home section pages without headings stretch to the viewport', async ({ page }) => {
+    const variants = [
+        { name: 'gallery empty', container: 'artwork-list', stretch: true },
+        { name: 'exhibitions empty', container: 'exhibitions-page', stretch: true },
+        { name: 'blog empty', container: 'blog-page', stretch: true },
+        { name: 'custom empty', container: 'custom-page', stretch: true },
+        { name: 'gallery with heading', container: 'artwork-list', heading: true },
+        { name: 'exhibitions with heading', container: 'exhibitions-page', heading: true },
+        { name: 'blog with heading', container: 'blog-page', heading: true },
+        { name: 'custom with heading', container: 'custom-page', heading: true },
+        { name: 'gallery populated', container: 'artwork-list', child: '<article class="artwork-card">Artwork</article>' },
+        { name: 'exhibitions populated', container: 'exhibitions-page', child: '<article class="exhibition-entry">Exhibition</article>' },
+        { name: 'blog populated', container: 'blog-page', child: '<article class="blog-entry">Post</article>' },
+        { name: 'custom populated', container: 'custom-page', child: '<section class="custom-page__component">Content</section>' },
+        { name: 'home empty components', container: 'custom-page home-components' },
+        { name: 'home artwork', container: 'artwork-card', child: '<div>Artwork</div>' },
+        { name: 'home without components', container: null },
+    ];
+
+    for (const variant of variants) {
         await page.setContent([
             '<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>',
             '<body class="public-site">',
@@ -288,8 +306,8 @@ test('empty public pages fill to the viewport end without creating a scrollbar',
             '<a href="#">Home</a></nav></div></div>',
             '</header>',
             '<main id="content" class="site-content">',
-            '<div class="' + (template === 'gallery' ? 'artwork-list' : template === 'exhibitions'
-                ? 'exhibitions-page' : template === 'blog' ? 'blog-page' : 'custom-page') + '"></div>',
+            variant.heading ? '<header class="public-page-heading"><h2>Optional heading</h2></header>' : '',
+            variant.container ? '<div class="' + variant.container + '">' + (variant.child ?? '') + '</div>' : '',
             '</main></body></html>',
         ].join(''));
         await page.addStyleTag({ path: 'resources/css/app.css' });
@@ -299,25 +317,37 @@ test('empty public pages fill to the viewport end without creating a scrollbar',
             await page.setViewportSize({ width, height: 960 });
             const geometry = await page.evaluate(() => {
                 const header = document.querySelector('.site-header').getBoundingClientRect();
-                const content = document.querySelector('#content').getBoundingClientRect();
-                const documentHeight = document.documentElement.scrollHeight;
-                const pageGap = parseFloat(getComputedStyle(document.querySelector('#content')).marginBottom);
+                const main = document.querySelector('#content');
+                const content = main.getBoundingClientRect();
+                const pageGap = parseFloat(getComputedStyle(main).marginBottom);
                 return {
                     headerBottom: header.bottom,
                     contentTop: content.top,
                     contentBottom: content.bottom,
-                    documentHeight,
+                    contentHeight: content.height,
+                    grow: getComputedStyle(main).flexGrow,
+                    documentHeight: document.documentElement.scrollHeight,
                     viewportHeight: window.innerHeight,
                     scrollY: window.scrollY,
                     pageGap,
                 };
             });
-            expect(geometry.documentHeight, template + ' root scroll at ' + width)
-                .toBeLessThanOrEqual(geometry.viewportHeight + 1);
-            expect(Math.abs(geometry.contentBottom + geometry.pageGap - geometry.viewportHeight),
-                template + ' fills height at ' + width).toBeLessThan(1);
+            expect(geometry.contentHeight, variant.name + ' minimum at ' + width).toBeGreaterThanOrEqual(240);
             expect(Math.abs(geometry.contentTop - geometry.headerBottom - geometry.pageGap),
-                template + ' equal outer margins at ' + width).toBeLessThan(1);
+                variant.name + ' top gap at ' + width).toBeLessThan(1);
+            if (variant.stretch) {
+                expect(geometry.grow, variant.name + ' grows at ' + width).toBe('1');
+                expect(geometry.documentHeight, variant.name + ' root scroll at ' + width)
+                    .toBeLessThanOrEqual(geometry.viewportHeight + 1);
+                expect(Math.abs(geometry.contentBottom + geometry.pageGap - geometry.viewportHeight),
+                    variant.name + ' bottom gap at ' + width).toBeLessThan(1);
+            } else {
+                expect(geometry.grow, variant.name + ' does not grow at ' + width).toBe('0');
+                expect(geometry.contentHeight, variant.name + ' retains old short page size at ' + width)
+                    .toBeCloseTo(240, 1);
+                expect(geometry.contentBottom + geometry.pageGap, variant.name + ' leaves normal background at ' + width)
+                    .toBeLessThan(geometry.viewportHeight - 100);
+            }
             expect(geometry.scrollY).toBe(0);
         }
     }
