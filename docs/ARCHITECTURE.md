@@ -34,7 +34,7 @@ The persisted site/navigation tree is represented by `SiteSection`; application 
 
 `Home` is the singleton root. `JournalTemplate` supports Blog and Exhibitions.
 
-`SiteSection` stores type/template, title/navigation label, slug, publication/navigation state, position, parent and optional Gallery persistence reference. Runtime decisions use `SiteSectionType` / `JournalTemplate`, not raw historical strings.
+`SiteSection` stores type/template, title/navigation label, slug, publication state, position, parent and optional Gallery persistence reference. Runtime decisions use `SiteSectionType` / `JournalTemplate`, not raw historical strings.
 
 Journal template switching is non-destructive: changing a Journal from Blog to Exhibitions or back changes the active presentation/editorial projection but does not convert or delete the inactive template's retained entry rows.
 
@@ -57,7 +57,7 @@ Protected preview media routes live below `/preview/media/...`; they permit auth
 
 `SiteNodePresentation` maps typed nodes to their canonical admin workspace. `SiteNavigation` owns the admin tree projection and active-state calculation.
 
-**Immediate navigation refresh:** Filament 5's Livewire `Sidebar` already listens to `refresh-sidebar`. The Pages editor calls `loadSections(navigationChanged: true)` only after a persisted navigation-affecting mutation, dispatching that one built-in event. The Sidebar re-renders the **editorial** `SiteNavigation` tree using committed SiteSection order and hierarchy, including new/unpublished/hidden-from-public-menu nodes so that Add page immediately creates a Sidebar entry. This must not implicitly publish drafts. Only the separate `PublicNavigationService` filters public navigation by publication and `show_in_navigation`. Both projections omit Home while the single canonical Home routing configuration has Skip Home enabled. Do not add a JS DOM synchronizer, polling, forced reload, duplicate menu tree or mutation events for mere filter/pagination/no-op requests.
+**Immediate navigation refresh:** Filament 5's Livewire `Sidebar` already listens to `refresh-sidebar`. The Pages editor calls `loadSections(navigationChanged: true)` only after a persisted navigation-affecting mutation, dispatching that one built-in event. The Sidebar re-renders the **editorial** `SiteNavigation` tree using committed SiteSection order and hierarchy, including new/unpublished nodes so that Add page immediately creates a Sidebar entry. This must not implicitly publish drafts. The separate `PublicNavigationService` includes every published node in the public menu; an unpublished node is excluded from public navigation and its public route. Artist preview retains its deliberate draft exception. The retired `site_sections.show_in_navigation` column is not used by application logic and remains physically present only to preserve schema hashes and older Publication restore snapshots. The published-position indexes alone enforce navigation ordering without using that legacy value. Both projections omit Home while the single canonical Home routing configuration has Skip Home enabled. Do not add a JS DOM synchronizer, polling, forced reload, duplicate menu tree or mutation events for mere filter/pagination/no-op requests.
 
 
 Canonical workspaces:
