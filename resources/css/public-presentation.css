@@ -617,23 +617,22 @@ body {
     outline: 1px dotted var(--public-artwork-line-hover);
     outline-offset: 3px;
 }
-/* Printed names are intrinsically sized: writing starts immediately after
-   each label, never after a fixed text column. */
+/* Each handwritten line starts shortly after its own printed prompt.
+   Align the first text baselines, not the top edges of two different fonts. */
 .artwork-label__field {
     display: flex;
     min-width: 0;
-    align-items: flex-start;
-    gap: .22rem;
+    align-items: baseline;
+    gap: .45rem;
 }
 .artwork-label__prompt {
     display: block;
     flex: 0 0 auto;
-    padding-top: .29rem;
     color: #746a5e;
     font-size: .56rem;
     font-weight: 500;
     letter-spacing: .045em;
-    line-height: 1.35;
+    line-height: 1.4rem;
     text-transform: uppercase;
 }
 .artwork-label__writing {
@@ -653,14 +652,14 @@ body {
 .artwork-label__entry {
     color: var(--public-label-ink);
     font-family: var(--public-label-handwriting);
-    font-size: .77rem;
+    font-size: .71rem;
     font-weight: 400;
     letter-spacing: 0;
     line-height: inherit;
     overflow-wrap: break-word;
 }
 .artwork-label__field--title .artwork-label__entry {
-    font-size: .84rem;
+    font-size: .77rem;
 }
 .artwork-label__tail {
     display: grid;
