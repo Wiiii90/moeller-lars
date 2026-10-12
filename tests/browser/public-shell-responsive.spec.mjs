@@ -15,7 +15,14 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         '<div class="site-navigation__item"><div class="site-navigation__primary"><a href="#">Drawings</a></div></div>',
         '</nav></div></div></header>',
         '<main id="content" class="site-content">',
-        '<article class="artwork-card"><a class="artwork-card__link" href="#">',
+        '<article class="artwork-card">',
+        '<nav class="artwork-folio" aria-label="Artwork browsing">',
+        '<a class="artwork-folio__gallery" href="#">Gallery</a>',
+        '<div class="artwork-folio__browse">',
+        '<span class="artwork-folio__position">1 / 3</span>',
+        '<a class="artwork-folio__step" href="#" aria-label="Previous artwork">←</a>',
+        '<a class="artwork-folio__step" href="#" aria-label="Next artwork">→</a>',
+        '</div></nav><a class="artwork-card__link" href="#">',
         '<div class="artwork-card__image" style="aspect-ratio: 1"></div></a>',
         '<div class="artwork-card__footer"><a href="#" class="artwork-label-trigger"><span class="artwork-label">',
         '<span class="artwork-label__field artwork-label__field--title"><span class="artwork-label__prompt">Title</span><span class="artwork-label__writing"><span class="artwork-label__entry">A.G.</span></span></span>',
@@ -24,8 +31,7 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         '<span class="artwork-label__field artwork-label__field--year"><span class="artwork-label__prompt">Year</span><span class="artwork-label__writing"><span class="artwork-label__entry">2025</span></span></span>',
         '<span class="artwork-label__field artwork-label__field--size"><span class="artwork-label__prompt">Size</span><span class="artwork-label__writing"><span class="artwork-label__entry">25 × 25</span></span></span>',
         '</span>',
-        '</span></a><nav class="artwork-card__actions" aria-label="Artwork navigation">',
-        '<a class="artwork-context-button" href="#">Drawings →</a></nav></div>',
+        '</span></a></div>',
         '</article><div aria-hidden="true" style="height:1400px"></div></main></body></html>',
     ].join(''));
     await page.addStyleTag({ path: 'resources/css/app.css' });
@@ -48,7 +54,7 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
                 artist: family('.site-header h1'),
                 navigation: family('.site-navigation__primary a'),
                 artwork: family('.artwork-label'),
-                action: family('.artwork-context-button'),
+                action: family('.artwork-folio__step'),
                 headerPosition: getComputedStyle(document.querySelector('.site-title')).position,
             };
         });
@@ -75,7 +81,7 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
                 content: rect('#content'),
                 header: rect('.site-header'),
                 label: rect('.artwork-label'),
-                action: rect('.artwork-card__actions'),
+                folio: rect('.artwork-folio'),
                 image: rect('.artwork-card__image'),
                 scrollWidth: scrollingElement.scrollWidth,
                 scrollClientWidth: scrollingElement.clientWidth,
@@ -89,13 +95,10 @@ test('document scrollbar, sticky header, symmetric page gap and artwork footer',
         expect(Math.abs(geometry.menu.left - geometry.content.left), 'left edges at '+width).toBeLessThan(1);
         expect(Math.abs(geometry.menu.right - geometry.content.right), 'right edges at '+width).toBeLessThan(1);
         expect(geometry.content.top - geometry.header.bottom, 'header gap at '+width).toBeGreaterThan(8);
-        const separateRows = geometry.action.top >= geometry.label.bottom - 1;
-        if (!separateRows) {
-            expect(Math.abs(geometry.label.bottom - geometry.action.bottom), 'footer baseline at '+width).toBeLessThan(1);
-            expect(geometry.label.right, 'label / action spacing at '+width).toBeLessThan(geometry.action.left);
-        } else {
-            expect(geometry.action.top, 'separate actions below plaque at '+width).toBeGreaterThanOrEqual(geometry.label.bottom - 1);
-        }
+        expect(geometry.folio.bottom, 'folio above artwork at '+width).toBeLessThanOrEqual(geometry.image.top);
+        expect(geometry.label.top, 'label below artwork at '+width).toBeGreaterThanOrEqual(geometry.image.bottom);
+        expect(geometry.folio.left, 'folio/image left alignment at '+width).toBeGreaterThanOrEqual(geometry.image.left - 1);
+        expect(geometry.folio.right, 'folio/image right alignment at '+width).toBeLessThanOrEqual(geometry.image.right + 1);
         expect(geometry.image.width).toBeGreaterThan(0);
         expect(geometry.scrollWidth, 'horizontal overflow at '+width).toBeLessThanOrEqual(geometry.scrollClientWidth + 1);
         expect(geometry.scrollOwner, 'root scroll owner at '+width).toBe(true);

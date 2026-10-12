@@ -29,6 +29,14 @@
         data-matomo-event-category="Artwork"
         data-matomo-event-name="{{ $artwork->analytics_key }}"
     >
+        <x-artwork-navigation
+            :category="$category"
+            :show-gallery-link="true"
+            :previous-artwork="$previousArtwork"
+            :next-artwork="$nextArtwork"
+            :folio-position="is_int($currentIndex) ? $currentIndex + 1 : null"
+            :folio-total="$sequence->count()"
+        />
         <a
             class="artwork-detail__viewer-trigger"
             href="{{ $originalUrl }}"
@@ -70,28 +78,6 @@
 
         <div class="artwork-detail__footer">
             <x-artwork-label :artwork="$artwork" :show-description="false" />
-
-            <nav class="artwork-detail__actions" aria-label="Artwork navigation">
-                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}" aria-label="Open {{ $category->name }} gallery" title="{{ $category->name }} gallery">
-                    <span class="artwork-context-button__label">{{ $category->name }} gallery</span>
-                </a>
-
-                @if ($previousArtwork !== null)
-                    <a class="artwork-context-button artwork-context-button--step artwork-context-button--previous"
-                       href="{{ $preview->url(route('artworks.show', $previousArtwork->slug)) }}"
-                       aria-label="Previous artwork" title="Previous artwork">
-                        <x-public-icon name="chevron-left" /><span>Previous</span>
-                    </a>
-                @endif
-
-                @if ($nextArtwork !== null)
-                    <a class="artwork-context-button artwork-context-button--step artwork-context-button--next"
-                       href="{{ $preview->url(route('artworks.show', $nextArtwork->slug)) }}"
-                       aria-label="Next artwork" title="Next artwork">
-                        <span>Next</span><x-public-icon name="chevron-right" />
-                    </a>
-                @endif
-            </nav>
         </div>
 
         @if ($artwork->description)

@@ -9,6 +9,8 @@
                     :show-details="$showDetails"
                     :show-category-link="$showGalleryLink"
                     :hero-navigation="$navigableHero"
+                    :folio-position="$navigableHero ? $loop->iteration : null"
+                    :folio-total="$navigableHero ? $heroGroup->count() : null"
                     :enable-viewer="$enableViewer"
                     :eager="$heroArtwork->is($artwork)"
                 />
