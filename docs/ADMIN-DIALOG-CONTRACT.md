@@ -23,12 +23,14 @@ Exactly five semantic dialog types are supported:
 ### Edit
 
 Pages and Home share one `PageHeadingFields` schema for the optional public
-content heading. Each heading field persists through Filament's native
-`afterStateUpdated` callback directly to `SiteSectionEditorialService`:
-toggles/selects on change, text on blur. Do not rely on a modal-level
-`wire:change` event for dynamic heading fields, or on the native X closing
-the dialog to submit data. The original Edit action autosave still owns its
-other fields. Heading state is separate from page identity/navigation,
+content heading. Each heading field persists once through Filament's
+`afterStateUpdated` callback to `SiteSectionEditorialService`: toggles
+and selects on change, text on blur. The shared field owner emits the
+canonical `AdminNotifier` success event only when that persisted field
+actually changed. The general Edit action must not save heading fields a
+second time: its modal-level `wire:change` remains solely for other fields
+and is not required for heading persistence or notification. The native
+X never submits data. Heading state is separate from page identity/navigation,
 disabled by default, and supports an optional 160-character override,
 left/center/right alignment plus none/thin/subtle/strong/dotted divider styles.
 

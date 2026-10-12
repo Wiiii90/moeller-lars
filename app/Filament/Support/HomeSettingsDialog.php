@@ -133,10 +133,12 @@ final class HomeSettingsDialog
                         ->label('Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
                 ]),
-            PageHeadingFields::schema(function (string $field, mixed $value): void {
+            PageHeadingFields::schema(function (string $field, mixed $value): bool {
                 $section = $this->homeSection($this->resolver->settings());
-                app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
-            }),
+                $updated = app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
+
+                return $updated->wasChanged($field);
+            }, 'Home settings saved'),
         ];
     }
 
@@ -194,11 +196,7 @@ final class HomeSettingsDialog
         $changed = $this->routingDialog->save($data) || $changed;
 
         $section = $this->homeSection($settings);
-        $editorial = app(SiteSectionEditorialService::class);
-        $beforeHeading = SitePageHeading::formState($section);
-        $section = $editorial->updatePageHeading($section, $data);
-        $changed = SitePageHeading::formState($section) !== $beforeHeading || $changed;
-        $section = $editorial->updatePlacement($section, 'published', null);
+        $section = app(SiteSectionEditorialService::class)->updatePlacement($section, 'published', null);
 
         return $section->wasChanged(['state', 'parent_id', 'position']) || $changed;
     }

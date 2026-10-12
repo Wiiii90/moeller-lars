@@ -4,6 +4,7 @@ use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\SitePages;
+use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -30,27 +31,39 @@ it('autosaves every content heading control without submitting the Pages Edit ac
     // Field-specific Livewire lifecycle persistence: NO callMountedAction.
     $page->set('mountedActions.0.data.content_heading_enabled', true)
         ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
         ->assertSet('mountedActions.0.name', 'editPage');
     expect($section->fresh()->content_heading_enabled)->toBeTrue();
 
-    $page->set('mountedActions.0.data.content_heading_alignment', 'center')
-        ->assertHasNoFormErrors();
-    expect($section->fresh()->content_heading_alignment)->toBe('center');
+    $page->set('mountedActions.0.data.content_heading_alignment', 'right')
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+    expect($section->fresh()->content_heading_alignment)->toBe('right');
 
     $page->set('mountedActions.0.data.content_heading_divider', 'dotted')
-        ->assertHasNoFormErrors();
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
     expect($section->fresh()->content_heading_divider)->toBe('dotted');
 
     $page->set('mountedActions.0.data.content_heading_override', 'Current programme')
-        ->assertHasNoFormErrors();
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
     expect($section->fresh()->content_heading_override)->toBe('Current programme');
+
+    // The generic modal change event is still allowed but must never persist
+    // the heading a second time or emit a duplicate success notification.
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
+    $page->call('callMountedAction')->assertHasNoFormErrors();
+    expect(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount);
 
     $page->call('unmountAction')->assertSet('mountedActions', []);
 
     Livewire::test(SitePages::class)
         ->mountAction('editPage', ['section' => $section->getKey()])
         ->assertSet('mountedActions.0.data.content_heading_enabled', true)
-        ->assertSet('mountedActions.0.data.content_heading_alignment', 'center')
+        ->assertSet('mountedActions.0.data.content_heading_alignment', 'right')
         ->assertSet('mountedActions.0.data.content_heading_divider', 'dotted')
         ->assertSet('mountedActions.0.data.content_heading_override', 'Current programme');
 
@@ -61,7 +74,7 @@ it('autosaves every content heading control without submitting the Pages Edit ac
     $this->get('/autosave-exhibitions')
         ->assertOk()
         ->assertSee('Current programme')
-        ->assertSee('public-page-heading--center', false)
+        ->assertSee('public-page-heading--right', false)
         ->assertSee('custom-page__divider--dotted', false);
 });
 
@@ -73,13 +86,17 @@ it('autosaves Home heading controls and preserves existing settings and public d
         ->mountAction('editHome')
         ->assertSet('mountedActions.0.data.content_heading_enabled', false);
 
-    $dialog->set('mountedActions.0.data.content_heading_enabled', true);
+    $dialog->set('mountedActions.0.data.content_heading_enabled', true)
+        ->assertDispatched('admin-header-notification');
     expect($section->fresh()->content_heading_enabled)->toBeTrue();
 
     $dialog->set('mountedActions.0.data.content_heading_alignment', 'right')
+        ->assertDispatched('admin-header-notification')
         ->set('mountedActions.0.data.content_heading_divider', 'thin')
+        ->assertDispatched('admin-header-notification')
         ->set('mountedActions.0.data.content_heading_override', 'Studio')
-        ->assertHasNoFormErrors();
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
     expect($section->fresh()->content_heading_alignment)->toBe('right')
         ->and($section->fresh()->content_heading_divider)->toBe('thin')
         ->and($section->fresh()->content_heading_override)->toBe('Studio');
@@ -105,8 +122,10 @@ it('can hide and restore a Page heading without discarding the optional style or
         ->set('mountedActions.0.data.content_heading_override', 'Override');
 
     $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
     $page->set('mountedActions.0.data.content_heading_override', 'Override');
-    expect(AuditEvent::query()->count())->toBe($auditCount);
+    expect(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount);
 
     $page->set('mountedActions.0.data.content_heading_enabled', false);
     expect($section->fresh()->content_heading_enabled)->toBeFalse()

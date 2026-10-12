@@ -89,12 +89,13 @@ trait ManagesSitePageEditDialog
                             ->minValue(1)
                             ->required(),
                     ]),
-                PageHeadingFields::schema(function (string $field, mixed $value) use ($arguments): void {
+                PageHeadingFields::schema(function (string $field, mixed $value) use ($arguments): bool {
                     $section = $this->dialogSection($arguments);
-                    app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
-                    // Keep subsequent dialog saves/actions on the latest persisted row.
+                    $updated = app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
                     $this->dialogSectionCache = [];
-                })
+
+                    return $updated->wasChanged($field);
+                }, 'Page updated')
                     ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
             ])
             ->action(function (array $data, array $arguments): void {
@@ -175,10 +176,6 @@ trait ManagesSitePageEditDialog
             (string) $section->getAttribute('state'),
             $parentId,
         );
-
-        if ($section->nodeType()->hasPublicPage()) {
-            $section = $editorial->updatePageHeading($section, $data);
-        }
 
         $position = $this->dialogPosition($data['position'] ?? null);
         if ($position !== null) {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\SitePageHeading;
 use Closure;
 use Filament\Forms\Components\Select;
@@ -14,7 +15,7 @@ use Filament\Schemas\Components\Utilities\Get;
 final class PageHeadingFields
 {
     /** Persist each heading field through the owner on a Livewire update. */
-    public static function schema(Closure $persist): Grid
+    public static function schema(Closure $persist, string $successTitle): Grid
     {
         return Grid::make()
             ->columns(['md' => 2])
@@ -23,14 +24,14 @@ final class PageHeadingFields
                     ->label('Show page heading')
                     ->default(false)
                     ->live()
-                    ->afterStateUpdated(fn (mixed $state) => $persist('content_heading_enabled', (bool) $state))
+                    ->afterStateUpdated(fn (mixed $state) => self::persist($persist, 'content_heading_enabled', (bool) $state, $successTitle))
                     ->columnSpanFull(),
                 TextInput::make('content_heading_override')
                     ->label('Heading text')
                     ->placeholder('Use page name')
                     ->maxLength(160)
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn (mixed $state) => $persist('content_heading_override', $state))
+                    ->afterStateUpdated(fn (mixed $state) => self::persist($persist, 'content_heading_override', $state, $successTitle))
                     ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled'))
                     ->columnSpanFull(),
                 Select::make('content_heading_alignment')
@@ -40,7 +41,7 @@ final class PageHeadingFields
                     ->native()
                     ->required()
                     ->live()
-                    ->afterStateUpdated(fn (mixed $state) => $persist('content_heading_alignment', $state))
+                    ->afterStateUpdated(fn (mixed $state) => self::persist($persist, 'content_heading_alignment', $state, $successTitle))
                     ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
                 Select::make('content_heading_divider')
                     ->label('Divider below heading')
@@ -49,8 +50,21 @@ final class PageHeadingFields
                     ->native()
                     ->required()
                     ->live()
-                    ->afterStateUpdated(fn (mixed $state) => $persist('content_heading_divider', $state))
+                    ->afterStateUpdated(fn (mixed $state) => self::persist($persist, 'content_heading_divider', $state, $successTitle))
                     ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
             ]);
+    }
+
+    /**
+     * Heading fields have one autosave owner. A no-op never produces a second
+     * Notification, even when the containing Edit modal also receives change.
+     */
+    private static function persist(Closure $persist, string $field, mixed $value, string $title): void
+    {
+        if ($persist($field, $value) !== true) {
+            return;
+        }
+
+        app(AdminNotifier::class)->notification(title: $title, status: 'success');
     }
 }
