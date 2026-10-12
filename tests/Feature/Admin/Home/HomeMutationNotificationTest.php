@@ -38,7 +38,7 @@ it('persists Home List entries in the parent component editor with one notificat
     ]]);
 
     $page = Livewire::test(HomePresentation::class)
-        ->mountAction('editComponent', ['index' => 0, 'type' => 'list'])
+        ->mountAction('editListComponent', ['index' => 0, 'type' => 'list'])
         ->assertMountedActionModalSee('List entries');
     $beforeNotifications = AdminNotification::query()->count();
     $page->fillForm([
@@ -57,7 +57,9 @@ it('persists Home List entries in the parent component editor with one notificat
 
     $activityCount = AuditEvent::query()->count();
     $notificationCount = AdminNotification::query()->count();
-    $page->callMountedAction();
+    $page->mountAction('editListComponent', ['index' => 0, 'type' => 'list'])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
     expect(AuditEvent::query()->count())->toBe($activityCount)
         ->and(AdminNotification::query()->count())->toBe($notificationCount);
 });
@@ -71,7 +73,7 @@ it('reorders and removes Home List entries from its Edit dialog', function (): v
     ]]);
 
     Livewire::test(HomePresentation::class)
-        ->mountAction('editComponent', ['index' => 0, 'type' => 'list'])
+        ->mountAction('editListComponent', ['index' => 0, 'type' => 'list'])
         ->fillForm([
             'editor_kind' => 'list',
             'list_title' => 'CV',
