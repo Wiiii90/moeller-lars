@@ -47,6 +47,44 @@ A stop means: identify the underlying owner/invariant that is failing, inspect t
 
 Do not preserve an obsolete implementation alongside its replacement. Remove obsolete files, hooks, imports, tests and documentation *as part of the same scoped correction*. Do not modify tests to make a broken implementation appear correct. An exceptional workaround is allowed **only if the user explicitly authorizes that specific, fully explained temporary exception**; convenience, time pressure, regressions and framework limitations do not constitute permission. This rule overrides generic instructions to “just make it work.”
 
+## Mandatory mutation/feedback completion contract
+
+For any user-facing authenticated editorial admin mutation, changing
+the database is **not** a complete UI action. Inbox-only state such as
+marking a Notification read/unread, pinning or dismissing it is an explicit
+exception: it must not generate a self-referential new Notification.
+Domain persistence, append-only Activity/audit, and
+`AdminNotifier::notification()` are distinct owners: neither domain save nor
+audit automatically delivers a Notification. The Action/Livewire mutation
+boundary **must** consume the domain change result, refresh the relevant
+projection, and call the single canonical notifier on a real successful
+change. A no-op or failed/rolled-back mutation must not emit success.
+For a common sub-operation, own the notification once at its existing
+mutation boundary; never add duplicate form-level, modal-level or
+page-local feedback paths. Domain callbacks reused outside the admin
+must not unconditionally create UI messages.
+
+**Mandatory verification before reporting an admin fix complete:**
+1. Trace user input / form event to the actual persisted record and
+   reload/reopen behavior; distinguish `afterStateUpdated` from modal
+   `wire:change`, and identify exactly one mutation owner.
+2. Trace `AdminAuditService` evidence and the actual call to
+   `AdminNotifier`; the audit context supplies presentation only, **not**
+   dispatch. Verify the notifier reaches both mailbox and header event.
+3. Assert a genuine change yields persisted data, expected audit,
+   exactly one persisted Notification and one immediate
+   `admin-header-notification` event; verify no-op and invalid state do
+   not create a success message. Check close/reopen and cross-field saves.
+4. Test both the domain transition and the real Filament/Livewire event
+   path, including dynamically shown/hidden fields and nested editors.
+5. If runtime tests or browser checks cannot be performed, mark them
+   **unverified**, never call static source review or unexecuted tests
+   proof of functional correctness. Include a reproducible acceptance
+   checklist in the handoff.
+
+See `docs/ADMIN-NOTIFICATION-CONTRACT.md`,
+`docs/ADMIN-DIALOG-CONTRACT.md`, and `docs/TESTING.md`.
+
 ## Source of truth
 
 Use, in this order:
@@ -73,17 +111,16 @@ Use the current artist-facing concepts:
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
 
-## Active two-chat direct-`dev` collaboration (2026-10-12)
+## Direct-`dev` collaboration (2026-10-12)
 
-The user is deliberately working with **two simultaneous ChatGPT chats on the same `dev` branch**:
-one owns admin/editorial UI and operational bug fixes; the other owns the public
-homepage's Blade/CSS/JS, public-facing UX, architecture, legacy cleanup and
-responsiveness. This is the **active, explicitly authorized execution mode**
-until the user changes it. Both chats may inspect shared Domain code, but each
-must minimize edits outside its assigned public/admin surface; coordinate any
-shared-file or cross-boundary change against the latest actual `dev` tree.
+The previously parallel public-facing chat has ended. The current continuation
+owns the full repository across admin, public and shared Domain code, subject
+to the user's requested scope and the same direct-`dev` constraints.
+If multiple chats resume concurrently, each must establish explicit file
+ownership and reconcile shared changes. Never assume the branch remained
+unchanged between work sessions.
 
-Hard restrictions in both chats:
+Hard restrictions for all direct-`dev` work:
 
 - **Commit directly to `dev` only.** Never create side/worker/integration/review
   branches, worktrees or duplicate local checkouts. Never merge/push to `main`,
@@ -546,11 +583,11 @@ After browser/product acceptance, audit the accepted change for source it create
 
 Preserve still-required compatibility and domain behavior. Audit references, call sites, routes and tests before deletion; never delete from naming alone. This cleanup scope covers only artifacts made obsolete by the accepted change; unrelated cleanup remains out of scope.
 
-Run authorized final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. In the active two-chat mode above **CI is prohibited**, including reads and dispatches; a later release qualification is a separate user-authorized workflow.
+Run authorized final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. In the current direct-`dev` mode **CI is prohibited**, including reads and dispatches; a later release qualification is a separate user-authorized workflow.
 
 ## CI ownership and log handoff
 
-**Not applicable in the active two-chat direct-to-`dev` mode:** CI is fully forbidden, even read-only metadata/status access. This section documents optional future modes only after the user explicitly lifts that restriction.
+**Not applicable in the current direct-to-`dev` mode:** CI is fully forbidden, even read-only metadata/status access. This section documents optional future modes only after the user explicitly lifts that restriction.
 
 CI handling depends on branch ownership. The default assumption for `dev` is that it is shared by multiple chats/workers. Treat `dev` as exclusive only when the user explicitly says that one worker owns it for the current cycle.
 

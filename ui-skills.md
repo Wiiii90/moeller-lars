@@ -296,30 +296,35 @@ Rules:
 
 ## 11. Home component table
 
-Home component templates currently use:
+Home Custom and Under Construction share the accepted Custom Page hierarchy:
 
 ```text
 [Position] [Drag] [Component] [Content] [Actions] [Selection]
 ```
 
-There is no artificial Status column because Home components do not have an independent publish lifecycle.
+The permanent Component selector exposes Image, Heading, Rich Text, Divider,
+List, Contact and Legal Disclaimer. Divider subtype (Thin/Subtle/Strong/Dotted)
+belongs to its Add/Edit schema. Content must not repeat the component type.
+The five action roles are Move up, Move down, Edit,
+Publish/Unpublish and Delete. Published state belongs to each component and
+its List/Contact children, not an artificial Status column. All available
+Actions in nested Edit dialogs mirror the corresponding row semantics.
 
-Use the same component-table grammar as Custom where appropriate, without forcing Custom-specific status semantics onto Home.
+List and Contact children share the canonical parent/child hierarchy,
+stable selection targets, explicit ordering, and publication semantics.
+Mixed parent/child selection must be applied through the transactional
+Home editorial owner, not separate partial writes. Type selection remains
+interactive at narrow widths even when drag/reorder is disabled.
+Search/Type filters disable reordered projections, never the type selector.
+The bottom shared Add component row remains available.
 
-Home tools:
-
-```text
-Search | Type | Filter | Selection
-```
-
-Types:
-
-- Image;
-- Heading;
-- Rich Text;
-- Divider.
-
-DnD is enabled only in neutral filter state. Bottom full-width `+ Add component` remains a valid add affordance even when the top action group also has Add component. Under Construction and Custom share this exact responsive table: Component yields before Content; Move up / Move down / Edit / Delete stay readable until the shared four-action rail reaches genuine Minimal table pressure. Hero Artwork's source table instead drops Candidates / Artworks / Newest Year first, then Status at Minimal, while its two row actions remain explicit.
+**Mutation feedback:** Home parent and child mutations use the canonical
+domain change result and exactly one `AdminNotifier` success notification
+per real change, visible in the header and durable mailbox. This includes
+nested editing, sorting, publishing and deleting, plus selected-item actions.
+No-op/invalid mutations create no success Notification. Review source,
+Livewire tests and browser behavior rather than inferring delivery from an
+audit event.
 
 ## 12. Journal table references
 

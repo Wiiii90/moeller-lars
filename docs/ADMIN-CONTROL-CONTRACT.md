@@ -68,6 +68,12 @@ Use discrete semantic commits:
 - rich text: semantic editor change/blur according to the canonical editor flow, not a timer.
 
 Always normalize and compare with the persisted value before writing. Activity/Audit records successful writes; it is not the persistence trigger.
+Nor is it the Notification trigger: after validating a changed persisted
+value, the owning admin Action/callback must call the canonical
+`AdminNotifier` to deliver the mailbox + immediate header projection.
+Keep that call in one owner. Duplicate modal `wire:change` and
+`afterStateUpdated` paths must never produce two writes/Notifications.
+Test changed, no-op and invalid values plus close/reopen in Livewire.
 
 `wire:model.live.debounce.*`, Filament `->debounce(...)`, `searchDebounce(...)`, `setTimeout`-based persistence and polling-based persistence are forbidden **when they trigger writes**. Changing a timer value does not make timer-driven persistence acceptable.
 

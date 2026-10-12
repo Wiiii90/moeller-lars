@@ -43,6 +43,41 @@ Ordinary one-off admin messages receive an origin-generated Notification source 
 
 When a successful admin mutation produced Activity in the same request, `AdminActivityNotificationContext` supplies the canonical Activity presentation and audit event id. The resulting mailbox Notification uses that audit event as its durable source/context rather than inventing a second success description.
 
+## Admin mutation feedback integration
+
+**Persistence, Activity and Notification are independent**, not an
+automatic pipeline. `AdminAuditService::record()` appends Activity and
+`AdminActivityNotificationContext` holds a presentation to be consumed if
+someone calls `AdminNotifier::notification()`. Neither automatically
+sends a Notification after a database write.
+
+Every authenticated **editorial** UI mutation owner must enforce:
+`validate → mutate via canonical Domain service → inspect actual changed
+result → refresh UI state → AdminNotifier success (if changed)`.
+
+Inbox-only user interactions (mark read/unread, pin/unpin, dismiss or
+delete a Notification) are explicitly exempt from creating another
+Notification, preventing self-generating messages. Such exceptions must
+be documented at the owning user action, not inferred for unrelated edits.
+Notification delivery must happen after successful mutation; a no-op,
+failed validation or rolled-back operation emits no success message.
+For nested/selected actions, put feedback at the single existing
+mutation boundary; do not duplicate notifications in outer Actions.
+If the operation also generates Activity, the notifier consumes its
+canonical Change/Details/audit-event context rather than creating
+competing descriptions. Non-admin/background services may need a
+different recipient and should not be forced to emit an admin UI event.
+
+**Required proof:** for representative edit/selection/ordering flows
+including Pages/Home heading, Home List/Contact child, General, Journal,
+Custom Page, Gallery and Storage, exercise the **real** Livewire action/
+form-update path. Assert new stored data, Activity, one mailbox record
+and one `admin-header-notification` event. Repeat the same value and
+test invalid input: no success Notification and no duplicate audit.
+Close/reopen edits to confirm persisted state. A test merely asserting
+a Domain service updated a row does not prove Notification delivery.
+Source inspection and unexecuted tests are hypotheses, not runtime proof.
+
 ## Header shell
 
 The header surface is a persisted SPA-shell element rendered through the panel-level `BODY_END` hook, **after** the page's `.admin-workspace` element in document order. It is deliberately outside Livewire page/topbar components so Livewire `@persist` can keep the same DOM while the one-time `admin-notifications.js` controller keeps queue, timer and remaining-lifetime state across `wire:navigate` visits. This order is required for CSS anchor positioning: Filament's native scroll lock fixes the document body for scrollable pages with an open dialog, and an earlier fixed Notification cannot anchor to a later workspace in that state. Neither the scroll-lock owner nor Notification sizing/animation has an alternate modal-specific path.

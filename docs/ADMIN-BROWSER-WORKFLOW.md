@@ -136,6 +136,15 @@ Use these terms precisely:
 
 When source advances after the last browser build, the new source is pending browser review even if an older candidate was accepted in part.
 
+**Admin mutation acceptance additionally requires functional evidence**:
+verify a real semantic field change (including Left → Right on Page Heading)
+causes persistence, a single immediate header Notification and a durable
+mailbox message; close/reopen preserves the state. Repeat the same value
+and an invalid value: no success feedback. Check nested Home List/Contact,
+mixed selection and other representative edit surfaces. Test execution
+and browser acceptance must be reported separately; source-only work must
+not claim either.
+
 ## Handoff rule
 
 A continuation prompt must state which collaboration mode is active: direct interactive dev, worker orchestration or mixed.

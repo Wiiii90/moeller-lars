@@ -161,7 +161,21 @@ Edit autosave must follow `ADMIN-CONTROL-CONTRACT.md`: discrete semantic changes
 
 `AdminDialog::edit()` routes discrete `wire:change` events through Filament's native `callMountedAction()` lifecycle (form validation, Action hooks and its database transaction). Its shared `after()` hook calls Filament's `Action::halt()` after successful persistence, committing the transaction while leaving the Edit modal mounted. This avoids a second project-owned Action executor. The native `X` only closes/unmounts the modal; the domain service remains responsible for comparing persisted values and recording actual changes in Activity/Audit. No separate `Save` or `Save and exit` path is added.
 
-The native Filament `X` executes only `unmountAction()`. A text input's final browser `change` on blur remains an ordinary autosave event; suppressing that event would discard the last edit. Livewire 4.4 queues non-async Actions on the same component while another Action request is active, so edit persistence and native close require no second client-side close handler, custom lock, timeout or focus-interception path. The shared Edit `after()` hook only keeps the modal open; notifications for actual persisted changes continue to come from the existing canonical domain actions via `AdminNotifier`. No extra Filament success/failure notification branch is installed by the Edit adapter.
+The native Filament `X` executes only `unmountAction()`. A text input's final browser `change` on blur remains an ordinary autosave event; suppressing that event would discard the last edit. Livewire 4.4 queues non-async Actions on the same component while another Action request is active, so edit persistence and native close require no second client-side close handler, custom lock, timeout or focus-interception path. The shared Edit `after()` hook only keeps the modal open. **Neither**
+`AdminDialog::edit()`, a Domain save, nor the Audit context automatically
+produces a Notification. The existing Action owner or an intentionally
+shared mutation-feedback boundary must call `AdminNotifier` after verifying
+an actual change. Dynamically visible fields using `afterStateUpdated`
+may use that field boundary instead of the form Action, but not both.
+The shared adapter does not install a second success/failure channel.
+
+An Edit regression must prove the complete observable lifecycle: change
+persists, Activity is accurate, one durable mailbox Notification and one
+immediate `admin-header-notification` event are created on real change,
+the dialog remains mounted, and close/reopen shows the value. No-op,
+validation failure and a duplicate modal-level event cannot create a
+success Notification. Test both form-level and field-level callbacks. See
+`ADMIN-NOTIFICATION-CONTRACT.md` and `TESTING.md`.
 
 Undo must extend the existing Activity/Audit receipt architecture. Do not create an independent dialog snapshot/rollback system. An Undo action may only be shown for mutations that have safe current receipts; applying Undo creates inverse editorial actions through the canonical `AdminUndoService` path.
 

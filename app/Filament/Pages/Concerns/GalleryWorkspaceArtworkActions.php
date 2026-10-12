@@ -92,7 +92,7 @@ trait GalleryWorkspaceArtworkActions
                         $actor = auth()->user();
                         if ($actor instanceof User) {
                             try {
-                                app(AdminNotifier::class)->both(
+                                app(AdminNotifier::class)->notification(
                                     user: $actor,
                                     sourceId: 'media-cleanup:asset-'.(int) $asset->getKey(),
                                     title: 'File cleanup failed',

@@ -704,10 +704,16 @@ final class HomePresentation extends Page
         if ($parents === [] && $children === []) {
             return;
         }
-        app(HomePresentationEditorialService::class)->changeSelection(
+        $changed = app(HomePresentationEditorialService::class)->changeSelection(
             $this->settings(), $this->componentTemplate(), $parents, $children, $published ? 'publish' : 'unpublish',
         );
         $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(
+                title: $published ? 'Selected Home items published' : 'Selected Home items unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function moveComponent(int $index, string $expectedType, string $direction): void

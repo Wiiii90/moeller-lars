@@ -4,39 +4,30 @@ Use this file when a long orchestration/review chat is becoming too large and th
 
 The goal is a lossless operational handoff, not a summary for casual reading.
 
-## Active parallel-`dev` continuation mode (2026-10-12)
+## Current direct-`dev` continuation mode (2026-10-12)
 
-The current user has explicitly requested **two separate continuation chats at
-the same time**, one admin-facing, one public-facing. This mode takes precedence
-over the older worker-branch examples below until the user changes it.
+The former public-facing parallel chat has ended. Create **one complete
+standalone continuation prompt** for the current unified admin/public project
+unless the user expressly asks for multiple prompts. Retain the capability
+to coordinate parallel agents only if another chat starts.
 
-- Prepare **two complete, standalone copyable prompts** when requested. The
-  admin prompt resumes iterative admin browser/functional repair; the public
-  prompt starts by auditing the public routing/controllers/Blade/CSS/JS,
-  responsiveness, legacy runtime and public/admin boundaries before repairing
-  justified public defects. Each prompt must name the other concurrent chat.
-- Both chats use `Wiiii90/moeller-lars`, directly on shared `dev` only:
-  **no side branches, worktrees, PR integration, CI reads/runs/dispatches/logs,
-  or deployment**. The public chat must not import admin-only layout rules as
-  public visual specifications; both reuse one Domain/media/publication stack.
-- Every chat records its initial head but **never assumes it remains current**.
-  Before each commit, re-read remote `dev`, inspect changes since its previous
-  base (especially shared files), adapt the patch/verify its net diff, then
-  commit against the updated head using an expected-SHA atomic ref update.
-  Retry conflicts only after inspection; no force push, reset, rebase or silent
-  overwrite of the other chat.
-- Repository documents are portable; local `P:\moeller-lars` is a user Windows
-  checkout, not necessarily mounted in the new ChatGPT runtime. Discover GitHub
-  tools first when that checkout is absent. Do not invent a browser session,
-  test run, Docker mount, command output or acceptance evidence.
-- Respect the user's productive **direct audit + implementation + independent
-  diff review** workflow: do not convert it to worker-only delegation just
-  because a historical section mentions worker prompts. Limit the scope to
-  the chat's surface and its genuinely needed shared Domain dependencies.
-- State the exact repository head from the moment of handoff, then instruct
-  both sessions to refresh it immediately. State any outstanding runtime/browser
-  acceptance separately from confirmed source work; current user feedback
-  supersedes stale test/source claims.
+- Repository `Wiiii90/moeller-lars`, **`dev` only**: no side branches,
+  worktrees, PRs, CI reads/runs/logs or deployment.
+- Refresh remote HEAD at the start and before every commit, compare any
+  concurrent changes, review overlaps, commit atomically using expected-SHA
+  fast-forward; never force/reset or overwrite another worker.
+- The Windows checkout `P:\moeller-lars` belongs to the user and may be
+  absent in a fresh ChatGPT environment. Discover available GitHub tools,
+  do not invent a local browser or successful test run.
+- Source-verified, test-authored, test-executed, browser-reviewed and
+  user-accepted are **different statuses**. Rejected current browser
+  behavior wins over stale summaries.
+- Handoff the **mandatory admin mutation feedback invariant**: trace
+  persisted change → audit → explicit `AdminNotifier` →
+  `admin-header-notification` event / durable mailbox; test no-ops,
+  failure, dialog close/reopen and non-heading editors. A notification is
+  not automatically emitted by saving or auditing.
+- Keep unreconciled issues and known risk plainly listed, not labeled done.
 
 ## 1. Core requirement
 
@@ -217,7 +208,7 @@ For historical parallel branch workers (only when that different mode is express
 - do not mutate historical feature branches;
 - no rebase/merge/deploy unless requested.
 
-**This branch-worker workflow does not apply to the active two-chat shared-`dev` mode.**
+**This branch-worker workflow does not apply to the current direct shared-`dev` mode.**
 In that mode, both independent chats commit directly to `dev` after
 pre-commit HEAD reconciliation and expected-SHA fast-forward updates.
 

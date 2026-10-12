@@ -101,11 +101,23 @@ trait HomePresentationChildren
      */
     private function persistHomeChild(array $args, string $operation, array $payload = []): void
     {
-        app(HomePresentationEditorialService::class)->mutateChild(
+        $changed = app(HomePresentationEditorialService::class)->mutateChild(
             $this->settings(), $this->componentTemplate(),
             (int) $args['index'], (string) $args['type'], $operation, $args['child'] ?? null, $payload,
         );
         $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(
+                title: match ($operation) {
+                    'add' => 'Home item added',
+                    'update' => 'Home item saved',
+                    'publish' => ($payload['published'] ?? false) ? 'Home item published' : 'Home item unpublished',
+                    'delete' => 'Home item deleted',
+                    default => 'Home item order updated',
+                },
+                status: 'success',
+            );
+        }
     }
 
     /** @return list<mixed> */
@@ -163,7 +175,6 @@ trait HomePresentationChildren
                     ? $this->homeListPayload($data)
                     : $this->homeContactPayload($data);
                 $this->persistHomeChild($args, 'add', $payload);
-                app(AdminNotifier::class)->notification('Home item added', status: 'success');
             }), 'Add item', AdminDialogSize::Large);
     }
 

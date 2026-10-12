@@ -548,7 +548,7 @@ final class ListMediaAssets extends Page
         };
 
         try {
-            app(AdminNotifier::class)->both(
+            app(AdminNotifier::class)->notification(
                 user: $actor,
                 sourceId: 'storage-capacity:'.$status,
                 title: match ($status) {
@@ -1020,7 +1020,7 @@ final class ListMediaAssets extends Page
                 $actor = auth()->user();
                 if ($actor instanceof User) {
                     try {
-                        app(AdminNotifier::class)->both(
+                        app(AdminNotifier::class)->notification(
                             user: $actor,
                             sourceId: 'media-cleanup:asset-'.$assetId,
                             title: 'File cleanup failed',

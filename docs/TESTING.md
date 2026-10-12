@@ -118,6 +118,22 @@ Good permanent tests protect examples such as publication snapshot integrity, ap
 
 Avoid permanent tests whose main assertion is that a particular CSS class, source filename, method call spelling or repair-era component still exists. If centralization itself is the durable contract, test the smallest architecture rule that proves it and keep that test under `Architecture`.
 
+An authenticated admin mutation needs a four-layer vertical regression:
+1. Domain service persists correctly and returns an accurate changed/no-op result;
+2. a changed operation records the appropriate append-only Activity/Audit;
+3. its real Filament/Livewire action or field-update request invokes
+   `AdminNotifier`, creates one durable mailbox entry and dispatches
+   `admin-header-notification`;
+4. close/reopen and browser inspection confirm the visible field state and
+   header behavior. Repeat a no-op and validation failure; neither creates
+   a success Notification or duplicate Activity.
+
+This specifically covers Pages and Home Heading controls, General settings,
+Journal, Gallery, Custom Page, Storage, Home parent/child components and
+bulk actions. A test that only invokes the Domain service does not prove
+Notification delivery. An authored but unexecuted test supplies no runtime
+evidence.
+
 For UI presentation, source review and browser/product acceptance remain distinct evidence. A unit or source-string test cannot establish visual correctness. A successful Playwright performance flow establishes the tested interaction/request contract; it does not establish visual/product acceptance of the complete admin.
 
 ## Regression policy

@@ -197,3 +197,16 @@ it('owns Notification delivery without framework notification objects or paralle
             ->not->toContain('->transient()');
     }
 });
+
+
+it('forbids legacy notification methods at every current application callsite', function (): void {
+    foreach (File::allFiles(app_path()) as $file) {
+        if ($file->getExtension() !== 'php') {
+            continue;
+        }
+
+        $source = File::get($file->getRealPath());
+        expect(preg_match('/app\s*\(\s*AdminNotifier::class\s*\)\s*->\s*(?:both|inbox)\s*\(/', $source))
+            ->toBe(0, 'Removed AdminNotifier API in '.$file->getRelativePathname());
+    }
+});

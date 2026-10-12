@@ -221,8 +221,14 @@ Administrative state has three distinct owners:
 - **Publication** — Working/LIVE/version state and publication operations.
 
 `App\Domain\Admin\AdminNotifier::notification()` is the single Notification write API. It persists the Dashboard mailbox record first and uses the project-owned `admin-header-notification` event/session channel only as the immediate presentation projection. There is no separate header-only, inbox-only or `both()` application API. `AdminActivityNotificationContext` reuses canonical Activity presentation and audit identity for successful mutation Notifications.
+The Domain service and append-only audit do **not** implicitly call the
+notifier. Every authenticated admin UI mutation must explicitly bridge
+its real success/no-op result into `AdminNotifier` exactly once at its
+single Action/field mutation owner; no-op and failed changes must emit
+no success message. This is verified in Livewire tests for data + audit
++ mailbox + header delivery, and accepted separately in the browser.
 
-The authenticated Filament admin uses the framework-native SPA mode. The header Notification surface is rendered through the layout-level `BODY_START` hook, outside Livewire page/topbar components, and is persisted with Livewire `@persist`. Page workspaces are replaced through Livewire navigation. Public-site destinations, downloads and separate application surfaces such as Pulse remain document boundaries.
+The authenticated Filament admin uses the framework-native SPA mode. The header Notification surface is rendered through the layout-level `BODY_END` hook, **after** the workspace DOM and outside Livewire page/topbar components, and is persisted with Livewire `@persist`. Page workspaces are replaced through Livewire navigation. Public-site destinations, downloads and separate application surfaces such as Pulse remain document boundaries.
 
 `AdminNotification` remains integrated into `DashboardFeed`, retention, pins and read/unread state. Stable `source_id` values provide `(user_id, source_id)` idempotency and Notifications may carry bounded action/entity/audit/publication context. Background jobs use the same notifier with an explicit recipient; without a matching browser actor they create only the durable mailbox projection.
 
