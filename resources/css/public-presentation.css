@@ -19,6 +19,7 @@
     --public-section-gap: 3.55rem;
     --public-page: #777;
     --public-surface: #fff;
+    --public-content-surface: #fbfaf7;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-ink: #555;
     --public-muted: #777;
@@ -425,6 +426,7 @@ body {
 #content {
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
+    background: var(--public-content-surface);
 }
 
 /* Only genuinely empty section pages without a configured heading fill the

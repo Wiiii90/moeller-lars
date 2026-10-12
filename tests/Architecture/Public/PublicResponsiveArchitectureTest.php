@@ -22,6 +22,8 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('min(var(--public-content-padding)')
         ->toContain('--public-content-block-inset: 2rem;')
         ->toContain('--public-shell-gap: .75rem;')
+        ->toContain('--public-content-surface: #fbfaf7;')
+        ->toContain('background: var(--public-content-surface);')
         ->toContain('--public-short-page-min-height: 15rem;')
         ->toContain('--public-section-gap: 3.55rem;')
         ->toContain('min-height: var(--public-short-page-min-height);')
