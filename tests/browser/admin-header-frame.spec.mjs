@@ -126,3 +126,40 @@ test('Header Notification retains workspace width under native modal body scroll
         await expect(modal).toBeHidden();
     }
 });
+
+
+test('Header dismisses one current Notification at a time and advances its queue', async ({ page }) => {
+    const email = process.env.PLAYWRIGHT_ADMIN_EMAIL;
+    const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD;
+    test.skip(!email || !password, 'Local admin credentials are required');
+
+    await page.goto('/admin/login');
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await expect(page).toHaveURL(/\/admin\/dashboard(?:[/?#]|$)/);
+
+    await page.evaluate(() => {
+        for (const index of [1, 2, 3]) {
+            window.dispatchEvent(new CustomEvent('admin-header-notification', {
+                detail: { id: 'dismiss-regression-' + index, title: 'Message ' + index, status: 'info' },
+            }));
+        }
+    });
+
+    const header = page.locator('[data-admin-header-notification]');
+    const title = header.locator('[data-admin-header-notification-title]');
+    const count = header.locator('[data-admin-header-notification-counter]');
+    const dismiss = header.getByRole('button', { name: 'Dismiss notification' });
+
+    await expect(title).toHaveText('Message 1');
+    await expect(count).toHaveText('+2');
+    await dismiss.click();
+    await expect(title).toHaveText('Message 2');
+    await expect(count).toHaveText('+1');
+    await dismiss.click();
+    await expect(title).toHaveText('Message 3');
+    await expect(count).toBeHidden();
+    await dismiss.click();
+    await expect(header).toBeHidden();
+});
