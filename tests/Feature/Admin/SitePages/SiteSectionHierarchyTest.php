@@ -468,6 +468,141 @@ it('autosaves Pages toggles from field updates without a separate Action submit'
         ->assertSet('mountedActions.0.data.navigation_nesting_enabled', false);
 });
 
+it('defaults Pages workflow preferences off and autosaves each new toggle once', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    expect(PublicContentSetting::navigationNestingEnabled())->toBeTrue()
+        ->and(PublicContentSetting::pagesAutoPublish())->toBeFalse()
+        ->and(PublicContentSetting::pagesDeleteWithoutConfirmation())->toBeFalse()
+        ->and(app(PagesSettingsDialog::class)->fill()['skip_home'])->toBeFalse();
+
+    $component = Livewire::test(SitePages::class)->mountAction('pagesSettings')
+        ->assertSet('mountedActions.0.data.pages_auto_publish', false)
+        ->assertSet('mountedActions.0.data.pages_delete_without_confirmation', false);
+
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
+    $component->set('mountedActions.0.data.pages_auto_publish', true)
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
+        ->assertSet('mountedActions.0.name', 'pagesSettings');
+
+    expect(PublicContentSetting::pagesAutoPublish())->toBeTrue()
+        ->and(AuditEvent::query()->count())->toBe($auditCount + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount + 1);
+
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
+    $component->set('mountedActions.0.data.pages_delete_without_confirmation', true)
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
+        ->assertSet('mountedActions.0.name', 'pagesSettings');
+
+    expect(PublicContentSetting::pagesDeleteWithoutConfirmation())->toBeTrue()
+        ->and(PublicContentSetting::navigationNestingEnabled())->toBeTrue()
+        ->and(AuditEvent::query()->count())->toBe($auditCount + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount + 1);
+
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
+    $component->call('callMountedAction')->assertHasNoFormErrors();
+    expect(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount);
+
+    $component->call('unmountAction');
+    Livewire::test(SitePages::class)->mountAction('pagesSettings')
+        ->assertSet('mountedActions.0.data.pages_auto_publish', true)
+        ->assertSet('mountedActions.0.data.pages_delete_without_confirmation', true);
+
+    $schema = app(PagesSettingsDialog::class)->schema();
+    expect(array_map(static fn ($field): string => $field->getName(), array_filter($schema, static fn ($field): bool => method_exists($field, 'getName'))))
+        ->toBe(['navigation_nesting_enabled', 'skip_home', 'skip_target_section_id', 'pages_auto_publish', 'pages_delete_without_confirmation']);
+});
+
+it('creates Pages as drafts by default and publishes each supported type when configured', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    Livewire::test(SitePages::class)->mountAction('addPage')
+        ->set('mountedActions.0.data.type', SiteSectionType::CustomPage->value)
+        ->set('mountedActions.0.data.name', 'Draft by Default')
+        ->set('mountedActions.0.data.slug', 'draft-by-default')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    expect(SiteSection::query()->where('slug', 'draft-by-default')->value('state'))->toBe('hidden');
+
+    Livewire::test(SitePages::class)->mountAction('pagesSettings')
+        ->set('mountedActions.0.data.pages_auto_publish', true)
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    foreach ([
+        [SiteSectionType::CustomPage->value, 'Auto Custom', 'auto-custom'],
+        [SiteSectionType::Journal->value, 'Auto Journal', 'auto-journal'],
+        [SiteSectionType::Gallery->value, 'Auto Gallery', 'auto-gallery'],
+        [SiteSectionType::NavigationNode->value, 'Auto Group', null],
+    ] as [$type, $name, $slug]) {
+        $component = Livewire::test(SitePages::class)->mountAction('addPage')
+            ->set('mountedActions.0.data.type', $type)
+            ->set('mountedActions.0.data.name', $name);
+        if ($slug !== null) {
+            $component->set('mountedActions.0.data.slug', $slug);
+        }
+        if ($type === SiteSectionType::Journal->value) {
+            $component->set('mountedActions.0.data.template', JournalTemplate::Blog->value);
+        }
+
+        $component->call('callMountedAction')
+            ->assertHasNoFormErrors()
+            ->assertDispatched('admin-header-notification');
+
+        $section = SiteSection::query()->where('type', $type)->where('title', $name)->firstOrFail();
+        expect($section->state)->toBe('published')
+            ->and($section->slug)->toBe($slug);
+    }
+
+    expect(SiteSection::query()->where('slug', 'draft-by-default')->value('state'))->toBe('hidden');
+});
+
+it('skips Pages deletion confirmation only when configured and retains deletion safety rules', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $editor = app(SiteSectionEditorialService::class);
+    $withConfirmation = $editor->createCustomPage('Confirm First', 'confirm-first');
+    Livewire::test(SitePages::class)->mountAction('deletePage', ['section' => (int) $withConfirmation->getKey()])
+        ->assertSet('mountedActions.0.name', 'deletePage');
+    expect(SiteSection::query()->whereKey($withConfirmation->getKey())->exists())->toBeTrue();
+
+    Livewire::test(SitePages::class)->mountAction('pagesSettings')
+        ->set('mountedActions.0.data.pages_delete_without_confirmation', true)
+        ->assertHasNoFormErrors();
+
+    Livewire::test(SitePages::class)->mountAction('deletePage', ['section' => (int) $withConfirmation->getKey()])
+        ->assertDispatched('admin-header-notification');
+    expect(SiteSection::query()->whereKey($withConfirmation->getKey())->exists())->toBeFalse();
+
+    $bulkA = $editor->createCustomPage('Delete A', 'delete-a');
+    $bulkB = $editor->createCustomPage('Delete B', 'delete-b');
+    Livewire::test(SitePages::class)
+        ->set('selectedSectionIds', [(int) $bulkA->getKey(), (int) $bulkB->getKey()])
+        ->mountAction('deleteSelectedPages')
+        ->assertDispatched('admin-header-notification');
+    expect(SiteSection::query()->whereKey($bulkA->getKey())->exists())->toBeFalse()
+        ->and(SiteSection::query()->whereKey($bulkB->getKey())->exists())->toBeFalse();
+
+    $published = $editor->createCustomPage('Protected Published', 'protected-published');
+    $editor->updatePlacement($published, 'published', null);
+    $blocked = Livewire::test(SitePages::class)
+        ->mountAction('deletePage', ['section' => (int) $published->getKey()]);
+    expect(SiteSection::query()->whereKey($published->getKey())->exists())->toBeTrue();
+});
+
 it('autosaves Skip Home destination selection and avoids duplicate mutations on no-op', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     Filament::setCurrentPanel('admin');
@@ -554,6 +689,8 @@ it('uses the shared toggle control and the native autosave dialog without Pages 
         ->and($pages)->toContain("AdminControl::toggle('navigation_nesting_enabled'")
         ->and($pages)->toContain('$this->homeRouting->schema($onToggleUpdated)')
         ->and($pages)->toContain('$nesting->afterStateUpdated($onToggleUpdated);')
+        ->and($pages)->toContain("AdminControl::toggle('pages_auto_publish'")
+        ->and($pages)->toContain("AdminControl::toggle('pages_delete_without_confirmation'")
         ->and($routing)->toContain('$skipHome->afterStateUpdated($onToggleUpdated);')
         ->and($pages)->not->toContain('Placeholder::make(')
         ->and($pages)->not->toContain('Allow one child level below top-level pages')
