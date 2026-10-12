@@ -7,8 +7,8 @@
     </span>
 
     @if ($artwork->medium)
-        <span class="artwork-label__field artwork-label__field--medium">
-            <span class="artwork-label__prompt">Medium</span>
+        <span class="artwork-label__field artwork-label__field--material">
+            <span class="artwork-label__prompt">Material</span>
             <span class="artwork-label__writing"><span class="artwork-label__entry">{{ $artwork->medium }}</span></span>
         </span>
     @endif

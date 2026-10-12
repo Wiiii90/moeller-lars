@@ -40,7 +40,7 @@ it('uses the current content-fit public responsive contract', function (): void 
         ->toContain('.artwork-context-button__label {')
         ->toContain('white-space: nowrap;')
         ->toContain('.artwork-label__field {')
-        ->toContain('grid-template-columns: 3.1rem minmax(0, 1fr);')
+        ->toContain('flex: 1 1 0%;')
         ->toContain('.artwork-label__tail {')
         ->toContain('--public-label-handwriting:')
         ->toContain('.artwork-label__writing {')

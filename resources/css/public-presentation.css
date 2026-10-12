@@ -617,15 +617,17 @@ body {
     outline: 1px dotted var(--public-artwork-line-hover);
     outline-offset: 3px;
 }
+/* Printed names are intrinsically sized: writing starts immediately after
+   each label, never after a fixed text column. */
 .artwork-label__field {
-    display: grid;
-    grid-template-columns: 3.1rem minmax(0, 1fr);
+    display: flex;
     min-width: 0;
-    align-items: start;
-    column-gap: .28rem;
+    align-items: flex-start;
+    gap: .22rem;
 }
 .artwork-label__prompt {
     display: block;
+    flex: 0 0 auto;
     padding-top: .29rem;
     color: #746a5e;
     font-size: .56rem;
@@ -636,6 +638,7 @@ body {
 }
 .artwork-label__writing {
     display: block;
+    flex: 1 1 0%;
     min-width: 0;
     min-height: 1.4rem;
     padding-inline: .12rem;
@@ -666,10 +669,6 @@ body {
 }
 .artwork-label__tail--single {
     grid-template-columns: minmax(0, 1fr);
-}
-.artwork-label__tail .artwork-label__field {
-    grid-template-columns: 1.85rem minmax(0, 1fr);
-    column-gap: .1rem;
 }
 .artwork-label__entry--numeric {
     font-variant-numeric: tabular-nums;
@@ -720,7 +719,6 @@ body {
 .artwork-context-button--category {
     max-width: 7.5rem;
     padding-inline: .32rem;
-    border-bottom: 1px solid var(--public-plaque-rule);
     color: #332f2b;
     font-family: var(--public-index-typeface);
     font-size: 1.06rem;
@@ -738,10 +736,6 @@ body {
 .artwork-context-button:hover,
 .artwork-context-button:focus-visible {
     color: #171511;
-}
-.artwork-context-button--category:hover,
-.artwork-context-button--category:focus-visible {
-    border-bottom-color: #514b42;
 }
 .artwork-context-button:focus-visible {
     outline: 1px dotted #6d665f;
