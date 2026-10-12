@@ -284,7 +284,7 @@ trait HomePresentationChildren
             $options = $all;
         }
 
-        $platforms = array_column(SocialLinks::configured(PublicContentSetting::general()->getAttribute('social_links')), 'platform');
+        $platforms = array_column(SocialLinks::visible(PublicContentSetting::general()->getAttribute('social_links')), 'platform');
         $platformOptions = array_intersect_key(SocialLinks::options(), array_flip($platforms));
 
         return [

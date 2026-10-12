@@ -468,7 +468,7 @@ final class HomePresentation extends Page
                     'items' => []],
                 'contact' => ['type' => 'contact', 'children' => [
                     ['type' => 'public_email', 'published' => true],
-                    ['type' => 'social_links', 'published' => true, 'social_platforms' => array_column(SocialLinks::configured(PublicContentSetting::general()->getAttribute('social_links')), 'platform')],
+                    ['type' => 'social_links', 'published' => true, 'social_platforms' => array_column(SocialLinks::visible(PublicContentSetting::general()->getAttribute('social_links')), 'platform')],
                     ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
                 ]],
                 'legal_disclaimer' => ['type' => 'legal_disclaimer'],
