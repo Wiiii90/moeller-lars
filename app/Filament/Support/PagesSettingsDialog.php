@@ -18,12 +18,14 @@ final class PagesSettingsDialog
         private readonly HomeRoutingDialog $homeRouting,
     ) {}
 
-    /** @return array{navigation_nesting_enabled:bool,skip_home:bool,skip_target_section_id:?int} */
+    /** @return array{navigation_nesting_enabled:bool,skip_home:bool,skip_target_section_id:?int,pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
     public function fill(): array
     {
         return [
             'navigation_nesting_enabled' => PublicContentSetting::navigationNestingEnabled(),
             ...$this->homeRouting->fill(),
+            'pages_auto_publish' => PublicContentSetting::pagesAutoPublish(),
+            'pages_delete_without_confirmation' => PublicContentSetting::pagesDeleteWithoutConfirmation(),
         ];
     }
 
@@ -40,6 +42,8 @@ final class PagesSettingsDialog
                     'navigation_nesting_enabled' => $get('navigation_nesting_enabled'),
                     'skip_home' => $get('skip_home'),
                     'skip_target_section_id' => $get('skip_target_section_id'),
+                    'pages_auto_publish' => $get('pages_auto_publish'),
+                    'pages_delete_without_confirmation' => $get('pages_delete_without_confirmation'),
                 ]);
             };
 
@@ -51,6 +55,12 @@ final class PagesSettingsDialog
         return [
             $nesting,
             ...$this->homeRouting->schema($onToggleUpdated),
+            AdminControl::toggle('pages_auto_publish', 'Auto-publish new pages')
+                ->live()
+                ->afterStateUpdated($onToggleUpdated ?? static function (): void {}),
+            AdminControl::toggle('pages_delete_without_confirmation', 'Delete pages without confirmation')
+                ->live()
+                ->afterStateUpdated($onToggleUpdated ?? static function (): void {}),
         ];
     }
 
@@ -70,9 +80,11 @@ final class PagesSettingsDialog
 
             $updated = $this->settings->updatePublicContent($settings, [
                 'navigation_nesting_enabled' => $enabled,
+                'pages_auto_publish' => (bool) ($data['pages_auto_publish'] ?? $settings->getAttribute('pages_auto_publish')),
+                'pages_delete_without_confirmation' => (bool) ($data['pages_delete_without_confirmation'] ?? $settings->getAttribute('pages_delete_without_confirmation')),
             ]);
 
-            return $updated->wasChanged('navigation_nesting_enabled') || $changed;
+            return $updated->wasChanged(['navigation_nesting_enabled', 'pages_auto_publish', 'pages_delete_without_confirmation']) || $changed;
         });
     }
 }
