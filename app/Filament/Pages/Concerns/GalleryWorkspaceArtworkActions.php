@@ -150,7 +150,9 @@ trait GalleryWorkspaceArtworkActions
             ->label('Publish')
             ->action(function (array $arguments): void {
                 try {
-                    app(ArtworkPublicationService::class)->publish($this->actionArtwork($arguments));
+                    $artwork = $this->actionArtwork($arguments);
+                    $previousState = (string) $artwork->getAttribute('state');
+                    $updated = app(ArtworkPublicationService::class)->publish($artwork);
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Artwork cannot be published', $exception);
 
@@ -158,10 +160,12 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->notification(
-                    title: 'Artwork published',
-                    status: 'success',
-                );
+                if ($previousState !== (string) $updated->getAttribute('state')) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'Artwork published',
+                        status: 'success',
+                    );
+                }
             });
     }
 
@@ -170,12 +174,16 @@ trait GalleryWorkspaceArtworkActions
         $action = Action::make('unpublishArtwork')
             ->label('Unpublish')
             ->action(function (array $arguments): void {
-                app(ArtworkPublicationService::class)->unpublish($this->actionArtwork($arguments));
+                $artwork = $this->actionArtwork($arguments);
+                $previousState = (string) $artwork->getAttribute('state');
+                $updated = app(ArtworkPublicationService::class)->unpublish($artwork);
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->notification(
-                    title: 'Artwork unpublished',
-                    status: 'success',
-                );
+                if ($previousState !== (string) $updated->getAttribute('state')) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'Artwork unpublished',
+                        status: 'success',
+                    );
+                }
             });
 
         return AdminDialog::confirm(
