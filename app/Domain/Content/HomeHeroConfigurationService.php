@@ -98,7 +98,7 @@ final class HomeHeroConfigurationService
             'specific_year' => $this->nullableYear($artwork['pool_year'] ?? null),
             'manual_include_ids' => $this->positiveIntList($artwork['manual_include_ids'] ?? []),
             'show_details' => (bool) ($artwork['show_details'] ?? true),
-            'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? true),
+            'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? false),
             'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
             'enable_viewer' => (bool) ($artwork['enable_viewer'] ?? true),
         ];

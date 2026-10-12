@@ -527,7 +527,7 @@ it('keeps the four independent Hero display options in the existing configuratio
 
     $defaults = $service->configuration($settings);
     expect($defaults['show_details'])->toBeTrue()
-        ->and($defaults['show_gallery_link'])->toBeTrue()
+        ->and($defaults['show_gallery_link'])->toBeFalse()
         ->and($defaults['show_navigation'])->toBeFalse()
         ->and($defaults['enable_viewer'])->toBeTrue();
 

@@ -77,7 +77,7 @@ final class HomePresentation extends Page
 
     public bool $artworkShowDetails = true;
 
-    public bool $artworkShowGalleryLink = true;
+    public bool $artworkShowGalleryLink = false;
 
     public bool $artworkShowNavigation = false;
 
@@ -320,7 +320,9 @@ final class HomePresentation extends Page
             ->label('Settings')
             ->modalHeading('Home settings')
             ->fillForm(fn (): array => $this->homeSettingsFormState())
-            ->schema($dialog->schema())
+            ->schema(fn (): array => $dialog->schema(
+                fn (string $field, bool $value) => $this->persistHeroDisplayToggle($field, $value),
+            ))
             ->action(function (array $data) use ($dialog): void {
                 $changed = $dialog->save($data);
                 $this->reloadWorkspace();
@@ -334,6 +336,27 @@ final class HomePresentation extends Page
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    private function persistHeroDisplayToggle(string $field, bool $value): void
+    {
+        if (! in_array($field, ['show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer'], true)) {
+            throw new \InvalidArgumentException('Unsupported Hero display setting.');
+        }
+
+        // One existing audited mutation owner; no parallel Livewire/DB writer.
+        $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings(
+            $this->settings(), [$field => $value],
+        );
+        if (! $changed) {
+            return;
+        }
+
+        $this->reloadWorkspace();
+        app(AdminNotifier::class)->notification(
+            title: 'Home settings saved',
+            status: 'success',
+        );
     }
 
     public function addHeroArtworkAction(): Action

@@ -29,6 +29,8 @@ it('uses the shared artwork renderer for independent Hero controls without a sec
         ->toContain("'enableViewer' => \$heroConfiguration['enable_viewer']");
 
     expect($settings)
-        ->toContain("Toggle::make('show_navigation')")
-        ->toContain("Toggle::make('enable_viewer')");
+        ->toContain("heroDisplayToggle('show_navigation'")
+        ->toContain("heroDisplayToggle('enable_viewer'")
+        ->toContain('AdminControl::toggle($field, $label)')
+        ->toContain('afterStateUpdated(');
 });

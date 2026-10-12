@@ -23,7 +23,7 @@ final class HomePresentationEditorialService
         return [
             HomeTemplate::Artwork->value => [
                 'show_details' => true,
-                'show_gallery_link' => true,
+                'show_gallery_link' => false,
                 'show_navigation' => false,
                 'enable_viewer' => true,
                 'hero_mode' => 'automatic',

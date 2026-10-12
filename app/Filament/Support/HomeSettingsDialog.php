@@ -15,6 +15,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
+use Closure;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -62,7 +63,7 @@ final class HomeSettingsDialog
     }
 
     /** @return list<mixed> */
-    public function schema(): array
+    public function schema(?Closure $persistHeroToggle = null): array
     {
         return [
             Grid::make()
@@ -125,18 +126,10 @@ final class HomeSettingsDialog
                         ->options(['days' => 'Days', 'weeks' => 'Weeks'])
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
-                    Toggle::make('show_details')
-                        ->label('Show artwork information')
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                    Toggle::make('show_gallery_link')
-                        ->label('Show Gallery link')
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                    Toggle::make('show_navigation')
-                        ->label('Navigate Hero group')
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                    Toggle::make('enable_viewer')
-                        ->label('Open artwork viewer')
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    $this->heroDisplayToggle('show_details', 'Show artwork information', $persistHeroToggle),
+                    $this->heroDisplayToggle('show_gallery_link', 'Show Gallery link', $persistHeroToggle),
+                    $this->heroDisplayToggle('show_navigation', 'Navigate Hero group', $persistHeroToggle),
+                    $this->heroDisplayToggle('enable_viewer', 'Open artwork viewer', $persistHeroToggle),
                     Toggle::make('public_site_gate')
                         ->label('Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
@@ -232,6 +225,23 @@ final class HomeSettingsDialog
             'template' => $this->resolver->template()->value,
             ...$this->routingDialog->tableState(),
         ];
+    }
+
+    private function heroDisplayToggle(string $field, string $label, ?Closure $persist): Toggle
+    {
+        // Filament's modal wire:change does not reliably submit live toggle
+        // state. Use the same canonical state-update mechanism as Pages Settings.
+        $toggle = AdminControl::toggle($field, $label)
+            ->live()
+            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value);
+
+        if ($persist !== null) {
+            $toggle->afterStateUpdated(static function (mixed $state) use ($persist, $field): void {
+                $persist($field, (bool) $state);
+            });
+        }
+
+        return $toggle;
     }
 
     private function homeSection(HomePresentationSetting $settings): SiteSection
