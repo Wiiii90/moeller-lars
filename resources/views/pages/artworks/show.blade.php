@@ -73,14 +73,14 @@
 
             <nav class="artwork-detail__actions" aria-label="Artwork navigation">
                 <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}" aria-label="Open {{ $category->name }} gallery" title="{{ $category->name }} gallery">
-                    <span class="artwork-context-button__label">{{ $category->name }}</span>
+                    <span class="artwork-context-button__label">{{ $category->name }} gallery</span>
                 </a>
 
                 @if ($previousArtwork !== null)
                     <a class="artwork-context-button artwork-context-button--step artwork-context-button--previous"
                        href="{{ $preview->url(route('artworks.show', $previousArtwork->slug)) }}"
                        aria-label="Previous artwork" title="Previous artwork">
-                        <x-public-icon name="arrow-left" />
+                        <x-public-icon name="chevron-left" /><span>Previous</span>
                     </a>
                 @endif
 
@@ -88,7 +88,7 @@
                     <a class="artwork-context-button artwork-context-button--step artwork-context-button--next"
                        href="{{ $preview->url(route('artworks.show', $nextArtwork->slug)) }}"
                        aria-label="Next artwork" title="Next artwork">
-                        <x-public-icon name="arrow-right" />
+                        <span>Next</span><x-public-icon name="chevron-right" />
                     </a>
                 @endif
             </nav>
