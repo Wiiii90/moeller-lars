@@ -212,7 +212,7 @@ it('uses one reactive checkbox state owner for Pages and Dashboard selection', f
         ->toContain('$wire.selectedSectionIds.map(Number)')
         ->toContain('$el.checked =')
         ->toContain('$el.indeterminate =')
-        ->toContain("$el.setAttribute('aria-checked',")
+        ->toContain('$el.setAttribute(\'aria-checked\',')
         ->not->toContain('@checked($allVisibleSelected)')
         ->not->toContain('$selectionIndeterminate')
         ->and($dashboard)->toContain('wire:click.prevent="toggleSelectAll"')
