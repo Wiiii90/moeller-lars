@@ -465,6 +465,7 @@ it('uses the shared toggle control and the native autosave dialog without Pages 
         ->and($pages)->toContain("AdminControl::toggle('navigation_nesting_enabled'")
         ->and($pages)->toContain('schema(showHelperText: false)')
         ->and($pages)->not->toContain('Allow one child level below top-level pages')
+        ->and($pages)->toContain("->visible(fn (callable \$get): bool => \$childCount > 0 && (bool) \$get('navigation_nesting_enabled'))")
         ->and($routing)->toContain("AdminControl::toggle('skip_home'")
         ->and($controls)->toContain('Toggle::configureUsing');
 });

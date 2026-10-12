@@ -37,8 +37,8 @@ final class PagesSettingsDialog
                 ->live(),
             Placeholder::make('navigation_nesting_warning')
                 ->label('Flatten nested pages')
-                ->content('Turning nesting off moves '.$childCount.' child '.($childCount === 1 ? 'page' : 'pages').' to the top level in canonical order. Example: 4, 4.1, 4.2, 5 becomes 4, 5, 6, 7. Re-enabling nesting later does not restore previous parents automatically.')
-                ->visible(fn (callable $get): bool => $childCount > 0 && ! (bool) $get('navigation_nesting_enabled'))
+                ->content('Turning this off immediately moves '.$childCount.' child '.($childCount === 1 ? 'page' : 'pages').' to the top level. Re-enabling nesting does not restore the previous parents.')
+                ->visible(fn (callable $get): bool => $childCount > 0 && (bool) $get('navigation_nesting_enabled'))
                 ->columnSpanFull(),
             ...$this->homeRouting->schema(showHelperText: false),
         ];
