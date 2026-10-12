@@ -39,8 +39,8 @@ it('exposes one canonical component selector in Edit without an empty Legal Disc
         ->and($home)->toContain("Select::make('editor_kind')")
         ->toContain("'targetKind' => \$targetKind")
         ->and($customProjection)->toContain("'editable' => \$type !== 'legal_disclaimer'")
-        ->and($customRows)->toContain(':disabled="! \$pageComponent[\'editable\']"')
-        ->and($homeRows)->toContain(':disabled="! \$homeComponent[\'editable\']"');
+        ->and($customRows)->toContain(':disabled="! $pageComponent[\'editable\']"')
+        ->and($homeRows)->toContain(':disabled="! $homeComponent[\'editable\']"');
 });
 
 it('cannot invoke Filament attachment uploads from the canonical Rich Text toolbar', function (): void {
