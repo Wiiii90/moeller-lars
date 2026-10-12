@@ -214,7 +214,7 @@ it('edits and reorders List entries only through the owning component dialog', f
     $page = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
     expect($page->get('components')[0]['children'])->toBe([]);
     $page->assertDontSee('Add list item')
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'list'])
+        ->mountAction('editListComponent', ['componentIndex' => 0, 'componentType' => 'list'])
         ->assertMountedActionModalSee('List entries')
         ->fillForm([
             'type' => 'list',
@@ -260,7 +260,7 @@ it('persists List entry details and publication through the component Edit dialo
     ]]]);
 
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'list'])
+        ->mountAction('editListComponent', ['componentIndex' => 0, 'componentType' => 'list'])
         ->fillForm([
             'type' => 'list',
             'publication_state' => 'published',
