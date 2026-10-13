@@ -81,15 +81,15 @@ Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser
 
 | Modell | Erste Quelle | Status |
 | --- | --- | --- |
-| PHP-Klassen, Interfaces, Enums, Traits und statische Abhängigkeiten | `app/**/*.php` | Tokenizer-Generator erstellt; vollständiger Checkout-Lauf und umfassende Abdeckungsprüfung offen |
+| PHP-Klassen, Interfaces, Enums, Traits und statische Abhängigkeiten | `app/**/*.php` | **248 Typen und 900 interne Importkanten** als unabhängiger Quellkatalog, mit inkrementellem Blob-Diff gegen `dev` überprüft; nativer Tokenizer-Lauf offen |
 | Fachmodule und ihre Eintrittspunkte | `app/Domain`, `app/Http`, `app/Filament`, `app/Livewire` | Schwerpunktpfade quellengeprüft |
 | Physisches PostgreSQL-Schema und Constraints | ausgeführte, vollständige Migrationen in **isolierter Wegwerf-DB** | offen; Migrationsanzahl ist kein Schema |
 | Eloquent-Beziehungen | Relation-Methoden der Models | 26 Modelquellen / 48 explizite Kanten als JSON und Mermaid vorhanden; **physische FKs unabhängig offen** |
-| JSON-/Rich-Text-Komponenten | Validierung und Normalisierung (z. B. `CustomPageSetting`) | erste Typfamilien geprüft, Feldschema offen |
+| JSON-/Rich-Text-Komponenten | `CustomPageSetting`, Home-Editorial-Validatoren, Public Renderer | sechs persistierte Komponenten samt verschachtelten Feldregeln, Normalisierung und Public-Readiness quellenbelegt; **Runtime-/Import-Akzeptanz offen** |
 | Routes und Middleware | `routes/web.php`, `bootstrap/app.php`, Filament-Provider | Public-Routen und Read-Kontext geprüft, kompletter Runtime-Router offen |
 | Zustandsautomaten | Domain-Services und Guards | fünf aktuell untersuchte Modelle / 35 quellverankerte Kanten; weitere Zustände und indirekte Übergänge offen |
-| Ablauf-/Sequenzdiagramme | UI/Controller → Services → Persistenz/Events | erste zwei in diesem Ordner |
-| Browserinstanzen und -übergänge | Blade, Alpine/Livewire und `resources/js` | Dateiinventar; dynamische Verifikation offen |
+| Ablauf-/Sequenzdiagramme | UI/Controller → Services → Persistenz/Events | Publication, Restore/Revert/Reset, Admin Notifications, Exhibition Map und Public SPA als getrennte statische Quellflüsse; **Runtime-Races/Browser nicht getestet** |
+| Browserinstanzen und -übergänge | Blade, Alpine/Livewire und `resources/js` | konkrete SPA-Disposer, Map/Viewer/Slideshow/Matomo-Pfade und native Folio-Animation quellengeprüft; **dynamische Browser-/Accessibility-Abnahme offen** |
 | Deployment und externe Systeme | Docker-/Laravel-Konfiguration; Plattformgrenze | offen; keine erfundene Hosttopologie |
 
 ### Reihenfolge der weiteren Arbeit
