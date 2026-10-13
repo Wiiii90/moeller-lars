@@ -1,28 +1,14 @@
 <?php
 
-use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
-use App\Domain\Artwork\ArtworkMaterialPresetService;
-use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
-use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\ArtworkEditDialog;
-use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Support\AdminActivityFeed;
-use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
 use App\Models\ArtworkMedia;
-use App\Models\AuditEvent;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -34,12 +20,12 @@ beforeEach(function (): void {
 require_once __DIR__.'/GalleryFixtures.php';
 
 it('moves an artwork between Galleries without mutating its MediaAsset', function (): void {
-    $source = polishGallery();
-    $destination = polishGallery();
-    $asset = polishAsset();
-    $moved = polishArtwork($source, ['position' => 0]);
-    $remaining = polishArtwork($source, ['position' => 1]);
-    polishPrimary($moved, $asset);
+    $source = galleryFixtureCategory();
+    $destination = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $moved = galleryFixtureArtwork($source, ['position' => 0]);
+    $remaining = galleryFixtureArtwork($source, ['position' => 1]);
+    galleryFixturePrimary($moved, $asset);
 
     app(ArtworkGalleryAssignmentService::class)->reassign($moved, $destination);
 
@@ -51,13 +37,13 @@ it('moves an artwork between Galleries without mutating its MediaAsset', functio
 
 
 it('moves an artwork through the Gallery workspace action without losing its destination or MediaAsset', function (): void {
-    $source = polishGallery();
-    $destination = polishGallery();
-    $asset = polishAsset();
-    $moved = polishArtwork($source, ['position' => 0]);
-    $remaining = polishArtwork($source, ['position' => 1]);
-    polishPrimary($moved, $asset);
-    polishUnavailableGalleryAnalytics();
+    $source = galleryFixtureCategory();
+    $destination = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $moved = galleryFixtureArtwork($source, ['position' => 0]);
+    $remaining = galleryFixtureArtwork($source, ['position' => 1]);
+    galleryFixturePrimary($moved, $asset);
+    galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
         ->mountAction('moveArtworkToGallery', ['artwork' => $moved->getKey()])
@@ -76,11 +62,11 @@ it('moves an artwork through the Gallery workspace action without losing its des
 
 
 it('edits per-artwork ALT text and publishes an uploaded image without changing shared Storage metadata', function (): void {
-    $gallery = polishGallery();
-    $artwork = polishArtwork($gallery);
-    $image = polishAsset('image/jpeg', '');
-    polishThumbnail($image);
-    polishPrimary($artwork, $image);
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $image = galleryFixtureAsset('image/jpeg', '');
+    galleryFixtureThumbnail($image);
+    galleryFixturePrimary($artwork, $image);
     $publication = app(ArtworkPublicationService::class);
 
     expect($publication->mediaReady($image))->toBeFalse();
@@ -110,11 +96,11 @@ it('edits per-artwork ALT text and publishes an uploaded image without changing 
 
 
 it('edits an unassigned draft and reassigns it using the shared Artwork editor', function (): void {
-    $gallery = polishGallery();
-    $artwork = polishArtwork(null);
-    $asset = polishAsset('image/jpeg', '');
-    polishThumbnail($asset);
-    polishPrimary($artwork, $asset);
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork(null);
+    $asset = galleryFixtureAsset('image/jpeg', '');
+    galleryFixtureThumbnail($asset);
+    galleryFixturePrimary($artwork, $asset);
     $dialog = app(ArtworkEditDialog::class);
 
     $form = $dialog->fill($artwork);
@@ -131,7 +117,7 @@ it('edits an unassigned draft and reassigns it using the shared Artwork editor',
 
 
 it('updates an unassigned artwork without silently attaching it to a Gallery', function (): void {
-    $artwork = polishArtwork(null);
+    $artwork = galleryFixtureArtwork(null);
     $dialog = app(ArtworkEditDialog::class);
 
     $form = $dialog->fill($artwork);
@@ -144,11 +130,11 @@ it('updates an unassigned artwork without silently attaching it to a Gallery', f
 
 
 it('rejects detaching a published artwork through the shared editor without changing its metadata', function (): void {
-    $gallery = polishGallery();
-    $artwork = polishArtwork($gallery);
-    $asset = polishAsset('image/jpeg', 'A monochrome photograph of a sculpture');
-    polishThumbnail($asset);
-    polishPrimary($artwork, $asset);
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $asset = galleryFixtureAsset('image/jpeg', 'A monochrome photograph of a sculpture');
+    galleryFixtureThumbnail($asset);
+    galleryFixturePrimary($artwork, $asset);
     app(ArtworkPublicationService::class)->publish($artwork);
 
     $form = app(ArtworkEditDialog::class)->fill($artwork->fresh());

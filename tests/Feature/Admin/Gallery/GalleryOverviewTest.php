@@ -1,31 +1,9 @@
 <?php
 
 use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
-use App\Domain\Artwork\ArtworkMaterialPresetService;
-use App\Domain\Artwork\ArtworkPrimaryMediaService;
-use App\Domain\Artwork\ArtworkPublicationService;
-use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\PublicMedia;
-use App\Filament\Support\ArtworkEditDialog;
-use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Support\AdminActivityFeed;
-use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
-use App\Models\ArtworkMedia;
-use App\Models\AuditEvent;
-use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
-use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -34,14 +12,14 @@ beforeEach(function (): void {
 require_once __DIR__.'/GalleryFixtures.php';
 
 it('renders the six Gallery metrics and per-artwork analytics from one canonical reporting call', function (): void {
-    $gallery = polishGallery();
-    $artwork = polishArtwork($gallery, [
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery, [
         'state' => 'published',
         'position' => 0,
     ]);
-    $image = polishAsset();
-    polishPrimary($artwork, $image);
-    polishThumbnail($image);
+    $image = galleryFixtureAsset();
+    galleryFixturePrimary($artwork, $image);
+    galleryFixtureThumbnail($image);
 
     $reporting = new class((string) $artwork->getAttribute('analytics_key'))
     {
@@ -106,15 +84,15 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
 
 
 it('renders previews with incomplete drafts and invalid legacy primary rows without a 500', function (): void {
-    $gallery = polishGallery();
-    $broken = polishArtwork($gallery, ['title' => 'No primary media', 'position' => 0]);
-    $missingAlt = polishArtwork($gallery, ['title' => 'No image ALT text', 'position' => 1]);
-    $asset = polishAsset('image/jpeg', '');
-    polishThumbnail($asset);
-    polishPrimary($missingAlt, $asset);
-    $valid = polishArtwork($gallery, ['title' => 'Valid visible artwork', 'position' => 2]);
-    $video = polishAsset('video/mp4', 'Accessible moving-image description');
-    polishPrimary($valid, $video);
+    $gallery = galleryFixtureCategory();
+    $broken = galleryFixtureArtwork($gallery, ['title' => 'No primary media', 'position' => 0]);
+    $missingAlt = galleryFixtureArtwork($gallery, ['title' => 'No image ALT text', 'position' => 1]);
+    $asset = galleryFixtureAsset('image/jpeg', '');
+    galleryFixtureThumbnail($asset);
+    galleryFixturePrimary($missingAlt, $asset);
+    $valid = galleryFixtureArtwork($gallery, ['title' => 'Valid visible artwork', 'position' => 2]);
+    $video = galleryFixtureAsset('video/mp4', 'Accessible moving-image description');
+    galleryFixturePrimary($valid, $video);
 
     // Simulate a legacy published row that no longer has a primary usage.
     $broken->forceFill(['state' => 'published'])->save();

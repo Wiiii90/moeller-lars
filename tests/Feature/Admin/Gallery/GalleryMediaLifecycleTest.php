@@ -1,28 +1,15 @@
 <?php
 
-use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
-use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\PublicMedia;
-use App\Filament\Support\ArtworkEditDialog;
-use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Support\AdminActivityFeed;
-use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
 use App\Models\ArtworkMedia;
-use App\Models\AuditEvent;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -34,12 +21,12 @@ beforeEach(function (): void {
 require_once __DIR__.'/GalleryFixtures.php';
 
 it('detaches a draft from its Gallery without deleting artwork media or shared MediaAssets', function (): void {
-    $gallery = polishGallery();
-    $asset = polishAsset();
-    $detached = polishArtwork($gallery, ['position' => 0]);
-    $remaining = polishArtwork($gallery, ['position' => 1]);
-    polishPrimary($detached, $asset);
-    polishPrimary($remaining, $asset);
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $detached = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $remaining = galleryFixtureArtwork($gallery, ['position' => 1]);
+    galleryFixturePrimary($detached, $asset);
+    galleryFixturePrimary($remaining, $asset);
 
     app(ArtworkGalleryAssignmentService::class)->detach($detached);
 
@@ -52,12 +39,12 @@ it('detaches a draft from its Gallery without deleting artwork media or shared M
 
 
 it('deletes only the draft and its usages while preserving a shared MediaAsset', function (): void {
-    $gallery = polishGallery();
-    $asset = polishAsset();
-    $deleted = polishArtwork($gallery, ['position' => 0]);
-    $other = polishArtwork($gallery, ['position' => 1]);
-    polishPrimary($deleted, $asset);
-    polishPrimary($other, $asset);
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $deleted = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $other = galleryFixtureArtwork($gallery, ['position' => 1]);
+    galleryFixturePrimary($deleted, $asset);
+    galleryFixturePrimary($other, $asset);
 
     app(ArtworkDraftService::class)->delete($deleted);
 
@@ -69,10 +56,10 @@ it('deletes only the draft and its usages while preserving a shared MediaAsset',
 
 
 it('preserves replaced MediaAssets in the library even when they become unreferenced', function (): void {
-    $artwork = polishArtwork(polishGallery());
-    $oldAsset = polishAsset();
-    $newAsset = polishAsset();
-    polishPrimary($artwork, $oldAsset);
+    $artwork = galleryFixtureArtwork(galleryFixtureCategory());
+    $oldAsset = galleryFixtureAsset();
+    $newAsset = galleryFixtureAsset();
+    galleryFixturePrimary($artwork, $oldAsset);
 
     app(ArtworkPrimaryMediaService::class)->replaceAsset($artwork, $newAsset);
 
@@ -86,16 +73,16 @@ it('preserves replaced MediaAssets in the library even when they become unrefere
 it('accepts existing image and video MediaAssets as primary and rejects audio', function (): void {
     $service = app(ArtworkPrimaryMediaService::class);
 
-    $imageArtwork = polishArtwork(polishGallery());
-    $image = polishAsset('image/jpeg');
+    $imageArtwork = galleryFixtureArtwork(galleryFixtureCategory());
+    $image = galleryFixtureAsset('image/jpeg');
     $service->attachAsset($imageArtwork, $image);
 
-    $videoArtwork = polishArtwork(polishGallery());
-    $video = polishAsset('video/mp4');
+    $videoArtwork = galleryFixtureArtwork(galleryFixtureCategory());
+    $video = galleryFixtureAsset('video/mp4');
     $service->attachAsset($videoArtwork, $video);
 
-    $audioArtwork = polishArtwork(polishGallery());
-    $audio = polishAsset('audio/mpeg');
+    $audioArtwork = galleryFixtureArtwork(galleryFixtureCategory());
+    $audio = galleryFixtureAsset('audio/mpeg');
 
     expect((int) $imageArtwork->fresh()->artworkMedia()->where('role', 'primary')->value('media_asset_id'))->toBe((int) $image->getKey())
         ->and((int) $videoArtwork->fresh()->artworkMedia()->where('role', 'primary')->value('media_asset_id'))->toBe((int) $video->getKey())
@@ -104,15 +91,15 @@ it('accepts existing image and video MediaAssets as primary and rejects audio', 
 
 
 it('detaches Gallery artworks after their shared primary Media File is deleted from the Gallery workspace', function (): void {
-    $source = polishGallery();
-    $otherGallery = polishGallery();
-    $asset = polishAsset();
-    $deletedFromSource = polishArtwork($source, ['position' => 0]);
-    $remainingInSource = polishArtwork($source, ['position' => 1]);
-    $alsoAffected = polishArtwork($otherGallery, ['position' => 0]);
-    polishPrimary($deletedFromSource, $asset);
-    polishPrimary($alsoAffected, $asset);
-    polishUnavailableGalleryAnalytics();
+    $source = galleryFixtureCategory();
+    $otherGallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $deletedFromSource = galleryFixtureArtwork($source, ['position' => 0]);
+    $remainingInSource = galleryFixtureArtwork($source, ['position' => 1]);
+    $alsoAffected = galleryFixtureArtwork($otherGallery, ['position' => 0]);
+    galleryFixturePrimary($deletedFromSource, $asset);
+    galleryFixturePrimary($alsoAffected, $asset);
+    galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
         ->mountAction('deletePrimaryMedia', ['artwork' => $deletedFromSource->getKey()])
@@ -128,18 +115,18 @@ it('detaches Gallery artworks after their shared primary Media File is deleted f
 
 
 it('cleans Gallery membership when a shared primary file is deleted directly from Storage', function (): void {
-    $firstGallery = polishGallery();
-    $secondGallery = polishGallery();
-    $shared = polishAsset();
-    $other = polishAsset();
-    $first = polishArtwork($firstGallery, ['position' => 0]);
-    $kept = polishArtwork($firstGallery, ['position' => 1]);
-    $second = polishArtwork($secondGallery, ['position' => 0]);
-    polishPrimary($first, $shared);
-    polishPrimary($second, $shared);
-    polishPrimary($kept, $other);
-    polishThumbnail($shared);
-    polishThumbnail($other);
+    $firstGallery = galleryFixtureCategory();
+    $secondGallery = galleryFixtureCategory();
+    $shared = galleryFixtureAsset();
+    $other = galleryFixtureAsset();
+    $first = galleryFixtureArtwork($firstGallery, ['position' => 0]);
+    $kept = galleryFixtureArtwork($firstGallery, ['position' => 1]);
+    $second = galleryFixtureArtwork($secondGallery, ['position' => 0]);
+    galleryFixturePrimary($first, $shared);
+    galleryFixturePrimary($second, $shared);
+    galleryFixturePrimary($kept, $other);
+    galleryFixtureThumbnail($shared);
+    galleryFixtureThumbnail($other);
 
     app(ArtworkPublicationService::class)->publish($first);
     app(ArtworkPublicationService::class)->publish($second);

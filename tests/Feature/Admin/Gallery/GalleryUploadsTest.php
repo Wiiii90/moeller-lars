@@ -1,30 +1,14 @@
 <?php
 
-use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
-use App\Domain\Artwork\ArtworkMaterialPresetService;
-use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
-use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\ArtworkEditDialog;
-use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Support\AdminActivityFeed;
-use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
-use App\Models\ArtworkMedia;
-use App\Models\AuditEvent;
-use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
@@ -35,8 +19,8 @@ require_once __DIR__.'/GalleryFixtures.php';
 
 it('ingests a real image through Add artwork and publishes its primary ALT description', function (): void {
     Storage::fake(config('media.disk'));
-    $gallery = polishGallery();
-    polishUnavailableGalleryAnalytics();
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('addArtwork')
@@ -76,13 +60,13 @@ it('ingests a real image through Add artwork and publishes its primary ALT descr
 
 it('replaces primary media through Edit without deleting the old Storage file or carrying over its ALT', function (): void {
     Storage::fake(config('media.disk'));
-    $gallery = polishGallery();
-    $artwork = polishArtwork($gallery);
-    $oldAsset = polishAsset('image/jpeg', 'Previous file description');
-    polishThumbnail($oldAsset);
-    $previousPrimary = polishPrimary($artwork, $oldAsset);
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $oldAsset = galleryFixtureAsset('image/jpeg', 'Previous file description');
+    galleryFixtureThumbnail($oldAsset);
+    $previousPrimary = galleryFixturePrimary($artwork, $oldAsset);
     $previousPrimary->forceFill(['alt_text_override' => 'Previous artwork description'])->save();
-    polishUnavailableGalleryAnalytics();
+    galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
@@ -112,8 +96,8 @@ it('replaces primary media through Edit without deleting the old Storage file or
 
 it('turns a real direct Gallery upload into an editable and publishable artwork draft', function (): void {
     Storage::fake(config('media.disk'));
-    $gallery = polishGallery();
-    polishUnavailableGalleryAnalytics();
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
 
     $component = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->set('directPrimaryMedia', [UploadedFile::fake()->image('direct-artwork.jpg', 56, 40)])

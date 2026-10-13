@@ -1,31 +1,11 @@
 <?php
 
-use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
-use App\Domain\Artwork\ArtworkPrimaryMediaService;
-use App\Domain\Artwork\ArtworkPublicationService;
-use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\PublicMedia;
-use App\Filament\Support\ArtworkEditDialog;
-use App\Domain\Publication\PublicationService;
-use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Support\AdminActivityFeed;
-use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
-use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
-use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
-use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -34,7 +14,7 @@ beforeEach(function (): void {
 require_once __DIR__.'/GalleryFixtures.php';
 
 it('stores reusable Material presets without rewriting historical Artwork material text', function (): void {
-    $artwork = polishArtwork(polishGallery(), ['medium' => 'Oil on linen']);
+    $artwork = galleryFixtureArtwork(galleryFixtureCategory(), ['medium' => 'Oil on linen']);
 
     expect(app(ArtworkMaterialPresetService::class)->sync(['Oil on linen', 'Graphite']))->toBeTrue()
         ->and(app(ArtworkMaterialPresetService::class)->sync(['Oil on linen', 'Graphite']))->toBeFalse();

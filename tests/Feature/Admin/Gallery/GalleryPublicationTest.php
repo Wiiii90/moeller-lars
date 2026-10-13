@@ -1,29 +1,13 @@
 <?php
 
-use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
-use App\Domain\Artwork\ArtworkMaterialPresetService;
-use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
-use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\PublicMedia;
-use App\Filament\Support\ArtworkEditDialog;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Support\AdminActivityFeed;
-use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
-use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
-use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -34,9 +18,9 @@ beforeEach(function (): void {
 require_once __DIR__.'/GalleryFixtures.php';
 
 it('publishes browser-supported video primary media without requiring an image thumbnail', function (): void {
-    $artwork = polishArtwork(polishGallery());
-    $video = polishAsset('video/mp4');
-    polishPrimary($artwork, $video);
+    $artwork = galleryFixtureArtwork(galleryFixtureCategory());
+    $video = galleryFixtureAsset('video/mp4');
+    galleryFixturePrimary($artwork, $video);
 
     $published = app(ArtworkPublicationService::class)->publish($artwork);
 
@@ -47,23 +31,23 @@ it('publishes browser-supported video primary media without requiring an image t
 
 
 it('still requires the canonical public thumbnail for image publication', function (): void {
-    $artwork = polishArtwork(polishGallery());
-    $image = polishAsset();
-    polishPrimary($artwork, $image);
+    $artwork = galleryFixtureArtwork(galleryFixtureCategory());
+    $image = galleryFixtureAsset();
+    galleryFixturePrimary($artwork, $image);
 
     expect(app(ArtworkPublicationService::class)->mediaReady($image))->toBeFalse();
 
-    polishThumbnail($image);
+    galleryFixtureThumbnail($image);
 
     expect(app(ArtworkPublicationService::class)->mediaReady($image->fresh('variants')))->toBeTrue();
 });
 
 
 it('requires unpublish before detach and preserves the historical publication timestamp when unpublishing', function (): void {
-    $gallery = polishGallery();
-    $artwork = polishArtwork($gallery);
-    $video = polishAsset('video/mp4');
-    polishPrimary($artwork, $video);
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $video = galleryFixtureAsset('video/mp4');
+    galleryFixturePrimary($artwork, $video);
 
     $publication = app(ArtworkPublicationService::class);
     $published = $publication->publish($artwork);
@@ -82,9 +66,9 @@ it('requires unpublish before detach and preserves the historical publication ti
 
 
 it('rejects audio publication even if an invalid primary usage was inserted outside the canonical service', function (): void {
-    $artwork = polishArtwork(polishGallery());
-    $audio = polishAsset('audio/mpeg');
-    polishPrimary($artwork, $audio);
+    $artwork = galleryFixtureArtwork(galleryFixtureCategory());
+    $audio = galleryFixtureAsset('audio/mpeg');
+    galleryFixturePrimary($artwork, $audio);
 
     $publication = app(ArtworkPublicationService::class);
 
@@ -94,9 +78,9 @@ it('rejects audio publication even if an invalid primary usage was inserted outs
 
 
 it('renders a published video artwork through the public viewer with native controls and no autoplay', function (): void {
-    $artwork = polishArtwork(polishGallery());
-    $video = polishAsset('video/mp4');
-    polishPrimary($artwork, $video);
+    $artwork = galleryFixtureArtwork(galleryFixtureCategory());
+    $video = galleryFixtureAsset('video/mp4');
+    galleryFixturePrimary($artwork, $video);
     $published = app(ArtworkPublicationService::class)->publish($artwork);
     $actor = User::query()->findOrFail((int) auth('web')->id());
     app(PublicationService::class)->commit($actor);
@@ -113,9 +97,9 @@ it('renders a published video artwork through the public viewer with native cont
 
 
 it('notifies only when a Gallery publication action actually changes the artwork state', function (): void {
-    $gallery = polishGallery();
-    $artwork = polishArtwork($gallery);
-    polishPrimary($artwork, polishAsset('video/mp4'));
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    galleryFixturePrimary($artwork, galleryFixtureAsset('video/mp4'));
     $arguments = ['artwork' => $artwork->getKey()];
     $params = ['gallery' => $gallery->getKey()];
 

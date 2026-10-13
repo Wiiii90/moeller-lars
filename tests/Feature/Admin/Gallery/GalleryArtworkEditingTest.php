@@ -1,30 +1,12 @@
 <?php
 
-use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
-use App\Domain\Artwork\ArtworkMaterialPresetService;
-use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
-use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\PublicMedia;
 use App\Filament\Support\ArtworkEditDialog;
-use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Support\AdminActivityFeed;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
-use App\Models\ArtworkMedia;
-use App\Models\AuditEvent;
-use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
@@ -34,10 +16,10 @@ beforeEach(function (): void {
 require_once __DIR__.'/GalleryFixtures.php';
 
 it('offers per-artwork ALT text in the Gallery create and edit dialogs without changing the shared file', function (): void {
-    $gallery = polishGallery();
-    $asset = polishAsset('image/jpeg', '');
-    polishThumbnail($asset);
-    polishUnavailableGalleryAnalytics();
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset('image/jpeg', '');
+    galleryFixtureThumbnail($asset);
+    galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('addArtwork')
@@ -63,10 +45,10 @@ it('offers per-artwork ALT text in the Gallery create and edit dialogs without c
 
 
 it('repairs an existing media-less Gallery draft using the same Edit form and then publishes it', function (): void {
-    $gallery = polishGallery();
-    $draft = polishArtwork($gallery);
-    $asset = polishAsset('image/jpeg', '');
-    polishThumbnail($asset);
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery);
+    $asset = galleryFixtureAsset('image/jpeg', '');
+    galleryFixtureThumbnail($asset);
     $dialog = app(ArtworkEditDialog::class);
 
     $form = $dialog->fill($draft);
@@ -83,10 +65,10 @@ it('repairs an existing media-less Gallery draft using the same Edit form and th
 
 
 it('stores per-artwork ALT for all images in the existing batch direct-upload action', function (): void {
-    $gallery = polishGallery();
-    $asset = polishAsset('image/jpeg', '');
-    polishThumbnail($asset);
-    polishUnavailableGalleryAnalytics();
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset('image/jpeg', '');
+    galleryFixtureThumbnail($asset);
+    galleryFixtureUnavailableAnalytics();
 
     $row = ['media_asset_id' => (int) $asset->getKey(), 'title' => 'A Batch Artwork'];
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
@@ -108,12 +90,12 @@ it('stores per-artwork ALT for all images in the existing batch direct-upload ac
 });
 
 it('edits the ALT description through the Gallery Edit action while retaining shared Storage ALT', function (): void {
-    $gallery = polishGallery();
-    $artwork = polishArtwork($gallery);
-    $asset = polishAsset('image/jpeg', 'Storage-level description');
-    polishThumbnail($asset);
-    polishPrimary($artwork, $asset);
-    polishUnavailableGalleryAnalytics();
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $asset = galleryFixtureAsset('image/jpeg', 'Storage-level description');
+    galleryFixtureThumbnail($asset);
+    galleryFixturePrimary($artwork, $asset);
+    galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
@@ -132,12 +114,12 @@ it('edits the ALT description through the Gallery Edit action while retaining sh
 
 
 it('routes the Artwork EditRecord page through the same ALT-aware editing service', function (): void {
-    $gallery = polishGallery();
-    $artwork = polishArtwork($gallery);
-    $asset = polishAsset('image/jpeg', '');
-    polishThumbnail($asset);
-    polishPrimary($artwork, $asset);
-    polishUnavailableGalleryAnalytics();
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $asset = galleryFixtureAsset('image/jpeg', '');
+    galleryFixtureThumbnail($asset);
+    galleryFixturePrimary($artwork, $asset);
+    galleryFixtureUnavailableAnalytics();
 
     Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])
         ->fillForm([

@@ -1,34 +1,14 @@
 <?php
 
 use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
-use App\Domain\Artwork\ArtworkMaterialPresetService;
-use App\Domain\Artwork\ArtworkPrimaryMediaService;
-use App\Domain\Artwork\ArtworkPublicationService;
-use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\PublicMedia;
-use App\Filament\Support\ArtworkEditDialog;
-use App\Domain\Publication\PublicationService;
-use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Support\AdminActivityFeed;
-use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
 use App\Models\ArtworkMedia;
-use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
-use App\Models\User;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
-use Livewire\Livewire;
 
 
-function polishGallery(string $state = 'published'): ArtworkCategory
+function galleryFixtureCategory(string $state = 'published'): ArtworkCategory
 {
     $gallery = ArtworkCategory::query()->create([
         'slug' => 'gallery-'.fake()->unique()->uuid(),
@@ -40,7 +20,7 @@ function polishGallery(string $state = 'published'): ArtworkCategory
     return $gallery;
 }
 
-function polishArtwork(?ArtworkCategory $gallery, array $overrides = []): Artwork
+function galleryFixtureArtwork(?ArtworkCategory $gallery, array $overrides = []): Artwork
 {
     return Artwork::query()->create(array_merge([
         'artwork_category_id' => $gallery?->getKey(),
@@ -52,7 +32,7 @@ function polishArtwork(?ArtworkCategory $gallery, array $overrides = []): Artwor
     ], $overrides));
 }
 
-function polishAsset(string $mime = 'image/jpeg', string $alt = 'Artwork media'): MediaAsset
+function galleryFixtureAsset(string $mime = 'image/jpeg', string $alt = 'Artwork media'): MediaAsset
 {
     return MediaAsset::query()->create([
         'storage_key' => 'originals/'.fake()->unique()->uuid().($mime === 'video/mp4' ? '.mp4' : '.jpg'),
@@ -67,7 +47,7 @@ function polishAsset(string $mime = 'image/jpeg', string $alt = 'Artwork media')
     ]);
 }
 
-function polishPrimary(Artwork $artwork, MediaAsset $asset): ArtworkMedia
+function galleryFixturePrimary(Artwork $artwork, MediaAsset $asset): ArtworkMedia
 {
     return ArtworkMedia::query()->create([
         'artwork_id' => $artwork->getKey(),
@@ -77,7 +57,7 @@ function polishPrimary(Artwork $artwork, MediaAsset $asset): ArtworkMedia
     ]);
 }
 
-function polishThumbnail(MediaAsset $asset): MediaVariant
+function galleryFixtureThumbnail(MediaAsset $asset): MediaVariant
 {
     return MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
@@ -93,7 +73,7 @@ function polishThumbnail(MediaAsset $asset): MediaVariant
     ]);
 }
 
-function polishUnavailableGalleryAnalytics(): void
+function galleryFixtureUnavailableAnalytics(): void
 {
     app()->instance(ArtistReportingService::class, new class
     {
