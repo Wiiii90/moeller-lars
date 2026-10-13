@@ -425,25 +425,11 @@ For a task involving a dialog, inspect the actual shared `AdminDialog` adapter, 
 
 ## 17. Rich Text editor UI
 
-There is one central Rich Text technology: `AdminRichText` backed by Filament `MarkdownEditor`.
-
-Canonical embedded image reference:
-
-```markdown
-![](media:123)
-```
-
-Media insertion belongs with the editor controls/action area and uses the lazy Storage picker. Do not add a second free-standing media-upload subsystem, arbitrary external image URLs, TipTap/RichEditor or a parallel parser.
-
-Canonical asset ALT should be reused unless a product surface explicitly supports a true occurrence-level override. Journal structured Cover/Gallery currently use Storage ALT exclusively at runtime.
+The shared [ADMIN-CONTROL-CONTRACT.md](docs/ADMIN-CONTROL-CONTRACT.md#rich-text-and-reusable-media-selection) owns the `AdminRichText` / Filament `MarkdownEditor` integration, the canonical Storage `media:<id>` reference and the **explicit validated HTTP(S) external-image option**. Consult `SafeRichTextRenderer` / `SafeLinkPolicy` rather than forbidding a currently supported URL input or inventing a second parser.
 
 ## 18. Media picker behavior
 
-Use the central lazy `MediaAssetSelect` pattern.
-
-Do not eagerly `pluck()` hundreds of MediaAsset options merely because a normal Select supports preload.
-
-The picker should narrow by allowed media kind and query lazily. This is both a UI consistency and performance rule.
+See the same [canonical control owner](docs/ADMIN-CONTROL-CONTRACT.md#rich-text-and-reusable-media-selection) for `MediaAssetSelect`, allowed type/state filters, lazy search and the shared search debounce. Do not preload the Storage library or create feature-specific media pickers.
 
 ## 19. Performance as UI quality
 

@@ -43,6 +43,20 @@ These are intentionally specialized and remain canonical:
 
 Do not create alternative media pickers, rich-text editors, material selectors or color controls for one page.
 
+## Rich Text and reusable media selection
+
+The single rich-text editor is [`App\Filament\Support\AdminRichText`](../app/Filament/Support/AdminRichText.php), backed by Filament's native `MarkdownEditor`. It uses an explicit **adjacent Insert image control**, not Filament's built-in `attachFiles` upload; `fileAttachments(false)` prevents a second uncontrolled upload pipeline. Embedded canonical Storage images use [`RichTextMediaReference::markdown()`](../app/Domain/Content/RichTextMediaReference.php), serialized for example as:
+
+```markdown
+![](media:123)
+```
+
+The Insert image UI exposes **two supported choices** under the existing central editor: an available Storage image selected by `MediaAssetSelect`, **or** a valid external HTTP(S) image URL. External image URLs are not arbitrary unsafe schemes: [`SafeRichTextRenderer`](../app/Domain/Content/SafeRichTextRenderer.php) accepts external images only under `SafeLinkPolicy`, which rejects invalid URLs, credentials, control characters and unsupported schemes. The Alpine inserter likewise verifies HTTP(S) and rejects username/password URL components before inserting Markdown. External URLs are not `MediaAsset` IDs and do not confer canonical Storage lifecycle ownership. **Do not inaccurately forbid the supported external option**, nor introduce a second rich-text parser, upload subsystem or unrelated editor.
+
+The editor bridge commits on a **semantic blur/change or completed image insertion** in an Edit dialog, never per keystroke or an autosave timer. The canonical AST/parser and Validation layers own safe Rich Text semantics. Asset ALT is authoritative unless the specific consumer actually supports an occurrence-level override; structured Journal Cover/Gallery currently use Storage ALT at runtime.
+
+[`MediaAssetSelect`](../app/Filament/Support/MediaAssetSelect.php) is the single reusable Storage selector. Its `make()` / `makeId()` modes use Filament searchable controls with `getSearchResultsUsing()`, the shared **`AdminControl::SEARCH_DEBOUNCE_MS`**, a query restricted to `state = available`, and consumer-specific `imagesOnly` or allowed-MIME filters. Existing selected IDs are resolved individually for a label; search results are bounded and loaded only on query. **Never `pluck()`/preload the full Storage library** just because a Select supports it. Search is read-only; choosing the final asset is the semantic edit action.
+
 ## Native/Blade adapter
 
 Workspace searches, filters, pager controls and compact inline controls may remain native HTML where Filament state is not useful. They must use the shared admin field classes owned by `resources/css/admin/data-workspace.css`, `resources/css/admin/forms.css` and `resources/css/admin/task-surfaces.css` rather than page-local control styling. Table-level direct editors use the shared `admin-inline-select` / `admin-inline-input` geometry; static values aligned with those controls use `admin-inline-control-value`.

@@ -126,13 +126,14 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Quellstand 13.10.2026:** weitere Public-SPA-Änderung auf `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf` per Zwei-Eltern-Merge `973b66faf981985f854375f937c532def1f78e49` übernommen. Menü-Parent-Links bleiben absichtlich außerhalb der `wire:navigate`-Markierung; [SPA-Dokumentation](docs/architecture/public-spa-lifecycle.md) aktualisiert.
+**Quellstand:** `docs` bei `2c4fd9533721513c1e632800c6530b80420b5fd0` vor diesem Commit; `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf` ist nach letztem Merge synchron. Vor weiterer Arbeit HEADs erneut abfragen.
 
-**Duplikatbereinigung mit erhaltener Normsemantik:**
-- Journal Split/Fold in `docs/ADMIN-TABLE-CONTRACT.md` konsolidiert, `ui-skills.md` §12 verlinkt.
-- Allgemeine Rollen-, Marker-, Position- und Aktionsachsen ebenfalls im Tabellenvertrag vereinheitlicht; `ui-skills.md` §§7–8 verlinken.
-- Dialog-Overlay und gemessene Modal-/Scrollbar-Geometrie (Topbar/Sidebar, `.fi-main`, Fokus, Popovers, Field-Reihenfolge) in `docs/ADMIN-DIALOG-CONTRACT.md` als einen Owner übernommen; `ui-skills.md` §16 ersetzt durch Verweis. **Der Filament-5-Scroll-Lock-Vertrag samt pinned Patch bleibt erhalten.**
+**Gesicherte Konsolidierung:** Journal Split/Fold, gewöhnliche Tabellen-/Position-Regeln und Dialog-Geometrie haben eigene Norm-Owner in `ADMIN-TABLE-CONTRACT.md` bzw. `ADMIN-DIALOG-CONTRACT.md`; `ui-skills.md` §§7–8/12/16 verlinken. Jetzt auch Rich Text / Lazy-Media-Select zentral in `docs/ADMIN-CONTROL-CONTRACT.md`, `ui-skills.md` §§17–18 verlinken.
 
-Keine Runtime-/CSS-Änderung durch den Dokumentationsbranch, keine Browser-/CI-/DB-Tests ausgeführt.
+**Wichtiger korrigierter Widerspruch:** `AdminRichText` bietet neben `media:<id>` aus Storage eine **explizite externe Bild-URL-Option**; `SafeRichTextRenderer`/`SafeLinkPolicy` erlauben validierte HTTP(S)-Bild-URLs. Das frühere pauschale Verbot externer Bild-URLs war gegenüber dem aktuellen Code **falsch**. Keine Runtime-/UI-Änderung; Unit-Testquelle gelesen, nicht ausgeführt.
 
-**Unmittelbarer nächster Schritt:** Die übrigen Doppelungen in `ui-skills.md` (z. B. §17–18 Rich Text/Media-Picker, große Responsive-Sammlung) mit konkreten `ADMIN-CONTROL`-/`ADMIN-TABLE`-/Domain-Ownern vergleichen und nur eindeutig redundante Regeln entfernen. Danach Source-Audit und Querverweise validieren; weiter nachziehende `dev`-Commits vor jeder Arbeit prüfen.
+**Public SPA:** Neuer `wire:navigate`-Lebenszyklus unter [Public SPA](docs/architecture/public-spa-lifecycle.md), inklusive Vorab-Dispose und Ausschluss von Parent-Menülinks. Keine Browserabnahme behauptet.
+
+**Unmittelbar nächster Schritt:** Große responsive Duplikate in `ui-skills.md` §§21/22 gegen Table-/Control-/Dialog-Verträge analysieren und nur genau geprüfte allgemeine Regeln zentralisieren. Parallel neu eingetroffene `dev`-Commits aufnehmen, falls vorhanden.
+
+**Länger offen:** voller nativer PHP-Generator-Checkout, isolierter PostgreSQL-Katalog, echte Public-SPA-/Admin-Modal-E2E-Prüfung. Nicht CI oder `testing` verwenden.
