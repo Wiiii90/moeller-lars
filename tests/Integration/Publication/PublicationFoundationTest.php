@@ -11,12 +11,9 @@ use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-
-uses(RefreshDatabase::class);
 
 function publicationReviewContactPayload(): array
 {

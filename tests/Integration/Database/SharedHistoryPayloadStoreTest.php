@@ -5,10 +5,7 @@ use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-
-uses(RefreshDatabase::class);
 
 it('shares history payloads across Undo and Publication roots and collects them after the final reference is released', function (): void {
     $actor = User::factory()->admin()->create();

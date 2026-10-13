@@ -3,10 +3,7 @@
 use App\Domain\Migration\SiteSectionMigrationValidator;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-
-uses(RefreshDatabase::class);
 
 it('reconciles the invariants owned by the SiteSection migration validator', function (): void {
     $parent = ArtworkCategory::create(['name' => 'Paintings', 'slug' => 'paintings', 'show_on_home' => true]);
