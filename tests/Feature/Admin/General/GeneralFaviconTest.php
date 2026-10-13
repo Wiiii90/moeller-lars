@@ -32,6 +32,15 @@ it('searches favicon choices by filename and keeps the picker image-only and ava
         'state' => 'available',
     ]);
 
+    MediaAsset::query()->create([
+        'storage_key' => 'originals/picker-match-unavailable.png',
+        'original_filename' => 'picker-match-unavailable.png',
+        'mime_type' => 'image/png',
+        'byte_size' => 6,
+        'sha256' => hash('sha256', 'picker-match-unavailable.png'),
+        'state' => 'quarantined',
+    ]);
+
     $results = MediaAssetSelect::searchOptions('picker-match', imagesOnly: true);
 
     expect(array_keys($results))->toBe([(int) $image->id]);

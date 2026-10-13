@@ -18,7 +18,7 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/GeneralFixtures.php';
 
-it('keeps background mode geometry stable and maps shared color slots to existing fields', function (): void {
+it('updates separate persisted solid and gradient colors through the shared controls', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'background_mode' => 'solid',
         'background_color' => '#123456',

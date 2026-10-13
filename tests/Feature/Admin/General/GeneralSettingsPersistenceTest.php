@@ -108,6 +108,11 @@ it('delivers ticker feedback for General contact legal and social mutations', fu
                 && ($message['body'] ?? null) === 'Social links updated.'
                 && ($message['status'] ?? null) === 'success';
         });
+
+    $saved = PublicContentSetting::general();
+    expect($saved->getAttribute('contact_recipient_email'))->toBe('after@example.invalid')
+        ->and($saved->getAttribute('legal_disclaimer'))->toBe('After legal text.')
+        ->and($saved->getAttribute('social_links')[0]['url'])->toBe('https://example.invalid/after');
 });
 
 
