@@ -97,14 +97,19 @@ Do not compensate this alignment with page-local margins or padding.
 
 ## Component sequences
 
-Custom Page and Home (Custom / Under Construction) use the same hierarchy row
-primitives: **Position / Drag / Component / Content / Actions / Selection**.
-Component is a permanent editable select, even when filters disable drag
-ordering or at narrow widths. Never repeat its type in Content as responsive
-metadata. Content alone absorbs remaining space. Home and Custom Page
-share the five-action row grammar (Move up, Move down, Edit,
-Publish/Unpublish, Delete) and a nested List/Contact hierarchy. Nested rows
-support reorder, editorial actions and selection through the owning service.
+Custom Page and Home (Custom / Under Construction) share one **hierarchical row grammar** with the global columns **Position / Drag / Component / Content / Actions / Selection**. Position and Drag form a single leading ordering region. The parent and its List/Contact child rows align to the **same table axes**, including the Actions and terminal Selection columns. Do not render a separate nested `Content | Status | Actions` header or indent the whole child table. A restrained connector, if present, follows the parent drag-handle axis. Child rows may be denser but cannot float independently across columns.
+
+The **Component** column is permanently interactive at all supported widths: the select remains changeable even when Search, Type filtering or pagination disable canonical drag/reorder. Component and Content are distinct tracks across Wide/Compact/Narrow/Minimal; do not hide the type select or duplicate the type as Content metadata. Child **Kind** likewise retains its own aligned column. Content shows useful actual content (for Contact, a child count), not another type label. Narrow layouts yield supportive content before destroying this core editing affordance.
+
+The shared five-action order for parent components and nested children is **Move up, Move down, Edit, Publish/Unpublish, Delete**, with the owning domain guard deciding availability. A component's `published` flag and each List/Contact child's separate `published` flag are **not** an artificial Status column. Nested Edit dialog contextual actions mirror the available row semantics; dialog lifecycle and conversion confirmations remain with [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md).
+
+- A drag handle is enabled only when its **own sibling scope** contains at least two reorderable items and the complete canonical order is visible. Parent-component ordering and each child sequence are independent. Use native `wire:sort` / `wire:sort:item` / `wire:sort:handle` and shared `admin-drag-handle`; retain existing Move up/down keyboard actions.
+- The Component select is independent of reorder eligibility. Custom Page type conversion uses existing `AdminDialog::confirm()` and `CustomPageEditorialService::convertBlock()`; never gate it through `componentReorderEnabled()` or create a second mutation service.
+- Home editor offers **Image, Heading, Rich Text, Divider, List, Contact, Legal Disclaimer**. Heading and Rich Text serialize to `type=text` and Divider has Thin/Subtle/Strong/Dotted variants in Add/Edit. These are UI selections, not seven distinct persisted types: see [structured-components](architecture/structured-components.md).
+- Mixed parent/child Selection must use stable, scope-aware targets and one atomic domain mutation. Home uses the transactional Home editorial owner; Custom Page uses its canonical Custom Page editorial owner. Do not split a mixed selection into independent partial writes. The persistent shared bottom **Add component** row remains available through the existing Add Row primitive.
+- Notifications follow the [canonical Admin Notification contract](ADMIN-NOTIFICATION-CONTRACT.md#admin-mutation-feedback-integration). Their message count follows the **actual verified Activity set**, not a hardcoded one-per-action claim; no-op/invalid actions must not announce successful mutations.
+
+**Implementation sources:** [Custom Page component rows](../resources/views/filament/pages/partials/custom-page-workspace-sequence.blade.php), [Home component rows](../resources/views/filament/pages/partials/home-component-sequence.blade.php), [Custom Page editorial owner](../app/Domain/Content/CustomPageEditorialService.php), [Home editorial owner](../app/Domain/Content/HomePresentationEditorialService.php) and the shared `x-admin.row-action` / `admin-hierarchy` presentation classes. These are current source-backed requirements; no new browser acceptance is claimed here.
 
 ## Action order
 

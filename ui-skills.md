@@ -211,77 +211,13 @@ Rules:
 
 ## 10. Parent/child hierarchical tables
 
-When child rows are part of the same editorial table, they align to the **same global columns**.
-
-Current Custom Page reference, with Position and Drag sharing the ordering heading:
-
-Parent:
-
-```text
-[Position + Drag] [Component dropdown] [Content] [Actions] [Selection]
-```
-
-Child:
-
-```text
-[Position + Drag] [Kind] [Content] [Actions] [Selection]
-```
-
-**Component is an essential editable control, never a responsive optional column.**
-The inline Component type select stays visible and changeable at every supported
-width, even while filters or pagination disable drag sorting. Keep Component
-and Content as distinct tracks across Wide, Compact, Narrow and Minimal; reduce
-supportive content and compact Actions through the shared responsive system,
-not by hiding the type selector. Never repeat the component type under Content
-as responsive metadata. Content describes the component's actual text/media/
-items; e.g. a Contact component shows its child count, not the word “Contact”
-a second time. Child Kind similarly keeps its own aligned column rather than
-becoming duplicate Content metadata. Change type uses the existing shared
-`AdminDialog::confirm()` plus canonical
-`CustomPageEditorialService::convertBlock()`; never tie conversion eligibility
-to `componentReorderEnabled()` or create a second mutation path.
-
-Rules:
-
-- no nested `Content | Status | Actions` child header;
-- do not indent the entire child table and thereby destroy global alignment;
-- hierarchy may be shown with a restrained connector line;
-- connector axis aligns with the parent drag column/handle axis;
-- parent and child action cells use the same action-column geometry;
-- Selection remains the shared trailing utility column;
-- child rows may be more compact, but their column starts do not float.
+The single owner of Home and Custom Page component-table geometry and hierarchy is [ADMIN-TABLE-CONTRACT.md](docs/ADMIN-TABLE-CONTRACT.md#component-sequences). Both use the same global columns, a permanent editable Component selector, shared Actions and terminal Selection rail. Consult the current [Custom Page](resources/views/filament/pages/partials/custom-page-workspace-sequence.blade.php) and [Home](resources/views/filament/pages/partials/home-component-sequence.blade.php) Blade implementations before changing this structure. Do not introduce feature-local replacements for the common table/row primitives.
 
 ## 11. Home component table
 
-Home Custom and Under Construction share the accepted Custom Page hierarchy:
+Home Custom and Under Construction share the component sequence in [ADMIN-TABLE-CONTRACT.md](docs/ADMIN-TABLE-CONTRACT.md#component-sequences). Their editable display choices include Image, Heading, Rich Text, Divider, List, Contact and Legal Disclaimer; Heading/Rich Text are both serialized as the canonical `text` component. The [structured content model](docs/architecture/structured-components.md) owns JSON representation and the [Dialog contract](docs/ADMIN-DIALOG-CONTRACT.md) owns Edit/conversion semantics.
 
-```text
-[Position] [Drag] [Component] [Content] [Actions] [Selection]
-```
-
-The permanent Component selector exposes Image, Heading, Rich Text, Divider,
-List, Contact and Legal Disclaimer. Divider subtype (Thin/Subtle/Strong/Dotted)
-belongs to its Add/Edit schema. Content must not repeat the component type.
-The five action roles are Move up, Move down, Edit,
-Publish/Unpublish and Delete. Published state belongs to each component and
-its List/Contact children, not an artificial Status column. All available
-Actions in nested Edit dialogs mirror the corresponding row semantics.
-
-List and Contact children share the canonical parent/child hierarchy,
-stable selection targets, explicit ordering, and publication semantics.
-Mixed parent/child selection must be applied through the transactional
-Home editorial owner, not separate partial writes. Type selection remains
-interactive at narrow widths even when drag/reorder is disabled.
-Search/Type filters disable reordered projections, never the type selector.
-The bottom shared Add component row remains available.
-
-**Mutation feedback:** Home parent and child mutations use the canonical
-domain change result and exactly one `AdminNotifier` success notification
-per real change, visible in the header and durable mailbox. This includes
-nested editing, sorting, publishing and deleting, plus selected-item actions.
-No-op/invalid mutations create no success Notification. Review source,
-Livewire tests and browser behavior rather than inferring delivery from an
-audit event.
+**Mutation feedback is governed by the [Notification contract](docs/ADMIN-NOTIFICATION-CONTRACT.md#admin-mutation-feedback-integration), not a fixed one-message-per-action rule.** Real changes may produce multiple verified Activity presentations, and each delivered presentation has its own mailbox/header projection. No-op and invalid actions must not produce a false success. A source read alone does not establish successful delivery; check the real Livewire/DB/browser lifecycle.
 
 ## 12. Journal table references
 
