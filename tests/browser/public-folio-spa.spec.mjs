@@ -38,8 +38,9 @@ test('connected paper corners animate on a real browser from the original geomet
     expect(state.leftAnimations).toBe(1);
     expect(state.rightAnimations).toBe(1);
     expect(state.keyframes).toHaveLength(2);
-    expect(state.keyframes[0].top).toBe('1.10rem');
-    expect(state.keyframes[0].width).toBe('.55rem');
+    // The browser normalizes CSS lengths (1.10rem -> 1.1rem).
+    expect(parseFloat(state.keyframes[0].top)).toBeCloseTo(1.1, 2);
+    expect(parseFloat(state.keyframes[0].width)).toBeCloseTo(.55, 2);
     expect(state.initialFallbackHidden).toBe(true);
     await expect(left).toBeVisible();
     await expect(right).toBeVisible();
