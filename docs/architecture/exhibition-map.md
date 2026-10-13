@@ -12,6 +12,8 @@
 | Edit bleibt geöffnet; native Formvalidierung und Action-Lifecycle bleiben bei Filament | `AdminDialog::edit()` mit `wire:change="callMountedAction"` und `after()->halt()` |
 | DB-Persistenz, Lock, Geocoder-Entscheidung und Domain-Audit | `ExhibitionEditorialService::update()` |
 | Ein einzelnes Koordinaten-Update des geöffneten Editors | `JournalWorkspace::editExhibitionAction()` → `Schema::partialRawState` |
+| Abgelehnter Map-Toggle darf nicht lokal aktiv bleiben | `JournalWorkspace::editExhibitionAction()` synchronisiert `map_enabled` plus Koordinaten erneut aus dem gespeicherten Datensatz, ohne die übrigen fokussierten Formfelder zu ersetzen |
+| Kein konkurrierender zweiter Toggle-Transport | `JournalEntryEditorSchema::mapSection()` verwendet **kein** zusätzliches `->live()` auf dem Map-Toggle; das zentrale `change`-Ereignis ist der einzige Edit-Speicherpfad |
 | Notification erst bei Änderung | expliziter `AdminNotifier::notification()`-Aufruf im `JournalWorkspace` |
 
 Der Toggle darf bei bereits aktiver Map auch mit einer später unvollständigen Adresse **ausgeschaltet** werden. Bei erstmaliger Aktivierung muss der Ort identifizierbar sein. Die UI-Vorprüfung ist keine Sicherheitsgrenze: dieselbe Policy wird im Domain-Service geprüft.
@@ -47,7 +49,8 @@ sequenceDiagram
     end
     alt Validierung fehlgeschlagen
         Note over Domain,DB: DB-Transaktion wird zurückgerollt
-        Action-->>UI: Validierungsfeedback; Dialog bleibt
+        Action->>DB: Reload gespeicherter Map-Zustand
+        Action-->>UI: partialRawState map_enabled und Koordinaten; Fehlerhinweis; Dialog bleibt
     else Domain-Update erfolgreich
         Domain->>DB: save falls isDirty; Audit falls Row/Media geändert
         Domain-->>Action: fresh Exhibition
@@ -57,6 +60,8 @@ sequenceDiagram
         end
     end
 ```
+
+**Aktualisierung nach `dev`-Merge:** Nach einem fehlgeschlagenen Geocoding oder einer unzureichenden Adresse wird auch der unmittelbar umgeschaltete `map_enabled`-Wert aus der Datenbank wiederhergestellt. Das verhindert, dass der Alpine-Schalter aktiv aussieht, obwohl seine Mutation abgelehnt wurde. Die frühere zusätzliche `->live()`-Anforderung auf dem Toggle wurde entfernt, weil sie mit dem normalen `wire:change`-Autosave konkurrieren konnte.
 
 Die UI setzt die **Preview-Koordinaten** auf leer, wenn der Benutzer ein Ortsfeld per Blur aktualisiert. Erst das Domain-Ergebnis befüllt die Hidden-State-Werte wieder, ohne andere fokussierte Formfelder neu zu füllen. Eine fehlgeschlagene Geocoding-Anfrage darf keinen erfundenen gültigen Map-Zustand speichern.
 
@@ -69,4 +74,4 @@ Die UI setzt die **Preview-Koordinaten** auf leer, wenn der Benutzer ein Ortsfel
 
 ## Abgleich mit bestehenden Testfällen
 
-Die vorhandenen Testdateien enthalten Prüfungen zu Toggle on/off ohne Dialogschluss, einmaligem Re-Geocoding bei Adressänderung, unvollständiger Adresse und fehlgeschlagenem Geocoding. **Das ist nachgewiesene Testabdeckung im Quellcode, kein bestandener Testrun.** Die spätere Branch-Zuständigkeit für `testing` bleibt von dieser Dokumentation getrennt.
+Die vorhandenen Testdateien enthalten Prüfungen zu Toggle on/off ohne Dialogschluss, einmaligem Re-Geocoding bei Adressänderung, unvollständiger Adresse und fehlgeschlagenem Geocoding. Neu hinzugekommen ist insbesondere der Pfad **Country im bereits geöffneten Edit-Dialog von leer auf `Deutschland` setzen → speichern → Map aktivieren**, mit persistiertem Country, zwei unterscheidbaren Erfolgsnotifications und genau einer Geocoding-Anfrage. Der Test für unvollständige Adressen erwartet nun auch die **Rücksetzung des gemounteten Map-Toggles** auf `false`. **Das ist nachgewiesene Testabdeckung im Quellcode, kein bestandener Testrun.** Die spätere Branch-Zuständigkeit für `testing` bleibt von dieser Dokumentation getrennt.
