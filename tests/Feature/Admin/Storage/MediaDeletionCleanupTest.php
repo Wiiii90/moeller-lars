@@ -10,8 +10,10 @@ use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\MediaAsset;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
+    Storage::fake(config('media.disk'));
     $this->actingAs(User::factory()->admin()->create(), 'web');
 });
 
@@ -75,5 +77,7 @@ it('records draft Journal rich-text cleanup when referenced media is deleted wit
         ->firstOrFail();
 
     expect((string) $post->getAttribute('body'))->not->toContain('media:'.$asset->id)
+        ->and($asset->fresh()->state)->toBe('deleted')
+        ->and(AuditEvent::query()->where('action', 'media.deleted')->where('entity_id', $asset->id)->count())->toBe(1)
         ->and(AdminActionReceipt::query()->where('audit_event_id', $event->getKey())->exists())->toBeFalse();
 });

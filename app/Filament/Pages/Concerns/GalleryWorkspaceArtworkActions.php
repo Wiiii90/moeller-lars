@@ -80,7 +80,7 @@ trait GalleryWorkspaceArtworkActions
             ->action(function (array $arguments): void {
                 $asset = $this->primaryMediaAsset($arguments);
                 try {
-                    app(MediaAssetEditorialService::class)->delete($asset);
+                    $changed = app(MediaAssetEditorialService::class)->delete($asset);
                 } catch (Throwable $exception) {
                     if (! $exception instanceof ValidationException) {
                         report($exception);
@@ -130,10 +130,12 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->notification(
-                    title: 'File deleted',
-                    status: 'success',
-                );
+                if ($changed) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'File deleted',
+                        status: 'success',
+                    );
+                }
             });
 
         return AdminDialog::confirm(

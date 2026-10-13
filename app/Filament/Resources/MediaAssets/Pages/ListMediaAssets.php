@@ -451,8 +451,9 @@ final class ListMediaAssets extends Page
                     }
 
                     try {
-                        $service->delete($asset);
-                        $deleted++;
+                        if ($service->delete($asset)) {
+                            $deleted++;
+                        }
                     } catch (Throwable $exception) {
                         if (! $exception instanceof ValidationException) {
                             report($exception);
@@ -494,10 +495,12 @@ final class ListMediaAssets extends Page
                     return;
                 }
 
-                app(AdminNotifier::class)->notification(
-                    title: 'Selected files deleted',
-                    status: 'success',
-                );
+                if ($deleted > 0) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'Selected files deleted',
+                        status: 'success',
+                    );
+                }
             });
 
         return AdminDialog::confirm(
@@ -1006,7 +1009,7 @@ final class ListMediaAssets extends Page
         $assetId = (int) $asset->getKey();
 
         try {
-            app(MediaAssetEditorialService::class)->delete($asset);
+            $changed = app(MediaAssetEditorialService::class)->delete($asset);
         } catch (Throwable $exception) {
             if (! $exception instanceof ValidationException) {
                 report($exception);
@@ -1056,10 +1059,12 @@ final class ListMediaAssets extends Page
         $this->removeSelection($assetId);
         $this->loadLibrary();
         $this->refreshStorageOverviewAfterMutation();
-        app(AdminNotifier::class)->notification(
-            title: 'File deleted',
-            status: 'success',
-        );
+        if ($changed) {
+            app(AdminNotifier::class)->notification(
+                title: 'File deleted',
+                status: 'success',
+            );
+        }
 
         return true;
     }

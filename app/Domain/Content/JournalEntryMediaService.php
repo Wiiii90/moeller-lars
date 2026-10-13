@@ -9,6 +9,7 @@ use App\Models\BlogPost;
 use App\Models\Exhibition;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
 use LogicException;

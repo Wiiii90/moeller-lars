@@ -136,7 +136,7 @@ class MediaAssetEditorialService
         $keys = [];
         $deferCleanup = false;
 
-        DB::transaction(function () use ($assetId, $actor, &$keys, &$deferCleanup): void {
+        $changed = DB::transaction(function () use ($assetId, $actor, &$keys, &$deferCleanup): bool {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
             $deferCleanup = DB::table('committed.media_assets')
                 ->where('id', $assetId)
@@ -154,7 +154,7 @@ class MediaAssetEditorialService
 
             $keys = $this->storageKeys($locked);
             if ($locked->getAttribute('state') === 'deleted') {
-                return;
+                return false;
             }
 
             $this->undoContext->withoutReceipts(function () use ($locked, $actor): void {
@@ -171,13 +171,15 @@ class MediaAssetEditorialService
             if ($deferCleanup) {
                 $this->publicationMediaCleanup->queue($assetId, $keys);
             }
+
+            return true;
         });
 
         if (! $deferCleanup) {
             $this->publicationMediaCleanup->deleteNow($keys);
         }
 
-        return true;
+        return $changed;
     }
 
     private function removeCanonicalReferences(MediaAsset $asset, User $actor): void

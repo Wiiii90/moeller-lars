@@ -17,9 +17,11 @@ use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
+    Storage::fake(config('media.disk'));
     $this->actingAs(User::factory()->admin()->create(), 'web');
 });
 
