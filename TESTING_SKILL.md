@@ -1,7 +1,7 @@
 # TESTING_SKILL.md — living testing workstream handoff
 
 Updated 2026-10-13. Repository: Wiiii90/moeller-lars. Sole writable branch for this workstream: testing.
-Latest source-reviewed testing parent before this merge: cb5ea6b2682629e59cf1d01532ccff42b803f6c0. Last merged dev parent: 13a2a057a64dbedbfec47b724048d07b821d7fa4. Last observed dev: 13a2a057a64dbedbfec47b724048d07b821d7fa4. Recheck both live heads before the next edit. Always check live heads; these values are timestamps, not permissions to overwrite new commits.
+Latest source-reviewed testing parent before the next change: 1f4eb8afa9e3043fc18d72f975f83cb4bd00a1c4. Last merged dev parent: 13a2a057a64dbedbfec47b724048d07b821d7fa4. Last observed dev: 13a2a057a64dbedbfec47b724048d07b821d7fa4. Recheck both live heads before the next edit. Always check live heads; these values are timestamps, not permissions to overwrite new commits.
 Recent genuine two-parent dev merges into testing: this merge (dev 13a2a057a64dbedbfec47b724048d07b821d7fa4), ffedc27f566902f6ce036628a91e741d9c4281ac (dev eaf1531742d9f3174a1e3f6645bf20d0f8c8a743), 64b73aa0dc5dd08f91fb7c107bdd71048cbc50ce (dev 1bcbf53ed3ded992343dc335f5efcba7bb0a4067), e81e6db0ea7061296b466834c6d704d7139e69bf (dev a6141d37db520a2d97f7a5ce344dd8ff8156d005), 2fb94906619e89d2f1e6fced6c97c1e700a2a8ce (dev 919eec2c088ccd7aca804ab5108a6a8378a1028e), e9df41f50f9182068a5cb595d50c46de2009b219 (dev 7c332b32762029b7e9da83491f52b12860bef9ed), 55e84141e6490f52508f709611d9d13d13957218 (dev 222bd0534bc7daa93acf6afad795e827a81d18bf). Earlier merge: 9194235980b3772063c8db4aa236e1e1b34120d7.
 
 ## Operating contract

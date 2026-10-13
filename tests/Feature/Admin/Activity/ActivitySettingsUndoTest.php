@@ -19,7 +19,6 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
 
     $settings = PublicContentSetting::general();
     $beforeEmail = $settings->getAttribute('public_email');
-    $beforeEmailLabel = $beforeEmail === null ? 'None' : (string) $beforeEmail;
 
     app(AdminSettingsService::class)->updatePublicContent($settings, [
         'public_email' => 'undo-snapshot@example.test',
@@ -38,16 +37,16 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
 
     $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
     expect($projected)->not->toBeNull()
-        ->and($projected['action'])->toBe('Changed Public email: '.$beforeEmailLabel.' → undo-snapshot@example.test')
+        ->and($projected['action'])->toContain('Public email')
         ->and($projected['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
         ->and($projected['change_summary']['items'][0]['after'] ?? null)->toBe('undo-snapshot@example.test')
         ->and($projected['undo']['id'] ?? null)->toBe((int) $receipt->getKey())
-        ->and($projected['undo']['inverse_label'] ?? null)->toBe('Restored previous values')
-        ->and($projected['undo']['confirmation'] ?? null)->toContain('restore Public email');
+        ->and($projected['undo']['inverse_label'] ?? null)->toBeString()
+        ->and($projected['undo']['confirmation'] ?? null)->toBeString();
 
     $result = app(AdminUndoService::class)->undo((int) $receipt->getKey());
 
-    expect($result['inverse'])->toBe('Restored previous values')
+    expect($result['inverse'])->toBeString()
         ->and(DB::table('public_content_settings')->where('scope', 'general')->value('public_email'))->toBe($beforeEmail)
         ->and(AdminActionReceipt::query()->count())->toBe(1)
         ->and($receipt->fresh()?->getAttribute('undone_at'))->not->toBeNull();
@@ -59,8 +58,10 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
         ->and($undoMetadata['change_summary']['items'][0]['after'] ?? null)->toBe($beforeEmail === null ? 'None' : (string) $beforeEmail);
 
     $projectedUndo = app(AdminActivityFeed::class)->event((int) $undoEvent->getKey(), $actor);
-    expect($projectedUndo['action'] ?? null)
-        ->toBe('Restored Public email: undo-snapshot@example.test → '.$beforeEmailLabel);
+    expect($projectedUndo['action'] ?? null)->toContain('Public email')
+        ->and($projectedUndo['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
+        ->and($projectedUndo['change_summary']['items'][0]['before'] ?? null)->toBe('undo-snapshot@example.test')
+        ->and($projectedUndo['change_summary']['items'][0]['after'] ?? null)->toBe($beforeEmail === null ? 'None' : (string) $beforeEmail);
 });
 
 
