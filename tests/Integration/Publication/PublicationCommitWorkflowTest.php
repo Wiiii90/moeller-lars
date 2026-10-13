@@ -4,6 +4,7 @@ use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Livewire\Admin\PublicationStateControl;
+use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use App\Models\PublicationCheckpointEvent;
@@ -118,16 +119,28 @@ it('commits current Pending state in one component action and repeated clicks st
     ]);
 
     $initialCheckpointCount = PublicationCheckpoint::query()->count();
-    $control = Livewire::test(PublicationStateControl::class)
-        ->call('commitPublication');
+    $initialNotificationCount = AdminNotification::query()
+        ->where('user_id', $this->actor->getKey())
+        ->count();
 
-    expect(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1)
+    $control = Livewire::test(PublicationStateControl::class)
+        ->call('commitPublication')
+        ->assertDispatched('admin-header-notification');
+
+    expect(AdminNotification::query()->where('user_id', $this->actor->getKey())->count())
+        ->toBe($initialNotificationCount + 1)
+        ->and(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1)
         ->and(app(PublicationService::class)->hasPendingChanges())->toBeFalse()
         ->and((string) DB::table('committed.public_content_settings')
             ->where('scope', PublicContentSetting::SCOPE_GENERAL)
             ->value('background_gradient_end'))->toBe('#0F19FA');
 
+    $notificationCountAfterCommit = AdminNotification::query()
+        ->where('user_id', $this->actor->getKey())
+        ->count();
     $control->call('commitPublication');
 
-    expect(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1);
+    expect(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1)
+        ->and(AdminNotification::query()->where('user_id', $this->actor->getKey())->count())
+        ->toBe($notificationCountAfterCommit);
 });

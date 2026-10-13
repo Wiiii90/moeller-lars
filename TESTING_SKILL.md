@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `d5172fcbddd3549a5e499f9cf98b60b74fe54d58` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `c1579da2d3acd082fcbbd0280ac0e59f6e2b3952` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -51,6 +51,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Added public behavior checks for sitemap committed/draft visibility (`tests/Feature/Public/Seo/SeoRoutesTest.php`) and private unreferenced media access (`tests/Feature/Public/Media/OriginalAccessTest.php`).
 - Last known snapshot after refactor: **140 files under `tests/`, approx. 542 KB**, vs **141 files / 751 KB** originally. Counts will change as quality work continues; never optimize just to reduce the number.
 - Publication/Activity split reviewed again: removed duplicated imports from the extracted suites and eliminated redundant `PublicationSnapshot::TABLES`/restore-order constant tests. An actual publication media-dependency restore scenario already covers correct ordering.
+- Strengthened the actual `PublicationStateControl` Livewire Commit test: a successful Commit must emit the immediate header notification and add one durable admin notification; a repeated no-op Commit must add none. This is **test-authored only, NOT RUN**.
 - Replaced the Dashboard feed hook-only test with an authenticated Livewire feed search/selection workflow. Removed the Pulse recorder-configuration snapshot while retaining its admin access contract. Publication history deletion test now creates its **own real checkpoint** instead of relying on seeded history.
 - Updated `tests/README.md` with the component / E2E / profiling / full browser commands. These were **authored but not executed**.
 - Removed unnecessary preview-route registration from unrelated Publication commit/media tests; Media-retention tests no longer load unrelated Publication workflow helpers. Preview access tests keep their own isolated preview route.
@@ -94,7 +95,7 @@ Track each review by **verified contract**, not by number of files. 'Source-revi
 | General / Home / Pages | Cases inventoried; partial behavior source-review | Review every workflow against traits, actions and current dialog behavior |
 | Journal / Exhibitions | Partial; recent dev merge | Map autosave + address validation, public visibility, Journal state changes |
 | Gallery / Storage / media | Cases inventoried; partial behavior source-review | Cross-check deletion/variants/usage, public authorization and preview |
-| Publication / Restore | Partially source-reviewed | Execute realistic Commit/Stage/Revert and media retention cases |
+| Publication / Restore | Partially source-reviewed; Commit notification/no-op strengthened | Execute realistic Commit/Stage/Revert and media retention cases |
 | Public / security / contact / SEO | Partial | Reverify current routes, middleware, side effects and auth |
 | Unit / Integration / Migration | All cases inventoried; migration sources inspected | Validate actual migration compatibility, historical retirement and runtime |
 
