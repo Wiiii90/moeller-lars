@@ -29,7 +29,17 @@
 }
 
 .journal-table--blog col.journal-col--publication {
-    width: 12.5rem;
+    width: 7rem;
+}
+
+.journal-table--blog col.journal-col--publication-date {
+    width: 9rem;
+}
+
+@container admin-table (max-width: 88rem) {
+    .journal-table--blog col.journal-col--publication {
+        width: 12.5rem;
+    }
 }
 
 .journal-table col.journal-table__actions--blog {
@@ -41,7 +51,17 @@
 }
 
 .journal-table--exhibitions col.journal-col--schedule {
-    width: 15.5rem;
+    width: 9.5rem;
+}
+
+.journal-table--exhibitions col.journal-col--timing {
+    width: 10rem;
+}
+
+@container admin-table (max-width: 74rem) {
+    .journal-table--exhibitions col.journal-col--schedule {
+        width: 15.5rem;
+    }
 }
 
 .journal-table col.journal-table__actions--exhibitions {
@@ -80,8 +100,8 @@
 }
 
 .journal-publication__date,
-.journal-schedule > em,
-.journal-schedule > .journal-schedule__dates {
+.journal-schedule__details > em,
+.journal-schedule__dates {
     display: block;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -90,18 +110,25 @@
 }
 
 .journal-publication__date,
-.journal-schedule > em {
+.journal-schedule__details > em {
     color: var(--admin-muted);
 }
 
 .journal-publication__date,
-.journal-schedule > em,
-.journal-schedule > .journal-timing {
+.journal-schedule__details.admin-table__folded-only {
     margin-top: .17rem;
 }
 
-.journal-schedule > em {
+.journal-publication-date .journal-publication__date {
+    margin-top: 0;
+}
+
+.journal-schedule__details > em {
     font-weight: 400;
+}
+
+.journal-schedule__details > :not(:first-child) {
+    margin-top: .17rem;
 }
 
 .journal-state,

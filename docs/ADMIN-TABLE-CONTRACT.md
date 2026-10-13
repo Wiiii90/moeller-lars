@@ -169,6 +169,12 @@ Toolbars are the exception to structural row reflow: the canonical toolbar remai
 
 Metrics, tables, toolbars and stages may transition at different widths because each responds to its own available container width.
 
+## Split/fold columns
+
+When two meaningful columns fit in Wide but should combine under table pressure, keep one primary column and one additional detail column. The shared table-pressure owner offers `admin-table--fold-early` (88rem) and `admin-table--fold-at-actions` (74rem) with `admin-table__split-only` for the extra column and `admin-table__split-label` / `admin-table__folded-only` for its counterpart in the primary column. Apply `admin-table__split-only` to its `<col>`, `<th>` and every `<td>` together; only the extra column yields. The folded primary column can itself use the normal Minimal-yield contract.
+
+Journal uses this once for Blog Status + Publication and once for Exhibition Date + Schedule. This is a responsive presentation of the same data, not a domain-state transformation. The semantic Actions and Selection rails remain fixed.
+
 ## Implementation authority
 
 Shared implementation lives in:
