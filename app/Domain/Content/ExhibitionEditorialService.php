@@ -340,8 +340,10 @@ final class ExhibitionEditorialService
             ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
             ->map(static fn (string $value): string => trim($value))
             ->values();
-        if ($parts->isEmpty()) {
-            throw ValidationException::withMessages(['location_text' => 'Enter a street, postal code, city or country to enable the map.']);
+        if (! ExhibitionMapAddress::isSufficient($values)) {
+            throw ValidationException::withMessages([
+                'map_enabled' => 'Enter a country and either a city or postal code before enabling the map.',
+            ]);
         }
 
         try {
