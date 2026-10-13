@@ -126,34 +126,32 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand 13.10.2026:** `docs` vor diesem Commit `a25ef4623f27a7b795915d85e84f3d794e37edb1`,
+**Branchstand:** `docs` vor dieser Änderung `c7a770ea347ed7ec5d6ca9e043393d0911f82e25`,
 `dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`.
-Git-HEADs vor jedem Schritt aktuell prüfen.
+HEADs vor Weiterarbeit frisch vergleichen.
 
-**Wichtiger nachgewiesener Vertragswiderspruch korrigiert:**
-[`AdminNotifier::notification()`](app/Domain/Admin/AdminNotifier.php)
-verarbeitet bei `success` eine Liste aufgezeichneter Activity-Präsentationen:
-eine aufrufende Action kann **mehrere** `recordAndSurface()`-Nachrichten
-erzeugen. `AGENTS.md` und [Notification-Vertrag](docs/ADMIN-NOTIFICATION-CONTRACT.md)
-fordern deshalb nicht mehr pauschal genau eine Nachricht pro Aufruf, sondern
-die korrekte Kardinalität pro Activity-Quelle. Die einzigartige
-`(user_id,source_id)`-Datenbankzeile ist idempotent; der Header wird bei
-wiederverwendeter Quelle derzeit dennoch erneut angesprochen.
-**Geprüft nur im Code, kein ausgeführter Header-/Retry-Test.** Nicht auf
-`docs` den Domain-/UI-Code reparieren; Verhaltensfrage mit dem
-zuständigen `dev`-/`testing`-Workstream abstimmen, wenn relevant.
+**Abgeschlossen:** Die ausführliche, browserabgenommene Filament-5.7.6-
+Scroll-Lock-Semantik liegt jetzt **einmal** im
+[`ADMIN-DIALOG-CONTRACT.md`](docs/ADMIN-DIALOG-CONTRACT.md),
+inklusive der bisher nur im Root vorhandenen
+`tests/js/filament-scroll-lock-patch.test.mjs`- und
+`tests/browser/admin-dialog-regression.spec.mjs`-Belege,
+Build-Reihenfolge, Upgrade-Version-Guard, Kurz-/Langseiten- und
+Close-Leave-Verhalten. `AGENTS.md` hat nur noch die geschützte
+Kerninvariante und den direkten Link. Keine Tests/Browserchecks
+ausgeführt, keine Runtime-Veränderung.
 
-**Vorher erledigt:** Follow-up-Workflow in kanonischen Handoff-Skill
-konsolidiert, veraltete Worker-/CI-Anweisungen aus `AGENTS.md` entfernt,
-persistierte Public-Folio-Animation dokumentiert und neueste Folio-Testquelle
-aus `dev` über echtem Merge geholt.
+**Weitere aktuelle Korrekturen:** Notification-Vertrag und `AGENTS.md`
+unterscheiden echte mehrere Activity-Nachrichten von einzelner
+Notifier-Benachrichtigung; Mailbox-`source_id` dedupliziert nicht
+zwangsläufig die Header-Darstellung. Das ist quellenbelegt,
+Runtime-/Retry-Prüfung offen.
 
-**Unmittelbar nächster Schritt:** systematisch weitere zwischen
-`AGENTS.md` und Fachverträgen divergierende Invarianten prüfen;
-insbesondere die Scroll-Lock-/Dialogregel und deren aktuelle Patch-/Testowner.
-Danach gegebenenfalls allgemeine wiederholte Regeln verkürzen, aber nur
-mit Beleg und ohne akzeptierte Semantik zu verlieren.
+**Unmittelbar als Nächstes:** weitere doppelte Root-Normen (z. B.
+Persistenz/Audit vs. Admin-Activity/Control-Vertrag) kontrolliert
+vergleichen. Parallel eintreffenden Public-`dev`-Code nachziehen.
+Nie eine akzeptierte Fachregel ohne belegten neuen Owner löschen.
 
-**Offene Laufzeitprüfungen:** nativer kompletter PHP-Generator,
-wegwerfbares isoliertes PostgreSQL für `pg_catalog`, Browser-SPA/Admin,
-Notifier-Mehrfach- und Retry-Verhalten. CI und `testing` unangetastet.
+**Noch offen:** native PHP-Full-Checkout-Generatoren, isoliertes
+PostgreSQL-`pg_catalog`, echte Public-/Admin-Browsertests.
+`testing` und CI nicht bedienen.

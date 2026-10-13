@@ -239,6 +239,23 @@ Width modifiers are desktop maxima, not fixed mobile widths. On narrow viewports
 
 Dialog-internal scrolling remains visibly discoverable. The shared contract styles the internal scrollbar as a narrow, low-contrast thumb with a transparent track; it must remain wheel, trackpad, touch and keyboard scrollable. Do not hide dialog scrollbars by default.
 
+**Accepted regression evidence and upgrade gate (2026-10-11):**
+- Preserve the long-page, short-page and nested-dialog cases in
+  [`tests/js/filament-scroll-lock-patch.test.mjs`](../tests/js/filament-scroll-lock-patch.test.mjs)
+  and the independently reviewed browser cases in
+  [`tests/browser/admin-dialog-regression.spec.mjs`](../tests/browser/admin-dialog-regression.spec.mjs).
+  Existing browser acceptance is a protected input; reading or running a
+  source test alone does not repeat that acceptance.
+- `composer.json` applies [`scripts/patch-filament-scroll-lock.php`](../scripts/patch-filament-scroll-lock.php)
+  before `filament:upgrade` publishes vendor assets. The production Docker
+  image must contain the patched build output. Filament Support upgrades
+  require deliberate review of the patch's version guard and lifecycle.
+  The failed-fast version check must not be silently removed.
+- Do not replace the accepted long/short behavior with upstream
+  `overflow: hidden`, `scrollbar-gutter: stable`, permanent body padding,
+  synthetic short-page scrollbars or independent application lock counters.
+  Validate no scrollbar flash through the actual close/leave animation.
+
 Opening or closing a blocking admin task dialog keeps Filament as the sole lifecycle and document-scroll-lock owner. The pinned `filament/support` v5.7.6 bundle is corrected **at build time** by `scripts/patch-filament-scroll-lock.php` before `filament:upgrade` publishes the asset; the runtime retains one Filament lock counter. The lock preserves a preexisting native vertical scrollbar without reserving space on short pages. Its existing Filament lock counter has two legitimate states based on the document at first acquire: on a scrollable page, the body is frozen while root scrollbar width and scroll position are retained; on a short page, only root overflow is hidden, because there is no background document scroll range to freeze. In particular **never set body position, min-height, or a forced scrollbar on short pages**: detaching and restoring the body produces a brief scrollbar flash during modal close. All touched inline styles and the original scroll position are restored on final unlock. The patch fails loudly for an unreviewed Filament version and never adds a second Alpine modal or application-level global scroll interceptor.
 
 Filament owns: modal state, background lock, focus trapping, Escape, native X, animation, destroy and lock cleanup remain framework-owned. The shared dialog-geometry companion may only measure the current Main frame, apply placement variables to the persistent HTML root and reset dialog-internal scroll on the actual `x-modal-opened` transition. The Filament modal's frame CSS is declarative and cannot disappear when Livewire replaces the modal element after a field change. Its native backdrop blocks wheel/touch overscroll chaining into the still-visible document scrollbar. It must not remeasure on Filament's `open-modal` signal, which can be repeated when a mounted Action updates without closing. It must not call `window.scrollTo()`, change document overflow/padding, install global wheel/touch/key scroll interception, preserve a second lock counter or add a modal-lock class. The native window remains in Filament's grid row 2, but the shared admin dialog frame fixes row 1 at zero and lets the final row absorb unused height. Conditional fields therefore change the window height without changing its top position. The outer modal container is positioning geometry only; `.fi-modal-content` is the sole dialog-internal scroller. Page-local scroll-lock workarounds are forbidden.

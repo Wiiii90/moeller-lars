@@ -14,35 +14,15 @@ Task-specific companion documents are part of this contract:
 
 ## Browser-accepted dialog scroll-lock contract — do not regress
 
-The admin dialog behavior accepted in browser review on 2026-10-11 is a
-**protected product invariant**, not disposable styling or a temporary workaround:
-
-- **Long pages:** Keep the existing native document scrollbar visible and in its
-  exact place during blocking dialogs; prevent background scrolling; preserve
-  document geometry and scroll position on close.
-- **Short pages:** Never manufacture a document scrollbar, right gutter, or
-  horizontal shift. Opening **and closing**, including the leave animation,
-  must not briefly flash a scrollbar. Keep the short-page body in normal flow;
-  the root overflow lock suffices when there was no document scroll range.
-- **All dialogs:** Conditional field/checkbox changes must not move the window.
-  Preserve the persistent root-owned geometry variables and declarative Filament
-  modal CSS across Livewire morphs; retain framework focus/Escape/X lifecycle.
-- **Single owner:** Filament's existing modal lock and counter remain authoritative.
-  The reviewed, version-locked build-time adjustment lives in
-  `scripts/patch-filament-scroll-lock.php`; do not remove it, revert to upstream
-  `overflow: hidden` on pages with scrollbars, add a second JS lock or wheel
-  interceptor, or substitute `scrollbar-gutter: stable` / permanent padding.
-- **Upgrade/build:** `composer.json` applies the patch before
-  `filament:upgrade` publishes assets; the Docker production image carries those
-  assets. An upgrade to Filament Support requires reviewing and adapting the
-  version guard and patch, rather than silently removing this behavior.
-- **Acceptance:** Keep the long/short/nested lifecycle tests in
-  `tests/js/filament-scroll-lock-patch.test.mjs` and the real browser checks in
-  `tests/browser/admin-dialog-regression.spec.mjs`. A passing source-level test
-  does **not** imply browser acceptance. Retain the last accepted behavior unless
-  the user explicitly changes this contract.
-
-See `docs/ADMIN-DIALOG-CONTRACT.md` and `ui-skills.md` for shared UI geometry.
+The **11 October 2026 accepted** Filament dialog lock is a protected behavior:
+scrollable pages retain the native document scrollbar and scroll position
+while blocking background scroll; short pages must not gain a scrollbar,
+gutter or close-animation flash. Conditional fields must not move the
+dialog window. The [ADMIN-DIALOG-CONTRACT](docs/ADMIN-DIALOG-CONTRACT.md#scrolling-and-responsive-behavior)
+owns the precise long/short lock, frame geometry, pinned build patch,
+focus/close lifecycle, browser/test references and version-upgrade guards.
+Filament remains the single lock owner: do not replace its patched lifecycle
+with a second JS lock, global wheel interceptor or permanent scrollbar gutter.
 
 ## No workarounds — mandatory stop rule
 
