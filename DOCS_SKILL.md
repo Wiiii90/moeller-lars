@@ -275,6 +275,13 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Nur Docs auf `docs`; kein Runtime-Code und kein `testing`/CI.
 - **Nächster Schritt:** native PHP-Tokenizer-Generatoren an kritischen Syntax-Randfällen prüfen und korrigieren, Ergebnisse mit dem vollständigen Source-Audit vergleichen.
 
+## 6k. Fortsetzung 2026-10-13 — Vollständige Modul-Klassendiagramme
+
+- [20 Moduldiagramme](docs/architecture/class-import-diagrams.md) für alle 248 Quelltypen und 900 intern auflösbaren Importkanten eingecheckt. Die Subgraphen sind nach Modul-Owner aufgeteilt; sie zeigen auch fremde Importziele.
+- [PHP-Generator](scripts/generate-architecture-import-diagrams.php) verarbeitet das versionierte `app-source-audit.json`, hat `--write`/`--check` und erkennt überzählige Diagramme.
+- Isolierter PHP-8.4-Fixture **tatsächlich geprüft**: Syntax, Write, Check, absichtlich veraltetes Diagramm wird abgelehnt. Die realen 20 Diagramme wurden aus denselben Audit-Daten generiert und Summen verifiziert; **kein** nativer Voll-Checkout-PHP-Lauf.
+- Importkanten sind keine Aufruf-/Instanz-Beweise; Runtime- und DB-Generatoren bleiben getrennt.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:

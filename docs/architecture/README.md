@@ -6,17 +6,18 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 
 1. [Bestandsaufnahme](inventory.md) — nachprüfbarer Quellcodekatalog mit Klassifikation, Abhängigkeiten und bekannten Abdeckungslücken.
 2. [Vollständiger PHP-Quellenkatalog](php-source-audit.md) — 248 PHP-Dateien, 248 Typen, 900 interne Imports, [Modulgraph](generated/app-module-imports.mmd).
-3. [Importgrenzen und Artwork-Publish-Abweichung](import-boundaries.md) — Modulzyklus und konkret unterschiedliche Gallery-/Undo-Guards.
-4. [Eloquent-Relationen](eloquent-relations.md) — 26 Modeldateien und 48 Relationen, jetzt zusätzlich als [generierter JSON-Graph](generated/eloquent-relationships.json) und [Mermaid-Gesamtgraph](generated/eloquent-relationships.mmd).
-5. [Fachliche Lebenszyklen](lifecycles.md) — fünf getrennte Zustandsmodelle mit 35 überprüfbaren Quellbelegen.
-6. [Admin-/Publication-Aufrufstellen](admin-publication-calls.md) — 21 belegte direkte Methodenaufrufe über 14 Klassen, mit separatem JSON/Diagramm und Source-Anchor-Check.
-7. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
-8. [Restore, Revert und Reset](publication-working-operations.md) — Activity UI bis zum Working-Snapshot, mit drei getrennten Ablaufdiagrammen, Guards und No-ops.
-9. [Strukturierte Komponenten](structured-components.md) — die sechs persistierten JSON-Typen, Contact-/List-Kinder, Medienreferenzen und Home-Konfiguration.
-10. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 19 explizite HTTP-Routen, Middleware, Filament-Discovery und Public-JS-Initialisierung.
-11. [Filament-/Livewire-Komposition](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits und 72 literal Actions in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
-12. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
-13. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
+3. [Klassen-Importdiagramme](class-import-diagrams.md) — 20 vollständige Modulansichten mit 248 Quelltypen und 900 Importkanten.
+4. [Importgrenzen und Artwork-Publish-Abweichung](import-boundaries.md) — Modulzyklus und konkret unterschiedliche Gallery-/Undo-Guards.
+5. [Eloquent-Relationen](eloquent-relations.md) — 26 Modeldateien und 48 Relationen, jetzt zusätzlich als [generierter JSON-Graph](generated/eloquent-relationships.json) und [Mermaid-Gesamtgraph](generated/eloquent-relationships.mmd).
+6. [Fachliche Lebenszyklen](lifecycles.md) — fünf getrennte Zustandsmodelle mit 35 überprüfbaren Quellbelegen.
+7. [Admin-/Publication-Aufrufstellen](admin-publication-calls.md) — 21 belegte direkte Methodenaufrufe über 14 Klassen, mit separatem JSON/Diagramm und Source-Anchor-Check.
+8. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
+9. [Restore, Revert und Reset](publication-working-operations.md) — Activity UI bis zum Working-Snapshot, mit drei getrennten Ablaufdiagrammen, Guards und No-ops.
+10. [Strukturierte Komponenten](structured-components.md) — die sechs persistierten JSON-Typen, Contact-/List-Kinder, Medienreferenzen und Home-Konfiguration.
+11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 19 explizite HTTP-Routen, Middleware, Filament-Discovery und Public-JS-Initialisierung.
+12. [Filament-/Livewire-Komposition](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits und 72 literal Actions in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
+13. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
+14. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 

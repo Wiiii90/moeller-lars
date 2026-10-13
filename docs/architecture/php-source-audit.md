@@ -19,6 +19,8 @@ Die 248 Quelldateien wurden einzeln über den authentifizierten GitHub-Zugriff g
 
 **Nicht behauptet:** Dass importierte Klassen tatsächlich instanziiert, als Service konsumiert, über Laravel gebunden oder als Methodenaufruf verwendet werden. Der Quellscanner benutzt unabhängige konservative reguläre Ausdrücke und wurde **nicht als der bestehende PHP-Tokenizer-Generator ausgeführt**. Es gibt noch keine Laufzeit- oder Datenbankprüfung.
 
+**Klassenebene:** [Alle 20 Modul-Klassendiagramme](class-import-diagrams.md) geben die Quelltypen und Importkanten einzeln wieder, statt einen einzigen unlesbaren 248-Node-Graphen zu erzeugen.
+
 ## Modulübergreifende Imports
 
 | Quellmodul → importiertes Modul | Explizite Deklarationen |
