@@ -1,6 +1,6 @@
 # Eloquent-Relationen: Quellkatalog
 
-**Belegstand:** \`65cf807e980bbf7b85fe96e8ba8380c39ea61af0\` auf \`docs\` (Anwendungscode aus dem ursprünglichen \`dev\`-Stand \`82879135c0ab18dd88b07663c1e214a4ade0e45b\`). Alle **26** PHP-Klassen unter \`app/Models/\` wurden für diese Aufnahme gelesen. Gezählt wurden **48 explizite Eloquent-Relation-Aufrufe** in den Modelklassen; fünf Modelle deklarieren keinen der hier untersuchten Relationstypen.
+**Belegstand:** `65cf807e980bbf7b85fe96e8ba8380c39ea61af0` auf `docs` (Anwendungscode aus dem ursprünglichen `dev`-Stand `82879135c0ab18dd88b07663c1e214a4ade0e45b`). Alle **26** PHP-Klassen unter `app/Models/` wurden für diese Aufnahme gelesen. Gezählt wurden **48 explizite Eloquent-Relation-Aufrufe** in den Modelklassen; fünf Modelle deklarieren keinen der hier untersuchten Relationstypen.
 
 **Wichtig:** Die Tabelle zeigt explizite **PHP-Methoden**, keine aus der Datenbank verifizierten Fremdschlüssel, NOT-NULL-Constraints oder tatsächliche Datensätze. Sie ist deshalb ausdrücklich **kein physisches ERD**. Quellpfade verweisen auf die betreffenden Modelklassen. Der [statische Beziehungs-Generator](../../scripts/generate-architecture-relations.php) soll dieselben expliziten Kanten später reproduzierbar katalogisieren.
 
@@ -8,26 +8,26 @@
 
 | Model (Quelle) | Deklarierte Relation-Methoden und Ziele |
 | --- | --- |
-| [\`SiteSection\`](../../app/Models/SiteSection.php) | \`parent(): belongsTo(self)\` · \`children(): hasMany(self)\` · \`artworkCategory(): belongsTo(ArtworkCategory)\` · \`customPageSetting(): hasOne(CustomPageSetting)\` · \`journalSetting(): hasOne(JournalSetting)\` |
-| [\`ArtworkCategory\`](../../app/Models/ArtworkCategory.php) | \`siteSection(): hasOne(SiteSection)\` · \`artworks(): hasMany(Artwork)\` |
-| [\`Artwork\`](../../app/Models/Artwork.php) | \`category(): belongsTo(ArtworkCategory)\` · \`artworkMedia(): hasMany(ArtworkMedia)\` · \`mediaAssets(): belongsToMany(MediaAsset)\` via \`artwork_media\` |
-| [\`ArtworkMedia\`](../../app/Models/ArtworkMedia.php) | \`artwork(): belongsTo(Artwork)\` · \`mediaAsset(): belongsTo(MediaAsset)\` |
-| [\`MediaAsset\`](../../app/Models/MediaAsset.php) | \`variants(): hasMany(MediaVariant)\` · \`cvEntries(): hasMany(CvEntry)\` (Legacy) · \`siteIdentitySettings(): hasMany(PublicContentSetting)\` · \`journalEntryMedia(): hasMany(JournalEntryMedia)\` · \`artworks(): belongsToMany(Artwork)\` via \`artwork_media\` |
-| [\`MediaVariant\`](../../app/Models/MediaVariant.php) | \`mediaAsset(): belongsTo(MediaAsset)\` |
-| [\`BlogPost\`](../../app/Models/BlogPost.php) | \`siteSection(): belongsTo(SiteSection)\` · \`mediaUsages(): hasMany(JournalEntryMedia)\` |
-| [\`Exhibition\`](../../app/Models/Exhibition.php) | \`siteSection(): belongsTo(SiteSection)\` · \`mediaUsages(): hasMany(JournalEntryMedia)\` |
-| [\`JournalEntryMedia\`](../../app/Models/JournalEntryMedia.php) | \`blogPost(): belongsTo(BlogPost)\` · \`exhibition(): belongsTo(Exhibition)\` · \`mediaAsset(): belongsTo(MediaAsset)\` |
-| [\`JournalSetting\`](../../app/Models/JournalSetting.php) | \`siteSection(): belongsTo(SiteSection)\` |
-| [\`CustomPageSetting\`](../../app/Models/CustomPageSetting.php) | \`siteSection(): belongsTo(SiteSection)\` |
-| [\`HomePresentationSetting\`](../../app/Models/HomePresentationSetting.php) | \`siteSection(): belongsTo(SiteSection)\` · \`skipTargetSection(): belongsTo(SiteSection)\` via \`skip_target_section_id\` |
-| [\`PublicContentSetting\`](../../app/Models/PublicContentSetting.php) | \`faviconMediaAsset(): belongsTo(MediaAsset)\` via \`favicon_media_asset_id\` |
-| [\`CvEntry\`](../../app/Models/CvEntry.php) | \`imageMediaAsset(): belongsTo(MediaAsset)\` (Legacy; keine aktive \`cv_entries\`-Runtime-Tabelle) |
-| [\`ArtworkMaterialPreset\`](../../app/Models/ArtworkMaterialPreset.php) | Keine explizite Eloquent-Relation |
-| [\`Redirect\`](../../app/Models/Redirect.php) | Keine explizite Eloquent-Relation |
+| [`SiteSection`](../../app/Models/SiteSection.php) | `parent(): belongsTo(self)` · `children(): hasMany(self)` · `artworkCategory(): belongsTo(ArtworkCategory)` · `customPageSetting(): hasOne(CustomPageSetting)` · `journalSetting(): hasOne(JournalSetting)` |
+| [`ArtworkCategory`](../../app/Models/ArtworkCategory.php) | `siteSection(): hasOne(SiteSection)` · `artworks(): hasMany(Artwork)` |
+| [`Artwork`](../../app/Models/Artwork.php) | `category(): belongsTo(ArtworkCategory)` · `artworkMedia(): hasMany(ArtworkMedia)` · `mediaAssets(): belongsToMany(MediaAsset)` via `artwork_media` |
+| [`ArtworkMedia`](../../app/Models/ArtworkMedia.php) | `artwork(): belongsTo(Artwork)` · `mediaAsset(): belongsTo(MediaAsset)` |
+| [`MediaAsset`](../../app/Models/MediaAsset.php) | `variants(): hasMany(MediaVariant)` · `cvEntries(): hasMany(CvEntry)` (Legacy) · `siteIdentitySettings(): hasMany(PublicContentSetting)` · `journalEntryMedia(): hasMany(JournalEntryMedia)` · `artworks(): belongsToMany(Artwork)` via `artwork_media` |
+| [`MediaVariant`](../../app/Models/MediaVariant.php) | `mediaAsset(): belongsTo(MediaAsset)` |
+| [`BlogPost`](../../app/Models/BlogPost.php) | `siteSection(): belongsTo(SiteSection)` · `mediaUsages(): hasMany(JournalEntryMedia)` |
+| [`Exhibition`](../../app/Models/Exhibition.php) | `siteSection(): belongsTo(SiteSection)` · `mediaUsages(): hasMany(JournalEntryMedia)` |
+| [`JournalEntryMedia`](../../app/Models/JournalEntryMedia.php) | `blogPost(): belongsTo(BlogPost)` · `exhibition(): belongsTo(Exhibition)` · `mediaAsset(): belongsTo(MediaAsset)` |
+| [`JournalSetting`](../../app/Models/JournalSetting.php) | `siteSection(): belongsTo(SiteSection)` |
+| [`CustomPageSetting`](../../app/Models/CustomPageSetting.php) | `siteSection(): belongsTo(SiteSection)` |
+| [`HomePresentationSetting`](../../app/Models/HomePresentationSetting.php) | `siteSection(): belongsTo(SiteSection)` · `skipTargetSection(): belongsTo(SiteSection)` via `skip_target_section_id` |
+| [`PublicContentSetting`](../../app/Models/PublicContentSetting.php) | `faviconMediaAsset(): belongsTo(MediaAsset)` via `favicon_media_asset_id` |
+| [`CvEntry`](../../app/Models/CvEntry.php) | `imageMediaAsset(): belongsTo(MediaAsset)` (Legacy; keine aktive `cv_entries`-Runtime-Tabelle) |
+| [`ArtworkMaterialPreset`](../../app/Models/ArtworkMaterialPreset.php) | Keine explizite Eloquent-Relation |
+| [`Redirect`](../../app/Models/Redirect.php) | Keine explizite Eloquent-Relation |
 
 ### Ausschnitt: unmittelbare Content-/Medienbeziehungen
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
     Section["SiteSection"] -->|parent / children| Section
     Artwork["Artwork"] -->|category| Gallery["ArtworkCategory"]
@@ -42,7 +42,7 @@ flowchart LR
     JournalMedia -->|mediaAsset| Asset
     PageConfig["CustomPageSetting"] -->|siteSection| Section
     HomeConfig["HomePresentationSetting"] -->|siteSection / skipTarget| Section
-\`\`\`
+```
 
 Das ist ein **lesbarer Ausschnitt** aus den oben vollständig aufgelisteten Eloquent-Relationen. Die tatsächlichen Fremdschlüssel-Kardinalitäten werden hier bewusst nicht behauptet.
 
@@ -50,20 +50,20 @@ Das ist ein **lesbarer Ausschnitt** aus den oben vollständig aufgelisteten Eloq
 
 | Model (Quelle) | Deklarierte Relation-Methoden und Ziele |
 | --- | --- |
-| [\`User\`](../../app/Models/User.php) | \`auditEvents(): hasMany(AuditEvent)\` via \`admin_user_id\` |
-| [\`AuditEvent\`](../../app/Models/AuditEvent.php) | \`adminUser(): belongsTo(User)\` · \`activityOrderingEvent(): hasOne(AdminActivityOrderingEvent)\` · \`publicationCheckpointEvent(): hasOne(PublicationCheckpointEvent)\` |
-| [\`AdminActionReceipt\`](../../app/Models/AdminActionReceipt.php) | \`auditEvent(): belongsTo(AuditEvent)\` · \`adminUser(): belongsTo(User)\` |
-| [\`AdminActivityOrderingEvent\`](../../app/Models/AdminActivityOrderingEvent.php) | \`auditEvent(): belongsTo(AuditEvent)\` · \`projection(): belongsTo(AdminActivityOrderingProjection)\` |
-| [\`AdminActivityOrderingProjection\`](../../app/Models/AdminActivityOrderingProjection.php) | Keine explizite Eloquent-Relation |
-| [\`AdminNotification\`](../../app/Models/AdminNotification.php) | \`user(): belongsTo(User)\` · \`auditEvent(): belongsTo(AuditEvent)\` · \`publicationCheckpoint(): belongsTo(PublicationCheckpoint)\` |
-| [\`PublicationCheckpoint\`](../../app/Models/PublicationCheckpoint.php) | \`adminUser(): belongsTo(User)\` · \`auditEventLinks(): hasMany(PublicationCheckpointEvent)\` · \`parent(): belongsTo(self)\` · \`source(): belongsTo(self)\` |
-| [\`PublicationCheckpointEvent\`](../../app/Models/PublicationCheckpointEvent.php) | \`checkpoint(): belongsTo(PublicationCheckpoint)\` · \`auditEvent(): belongsTo(AuditEvent)\` |
-| [\`ContactMessage\`](../../app/Models/ContactMessage.php) | Keine explizite Eloquent-Relation |
-| [\`DailyMetric\`](../../app/Models/DailyMetric.php) | Keine explizite Eloquent-Relation |
+| [`User`](../../app/Models/User.php) | `auditEvents(): hasMany(AuditEvent)` via `admin_user_id` |
+| [`AuditEvent`](../../app/Models/AuditEvent.php) | `adminUser(): belongsTo(User)` · `activityOrderingEvent(): hasOne(AdminActivityOrderingEvent)` · `publicationCheckpointEvent(): hasOne(PublicationCheckpointEvent)` |
+| [`AdminActionReceipt`](../../app/Models/AdminActionReceipt.php) | `auditEvent(): belongsTo(AuditEvent)` · `adminUser(): belongsTo(User)` |
+| [`AdminActivityOrderingEvent`](../../app/Models/AdminActivityOrderingEvent.php) | `auditEvent(): belongsTo(AuditEvent)` · `projection(): belongsTo(AdminActivityOrderingProjection)` |
+| [`AdminActivityOrderingProjection`](../../app/Models/AdminActivityOrderingProjection.php) | Keine explizite Eloquent-Relation |
+| [`AdminNotification`](../../app/Models/AdminNotification.php) | `user(): belongsTo(User)` · `auditEvent(): belongsTo(AuditEvent)` · `publicationCheckpoint(): belongsTo(PublicationCheckpoint)` |
+| [`PublicationCheckpoint`](../../app/Models/PublicationCheckpoint.php) | `adminUser(): belongsTo(User)` · `auditEventLinks(): hasMany(PublicationCheckpointEvent)` · `parent(): belongsTo(self)` · `source(): belongsTo(self)` |
+| [`PublicationCheckpointEvent`](../../app/Models/PublicationCheckpointEvent.php) | `checkpoint(): belongsTo(PublicationCheckpoint)` · `auditEvent(): belongsTo(AuditEvent)` |
+| [`ContactMessage`](../../app/Models/ContactMessage.php) | Keine explizite Eloquent-Relation |
+| [`DailyMetric`](../../app/Models/DailyMetric.php) | Keine explizite Eloquent-Relation |
 
 ### Ausschnitt: Commit, Audit und Undo
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
     User["User"] -->|auditEvents| Audit["AuditEvent"]
     Receipt["AdminActionReceipt"] -->|auditEvent| Audit
@@ -75,13 +75,13 @@ flowchart LR
     Commit -->|parent / source| Commit
     Commit -->|adminUser| User
     Notification -->|publicationCheckpoint| Commit
-\`\`\`
+```
 
 ## Drei besonders wichtige Befunde
 
-1. **Self-Relations sind fachlich relevant.** \`SiteSection.parent/children\` bildet die redaktionelle Hierarchie. \`PublicationCheckpoint.parent/source\` modelliert die Veröffentlichungslinie beziehungsweise die Quelle von Restore/Revert. Der Generator muss \`self::class\` explizit erfassen; dies ist in der jetzigen Version berücksichtigt.
-2. **Eloquent und physisches Schema können absichtlich auseinanderliegen.** Die PHP-Relation \`MediaAsset::cvEntries()\` besteht weiter, obwohl \`cv_entries\` durch eine Forward-Migration als aktive Tabelle aufgegeben wurde. Wer daraus blind eine FK-Kante ins aktuelle SQL-ERD zeichnet, erzeugt eine falsche Architektur.
-3. **Persistenzbeziehungen außerhalb von Eloquent sind nicht abgebildet.** JSON-Komponenten mit \`media_asset_id\`, Snapshot-Manifeste, History-Payloads und einzelne technische Datenbanksichten müssen aus Domain-Validierung und der PostgreSQL-Katalogaufnahme kommen.
+1. **Self-Relations sind fachlich relevant.** `SiteSection.parent/children` bildet die redaktionelle Hierarchie. `PublicationCheckpoint.parent/source` modelliert die Veröffentlichungslinie beziehungsweise die Quelle von Restore/Revert. Der Generator muss `self::class` explizit erfassen; dies ist in der jetzigen Version berücksichtigt.
+2. **Eloquent und physisches Schema können absichtlich auseinanderliegen.** Die PHP-Relation `MediaAsset::cvEntries()` besteht weiter, obwohl `cv_entries` durch eine Forward-Migration als aktive Tabelle aufgegeben wurde. Wer daraus blind eine FK-Kante ins aktuelle SQL-ERD zeichnet, erzeugt eine falsche Architektur.
+3. **Persistenzbeziehungen außerhalb von Eloquent sind nicht abgebildet.** JSON-Komponenten mit `media_asset_id`, Snapshot-Manifeste, History-Payloads und einzelne technische Datenbanksichten müssen aus Domain-Validierung und der PostgreSQL-Katalogaufnahme kommen.
 
 ## Verifikation und Abdeckung
 
