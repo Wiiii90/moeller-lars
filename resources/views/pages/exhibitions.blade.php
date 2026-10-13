@@ -7,7 +7,9 @@
 @section('content')
     <x-public.page-heading :section="$section" />
     <section class="exhibitions-page" aria-label="Exhibitions">
-        @php($hasInheritedMedia = false)
+        @php
+            $hasInheritedMedia = false;
+        @endphp
         @foreach ($exhibitions as $exhibition)
             @php
                 $timing = $exhibition->temporalState(now());
@@ -187,7 +189,9 @@
             </article>
         @endforeach
         @if ($hasInheritedMedia)
-            @php($defaultCopyright = trim((string) (\App\Models\PublicContentSetting::general()->getAttribute('default_media_copyright_notice') ?? '')))
+            @php
+                $defaultCopyright = trim((string) (\App\Models\PublicContentSetting::general()->getAttribute('default_media_copyright_notice') ?? ''));
+            @endphp
             @if ($defaultCopyright !== '')
                 <footer class="exhibitions-page__copyright" aria-label="Image copyright">{{ $defaultCopyright }}</footer>
             @endif
