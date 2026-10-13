@@ -133,3 +133,24 @@ it('applies dashboard feed filters to the pinned priority list', function (): vo
     expect(array_column($pins->entries('', 'announcement'), 'key'))->toBe(['static:announcement'])
         ->and(array_column($pins->entries('catalogue', 'all'), 'key'))->toBe(['contact:'.$contact->getKey()]);
 });
+
+it('keeps pin ordering independent between administrators', function (): void {
+    $first = User::factory()->admin()->create();
+    $second = User::factory()->admin()->create();
+    config()->set('dashboard-feed.items', [
+        ['id' => 'alpha', 'type' => 'announcement', 'date' => '2026-09-01', 'title' => 'Alpha', 'body' => 'Alpha notice'],
+        ['id' => 'beta', 'type' => 'changelog', 'date' => '2026-09-02', 'title' => 'Beta', 'body' => 'Beta change'],
+    ]);
+    $this->actingAs($first, 'web');
+    $pins = app(DashboardFeedPins::class);
+    $pins->pinMany(['static:alpha', 'static:beta']);
+    $firstEntries = $pins->entries();
+    $this->actingAs($second, 'web');
+    expect($pins->entries())->toBe([]);
+    $pins->pinMany(['static:beta', 'static:alpha']);
+    $pins->move('static:alpha', 0);
+    $pins->unpinMany(['static:beta']);
+    expect(array_column($pins->entries(), 'key'))->toBe(['static:alpha']);
+    $this->actingAs($first, 'web');
+    expect($pins->entries())->toBe($firstEntries);
+});
