@@ -40,7 +40,7 @@
 }
 
 .journal-table--exhibitions col.journal-col--date {
-    width: 9.5rem;
+    width: 12.5rem;
 }
 
 .journal-table--exhibitions col.journal-col--timing {
@@ -57,7 +57,10 @@
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
-    .journal-table--exhibitions col.journal-col--date,
+    .journal-table--exhibitions col.journal-col--date {
+        width: 12.5rem;
+    }
+
     .journal-table--blog col.journal-col--publication-date {
         width: 11rem;
     }
@@ -109,7 +112,7 @@
 
 .journal-publication__date,
 .journal-date__range,
-.journal-date__vernissage-value {
+.journal-date__vernissage {
     display: block;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -122,19 +125,24 @@
     color: var(--admin-muted);
 }
 
+/* The complete structured range stays on one line while its Date column
+ * exists; the column yields to identity metadata at Narrow. */
+.journal-date__range {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    font-variant-numeric: tabular-nums;
+}
+
+.journal-date__vernissage {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .journal-date__vernissage,
 .journal-date__timing,
 .journal-publication__state {
     margin-top: .17rem;
-}
-
-.journal-date__vernissage-label,
-.journal-date__vernissage-value {
-    display: block;
-}
-
-.journal-date__vernissage-label {
-    font-size: var(--admin-font-size-table-support);
 }
 
 .journal-publication-date .journal-publication__date {

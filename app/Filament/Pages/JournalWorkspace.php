@@ -707,7 +707,7 @@ final class JournalWorkspace extends Page
 
             return [
                 'id' => (int) $post->getKey(), 'rank' => $rank, 'title' => (string) $post->getAttribute('title'),
-                'excerpt' => filled($post->getAttribute('excerpt')) ? Str::limit(trim((string) $post->getAttribute('excerpt')), 140) : null,
+                'excerpt' => $this->postTableExcerpt($post),
                 'publication' => $publication, 'state' => $state, 'thumbnail_url' => $this->coverThumbnailUrl($post),
                 'public_url' => $this->journalPublicUrl !== null && $this->postIsPublic($post, $now) ? route('journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')]) : null,
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count,
@@ -715,6 +715,17 @@ final class JournalWorkspace extends Page
                 'delete_help' => in_array($state, ['published', 'scheduled'], true) ? 'Unpublish or cancel schedule before deleting' : null,
             ];
         })->all();
+    }
+
+    /** Display the existing summary, or a plain-text preview when no excerpt was authored. */
+    private function postTableExcerpt(BlogPost $post): ?string
+    {
+        $excerpt = trim((string) ($post->getAttribute('excerpt') ?? ''));
+        $body = trim((string) ($post->getAttribute('body') ?? ''));
+        $source = $excerpt !== '' ? $excerpt : strip_tags($body);
+        $source = trim(preg_replace('/\\s+/u', ' ', html_entity_decode($source, ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? $source);
+
+        return $source !== '' ? Str::limit($source, 140) : null;
     }
 
     private function loadExhibitions(bool $refreshMetrics = true): void
@@ -760,6 +771,8 @@ final class JournalWorkspace extends Page
             $endsOn = $entry->getAttribute('ends_on');
             $dateStart = $startsOn instanceof CarbonInterface ? $startsOn->format('d.m.Y') : null;
             $dateEnd = $endsOn instanceof CarbonInterface ? $endsOn->format('d.m.Y') : null;
+            // Display structured dates as one consistent range, independent of
+            // the public-facing free-text date override.
             $dateRange = match (true) {
                 $dateStart !== null && $dateEnd !== null && $dateStart !== $dateEnd => $dateStart.' – '.$dateEnd,
                 $dateStart !== null => $dateStart,
@@ -768,12 +781,13 @@ final class JournalWorkspace extends Page
             };
             $vernissageAt = $entry->getAttribute('vernissage_at');
             $vernissage = $vernissageAt instanceof CarbonInterface
-                ? $vernissageAt->format('d.m.Y · H:i')
+                ? $vernissageAt->format('d.m.Y, H:i')
                 : (filled($entry->getAttribute('opening_text')) ? trim((string) $entry->getAttribute('opening_text')) : null);
 
             return [
                 'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
-                'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $vernissage, 'date_range' => $dateRange,
+                'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $vernissage,
+                'date_range' => $dateRange,
                 'thumbnail_url' => $this->coverThumbnailUrl($entry),
                 'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',

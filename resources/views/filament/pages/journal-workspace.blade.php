@@ -146,7 +146,7 @@
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data admin-table--ranked">
-                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog admin-table--fold-at-compact' : 'journal-table--exhibitions admin-table--fold-at-compact' }}">
+                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog admin-table--fold-dense' : 'journal-table--exhibitions admin-table--fold-at-compact' }}">
                     <colgroup>
                         <col class="admin-table__col-quarter-unit admin-table__col-position">
                         <col class="admin-table__col-quarter-unit admin-table__col-drag">
@@ -222,7 +222,7 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="admin-table__identity journal-col--identity">
+                                <td class="admin-table__identity admin-table__identity--ellipsis-meta journal-col--identity">
                                     <strong>{{ $entry['title'] }}</strong>
                                     @if ($isBlog)
                                         <small class="admin-responsive-meta">{{ ucfirst($entry['state']) }}@if ($entry['publication']) · {{ $entry['publication'] }}@endif</small>
@@ -250,10 +250,7 @@
                                     <td class="journal-date journal-col--date admin-table__yield--narrow">
                                         @if ($entry['date_range'] !== '')<span class="journal-date__range">{{ $entry['date_range'] }}</span>@else<span aria-label="No structured date">—</span>@endif
                                         @if ($entry['vernissage'])
-                                            <span class="journal-date__vernissage">
-                                                <span class="journal-date__vernissage-label">Vernissage</span>
-                                                <span class="journal-date__vernissage-value">{{ $entry['vernissage'] }}</span>
-                                            </span>
+                                            <span class="journal-date__vernissage">Vernissage: {{ $entry['vernissage'] }}</span>
                                         @endif
                                         <div class="journal-date__timing admin-table__folded-only">
                                             <span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span>

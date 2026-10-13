@@ -14,8 +14,48 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['1.3rem', '4.52rem', '4.28rem', '.72rem', '.73rem', '1rem'],
 ]);
 
+// Debug animation is ONLY an explicit opt-in on loopback hosts. It persists
+// within the tab while navigating, but never disables accessibility in prod.
+const DEBUG_KEY = 'public-folio-motion-debug';
+const DEBUG_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+const DEBUG_SEQUENCE = Object.freeze([1, 7, 3, 8, 4, 9, 2, 6, 5, 0]);
+const DEBUG_VARIANTS = Object.freeze([
+    FOLIO_VARIANTS[0],
+    ['.35rem', '6.2rem', '1.25rem', '3.0rem', '2.6rem', '2.2rem'],
+    ['2.8rem', '1.8rem', '5.1rem', '.45rem', '3.0rem', '1.05rem'],
+    ['.55rem', '5.65rem', '4.9rem', '.85rem', '1.1rem', '3.0rem'],
+    ['2.65rem', '2.15rem', '1.3rem', '3.25rem', '2.7rem', '1.3rem'],
+    ['.4rem', '6.35rem', '5.15rem', '.5rem', '1.1rem', '2.65rem'],
+    ['2.9rem', '1.55rem', '1.5rem', '3.15rem', '3.05rem', '1.15rem'],
+    ['.5rem', '5.9rem', '4.65rem', '.6rem', '1.2rem', '2.9rem'],
+    ['2.5rem', '2rem', '1.15rem', '3rem', '2.9rem', '1.1rem'],
+    ['.4rem', '6.1rem', '4.8rem', '.7rem', '1.1rem', '3.1rem'],
+]);
 let variant = 0;
 let snapshot = null;
+let debugStep = 0;
+
+// ?folio-motion=debug enables a conspicuous preview only on localhost.
+// ?folio-motion=off clears it. Ordinary pages respect reduced motion.
+export function isPublicFolioDebugEnabled(browser = window) {
+    if (!DEBUG_HOSTS.has(browser.location?.hostname)) return false;
+    const mode = new URL(browser.location.href).searchParams.get('folio-motion');
+    try {
+        if (mode === 'debug') browser.sessionStorage?.setItem(DEBUG_KEY, '1');
+        if (mode === 'off') browser.sessionStorage?.removeItem(DEBUG_KEY);
+        return mode !== 'off'
+            && (mode === 'debug' || browser.sessionStorage?.getItem(DEBUG_KEY) === '1');
+    } catch {
+        return mode === 'debug';
+    }
+}
+
+export function syncPublicFolioDebug(root = document) {
+    const enabled = isPublicFolioDebugEnabled();
+    if (enabled) root.body?.setAttribute('data-public-folio-debug', '');
+    else root.body?.removeAttribute('data-public-folio-debug');
+    return enabled;
+}
 
 export function chooseNextFolioVariant(current, random = Math.random) {
     const from = Number.isInteger(current) && current >= 0 && current < FOLIO_VARIANTS.length
@@ -55,15 +95,23 @@ function frame(values, side) {
 
 export function advancePublicFolio(root = document) {
     const current = edges(root);
-    if (!current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const debug = isPublicFolioDebugEnabled();
+    if (!current || (!debug && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
         snapshot = null;
         return false;
     }
 
+    // First visit begins at the exact approved original. During fast
+    // navigation a captured *computed* intermediate geometry wins.
     const start = snapshot ?? FOLIO_VARIANTS[variant];
     snapshot = null;
-    variant = chooseNextFolioVariant(variant);
-    const target = FOLIO_VARIANTS[variant];
+    if (debug) {
+        variant = DEBUG_SEQUENCE[debugStep % DEBUG_SEQUENCE.length];
+        debugStep += 1;
+    } else {
+        variant = chooseNextFolioVariant(variant);
+    }
+    const target = debug ? DEBUG_VARIANTS[variant] : FOLIO_VARIANTS[variant];
 
     // Apply the exact destination first so unsupported WAAPI never distorts
     // the paper. The browser then interpolates ordinary layout properties
@@ -76,7 +124,7 @@ export function advancePublicFolio(root = document) {
         if (typeof element.animate === 'function') {
             try {
                 element.animate([first, last], {
-                    duration: 920,
+                    duration: debug ? 1800 : 920,
                     easing: 'cubic-bezier(.2, .65, .25, 1)',
                 });
             } catch {
@@ -86,5 +134,6 @@ export function advancePublicFolio(root = document) {
     }
     current.folio.setAttribute('data-folio-active', '');
     current.folio.dataset.folioVariant = String(variant + 1);
+    current.folio.dataset.folioMotion = debug ? 'debug' : 'normal';
     return true;
 }

@@ -9,7 +9,7 @@ import { initializeHomeHero } from './home-hero.js';
 import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
-import { capturePublicFolio, advancePublicFolio } from './public-folio-motion.js';
+import { capturePublicFolio, advancePublicFolio, syncPublicFolioDebug } from './public-folio-motion.js';
 import { applyPublicLayoutFromMeta, initializePublicSpaLinks } from './public-spa.js';
 
 // The module and delegation are loaded once. Page-local resources aren't.
@@ -28,6 +28,7 @@ function initializePage() {
     if (!content || content === currentContent) return;
     disposePage();
     currentContent = content;
+    syncPublicFolioDebug();
     const root = document.body;
     disposers.push(initializeArtworkViewer(root));
     initializeHomeHero(root);

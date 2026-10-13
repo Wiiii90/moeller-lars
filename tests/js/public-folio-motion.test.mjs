@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     FOLIO_VARIANTS, chooseNextFolioVariant, capturePublicFolio, advancePublicFolio,
+    isPublicFolioDebugEnabled, syncPublicFolioDebug,
 } from '../../resources/js/public-folio-motion.js';
 
 function fixture({ active = false, computed = ['20px', '64px', '60px', '18px', '9px', '9px'] } = {}) {
@@ -107,4 +108,60 @@ test('a missing overlay never crashes an interrupted or completed page visit', (
         assert.equal(capturePublicFolio({ querySelector: () => null }), false);
         assert.equal(advancePublicFolio({ querySelector: () => null }), false);
     });
+});
+
+test('debug mode can override reduced motion only after explicit local opt-in', () => {
+    const previousWindow = globalThis.window;
+    const previousComputed = globalThis.getComputedStyle;
+    const data = new Map();
+    const storage = {
+        setItem: (key, value) => data.set(key, value),
+        getItem: (key) => data.get(key) ?? null,
+        removeItem: (key) => data.delete(key),
+    };
+    const browser = {
+        location: { hostname: '127.0.0.1', href: 'http://127.0.0.1:8001/paintings?folio-motion=debug' },
+        sessionStorage: storage,
+        matchMedia: () => ({ matches: true }),
+    };
+    globalThis.window = browser;
+    globalThis.getComputedStyle = (el) => el.computed;
+    try {
+        assert.equal(isPublicFolioDebugEnabled(), true);
+        const attrs = new Set();
+        const body = {
+            setAttribute: (key) => attrs.add(key),
+            removeAttribute: (key) => attrs.delete(key),
+        };
+        assert.equal(syncPublicFolioDebug({ body }), true);
+        assert.ok(attrs.has('data-public-folio-debug'));
+
+        // The SPA destination no longer has the parameter, yet this browser
+        // tab remains explicitly opted into the strong preview animation.
+        browser.location.href = 'http://127.0.0.1:8001/prints';
+        assert.equal(isPublicFolioDebugEnabled(), true);
+        const first = fixture();
+        assert.equal(advancePublicFolio(first.root), true);
+        assert.equal(first.animations.length, 2);
+        assert.equal(first.animations[0].options.duration, 1800);
+        assert.equal(first.folio.dataset.folioMotion, 'debug');
+
+        browser.location.href = 'http://127.0.0.1:8001/exhibitions?folio-motion=off';
+        assert.equal(syncPublicFolioDebug({ body }), false);
+        assert.equal(attrs.has('data-public-folio-debug'), false);
+        const restored = fixture();
+        assert.equal(advancePublicFolio(restored.root), false);
+        assert.equal(restored.animations.length, 0);
+    } finally {
+        globalThis.window = previousWindow;
+        globalThis.getComputedStyle = previousComputed;
+    }
+});
+
+test('production hosts cannot bypass reduced motion with debug query or saved storage', () => {
+    const browser = {
+        location: { hostname: 'www.artist.example', href: 'https://www.artist.example/paintings?folio-motion=debug' },
+        sessionStorage: { getItem: () => '1' },
+    };
+    assert.equal(isPublicFolioDebugEnabled(browser), false);
 });

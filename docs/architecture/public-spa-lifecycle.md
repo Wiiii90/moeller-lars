@@ -1,6 +1,6 @@
 # Öffentliche SPA-Dokumentnavigation und Instanzlebenszyklus
 
-**Code-Referenz:** `dev` bei `18b0a5943aec407fa1bc57e557a2aadcdbf395da`, nach `docs` übernommen. Dieser Ablauf wurde **aus den aktuellen JS-/Blade-/Middleware-Quellen abgeleitet**, aber nicht im Browser oder mit Laravel-End-to-End ausgeführt.
+**Code-Referenz:** `dev` bei `8fb60db6a1a427ce6f905e5d8a65454c7d39ec45`, nach `docs` übernommen. Dieser Ablauf wurde **aus den aktuellen JS-/Blade-/Middleware-Quellen abgeleitet**, aber nicht im Browser oder mit Laravel-End-to-End ausgeführt.
 
 ## Architekturentscheidung
 
@@ -67,7 +67,7 @@ Dieser Mechanismus ist aus [`routes/web.php`](../../routes/web.php), [`layouts/a
 
 ## Neuer DOM-Knoten, übertragene Folio-Geometrie und WAAPI-Animation
 
-Der Folio-Lebenszyklus in [`public-folio-motion.js`](../../resources/js/public-folio-motion.js) beim Quellstand `18b0a5943aec407fa1bc57e557a2aadcdbf395da` **verwendet keinen persistierten Knoten**. [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php) rendert **in jedem neuen `#content`** eine normale `.public-folio-decoration` mit zwei absoluten, nichtinteraktiven Kindknoten `__left` und `__right`. Das ursprüngliche, vollständige asymmetrische Atelier-Konturpaar existiert weiterhin ohne JavaScript über `#content::before/::after` als statischer Fallback.
+Der Folio-Lebenszyklus in [`public-folio-motion.js`](../../resources/js/public-folio-motion.js) beim Quellstand `8fb60db6a1a427ce6f905e5d8a65454c7d39ec45` **verwendet keinen persistierten Knoten**. [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php) rendert **in jedem neuen `#content`** eine normale `.public-folio-decoration` mit zwei absoluten, nichtinteraktiven Kindknoten `__left` und `__right`. Das ursprüngliche, vollständige asymmetrische Atelier-Konturpaar existiert weiterhin ohne JavaScript über `#content::before/::after` als statischer Fallback.
 
 Die genaue Reihenfolge aus [`app.js`](../../resources/js/app.js) ist:
 
@@ -76,6 +76,12 @@ Die genaue Reihenfolge aus [`app.js`](../../resources/js/app.js) ist:
 3. Bei `livewire:navigating` erfasst `capturePublicFolio()` die **berechneten** Positionen (links/rechts `top`, `bottom`, `width`) der alten Kontur, **sofern** sie bereits `data-folio-active` besitzt; danach laufen die Page-Disposer, und `onSwap(applyPublicLayoutFromMeta)` wird registriert.
 4. Nach dem Dokument-Swap startet `livewire:navigated` die normalen Page-Instanzen für das neue `#content`. Nur bei `pendingVisit` aktiviert `advancePublicFolio()` am **neuen** DOM-Knoten die nächste der zehn kuratierten Varianten. Ihre sechs Werte beschreiben vier vertikale Randpositionen und zwei Return-Stroke-Breiten; die unmittelbar vorige Variante wird ausgeschlossen. Ein vorhandener Snapshot wird als Startgeometrie verwendet, andernfalls die gespeicherte Variante.
 5. Für beide Seiten werden die Zielwerte **zuerst als normale Style-Eigenschaften** gesetzt. Wenn `Element.animate()` verfügbar ist, interpoliert die native Web Animations API von der erfassten Startgeometrie zum Ziel über **920 ms**. Bei fehlender WAAPI oder einem Animationsfehler bleiben die Zielwerte statisch gültig. Erst danach aktiviert `data-folio-active` die neue Kontur und unterdrückt via `:has()` die statischen Pseudoelemente.
+
+### Folio motion and local review mode
+
+`public-folio-motion.js` erlaubt ausschließlich auf Loopback-Hosts (`localhost`, `127.0.0.1`, `::1`) den expliziten Diagnoseparameter `?folio-motion=debug`. Er setzt einen tab-lokalen `sessionStorage`-Wert, der bei internen SPA-Wechseln erhalten bleibt; `?folio-motion=off` beendet ihn. Im Modus `debug` verwendet das Modul eine deterministische Variantensequenz, markiert den Body mit `data-public-folio-debug` und interpoliert die sichtbaren Konturen **1800ms** statt normal **920ms**. Nur diese lokale Opt-in-Vorschau übersteuert reduzierte Bewegung. Der Debugmodus ist kein zweiter Router oder Persistenzpfad und auf fremden Hosts nicht aktivierbar.
+
+**Beleggrenze:** JS-Modul und zugehörige Testquellen beim `dev`-Stand `8fb60db6` statisch geprüft; kein Browser- oder Testlauf in diesem Dokumentationsdurchgang. Der überzeichnete Debugmodus ist keine Produktionsabnahme.
 
 `prefers-reduced-motion: reduce` und fehlende Konturelemente verhindern die dekorative Aktivierung; es gibt keine App-Polling-Timer oder eigenen Frame-Loops. Die Animation ändert nicht die Content-Breite, Navigation oder Speicherung. Der Code ist **keine** `@persist`-DOM-Übernahme und **keine** CSS-`@property`-Transition auf dem alten Element.
 

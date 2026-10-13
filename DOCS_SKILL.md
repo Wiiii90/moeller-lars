@@ -28,8 +28,8 @@
 
 | Zuletzt geprüfte Referenz (13.10.2026) | SHA |
 | --- | --- |
-| `docs` unmittelbar vor diesem Merge | `cda314f6516a3b11487f94f5a8d330feb8237882` |
-| `dev`, für diesen Merge geprüfter Stand | `2ced9565a0a1ac93697ec2efa2b4c51ad6999f4f` |
+| `docs` unmittelbar vor diesem Merge | `45adb4b164f403484deb9499ee59a48e05811966` |
+| `dev`, für diesen Merge geprüfter Stand | `8fb60db6a1a427ce6f905e5d8a65454c7d39ec45` |
 | Synchronisierung | echter Zwei-Eltern-Merge; neue `docs`-SHA danach frisch abrufen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
@@ -126,12 +126,14 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branch-Checkpoint (13.10.2026):** `dev`-Stand `2ced9565a0a1ac93697ec2efa2b4c51ad6999f4f` nach Pfadprüfung als echter Zwei-Eltern-Merge in `docs` übernommen. `docs`-HEAD danach erneut ermitteln; bei parallel eingetroffenen neuen `dev`-Commits nur bewusst mergen.
+**Branch-Checkpoint (13.10.2026):** Den `dev`-Stand `8fb60db6a1a427ce6f905e5d8a65454c7d39ec45` (sechs Commits seit dem letzten übernommenen Stand `2ced9565`) nach Pfadprüfung als echten Zwei-Eltern-Merge in `docs` übernommen. `docs`-HEAD nach dem Merge frisch prüfen; künftig eingehende `dev`-Commits nicht blind überschreiben. `testing`, `main` und CI unberührt.
 
-**Neuste fachliche Tabellenregel:** Blog **Date + Status**, Exhibition **Date + Status**, je Faltung bei **64rem tatsächlicher Tabellenbreite**. Die getrennte Exhibition-Date verwendet ausschließlich `starts_on/ends_on`; Vernissage zweizeilig, abgeleiteter Status nur Past/Current/Upcoming. Im Blog bleibt der **voll beschriftete Sieben-Actions-Rail bis zur 80rem-Workspace-Obergrenze** erhalten und wird **bei 78rem** im zentralen `table-contract.css` gemeinsam mit der Actions-`<col>` kompakt; keine Feature-CSS-Kopie. Die alte 88rem-Aussage und der verbliebene Date/Timing-Verweis sind in `ADMIN-TABLE-CONTRACT.md` und `ADMIN-RESPONSIVE-TABLES.md` beseitigt. `ui-skills.md` bleibt ein knapper Verweis auf diesen kanonischen Owner.
+**Journal:** Kanonischer `ADMIN-TABLE-CONTRACT.md` an Quellstand angepasst. Blog Status faltet bei **74rem** tatsächlicher Tabellenbreite in Date; die sieben Actions behalten Labels bis **72rem**, danach gemeinsamer icon-only Rail- und Spaltenwechsel. Exhibition Status/Date faltet bei **64rem**; Date-Range und `Vernissage: dd.mm.yyyy, HH:mm` bleiben getrennte einzelne Zeilen, die Vernissage kann ellipsieren. Blog-Excerpt verwendet vorhandenen Text oder einen auf **140 Zeichen** begrenzten, normalisierten Body-Preview. Gemeinsamer `admin-table__identity--ellipsis-meta`-Modifier für einzeilige Überschrift und zweite Zeile. Die obsolete 78rem-/Zwei-Zeilen-Vernissage-Dokumentation und doppelte responsive Journal-Breakpoints entfernt. Umsetzung in PHP/Blade/CSS quellengeprüft, **kein neuer Browserlauf**.
 
-**Weiter erledigt:** Public-SPA-Dokumentation aus dem aktuellen Livewire-CSP-/Folio-Code korrigiert; 20 explizite Webrouten plus [read-only Quellprüfer](scripts/check-architecture-routes.php). Isolierter PHP-8.4-Positiv-/Negativlauf durchgeführt, vollständiger Repository-Lauf noch offen. Der neue Public-Folio-Browser-Test auf `dev` wurde ausschließlich als Quelltext betrachtet, nicht ausgeführt. Gezielt alle **61 Markdown-Dateien** auf alte Journal-/Public-Persistenz-Formulierungen kontrolliert; Admin-Notification-Persistenz wurde korrekt **nicht** entfernt.
+**Public-SPA:** Loopback-only `?folio-motion=debug`, persistiert pro Tab, mit überzeichneter **1800ms**-Diagnoseanimation und `?folio-motion=off` statisch verifiziert und im Public-Vertrag plus `public-spa-lifecycle.md` dokumentiert. Normaler Reduced-Motion-Vertrag bleibt bestehen. Aktualisierte JS-/Testquellen **nur gelesen**, nicht ausgeführt; keine Produktabnahme aus dem Debugmodus abgeleitet.
 
-**Nächster konkreter Schritt:** Source-Manifest- und Vertragsanalysergebnisse gegen weiteren `dev`-Stand abgleichen; danach vor allem den lokal ausführbaren PHP-Quellprüfer und die vorhandenen Architektur-Generatoren an syntaktischen Randfällen weiter validieren. Falls ein sicherer vollständiger Checkout nicht verfügbar ist, **niemals** native Full-Repo-/DB-/Browser-Checks behaupten.
+**Duplikatabbau:** Vier am Ende von `ui-skills.md` fehlplatzierte Metrics-/Stage-Bullets gelöscht, nachdem die Regeln bereits in `ADMIN-RESPONSIVE-METRICS.md` und `ADMIN-RESPONSIVE-STAGES.md` verortet wurden. Keine Anwendungscode-Korrektur auf `docs`.
 
-**Offen:** migriertes isoliertes PostgreSQL-`pg_catalog`, vollständige PHP-Generator-Checks, produktrelevante Browser-Abnahme und Notification-Transport. Nicht CI oder `testing`.
+**Nächster Schritt:** Weitere thematische Duplikate mit realen Code-Owners abgleichen und PHP-Tokenizer/Generatoren an isolierten Syntax-Fixtures validieren, bis ein sicherer vollständiger Checkout zur Verfügung steht. Eingehende `dev`-Änderungen mit neuem Compare prüfen.
+
+**Offen:** native Full-Checkout-PHP-Generatorprüfungen, isoliertes vollständig migriertes PostgreSQL-`pg_catalog`, Notification-Transport und Browser-Produktabnahme. Weder `testing` noch CI für diese Arbeit verwenden.
