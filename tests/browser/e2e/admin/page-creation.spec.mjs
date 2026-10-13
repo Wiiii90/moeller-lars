@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
-test('creating an unpublished Page persists across reload without publishing a public route', async ({ page }) => {
+test('creating an unpublished Page persists across reload without publishing a public route', async ({ page }, testInfo) => {
   await signIn(page);
   await page.goto('/admin/pages');
-  const unique = Date.now().toString(36);
-  const title = 'Browser creation ' + unique;
-  const slug = 'browser-creation-' + unique;
+  // The database is freshly seeded per browser run; retries get a distinct, predictable slug.
+  const suffix = testInfo.repeatEachIndex + '-' + testInfo.retry;
+  const title = 'Browser creation ' + suffix;
+  const slug = 'browser-creation-' + suffix;
 
   await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
