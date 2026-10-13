@@ -31,7 +31,7 @@
                 $hasDetails = $hasFacts || $hasDescription || $hasCover
                     || $gallery->isNotEmpty() || $hasActions;
             @endphp
-            <article class="exhibition-entry @if ($hasCover || $gallery->isNotEmpty()) exhibition-entry--with-art @else exhibition-entry--textual @endif @if (in_array($timing, ['current', 'upcoming'], true)) exhibition-entry--forthcoming @endif" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
+            <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
                     <details class="exhibition-entry__disclosure">
                         <summary class="exhibition-entry__summary">

@@ -178,16 +178,19 @@ the Blog's actual artworks have small square-edged double-line mounts; no
 artwork is cropped or covered. The white Content surface itself, its width,
 artist name and navigation retain their established ownership.
 
-The layered outer-sheet silhouette is accepted. The new interior drawing
-uses occasional short open strokes and translucent graphite washes behind
-headlines, plus a small marginal note surface in an opened Exhibition.
-Those details can enter the configured content padding but never displace the
-actual text into it. This interior pass remains pending browser review.
-Do not revive numbering, date-axis nodes, graphical stickers, clipped/castle
-corners, rounded corners, chips, repeated bordered entries, fake old-paper
-textures, decorative bars, duplicated underlines, or extra Admin controls.
-Neither Journal view renders a timeline. The presentation is reversible without
-changing Journal storage, publication or media contracts.
+The layered outer-sheet silhouette and the Blog's small angled corner strokes
+on individual entries are the only accepted new interior accents. These Blog
+strokes may enter the configured content padding but never displace text into
+it; they alternate to the left or right with the cover composition. The
+translucent headline washes, Exhibition date marks, heading backgrounds,
+open-body corner strokes and tinted fact panels were browser-rejected and
+removed. Do not restore them by accumulating overrides. Exhibition details
+retain their existing artwork/visit/prose composition pending a separate
+design pass. Do not revive numbering, date-axis nodes, graphical stickers,
+clipped/castle corners, rounded corners, chips, repeated bordered entries,
+fake old-paper textures, decorative bars, duplicated underlines or extra
+Admin controls. Neither Journal view renders a timeline. The presentation is
+reversible without changing Journal storage, publication or media contracts.
 
 The Blog *index* omits the repeated, inherited General copyright notice,
 including the previously detached closing colophon. Explicit media-specific
