@@ -5,6 +5,7 @@ use App\Domain\Publication\PublicationService;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 it('denies public delivery of an unreferenced original even after publication, while the admin can access it', function (): void {
@@ -99,21 +100,39 @@ it('serves a page image only while its reference is part of the committed public
     $this->get($url)->assertNotFound();
     $this->get($variantUrl)->assertNotFound();
 
-    // Authenticated Preview can inspect Working before publication, but public URLs cannot.
-    $this->get(route('preview.media.original', ['mediaAsset' => $asset->getKey()]))
+    $previewOriginal = route('preview.media.original', ['mediaAsset' => $asset->getKey()]);
+    $previewVariant = route('preview.media.variant', ['mediaVariant' => $variant->getKey()]);
+
+    // Working media remains private even when the actual original and variant
+    // files exist. Signing in as an ordinary user is not sufficient.
+    Auth::guard('web')->logout();
+    $this->get($previewOriginal)->assertNotFound();
+    $this->get($previewVariant)->assertNotFound();
+
+    $this->actingAs(User::factory()->create(), 'web');
+    $this->get($previewOriginal)->assertNotFound();
+    $this->get($previewVariant)->assertNotFound();
+
+    // Only an administrator may inspect the Working media before Commit.
+    $this->actingAs($actor, 'web');
+    $this->get($previewOriginal)
         ->assertOk()
         ->assertHeader('Cache-Control', 'private, max-age=3600');
-    $this->get(route('preview.media.variant', ['mediaVariant' => $variant->getKey()]))
-        ->assertOk();
+    $this->get($previewVariant)->assertOk();
 
     $publication = app(PublicationService::class);
     expect($publication->commit($actor))->not->toBeNull();
 
+    // Committed content is public to guests, not merely visible to the
+    // administrator who authored the draft.
+    Auth::guard('web')->logout();
     $this->get($url)
         ->assertOk()
         ->assertHeader('Content-Type', 'image/jpeg')
         ->assertHeader('Cache-Control', 'public, max-age=31536000, immutable');
     $this->get($variantUrl)->assertOk()->assertHeader('Content-Type', 'image/webp');
+
+    $this->actingAs($actor, 'web');
 
     // An editorial change must not leak before the next explicit Commit.
     $settings->update(['blocks' => [[...$publishedImage, 'published' => false]]]);
