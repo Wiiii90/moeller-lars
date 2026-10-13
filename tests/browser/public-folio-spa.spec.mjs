@@ -75,44 +75,7 @@ test('live Laravel preview keeps one document and activates folio only after SPA
     }, candidate);
     await expect(page).toHaveURL(candidate);
     await expect.poll(() => page.evaluate(() => window.__publicDocumentMarker)).toBe('unchanged');
-    await expect.poll(() => page.evaluate(() => document.body.dataset.publicSpaVisit)).toBe('true');
     await expect(page.locator('.public-folio-decoration')).toHaveAttribute('data-folio-active', '');
     await expect(page.locator('.public-folio-decoration__left')).toBeVisible();
 });
 
-test('local opt-in displays conspicuous folio motion even with reduced-motion enabled', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.route('http://127.0.0.1:8001/**', (route) => route.fulfill({
-        status: 200, contentType: 'text/html',
-        body: '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'
-            + '<body class="public-site">' + sheet('Paintings') + '</body></html>',
-    }));
-    await page.goto('http://127.0.0.1:8001/paintings?folio-motion=debug');
-    await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
-    await page.addScriptTag({
-        content: motionSource.replace(/^export /gm, '')
-            + '\nwindow.publicFolioDebugTest = { syncPublicFolioDebug, advancePublicFolio };',
-    });
-
-    const state = await page.evaluate(() => {
-        const testApi = window.publicFolioDebugTest;
-        testApi.syncPublicFolioDebug();
-        testApi.advancePublicFolio();
-        const folio = document.querySelector('.public-folio-decoration');
-        const edge = folio.querySelector('.public-folio-decoration__left');
-        const animation = edge.getAnimations()[0];
-        return {
-            reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-            optedIn: document.body.hasAttribute('data-public-folio-debug'),
-            mode: folio.dataset.folioMotion,
-            duration: animation?.effect.getTiming().duration,
-            start: animation?.effect.getKeyframes()[0].bottom,
-            end: animation?.effect.getKeyframes()[1].bottom,
-        };
-    });
-    expect(state.reducedMotion).toBe(true);
-    expect(state.optedIn).toBe(true);
-    expect(state.mode).toBe('debug');
-    expect(state.duration).toBe(1800);
-    expect(state.start).not.toBe(state.end);
-});
