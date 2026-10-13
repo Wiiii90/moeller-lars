@@ -14,11 +14,11 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['1.17rem', '3.74rem', '4.02rem', '1.06rem'],
 ]);
 export const MENU_VARIANTS = Object.freeze([
-    ['.35rem', '-.38rem', '.48rem', '-.44rem'],
-    ['.46rem', '-.47rem', '.61rem', '-.51rem'],
-    ['.26rem', '-.31rem', '.39rem', '-.35rem'],
-    ['.42rem', '-.43rem', '.56rem', '-.56rem'],
-    ['.35rem', '-.38rem', '.48rem', '-.44rem'],
+    ['-.76rem', '-.38rem', '-1.1rem', '-.44rem'],
+    ['-.88rem', '-.47rem', '-1.23rem', '-.51rem'],
+    ['-.66rem', '-.31rem', '-.98rem', '-.35rem'],
+    ['-.83rem', '-.43rem', '-1.17rem', '-.56rem'],
+    ['-.76rem', '-.38rem', '-1.1rem', '-.44rem'],
 ]);
 export const FOLIO_SHADOW_DEPTHS = Object.freeze([
     [7, 8], [9, 11], [6, 9], [8, 10], [5, 7],

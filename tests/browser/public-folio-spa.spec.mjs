@@ -44,22 +44,28 @@ test('content and menu animate their EXISTING strokes continuously, with no extr
     expect(state.effects.every(x => x.frames[0].top === undefined
         || x.frames[0].top === x.frames.at(-1).top)).toBe(true);
 
-    // The menu left trace cannot wrap around the bottom; the right side
-    // physically reaches a few pixels into the white sheet.
+    // Both original outside strokes run upward OPEN; only their bottom
+    // return turns a few pixels into the white menu sheet.
     const geometry = await page.evaluate(() => {
         const menu = document.querySelector('.site-navigation');
         const left = getComputedStyle(menu, '::before');
         const right = getComputedStyle(menu, '::after');
         return {
-            leftNoBottom: left.borderBottomStyle === 'none',
-            leftHasTop: left.borderTopStyle === 'solid',
+            leftNoTop: left.borderTopStyle === 'none',
+            rightNoTop: right.borderTopStyle === 'none',
+            leftHasBottom: left.borderBottomStyle === 'solid',
             rightHasBottom: right.borderBottomStyle === 'solid',
+            leftInside: parseFloat(left.width) > Math.abs(parseFloat(left.left)),
             rightInside: parseFloat(right.width) > Math.abs(parseFloat(right.right)),
+            leftAboveMenu: parseFloat(left.top) < 0,
+            rightAboveMenu: parseFloat(right.top) < 0,
         };
     });
     expect(geometry).toEqual({
-        leftNoBottom: true, leftHasTop: true,
-        rightHasBottom: true, rightInside: true,
+        leftNoTop: true, rightNoTop: true,
+        leftHasBottom: true, rightHasBottom: true,
+        leftInside: true, rightInside: true,
+        leftAboveMenu: true, rightAboveMenu: true,
     });
 
     // A Livewire-like swap during the ongoing animation must start from

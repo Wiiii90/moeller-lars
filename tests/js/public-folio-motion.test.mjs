@@ -56,7 +56,7 @@ function browser(testFn, args) {
 test('original content and menu contours are first states and every state is bounded', () => {
     assert.equal(FOLIO_VARIANTS.length, 10);
     assert.deepEqual(FOLIO_VARIANTS[0], ['1.10rem', '4.00rem', '3.80rem', '1.15rem']);
-    assert.deepEqual(MENU_VARIANTS[0], ['.35rem', '-.38rem', '.48rem', '-.44rem']);
+    assert.deepEqual(MENU_VARIANTS[0], ['-.76rem', '-.38rem', '-1.1rem', '-.44rem']);
     assert.deepEqual(MENU_VARIANTS.at(-1), MENU_VARIANTS[0]);
     for (const v of FOLIO_VARIANTS) {
         assert.equal(v.length, 4);
@@ -68,6 +68,10 @@ test('original content and menu contours are first states and every state is bou
     for (const v of MENU_VARIANTS) {
         assert.equal(v.length, 4);
         assert.ok(v.every(x => /^-?\d*\.?\d+rem$/.test(x)));
+        // All four offsets keep the top ends above the menu and preserve
+        // one lower connection at each side throughout the animation.
+        assert.ok(parseFloat(v[0]) < 0 && parseFloat(v[2]) < 0);
+        assert.ok(parseFloat(v[1]) < 0 && parseFloat(v[3]) < 0);
     }
     assert.equal(FOLIO_SHADOW_DEPTHS.length, 10);
     assert.ok(FOLIO_SHADOW_DEPTHS.every(v => v.length === 2 && v.every(n => n >= 5 && n <= 12)));
