@@ -202,6 +202,16 @@ Exhibitions Folded: Position | Drag | Image | Exhibition | Dates | Actions | Sel
 
 **Source owners:** [Journal projection](../app/Filament/Pages/JournalWorkspace.php), [Blade](../resources/views/filament/pages/journal-workspace.blade.php), [Journal CSS](../resources/css/admin/journal.css), [shared table-pressure CSS](../resources/css/admin/table-contract.css), [shared identity CSS](../resources/css/admin/data-workspace.css).
 
+## Pages Home row: routing actions
+
+The Home row in Pages remains an ordinary **table-row action owner**, not an extra Settings dialog or a bulk Selection control. The visible `Skip Home` / `Show Home` state button is one-click through `ManagesHomePagePresentation::toggleSkipHome()`: enabling checks for an eligible published destination, writes only through `HomeRoutingSettingsService`, and refreshes the Pages projection; a validation error reports a warning rather than a false success. It never mounts a separate Skip Home Action dialog.
+
+When Skip Home is active, the Home row exposes an inline destination dropdown with `Next page in order` or another eligible published top-level target. `changeSkipHomeTarget()` validates and commits through **the same Home routing service**; target options come from the shared `HomeRoutingDialog` rather than a second query/validation scheme. It does not open Home Settings. The established Skip icon remains authoritative; `Show Home` uses the registered crossed-circle/no-symbol semantic action. All ordinary row-action icons use the shared Filament Small icon geometry (1rem); changing the visible semantic icon must not change row height.
+
+The destination dropdown borrows the canonical `admin-selection__menu` **popup surface**, but its owner remains the `admin-pages__redirect-target` **row action**, never the taller `admin-selection__anchor` toolbar trigger. Do not use the latter's 2.5rem minimum control height or create a duplicate row/select system. This is a task-specific table behavior; Skip Home routing semantics remain owned by the [Public contract](PUBLIC-IMPLEMENTATION-CONTRACT.md), and shared dialog persistence by the [Dialog contract](ADMIN-DIALOG-CONTRACT.md).
+
+**Source:** [Home row Blade](../resources/views/filament/pages/partials/site-section-row.blade.php), [row Actions](../app/Filament/Pages/Concerns/ManagesHomePagePresentation.php), [Home routing service](../app/Domain/Content/HomeRoutingSettingsService.php), [shared target options](../app/Filament/Support/HomeRoutingDialog.php).
+
 ## Implementation authority
 
 Shared implementation lives in:
