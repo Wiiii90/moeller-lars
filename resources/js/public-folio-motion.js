@@ -78,11 +78,12 @@ function playPseudo(element, pseudo, frames, duration) {
     }
 }
 
-function cycleStates(start, states, order) {
-    // First and final frame coincide: no visible restart at loop boundaries.
+function cycleStates(start, states, order, first, second) {
+    // Matching first/last keyframes avoid any jump at a loop boundary.
     const values = [start, ...order.slice(1, -1).map(index => states[index]), start];
     return values.map((value, index) => ({
-        top: value[0], bottom: value[1],
+        top: value[first],
+        bottom: value[second],
         offset: index / (values.length - 1),
         easing: 'ease-in-out',
     }));
@@ -90,15 +91,10 @@ function cycleStates(start, states, order) {
 
 function animateCorners(element, start, states, order, leftDuration, rightDuration) {
     if (!start || !element) return;
-    const frames = cycleStates(start, states, order);
-    playPseudo(element, '::before', frames.map(({ top, bottom, offset, easing }) =>
-        ({ top, bottom, offset, easing })), leftDuration);
-    playPseudo(element, '::after', frames.map((item, index) => ({
-        top: (index === 0 || index === frames.length - 1 ? start : states[order[index]])[2],
-        bottom: (index === 0 || index === frames.length - 1 ? start : states[order[index]])[3],
-        offset: item.offset,
-        easing: item.easing,
-    })), rightDuration);
+    playPseudo(element, '::before',
+        cycleStates(start, states, order, 0, 1), leftDuration);
+    playPseudo(element, '::after',
+        cycleStates(start, states, order, 2, 3), rightDuration);
 }
 
 // Called on initial page load AND each completed Livewire visit.
