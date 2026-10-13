@@ -207,6 +207,15 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Neue Erkenntnis: Admin-Audit bereitet Receipts/Activity vor, aber Notification-Versand ist ein separater expliziter Schritt; Undo besitzt separate Ordering-/Snapshot-/Media-/State-Inversen.
 - **Nächster Schritt:** Generator-Abdeckung und Korrektheit auf vollständigem Checkout prüfen bzw. PHP-Typgraph-Lücken (u. a. dynamische Resolver und skipped declarations) methodisch sichtbar machen. Parallel die verbleibenden Domain- und Filament-Einstiegspunkte inventarisieren.
 
+## 6b. Fortsetzung 2026-10-13 — JSON-Komponentenarchitektur
+
+- [Strukturierte Komponenten](docs/architecture/structured-components.md) und [maschinenlesbarer Katalog](docs/architecture/structured-components.json) erfasst.
+- Aus PHP Konstanten/Normalisierern verifiziert: **6** persistierte Component-Typen, **3** Contact-Child-Typen, **4** Divider-Varianten und individuelle `published`-Flags. `heading` und `rich_text` des Home-Editors serialisieren beide zu `text`.
+- Custom Page und Home teilen den bestehenden `CustomPageSetting`-Validator. JSON-Media-IDs sind **keine automatisch gesicherten SQL-FKs**.
+- `dev`-Änderung an Public-Exhibitions über echten Merge `0ebeea0fe1031d0912f9e0d7827115d052509465` übernommen.
+- **Zusätzlich lokal geprüft:** vorhandener `generate-architecture-eloquent.php` mit PHP 8.4 in isoliertem Modellfixture: Syntax, `--write`, `--check` sowie erwarteter Fail bei Quelländerung. Realer Voll-Checkout-/DB-Check weiterhin offen.
+- **Nächster Schritt:** Vollständige PHP-Symbol-/Service-Generatorabdeckung und dynamische Fehlstellen nachprüfbar erfassen; anschließend Routen/Livewire-/Filament-Einstiegspunkte.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:

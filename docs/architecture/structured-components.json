@@ -1,0 +1,183 @@
+{
+  "format": "structured-content-inventory-v1",
+  "source_code_ref": "a71ec7d1b28d09cec1399998239b09bdaefdea11",
+  "scope": "Source-reviewed normalized PHP JSON shapes, not a JSON Schema validator or SQL foreign-key catalogue.",
+  "owners": {
+    "customPage": "app/Models/CustomPageSetting.php::normalizedBlocks;validateBlocks",
+    "home": "app/Domain/Content/HomePresentationEditorialService.php::validateComponents;validateConfiguration",
+    "routing": "app/Domain/Content/HomeRoutingSettingsService.php"
+  },
+  "components": [
+    {
+      "type": "image",
+      "fields": [
+        "type",
+        "published",
+        "media_asset_id",
+        "image_decorative"
+      ],
+      "publicRule": "Available image required; ALT text mandatory unless decorative"
+    },
+    {
+      "type": "text",
+      "fields": [
+        "type",
+        "published",
+        "title",
+        "body"
+      ],
+      "publicRule": "Title max 160; body is canonical safe rich text"
+    },
+    {
+      "type": "list",
+      "fields": [
+        "type",
+        "published",
+        "title",
+        "media_asset_id",
+        "items"
+      ],
+      "items": [
+        "published",
+        "date",
+        "title",
+        "meta",
+        "location",
+        "url",
+        "body"
+      ],
+      "publicRule": "Item title nonempty <=240; optional safe HTTP(S) URL; nested public-media guards"
+    },
+    {
+      "type": "divider",
+      "fields": [
+        "type",
+        "published",
+        "variant"
+      ],
+      "variants": [
+        "thin",
+        "subtle",
+        "strong",
+        "dotted"
+      ]
+    },
+    {
+      "type": "contact",
+      "fields": [
+        "type",
+        "published",
+        "children"
+      ],
+      "childTypes": [
+        "public_email",
+        "social_links",
+        "contact_form"
+      ],
+      "publicRule": "Each child type at most once"
+    },
+    {
+      "type": "legal_disclaimer",
+      "fields": [
+        "type",
+        "published"
+      ],
+      "publicRule": "At most one per component sequence"
+    }
+  ],
+  "contactChildren": [
+    {
+      "type": "public_email",
+      "fields": [
+        "type",
+        "published"
+      ],
+      "valueSource": "generalSettings.public_email"
+    },
+    {
+      "type": "social_links",
+      "fields": [
+        "type",
+        "published",
+        "social_platforms"
+      ],
+      "valueSource": "selected supported General social links"
+    },
+    {
+      "type": "contact_form",
+      "fields": [
+        "type",
+        "published",
+        "form_state",
+        "status_text"
+      ],
+      "states": [
+        "enabled",
+        "under_construction"
+      ],
+      "publicRule": "Under-construction requires nonempty text, max 500"
+    }
+  ],
+  "home": {
+    "templates": [
+      "artwork",
+      "under_construction",
+      "custom"
+    ],
+    "legacyTemplate": "skip_home",
+    "routingColumns": [
+      "skip_home",
+      "skip_target_section_id"
+    ],
+    "configurationKeys": [
+      "artwork",
+      "under_construction",
+      "custom"
+    ],
+    "artwork": {
+      "heroModes": [
+        "automatic",
+        "fixed",
+        "random"
+      ],
+      "poolRules": [
+        "newest",
+        "year"
+      ],
+      "fields": [
+        "show_details",
+        "show_gallery_link",
+        "show_navigation",
+        "enable_viewer",
+        "hero_mode",
+        "fixed_artwork_id",
+        "pool_rule",
+        "pool_year",
+        "manual_include_ids"
+      ]
+    },
+    "underConstruction": {
+      "fields": [
+        "public_site_gate",
+        "components"
+      ],
+      "componentsOwner": "CustomPageSetting::assertEditableComponents"
+    },
+    "custom": {
+      "fields": [
+        "components"
+      ],
+      "componentsOwner": "CustomPageSetting::assertEditableComponents"
+    },
+    "editorKindToPersistedType": {
+      "heading": "text",
+      "rich_text": "text",
+      "image": "image",
+      "divider": "divider",
+      "list": "list",
+      "contact": "contact",
+      "legal_disclaimer": "legal_disclaimer"
+    }
+  },
+  "verification": "Component/child/divider constants cross-checked against PHP; nested fields curated from normalizedBlocks/validateBlocks; runtime behavior and DB FKs not verified."
+}
