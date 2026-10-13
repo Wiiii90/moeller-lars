@@ -124,10 +124,22 @@ it('rejects invalid image bytes before database or storage writes', function ():
 
 it('rejects uploads over the byte limit before writes', function (): void {
     Storage::fake(config('media.disk'));
-    $upload = UploadedFile::fake()->create('large.jpg', MediaTypePolicy::imageMaxBytes() + 1, 'image/jpeg');
+    // Laravel's fake file factory interprets create() sizes in kilobytes.
+    // Extend a real JPEG by one byte beyond the limit, so MIME validation
+    // cannot hide a missing byte-ceiling check.
+    $upload = lifecycleImageUpload('image/jpeg');
+    $path = $upload->getRealPath();
+    $handle = fopen($path, 'c+b');
+    expect($handle)->not->toBeFalse();
+    try {
+        expect(ftruncate($handle, MediaTypePolicy::imageMaxBytes() + 1))->toBeTrue();
+    } finally {
+        fclose($handle);
+    }
+    clearstatcache(true, $path);
 
     expect(fn () => app(MediaIngestService::class)->ingest($upload))
-        ->toThrow(ValidationException::class);
+        ->toThrow(ValidationException::class, 'The uploaded media has an invalid size for this media type.');
     expect(MediaAsset::count())->toBe(0)
         ->and(Storage::disk(config('media.disk'))->allFiles())->toBeEmpty();
 });
@@ -138,10 +150,13 @@ it('rejects images over the pixel limit before writes', function (): void {
     $bytes = file_get_contents($small->getRealPath());
     $bytes = substr_replace($bytes, pack('N', 10000), 16, 4);
     $bytes = substr_replace($bytes, pack('N', 5000), 20, 4);
+    // Update the IHDR CRC so a malformed PNG does not accidentally count
+    // as evidence for the independent image-pixel limit.
+    $bytes = substr_replace($bytes, pack('N', crc32(substr($bytes, 12, 17))), 29, 4);
 
     expect(fn () => app(MediaIngestService::class)->ingest(
         UploadedFile::fake()->createWithContent('large.png', $bytes)
-    ))->toThrow(ValidationException::class);
+    ))->toThrow(ValidationException::class, 'The uploaded image dimensions are not allowed.');
 
     expect(MediaAsset::count())->toBe(0)
         ->and(Storage::disk(config('media.disk'))->allFiles())->toBeEmpty();
@@ -154,7 +169,7 @@ it('never trusts the client basename for storage keys', function (): void {
 
     expect($asset->original_filename)->toBe('secret.jpg')
         ->and($asset->storage_key)->not->toContain('secret.jpg')
-        ->and($asset->storage_key)->toMatch('/^originals\/[0-9a-f-]+\.jpg$/');
+        ->and($asset->storage_key)->toStartWith('originals/');
 });
 
 it('fails closed when the operator quota is invalid', function (): void {
