@@ -1373,20 +1373,6 @@ body {
     margin-bottom: 0;
 }
 
-/* Quiet editorial separation, not an artificial corner beside the dates
-   or an Open action: a short fading rule only BETWEEN entries, aligned with
-   the title column. The chronological rows themselves remain unboxed. */
-.exhibition-entry + .exhibition-entry::before {
-    position: absolute;
-    top: -.82rem;
-    left: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
-    width: min(4.5rem, 30%);
-    height: 1px;
-    content: "";
-    background: linear-gradient(90deg, rgba(133, 127, 117, .23), transparent);
-    pointer-events: none;
-}
-
 .exhibition-entry__summary {
     display: grid;
     min-width: 0;
@@ -1705,9 +1691,6 @@ body {
 @container (max-width: 26rem) {
     .exhibition-entry {
         margin-bottom: 1.6rem;
-    }
-    .exhibition-entry + .exhibition-entry::before {
-        left: 0;
     }
 
     .exhibition-entry__summary {

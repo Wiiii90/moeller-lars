@@ -229,11 +229,10 @@ Content width, disappear on narrow viewports, and never change artist-configured
 background, reading insets or media size. Only the Blog's actual artworks have
 small square-edged double-line mounts. The additional Gallery item corners have been rejected and entirely removed:
 artwork images and existing labels are separated by their natural white space.
-The rejected Exhibition date/margin corners are also removed. Their replacement
-is one faint, short, fading separator aligned with the TITLE column in the
-inter-entry whitespace (aligned with the only column at narrow widths).
-Neither surface gets framed records, date-axis timelines, decorative stickers
-or repeated corner ornaments.
+All extra Exhibition entry separators have been removed after browser rejection;
+the open chronological catalogue is intentionally undecorated between entries.
+Neither surface gets framed records, date-axis timelines, decorative stickers,
+repeated corner ornaments or new entry rules.
 No artwork is cropped or covered.
 The existing artist name and navigation retain their independent layout owners.
 
