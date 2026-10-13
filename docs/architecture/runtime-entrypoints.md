@@ -30,6 +30,16 @@ sequenceDiagram
 
 `bootstrap/app.php` setzt `UseCommittedPublicState` global an den Anfang, `RecordOperationalMetrics` ans Ende sowie `SecurityHeaders` und `AttachPublicationState` in den Web-Stack. Der Committed-Read-Kontext betrifft GET/HEAD außerhalb `admin*`, `preview*`, `livewire*` und `up`. `PublicationPostgresGrammar` qualifiziert darin nur getrackte Tabellen, **keine globale PostgreSQL-`search_path`-Umschaltung**.
 
+## Maschinenlesbare Quellprüfung
+
+Der [Routenprüfer](../../scripts/check-architecture-routes.php) vergleicht `routes/web.php` mit [`runtime-entrypoints.json`](runtime-entrypoints.json). Er verifiziert **alle expliziten** `Route::get/post`-Deklarationen in ihrer Quellreihenfolge, HTTP-Methode, (Preview-)Pfad, Zeilennummer sowie Controller/Action beziehungsweise das Public-CSP-Closure. Neue Routen, verrutschte Zeilen und abweichende Handler machen die Prüfung fehlgeschlagen:
+
+```sh
+php scripts/check-architecture-routes.php --check
+```
+
+**Durchgeführt:** `php -l`, Positivprüfung und absichtlich fehlerhafte Zeilenangabe in einer isolierten PHP-8.4-Teststruktur. Der reale Routenindex wurde zusätzlich quellenweise gegen alle 20 aktuellen Deklarationen verglichen, aber ein **nativer Skriptlauf im vollständigen Laravel-Checkout ist offen**. Die Prüfung bootet keine Framework-Routen, kennt also weder automatisch registrierte Paket-Routen noch zur Laufzeit hinzugefügte Middleware.
+
 ## Explizite Routengruppen
 
 | Gruppe | Routen | Zugriffsweg |

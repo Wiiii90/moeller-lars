@@ -126,14 +126,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Geprüfter Stand (13.10.2026):** `dev`-Quelle `18b0a5943aec407fa1bc57e557a2aadcdbf395da` per zwei echten Zwei-Eltern-Merges `aab5a6ea6289bd8432b9473dbad599ccb5251646` und `9f08044bbaf4103a3b7b9053630de509a23fd75f` nach `docs` integriert. `docs`-SHA nach dieser Änderung erneut ermitteln.
+**Stand:** `docs` war vor diesem Commit `3b35877351f4dc44ff2bf3eadb1f44258d650b49`, `dev` zuletzt `18b0a5943aec407fa1bc57e557a2aadcdbf395da`. Vor weiteren Änderungen **aktuelle HEADs** ermitteln.
 
-**Abgeschlossene Aktualisierung:**
-- Journal Date/Timing statt Date/Schedule: **beide** Journal-Split/Fold-Gruppen wechseln bei 64rem; der bestehende `ADMIN-TABLE-CONTRACT.md` wurde mit den realen Blade-/CSS-Spalten versöhnt und `ADMIN-RESPONSIVE-TABLES.md` verlinkt nur die kanonische Regel. `ui-skills.md` bleibt gekürzt, keine doppelte alte Norm zurückkopieren.
-- [20 HTTP-Eintrittspunkte](docs/architecture/runtime-entrypoints.json) statt 19: neue benannte Public-`/site-assets/livewire-csp.js`-Closure, exakte Controller-/Closure-Quellzeilen nachgezogen.
-- [Public-SPA](docs/architecture/public-spa-lifecycle.md) jetzt korrekt mit einem **einmaligen delegierten `Livewire.navigate()`-Click-Handler**, Public-CSP-Asset mit `finally`-Config-Restore und aktualisiertem Folio-Lebenszyklus.
-- **Folio-Korrektur:** neue DOM-Knoten statt `@persist`; `capturePublicFolio()` beim Navigating, `advancePublicFolio()` nach Navigated, WAAPI **920ms** mit statischem CSS-Fallback. [Public-Implementierungsvertrag](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md) korrigiert. Kein Browsertest/keine JS-Testausführung durch `docs`.
+**Abgeschlossen:** Die 20 expliziten GET/POST-Webrouten einschließlich Public-CSP-Asset-Closure sind nun auch durch [`scripts/check-architecture-routes.php`](scripts/check-architecture-routes.php) als Quellmanifest prüfbar. Der Prüfer kontrolliert Anzahl, Reihenfolge, Zeile, Pfad, Methode, Controller-/Closure-Art. **Tatsächlich lokal mit PHP 8.4 ausgeführt:** Syntaxcheck, Positivtest an einem Fixture mit Public-/Preview-/CSP-Routen, erwarteter Fehler bei veraltetem Zeilenanker. Die 20 Original-Quellbelege wurden über GitHub geprüft; vollständiger nativer Checkout-Lauf bleibt offen.
 
-**Nächster ausführbarer Schritt:** Die Routen-Manifest-Quellanker automatisch und read-only validierbar machen; danach semantische Altbehauptungen in Architektur- und Fachverträgen weiter prüfen. Neue `dev`-Commits nur nach Pfadvergleich/konfliktbewusstem Merge.
+**Weitere zuletzt aktualisierte Verträge:** SPA mit `Livewire.navigate()`-Delegation und sicherem öffentlichem Livewire-CSP-Script; Folio-Kontur als **neu gerenderte DOM-Knoten** mit Computed-Style-Snapshot und WAAPI (kein `@persist`), Journal Date/Timing 64rem in Table-Owner. Keine Browserabnahme behauptet.
 
-**Offen:** native Full-Checkout-PHP-Generatorläufe, isolierte reale PostgreSQL-`pg_catalog`-Extraktion, Public-SPA- und Admin-Browserabnahme, Notification-Retry-Transport. Nicht CI oder `testing`.
+**Nächster Schritt:** verbliebene Fach-/Architekturdokumente gezielt auf Widersprüche mit dem neuesten `dev`-Quellstand und auf semantische Doppelungen prüfen; Generatorsyntax und einzelne Strukturinventare bei konkreten Änderungen nachziehen. Vor weiteren Arbeiten `dev`-Diff und Mergefähigkeit kontrollieren.
+
+**Länger offen:** nativer Full-Checkout-PHP-Generatorlauf, isoliertes migriertes PostgreSQL-`pg_catalog`, echte Browserabnahme, Notification-Transport-Verifikation. Kein CI/`testing`.
