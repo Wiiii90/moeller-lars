@@ -9,7 +9,9 @@ it('uses the current content-fit public responsive contract', function (): void 
 
     expect($presentation)
         ->toContain('@media (max-width: 64rem)')
-        ->toContain('@media (max-width: 46rem)')
+        ->toContain('@container (max-width: 26rem)')
+        ->toContain('@container (min-width: 27.5rem)')
+        ->toContain('container-type: inline-size;')
         ->toContain('@media (max-width: 34rem)')
         ->toContain('.site-navigation__rail > nav')
         ->toContain('.site-navigation__rail[hidden]')
