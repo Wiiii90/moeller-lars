@@ -2,6 +2,10 @@
 
 The documents in this directory are split by purpose so current application contracts are not mixed with legacy investigation notes or unfinished-work diaries.
 
+## Architecture inventory (in progress)
+
+- [Architecture source inventory and models](architecture/README.md) — evidence-backed, source-versioned inventory with concrete Publication and Exhibition Map flows; coverage gaps are explicit. This is a staged replacement, not a second normative source of contracts.
+
 ## Current application contracts
 
 These describe the durable current application architecture and behavior. Browser/product milestone acceptance, release-candidate promotion and environment-specific evidence are tracked separately through the current review/release workflow:
