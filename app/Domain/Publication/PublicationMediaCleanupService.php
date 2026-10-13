@@ -108,12 +108,13 @@ final class PublicationMediaCleanupService
         }
     }
 
-    public function drain(): void
+    public function drain(): int
     {
         $rows = DB::table('publication_media_cleanups')
             ->orderBy('id')
             ->get(['id', 'media_asset_id', 'storage_key']);
         $changed = false;
+        $removedFiles = 0;
 
         foreach ($rows as $row) {
             $mediaAssetId = (int) $row->media_asset_id;
@@ -122,17 +123,21 @@ final class PublicationMediaCleanupService
             }
 
             $key = (string) $row->storage_key;
-            if (! $this->deleteKey($key)) {
+            $removed = false;
+            if (! $this->deleteKey($key, $removed)) {
                 continue;
             }
 
             DB::table('publication_media_cleanups')->where('id', $row->id)->delete();
             $changed = true;
+            $removedFiles += (int) $removed;
         }
 
         if ($changed) {
             $this->refreshCapacitySnapshot();
         }
+
+        return $removedFiles;
     }
 
     /** @param list<string> $storageKeys */
@@ -190,16 +195,21 @@ final class PublicationMediaCleanupService
         return ! $this->referenceQuery->isReferenced($workingAsset);
     }
 
-    private function deleteKey(string $key): bool
+    private function deleteKey(string $key, ?bool &$removed = null): bool
     {
         $disk = Storage::disk(config('media.disk'));
 
         try {
-            if ($disk->exists($key) && ! $disk->delete($key)) {
+            $removed = false;
+            $existed = $disk->exists($key);
+            if ($existed && ! $disk->delete($key)) {
                 return false;
             }
 
-            return ! $disk->exists($key);
+            $complete = ! $disk->exists($key);
+            $removed = $existed && $complete;
+
+            return $complete;
         } catch (Throwable) {
             return false;
         }

@@ -208,6 +208,10 @@ it('does not return a partial download when bulk selection contains missing or m
         ->assertStatus(409);
     $this->get(route('admin.media.download-selected', ['ids' => ['invalid']]))
         ->assertStatus(422);
+    $this->get(route('admin.media.download-selected', ['ids' => [$available->getKey(), 'invalid']]))
+        ->assertStatus(422);
+    $this->get(route('admin.media.download-selected', ['ids' => [$available->getKey(), ['nested' => 'not-an-id']]]))
+        ->assertStatus(422);
     $this->get(route('admin.media.download-selected', ['ids' => [['nested' => 'not-an-id']]]))
         ->assertStatus(422);
 

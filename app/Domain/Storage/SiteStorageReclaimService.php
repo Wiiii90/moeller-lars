@@ -21,12 +21,12 @@ final class SiteStorageReclaimService
         private readonly MediaCapacityService $capacity,
     ) {}
 
-    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,generated_files:int,generated_bytes:int} */
+    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,generated_files:int,generated_bytes:int,removed_files:int,changed:bool} */
     public function reclaim(): array
     {
         $actor = $this->audit->requireActor();
 
-        $result = DB::transaction(function () use ($actor): array {
+        return DB::transaction(function () use ($actor): array {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
 
             $protectedIds = $this->protectedPublicationCheckpointIds();
@@ -62,32 +62,32 @@ final class SiteStorageReclaimService
             AdminActionReceipt::query()->delete();
             $this->queueDeletedWorkingMedia();
 
-            $this->undoContext->withoutReceipts(
-                fn () => $this->audit->record(
-                    $actor,
-                    'storage.reclaimed',
-                    'storage',
-                    1,
-                ),
-            );
-
-            return [
+            $result = [
                 'undo_receipts' => $undoReceipts,
                 'publication_snapshots' => count($releasableIds),
                 'publication_rows' => $publicationRows,
                 'protected_snapshots' => count($protectedIds),
             ];
+
+            $removedFiles = $this->mediaCleanup->drain();
+            $generated = $this->variantRegeneration->reclaimRebuildableFiles();
+            $this->capacity->refreshCachedSnapshot();
+            $changed = $result['undo_receipts'] > 0 || $result['publication_snapshots'] > 0
+                || $removedFiles > 0 || $generated['files'] > 0;
+            if ($changed) {
+                $this->undoContext->withoutReceipts(
+                    fn () => $this->audit->record($actor, 'storage.reclaimed', 'storage', 1),
+                );
+            }
+
+            return [
+                ...$result,
+                'generated_files' => $generated['files'],
+                'generated_bytes' => $generated['bytes'],
+                'removed_files' => $removedFiles,
+                'changed' => $changed,
+            ];
         }, attempts: 1);
-
-        $this->mediaCleanup->drain();
-        $generated = $this->variantRegeneration->reclaimRebuildableFiles();
-        $this->capacity->refreshCachedSnapshot();
-
-        return [
-            ...$result,
-            'generated_files' => $generated['files'],
-            'generated_bytes' => $generated['bytes'],
-        ];
     }
 
     /** @return list<int> */

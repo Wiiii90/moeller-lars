@@ -55,16 +55,17 @@ final class AdminMediaController extends Controller
         }
 
         $ids = collect($rawIds)
-            ->map(static function (mixed $value): ?int {
+            ->map(static function (mixed $value): int {
                 if (! is_scalar($value)) {
-                    return null;
+                    abort(422, 'Selected file identifiers must be positive integers.');
                 }
 
                 $id = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 
-                return $id === false ? null : (int) $id;
+                abort_if($id === false, 422, 'Selected file identifiers must be positive integers.');
+
+                return (int) $id;
             })
-            ->filter(static fn (?int $id): bool => $id !== null)
             ->unique()
             ->values()
             ->all();

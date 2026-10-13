@@ -89,3 +89,29 @@ it('never regenerates an unreferenced committed variant for an unauthenticated p
     $this->get(route('media.variant', $variant))->assertNotFound();
     Storage::disk(config('media.disk'))->assertMissing($key);
 });
+
+it('preserves variants when file deletion fails and reclaims them on retry', function (bool $throws): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $asset = app(MediaIngestService::class)->ingest(UploadedFile::fake()->image('retry-variant.jpg', 640, 480));
+    $variant = $asset->variants()->sole();
+    $disk = Storage::disk(config('media.disk'));
+    $failingDisk = Mockery::mock($disk);
+    $expectation = $failingDisk->shouldReceive('delete')->with($variant->storage_key)->once();
+    if ($throws) {
+        $expectation->andThrow(new RuntimeException('Filesystem unavailable'));
+    } else {
+        $expectation->andReturnFalse();
+    }
+    Storage::shouldReceive('disk')->andReturn($failingDisk);
+    expect(app(MediaVariantRegenerationService::class)->reclaimRebuildableFiles())->toBe(['files' => 0, 'bytes' => 0]);
+    expect($disk->exists($variant->storage_key))->toBeTrue()
+        ->and($disk->exists($asset->storage_key))->toBeTrue()
+        ->and($variant->fresh()->state)->toBe('available');
+    $failingDisk->shouldReceive('delete')->with($variant->storage_key)->once()
+        ->andReturnUsing(fn () => $disk->delete($variant->storage_key));
+    expect(app(MediaVariantRegenerationService::class)->reclaimRebuildableFiles())
+        ->toBe(['files' => 1, 'bytes' => (int) $variant->byte_size]);
+    expect($disk->exists($variant->storage_key))->toBeFalse()
+        ->and($disk->exists($asset->storage_key))->toBeTrue();
+    expect(app(MediaVariantRegenerationService::class)->reclaimRebuildableFiles())->toBe(['files' => 0, 'bytes' => 0]);
+})->with(['delete returns false' => false, 'delete throws' => true]);

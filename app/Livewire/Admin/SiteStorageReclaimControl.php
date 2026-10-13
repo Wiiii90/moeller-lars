@@ -25,13 +25,17 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
             ->color('danger')
             ->action(function (): void {
                 $result = app(SiteStorageReclaimService::class)->reclaim();
+                if (! $result['changed']) {
+                    return;
+                }
 
                 app(AdminNotifier::class)->notification(
                     title: 'Storage reclaimed',
                     body: sprintf(
-                        'Cleared %d Undo entries, released %d older publication restore snapshots, and removed %d rebuildable generated files. Activity remains available.',
+                        'Cleared %d Undo entries, released %d older publication restore snapshots, and removed %d obsolete media files and %d rebuildable generated files. Activity remains available.',
                         $result['undo_receipts'],
                         $result['publication_snapshots'],
+                        $result['removed_files'],
                         $result['generated_files'],
                     ),
                     status: 'success',
