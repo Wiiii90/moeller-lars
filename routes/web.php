@@ -24,9 +24,17 @@ Route::get('/robots.txt', [PublicSeoController::class, 'robots'])->name('seo.rob
 // ordinary bundle remains unchanged for Filament; only this asset endpoint
 // serves Livewire 4's CSP-safe frontend for public wire:navigate.
 Route::get('/site-assets/livewire-csp.js', static function () {
-    config()->set('livewire.csp_safe', true);
+    // Do not leak a request-local setting into a long-lived PHP worker or
+    // the Admin panel's normal Alpine bundle.
+    $previous = config('livewire.csp_safe', false);
 
-    return app(FrontendAssets::class)->returnJavaScriptAsFile();
+    try {
+        config()->set('livewire.csp_safe', true);
+
+        return app(FrontendAssets::class)->returnJavaScriptAsFile();
+    } finally {
+        config()->set('livewire.csp_safe', $previous);
+    }
 })->name('public.livewire.csp');
 
 Route::middleware(ProtectArtistPreview::class)
