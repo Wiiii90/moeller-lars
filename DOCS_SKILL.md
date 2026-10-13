@@ -126,35 +126,34 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branchstand (13.10.2026):** `docs` vor diesem Commit `85c1fa08e4949bb71e5f3a77a0af128f8e7cb082`;
+**Branchstand:** `docs` vor diesem Commit `ecdf52deab13d83390a7171a4a4882b3c626693a`,
 `dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`.
-`dev` war zu diesem Zeitpunkt vollständig gemerged; alle HEADs
-vor weiterer Arbeit erneut abrufen.
+Vor Weiterarbeit beide HEADs neu prüfen und `dev`-Änderungen bewusst übernehmen.
 
-**Abgeschlossen:**
-- Die **61 Markdown-Dateien** auf `85c1fa08e4949bb71e5f3a77a0af128f8e7cb082` vollständig auf einfache
-  relative Datei-/Verzeichnislinks geprüft: **450** erkannte relative
-  Pfadziele und **0 fehlende Ziele**. Eingezäunte Codebeispiele,
-  reine Abschnittsanker, verschachtelte Spezial-Linksyntax und externe
-  URLs waren **nicht Teil** dieser Prüfung. GitHub-Quellenprüfung, kein
-  ausgeführter nativer Repository-Linter.
-- `AGENTS.md`-Doppelung für Autosave/Search/Audit/Media-Refresh reduziert
-  auf Verweise zu den kanonischen [Control](docs/ADMIN-CONTROL-CONTRACT.md),
-  [Media](docs/MEDIA.md), [Activity](docs/ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md)
-  und [Notification](docs/ADMIN-NOTIFICATION-CONTRACT.md) Verträgen.
-- **Widerspruch behoben:** `ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md`
-  behauptete einen Reset-Audit-Event auch ohne staged Änderungen.
-  `PublicationVersionService::resetStagedChanges()` erstellt ihn nur
-  bei positivem Working/LIVE-Diff; der Null-Diff-Fall räumt nur den
-  Working-Herkunftskontext ab. Die normative Darstellung folgt nun dem
-  tatsächlichen Code.
+**Erledigte Medienvertragskorrektur:** [MEDIA.md](docs/MEDIA.md)
+unterscheidet nun korrekt den `MediaReferenceQuery`-Nachweis von
+`MediaAssetEditorialService::delete()`: existierende Referenzen
+führen zum kanonischen Entfernen betroffener Usages/Custom-/Home-/Journal-
+Verweise, nicht zu einem generellen Löschverbot. Physische Dateilöschung
+berücksichtigt Working/LIVE/History-Schutz. Das alte `CvEntry`-
+Direktbild/RichText-Modell ist nicht mehr aktiv; heutige CV-Komposition
+liegt in Custom Pages. Die unterstützten, sicheren externen HTTP(S)-
+Rich-Text-Bilder wurden vom `media:<id>`-Storage-Format unterschieden.
+**Alles quellengeprüft; kein Runtime-/Browser-Test und keine App-Änderung.**
 
-**Unmittelbar weiter:** Dokumentationslinks zusätzlich auf relevante
-Abschnittsanker prüfen und die aktuelle Public-SPA-/Admin-Policy nur
-bei belegtem Quellenwiderspruch korrigieren; danach verbleibende
-duplizierte Root-Anleitungen weiter kürzen, ohne accepted UX Regeln
-zu verlieren.
+**Außerdem erledigt:** einfache relative Links in allen **61** Markdown-
+Dateien / **450** erkannten Pfaden geprüft (keine fehlenden Ziele;
+Anker/externe URLs noch nicht geprüft). Root-Regeln für
+Storage-Kapazität, 300-ms-Search, Audit und Edit-Blurs verlinken jetzt
+ihre kanonischen Domain-/Control-/Notification-Owner.
+Der Reset-Null-Diff-Audit-Widerspruch wurde ebenfalls korrigiert.
 
-**Weiter offen:** nativer kompletter PHP-Generator-Checkout,
-Wegwerf-PostgreSQL/`pg_catalog`, Browser-/Livewire-E2E und
-Notifier-Retry/Mehrfachtransport. Keine CI-/`testing`-Änderungen.
+**Nächster konkreter Schritt:** Verbleibende aktuelle Vertragswidersprüche
+in `docs/ARCHITECTURE.md`, `docs/DATA-MODEL.md` und
+`docs/ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md` am Code überprüfen,
+sowie ausgewählte interne Abschnittsanker validieren. Keine reine
+Markdown-Menge als Ersatz für fachliche Prüfung behandeln.
+
+**Offen:** echter nativer PHP-Generatorlauf im Full-Checkout, isolierte
+PostgreSQL-Schemaaufnahme, ausgeführte Public-/Admin-Browserchecks und
+Notifier-Transport-Retry-Test. CI und `testing` unangetastet.

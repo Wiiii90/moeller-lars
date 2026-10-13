@@ -60,7 +60,7 @@ Structured consumers include:
 
 - Artwork primary/additional media;
 - Blog/Exhibition Cover and Gallery through `JournalEntryMedia`;
-- CV direct image;
+- historical CV direct-image references were retired with the `cv_entries` table; current CV/Vita is Custom Page List/Text content;
 - Custom Page Image components;
 - Home Image components;
 - site identity/favicon.
@@ -71,9 +71,9 @@ Rich Text consumers reference media through canonical Markdown:
 ![](media:<id>)
 ```
 
-`RichTextMediaReference` owns parsing/formatting. There is no alternate Journal inline-image runtime syntax, alternate Rich Text image model or arbitrary external-image reference system.
+`RichTextMediaReference` owns parsing/formatting of **managed Storage media IDs**. There is no second managed-media identifier syntax for Journal. The shared `AdminRichText` editor also supports **independent, validated external HTTP(S) image URLs**; `SafeRichTextRenderer` and `SafeLinkPolicy` govern them. Such external links are not `MediaAsset` references and must not be presented as managed Storage assets. See [Admin control contract](ADMIN-CONTROL-CONTRACT.md#rich-text-and-reusable-media-selection).
 
-Current Rich Text consumers include Blog body, Exhibition description, Custom Page Text/List rich text, CV body and Home rich text.
+Current Rich Text consumers include Blog body, Exhibition description, Custom Page Text/List rich text and Home rich text. Historical CV-body references belonged to the retired `cv_entries` schema and are **not** a current independently queryable editor/persistence model.
 
 ## Reference versus publication
 
@@ -83,7 +83,7 @@ Two questions are deliberately separate:
 
 Answers whether an asset is referenced anywhere in canonical editorial data.
 
-This protects deletion and powers Storage reference/destination inspection. A reference may belong to draft, inactive or presentation-disabled content.
+This powers Storage reference/destination inspection and informs **canonical reference-aware deletion**. It does **not** uniformly block deletion: `MediaAssetEditorialService::delete()` checks whether references exist and, when they do, invokes the domain-owned removal path before marking the asset and variants deleted. A reference may belong to draft, inactive or presentation-disabled content.
 
 For a Journal SiteSection, reference discovery includes **both retained Blog and Exhibition entry worlds** even when only one Journal template is currently active. Template switching does not make inactive retained content “unreferenced”.
 
@@ -136,9 +136,9 @@ Consumer-specific type restrictions remain explicit. Storage supporting audio do
 
 Normal media deletion is conservative and reference-aware.
 
-- any supported canonical reference blocks destructive deletion;
+- references must be discovered and removed or updated by the **single canonical editorial deletion transaction** before the asset is logically deleted; their presence is not an unconditional refusal to delete;
 - removing one usage does not delete a shared asset;
-- canonical Rich Text/direct-image references in Custom/CV/Home/Journal are part of deletion accounting;
+- canonical Rich Text and direct-image references in Custom Pages, Home, Journal, Artwork and site identity are part of deletion accounting; retired CV database rows do not reappear as a current reference source;
 - deleting a MediaAsset through an explicitly authorized cleanup path removes/updates all supported canonical references symmetrically before physical cleanup where the current domain contract allows it;
 - physical cleanup failure may leave repairable private orphan bytes but must not reactivate a logically deleted record;
 - variants follow their original lifecycle and remain rebuildable.
@@ -147,7 +147,7 @@ Presentation toggles such as Exhibition Gallery/Map do not silently detach unrel
 
 ### Gallery, Artwork usage and Storage deletion
 
-A `MediaAsset` is a reusable Storage file; an `Artwork` is a separate editorial record. **When explicit Storage deletion is authorized**, [`MediaAssetEditorialService`](../app/Domain/Media/MediaAssetEditorialService.php) must remove all related usages within its single canonical transaction, unpublish any Artwork losing its primary usage and remove that Artwork from its Gallery without deleting unrelated assets. An unassigned Artwork remains as historical/editorial metadata; a Gallery card must never be left orphaned. Do **not** add a second Gallery-local cleanup mechanism. Ordinary reference-protected deletion remains conservative as described above.
+A `MediaAsset` is a reusable Storage file; an `Artwork` is a separate editorial record. **When explicit Storage deletion is authorized**, [`MediaAssetEditorialService`](../app/Domain/Media/MediaAssetEditorialService.php) must remove all related usages within its single canonical transaction, unpublish any Artwork losing its primary usage and remove that Artwork from its Gallery without deleting unrelated assets. An unassigned Artwork remains as historical/editorial metadata; a Gallery card must never be left orphaned. Do **not** add a second Gallery-local cleanup mechanism. Reference discovery is an input to this removal transaction, **not** a general hard block; subsequent physical-media removal is subject to Working, LIVE and retained-history protection.
 
 The Gallery editor may retain incomplete Draft artworks. Public and artist-preview artwork-card queries are limited to media-renderable Artworks with exactly one available image/video primary, effective ALT and (for images) a valid thumbnail. `PublicMedia` must not hide a violated invariant as a successful render. Newly created Artworks remain Draft until explicitly published.
 
