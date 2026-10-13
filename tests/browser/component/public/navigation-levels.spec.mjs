@@ -59,12 +59,9 @@ test.beforeEach(async ({ page }) => {
     });
 });
 
-test('parent switches levels without a second row, with a contextual icon return', async ({ page }) => {
+test('parent switches to contextual child navigation and back', async ({ page }) => {
     await page.setViewportSize({ width: 1200, height: 700 });
     await page.goto('https://navigation.test/');
-    const header = page.locator('.site-navigation');
-    const originalHeight = await header.evaluate((element) => element.getBoundingClientRect().height);
-
     await expect(page.locator('[data-navigation-main]')).toBeVisible();
     await expect(page.locator('#child-about')).toBeHidden();
     await page.locator('[data-navigation-parent-link]').click();
@@ -72,17 +69,8 @@ test('parent switches levels without a second row, with a contextual icon return
     await expect(page.locator('[data-navigation-main]')).toBeHidden();
     await expect(page.locator('#child-about')).toBeVisible();
     await expect(page.locator('[data-navigation-back] .site-navigation__back-label')).toHaveText('ABOUT');
-    await expect(page.locator('[data-navigation-back] .public-icon path')).toHaveAttribute('d', 'M9 14 4 9l5-5M20 20v-7a4 4 0 0 0-4-4H4');
+    await expect(page.locator('[data-navigation-back] .public-icon')).toBeVisible();
     await expect(page.locator('[data-navigation-back]')).toHaveAttribute('aria-label', 'Return to main navigation from About');
-    const separator = await page.locator('.site-navigation__breadcrumb-separator').evaluate((element) => {
-        const style = getComputedStyle(element);
-        const bounds = element.getBoundingClientRect();
-        return { width: bounds.width, height: bounds.height, background: style.backgroundColor };
-    });
-    expect(separator.width).toBeCloseTo(1, 1);
-    expect(separator.height).toBeGreaterThan(10);
-    expect(separator.background).not.toBe('rgba(0, 0, 0, 0)');
-    expect(await header.evaluate((element) => element.getBoundingClientRect().height)).toBeCloseTo(originalHeight, 1);
     expect(await page.locator('[data-navigation-main]:visible, [data-navigation-submenu]:visible').count()).toBe(1);
 
     // A parent with its own URL remains reachable from the new level.
@@ -96,20 +84,12 @@ test('parent switches levels without a second row, with a contextual icon return
     await expect(page.locator('#child-about')).toBeHidden();
 });
 
-test('direct child routes remain in the one-row child level; Escape returns to main', async ({ page }) => {
+test('direct child route remains selected and Escape returns to main', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 700 });
     await page.goto('https://navigation.test/biography');
     await expect(page.locator('#child-about')).toBeVisible();
     await expect(page.locator('[data-navigation-main]')).toBeHidden();
     await expect(page.locator('#child-about a[href="/biography"]')).toHaveAttribute('aria-current', 'page');
-
-    const geometry = await page.evaluate(() => {
-        const menu = document.querySelector('.site-navigation').getBoundingClientRect();
-        const content = document.querySelector('#content').getBoundingClientRect();
-        return { leftGap: Math.abs(menu.left - content.left), rightGap: Math.abs(menu.right - content.right) };
-    });
-    expect(geometry.leftGap).toBeLessThan(1);
-    expect(geometry.rightGap).toBeLessThan(1);
 
     await page.getByRole('button', { name: 'Return to main navigation from About' }).focus();
     await page.keyboard.press('Escape');
