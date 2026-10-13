@@ -3,15 +3,15 @@
 use App\Domain\Admin\DashboardFeed;
 use App\Filament\Pages\Dashboard;
 use App\Models\ContactMessage;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 it('filters the Dashboard feed through Livewire and clears stale selections', function (): void {
     config()->set('dashboard-feed.items', []);
     $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 
     $needle = ContactMessage::query()->create([
         'sender_name' => 'Distinctive Needle',

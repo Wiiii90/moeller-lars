@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `32528be482cd2867f6d17548d66fb167402f7517` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `7a10574c2dab1f88a981024cddd1c99551e7eff1` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -58,6 +58,8 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Reintegrated later `dev` Journal/Exhibition changes and their **new or updated Feature/Unit tests**, preserving the intentional deletion of `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php`.
 - Corrected the newly merged Journal copyright Unit test to construct `JournalMediaRenderer` with a mock `PublicMedia` dependency rather than calling `app()` without bootstrapping Laravel. All current `tests/Unit` files were scanned for `app()`; no other such calls were found.
 - Removed two brittle markup assertions from Custom Page type-conversion coverage; the test still performs the real conversion and verifies persisted component types. Deleted a separate one-row test consisting entirely of incidental drag-handle markup and copy assertions.
+- Source-inventoried **all 125 PHP files** (115 tests, plus helpers/bootstrap) by case name and inspected obvious weak-assertion patterns. Further full code-to-contract review remains required.
+- Removed a constant-only Undo retention case and a hard-coded 256 MiB expectation; the live retention behavior test remains. Removed Home component options equality snapshot, leaving real component conversion/validation; removed Storage CSS class order and enum icon assertions while keeping actual page actions.
 
 ## 5. Explicitly unverified / risks
 
@@ -72,7 +74,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 
 ## 6. Next work, in recommended order
 
-1. Continue auditing existing test assertions **against live production code**, not filenames alone. Remove empty signal, stale user interactions, duplicated checks, arbitrary constants and hidden dependency on test order.
+1. Continue auditing every inventoried test **against live production code**, not filenames alone. Name-and-pattern inventory is complete but is **not** a full implementation review. Remove empty signal, stale user interactions, duplicated checks, arbitrary constants and hidden dependency on test order.
 2. Review remaining split test files as standalone PHP: unused global fixtures, setup/teardown scope, function redeclarations, nondeterminism, and correctness of failure expectations. Publication media/commit route setup was simplified; review other domains rather than redoing that work.
 3. Strengthen only the important gaps: permissions, audit/persistence correctness, Livewire reopen/no-op/error behavior, publication Working vs LIVE, rollback, public privacy and media authorization. Use **few, strong** tests.
 4. Validate test discovery, syntax, and runtime using a verified disposable environment **without CI**, if one becomes available; otherwise mark each unexecuted layer as `NOT RUN`.
@@ -85,11 +87,11 @@ Track each review by **verified contract**, not by number of files. 'Source-revi
 
 | Domain / test layer | Status | Still to investigate |
 | --- | --- | --- |
-| Activity / audit / undo | Partially source-reviewed | Validate split suites, permission/no-op/notification semantics end-to-end |
+| Activity / audit / undo | Cases inventoried; partial behavior source-review | Validate split suites, permission/no-op/notification semantics end-to-end |
 | Dashboard / notifications | Partially source-reviewed | Run Livewire interaction tests, verify mutations and notifications |
-| General / Home / Pages | Partially source-reviewed | Review every workflow against traits, actions and current dialog behavior |
+| General / Home / Pages | Cases inventoried; partial behavior source-review | Review every workflow against traits, actions and current dialog behavior |
 | Journal / Exhibitions | Partial; recent dev merge | Map autosave + address validation, public visibility, Journal state changes |
-| Gallery / Storage / media | Partial | Cross-check deletion/variants/usage, public authorization and preview |
+| Gallery / Storage / media | Cases inventoried; partial behavior source-review | Cross-check deletion/variants/usage, public authorization and preview |
 | Publication / Restore | Partially source-reviewed | Execute realistic Commit/Stage/Revert and media retention cases |
 | Public / security / contact / SEO | Partial | Reverify current routes, middleware, side effects and auth |
 | Unit / Integration / Migration | Partial | Unit construction, historic migration retirement, runtime correctness |

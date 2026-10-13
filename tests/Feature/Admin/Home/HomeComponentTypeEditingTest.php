@@ -2,7 +2,6 @@
 
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
-use App\Filament\Pages\HomePresentation;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -63,23 +62,6 @@ it('confirms content loss for Rich Text conversions and rejects stale component 
         ->toThrow(ValidationException::class);
 });
 
-it('offers Home the same editorial component types as Custom Page', function (): void {
-    $page = new HomePresentation;
-
-    expect($page->componentTypeOptions)->toBe([
-        'image' => 'Image',
-        'heading' => 'Heading',
-        'rich_text' => 'Rich Text',
-        'divider' => 'Divider',
-        'list' => 'List',
-        'contact' => 'Contact',
-        'legal_disclaimer' => 'Legal Disclaimer',
-    ])->and($page->newComponentOptions)->toHaveKey('heading')
-        ->and($page->newComponentOptions)->toHaveKey('list')
-        ->and($page->newComponentOptions)->toHaveKey('contact')
-        ->and($page->newComponentOptions)->toHaveKey('legal_disclaimer');
-});
-
 it('accepts the four shared Divider variants for Home and rejects invalid styles', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $settings = homeComponentTypeSettings(HomeTemplate::Custom, [['type' => 'divider']]);
@@ -92,8 +74,6 @@ it('accepts the four shared Divider variants for Home and rejects invalid styles
         ))->toBeBool();
         expect($service->configuration($settings->fresh())['custom']['components'][0]['variant'])->toBe($variant);
     }
-
-    expect(\App\Models\CustomPageSetting::DIVIDER_VARIANTS)->toBe(\App\Domain\Content\DividerVariant::VALUES);
 
     expect(fn () => $service->updateComponent(
         $settings, HomeTemplate::Custom, 0, 'divider',

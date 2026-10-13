@@ -1,15 +1,11 @@
 <?php
 
-use App\Domain\Content\HomePresentationResolver;
-use App\Filament\Support\HomeRoutingDialog;
-use App\Models\HomePresentationSetting;
 use App\Models\User;
-use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Support\Facades\DB;
+use App\Filament\Support\HomeSettingsDialog;
 
 it('edits Hero navigation and viewer controls through the existing Home settings form', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    $dialog = app(\App\Filament\Support\HomeSettingsDialog::class);
+    $dialog = app(HomeSettingsDialog::class);
     $data = $dialog->fill();
 
     expect($data)->toHaveKeys([

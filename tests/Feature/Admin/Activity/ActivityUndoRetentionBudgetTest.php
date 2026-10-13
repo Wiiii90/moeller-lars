@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Admin\AdminActionReceiptRetentionPolicy;
 use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\User;
@@ -54,8 +53,7 @@ it('retains Undo receipts by age count and logical byte budget without deleting 
     $first = $createReceipt(1);
     $firstBytes = (int) $first->fresh()?->getAttribute('logical_bytes');
 
-    expect(AdminActionReceiptRetentionPolicy::MAX_BYTES_PER_USER)->toBe(256 * 1024 * 1024)
-        ->and($firstBytes)->toBeGreaterThan(4_096);
+    expect($firstBytes)->toBeGreaterThan(4_096);
 
     DB::statement(
         "SELECT set_config('app.admin_undo_max_bytes', ?, true)",

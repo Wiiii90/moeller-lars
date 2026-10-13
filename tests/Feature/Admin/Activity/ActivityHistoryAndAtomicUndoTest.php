@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Admin\AdminActionReceiptService;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Filament\Support\AdminActivityFeed;
@@ -68,9 +67,4 @@ it('treats a Gallery rename and its linked page update as one atomic Undo', func
     expect($gallery->fresh()?->getAttribute('name'))->toBe('Original Gallery')
         ->and($section->fresh()?->getAttribute('title'))->toBe('Original Gallery')
         ->and($section->fresh()?->getAttribute('navigation_label'))->toBe('Original Gallery');
-});
-
-it('keeps a large but bounded Undo receipt window', function (): void {
-    expect(AdminActionReceiptService::RETENTION_DAYS)->toBe(365)
-        ->and(AdminActionReceiptService::MAX_RECEIPTS_PER_USER)->toBe(5000);
 });
