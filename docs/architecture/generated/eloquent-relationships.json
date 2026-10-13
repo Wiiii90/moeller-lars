@@ -254,7 +254,7 @@
             "kind": "hasMany",
             "target": "JournalEntryMedia",
             "path": "app/Models/BlogPost.php",
-            "line": 35
+            "line": 42
         },
         {
             "model": "BlogPost",
@@ -262,7 +262,7 @@
             "kind": "belongsTo",
             "target": "SiteSection",
             "path": "app/Models/BlogPost.php",
-            "line": 30
+            "line": 37
         },
         {
             "model": "CustomPageSetting",
