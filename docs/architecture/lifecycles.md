@@ -98,6 +98,8 @@ stateDiagram-v2
 
 [MediaIngestService](../../app/Domain/Media/MediaIngestService.php) schreibt Original und gegebenenfalls Variante vor der DB-Erstellung und versucht bei einem Fehler die schon angelegten Binärdateien zu bereinigen. [MediaAssetEditorialService::delete()](../../app/Domain/Media/MediaAssetEditorialService.php) markiert den Datensatz und Varianten logisch als Deleted, trennt nötigenfalls Referenzen und kann andere Entitäten mitändern. Physische Löschung erfolgt gesondert mit Schutz von LIVE- und historisch restorablem Zustand. Ein `MediaAsset`-State ist nicht gleich der Existenz einer Datei im Storage.
 
+**Hinweis zu weiteren persistierten Werten:** Die ursprünglichen DB-CHECK-Constraints erlaubten für Artworks und Exhibitions zusätzlich Hidden/Archived sowie für MediaAssets Quarantined. Die obigen Graphen zeigen **nachverfolgte aktuelle Workflow-Transitionen**, nicht bereits sämtliche historisch oder physisch zulässigen Werte. Details und ausstehende Endschema-Verifikation stehen in [Schemaentwicklung](schema-evolution.md).
+
 ## Quellen- und Vollständigkeitsregel
 
 Die fünf Maschinen enthalten zunächst **35 kuratierte Kanten**, keine vollständige Lebenszykluskarte aller PHP-Objekte. Als Nächstes fehlen unter anderem Publication und Undo/Activity, Home-Routing und Template, Journal-Templatewechsel, MediaVariant-Recovery und UI-interne Zustände. Für jeden weiteren Workflow müssen auch No-op-, Fehler-, Rollback- und indirekte Fremdservicepfade erfasst werden.

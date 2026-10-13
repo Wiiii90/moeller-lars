@@ -146,6 +146,10 @@ Die generierte Modul-Mermaid-Grafik zählt solche Kanten, **nicht** echte Aufruf
 
 Die [fünf quellverankerten Zustandsmodelle](lifecycles.md) enthalten 35 kuratierte Übergänge und unterscheiden persistierte Zustände von zeitabhängigen Public-Prädikaten. Die maschinenlesbare Eingabe ist [lifecycles.json](lifecycles.json), der Generator liegt unter `scripts/generate-architecture-lifecycles.php`. Das ist ein erster Ausschnitt.
 
+## Schemahistorie und physische Datenbank
+
+Die [Schema-Evolution](schema-evolution.md) erfasst nachgeprüfte Migrations-Etappen und verwechselt `publication_version_rows` nicht mit einer aktuellen physischen Tabelle; seit dem Shared-History-Payload-Refactor ist es eine SQL-View mit Triggern. Ein tatsächlicher `pg_catalog`-Export bleibt offen.
+
 ## 7. Nacharbeit, ohne Scheingenauigkeit
 
 - Vollständiger deterministischer PHP-Symbol- und Verwendungsgraph mit Quellpositionen.

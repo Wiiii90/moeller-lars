@@ -8,7 +8,8 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 2. [Eloquent-Relationen](eloquent-relations.md) — alle 26 Modeldateien, 48 explizite Relation-Aufrufe und die Grenze zum realen Datenbankschema.
 3. [Fachliche Lebenszyklen](lifecycles.md) — fünf getrennte Zustandsmodelle mit 35 überprüfbaren Quellbelegen.
 4. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
-5. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
+5. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
+6. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 

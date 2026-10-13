@@ -1,0 +1,70 @@
+# PostgreSQL-Schemaentwicklung und bewusste Kompatibilitätsgrenzen
+
+**Quellenstand:** `28219ef962178602340989d49d2f4329286b0697` auf `dev`, in `docs` enthalten. Diese Aufnahme basiert auf konkret gelesenen Up-Migrationspfaden und relevanten Domain-Services. **Keine** der 73 Migrationen wurde in dieser Arbeitsumgebung gegen eine Datenbank ausgeführt. Der physische PostgreSQL-Katalog bleibt die endgültige Quelle für aktuelles Schema und tatsächlich vorhandene Constraints.
+
+## Arbeitsregel: Migration ist Historie, Snapshot ist Runtime
+
+| Ebene | Quelle | Aussage |
+| --- | --- | --- |
+| Historische Schema-Evolution | `database/migrations/*.php` in Ausführungsreihenfolge, jeweils `up()` | Wie der aktuelle Aufbau erreicht werden **soll**; Down-Pfade sind kein Nachweis für aktuelle Objekte |
+| Tatsächliches physisches Schema | `pg_catalog` einer isolierten, vollständig migrierten DB | Tabellen, Views, Indizes, FKs, Constraints, Trigger |
+| Current Publication Contract | [PublicationSnapshot::TABLES](../../app/Domain/Publication/PublicationSnapshot.php) | **15** aktuelle Working/LIVE-Snapshot-Tabellen, nicht alle SQL-Tabellen |
+| Eloquent-Anwendungsmodell | [Model-Relationen](eloquent-relations.md) | PHP-Referenz-API, nicht alle FKs, JSON-Referenzen oder SQL-Views |
+| Runtime-Wahrheit | Controller/Services/Query Grammar und Domain-Validierung | Was aktuelle Applikationspfade tatsächlich tun |
+
+Die ursprüngliche Publication-Migration [`2026_08_29_000001_add_staged_publication.php`](../../database/migrations/2026_08_29_000001_add_staged_publication.php) führte **16** historisch getrackte Tabellen an, darunter `cv_entries`. Die aktuelle [`PublicationSnapshot::TABLES`](../../app/Domain/Publication/PublicationSnapshot.php) enthält 15 und **nicht** mehr `cv_entries`. Das ist eine bewusst unterschiedliche **Zeitversion** des Publication-Vertrags; die eingefrorene alte Liste darf nicht dem Runtime-Konstantenwert angepasst werden.
+
+## Fachliche Kern- und Eigentümertabellen
+
+| Migrationsschritt | Nachweisbarer Mechanismus |
+| --- | --- |
+| [`2026_08_15_000003_create_domain_tables.php`](../../database/migrations/2026_08_15_000003_create_domain_tables.php) | Basis u. a. für Artwork, Media, Exhibition, Blog, Redirect, Audit, Metriken; enthält State-CHECKs und partielle Unique-Indizes |
+| [`2026_08_19_000002_create_site_sections.php`](../../database/migrations/2026_08_19_000002_create_site_sections.php) | Typisierte Seitenstruktur, Positions-/Typ-/Navigationsconstraints |
+| [`2026_08_21_000013_add_configurable_site_pages.php`](../../database/migrations/2026_08_21_000013_add_configurable_site_pages.php) | Aktuelle SiteSection-Typfamilie (`home/gallery/navigation_group/custom/journal`), separate Settings für Custom Page und Journal |
+| [`2026_08_25_000001_create_journal_entry_media.php`](../../database/migrations/2026_08_25_000001_create_journal_entry_media.php) | **Genau ein** Eigentümer: entweder `blog_post_id` oder `exhibition_id`; Rolle `cover/inline/gallery` mit individuellen Eintrags-/Positions-Indizes |
+| [`2026_08_26_020000_create_home_presentation_settings.php`](../../database/migrations/2026_08_26_020000_create_home_presentation_settings.php) und [`2026_09_14_184000_separate_home_skip_routing.php`](../../database/migrations/2026_09_14_184000_separate_home_skip_routing.php) | Ursprünglicher vierter Templatewert `skip_home` wird durch eigenständigen Routingzustand ersetzt, aktuelle Templates sind Artwork, Under Construction, Custom |
+| [`2026_10_12_000001_make_public_navigation_follow_publication.php`](../../database/migrations/2026_10_12_000001_make_public_navigation_follow_publication.php) | Einzigartige Navigation-Positionsindizes entfallen; neue partielle **nicht eindeutige** Positionsindizes schützen historische Wiederherstellbarkeit |
+| [`2026_10_13_000001_add_exhibition_postal_code.php`](../../database/migrations/2026_10_13_000001_add_exhibition_postal_code.php) | `postal_code` wird in **beiden** Schemas ergänzt |
+
+Wichtig für das spätere ERD: `journal_entry_media` ist kein generisch polymorphes Eloquent-Morphing. Der SQL-Owner-CHECK verlangt genau eine der beiden expliziten Eigentümerspalten.
+
+## Publication-Snapshot und History-Payloads
+
+```mermaid
+flowchart LR
+    Working["public.* (15 current tracked tables)"] -->|commit| Live["committed.* (15 tracked tables)"]
+    Live -->|capture| Checkpoint["publication_checkpoints"]
+    Checkpoint --> Manifest["publication_version_row_manifests"]
+    Manifest --> Payload["history_payloads"]
+    Receipt["admin_action_receipts"] --> Payload
+    Manifest --> VersionView["publication_version_rows (SQL VIEW)"]
+    Payload --> VersionView
+```
+
+Die Pfeile zeigen hier **fachliche Datenbeziehungen**, nicht behauptete FK-Kardinalitäten. Quellen:
+
+- [`2026_08_29_000001_add_staged_publication.php`](../../database/migrations/2026_08_29_000001_add_staged_publication.php): initiales `committed`-Schema; Kopieren der damals getrackten Tabellen; PublicationCheckpoints und Media-Cleanup.
+- [`2026_09_15_000001_add_restorable_publication_versions.php`](../../database/migrations/2026_09_15_000001_add_restorable_publication_versions.php): Commit-Linie, Hashes, initiale `publication_version_rows`-**Tabelle**.
+- [`2026_09_17_000001_control_history_storage_growth.php`](../../database/migrations/2026_09_17_000001_control_history_storage_growth.php): inhaltsadressierte Payload-Deduplikation und Wechsel zu Manifests/SQL-View.
+- [`2026_09_17_000003_share_history_payload_store.php`](../../database/migrations/2026_09_17_000003_share_history_payload_store.php): gemeinsames `history_payloads` für Undo-Receipts und Publication-Manifeste; **`publication_version_rows` ist nun eine View mit INSTEAD-OF-Triggern** für Insert/Delete. Zusätzlich existieren Trigger/Funktionen für Unveränderlichkeit und freigabegesteuerte Garbage Collection.
+- [`2026_09_29_191500_rebuild_admin_activity_ordering_projection.php`](../../database/migrations/2026_09_29_191500_rebuild_admin_activity_ordering_projection.php): getrennte Tabellen für fachliche Ordering-Projektionen und Raw-Event-Verknüpfung.
+- [`2026_09_30_010000_drop_publication_event_states.php`](../../database/migrations/2026_09_30_010000_drop_publication_event_states.php): Entfernung einer alten, inzwischen obsoleten Publication-Zwischentabelle.
+
+Ein rein aus Eloquent generiertes Diagramm könnte die `publication_version_rows`-View irrtümlich als physische Tabelle interpretieren und dabei die Trigger und den geteilten Payloadstore verlieren. Beides wäre sachlich falsch.
+
+## Legacy-Reste und getrennte Zustandsbegriffe
+
+1. [`2026_09_15_000004_retire_obsolete_blog_settings.php`](../../database/migrations/2026_09_15_000004_retire_obsolete_blog_settings.php) entfernt `blog_settings` aus dem aktuellen Arbeits-Schema; Werte gehören in SiteSection/JournalSetting.
+2. [`2026_09_16_235901_finalize_legacy_cv_retirement.php`](../../database/migrations/2026_09_16_235901_finalize_legacy_cv_retirement.php) entfernt `cv_entries` aus `public` und `committed`. Das weiterhin existierende Eloquent-Modell macht die Tabelle nicht wieder aktiv.
+3. `exhibition_media` und die historische `map_shape`-Spalte müssen wegen Snapshot-/Schema-Kompatibilität getrennt von aktuell genutzten UI-Funktionen betrachtet werden.
+4. **Datenbank-akzeptierte Werte ≠ aktive Service-Transitionen.** Die ursprünglichen CHECK-Constraints aus `2026_08_15_000003` erlaubten für Artworks und Exhibitions neben Draft/Published auch Hidden/Archived, für MediaAssets neben Available/Deleted auch Quarantined; MediaVariants kennen außerdem Stale. Die [ersten Lifecycle-Diagramme](lifecycles.md) bilden nur bereits nachverfolgte **aktuelle Mutationspfade** ab. Ob diese historischen Werte im vollständig migrierten Endschema weiterhin zulässig sind, muss der DB-Katalogexport belegen. Bestehende Daten dürfen nicht allein aus fehlenden UI-Übergängen für unmöglich erklärt werden.
+
+## Konkreter Quellenkonflikt, noch nicht bereinigt
+
+Die Dokumentationsregel in [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) verlangt, dass historische Migrationen ihre damaligen Publication-Tabellen **fest einbetten** und nicht die spätere Runtime-Konstante importieren.
+
+Die frühe Migration vom 29.08. hält das ein. Dagegen verwendet [`2026_09_15_000001_add_restorable_publication_versions.php`](../../database/migrations/2026_09_15_000001_add_restorable_publication_versions.php) für den Snapshot-Backfill den veränderlichen Wert `PublicationSnapshot::TABLES`. Das ist eine reale Abhängigkeit der Schemahistorie vom aktuellen Code. Hier wird kein Laufzeitcode auf dem Dokumentationsbranch verändert; für eine spätere Korrektur wäre eine gezielte Prüfung der Migrations-Evolution notwendig, bevor man die historische Tabelleliste festschreibt.
+
+## Noch nicht nachgewiesen
+
+Ein erfolgreich in einer isolierten DB ausgeführtes `migrate:fresh`, sämtliche endgültigen Constraintdefinitionen, aktuelle FK-Target-Schemata, alle SQL-Funktionskörper, Trigger-Grenzen und die Korrektheit des vollständigen Restore-Laufs. [export-architecture-postgres.php](../../scripts/export-architecture-postgres.php) bereitet die **lesende** Katalogabfrage vor; ein Export wurde noch nicht ausgeführt.
