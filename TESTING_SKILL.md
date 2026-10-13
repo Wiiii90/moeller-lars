@@ -15,7 +15,7 @@ Recent genuine two-parent dev merges into testing: this merge (dev 18b0a5943aec4
 
 ## Environment and validation status
 
-Runtime status on 2026-10-13: `npm run test:js` ran on testing HEAD 5e262d7d6c76c6b76279b487fe66d8bccabbb499: 38 passed, 0 failed. `npm run test:browser:component` was invoked on the same HEAD but stopped before test discovery because the Playwright CLI was unavailable (`playwright` command not found); `@playwright/test` and `playwright-core` are absent from node_modules, and the local Playwright browser cache is absent. No Chromium tests ran. PHP/Pest, database, browser E2E, profiling and build remain unrun.
+Runtime status on 2026-10-13: on testing HEAD 5e262d7d6c76c6b76279b487fe66d8bccabbb499, `npm run test:js` passed 38/38. `npm ci` installed the locked dependencies; `npx playwright install chromium` installed Chrome for Testing 153.0.8010.12 and its Headless Shell. The first `npm run test:browser:component` attempt discovered 6 tests but all failed before launch because elevated browser installation used `C:\Users\Wiiii\AppData\Local\ms-playwright` while the sandbox test process expected its isolated cache. Re-running with `PLAYWRIGHT_BROWSERS_PATH=C:\Users\Wiiii\AppData\Local\ms-playwright` passed 6/6 component tests. PHP/Pest, database, browser E2E, profiling and build remain unrun.
 
 Configured commands and a budget-friendly local Codex test protocol in tests/README.md: composer test:unit; composer test:integration; composer test:feature; composer test:migration; npm run test:js; npm run test:browser:component; npm run test:browser:e2e; npm run test:browser:profile; npm run test:browser. Never execute DB tests without independent disposable-DB verification. Do not invoke CI.
 
