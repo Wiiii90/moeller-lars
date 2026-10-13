@@ -141,6 +141,52 @@ it('notifies only when a Gallery publication action actually changes the artwork
 
 
 
+it('publishes an entire ready Gallery selection once and leaves repeated publication as a no-op', function (): void {
+    $gallery = galleryFixtureCategory();
+    $first = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $second = galleryFixtureArtwork($gallery, ['position' => 1]);
+    galleryFixturePrimary($first, galleryFixtureAsset('video/mp4'));
+    galleryFixturePrimary($second, galleryFixtureAsset('video/mp4'));
+    galleryFixtureUnavailableAnalytics();
+
+    $selected = [$first->getKey(), $second->getKey()];
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('selectedArtworkIds', $selected)
+        ->mountAction('publishSelectedArtworks')
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return $event === 'admin-header-notification'
+                && ($params['notification']['status'] ?? null) === 'success';
+        });
+
+    expect($first->fresh()->state)->toBe('published')
+        ->and($second->fresh()->state)->toBe('published')
+        ->and($first->fresh()->published_at)->not->toBeNull()
+        ->and($second->fresh()->published_at)->not->toBeNull()
+        ->and(AuditEvent::query()->where('action', 'artwork.published')
+            ->where('entity_type', 'artwork')
+            ->whereIn('entity_id', $selected)->count())->toBe(2)
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2);
+
+    // One batch action is one successful user mutation, irrespective of how
+    // many individual artwork audits it records. Current AdminNotifier audit
+    // fan-out is expected to violate this until the production owner fixes it.
+    expect(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('selectedArtworkIds', $selected)
+        ->mountAction('publishSelectedArtworks')
+        ->callMountedAction()
+        ->assertNotDispatched('admin-header-notification');
+
+    expect(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+});
+
 it('rolls back a batch publication when one selected artwork is not publishable', function (): void {
     $gallery = galleryFixtureCategory();
     $ready = galleryFixtureArtwork($gallery, ['position' => 0]);
