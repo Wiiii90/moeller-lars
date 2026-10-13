@@ -29,6 +29,8 @@ Background jobs and other server-side processes use the same method with an expl
 
 Pre-authentication messages cannot have an admin mailbox recipient. They may use the same immediate session/header transport, but they do not fabricate an `AdminNotification` owner.
 
+**Architekturbelege und offene Runtime-Grenzen:** Der beschreibende [Notification-Transportgraph](architecture/admin-notification-transport.md) verfolgt Audit-Context, `firstOrCreate`, Livewire-/Session-Header, JS-FIFO, benutzerspezifische Dashboard-Reads sowie den aus `pruneFor()` ableitbaren Pin/Retention-Grenzfall. Diese Quellprüfung ersetzt keine ausgeführte Akzeptanz des hier normativen Vertrags.
+
 ## Source identity and idempotency
 
 Every durable Notification has a `source_id`. The database uniqueness contract `(user_id, source_id)` is authoritative.
