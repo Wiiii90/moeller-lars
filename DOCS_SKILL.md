@@ -126,32 +126,35 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand 13.10.2026:** `docs` vor diesem Commit `af4a45ec77dba447e133479e01537b8306919cae`,
+**Git-Stand:** `docs` vor diesem Commit `97b9116cef0a896c9c9797cc559bc5f8dfef62a0`,
 `dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`.
-Remote-HEADs vor weiterer Arbeit erneut prüfen.
+Bei Fortsetzung immer aktuellen HEAD- und Merge-Status prüfen.
 
-**Hauptdokumente korrigiert:** `docs/ARCHITECTURE.md` und
-`docs/DATA-MODEL.md` wieder mit [MEDIA.md](docs/MEDIA.md) und dem
-tatsächlichen Code abgeglichen: keine aktive CV-Direct-Image-/Body-
-Datenstruktur und kein eigener `CV List`-Komponententyp; `list`/
-`text` bleiben kanonisch. Medienreferenzen führen beim autorisierten
-Löschen zu Domain-gesteuerter Usage-Entfernung statt zu einem
-pauschalen Verbot. Rich Text kann sichere externe HTTP(S)-Bilder
-verlinken, ohne sie als `MediaAsset` zu verwalten.
-`ARCHITECTURE.md` unterscheidet Activity-bedingte mehrfache
-Notifications und behauptet weder ausgeführte Livewire-Tests noch
-einen automatisch autorisierten `main`-PR/CI-Gate.
+**Abgeschlossen:** Haupt-Architektur und Datenmodell sind mit
+den aktuellen CV-/Media-/Notification-Implementierungen abgeglichen.
+Im [Migrationsvertrag](docs/MIGRATION-INVARIANTS.md) steht jetzt
+explizit die tatsächliche **bekannte Verletzung** der historischen
+Self-Containment-Regel: Migration
+`2026_09_15_000001_add_restorable_publication_versions.php` importiert
+`PublicationSnapshot::TABLES` beim Backfill sowie bei
+`schemaHash()`/`snapshotHash()`. Damals waren 16 Publication-Tabellen
+aktiv, aktuell sind 15 getrackt; [Schema-Evolution](docs/architecture/schema-evolution.md)
+enthält den konkreten Quellnachweis. Dies ist **ein Quellrisiko, kein
+beobachteter `migrate:fresh`-Fehler**; nur isolierte und separat
+autorisierte Runtime-Prüfung kann Korrektur freigeben. Kein
+Migration-/Runtime-Code auf `docs` verändert.
 
-**Bereits geprüft:** 61 Markdown-Dateien / 450 erkannte relative Links
-ohne fehlende Dateiziele (keine Fragment-/externe URL-Prüfung).
-`ADMIN-ACTIVITY-PUBLICATION-CONTRACT` beschreibt Reset-Audit nur
-bei echtem Working/LIVE-Diff. Keine Runtime-/Browser-/CI-Tests gelaufen.
+**Vorher erledigt:** die in Root-/Medien-/Activity-Dokumentation
+gefundenen Verwechslungen zu Gallery-Löschung, ehemaligem CV-Modell,
+safe external RichText, Notifier-Mehrfachkontext und Reset-Audit bei
+Null-Diff sind quellenorientiert korrigiert. Die einfache Dateipfadprüfung
+der 61 Markdown-Dateien/450 Links fand keinen fehlenden Pfad.
 
-**Unmittelbar weiter:** [MIGRATION-INVARIANTS.md](docs/MIGRATION-INVARIANTS.md)
-gegen die konkrete historische Migration prüfen, die noch eine
-veränderliche `PublicationSnapshot::TABLES`-Konstante importiert;
-quellbelegte Abweichung getrennt von der normativen Zielregel
-dokumentieren. Danach Anker-Verweise/weitere echte Widersprüche.
+**Nächster konkreter Schritt:** interne Markdown-Abschnittsanker gezielt
+gegen wirkliche Überschriften prüfen; danach evtl. neue `dev`-Änderungen
+übernehmen und die architekturrelevanten Quellen nachziehen.
+Restarbeiten nur bei konkreter Quellenlage, nicht pro forma wiederholen.
 
-**Offen:** Full-Checkout-PHP, Wegwerf-PostgreSQL-`pg_catalog`, E2E
-und Notification-Retry. `testing`/CI unberührt.
+**Weiter offen:** isoliertes `pg_catalog` inkl. Migrationstest,
+native PHP-Generatoren im vollen Checkout, echter Browser-/Livewire-Test
+und Notification-Header-Retry-Kardinalität. CI/`testing` bleiben tabu.
