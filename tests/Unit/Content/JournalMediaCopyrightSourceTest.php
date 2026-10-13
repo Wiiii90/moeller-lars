@@ -4,7 +4,7 @@ use App\Domain\Content\JournalMediaRenderer;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 
-it('consolidates only inherited Journal notices and preserves asset overrides', function (): void {
+it('distinguishes inherited Journal notices from per-asset copyright overrides', function (): void {
     $renderer = app(JournalMediaRenderer::class);
     $usage = new JournalEntryMedia;
     $asset = new MediaAsset;

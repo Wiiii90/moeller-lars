@@ -7,9 +7,6 @@
 @section('content')
     <x-public.page-heading :section="$section" />
     <section class="exhibitions-page" aria-label="Exhibitions">
-        @php
-            $hasInheritedMedia = false;
-        @endphp
         @foreach ($exhibitions as $exhibition)
             @php
                 $timing = $exhibition->temporalState(now());
@@ -33,14 +30,8 @@
                 $hasActions = $map !== null || $exhibition->external_url !== null;
                 $hasDetails = $hasFacts || $hasDescription || $hasCover
                     || $gallery->isNotEmpty() || $hasActions;
-                // Inherited General notices are consolidated once for this
-                // index; individual credits/overrides stay with each figure.
-                $displayedMedia = collect($hasCover ? [$cover] : [])->concat($gallery);
-                $hasInheritedMedia = $hasInheritedMedia || $displayedMedia->contains(
-                    fn ($usage): bool => $journalMedia->inheritsDefaultNotice($usage),
-                );
             @endphp
-            <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
+            <article class="exhibition-entry @if ($hasCover || $gallery->isNotEmpty()) exhibition-entry--with-art @else exhibition-entry--textual @endif @if (in_array($timing, ['current', 'upcoming'], true)) exhibition-entry--forthcoming @endif" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
                     <details class="exhibition-entry__disclosure">
                         <summary class="exhibition-entry__summary">
@@ -200,13 +191,5 @@
                 @endif
             </article>
         @endforeach
-        @if ($hasInheritedMedia)
-            @php
-                $defaultCopyright = trim((string) (\App\Models\PublicContentSetting::general()->getAttribute('default_media_copyright_notice') ?? ''));
-            @endphp
-            @if ($defaultCopyright !== '')
-                <footer class="exhibitions-page__copyright" aria-label="Image copyright">{{ $defaultCopyright }}</footer>
-            @endif
-        @endif
     </section>
 @endsection

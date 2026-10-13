@@ -178,12 +178,15 @@ the Blog's actual artworks have small square-edged double-line mounts; no
 artwork is cropped or covered. The white Content surface itself, its width,
 artist name and navigation retain their established ownership.
 
-This is a new, **not browser-accepted** design candidate replacing the
-rejected continuous spine/connector/timeline presentation. Do not revive
-numbering, date-axis nodes, graphical stickers, clipped/castle corners,
-rounded corners, chips, repeated bordered entries, fake old-paper textures,
-decorative bars, duplicated underlines, or extra Admin controls. Neither
-Journal view renders a timeline. The visual presentation is reversible without
+The layered outer-sheet silhouette is accepted. The new interior drawing
+uses occasional short open strokes and translucent graphite washes behind
+headlines, plus a small marginal note surface in an opened Exhibition.
+Those details can enter the configured content padding but never displace the
+actual text into it. This interior pass remains pending browser review.
+Do not revive numbering, date-axis nodes, graphical stickers, clipped/castle
+corners, rounded corners, chips, repeated bordered entries, fake old-paper
+textures, decorative bars, duplicated underlines, or extra Admin controls.
+Neither Journal view renders a timeline. The presentation is reversible without
 changing Journal storage, publication or media contracts.
 
 The Blog *index* omits the repeated, inherited General copyright notice,
@@ -275,11 +278,13 @@ No new Administration customization, Exhibition detail route or duplicate
 media source of truth is introduced.
 
 The existing MediaAsset copyright modes remain authoritative. Exhibition
-images keep their own authored credits and explicit copyright overrides
-adjacent to each figure; only repeated *inherited* General copyright notices
-are consolidated into one visible notice at the end of the Exhibitions page.
-Explicit No notice stays silent, other Journal surfaces preserve their current
-per-image policy, and attribution is not inferred from an image's filename.
+index images retain authored credits and explicit per-asset copyright overrides
+beside the corresponding work, but repeated *inherited* General copyright
+notices are suppressed. There is no generated Exhibitions-page copyright footer.
+The Blog index follows this same presentation policy. Full Blog articles and
+other unaffected surfaces keep their current credit behavior; an explicit
+No notice remains silent. No stored General or per-asset copyright data is
+removed, and source attribution is never inferred from an image filename.
 
 Enabled Exhibition maps remain available for past, current and upcoming
 exhibitions. A single **Show map** action opens a native, viewport-bounded
