@@ -15,7 +15,7 @@ Recent genuine two-parent dev merges into testing: this merge (dev 18b0a5943aec4
 
 ## Environment and validation status
 
-ALL PHP, JS, Vite and Playwright tests are currently NOT RUN under this refactor. No PHPUnit/Pest discovery, Postgres suite, Node suite, build or Chromium run has succeeded or been attempted in a verified project checkout. The current code execution container has PHP and Node but cannot resolve github.com to obtain a checkout, and Composer/project vendor are not available. GitHub connector source review and commits are not validation.
+Runtime status on 2026-10-13: `npm run test:js` ran on testing HEAD 5e262d7d6c76c6b76279b487fe66d8bccabbb499: 38 passed, 0 failed. `npm run test:browser:component` was invoked on the same HEAD but stopped before test discovery because the Playwright CLI was unavailable (`playwright` command not found); `@playwright/test` and `playwright-core` are absent from node_modules, and the local Playwright browser cache is absent. No Chromium tests ran. PHP/Pest, database, browser E2E, profiling and build remain unrun.
 
 Configured commands and a budget-friendly local Codex test protocol in tests/README.md: composer test:unit; composer test:integration; composer test:feature; composer test:migration; npm run test:js; npm run test:browser:component; npm run test:browser:e2e; npm run test:browser:profile; npm run test:browser. Never execute DB tests without independent disposable-DB verification. Do not invoke CI.
 
