@@ -2,7 +2,7 @@
 
 This document is the canonical ordering, alignment and typography contract for ordinary editorial tables and table-like hierarchies in the authenticated admin.
 
-It complements `ui-skills.md`; both documents use the same current role order and action-order rules. `resources/css/admin/table-contract.css` is the shared implementation authority for that geometry.
+`ui-skills.md` links here rather than duplicating ordinary-table roles or action-order rules. `resources/css/admin/table-contract.css` is the shared implementation authority for that geometry.
 
 ## Scope
 
@@ -69,6 +69,14 @@ When content does not fit, solve geometry first: redistribute grid tracks, remov
 
 If a genuinely new semantic text size is needed across the admin, add or change the shared theme/token intentionally and apply it by role. Do not introduce an unexplained literal in one table or toolbar.
 
+## Row presentation and status-marker alignment
+
+Ordinary tables use **one canonical header row**, with identical column axes through every body row. Child rows in a single editorial hierarchy share those axes; a nested child table must not introduce a redundant independent header or floating columns. Action cells have one consistent right edge and share their slots with the table heading. If a row has fewer applicable actions, do not remove its leading action slot and shift all following icons.
+
+Use an elastic primary identity track: ellipsize long identity/supporting content **before** it displaces essential action or selection columns. One or two **meaningful** text lines per cell may be appropriate where the secondary line adds real context, but avoid dense stacks of four or five redundant fragments. Status markers/dots in one semantic column have a stable marker axis through all rows even when supporting values (for example a commit hash) appear on a second line. Desktop row-action labels do not wrap opportunistically: use the shared intentional responsive icon-only/overflow transition.
+
+Do not add vertical separators merely to make the six-unit alignment ruler visibly obvious where the accepted table presentation uses spacing rather than borders. This entire rule applies through the shared table/task primitives and is not an invitation to add page-local `font-size` or pixel-fix overrides.
+
 ## Control-to-table boundary
 
 When a search/filter/control row directly precedes a table or hierarchy header, there is one separator only. The table/header boundary owns it.
@@ -78,6 +86,8 @@ Do not add a second bottom border to the controls row and do not compensate for 
 The shared table empty state is **content**, not another framed surface. Inside `x-admin.table` or its hierarchy, `x-admin.empty-state` adds **no top or bottom borders**: the table header owns the top separator and the next `x-admin.add-row` or pager owns the lower transition. This applies equally to truly empty and filtered-empty tables (Custom Page, Pages, Dashboard, Home, Journal, General, Activity and Analytics). Outside tables, standalone empty states may keep their own borders; when such a state directly precedes `x-admin.add-row` (for example empty Storage), the add row suppresses its duplicate top border. These boundaries are implemented centrally in `resources/css/admin/data-workspace.css`, not with feature-local border or spacing overrides.
 
 ## Position and Add Row
+
+A Position rank is a **1-based editorial display value**, not the sparse/zero-based stored order. Compact labels such as `01`, `02`, `03` are valid when legible. Add Position intentionally to reviewed ordered tables, not as an unrequested global presentation rewrite.
 
 The Position indicator and the leading `+` square of `x-admin.add-row` share one canonical square geometry and leading inset.
 

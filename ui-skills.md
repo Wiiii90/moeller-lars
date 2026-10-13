@@ -180,54 +180,11 @@ Rules:
 
 ## 7. Table grammar
 
-Prefer flat tables for list-oriented editorial work instead of cards pretending to be rows.
-
-The canonical ordinary-table role order is defined together with `docs/ADMIN-TABLE-CONTRACT.md`:
-
-```text
-Position + Drag | primary identity | secondary data | Actions | Selection
-```
-
-A table renders only roles that actually exist. When Position is absent, Drag may be the leading role; when Selection is absent, Actions remain the final semantic work column. Selection, when present, is always the trailing utility column.
-
-Shared principles:
-
-- one canonical header row;
-- stable columns from header through every row;
-- action cells share one alignment and right edge;
-- avoid nested child tables with their own duplicate headers when children belong to the parent task table;
-- row identity/content should ellipsize rather than push action columns around;
-- normal desktop action bars should be `nowrap`; responsive wrapping belongs at an intentional breakpoint;
-- state indicators occupy a stable column;
-- do not conditionally remove a leading action if that makes every following action shift;
-- use the metric-unit reference grid where it improves cross-surface alignment; semantic columns may span or subdivide those units rather than being forced to equal widths;
-- compact rows may use **one or two meaningful lines per cell** when the second line adds useful support information; do not force every field onto one line, but also do not stack four or five redundant fragments into a single cell;
-- status dots/markers in the same state column must keep a stable marker axis across rows, even when supporting text such as a commit hash sits on a second line;
-- do not add vertical cell borders solely to make column/metric alignment visible when accepted admin tables do not use them.
-
-### Stable action order
-
-For ordinary editorial tables, use the shared semantic action order when those actions exist:
-
-```text
-Move up | Move down | Edit / View | state / workflow | other task actions | Delete
-```
-
-Not every table has every action. Movement comes first because it belongs to ordering, Delete remains last, and state/workflow actions keep stable slots where row-state variation would otherwise make controls jump.
-
-For tables whose canonical leading action is Details rather than Edit/View, keep **Details first on every row** and append contextual actions such as Undo/Restore/Revert after it. Do not right-pack a lone Details action differently from rows that happen to have more actions.
+The canonical ordinary editorial-table geometry, semantics, action order, responsive content priorities, marker axes and fit rules live in [ADMIN-TABLE-CONTRACT.md](docs/ADMIN-TABLE-CONTRACT.md). Prefer actual tables for tabular editorial work; do not emulate rows with cards. Only render the task's real roles. Read the shared table contract and current implementation instead of duplicating its role/action specification here.
 
 ## 8. Ranked tables and Position
 
-New convention: ranked/ordered admin tables should expose a human-readable **Position** where that helps the editor understand order.
-
-Use a 1-based display rank. Do not expose sparse/zero-based internal persistence values directly.
-
-Compact forms such as `01`, `02`, `03` are acceptable.
-
-This convention should be propagated deliberately as pages are reviewed; do not create a broad site-wide rewrite just to add Position everywhere in one worker.
-
-Journal already uses visible Position and is the current reference for the convention.
+[ADMIN-TABLE-CONTRACT.md](docs/ADMIN-TABLE-CONTRACT.md#canonical-role-order) owns the human-readable 1-based Position convention and its alignment with Drag/Add Row. Apply Position deliberately when the task has meaningful canonical order; do not create a site-wide cosmetic rewrite merely to expose it. Journal is the current ranked-table implementation reference.
 
 ## 9. Drag and ordering
 

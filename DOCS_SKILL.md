@@ -126,12 +126,10 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand 13.10.2026:** neuer `dev`-SHA `7c332b32762029b7e9da83491f52b12860bef9ed` per echten Merge `26048ba461e1ded0b4f47191ea911ecf5f6070e0` auf `docs` integriert. Diese Änderung hat den öffentlichen Seitenwechsel fundamental verbessert: Livewire 4 `wire:navigate` auf serverseitigen Blade-Routen, statt statischem vollständigem Seitenwechsel.
+**Quellstand (13.10.2026):** Öffentliche SPA-Neuerungen von `dev` `7c332b32762029b7e9da83491f52b12860bef9ed` und Folgefix `8b0345bb819bd9f82d8af4cc6f6af497d9c2f1ed` als echte Zwei-Eltern-Merges `26048ba461e1ded0b4f47191ea911ecf5f6070e0` und `e5d01ddc5331939c1197fe99286f3b21a934656c` übernommen. Beim neuen `livewire:navigating` werden alte Viewer-/Map-/Tracker-Observer **vor** dem Swap entsorgt. [SPA-Lebenszyklus](docs/architecture/public-spa-lifecycle.md) nachgezogen; noch kein Browsertest.
 
-**Neue Architekturaufnahme:** [Public-SPA-Lifecycle](docs/architecture/public-spa-lifecycle.md) samt Sequenz, eindeutiger Link-Freigabe, `livewire:navigating`/`onSwap`, `livewire:navigated`, `#content`-Identitätsguard, Event-/Observer-Disposern und Matomo-PageView. [Runtime-Einstiegspunkte](docs/architecture/runtime-entrypoints.md) aktualisiert; dies wurde **nur anhand des Codes gelesen**, kein Browser-/Testlauf.
+**Erledigte Normenkonsolidierung:** Journal-spezifische Tabellenregeln allein in `docs/ADMIN-TABLE-CONTRACT.md`; `ui-skills.md` §12 verlinkt. Allgemeine Tabellen-Rollen/Aktionsordnung, Reihen- und Marker-Achsen sowie 1-based Position im selben Table-Vertrag vereinheitlicht; `ui-skills.md` §§7–8 sind knappe Einstiegspunkte. Die bisher nur dort enthaltenen Regeln für sinnvolle zweite Textzeilen, Header-, Statusmarker- und Action-Achsen wurden im Table-Owner erhalten. **Kein** Runtime-/CSS-Code geändert.
 
-**Vorher erledigte Duplikatbereinigung:** Journal-spezifische Split/Fold-Tabelle unter `ADMIN-TABLE-CONTRACT.md` konsolidiert; `ui-skills.md` verweist auf den einen Owner.
+**Unmittelbarer nächster Schritt:** `ui-skills.md` §16 (Dialogs) gegen `docs/ADMIN-DIALOG-CONTRACT.md` mit dem tatsächlich bestehenden Filament-Scroll-Lock-Patch, Header-Chrome und Geometry-Owner vergleichen; redundante Normen nur nach nachweisbarer Inhaltsübernahme kürzen. Danach `ADMIN-CONTROL-CONTRACT.md` und die große Responsive-Sammlung schrittweise.
 
-**Unmittelbarer nächster Schritt:** Weitere allgemeine Tabellen-/Dialog-/Controls-Duplizierungen in `ui-skills.md` gegen ihre kanonischen Verträge vergleichen, nur eindeutig redundante Texte kürzen. Public-SPA-Quelle bei weiteren `dev`-Commits nachziehen. Die alten statischen Public-Bootstrap-Aussagen nicht wiederherstellen.
-
-**Längere offene Prüfungen:** nativer PHP-Full-Checkout, isolierter PostgreSQL-Katalogexport, browserbasierte SPA-/Interaktions-/Livewire-Verifikation. CI und `testing` bleiben tabu.
+**Offen:** nativer PHP-Generator-Full-Checkout, isolierter physischer PostgreSQL-Katalog, echte SPA-/Dialog-Browserprüfung, keine CI-/`testing`-Interaktion.
