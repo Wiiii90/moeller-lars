@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\SecurityHeaders;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -36,4 +37,43 @@ it('uses a Pulse-specific CSP without weakening the public CSP', function (): vo
         ->toContain("style-src 'self' 'nonce-{$nonce}'")
         ->not->toContain("'unsafe-inline'")
         ->not->toContain("'unsafe-eval'");
+});
+
+it('enforces non-frameable public pages and same-origin administrator Preview with fresh strict CSP nonces', function (): void {
+    $public = $this->get('/')
+        ->assertOk()
+        ->assertHeader('X-Frame-Options', 'DENY');
+    $publicCsp = (string) $public->headers->get('Content-Security-Policy');
+
+    expect($publicCsp)
+        ->toContain("frame-ancestors 'none'")
+        ->not->toContain("'unsafe-inline'")
+        ->not->toContain("'unsafe-eval'");
+
+    $this->get('/preview')->assertNotFound();
+    $this->actingAs(User::factory()->create(), 'web')
+        ->get('/preview')
+        ->assertNotFound();
+
+    $admin = User::factory()->admin()->create();
+    $preview = $this->actingAs($admin, 'web')
+        ->get('/preview')
+        ->assertOk()
+        ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    $previewCsp = (string) $preview->headers->get('Content-Security-Policy');
+
+    expect($previewCsp)
+        ->toContain("frame-ancestors 'self'")
+        ->not->toContain("'unsafe-inline'")
+        ->not->toContain("'unsafe-eval'");
+
+    $publicNonceMatch = preg_match("/style-src 'self' 'nonce-([^']+)'/", $publicCsp, $publicNonce);
+    $previewNonceMatch = preg_match("/style-src 'self' 'nonce-([^']+)'/", $previewCsp, $previewNonce);
+
+    expect($publicNonceMatch)->toBe(1)
+        ->and($previewNonceMatch)->toBe(1)
+        ->and($previewNonce[1])->not->toBe($publicNonce[1])
+        ->and($previewCsp)->toContain("'nonce-{$previewNonce[1]}'")
+        ->and((string) $preview->getContent())->toContain('nonce="'.$previewNonce[1].'"');
 });
