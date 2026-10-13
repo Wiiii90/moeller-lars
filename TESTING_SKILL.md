@@ -1,140 +1,64 @@
-# Testing workstream — living handoff and working rules
+# Testing workstream — living handoff / TESTING_SKILL
 
-> **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
+**Active as of 2026-10-13.** Repository: `Wiiii90/moeller-lars`. Long-lived branch: **`testing`**, current base HEAD before this update `f5efd87d13a4b03be25592fcb994443e6cadc966`; latest observed `dev`: `7294d19ae48a58624fc5f0883e63aee207198edb`. The latest *actual merge commit* already on testing is `9194235980b3772063c8db4aa236e1e1b34120d7` (dev parent `7294d19ae48a58624fc5f0883e63aee207198edb`). **Always inspect live heads and ancestry; these recorded SHAs become stale.** Initially forked dev `82879135c0ab18dd88b07663c1e214a4ade0e45b`.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `11e42269c43ac69beea1c6b3453987ca35a4d995` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `261942a282f0d396caeaf185272487b0b4d27d82` (from `dev` at `a53d59030a03e198fbba3c631d560bdffdf5e6e3`). More recent `dev` commits may exist.
+This is the **single living operational handoff** for a full test-suite refactor. Read it first in each new conversation, then read `tests/README.md`, `tests/Pest.php`, relevant test and production code. Update this file **in the same commit** as each substantive testing change. Replace stale status/next steps; do not just append historical notes.
 
-## 1. Mission and quality bar
+## Non-negotiable repository rules
 
-Rebuild the test suite so it is **small in maintenance cost, legible by domain/page, and highly effective at finding real bugs**. Neither the pre-existing tests nor tests added during the refactor are assumed to be good merely because they exist.
+- **Only write/commit on `testing`.** `dev` is edited independently by Admin/Public chats; `docs` is the separate long-lived documentation branch. Never edit or push `dev`, `main` or `docs`, and do not alter `docs/TESTING.md` (docs owner).
+- **Never trigger CI/Actions, deployment, polling, releases, server operations or preview workflows.** The user intentionally wants eventual CI readiness without spending current CI runs. Branch push does not activate existing workflows configured for `dev`/`main`.
+- Before every commit fetch current `testing` and `dev` heads, and for overlapping files inspect their live content. GitHub writes must be compare-and-swap with `update_ref(expected_sha=oldTestingHead)`, never force pushes. Integrate `dev` via genuine merge commits with `additional_parent_shas` after identifying conflicts; intentionally deleted `tests/Architecture` files must stay deleted.
+- No unrelated production refactors. Validate current domain API signatures, Filament traits and actual views rather than infer methods from filenames. Preserve `AGENTS.md` and `ui-skills.md` rules; notify docs branch of obsolescence instead of changing its files.
+- No destructive tests on the persistent local preview, staging or production DB. `Tests\\TestCase` uses `LocalPreviewDatabaseGuard`, which requires **`GITHUB_ACTIONS=true` and `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` with no persistent-preview flag**. Do not bypass safety checks merely to run a suite. Browser seeder has the same guard.
 
-- Tests must establish **observable user behavior, data consistency, permission boundaries, publication visibility, failure handling, or enduring domain invariants**. Include meaningful negative cases and persisted/reloaded outcomes.
-- **No CSS pixel/geometry snapshots, source-string assertions, historical repair tests, arbitrary performance thresholds or tests that merely certify private implementation details.** Do not restore the deleted `tests/Architecture` directory. If a structural rule truly matters, justify it and prefer an executable behavior check.
-- Eliminate obsolete and duplicative assertions rather than transferring everything into new files. **Do not make broken production behavior appear correct by weakening a test.**
-- Use deterministic fixtures; no sleeps/timers, random fragile ordering, user-dependent data, or silently skipped required coverage. Exercise current signatures and methods in production code before writing tests.
-- Name cases in terms of what can break: what operation, what input/condition, what observable result. Split broad tests by meaningful responsibility, not a rigid line limit.
-- The target is **high signal**, not a particular number of tests, coverage percentage, or artificially green CI.
+## Quality bar
 
-## 2. Branch coordination and restrictions
+Every retained test should detect meaningful wrong behavior: **observable admin/public workflow, security/permissions, data consistency, publication Working vs Committed, notifications/audit/no-op, undo/rollback, failure recovery or a durable pure domain invariant**. Retire duplicates and assertions of PHP source strings, arbitrary icons/CSS class/pixel order, private method names, static constant arrays, artificial budgets or historical one-off repairs. Avoid fragile random/time-based fixtures, sleeps/timers, fake browser passes and conditional skips. Split large suites when responsibilities differ, not to game line counts. Actual *run* evidence must be distinguished from source review.
 
-- **Work only on `testing` for this workstream.** Do not push to `dev`, `main`, or `docs`. `docs` is a separate long-lived documentation workstream and owns changes to `docs/TESTING.md`. Do not overwrite it with a stale copy.
-- **Do not trigger CI, GitHub Actions, deploy, release, preview deployment or automated polling.** Prepare workflows for an eventual deliberate run. Pushing to `testing` must not implicitly require any workflow run.
-- Before **every** write: fetch the live `testing` HEAD, inspect the latest `dev` HEAD, compare affected paths and perform expected-SHA fast-forward updates. Never force-push/reset. Merge `dev` into `testing` when useful and safe; explicitly resolve overlaps, preserving the latest application changes and test-suite cleanup. Never merge `testing` back into `dev` without approval.
-- Other project chats modify `dev` concurrently. Keep scope to tests, test fixtures, test commands and test workflows. Production code must only change for a proven defect and with a properly traced cause.
-- If a local checkout is unavailable, use the connected GitHub repository tools. **GitHub source inspection and commits are not a substitute for running PHP/Node/Playwright or checking a real browser.** Never claim runtime success based on static inspection.
+## Current structure, progress and tooling
 
-## 3. Source of truth and test taxonomy
+Last confirmed test tree: **141 files / 545564 bytes** (original fork circa 141 files / 751 KB), including **115 PHP `*Test.php` files**, 78 Feature, 32 Integration, 3 Migration, 10 Unit, 11 browser (including support), 4 Node test files, and **zero `tests/Architecture/`**. Do not optimize these counts.
 
-Read `AGENTS.md`, `ui-skills.md` as relevant, `tests/README.md`, `tests/Pest.php`, `tests/TestCase.php`, `composer.json`, `phpunit.xml`, `package.json`, `playwright.config.mjs`, and the relevant production implementation.
+- `tests/Unit`: pure classes without Laravel app/DB. `tests/Integration`: DB-backed domain boundaries. `tests/Feature/Admin`: Filament/Livewire, HTTP, mutations. `tests/Feature/Public`: visibility, contact, publication, media, security/SEO. `tests/Migration`: historical cutover coverage only.
+- `tests/js`: Node test runner, real JS exports. `tests/browser/component/public`: production JS in isolated Chromium DOM. `tests/browser/e2e/admin`: real authenticated web flows with disposable seeded DB. `tests/browser/profiling`: non-blocking diagnostic metrics + runtime errors.
+- Commands configured: `composer test:unit`, `test:integration`, `test:feature`, `test:migration`; `npm run test:js`, `test:browser:component`, `test:browser:e2e`, `test:browser:profile`, `test:browser`. **DO NOT run CI.** Read `composer.json`, `phpunit.xml`, `playwright.config.mjs`, `.github/workflows/release.yml`, `browser-profile.yml` for wiring.
+- Connected GitHub repository tools under `functions.exec`: `mcp__GitHub__fetch` branch/tree; `fetch_file` or `fetch_blob`; `create_tree` (typically batch <=24 objects); `create_commit` parent SHA; `update_ref` with expected SHA. Full checkout unavailable here; no PHP/Postgres/Playwright runtime proven. Never call GitHub Action dispatch.
 
-- `tests/Unit/{Artwork,Content,...}`: pure domain logic, minimal setup. **Do not use `app()`, Laravel test-case state or DB facades in this suite**; inject a mock or use a deterministic constructor.
-- `tests/Integration/{Analytics,Artwork,Content,Database,External,Media,Publication}`: real domain boundaries; PostgreSQL + deterministic fakes.
-- `tests/Feature/Admin/{Activity,Analytics,Authentication,Dashboard,Dialogs,Gallery,General,Home,Journal,Notifications,Observability,Pages,Search,Storage}`: admin/Livewire user workflows organized by the visible page or responsibility.
-- `tests/Feature/Public/{Contact,Media,Publication,Seo,...}`: HTTP and public access, privacy and visibility.
-- `tests/Migration/Legacy`: short-lived compatibility/cutover expectations, with a clear retirement decision.
-- `tests/js`: production JS behavior using Node's test runner.
-- `tests/browser/component/public`: isolated real-browser JS/CSS behavior; **not** full Laravel E2E.
-- `tests/browser/e2e/admin`: authenticated, disposable-DB full-browser workflows.
-- `tests/browser/profiling`: representative browser interaction traces and diagnostics; no arbitrary pixel or transfer-budget blockers.
-- `tests/browser/support`: shared sign-in and browser support. `database/seeders/BrowserProfilingSeeder.php` supplies disposable admin + required Page/Contact fixtures; missing fixture prerequisites must fail.
+## Completed refactor that must not be undone
 
-Only introduce subdirectories as they earn their existence. Fixtures adjacent to their domain. Prefer a shared helper when multiple cases genuinely need it.
+1. Removed the **34 Architecture PHP tests** and stale Pest/Composer/CI references. Actual FK restore-order behavior is exercised by `tests/Integration/Publication/PublicationRestoreTest.php`, rather than a constant-only Unit snapshot.
+2. Reorganized Feature/Admin by actual page (`Pages`, `Storage`, `Journal`, `Observability`), split Activity Undo and Publication commit/media/preview/history/restore tests with adjacent helpers; simplified outdated menu flags, old method argument counts, and duplicate imports. `tests/Pest.php` centrally owns `RefreshDatabase` for Feature/Integration/Migration; 33 duplicate file-local registrations already removed. Do not reintroduce them.
+3. Rebuilt Playwright project split; admin E2E covers page creation, selection, compact/inline filters, notifications and modal lifecycle. Browser seeder creates synthetic admin, two draft Pages and contact messages and requires disposable CI context. Removed timestamp-based page-name entropy. Tests are authored only.
+4. Preserved rich behavior coverage while removing implementation-only checks: CSS markup/geometry and icon snapshots, raw source scans, Pulse recorder exact config, internal Publication table order, Undo constant quota/retention values, Dashboard SQL hydration/probe thresholds and filter-label snapshot, and redundant General cache-object identity test.
+5. Added substantive public privacy checks: sitemap committed vs Working; unpublished/unreferenced originals and generated variants inaccessible, admin/preview guarded; file availability before and after explicit Commit; missing generated guest variant cannot be regenerated. Added admin original/variant/single/bulk download denial to guests/non-admins and malformed/missing bulk selection outcomes.
+6. Publication Commit Livewire tests now assert immediate/durable notification for real commit and silence for repeat no-op. Journal Exhibition Map autosave tests verify hydrated coordinates, notifications, incomplete address, geocoder errors and redundant saves. Fixed stale `toggleSectionNavigation` calls to real publication behavior and `updatePlacement` 3-arg calls.
+7. Reintegrated several real `dev` merges: latest `9194235` brings Blog gallery modes and copyright presentation. Current tests cover `BlogGalleryPresentationTest.php` sequence/grid/mosaic/slideshow persistence, invalid choice with no mutation, two schema Commit/Stage Reset/Commit; `tests/browser/component/public/journal-slideshow.spec.mjs` cycles real JS, focus/keyboard/aria and single image; `JournalMediaCaptionTest.php` verifies rendered authored credit independent of suppressed inherited or overridden copyright. `MediaLifecycleTest.php` fixtures no longer use `uniqid()` or random section positions.
+8. Source-inventoried all PHP cases and reviewed all existing browser specs and global helper names/relative `require_once` paths. **This was an inventory, not proof that every case is correct.**
 
-## 4. Completed work (verify actual HEAD; do not redo blindly)
+## Current blocking risks and evidence
 
-- Removed all **34** historical PHP Architecture test files and removed the Architecture PHPUnit/Pest/Composer/CI entry points. Kept the publication restore-order invariant in the actual database-backed `tests/Integration/Publication/PublicationRestoreTest.php`; the transient constant-only Unit test was later deleted.
-- Deleted large suites of source/CSS/string/pixel checks, legacy patch simulation, fragile browser geometry checks, and private performance probes. Trimmed implementation-locked assertions embedded in Feature suites.
-- Decomposed oversized suites for Admin Pages, Custom Page, Gallery, General, Home Hero, Dashboard, Storage, Activity Undo and Publication into responsibility-specific tests and adjacent fixtures.
-- Moved Admin `SitePages` tests to `tests/Feature/Admin/Pages`; `Files` tests to `Storage`; `JournalOrderingTest.php` into `Journal`; `PulseReportTest.php` into `Observability`.
-- Replaced obsolete four-argument `SiteSectionEditorialService::updatePlacement` calls with the current three-argument method; removed obsolete `toggleSectionNavigation` expectations. Public menu visibility is driven by publication; remove historical `show_in_navigation` fixtures except where **legacy migration semantics themselves** are under test.
-- Browser tests are split into `component-chromium`, `e2e-chromium`, `profiling-chromium`. New E2E cases cover page creation, selection, filters, notification dismissal and dialog lifecycle. Disposable browser seeder creates actual Page configuration alongside Pages and Contacts. Browser CI workflow is prepared for all projects but **has not run**.
-- Added public behavior checks for sitemap committed/draft visibility (`tests/Feature/Public/Seo/SeoRoutesTest.php`) and private unreferenced media access (`tests/Feature/Public/Media/OriginalAccessTest.php`).
-- Last known snapshot after refactor: **140 files under `tests/`, approx. 542 KB**, vs **141 files / 751 KB** originally. Counts will change as quality work continues; never optimize just to reduce the number.
-- Publication/Activity split reviewed again: removed duplicated imports from the extracted suites and eliminated redundant `PublicationSnapshot::TABLES`/restore-order constant tests. An actual publication media-dependency restore scenario already covers correct ordering.
-- Strengthened the actual `PublicationStateControl` Livewire Commit test: a successful Commit must emit the immediate header notification and add one durable admin notification; a repeated no-op Commit must add none. This is **test-authored only, NOT RUN**.
-- Removed two DashboardFeed query/hydration-count implementation probes and exact type-label list snapshot. Kept feed filters, results, pagination, search and global chronological ordering; existing Livewire Dashboard test exercises selections.
-- Replaced the Dashboard feed hook-only test with an authenticated Livewire feed search/selection workflow. Removed the Pulse recorder-configuration snapshot while retaining its admin access contract. Publication history deletion test now creates its **own real checkpoint** instead of relying on seeded history.
-- Updated `tests/README.md` with the component / E2E / profiling / full browser commands. These were **authored but not executed**.
-- Removed unnecessary preview-route registration from unrelated Publication commit/media tests; Media-retention tests no longer load unrelated Publication workflow helpers. Preview access tests keep their own isolated preview route.
-- Added a security regression to `MediaVariantReclamationTest`: requesting an unreferenced Committed variant as a guest does not regenerate a missing generated file; access remains 404. This crosses public middleware and disk behavior, runtime NOT RUN.
-- Replaced `uniqid()` checksums/storage keys and `random_int()` site-section position in Media Lifecycle fixtures with deterministic, collision-free derived values. This preserves the same file/database behavior without time or randomness dependency.
-- Removed redundant General request-cache object-identity test: canonical General autosave tests already verify fresh persisted values from the same request. Replaced an exact CSS gradient-string assertion in Committed/Public/Preview test with committed-versus-working content checks (still verifies the public HTTP response and preview headers).
-- Strengthened admin Storage route security tests: guest and non-admin access denied for original, generated thumbnail, single download and selected archive; bulk selection rejects missing/malformed IDs without altering originals. These cases have been **authored, not executed**.
-- Added a public-media publication transition contract: draft/Working original and variant not public before Commit; protected admin Preview available; public original and variant available after Commit; Working unpublish does not leak; unavailable after next Commit. Admin-original denies guests and non-admins. **Authored, runtime NOT RUN**.
-- Integrated dev `a53d590` Blog gallery presentation: new `blog_posts.gallery_presentation` migration/model/editor/public renderers, plus new Integration test. The incoming test's duplicate RefreshDatabase registration was removed during merge; runtime NOT RUN.
-- Reintegrated later `dev` Journal/Exhibition changes and their **new or updated Feature/Unit tests**, preserving the intentional deletion of `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php`.
-- Reintegrated October 13 Blog gallery presentation (sequence/grid/mosaic/slideshow), the canonical Blog model/editor and aligned migration in both schemas, plus Integration behavior tests from `dev`.
-- Brought in the latest October 13 Blog copyright/credit rendering improvements from `dev`; added `JournalMediaCaptionTest.php` against actual rendered HTML, inherited General copyright, explicit asset override and authored credit. A Blog copyright-suppression choice must not suppress independently authored credits. **Not executed.**
-- Added Integration publication lifecycle for the new Blog gallery field: first Commit, staged uncommitted change, reset staged state, second Commit. Checks both schemas and pending-state transitions, not internal table lists. **Not executed.**
-- Extended Blog gallery Integration coverage to all four presentations and to verify invalid input preserves the previous choice. Added isolated Chromium component scenarios for real Slideshow JS: initial visibility, reverse/forward wrapping, keyboard activation/focus, aria-hidden/status and single-image stability. **Not yet executed.** Review publication/restore behavior of the new field and public rendering next.
-- Corrected the newly merged Journal copyright Unit test to construct `JournalMediaRenderer` with a mock `PublicMedia` dependency rather than calling `app()` without bootstrapping Laravel. All current `tests/Unit` files were scanned for `app()`; no other such calls were found.
-- Deleted the dialog-submit implementation introspection suite (icon/name/modal property assertions); actual Edit dialog lifecycle and Add page/create workflows retain behavioral coverage. Removed two brittle markup assertions from Custom Page type-conversion coverage; the test still performs the real conversion and verifies persisted component types. Deleted a separate one-row test consisting entirely of incidental drag-handle markup and copy assertions.
-- Source-inventoried all PHP test files by case name and inspected obvious weak-assertion patterns. Further full code-to-contract review remains required.
-- Removed a constant-only Undo retention case and a hard-coded 256 MiB expectation; the live retention behavior test remains. Removed Home component options equality snapshot, leaving real component conversion/validation; removed Storage CSS class order and enum icon assertions while keeping actual page actions.
-- Removed wall-clock-dependent page names from Playwright creation E2E; deterministic retry/repeat-index suffix preserves a fresh slug on retries. A new browser run still requires recreating the disposable seeded database.
-- Strengthened Exhibition map Livewire autosave scenarios with immediate header event on a real change and an audit/mailbox no-op boundary after repeat save; source-reviewed `JournalEntryEditorSchema` and existing mailbox assertions, runtime NOT RUN.
-- Reworked Playwright Admin filter E2E: no fixed field counts per page, verifies a single semantic Filters group and adds the real Pages status-filter behavior across compact-to-inline resize. These browser tests have **not been run**.
-- Added the `LocalPreviewDatabaseGuard` to `BrowserProfilingSeeder`: besides explicit `APP_ENV=testing` and Browser flag, the seeded browser run requires the existing CI/disposable DB guard. Never bypass or relax that check to get a local run. Removed historical dialog-copy assertions from Journal template autosave.
+**All tests and test layers remain NOT RUN under this refactor. CI not triggered.** No full PHP syntax/Pest discovery, Postgres Unit/Integration/Feature/Migration, Node, Vite build or Chromium test suite has run. Static reading and GitHub commits do not establish green status. A safe verified disposable environment is a prerequisite before any DB tests; preserve the current CI-only safety guard.
 
-- Audited named global test helpers and relative `require_once` fixtures across the complete PHP test tree: no duplicate declarations or missing relative fixture paths detected by source inspection. 
-- Removed redundant file-scoped `RefreshDatabase` imports/`uses` in Activity, Dashboard, Dialog, Journal and Notification test files (10 files in first batch, then 10 Pages/Custom Page files, then 10 further Pages/Storage/Public/Integration files, plus 3 Integration/Migration files (33 targeted tests total). File-local duplicate DB trait registrations from the inventory are now eliminated; Pest.php still centrally owns RefreshDatabase for every DB layer.); central Pest registration remains authoritative; these layers are already centrally configured in `tests/Pest.php`.
+- Specifically runtime-verify newly written `StorageRouteTest.php` guest/nonadmin tests, `OriginalAccessTest.php` Committed/Working original+variant, `BlogGalleryPresentationTest.php` staged reset, `JournalMediaCaptionTest.php` unsaved usage with loaded asset relation, `journal-slideshow.spec.mjs` script loading, `DashboardFeedActionsTest.php` Livewire mount, and split Activity/Publication suite imports/actions. Fix actual failures, never weaken permissions or bypass DB guard.
+- Production `dev` moves quickly. Check latest migration/schema additions and potential changed signatures each time. Latest tests may require valid PostgreSQL schema parity in `public` and `committed`.
+- `AGENTS.md`, `followup-skill.md`, and `docs/TESTING.md` on `testing` may still refer to obsolete architecture paths/branches. **Documentation synchronization belongs to `docs`**, not this branch.
+- The currently configured release/browser workflows run on `dev`/`main`, not on testing; an eventual authorized test run and integration into dev are outstanding.
 
-## 5. Explicitly unverified / risks
+## Remaining work — priority order for the next chat
 
-**No CI has been triggered. No full PHP, PostgreSQL, Playwright/Chromium, or Node test run has been demonstrated for this refactor.** The suite is not certified green. File movement and static checks alone cannot prove correctness.
+1. Continue **file-by-file production-to-test behavioral audit** of the remaining Feature/Integration/Unit/Migration cases. The inventory is complete but only part has been reviewed deeply. Particularly check stale Filament modal APIs, absent assertions after mutations, no-op audit/notification behavior, cross-user access, and real public visibility. Keep useful tests; remove duplicates.
+2. Audit Admin `Gallery`, `Storage`, `Activity`, `General`, `Home`, `Pages`, `Journal`, public contact/security, and Publication domain in that order or in parallel without conflicting with `dev`; make small focused commits with test + this file.
+3. Verify the new Blog gallery **end-to-end public rendering** and gallery/copyright components (the present tests cover isolated runtime helpers and domain persistence, not a complete public page). Review map address fields and real user notification feedback whenever `dev` changes.
+4. Validate Jest/Node/Playwright imports and PHP syntax/discovery under a strictly disposable setup. If none is accessible, keep status `NOT RUN`; do not simulate success.
+5. Reconcile docs on the separate docs workstream; once tests actually pass in a permitted environment, prepare integration to `dev` only with the user's approval.
 
-- **First priority when a safe local disposable runtime is available:** validate PHP syntax, Composer/Pest test discovery, imports/helpers, Unit, Integration, Feature, Migration, Node tests and Playwright separately. Fix genuine failures without disguising them. CI must remain off until explicitly authorized.
-- Database test setup must retain `Tests\\TestCase` → `LocalPreviewDatabaseGuard::assertDisposableTestContext()`. Never run `migrate:fresh` on an ambiguous, persistent local preview or production database. Require explicit disposable PostgreSQL context.
-- Watch for helper redeclarations after splitting Pest files, misplaced `require_once` paths, remaining unused imports, source/history-based assertions, and test cases tied to stale production APIs. The newly rewritten Dashboard Livewire test specifically requires runtime confirmation. **Avoid unverified automated import pruning**: the initial mechanical pass removed required PHP imports; follow-up commits `94cd8e6` and `e63ef36` restored them. Independently inspect every resulting file before claiming syntax or runtime correctness.
-- Browser testing depends on the disposable admin seeder, built Vite assets, current Filament markup and actual interactions; neither static fixture review nor HTML-only component tests can establish full-stack behavior.
-- **Documentation drift to reconcile with the `docs` owner:** `AGENTS.md` and `followup-skill.md` may still say “`dev` only,” or reference deleted tests; `docs/TESTING.md` on `testing` still describes an obsolete Architecture layer and old browser paths. Do not unilaterally edit `docs/TESTING.md`; flag specific changes for the docs branch / later integration.
-- New public tests (including the media transition through two Commits) and the split Publication/Activity tests deserve runtime verification, not exemption because the refactor authored them.
+### Migration-specific retirement decisions
 
-## 6. Next work, in recommended order
+- `tests/Migration/JournalEntryOrderingMigrationTest.php`: keep until historical journal resequencing migration is no longer supported during cutover.
+- `tests/Migration/Legacy/HomeHeroCompatibilityTest.php`: keep while old Hero fixed/newest/random inputs are accepted.
+- `tests/Migration/Legacy/SiteSectionMigrationValidatorTest.php`: keep until historical Gallery→SiteSection validation/cutover path is removed.
+- `tests/Unit/Content/HistoricalCustomPageBlockCanonicalizerTest.php`: migration-only compatibility, keep until old payload normalization is deliberately retired.
+- Historical `show_in_navigation` DB column is retained for old publication snapshots; migration fixtures may rightly contain it even though current public navigation does not use it.
 
-1. Continue auditing every inventoried test **against live production code**, not filenames alone. Name-and-pattern inventory is complete but is **not** a full implementation review. Remove empty signal, stale user interactions, duplicated checks, arbitrary constants and hidden dependency on test order.
-2. Review remaining split test files as standalone PHP: unused global fixtures, setup/teardown scope, function redeclarations, nondeterminism, and correctness of failure expectations. Publication media/commit route setup was simplified; review other domains rather than redoing that work.
-3. Strengthen only the important gaps: permissions, audit/persistence correctness, Livewire reopen/no-op/error behavior, publication Working vs LIVE, rollback, public privacy and media authorization. Use **few, strong** tests.
-4. Validate test discovery, syntax, and runtime using a verified disposable environment **without CI**, if one becomes available; otherwise mark each unexecuted layer as `NOT RUN`.
-5. Keep browser scenarios representative and stable; consolidate setup and ensure E2E fixtures reflect actual requirements. Report measured profiles separately from blocking correctness assertions.
-6. Coordinate revisions to test policy and obsolete path references with the `docs` branch, and keep eventual CI wiring consistent with the actual test tree.
-
-## 7. Full-suite review ledger (as of 2026-10-13)
-
-Track each review by **verified contract**, not by number of files. 'Source-reviewed' never means 'runtime passed'.
-
-| Domain / test layer | Status | Still to investigate |
-| --- | --- | --- |
-| Activity / audit / undo | Cases inventoried; partial behavior source-review | Validate split suites, permission/no-op/notification semantics end-to-end |
-| Dashboard / notifications | Partially source-reviewed | Run Livewire interaction tests, verify mutations and notifications |
-| General / Home / Pages | Cases inventoried; partial behavior source-review | Review every workflow against traits, actions and current dialog behavior |
-| Journal / Exhibitions | Partial; Blog gallery presentation + map autosave tests synchronized | Map autosave + address validation, public visibility, Journal state changes |
-| Gallery / Storage / media | Cases inventoried; public variant access/regeneration security strengthened | Cross-check deletion/variants/usage, public authorization and preview |
-| Publication / Restore | Partially source-reviewed; Commit notification/no-op strengthened | Execute realistic Commit/Stage/Revert and media retention cases |
-| Public / security / contact / SEO | Partial; published-vs-Working test simplified | Reverify current routes, middleware, side effects and auth |
-| Unit / Integration / Migration | All cases inventoried; migration sources inspected | Validate actual migration compatibility, historical retirement and runtime |
-
-| JS / Playwright | All browser specs inspected; filter workflow strengthened, NOT RUN | Runtime executions and fixture realism; avoid DOM/copy locks |
-| Test infrastructure / CI | Source-reviewed; browser-seeder disposable guard added | Disposable Postgres, test discovery, npm imports and safe validation |
-| Runtime suites | **NOT RUN** | No CI; local disposable execution not established |
-
-Important: `dev` is moving independently; its new features and tests must be brought over thoughtfully. A deleted Architecture test on `dev` is not evidence of missing coverage until its public behavior is inspected.
-
-### Migration retirement decisions (do not delete solely to hit a file count)
-
-- `tests/Migration/JournalEntryOrderingMigrationTest.php`: run against the `2026_09_17_000001_resequence_journal_entries_newest_first` historical data migration. Retire only when the migration itself is no longer supported/executed in the planned cutover; normal new Journal ordering is already tested separately.
-- `tests/Migration/Legacy/HomeHeroCompatibilityTest.php`: `hero_mode`/old fixed/newest/random configurations are still accepted by the compatibility resolver. Retire with the explicit migration/normalization that removes legacy input handling, not before.
-- `tests/Migration/Legacy/SiteSectionMigrationValidatorTest.php`: guards historical Gallery → SiteSection parity/one-level migration. Retire when the validator and original migration pathway are intentionally removed at cutover; permanent DB invariants remain independently covered.
-- `tests/Unit/Content/HistoricalCustomPageBlockCanonicalizerTest.php`: has migration-only semantic ownership although currently placed under Unit; preserve until the legacy custom-page canonicalization migration is no longer supported, then retire with that adapter.
-- The historical `show_in_navigation` database column persists for restorable snapshot compatibility (see `2026_10_12_000001_make_public_navigation_follow_publication.php`). Migration fixture fields are **not** automatically stale current runtime APIs.
-
-## 8. Maintenance ritual — mandatory
-
-At **every substantive testing commit / merge**:
-1. Re-read **`TESTING_SKILL.md`** and check current `testing`/`dev` HEADs.
-2. Update **Completed work**, **Unverified / risks**, **Next work** and the **full-suite review ledger** to reflect reality. Remove already-resolved TODOs; don't accumulate a historical changelog.
-3. Update the **Last reconciled** date and relevant recent merge/commit note. Exact SHA is context only; live GitHub HEAD always wins.
-4. Keep this operational file **on `testing`**, preferably in the same commit as related changes. Avoid redundant updates for formatting-only edits.
-5. Before handing work to a new chat, direct it to read **`TESTING_SKILL.md` first**, then `tests/README.md` and relevant production/test code, and distinguish *inspected*, *authored*, *executed* and *browser-verified* evidence.
-
-**No CI without the user's explicit authorization.**
+**MANDATORY handoff procedure:** Read `TESTING_SKILL.md` first; inspect current `testing` and `dev` HEADs; inspect `AGENTS.md`, `ui-skills.md`, `tests/README.md` and production code for next target; implement actual changes on `testing`; update this file in the same commit; explicitly distinguish source-inspected, test-authored, test-executed and browser-confirmed. **Never trigger CI without explicit permission.**
