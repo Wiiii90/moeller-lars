@@ -6,6 +6,7 @@ use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
 use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
+use App\Models\AdminNotification;
 use App\Models\BlogPost;
 use Filament\Facades\Filament;
 use Illuminate\Validation\ValidationException;
@@ -19,13 +20,15 @@ it('does not report success for no-op page type or Journal template commands', f
     $page = $service->createCustomPage('No-op Type Page', 'noop-type-page');
     $journal = $service->createJournal('No-op Template Journal', 'noop-template-journal', JournalTemplate::Blog->value);
     $eventsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
 
     Livewire::test(SitePages::class)
         ->call('convertSectionType', (int) $page->getKey(), SiteSectionType::CustomPage->value)
         ->call('changeJournalTemplate', (int) $journal->getKey(), JournalTemplate::Blog->value)
-        ->assertNotDispatched('admin-notification-ticker');
+        ->assertNotDispatched('admin-header-notification');
 
     expect(AuditEvent::query()->count())->toBe($eventsBefore)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore)
         ->and($page->fresh()->type)->toBe(SiteSectionType::CustomPage->value)
         ->and($journal->fresh()->template)->toBe(JournalTemplate::Blog->value);
 });
