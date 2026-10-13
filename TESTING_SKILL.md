@@ -1,6 +1,6 @@
 # Testing workstream — living handoff / TESTING_SKILL
 
-**Active as of 2026-10-13.** Repository: `Wiiii90/moeller-lars`. Long-lived branch: **`testing`**, prior observed HEAD `61fdbefbe9d051eabf401d8f62d0ac9f80a7c7f5`; latest merged `dev`: `7c332b32762029b7e9da83491f52b12860bef9ed`. Newest merged dev parent on testing is `7c332b32762029b7e9da83491f52b12860bef9ed` (prior integration: `9194235980b3772063c8db4aa236e1e1b34120d7`). This update is a genuine two-parent merge; inspect ancestry on resumption. **Always inspect live heads and ancestry; these recorded SHAs become stale.** Initially forked dev `82879135c0ab18dd88b07663c1e214a4ade0e45b`.
+**Active as of 2026-10-13.** Repository: `Wiiii90/moeller-lars`. Long-lived branch: **`testing`**, prior observed HEAD `61fdbefbe9d051eabf401d8f62d0ac9f80a7c7f5`; latest merged `dev`: `7c332b32762029b7e9da83491f52b12860bef9ed`. Newest merged dev parent on testing is `222bd0534bc7daa93acf6afad795e827a81d18bf` (prior integration: `9194235980b3772063c8db4aa236e1e1b34120d7`). This update is a genuine two-parent merge; inspect ancestry on resumption. **Always inspect live heads and ancestry; these recorded SHAs become stale.** Initially forked dev `82879135c0ab18dd88b07663c1e214a4ade0e45b`.
 
 This is the **single living operational handoff** for a full test-suite refactor. Read it first in each new conversation, then read `tests/README.md`, `tests/Pest.php`, relevant test and production code. Update this file **in the same commit** as each substantive testing change. Replace stale status/next steps; do not just append historical notes.
 
@@ -72,6 +72,8 @@ Current test file inventory after this cleanup: **114 PHP `*Test.php` files** (7
 29. Added `tests/js/public-spa.test.mjs`: Node-level contract tests for the newly merged Livewire-owned public SPA opt-in (same-origin/public-only links, native same-page anchors, external/private routes, downloads/new windows/explicit full-load exclusions), the actual DOM marking boundary, and CSP-safe destination layout CSSOM synchronization including missing/empty metadata. Production owners: `public-spa.js`, `app.js`, `layouts/app.blade.php`. **Not run**, and this is not an end-to-end assertion that Livewire performs document swaps; a real E2E visit/back/forward test remains required.
 
 30. Public SPA E2E: extended the **already disposable-guarded** `BrowserProfilingSeeder` with two distinct published Custom Page fixtures and an explicit `PublicationService::commit` (the two existing unpublished Pages and contact messages remain). Added `tests/browser/e2e/public/public-spa-navigation.spec.mjs`, validating real `wire:navigate` participation, Livewire content swap without replacing the JS document, and back/forward history using a persistent window probe and unique rendered content. No mocking of Livewire's router. **Not run**; requires safe seeded Laravel + Vite + Chromium context, as does the existing E2E suite.
+
+31. Merged subsequent SPA stabilization from `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf`: canonical Livewire navigation no longer intercepts parent-toggle links and disposes page observers at the navigating boundary. Extended Node link mock to reject `data-navigation-parent-link`; real E2E leaf navigation remains in scope. **Not run.**
 
 ## Current blocking risks and evidence
 

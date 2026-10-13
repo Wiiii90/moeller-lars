@@ -37,10 +37,11 @@ test('SPA navigation does not intercept external, private, download or new-windo
     assert.equal(isPublicSpaDestination('/gallery', 'not a URL'), false);
 });
 
-function link(href, { target = '', download = false, fullLoad = false, external = false } = {}) {
+function link(href, { target = '', download = false, fullLoad = false, external = false, parent = false } = {}) {
     const attributes = new Map([['href', href]]);
     if (download) attributes.set('download', '');
     if (fullLoad) attributes.set('data-public-full-load', '');
+    if (parent) attributes.set('data-navigation-parent-link', '');
 
     return {
         target,
@@ -62,6 +63,7 @@ test('only eligible real anchors opt into the existing Livewire SPA router', () 
         link('/gallery', { download: true }),
         link('/gallery', { fullLoad: true }),
         link('/gallery', { external: true }),
+        link('/gallery', { parent: true }),
     ];
     const previousWindow = globalThis.window;
     globalThis.window = { location: { href: currentPage } };
@@ -71,7 +73,7 @@ test('only eligible real anchors opt into the existing Livewire SPA router', () 
             return links;
         } });
         assert.deepEqual(links.map((entry) => entry.navigates()), [
-            true, true, false, false, false, false, false, false,
+            true, true, false, false, false, false, false, false, false,
         ]);
     } finally {
         if (previousWindow === undefined) delete globalThis.window;

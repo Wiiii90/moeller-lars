@@ -52,7 +52,7 @@
         @endif
         <header class="site-header">
             <h1>
-                <a href="{{ $homeUrl }}" class="site-title" aria-label="Lars Möller — Home">
+                <a href="{{ $homeUrl }}" class="site-title" aria-label="Lars Möller — Home" wire:navigate>
                     <span class="site-title__first">Lars</span><span class="site-title__last">Möller</span>
                 </a>
             </h1>
@@ -71,6 +71,7 @@
                                     <div class="site-navigation__primary">
                                         @if ($navigationItem['url'] !== null)
                                             <a href="{{ $navigationItem['url'] }}"
+                                                @if ($navigationItem['children'] === []) wire:navigate @endif
                                                 @if ($navigationItem['current']) aria-current="page" @endif
                                                 @if ($navigationItem['children'] !== [])
                                                     aria-expanded="{{ $selectedChildParent ? 'true' : 'false' }}"
@@ -113,7 +114,7 @@
                                         @if ($navigationItem['url'] !== null)
                                             <div class="site-navigation__item @if ($navigationItem['current']) is-active @endif" data-navigation-item data-navigation-key="{{ $navigationItem['tie_breaker'] }}:parent">
                                                 <div class="site-navigation__primary">
-                                                    <a href="{{ $navigationItem['url'] }}" @if ($navigationItem['current']) aria-current="page" @endif>
+                                                    <a href="{{ $navigationItem['url'] }}" wire:navigate @if ($navigationItem['current']) aria-current="page" @endif>
                                                         <span class="site-navigation__label">{{ $navigationItem['label'] }}</span>
                                                     </a>
                                                 </div>
@@ -123,7 +124,7 @@
                                             <div class="site-navigation__item @if ($child['current']) is-active @endif" data-navigation-item data-navigation-key="{{ $loop->index }}:{{ $child['url'] ?? $child['label'] }}">
                                                 <div class="site-navigation__primary">
                                                     @if ($child['url'] !== null)
-                                                        <a href="{{ $child['url'] }}" @if ($child['current']) aria-current="page" @endif><span class="site-navigation__label">{{ $child['label'] }}</span></a>
+                                                        <a href="{{ $child['url'] }}" wire:navigate @if ($child['current']) aria-current="page" @endif><span class="site-navigation__label">{{ $child['label'] }}</span></a>
                                                     @else
                                                         <span class="site-navigation__text"><span class="site-navigation__label">{{ $child['label'] }}</span></span>
                                                     @endif
