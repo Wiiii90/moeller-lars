@@ -122,6 +122,13 @@
     color: var(--admin-muted);
 }
 
+/* The range's two dates are intentional rows. Never let the browser choose
+ * different wrap points according to the day/month digit widths. */
+.journal-date__range > span {
+    display: block;
+    white-space: nowrap;
+}
+
 .journal-date__vernissage,
 .journal-date__timing,
 .journal-publication__state {
