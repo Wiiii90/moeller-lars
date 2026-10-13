@@ -28,7 +28,7 @@ it('uses one address eligibility policy and refreshes only committed map coordin
         ->toContain("Toggle::make('map_enabled')")
         ->toContain('ExhibitionMapAddress::isSufficient(')
         ->toContain("! (bool) \$get('map_enabled')")
-        ->toContain('->live(onBlur: true)')
+        ->not->toContain("->afterStateUpdatedJs(")
         ->toContain("Hidden::make('latitude')->dehydrated(false)")
         ->not->toContain('journal-location-stale')
         ->not->toContain('x-on:journal-location-stale')
