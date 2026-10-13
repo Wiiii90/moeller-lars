@@ -5,12 +5,12 @@ import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
 import { advancePublicFolio } from './public-folio-motion.js';
-import { applyPublicLayoutFromMeta, markPublicSpaLinks } from './public-spa.js';
+import { applyPublicLayoutFromMeta, initializePublicSpaLinks } from './public-spa.js';
 
-// Livewire swaps the public body's contents, but module scope and document
-// event listeners persist. Dispose page-specific observers/listeners each visit.
+// Scripts and document listeners are persistent; the page-specific DOM is not.
 let currentContent = null;
 let disposers = [];
+let visitPending = false;
 
 function initializePublicApplication() {
     const content = document.querySelector('#content');
@@ -26,24 +26,37 @@ function initializePublicApplication() {
     disposers.push(initializeJournalPresentation());
     disposers.push(initializeMatomoTracking(root));
     disposers.push(initializePublicNavigation());
-    markPublicSpaLinks(root);
 }
 
-// A new response has a fresh style nonce; copy its validated layout values
-// into CSSOM before paint rather than relying on a newly inserted inline
-// style element that the current document's CSP cannot authorize.
+// This event fires for ACTUAL Livewire visits, not the initial page load.
+document.addEventListener('livewire:navigate', () => {
+    visitPending = true;
+});
+
 document.addEventListener('livewire:navigating', (event) => {
-    advancePublicFolio();
-    // Navigation is about to replace the old body: release modal maps, image
-    // attention tracking and global observers before their elements detach.
     for (const dispose of disposers) dispose?.();
     disposers = [];
     currentContent = null;
+    // The new response has another CSP nonce. Copy its authored layout
+    // metadata at the documented post-swap boundary before Alpine starts.
     event.detail.onSwap?.(applyPublicLayoutFromMeta);
 });
-document.addEventListener('livewire:navigated', initializePublicApplication);
 
-// Harmless initial fallback if scripts initialize in a different order.
+document.addEventListener('livewire:navigated', () => {
+    initializePublicApplication();
+    if (!visitPending) return;
+    visitPending = false;
+
+    // Real navigation is now complete. The persisted contour exists in the
+    // new document and CSS can render the interpolation on the next frame.
+    advancePublicFolio();
+    document.body.dataset.publicSpaVisit = 'true';
+});
+
+// Delegated, eligible content links use Livewire's official navigate API.
+// No second Fetch/History router, and no late-added inert wire:navigate attrs.
+initializePublicSpaLinks();
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializePublicApplication, { once: true });
 } else {

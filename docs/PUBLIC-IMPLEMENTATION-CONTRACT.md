@@ -42,7 +42,8 @@ Livewire 4 CSP-safe asset endpoint (`/site-assets/livewire-csp.js`) so that
 the strict no-`unsafe-eval` public CSP does not block the client runtime;
 this deliberately does not change the Admin/Filament Livewire bundle or
 globally enable CSP-safe Alpine evaluation. Only eligible same-origin public links
-are opted in; downloads, cross-origin links, anchors and admin/system paths
+are opted in, including dynamically rendered content links through the
+document-level Livewire.navigate() delegate; downloads, cross-origin links, anchors and admin/system paths
 retain native browser navigation. The canonical server routes remain the
 source of content/publication/preview authority. JavaScript page initializers
 must dispose global listeners/observers on each document swap; Matomo records
@@ -61,15 +62,26 @@ The first accepted Content folio geometry is an immutable fallback:
 paper-corner contours even with JavaScript off or non-SPA navigation.
 The ten experimental variants preserve this exact form as variant 1,
 change only bounded end positions, and never detach corner return strokes.
-The additional `@persist('public-folio-decoration')` inner element stays
-hidden until an actual `livewire:navigating` event. Only then does it take
-over from the identical baseline pseudos and animate registered CSS lengths
-from its current position. The menu contours remain the approved static
-geometry; no animations change artwork or shell dimensions. Native
-`wire:transition.navigate` adds an optional brief content crossfade.
-Browser support, CSP activation and true navigation performance must still
-be checked in the local preview; without SPA the accepted baseline remains
-fully intact.
+The animated layer is a DIRECT `x-persist="public-folio-decoration"`
+child of `#content`. This is required because Livewire 4's Blade
+`@persist` creates an enclosing `div`, which previously prevented the
+base contour from being hidden after motion activation. Real
+`livewire:navigate` / `livewire:navigated` events gate motion: no animation
+runs on first load, the overlay becomes visible only AFTER the completed
+document swap, and each subsequent visit transitions from the existing
+rendered state to one of ten different targets. Left and right return-stroke
+widths as well as endpoints interpolate. CSS keeps the original version as
+variant 1 and the guaranteed no-JavaScript fallback. The menu contours remain
+the approved static geometry, and neither media nor content width is animated.
+`wire:transition.navigate` was removed because it does not implement SPA
+crossfades. Instead an explicitly gated short opacity/translateY animation
+settles the NEW content after a completed Livewire navigation, never on initial
+load or reduced-motion clients. The same-origin content-link delegation invokes
+`Livewire.navigate()` for eligible links not predeclared with `wire:navigate`
+(adding Alpine directives after initialization did not activate them).
+Neither a second router nor timers, polling or synthetic page transitions
+are introduced. Actual CSP activation and SPA behavior still require
+running-preview verification.
 
 The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`, `--public-folio-depth`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
 

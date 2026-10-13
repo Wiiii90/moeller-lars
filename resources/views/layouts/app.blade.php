@@ -141,10 +141,10 @@
                 </div>
             @endunless
         </header>
-        <main id="content" class="site-content" wire:transition.navigate>
-            @persist('public-folio-decoration')
-                <div class="public-folio-decoration" aria-hidden="true"></div>
-            @endpersist
+        <main id="content" class="site-content">
+            {{-- A direct x-persist element: @persist adds an extra div wrapper
+                 and breaks the immediate-child contour selector. --}}
+            <div class="public-folio-decoration" x-persist="public-folio-decoration" aria-hidden="true"></div>
             @yield('content')
         </main>
         <x-artwork-viewer />
