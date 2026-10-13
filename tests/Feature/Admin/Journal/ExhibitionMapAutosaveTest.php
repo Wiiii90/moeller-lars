@@ -9,6 +9,7 @@ use App\Models\AuditEvent;
 use App\Models\Exhibition;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
@@ -24,6 +25,7 @@ beforeEach(function (): void {
         'services.nominatim.min_interval_ms' => 1000,
         'services.nominatim.lock_wait_seconds' => 0,
     ]);
+    Cache::flush();
 });
 
 function journalMapExhibition(array $overrides = []): array
