@@ -2,10 +2,12 @@
 
 ## Scope
 
-A project Notification is one durable administrative message with two projections:
+A project Notification **message** has two projections:
 
-- the **Dashboard mailbox** stores the user-scoped `AdminNotification` record;
-- the **header Notification surface** shows a newly created Notification immediately when its recipient is the admin currently using the browser.
+- the **Dashboard mailbox** stores a user-scoped `AdminNotification` record;
+- the **header Notification surface** delivers the message immediately when its recipient is the admin currently using the browser.
+
+A **single `AdminNotifier::notification()` invocation may produce several messages** when a successful mutation has accumulated several verified Activity presentations. Message cardinality is not fixed at one per method call.
 
 Activity and Publication remain separate domain systems. The header is never a persistence source and the Dashboard mailbox is never reconstructed from browser state.
 
@@ -17,9 +19,9 @@ A Notification call:
 
 1. normalizes bounded plain-text title, body, status and context;
 2. resolves the recipient from an explicit user or the authenticated admin;
-3. creates one idempotent `AdminNotification` row when a recipient exists;
-4. projects a newly created row into the current header surface when that recipient is the current browser actor;
-5. otherwise leaves the durable row available in the Dashboard mailbox.
+3. for `status=success`, consumes the recorded, still-existing Activity presentations in `AdminActivityNotificationContext`: if any exist, it calls `recordAndSurface()` **for each** and uses each audit event as a stable message source; otherwise it calls `recordAndSurface()` once with the supplied message;
+4. for non-success statuses, discards any pending Activity presentation and delivers the explicit message once;
+5. each `recordAndSurface()` upserts at most one durable row per `(user_id, source_id)` and surfaces the message only for the matching browser actor (or places it in the bounded session queue). A nonmatching background recipient gets mailbox persistence without an immediate header event.
 
 There is no parallel `inbox()`, `both()`, framework-toast or compatibility API.
 
@@ -42,6 +44,8 @@ storage-capacity:critical:2026-09-14
 Ordinary one-off admin messages receive an origin-generated Notification source id.
 
 When a successful admin mutation produced Activity in the same request, `AdminActivityNotificationContext` supplies the canonical Activity presentation and audit event id. The resulting mailbox Notification uses that audit event as its durable source/context rather than inventing a second success description.
+
+**Idempotency scope:** `AdminNotification::firstOrCreate()` deduplicates only the **mailbox row** for a stable recipient/source pair. The current implementation calls `surfaceNotification()` even when `firstOrCreate()` returns an existing row. Thus a retry with the same source id can still yield an additional header event or pending-session message. This is a **source-observed behavior**, not a claim that duplicate presentation is the intended acceptance contract. A focused runtime test should determine whether header delivery should also be suppressed on a repeated source. Do not claim exactly-once UI transport based on the database uniqueness key alone.
 
 ## Admin mutation feedback integration
 
@@ -71,8 +75,10 @@ different recipient and should not be forced to emit an admin UI event.
 **Required proof:** for representative edit/selection/ordering flows
 including Pages/Home heading, Home List/Contact child, General, Journal,
 Custom Page, Gallery and Storage, exercise the **real** Livewire action/
-form-update path. Assert new stored data, Activity, one mailbox record
-and one `admin-header-notification` event. Repeat the same value and
+form-update path. Assert persisted data, Activity and **message cardinality
+matching the actual Activity set**: one for a single-Activity edit, one per
+consumed eligible Activity for a composite action, with corresponding mailbox
+row and header event for the current actor. Repeat the same value and
 test invalid input: no success Notification and no duplicate audit.
 Close/reopen edits to confirm persisted state. A test merely asserting
 a Domain service updated a row does not prove Notification delivery.
@@ -154,7 +160,8 @@ Do not maintain:
 
 Coverage should prove at least:
 
-- an authenticated admin Notification creates one `AdminNotification` row and one immediate header event;
+- a simple single-Activity admin success generates one canonical mailbox message and header event; an action consuming multiple eligible Activity messages fans out appropriately;
+- repeated stable `source_id` values deduplicate stored mailbox rows; investigate whether a repeated header event is intended or should be suppressed (not yet runtime verified);
 - explicit `source_id` values remain idempotent per recipient;
 - background delivery persists without requiring a browser session;
 - mailbox reads/mutations remain user-scoped;

@@ -126,27 +126,34 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branchstand 13.10.2026:** `docs` vor diesem Dokumentations-Commit
-`0aa31b37a5ca561880f5fe8f634500a84afd2cde`; `dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`
-und per Zwei-Eltern-Merge `0aa31b37a5ca561880f5fe8f634500a84afd2cde`
-nach `docs` übernommen (nur Folio-JS-Testquelle). Vor jeder Weiterarbeit
-die tatsächlichen HEADs erneut lesen.
+**Stand 13.10.2026:** `docs` vor diesem Commit `a25ef4623f27a7b795915d85e84f3d794e37edb1`,
+`dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`.
+Git-HEADs vor jedem Schritt aktuell prüfen.
 
-**Abgeschlossen:** Alte temporäre Worker-/Side-Branch-Anweisungen aus
-`AGENTS.md` in quellbewusste Regeln für read-only Audits, begrenzte
-Implementierung, gemeinsame direkte `dev`-Änderungen, `docs`-Merges,
-HEAD-/Diff-Verifikation und Issue-Disziplin überführt. Zwei redundante
-Handoff-Abschnitte vereinheitlicht. Widersprüchliche „CI verifies PRs“-
-Formulierung und CI-Status als Remote-Nachschlagebeispiel entfernt.
-[`followup-skill.md`](followup-skill.md) verweist jetzt ausschließlich
-auf den [kanonischen Handoff-Skill](.agents/skills/handoff/SKILL.md).
-Keine Runtime-Anwendung geändert.
+**Wichtiger nachgewiesener Vertragswiderspruch korrigiert:**
+[`AdminNotifier::notification()`](app/Domain/Admin/AdminNotifier.php)
+verarbeitet bei `success` eine Liste aufgezeichneter Activity-Präsentationen:
+eine aufrufende Action kann **mehrere** `recordAndSurface()`-Nachrichten
+erzeugen. `AGENTS.md` und [Notification-Vertrag](docs/ADMIN-NOTIFICATION-CONTRACT.md)
+fordern deshalb nicht mehr pauschal genau eine Nachricht pro Aufruf, sondern
+die korrekte Kardinalität pro Activity-Quelle. Die einzigartige
+`(user_id,source_id)`-Datenbankzeile ist idempotent; der Header wird bei
+wiederverwendeter Quelle derzeit dennoch erneut angesprochen.
+**Geprüft nur im Code, kein ausgeführter Header-/Retry-Test.** Nicht auf
+`docs` den Domain-/UI-Code reparieren; Verhaltensfrage mit dem
+zuständigen `dev`-/`testing`-Workstream abstimmen, wenn relevant.
 
-**Unmittelbar nächster Schritt:** weitere `AGENTS.md`-Regelüberschneidungen
-mit Admin-/Public-/Media-/Activity-Verträgen gezielt prüfen. Nicht das
-gesamte Root-Dokument auf einmal löschen. Parallel eintreffende
-`dev`-Änderungen nach Bedarf synchronisieren und Public-SPA-Dokumentation
-aktuell halten.
+**Vorher erledigt:** Follow-up-Workflow in kanonischen Handoff-Skill
+konsolidiert, veraltete Worker-/CI-Anweisungen aus `AGENTS.md` entfernt,
+persistierte Public-Folio-Animation dokumentiert und neueste Folio-Testquelle
+aus `dev` über echtem Merge geholt.
 
-**Noch offen:** Full-Checkout-PHP-Generator, isolierter PostgreSQL-`pg_catalog`-
-Export und echte Browser-E2E-Abnahme. CI und `testing` bleiben unberührt.
+**Unmittelbar nächster Schritt:** systematisch weitere zwischen
+`AGENTS.md` und Fachverträgen divergierende Invarianten prüfen;
+insbesondere die Scroll-Lock-/Dialogregel und deren aktuelle Patch-/Testowner.
+Danach gegebenenfalls allgemeine wiederholte Regeln verkürzen, aber nur
+mit Beleg und ohne akzeptierte Semantik zu verlieren.
+
+**Offene Laufzeitprüfungen:** nativer kompletter PHP-Generator,
+wegwerfbares isoliertes PostgreSQL für `pg_catalog`, Browser-SPA/Admin,
+Notifier-Mehrfach- und Retry-Verhalten. CI und `testing` unangetastet.

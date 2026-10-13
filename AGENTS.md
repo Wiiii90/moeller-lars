@@ -76,10 +76,13 @@ must not unconditionally create UI messages.
 2. Trace `AdminAuditService` evidence and the actual call to
    `AdminNotifier`; the audit context supplies presentation only, **not**
    dispatch. Verify the notifier reaches both mailbox and header event.
-3. Assert a genuine change yields persisted data, expected audit,
-   exactly one persisted Notification and one immediate
-   `admin-header-notification` event; verify no-op and invalid state do
-   not create a success message. Check close/reopen and cross-field saves.
+3. Assert that a genuine change yields persisted data, expected audit and
+   the **correct number** of user messages: a simple single-Activity edit
+   normally yields one mailbox row and one immediate header event; an action
+   with multiple recorded Activity presentations may legitimately yield one
+   distinct message per consumed Activity. No-op and invalid state must not
+   create success. Check close/reopen, cross-field edits and duplicate source
+   IDs; database deduplication does not by itself deduplicate header delivery.
 4. Test both the domain transition and the real Filament/Livewire event
    path, including dynamically shown/hidden fields and nested editors.
 5. If runtime tests or browser checks cannot be performed, mark them
