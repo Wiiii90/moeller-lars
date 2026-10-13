@@ -754,9 +754,26 @@ final class JournalWorkspace extends Page
             $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
             $location = collect([$entry->getAttribute('venue'), $entry->getAttribute('city')])->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')->map(fn (string $value): string => trim($value))->unique()->implode(' · ');
 
+            // The admin table displays structured dates, not the public-facing
+            // free-text display override (which may use different separators).
+            $startsOn = $entry->getAttribute('starts_on');
+            $endsOn = $entry->getAttribute('ends_on');
+            $dateStart = $startsOn instanceof CarbonInterface ? $startsOn->format('d.m.Y') : null;
+            $dateEnd = $endsOn instanceof CarbonInterface ? $endsOn->format('d.m.Y') : null;
+            $dateRange = match (true) {
+                $dateStart !== null && $dateEnd !== null && $dateStart !== $dateEnd => $dateStart.' – '.$dateEnd,
+                $dateStart !== null => $dateStart,
+                $dateEnd !== null => $dateEnd,
+                default => '',
+            };
+            $vernissageAt = $entry->getAttribute('vernissage_at');
+            $vernissage = $vernissageAt instanceof CarbonInterface
+                ? $vernissageAt->format('d.m.Y · H:i')
+                : (filled($entry->getAttribute('opening_text')) ? trim((string) $entry->getAttribute('opening_text')) : null);
+
             return [
                 'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
-                'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $entry->vernissageDisplay(), 'date_text' => $entry->displayDate() ?? '',
+                'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $vernissage, 'date_range' => $dateRange,
                 'thumbnail_url' => $this->coverThumbnailUrl($entry),
                 'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',
