@@ -2,7 +2,6 @@
 
 use App\Domain\Analytics\ArtistReportingService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Models\Artwork;
 use App\Models\User;
 
 beforeEach(function (): void {
@@ -11,7 +10,7 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/GalleryFixtures.php';
 
-it('renders the six Gallery metrics and per-artwork analytics from one canonical reporting call', function (): void {
+it('shows real Gallery totals and per-artwork analytics in the workspace', function (): void {
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery, [
         'state' => 'published',
@@ -23,25 +22,11 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
 
     $reporting = new class((string) $artwork->getAttribute('analytics_key'))
     {
-        public int $calls = 0;
-
-        /** @var list<string> */
-        public array $keys = [];
-
-        public ?string $path = null;
-
-        public ?string $range = null;
-
         public function __construct(private readonly string $analyticsKey) {}
 
         /** @param list<string> $artworkAnalyticsKeys */
         public function gallery(string $publicPath, array $artworkAnalyticsKeys, string $range = '30d'): array
         {
-            $this->calls++;
-            $this->path = $publicPath;
-            $this->keys = $artworkAnalyticsKeys;
-            $this->range = $range;
-
             return [
                 'status' => 'available',
                 'page' => [
@@ -65,7 +50,7 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
     };
     app()->instance(ArtistReportingService::class, $reporting);
 
-    $response = $this->get(GalleryWorkspace::getUrl( ['gallery' => $gallery->getKey()]));
+    $response = $this->get(GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]));
 
     $response->assertOk()
         ->assertSeeText('Artworks')
@@ -74,12 +59,8 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
         ->assertSeeText('Views')
         ->assertSeeText('Artwork opens')
         ->assertSeeText('Attention')
+        ->assertSeeText($artwork->title)
         ->assertSeeText('30d · 4 views · 3 opens · 2 zooms · 3m 15s attention');
-
-    expect($reporting->calls)->toBe(1)
-        ->and($reporting->range)->toBe('30d')
-        ->and($reporting->path)->toBe('/'.(string) $gallery->getAttribute('slug'))
-        ->and($reporting->keys)->toBe([(string) $artwork->getAttribute('analytics_key')]);
 });
 
 

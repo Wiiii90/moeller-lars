@@ -5,6 +5,8 @@ use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
+use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -132,4 +134,53 @@ it('routes the Artwork EditRecord page through the same ALT-aware editing servic
     expect($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
         ->toBe('A landscape painting viewed from a rocky terrace')
         ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
+});
+
+
+
+it('renames artwork through the Gallery inline editor with one audit and notification, but stays silent on no-op', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery, ['title' => 'Original artwork title']);
+    galleryFixtureUnavailableAnalytics();
+
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->call('renameArtwork', $artwork->getKey(), '  Revised   artwork title  ')
+        ->assertHasNoErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect($artwork->fresh()->title)->toBe('Revised artwork title')
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 1)
+        ->and(AuditEvent::query()->latest('id')->value('action'))->toBe('artwork.updated')
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->call('renameArtwork', $artwork->getKey(), ' Revised artwork title ')
+        ->assertHasNoErrors()
+        ->assertNotDispatched('admin-header-notification');
+
+    expect($artwork->fresh()->title)->toBe('Revised artwork title')
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+});
+
+it('does not rename artwork belonging to another Gallery through the inline editor', function (): void {
+    $gallery = galleryFixtureCategory();
+    $otherGallery = galleryFixtureCategory();
+    $otherArtwork = galleryFixtureArtwork($otherGallery, ['title' => 'Owned by another Gallery']);
+    galleryFixtureUnavailableAnalytics();
+
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->call('renameArtwork', $otherArtwork->getKey(), 'Unexpected change')
+        ->assertHasNoErrors()
+        ->assertNotDispatched('admin-header-notification');
+
+    expect($otherArtwork->fresh()->title)->toBe('Owned by another Gallery')
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
 });

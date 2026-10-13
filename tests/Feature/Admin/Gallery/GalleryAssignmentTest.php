@@ -7,6 +7,7 @@ use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -146,4 +147,35 @@ it('rejects detaching a published artwork through the shared editor without chan
 
     expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
         ->and($artwork->fresh()->title)->not->toBe('Must not be saved');
+});
+
+
+
+it('rejects a published artwork move to an unpublished Gallery without changing its membership or audit', function (): void {
+    $source = galleryFixtureCategory('published');
+    $destination = galleryFixtureCategory('hidden');
+    $artwork = galleryFixtureArtwork($source);
+    $asset = galleryFixtureAsset('video/mp4');
+    galleryFixturePrimary($artwork, $asset);
+    app(ArtworkPublicationService::class)->publish($artwork);
+    $auditsBefore = AuditEvent::query()->count();
+
+    expect(fn () => app(ArtworkGalleryAssignmentService::class)->reassign($artwork, $destination))
+        ->toThrow(ValidationException::class);
+
+    expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $source->getKey())
+        ->and($artwork->fresh()->state)->toBe('published')
+        ->and((int) $artwork->artworkMedia()->where('role', 'primary')->value('media_asset_id'))->toBe((int) $asset->getKey())
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore);
+});
+
+it('does not create an audit event when assigning an artwork to its current Gallery', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $auditsBefore = AuditEvent::query()->count();
+
+    app(ArtworkGalleryAssignmentService::class)->reassign($artwork, $gallery);
+
+    expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore);
 });
