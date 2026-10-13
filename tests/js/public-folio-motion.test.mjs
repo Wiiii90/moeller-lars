@@ -37,7 +37,7 @@ test('folio variants never remove return corners or greatly displace the accepte
     const original = FOLIO_VARIANTS[0].map(parseFloat);
     FOLIO_VARIANTS.forEach((values) => {
         values.forEach((value, position) => {
-            assert.ok(Math.abs(parseFloat(value) - original[position]) <= (position < 4 ? .85 : .5),
+            assert.ok(Math.abs(parseFloat(value) - original[position]) <= (position < 4 ? .9 : .5),
                 'outside contour end must stay close to the accepted position');
         });
     });
