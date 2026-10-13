@@ -1,6 +1,8 @@
-// Livewire 4 owns SPA document visits. This module only declares which real
-// server-rendered public links participate and synchronizes public shell tokens.
-const OUTSIDE_PUBLIC_SITE = /^\/(?:admin|api|pulse|livewire|logout|media|storage|vendor)(?:\/|$)/;
+// Public navigation remains real server-rendered Blade routes. Delegate
+// links that lack an initial wire:navigate attribute to Livewire's own API,
+// rather than adding Alpine directives after Alpine has initialized them.
+const OUTSIDE_PUBLIC_SITE = /^\/(?:admin|api|pulse|livewire|logout|media|storage|vendor|site-assets)(?:\/|$)/;
+const OUTSIDE_PUBLIC_PREVIEW = /^\/preview\/(?:media|admin|logout)(?:\/|$)/;
 
 export function isPublicSpaDestination(href, currentHref, target = '', isDownload = false) {
     if (isDownload || (target !== '' && target !== '_self')) return false;
@@ -16,31 +18,40 @@ export function isPublicSpaDestination(href, currentHref, target = '', isDownloa
 
     if (!['http:', 'https:'].includes(destination.protocol)
         || destination.origin !== current.origin
-        || OUTSIDE_PUBLIC_SITE.test(destination.pathname)) return false;
+        || OUTSIDE_PUBLIC_SITE.test(destination.pathname)
+        || OUTSIDE_PUBLIC_PREVIEW.test(destination.pathname)
+        || /\.(?:pdf|xml|txt|jpe?g|png|webp|mp4|webm|svg|zip)$/i.test(destination.pathname)) return false;
 
-    // Same-document anchors should retain native browser scrolling.
+    // Preserve native intra-page anchor scrolling.
     return !(destination.pathname === current.pathname
         && destination.search === current.search && destination.hash);
 }
 
-export function markPublicSpaLinks(root = document.body) {
-    for (const link of root.querySelectorAll('a[href]')) {
-        if (link.hasAttribute('download') || link.hasAttribute('data-public-full-load')
+export function initializePublicSpaLinks(root = document) {
+    root.addEventListener('click', (event) => {
+        if (event.defaultPrevented || event.button !== 0 || event.ctrlKey
+            || event.metaKey || event.altKey || event.shiftKey) return;
+
+        const link = event.target.closest?.('a[href]');
+        if (!(link instanceof HTMLAnchorElement)
+            || link.hasAttribute('wire:navigate')
             || link.hasAttribute('data-navigation-parent-link')
-            || link.relList?.contains('external')
-            || !isPublicSpaDestination(link.getAttribute('href'), window.location.href, link.target)) {
-            continue;
-        }
-        link.setAttribute('wire:navigate', '');
-    }
+            || link.hasAttribute('data-public-full-load')
+            || link.hasAttribute('download')
+            || link.relList.contains('external')
+            || !isPublicSpaDestination(link.getAttribute('href'), window.location.href, link.target)) return;
+
+        const navigate = window.Livewire?.navigate;
+        if (typeof navigate !== 'function') return; // Native link fallback
+        event.preventDefault();
+        navigate(link.href);
+    });
 }
 
 export function applyPublicLayoutFromMeta() {
     const config = document.querySelector('meta[data-public-layout]');
     if (!config) return;
 
-    // CSSOM property assignment is permitted by the strict inline-style CSP.
-    // The server's author-approved values remain the only source of truth.
     const declarations = {
         '--public-page': config.dataset.publicLayoutBackground || '#777',
         '--public-shell-max': config.dataset.publicLayoutShell,

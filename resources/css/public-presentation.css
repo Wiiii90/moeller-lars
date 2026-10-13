@@ -23,6 +23,16 @@
     inherits: true;
     initial-value: 0px;
 }
+@property --public-folio-left-width {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 0px;
+}
+@property --public-folio-right-width {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 0px;
+}
 
 
 :root {
@@ -585,12 +595,16 @@ body {
     --public-folio-left-bottom: 4rem;
     --public-folio-right-top: 3.8rem;
     --public-folio-right-bottom: 1.15rem;
+    --public-folio-left-width: .55rem;
+    --public-folio-right-width: .55rem;
     pointer-events: none;
     transition:
-        --public-folio-left-top 780ms cubic-bezier(.22, .62, .32, 1),
-        --public-folio-left-bottom 780ms cubic-bezier(.22, .62, .32, 1),
-        --public-folio-right-top 780ms cubic-bezier(.22, .62, .32, 1),
-        --public-folio-right-bottom 780ms cubic-bezier(.22, .62, .32, 1);
+        --public-folio-left-top 850ms cubic-bezier(.2, .65, .25, 1),
+        --public-folio-left-bottom 850ms cubic-bezier(.2, .65, .25, 1),
+        --public-folio-right-top 850ms cubic-bezier(.2, .65, .25, 1),
+        --public-folio-right-bottom 850ms cubic-bezier(.2, .65, .25, 1),
+        --public-folio-left-width 850ms cubic-bezier(.2, .65, .25, 1),
+        --public-folio-right-width 850ms cubic-bezier(.2, .65, .25, 1);
 }
 /* A persisted node carries the motion between real Livewire page visits. */
 .public-folio-decoration[data-folio-active] {
@@ -603,10 +617,12 @@ body {
 .public-folio-decoration::before {
     top: var(--public-folio-left-top);
     bottom: var(--public-folio-left-bottom);
+    width: var(--public-folio-left-width);
 }
 .public-folio-decoration::after {
     top: var(--public-folio-right-top);
     bottom: var(--public-folio-right-bottom);
+    width: var(--public-folio-right-width);
 }
 
 /* Only genuinely empty section pages without a configured heading fill the
@@ -1792,27 +1808,22 @@ body {
 
 }
 
-/* Livewire's element-scoped page transition prevents the old artwork
-   from instantly disappearing while the new HTML is swapped. */
-@keyframes public-content-exit {
-    to { opacity: 0; }
+/* A real Livewire navigation completes before this animation starts.
+   The new page settles as one subtle visual unit, without animating the
+   persisted drawing, loading artwork, shell width, or the entire header. */
+@keyframes public-page-settle {
+    from { opacity: .83; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes public-content-enter {
-    from { opacity: 0; }
-}
-::view-transition-old(livewire-navigate) {
-    animation: 120ms ease-out both public-content-exit;
-}
-::view-transition-new(livewire-navigate) {
-    animation: 210ms ease-in both public-content-enter;
+.public-site[data-public-spa-visit] #content > :not(.public-folio-decoration) {
+    animation: public-page-settle 300ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .public-folio-decoration {
         transition: none;
     }
-    ::view-transition-old(livewire-navigate),
-    ::view-transition-new(livewire-navigate) {
+    .public-site[data-public-spa-visit] #content > :not(.public-folio-decoration) {
         animation: none !important;
     }
     .site-header nav,

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
     applyPublicLayoutFromMeta,
     isPublicSpaDestination,
-    markPublicSpaLinks,
+    initializePublicSpaLinks,
 } from '../../resources/js/public-spa.js';
 
 const currentPage = 'https://artist.example/about?language=en';
@@ -26,6 +26,7 @@ test('SPA navigation does not intercept external, private, download or new-windo
         '//external.example/page',
         '/admin', '/admin/pages', '/api', '/api/status', '/pulse',
         '/livewire/update', '/logout', '/media/file.jpg', '/storage/file.jpg', '/vendor/file.js',
+        '/preview/media/variant/1', '/site-assets/livewire-csp.js', '/file.pdf',
     ]) {
         assert.equal(isPublicSpaDestination(href, currentPage), false, href);
     }
@@ -37,47 +38,77 @@ test('SPA navigation does not intercept external, private, download or new-windo
     assert.equal(isPublicSpaDestination('/gallery', 'not a URL'), false);
 });
 
-function link(href, { target = '', download = false, fullLoad = false, external = false, parent = false } = {}) {
-    const attributes = new Map([['href', href]]);
-    if (download) attributes.set('download', '');
-    if (fullLoad) attributes.set('data-public-full-load', '');
-    if (parent) attributes.set('data-navigation-parent-link', '');
-
-    return {
-        target,
-        hasAttribute: (name) => attributes.has(name),
-        getAttribute: (name) => attributes.get(name) ?? null,
-        setAttribute: (name, value) => attributes.set(name, value),
-        relList: { contains: (value) => external && value === 'external' },
-        navigates: () => attributes.has('wire:navigate'),
-    };
-}
-
-test('only eligible real anchors opt into the existing Livewire SPA router', () => {
-    const links = [
-        link('/gallery'),
-        link('https://artist.example/contact'),
-        link('#contact'),
-        link('/admin/pages'),
-        link('/gallery', { target: '_blank' }),
-        link('/gallery', { download: true }),
-        link('/gallery', { fullLoad: true }),
-        link('/gallery', { external: true }),
-        link('/gallery', { parent: true }),
-    ];
-    const previousWindow = globalThis.window;
-    globalThis.window = { location: { href: currentPage } };
+test('delegated Livewire navigation preserves browser-native link behavior', () => {
+    const oldWindow = globalThis.window;
+    const oldAnchor = globalThis.HTMLAnchorElement;
+    const visited = [];
+    let onClick;
+    class Anchor {
+        constructor(href, opts = {}) {
+            this.href = new URL(href, currentPage).href;
+            this.target = opts.target || '';
+            this.attributes = new Map([['href', href]]);
+            for (const [name, flag] of [
+                ['download', opts.download], ['data-public-full-load', opts.fullLoad],
+                ['data-navigation-parent-link', opts.parent], ['wire:navigate', opts.navigate],
+            ]) if (flag) this.attributes.set(name, '');
+            this.relList = { contains: (name) => name === 'external' && opts.external === true };
+        }
+        hasAttribute(name) { return this.attributes.has(name); }
+        getAttribute(name) { return this.attributes.get(name) ?? null; }
+    }
     try {
-        markPublicSpaLinks({ querySelectorAll: (selector) => {
-            assert.equal(selector, 'a[href]');
-            return links;
+        globalThis.HTMLAnchorElement = Anchor;
+        globalThis.window = {
+            location: { href: currentPage },
+            Livewire: { navigate: (url) => visited.push(url) },
+        };
+        initializePublicSpaLinks({ addEventListener: (type, listener) => {
+            assert.equal(type, 'click');
+            onClick = listener;
         } });
-        assert.deepEqual(links.map((entry) => entry.navigates()), [
-            true, true, false, false, false, false, false, false, false,
+        assert.equal(typeof onClick, 'function');
+        const click = (anchor, overrides = {}) => {
+            let prevented = false;
+            onClick({
+                defaultPrevented: false, button: 0,
+                ctrlKey: false, metaKey: false, altKey: false, shiftKey: false,
+                target: { closest: (selector) => {
+                    assert.equal(selector, 'a[href]');
+                    return anchor;
+                } },
+                preventDefault: () => { prevented = true; },
+                ...overrides,
+            });
+            return prevented;
+        };
+        assert.equal(click(new Anchor('/gallery')), true);
+        assert.equal(click(new Anchor('/contact')), true);
+        assert.deepEqual(visited, [
+            'https://artist.example/gallery',
+            'https://artist.example/contact',
         ]);
+        for (const anchor of [
+            new Anchor('#details'), new Anchor('/admin/pages'),
+            new Anchor('/preview/media/variant/1'),
+            new Anchor('/gallery', { target: '_blank' }),
+            new Anchor('/gallery', { download: true }),
+            new Anchor('/gallery', { fullLoad: true }),
+            new Anchor('/gallery', { parent: true }),
+            new Anchor('/gallery', { navigate: true }),
+            new Anchor('/gallery', { external: true }),
+        ]) assert.equal(click(anchor), false);
+        assert.equal(click(new Anchor('/gallery'), { ctrlKey: true }), false);
+        assert.equal(click(new Anchor('/gallery'), { defaultPrevented: true }), false);
+        assert.equal(click(new Anchor('/gallery'), { button: 1 }), false);
+        globalThis.window.Livewire = null;
+        assert.equal(click(new Anchor('/gallery')), false);
+        assert.equal(visited.length, 2);
     } finally {
-        if (previousWindow === undefined) delete globalThis.window;
-        else globalThis.window = previousWindow;
+        if (oldWindow === undefined) delete globalThis.window;
+        else globalThis.window = oldWindow;
+        if (oldAnchor === undefined) delete globalThis.HTMLAnchorElement;
+        else globalThis.HTMLAnchorElement = oldAnchor;
     }
 });
 
