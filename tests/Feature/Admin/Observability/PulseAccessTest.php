@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 
 it('restricts the Pulse dashboard to administrator accounts', function (): void {
     $nonAdmin = User::factory()->create();

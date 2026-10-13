@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Middleware\ProtectArtistPreview;
+use App\Models\PublicContentSetting;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 require_once __DIR__.'/PublicationWorkflowFixtures.php';
 

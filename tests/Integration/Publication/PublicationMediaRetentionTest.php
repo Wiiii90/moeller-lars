@@ -1,5 +1,17 @@
 <?php
 
+use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Publication\PublicationMediaCleanupService;
+use App\Domain\Publication\PublicationService;
+use App\Http\Middleware\ProtectArtistPreview;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
+use App\Models\PublicationCheckpoint;
+use App\Models\PublicContentSetting;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 require_once __DIR__.'/PublicationWorkflowFixtures.php';
 
