@@ -96,10 +96,12 @@ it('serves a committed Blog gallery with authored credits but without copyright 
     $indexUrl = route('site.section', ['section' => $section->slug]);
     $variantUrl = route('media.variant', ['mediaVariant' => $assets[1]->variants()->firstOrFail()->getKey()]);
 
-    // Working is inspectable by an admin, but neither the page nor its files
-    // exist in the anonymous Committed website before the first Commit.
+    // Anonymous visitors cannot see Working pages or media. An admin can
+    // inspect the same content through the protected Preview route.
+    Auth::guard('web')->logout();
     $this->get($publicUrl)->assertNotFound();
     $this->get($variantUrl)->assertNotFound();
+    $this->actingAs($actor, 'web');
     $this->get($previewUrl)
         ->assertOk()
         ->assertSee('Gallery publication story')
@@ -142,11 +144,13 @@ it('serves a committed Blog gallery with authored credits but without copyright 
         ->assertOk()
         ->assertSee('data-journal-slide-next', false)
         ->assertSee('1 / 2');
+    Auth::guard('web')->logout();
     $this->get($publicUrl)
         ->assertOk()
         ->assertSee('journal-entry-gallery--grid', false)
         ->assertDontSee('data-journal-slide-next', false);
 
+    $this->actingAs($actor, 'web');
     expect($publication->commit($actor))->not->toBeNull();
     Auth::guard('web')->logout();
 

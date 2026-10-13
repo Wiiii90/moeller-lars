@@ -37,13 +37,14 @@ it('denies public delivery of an unreferenced original even after publication, w
 
     expect(app(PublicationService::class)->commit($actor))->not->toBeNull();
 
-    $this->get(route('media.original', ['mediaAsset' => $asset->getKey()]))
-        ->assertNotFound();
-
     $this->get(route('admin.media.original', ['mediaAsset' => $asset->getKey()]))
         ->assertOk()
         ->assertHeader('Content-Type', 'image/jpeg')
         ->assertHeader('X-Sendfile', Storage::disk(config('media.disk'))->path($storageKey));
+
+    Auth::guard('web')->logout();
+    $this->get(route('media.original', ['mediaAsset' => $asset->getKey()]))
+        ->assertNotFound();
 });
 
 it('serves a page image only while its reference is part of the committed public website', function (): void {
@@ -140,6 +141,7 @@ it('serves a page image only while its reference is part of the committed public
     $this->get($variantUrl)->assertOk();
 
     expect($publication->commit($actor))->not->toBeNull();
+    Auth::guard('web')->logout();
     $this->get($url)->assertNotFound();
     $this->get($variantUrl)->assertNotFound();
 

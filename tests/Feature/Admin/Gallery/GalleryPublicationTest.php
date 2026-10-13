@@ -10,6 +10,7 @@ use App\Models\Artwork;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -86,6 +87,7 @@ it('renders a published video artwork through the public viewer with native cont
     $published = app(ArtworkPublicationService::class)->publish($artwork);
     $actor = User::query()->findOrFail((int) auth('web')->id());
     app(PublicationService::class)->commit($actor);
+    Auth::guard('web')->logout();
 
     $response = $this->get(route('artworks.show', ['slug' => $published->getAttribute('slug')]));
 
