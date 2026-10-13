@@ -26,7 +26,7 @@ final class AdminControl
         Textarea::configureUsing(fn (Textarea $field) => self::decorate($field));
         Select::configureUsing(fn (Select $field) => self::decorate($field));
         Checkbox::configureUsing(fn (Checkbox $field) => self::decorate($field));
-        Toggle::configureUsing(fn (Toggle $field) => self::decorate($field));
+        Toggle::configureUsing(fn (Toggle $field) => self::decorateToggle($field));
         DatePicker::configureUsing(fn (DatePicker $field) => self::decorate($field));
         DateTimePicker::configureUsing(fn (DateTimePicker $field) => self::decorate($field));
         FileUpload::configureUsing(fn (FileUpload $field) => self::decorate($field));
@@ -88,6 +88,25 @@ final class AdminControl
     public static function file(string $name, ?string $label = null): FileUpload
     {
         return self::label(self::decorate(FileUpload::make($name)), $label);
+    }
+
+    /**
+     * Filament 5 renders Toggle as an Alpine switch button, not an input.
+     * Its click updates the entangled state but does not generate a native
+     * change event. The shared Edit dialog deliberately persists on change,
+     * so bridge the completed switch click into that existing event path.
+     * The capture listener runs before Filament's own click, and nextTick
+     * fires only after Alpine has applied the new state.
+     */
+    private static function decorateToggle(Toggle $field): Toggle
+    {
+        return self::decorate($field)->extraAlpineAttributes([
+            'x-on:click.capture' => <<<'JS'
+                if ($el.closest('.admin-dialog--edit')) {
+                    $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })))
+                }
+                JS,
+        ]);
     }
 
     /** @template T of \Filament\Forms\Components\Field
