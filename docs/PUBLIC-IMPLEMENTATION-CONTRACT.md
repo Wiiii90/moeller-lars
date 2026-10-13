@@ -59,8 +59,11 @@ both return strokes (top and bottom), with small bounded offsets instead of
 long unanchored strokes. A single `@persist('public-folio-decoration')`
 element inside the public Main remains physically continuous across
 Livewire navigation swaps. Interpolated, registered CSS lengths are applied
-to that element as the navigation begins, so another visit retargets the
-in-flight transition; neither the artwork nor Content box geometry moves.
+to that element as the navigation begins; the registrations use independent
+`0px` defaults with `rem` authored base positions on the element (a `rem`
+`@property initial-value` invalidates the registration and would prevent
+interpolation). Another visit retargets the in-flight transition; neither
+the artwork nor Content box geometry moves.
 The first document uses accepted base geometry. Livewire 4
 `wire:transition.navigate` applies a brief element-scoped crossfade to
 Content while keeping the Header steady. Unsupported transitions and
