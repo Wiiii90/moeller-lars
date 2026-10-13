@@ -14,7 +14,13 @@ function withPseudoBrowser(run, { reducedMotion = false, initial = null } = {}) 
     };
     const effects = [];
     const animations = [];
+    const shadows = [];
+    const initialShadow = 'rgba(28, 35, 32, 0.09) -2px 3px 0px 0px, rgba(255, 255, 255, 0.31) -5px 7px 0px 0px, rgba(28, 35, 32, 0.12) -6px 8px 0px 0px';
     const content = {
+        shadow: initialShadow,
+        animate(frames, options) {
+            shadows.push({ frames, options });
+        },
         style: { values: new Map(), setProperty(name, value) { this.values.set(name, value); } },
         computed: {
             '::before': { display: 'block', content: '""', top: initial?.[0] ?? '18px', bottom: initial?.[1] ?? '64px' },
@@ -24,7 +30,8 @@ function withPseudoBrowser(run, { reducedMotion = false, initial = null } = {}) 
     const root = { querySelector: (selector) => selector === '#content' ? content : null };
     globalThis.window = { matchMedia: () => ({ matches: reducedMotion }) };
     globalThis.document = { timeline: {} };
-    globalThis.getComputedStyle = (element, pseudo) => element.computed[pseudo];
+    globalThis.getComputedStyle = (element, pseudo) => pseudo
+        ? element.computed[pseudo] : { boxShadow: element.shadow };
     globalThis.KeyframeEffect = class {
         constructor(element, frames, options) { Object.assign(this, { element, frames, options }); effects.push(this); }
     };
@@ -32,7 +39,7 @@ function withPseudoBrowser(run, { reducedMotion = false, initial = null } = {}) 
         constructor(effect, timeline) { Object.assign(this, { effect, timeline }); animations.push(this); }
         play() { this.played = true; }
     };
-    try { return run({ root, content, effects, animations }); }
+    try { return run({ root, content, effects, animations, shadows, initialShadow }); }
     finally { for (const [key, value] of Object.entries(previous)) globalThis[key] = value; }
 }
 
@@ -59,7 +66,7 @@ test('random selection always differs from prior variant', () => {
 });
 
 test('SPA visits animate the existing CSS pseudos, never create new nodes', () => {
-    withPseudoBrowser(({ root, content, effects, animations }) => {
+    withPseudoBrowser(({ root, content, effects, animations, shadows, initialShadow }) => {
         assert.equal(advancePublicFolio(root), true);
         assert.equal(effects.length, 2);
         assert.equal(animations.length, 2);
@@ -69,7 +76,10 @@ test('SPA visits animate the existing CSS pseudos, never create new nodes', () =
         assert.equal(effects[1].element, content);
         assert.deepEqual(effects[0].frames[0], { top: '1.10rem', bottom: '4.00rem' });
         assert.deepEqual(effects[1].frames[0], { top: '3.80rem', bottom: '1.15rem' });
-        assert.equal(effects[0].options.duration, 850);
+        assert.equal(effects[0].options.duration, 1150);
+        assert.equal(shadows.length, 1);
+        assert.equal(shadows[0].frames[0].boxShadow, initialShadow);
+        assert.equal(shadows[0].options.duration, 1150);
         assert.deepEqual([...content.style.values.keys()], [
             '--public-folio-left-top', '--public-folio-left-bottom',
             '--public-folio-right-top', '--public-folio-right-bottom',
@@ -90,11 +100,13 @@ test('interrupted navigation starts from the preceding pseudoelements actual int
     });
 });
 
-test('reduced-motion leaves the original pseudos untouched', () => {
-    withPseudoBrowser(({ root, content, effects }) => {
-        assert.equal(advancePublicFolio(root), false);
-        assert.equal(effects.length, 0);
-        assert.equal(content.style.values.size, 0);
+test('requested paper-edge motion runs despite browser reduced-motion setting', () => {
+    withPseudoBrowser(({ root, content, effects, shadows }) => {
+        assert.equal(advancePublicFolio(root), true);
+        assert.equal(effects.length, 2);
+        assert.equal(shadows.length, 1);
+        assert.equal(content.style.values.size, 4);
+        assert.ok(content.style.boxShadow.includes('var(--public-folio-soft)'));
     }, { reducedMotion: true });
 });
 
@@ -118,5 +130,31 @@ test('unsupported pseudo-element WAAPI retains the existing connected CSS drawin
         assert.equal(advancePublicFolio(root), true);
         assert.equal(effects.length, 0);
         assert.equal(content.style.values.size, 4);
+    });
+});
+
+test('shadow animation moves only the two EXISTING rear sheet layers', () => {
+    withPseudoBrowser(({ root, content, shadows }) => {
+        assert.equal(advancePublicFolio(root), true);
+        const target = content.style.boxShadow;
+        assert.ok(target.startsWith('-2px 3px 0 rgba(28, 35, 32, .09)'));
+        assert.ok(target.includes('-5px '));
+        assert.ok(target.includes('var(--public-folio-soft)'));
+        assert.ok(target.includes('-6px '));
+        assert.ok(target.endsWith('var(--public-folio-depth)'));
+        assert.equal(shadows.length, 1);
+        assert.notEqual(shadows[0].frames[0].boxShadow, '');
+    });
+});
+
+test('interrupted shadow effect resumes from computed pre-swap shadow', () => {
+    const current = 'rgba(28, 35, 32, 0.09) -2px 3px 0px 0px, rgba(255, 255, 255, 0.31) -5px 8px 0px 0px, rgba(28, 35, 32, 0.12) -6px 10px 0px 0px';
+    withPseudoBrowser(({ root, content }) => {
+        content.shadow = current;
+        assert.equal(capturePublicFolio(root), true);
+    });
+    withPseudoBrowser(({ root, shadows }) => {
+        assert.equal(advancePublicFolio(root), true);
+        assert.equal(shadows[0].frames[0].boxShadow, current);
     });
 });

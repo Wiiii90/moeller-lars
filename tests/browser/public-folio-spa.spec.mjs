@@ -8,7 +8,7 @@ const sheet = (title) => '<main id="content" class="site-content">'
     + '<h2>' + title + '</h2></main>';
 
 test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setContent('<!doctype html><html><head>'
         + '<meta name="viewport" content="width=device-width, initial-scale=1">'
         + '</head><body class="public-site">' + sheet('Painting') + '</body></html>');
@@ -33,7 +33,8 @@ test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners',
     await page.evaluate(() => window.publicFolioTest.advancePublicFolio());
     const animations = await page.evaluate(() => {
         const el = document.querySelector('#content');
-        const tracked = document.getAnimations().filter((animation) => animation.effect.target === el).map((animation) => ({
+        const tracked = document.getAnimations().filter((animation) =>
+            animation.effect.target === el && !!animation.effect.pseudoElement).map((animation) => ({
             pseudo: animation.effect.pseudoElement,
             duration: animation.effect.getTiming().duration,
             frames: animation.effect.getKeyframes(),
@@ -41,6 +42,11 @@ test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners',
         return {
             children: el.children.length,
             tracked,
+            shadows: document.getAnimations().filter((animation) =>
+                animation.effect.target === el && !animation.effect.pseudoElement).map((animation) => ({
+                duration: animation.effect.getTiming().duration,
+                frames: animation.effect.getKeyframes(),
+            })),
             leftWidth: getComputedStyle(el, '::before').width,
             rightWidth: getComputedStyle(el, '::after').width,
             leftOffset: getComputedStyle(el, '::before').left,
@@ -49,8 +55,11 @@ test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners',
     });
     expect(animations.children).toBe(1);
     expect(animations.tracked).toHaveLength(2);
+    expect(animations.shadows).toHaveLength(1);
+    expect(animations.shadows[0].duration).toBe(1150);
+    expect(animations.shadows[0].frames[1].boxShadow).toContain('var(--public-folio-depth)');
     expect(animations.tracked.map((a) => a.pseudo).sort()).toEqual(['::after', '::before']);
-    expect(animations.tracked.every((a) => a.duration === 850)).toBe(true);
+    expect(animations.tracked.every((a) => a.duration === 1150)).toBe(true);
     expect(animations.leftWidth).toBe(initial.left.width);
     expect(animations.rightWidth).toBe(initial.right.width);
     expect(animations.leftOffset).toBe(initial.left.x);
@@ -76,7 +85,7 @@ test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners',
 test('the Livewire preview retains its document across public navigation', async ({ page }) => {
     test.skip(!process.env.PUBLIC_SPA_SMOKE_URL,
         'Set PUBLIC_SPA_SMOKE_URL to the local preview to verify the real Livewire transport.');
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(new URL('/paintings', process.env.PUBLIC_SPA_SMOKE_URL).href);
     await page.evaluate(() => { window.__publicDocumentMarker = 'unchanged'; });
     const candidate = await page.evaluate(() => [...document.querySelectorAll('.site-navigation a[wire\\:navigate]')]
