@@ -5,12 +5,9 @@ use App\Domain\Media\MediaVariantRegenerationService;
 use App\Domain\Publication\PublicationService;
 use App\Domain\Storage\SiteStorageReclaimService;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Storage::fake('media-variant-reclamation-test');

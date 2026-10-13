@@ -7,12 +7,9 @@ use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\Mail;
-
-uses(RefreshDatabase::class);
 
 function commitContactWorkingState(): void
 {

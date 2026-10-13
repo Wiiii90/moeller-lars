@@ -6,10 +6,7 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\SitePages;
 use App\Models\AuditEvent;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 it('toggles Skip Home directly without mounting an Action dialog and records both changes', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');

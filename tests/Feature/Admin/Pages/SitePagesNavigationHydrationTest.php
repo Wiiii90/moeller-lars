@@ -9,10 +9,7 @@ use App\Filament\Pages\SitePages;
 use App\Filament\Support\SiteNavigation;
 use App\Models\SiteSection;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 function navigationLabels(): array
 {

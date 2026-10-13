@@ -9,10 +9,7 @@ use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
 use App\Routing\SiteNodeRoute;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-
-uses(RefreshDatabase::class);
 
 it('keeps Home singular while configurable page types remain reusable', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');

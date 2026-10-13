@@ -9,12 +9,9 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
-
-uses(RefreshDatabase::class);
 
 function invariantAsset(): MediaAsset
 {

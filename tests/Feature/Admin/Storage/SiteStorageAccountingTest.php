@@ -4,11 +4,8 @@ use App\Domain\Media\MediaCapacityService;
 use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Storage::fake('site-storage-accounting-test');
