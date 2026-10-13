@@ -68,8 +68,20 @@ body {
     padding: 0;
     flex-direction: column;
     background: var(--public-page);
+    /* One engraved horizontal line retains the exact title/content boundary.
+       Its middle is darker, breaking the previous continuous white stripe;
+       the artist's configured page background remains untouched. */
     border-bottom: 2px solid transparent;
-    border-image: linear-gradient(90deg, rgba(255,255,255,.33), var(--public-header-separator) 24%, var(--public-header-separator) 76%, rgba(255,255,255,.33)) 1;
+    border-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, .48) 0%,
+        var(--public-header-separator) 16%,
+        rgba(239, 242, 239, .84) 32%,
+        rgba(156, 167, 160, .74) 53%,
+        rgba(236, 240, 236, .83) 73%,
+        var(--public-header-separator) 88%,
+        rgba(255, 255, 255, .42) 100%
+    ) 1;
 }
 
 /* Header navigation and page content share one centered shell geometry. */
@@ -81,38 +93,27 @@ body {
     background: var(--public-surface);
 }
 
+/* One paper surface and a single partial outside contour, akin to the
+   accepted Content folio. No ghost rectangles or dangling corner brackets.
+   The decorative stroke is outside the menu's measured grid bounds. */
 .site-navigation {
     position: relative;
     order: 1;
-    /* An inset hairline is visually a printed catalog edge, not new geometry. */
-    box-shadow: inset 0 -1px 0 var(--public-index-rule),
-                -2px 2px 0 rgba(255,255,255,.24),
-                -3px 3px 0 rgba(45,40,35,.12);
-}
-
-/* The menu and the artist's folio share one offset line vocabulary.
-   These strokes are outside the rail; they do not affect row geometry,
-   overflow measurement, selection or the child level. */
-.site-navigation::before,
-.site-navigation::after {
-    position: absolute;
-    bottom: -.34rem;
-    width: 2.3rem;
-    height: .6rem;
-    content: "";
-    pointer-events: none;
+    box-shadow:
+        inset 0 -1px 0 var(--public-index-rule),
+        -2px 3px 0 rgba(32, 33, 30, .19),
+        -3px 4px 0 rgba(255, 255, 255, .24);
 }
 .site-navigation::before {
-    left: -.35rem;
-    border-left: 1px solid rgba(255,255,255,.58);
-    border-bottom: 1px solid rgba(255,255,255,.46);
-    transform: skewY(-3deg);
-}
-.site-navigation::after {
-    right: -.35rem;
-    border-right: 1px solid rgba(255,255,255,.58);
-    border-bottom: 1px solid rgba(255,255,255,.46);
-    transform: skewY(3deg);
+    position: absolute;
+    top: .35rem;
+    right: 1.15rem;
+    bottom: -.48rem;
+    left: -.5rem;
+    content: "";
+    border-left: 1px solid rgba(255, 255, 255, .73);
+    border-bottom: 1px solid rgba(255, 255, 255, .63);
+    pointer-events: none;
 }
 
 .site-navigation__rail,
@@ -222,6 +223,8 @@ body {
 .site-navigation__label {
     position: relative;
     text-decoration: none;
+    /* A faint impressed serif edge, not a new color or button surface. */
+    text-shadow: .35px .35px 0 rgba(64, 53, 42, .13);
 }
 .site-navigation__label::after {
     content: "";
@@ -434,7 +437,6 @@ body {
     font-size: 2.05rem;
     font-weight: 400;
     letter-spacing: .055em;
-    text-shadow: 1px 1px 0 rgba(16,19,17,.28), -1px -1px 0 rgba(255,255,255,.09);
     line-height: 1.1;
     text-transform: none;
     white-space: nowrap;
@@ -454,6 +456,21 @@ body {
 .site-title__last {
     position: absolute;
     bottom: 0;
+    /* Etched light across each letter rather than a flat white fill.
+       The lettering and the name's established position stay intact. */
+    color: #e5e9e6;
+    background-image: linear-gradient(
+        162deg,
+        #fff 4%,
+        #f1f4f0 29%,
+        #d3d9d4 54%,
+        #fafbf8 78%,
+        #e5e9e6 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 0 rgba(27, 34, 29, .43));
 }
 
 .site-title__first { right: .16em; }
@@ -508,18 +525,30 @@ body {
     text-transform: uppercase;
 }
 
-/* One optional content heading for every public SiteSection template.
- * An absent heading adds no border, spacing, or wrapper before the content. */
+/* An authored page title is an editorial heading, never another menu
+   label. Keep the existing alignments, width and opt-in divider. */
 .public-page-heading {
+    position: relative;
     width: min(100%, var(--public-art-max));
     min-width: 0;
-    margin: 0 auto 1.35rem;
+    margin: 0 auto 1.75rem;
+    padding: .32rem 0 .1rem;
 }
 
-.public-page-heading > .category-heading {
+.public-page-heading > .public-page-heading__title {
     width: 100%;
     margin: 0;
+    color: #38322b;
+    font-family: var(--public-index-typeface);
+    font-size: 1.68rem;
+    font-weight: 400;
+    letter-spacing: .015em;
+    line-height: 1.3;
     text-align: inherit;
+    text-transform: none;
+    text-shadow: .4px .55px 0 rgba(75, 66, 57, .14);
+    text-wrap: pretty;
+    overflow-wrap: break-word;
 }
 
 .public-page-heading--left { text-align: left; }
@@ -528,7 +557,7 @@ body {
 
 .public-page-heading > .public-page-heading__divider {
     width: 100%;
-    margin: 1.3rem 0 0;
+    margin: 1.1rem 0 0;
 }
 
 .artwork-list {

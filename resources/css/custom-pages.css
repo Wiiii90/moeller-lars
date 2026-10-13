@@ -42,25 +42,71 @@
     outline-offset: -1px;
 }
 
+/* Shared drawn dividers: the same four authored choices belong to Custom
+   Page components and optional public page headings. Single strokes only,
+   square-ended and neutral; no generic <hr> or decorative bar surface. */
 .custom-page__divider {
+    position: relative;
+    height: .45rem;
     margin: .15rem 0;
     border: 0;
+    background: none;
 }
 
-.custom-page__divider--thin {
-    border-top: 1px solid var(--public-divider);
+.custom-page__divider::before {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    content: "";
+    pointer-events: none;
 }
 
-.custom-page__divider--subtle {
-    border-top: 1px solid color-mix(in srgb, var(--public-divider) 50%, transparent);
+/* Thin: the pencil catches and releases pressure rather than ending hard. */
+.custom-page__divider--thin::before {
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        rgba(93, 83, 72, .14),
+        rgba(111, 98, 83, .51) 20%,
+        rgba(111, 98, 83, .34) 73%,
+        rgba(93, 83, 72, .08)
+    );
 }
 
-.custom-page__divider--strong {
-    border-top: 2px solid var(--public-divider);
+/* Subtle: an incomplete impression in the middle of the page. */
+.custom-page__divider--subtle::before {
+    left: 12%;
+    right: 12%;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(126, 113, 99, .26) 27%,
+        rgba(126, 113, 99, .3) 64%,
+        transparent
+    );
 }
 
-.custom-page__divider--dotted {
-    border-top: 1px dotted var(--public-divider);
+/* Strong: more graphite weight, still one line and not a ruled band. */
+.custom-page__divider--strong::before {
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        rgba(74, 63, 51, .18),
+        rgba(82, 70, 56, .74) 16%,
+        rgba(101, 88, 71, .65) 70%,
+        rgba(74, 63, 51, .14)
+    );
+}
+
+/* Dotted: separated pinpricks with softly fading ends. */
+.custom-page__divider--dotted::before {
+    height: 2px;
+    background: radial-gradient(circle, rgba(93, 78, 62, .62) .8px, transparent 1.1px)
+                repeat-x 0 center / .57rem 2px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 86%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 9%, #000 86%, transparent);
 }
 
 .custom-page__list {
