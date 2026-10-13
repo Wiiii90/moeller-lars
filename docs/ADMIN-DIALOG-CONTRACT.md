@@ -191,6 +191,24 @@ success Notification. Test both form-level and field-level callbacks. See
 
 Undo must extend the existing Activity/Audit receipt architecture. Do not create an independent dialog snapshot/rollback system. An Undo action may only be shown for mutations that have safe current receipts; applying Undo creates inverse editorial actions through the canonical `AdminUndoService` path.
 
+## Exhibition map autosave
+
+The Exhibition Map uses the ordinary Edit dialog and its semantic `change`
+commit, not a separate confirmation or save path. The global Toggle bridge
+is owned by `AdminControl`; its `map_enabled` instance is the same standard
+field as `gallery_enabled`. `ExhibitionMapAddress` defines the single
+eligibility rule for UI and domain: **Country plus City or Postal code**.
+A map that is already on can always be switched off. The editorial service
+geocodes only when the saved address changes or coordinates are missing and
+rejects invalid or unavailable locations atomically.
+
+Map preview coordinates are read-only form state: the Exhibition Edit Action
+writes committed latitude/longitude/geocoded_at back to the mounted schema
+after the domain returns, without replacing other editor fields. Do not
+reintroduce Alpine `stale` flags, global events, extra Save buttons or
+asynchronous geocoding timers. A partial address and a temporarily
+unavailable geocoder must not publish an incorrect map.
+
 ## Controls
 
 Dialog schemas use the canonical controls from `ADMIN-CONTROL-CONTRACT.md`. A dialog does not get a separate form design language. The panel-wide `AdminControl::register()` adapter means ordinary Filament TextInput/Select/Checkbox/Toggle/etc. instances still receive the canonical wrapper and geometry; specialized editors continue to use their named canonical control components.
