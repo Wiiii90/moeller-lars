@@ -62,25 +62,26 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The first Atelier-sheet variant is the approved original and remains the
-static fallback for initial loads, no JavaScript, and reduced-motion users.
-Only the existing, pale external Content contours move: ten curated variants
-adjust the upper/lower end positions gently and keep both horizontal corner
-returns at or below the original `.55rem` depth, wholly outside the
-white Content surface. There are no extra black strokes, temporary debug
-variants, URL toggles, `sessionStorage` controls, or changes to images and
-Content geometry. The Web Animations API interpolates the two connected
-ordinary HTML edges on the new Content node. The previous rendered
-intermediate values are transferred during `livewire:navigating` and
-`livewire:navigated`, including interrupted animation states. Normal
-`prefers-reduced-motion` is respected; no CSS content-slide/fade
-accompanies these subtle decorative transitions. The accepted menu
-contours remain static and separate. The site-header title boundary
-uses only white ink with asymmetric opacity modulation, removing the
-dark central grey gradient. Livewire owns routing and History; the single
-content-link delegate invokes `Livewire.navigate()` only for eligible links
-without `wire:navigate`. No custom Fetch/History router, timers or polling.
-The final design remains subject to browser review.
+The accepted first Atelier-sheet contour is preserved *exactly* by the
+original `#content::before` and `#content::after` drawings. No separate
+decoration node, extra black lines, `@persist`, transition overlay,
+CSS-registered custom properties or new pseudoelements are introduced.
+The single shared Public motion module animates the existing two CSS pseudo-
+elements directly using native Web Animations API `KeyframeEffect` objects
+with `pseudoElement: '::before'` / `'::after'`. Ten restrained states adjust
+only each existing corner's upper/lower endpoint (`top` and `bottom`);
+both fixed lateral offsets, the `.55rem` return lengths, colors, shadows and
+skew are identical to the accepted original. On `livewire:navigating`, the
+four in-flight computed pseudo-style values are captured before the old
+Content is replaced. On `livewire:navigated`, a different target is applied
+to the new Content as the underlying CSS value, and the native effect
+interpolates from the captured intermediate state. The same two original
+drawings are always visible, including during fast navigation; no artwork
+or content layout moves. Initial loads, browsers without native pseudo
+effects, and reduced-motion preferences retain a complete static drawing.
+The public menu contour is independently static; existing Livewire routing
+and its no-custom-Fetch/History contract remain unchanged. This is a
+design candidate pending full visual browser review.
 
 The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`, `--public-folio-depth`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
 
