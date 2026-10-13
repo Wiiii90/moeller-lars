@@ -50,6 +50,8 @@ Eine Datei unter Storage hat deshalb **zwei getrennte Zugriffspolicies**: Admin-
 
 [`AttachPublicationState`](../../app/Http/Middleware/AttachPublicationState.php) sendet `X-Publication-Pending` nur bei `X-Livewire`-Requests, wenn der Snapshot-Buffer eine möglicherweise geänderte Publication-Lage signalisiert; dann wird `PublicationService::hasPendingChanges()` abgefragt. Ein Header auf jeder HTTP-Antwort wäre eine falsche Architekturannahme.
 
+Die genaue **Admin-Commit-UI-Sequenz** (Alpine-Event, Livewire-Methodenaufruf, optionaler Header, Notification) ist jetzt in [Publication](publication.md#admin-commit-navigation-livewire-und-notification) dokumentiert.
+
 ## Public-JavaScript
 
 `layouts/app.blade.php` bindet über Vite `resources/js/app.js` sowie Public-CSS-Entries ein. `app.js` initialisiert beim `DOMContentLoaded` oder direkt bei bereits bereitem Dokument: `artwork-viewer.js`, `home-hero.js`, `journal-presentation.js`, `matomo.js` und `public-navigation.js`. Dies sind belegte Import-/Initialisierungsbeziehungen, **noch keine** dynamisch verifizierten Browserzustände.

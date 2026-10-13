@@ -231,6 +231,13 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - **Generatorfehler korrigiert:** Typkörper-Suche fixiert gegen nachfolgendes `::class`; Concern-zu-Concern-Traitbeziehungen werden jetzt mitgezählt. Im lokalen PHP-8.4-Fixture inklusive Nested-Trait nachgeprüft.
 - **Nächster Schritt:** vollständigen PHP-Checkout für Generatorläufe herstellen bzw. statischen Scope konservativ ausweiten; verschachtelte Trait-Nutzung und konkrete Filament-/Livewire-Event-Callbacks untersuchen.
 
+## 6e. Fortsetzung 2026-10-13 — Commit-UI bis zum Domain-Service
+
+- [Publication-Architektur](docs/architecture/publication.md) um echten Admin-Commit-Einstieg ergänzt: Filament-Navigation → Alpine `publication-commit` → Livewire-Control → `PublicationService::commit` → expliziten `AdminNotifier`.
+- Quellgenau dokumentiert: No-op ohne Working-Diff, Fehler-Notification und rethrow, Erfolg nur bei vorhandenem Checkpoint; `AdminNotifier` kann Activity-Nachrichten konsumieren.
+- Livewire-Ereignis `publication-state-changed` und optionaler HTTP-Header `X-Publication-Pending` sind **zwei** Inputpfade für denselben Navigationszustand. Der Header erscheint nur bei `X-Livewire` plus dirty Mutation-Buffer.
+- **Nicht ausgeführt:** Browser-Klickfluss, gleichzeitige Requests oder vollständiger Laravel-Runtime-Check. Als nächstes Restore/Revert/Reset-Einstiege und Filament-Actions mit den entsprechenden Admin-Service-Verzweigungen abgleichen.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:
