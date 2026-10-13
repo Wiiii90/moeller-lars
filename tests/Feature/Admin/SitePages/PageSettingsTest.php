@@ -1,23 +1,16 @@
 <?php
 
-use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\SiteSectionEditorialService;
-use App\Domain\Content\SiteSectionOrderService;
-use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
 use App\Filament\Support\PagesSettingsDialog;
-use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
 use App\Models\AdminNotification;
-use App\Models\BlogPost;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
-use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -25,7 +18,7 @@ uses(RefreshDatabase::class);
 require_once __DIR__.'/PagesFixtures.php';
 
 it('autosaves Pages toggles from field updates without a separate Action submit', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
@@ -85,7 +78,7 @@ it('autosaves Pages toggles from field updates without a separate Action submit'
 
 
 it('defaults Pages workflow preferences off and autosaves each new toggle once', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
@@ -164,7 +157,7 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
 
 
 it('skips Pages deletion confirmation only when configured and retains deletion safety rules', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
@@ -200,7 +193,7 @@ it('skips Pages deletion confirmation only when configured and retains deletion 
 
 
 it('autosaves Skip Home destination selection and avoids duplicate mutations on no-op', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
@@ -238,7 +231,7 @@ it('autosaves Skip Home destination selection and avoids duplicate mutations on 
 
 
 it('closing an unchanged Pages Settings dialog does not create Activity or Notifications', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 

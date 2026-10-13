@@ -1,23 +1,11 @@
 <?php
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\HomePresentationResolver;
-use App\Domain\Content\HomeRoutingSettingsService;
-use App\Domain\Content\SiteSectionEditorialService;
-use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
-use App\Filament\Support\PagesSettingsDialog;
-use App\Models\ArtworkCategory;
-use App\Models\AuditEvent;
-use App\Models\AdminNotification;
-use App\Models\BlogPost;
-use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
-use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -25,7 +13,7 @@ uses(RefreshDatabase::class);
 require_once __DIR__.'/PagesFixtures.php';
 
 it('suggests a public slug from a new page name without replacing manual edits', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
@@ -46,7 +34,7 @@ it('suggests a public slug from a new page name without replacing manual edits',
 
 
 it('keeps generated page slugs within the allowed length and syntax', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
@@ -62,7 +50,7 @@ it('keeps generated page slugs within the allowed length and syntax', function (
 
 
 it('creates Pages as drafts by default and publishes each supported type when configured', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 

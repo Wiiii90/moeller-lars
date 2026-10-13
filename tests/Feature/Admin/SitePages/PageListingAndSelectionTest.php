@@ -7,17 +7,9 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
-use App\Filament\Support\PagesSettingsDialog;
-use App\Models\ArtworkCategory;
-use App\Models\AuditEvent;
-use App\Models\AdminNotification;
-use App\Models\BlogPost;
-use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
-use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -25,7 +17,7 @@ uses(RefreshDatabase::class);
 require_once __DIR__.'/PagesFixtures.php';
 
 it('derives the six wide metrics and compact navigation count from real SiteSections', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $parent = $service->createCustomPage('Metric Parent', 'metric-parent');
     $child = $service->createJournal('Metric Child', 'metric-child', JournalTemplate::Blog->value);
@@ -59,7 +51,7 @@ it('derives the six wide metrics and compact navigation count from real SiteSect
 
 
 it('keeps parent context when a child matches a filter and disables reorder', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $parent = $service->createCustomPage('Paintings Context', 'paintings-context');
     $child = $service->createCustomPage('Test Child Match', 'test-child-match');
@@ -81,7 +73,7 @@ it('keeps parent context when a child matches a filter and disables reorder', fu
 
 
 it('resets paging on filters and keeps root groups intact across pagination', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
 
@@ -125,7 +117,7 @@ it('resets paging on filters and keeps root groups intact across pagination', fu
 
 
 it('selects all visible Pages from none or mixed, and clears them from all', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     app(SiteSectionEditorialService::class)->createCustomPage('Alpha Selection', 'alpha-selection');
     app(SiteSectionEditorialService::class)->createCustomPage('Beta Selection', 'beta-selection');
 

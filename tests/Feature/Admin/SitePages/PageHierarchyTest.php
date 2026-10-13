@@ -1,20 +1,14 @@
 <?php
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\HomePresentationResolver;
-use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
 use App\Filament\Support\PagesSettingsDialog;
-use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
-use App\Models\AdminNotification;
-use App\Models\BlogPost;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
-use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -25,7 +19,7 @@ uses(RefreshDatabase::class);
 require_once __DIR__.'/PagesFixtures.php';
 
 it('keeps root reorder and child reorder canonical', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
     $rootA = $service->createCustomPage('Root A', 'root-a-order');
@@ -45,7 +39,7 @@ it('keeps root reorder and child reorder canonical', function (): void {
 
 
 it('allows normal cross-parent moves child to top and top to child with normalized positions', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
 
@@ -77,7 +71,7 @@ it('allows normal cross-parent moves child to top and top to child with normaliz
 
 
 it('rejects self parenting level three and nesting a page that already has children', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
 
@@ -98,7 +92,7 @@ it('rejects self parenting level three and nesting a page that already has child
 
 
 it('keeps Home fixed at the top level and preserves its publication delete and conversion guards', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
     $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
@@ -119,7 +113,7 @@ it('keeps Home fixed at the top level and preserves its publication delete and c
 
 
 it('flattens nested pages in canonical order when nesting is disabled and blocks new nesting', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
     $homeId = (int) SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail()->getKey();
@@ -177,7 +171,7 @@ it('flattens nested pages in canonical order when nesting is disabled and blocks
 
 
 it('immediately flattens nested pages through Settings autosave without a second submit', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
+    $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
