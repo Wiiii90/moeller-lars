@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (13.10.2026) | SHA |
 | --- | --- |
-| `docs` vor letzter Dokumentationsphase | `0c0be8a4eba37ef688923a6b9816c7216597c951` |
-| `dev` | `5b1d02d013452b7980d08786c1f5339bd36fdbfc` |
-| Differenz zum damaligen `dev` | neu abgeglichen; tatsächlichen Vergleich immer frisch abrufen |
+| `docs` unmittelbar vor diesem Merge | `cda314f6516a3b11487f94f5a8d330feb8237882` |
+| `dev`, für diesen Merge geprüfter Stand | `2ced9565a0a1ac93697ec2efa2b4c51ad6999f4f` |
+| Synchronisierung | echter Zwei-Eltern-Merge; neue `docs`-SHA danach frisch abrufen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -49,7 +49,7 @@ PHP-/DB-/Browser-Prüfungen ohne tatsächliche Ausführung.
 | Eloquent | [eloquent-relations.md](docs/architecture/eloquent-relations.md): alle **26** Models, **48** explizite Relation-Kanten, auch Self-Relations; **nicht** physisches SQL-ERD |
 | PHP-Generatoren | `scripts/generate-architecture-inventory.php`, `generate-architecture-relations.php`, `generate-architecture-eloquent.php`, `generate-architecture-import-diagrams.php` und weitere unter `scripts/`; **isolierte Fixture-Prüfungen**, kein vollständiger nativer Checkout-Lauf |
 | Admin UI | [ui-surfaces.md](docs/architecture/ui-surfaces.md): **9** Pages, **26** Concerns, **2** Livewire-Komponenten, **26** interne Trait-Uses, **72** statisch benannte Actions |
-| Services und HTTP | [admin-publication-calls.md](docs/architecture/admin-publication-calls.md): **21** quellenverankerte direkte Call-Sites; [runtime-entrypoints.md](docs/architecture/runtime-entrypoints.md): **19** explizite Webrouten plus Middleware/Filament/JS; dynamische Route-Registrierung offen |
+| Services und HTTP | [admin-publication-calls.md](docs/architecture/admin-publication-calls.md): **21** quellenverankerte direkte Call-Sites; [runtime-entrypoints.md](docs/architecture/runtime-entrypoints.md): **20** explizite Webrouten plus Middleware/Filament/JS; dynamische Route-Registrierung offen |
 | Lifecycle / Activity | [lifecycles.md](docs/architecture/lifecycles.md): **5** Domänenautomaten, **35** geprüfte Quellanker; [Working-Operationen](docs/architecture/publication-working-operations.md): Restore/Revert/Reset und **36** geprüfte Anker |
 | Public Inhaltsdaten | [structured-components.md](docs/architecture/structured-components.md): **6** Komponenten, **3** Contact-Kinder, List-Nesting, drei Home-Content-Modi und separates Skip-Home-Routing; JSON-Referenzen ≠ SQL-FKs |
 | Datenbankschema | [schema-evolution.md](docs/architecture/schema-evolution.md): konkrete Migrationen/Legacy-Snapshot-Kontrakte, `publication_version_rows` ist SQL-View mit Triggern; [read-only PostgreSQL-Exporter](scripts/export-architecture-postgres.php) vorhanden, **kein echter isolierter DB-Export** |
@@ -126,14 +126,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand (13.10.2026):** `dev` bei `05895de6db92832b8c3b47ea003780ffde0513cc` nach vollständigem Pfadvergleich via echtem Zwei-Eltern-Merge in `docs` übernommen. `docs`-SHA nach dem Merge frisch ermitteln, ebenso weitere neue `dev`-Commits.
+**Branch-Checkpoint (13.10.2026):** `dev`-Stand `2ced9565a0a1ac93697ec2efa2b4c51ad6999f4f` nach Pfadprüfung als echter Zwei-Eltern-Merge in `docs` übernommen. `docs`-HEAD danach erneut ermitteln; bei parallel eingetroffenen neuen `dev`-Commits nur bewusst mergen.
 
-**Aktuell geltender Journal-Vertrag:** Blog **Date + Status** (bei 64rem gefaltet zu Date), Exhibition **Date + Status** (bei 64rem gefaltet zu Dates). Exhibition-Date kommt aus `starts_on`/`ends_on`, Vernissage aus strukturiertem Zeitstempel mit Legacy-Fallback, **niemals** aus dem frei formulierten Public-Date-Override; separate abgeleitete Statusspalte nur Past/Current/Upcoming. Bei Narrow erscheinen Identity-Datumsinformationen erst nach dem Yield der Supporting Column. Alle diesbezüglichen Zwischenstände (Status/Publication, Date/Schedule, Date/Timing) sind aus den **aktiven** kanonischen Tabellenregeln entfernt. Die Vorgaben sind in `ADMIN-TABLE-CONTRACT.md`, `ADMIN-RESPONSIVE-TABLES.md` und dem knappen `ui-skills.md`-Verweis synchronisiert.
+**Neuste fachliche Tabellenregel:** Blog **Date + Status**, Exhibition **Date + Status**, je Faltung bei **64rem tatsächlicher Tabellenbreite**. Die getrennte Exhibition-Date verwendet ausschließlich `starts_on/ends_on`; Vernissage zweizeilig, abgeleiteter Status nur Past/Current/Upcoming. Im Blog bleibt der **voll beschriftete Sieben-Actions-Rail bis zur 80rem-Workspace-Obergrenze** erhalten und wird **bei 78rem** im zentralen `table-contract.css` gemeinsam mit der Actions-`<col>` kompakt; keine Feature-CSS-Kopie. Die alte 88rem-Aussage und der verbliebene Date/Timing-Verweis sind in `ADMIN-TABLE-CONTRACT.md` und `ADMIN-RESPONSIVE-TABLES.md` beseitigt. `ui-skills.md` bleibt ein knapper Verweis auf diesen kanonischen Owner.
 
-**Weiter verifiziert:** Statische Prüfung aller **61** Markdown-Dateien auf spezifisch überholte Public-`@persist`-, Journal-Fold- und Routenbegriffe; nur die zwei belegten Altstellen wurden geändert. Persistenzangaben der **Admin-Notifications** bleiben davon unberührt.
+**Weiter erledigt:** Public-SPA-Dokumentation aus dem aktuellen Livewire-CSP-/Folio-Code korrigiert; 20 explizite Webrouten plus [read-only Quellprüfer](scripts/check-architecture-routes.php). Isolierter PHP-8.4-Positiv-/Negativlauf durchgeführt, vollständiger Repository-Lauf noch offen. Der neue Public-Folio-Browser-Test auf `dev` wurde ausschließlich als Quelltext betrachtet, nicht ausgeführt. Gezielt alle **61 Markdown-Dateien** auf alte Journal-/Public-Persistenz-Formulierungen kontrolliert; Admin-Notification-Persistenz wurde korrekt **nicht** entfernt.
 
-**Routenprüfer:** `scripts/check-architecture-routes.php` für die 20 expliziten HTTP-Routen; PHP-8.4-Fixture mit positivem und absichtlich falschem Zeilenbeleg geprüft, noch kein native Full-Checkout-Lauf.
+**Nächster konkreter Schritt:** Source-Manifest- und Vertragsanalysergebnisse gegen weiteren `dev`-Stand abgleichen; danach vor allem den lokal ausführbaren PHP-Quellprüfer und die vorhandenen Architektur-Generatoren an syntaktischen Randfällen weiter validieren. Falls ein sicherer vollständiger Checkout nicht verfügbar ist, **niemals** native Full-Repo-/DB-/Browser-Checks behaupten.
 
-**Nächster Schritt:** aktuelle `dev`-HEADs neu prüfen; das Source-Audit nur bei tatsächlich geänderten `app/`-Quellen ergänzen, außerdem Tabellen- und Public-Browser-Testquellen als **nicht ausgeführte** Evidenz aufnehmen, sofern ihre neuen Invarianten dokumentationsrelevant sind.
-
-**Offen:** echte Browserabnahme, PostgreSQL-Katalog aus isolierter Migrierumgebung, vollständige native PHP-Generatorläufe, Notification-Transport. CI und `testing` tabu.
+**Offen:** migriertes isoliertes PostgreSQL-`pg_catalog`, vollständige PHP-Generator-Checks, produktrelevante Browser-Abnahme und Notification-Transport. Nicht CI oder `testing`.

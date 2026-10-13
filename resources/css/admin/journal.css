@@ -9,12 +9,8 @@
     max-width: 100%;
 }
 
-/* The shared row-action rail determines Actions width at each state.
+/* The shared table contract owns Blog Action rail and track widths together.
  * Supporting data yields before it squeezes the identity track. */
-.journal-table--blog {
-    --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
-}
-
 .journal-table--exhibitions {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
@@ -55,14 +51,7 @@
     width: var(--admin-row-actions-width);
 }
 
-/* One Journal track owner. The matching action column and heading inherit
- * the rail width of the responsive row controls. */
-@container admin-table (max-width: 88rem) {
-    .journal-table--blog {
-        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
-    }
-}
-
+/* Exhibition Actions retain their accepted 64rem density transition. */
 @container admin-table (max-width: 64rem) {
     .journal-table--exhibitions {
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
