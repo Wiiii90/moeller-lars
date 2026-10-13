@@ -12,6 +12,7 @@ Die öffentliche Website bleibt **serverseitig mit Laravel/Blade gerendert**, be
 sequenceDiagram
     participant User as Browser / Link
     participant Filter as public-spa.js
+    participant Folio as public-folio-motion.js
     participant LW as Livewire 4 Navigate
     participant PHP as Laravel Public Route
     participant DB as CommittedRead / PostgreSQL
@@ -30,6 +31,8 @@ sequenceDiagram
         DB-->>PHP: veröffentlichte Daten
         PHP-->>LW: neues Blade-HTML + Head-Metadaten
         LW-->>Boot: livewire:navigating mit onSwap-Hook
+        Boot->>Folio: advancePublicFolio (persistierter Node, Reduced-Motion-Guard)
+        Boot->>Boot: alte Disposer vor Swap ausführen
         Boot->>Boot: applyPublicLayoutFromMeta am Swap
         LW-->>Boot: livewire:navigated
         Boot->>Boot: vorherige Instanzen/Listener entsorgen
@@ -57,6 +60,55 @@ Der `onSwap`-Callback wird vom `livewire:navigating`-Ereignis installiert und li
 | [Public SPA Link Marker](../../resources/js/public-spa.js) | Gerade vorhandene Links | Zugelassene Links mit `wire:navigate` markieren; kein eigener Router/Disposer |
 
 `initializePublicApplication()` speichert die letzte `#content`-Elementidentität. Ist sie unverändert, bricht der Bootstrap **ohne erneute Initialisierung oder zusätzliche PageView** ab. Beim aktuellen `dev`-Stand werden vorhandene Disposer **bereits bei `livewire:navigating` vor dem Body-Swap** aufgerufen und die `currentContent`-Identität gelöscht. Beim folgenden `livewire:navigated` entsorgt die Init-Routine verbleibende Disposer defensiv, setzt die neue Identity und baut die Instanzen auf. Das verhindert, dass Modal-/Map-/Tracking-Observer am abgelösten Body weiterlaufen. Ein erstmaliger Besuch erfolgt bei `DOMContentLoaded` bzw. sofort, wenn das Dokument bereits bereit ist; spätere Navigationswechsel nutzen `livewire:navigated`. Diese Regeln sind **Codeverhalten**, keine Zusage bereits bestandener Browser-Zustandsprüfung.
+
+## Persistiertes Folio und CSS-Animation beim Navigieren
+
+Der aktuelle Public-Transport verwendet seit dem Merge des `dev`-Standes
+`a85930b4fedbb1416463e22a4e515f751a430112` eine **persistierte,
+rein dekorative Folio-Kontur**, getrennt vom ersetzten Seiteninhalt:
+
+- [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php)
+  definiert innerhalb von `#content` eine nichtinteraktive,
+  `aria-hidden` `.public-folio-decoration` in
+  `@persist('public-folio-decoration')`; die tatsächliche Entscheidung
+  über das Beibehalten des Nodes trifft Livewire.
+- [`app.js`](../../resources/js/app.js) ruft synchron beim
+  `livewire:navigating`-Ereignis **vor** dem Dispose der alten
+  Viewer-/Map-/Navigation-Instanzen `advancePublicFolio()` auf.
+  Dieser Aufruf gehört **nicht** zur späteren
+  `initializePublicApplication()`-Reinitialisierung. Der
+  `onSwap`-Handler übernimmt weiterhin die Public-Layout-Metawerte.
+- [`public-folio-motion.js`](../../resources/js/public-folio-motion.js)
+  verwaltet genau **zehn** vordefinierte Konturen mit je vier
+  `rem`-Abständen (oben/unten auf linker und rechter Seite). Die
+  Auswahl `chooseNextFolioVariant()` schließt die gerade gewählte
+  Variante aus; eine neue Navigation soll also nicht zufällig denselben
+  Zielzustand wählen. Die aktuelle Varianten-ID lebt im JS-Modul, die
+  bereits animierte **Zwischengeometrie** im persistierten DOM/CSSOM.
+- Bei fehlender `.public-folio-decoration` oder
+  `prefers-reduced-motion: reduce` erfolgen **keine** dekorativen
+  CSSOM-Änderungen. Es gibt **keine** Polling-Timer, Frame-Loops,
+  `setTimeout`-Kette oder zweite Navigation.
+- [`public-presentation.css`](../../resources/css/public-presentation.css)
+  registriert vier `@property`-Werte als CSS-`<length>` und animiert
+  diese auf demselben Element mit **780 ms**. Die beiden Pseudoelemente
+  zeichnen die linke und rechte Kontur; das absolute, nichtinteraktive
+  Folio verändert die eigentlichen Content-Boxabmessungen nicht.
+  Wiederholte Navigationen retargeten das laufende CSS-Transition-Ziel,
+  anstatt die gestrichene Kontur durch erneutes DOM-Mounten neu zu starten.
+
+Die lokale Testquelle
+[`tests/js/public-folio-motion.test.mjs`](../../tests/js/public-folio-motion.test.mjs)
+enthält Fälle für zehn erlaubte Ziele, Ausschluss der alten Variante und
+positive Vierer-Abstände, wurde hier aber **nur gelesen und nicht ausgeführt**.
+Der [Public-Implementation-Contract](../PUBLIC-IMPLEMENTATION-CONTRACT.md)
+enthält die zugehörige visuelle Absicht, einschließlich
+`wire:transition.navigate` auf `#content`. Die derzeitige
+Folio-/Crossfade-Darstellung war bei diesem Quellenstand **noch nicht als
+vom Nutzer browserabgenommen bestätigt**. Offen sind echte
+Livewire-`@persist`-Übernahme, Bewegung bei schnellen Folgewechseln,
+History/Back-Forward, Browserunterstützung für typed CSS Properties und
+Reduced-Motion-Verhalten in der laufenden Oberfläche.
 
 ## Fachliche und technische Grenzen
 

@@ -126,10 +126,29 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branchstand 13.10.2026:** `docs` hatte vor diesem Abschnitt den HEAD `c37fbd05568184e4c63855386879fe65750ab2ca`. Public-`dev` bei `a85930b4fedbb1416463e22a4e515f751a430112` per echtem Zwei-Eltern-Merge `c37fbd05568184e4c63855386879fe65750ab2ca` übernommen (neuer Folio-Motion-Controller, Public SPA/Artworks-CSS und zugehörige JS-Testquelle). `dev` entwickelt sich parallel weiter; HEADs beim Wiedereinstieg immer frisch lesen.
+**Branch-/Quellstand 13.10.2026:** Die Public-Änderungen bis `dev`
+`a85930b4fedbb1416463e22a4e515f751a430112` wurden als
+Zwei-Eltern-Merge `c37fbd05568184e4c63855386879fe65750ab2ca` nach
+`docs` übernommen. `dev` kann zwischenzeitlich weitergelaufen sein:
+`docs`- und `dev`-HEAD sowie Überschneidungen neu vergleichen.
 
-**Abgeschlossen:** `followup-skill.md` (zuvor 13 KB mit historischen Side-Worker-Branches und `dev`-only-Vorgaben) in einen kleinen rückwärtskompatiblen Einstieg umgewandelt; einmalige aktuelle Anleitung in `.agents/skills/handoff/SKILL.md`. `AGENTS.md` verlinkt diesen kanonischen Owner. Erhalten: sichere portable Folgeprompts, exakte SHAs, laufende Browserabnahme, lokale Umgebungsfakten nur bei Beleg, PowerShell-Qualität und zwei selbständige Prompts auf Anfrage.
+**Erledigt:**
+- [Handoff-Skill](.agents/skills/handoff/SKILL.md) ist jetzt alleiniger
+  Prozess-Owner. `followup-skill.md` ist ein kurzer Kompatibilitätseinstieg
+  ohne historischen Worker-Branch-Modus; die noch relevanten
+  Copy-/Paste-/PowerShell-/Browser-Übergaben wurden erhalten.
+- [Public-SPA-Lebenszyklus](docs/architecture/public-spa-lifecycle.md)
+  enthält jetzt das persistierte `@persist`-Folio, den
+  `livewire:navigating`-Animationsstart, vier registrierte CSS-Werte,
+  zehn Varianten, 780-ms-Transition und den Reduced-Motion-Guard.
+  Die JS-Testquelle wurde **gelesen, nicht ausgeführt**; Browserabnahme offen.
 
-**Unmittelbar nächster Schritt:** die neue `resources/js/public-folio-motion.js`-Integration entlang des Public-SPA-Lebenszyklus quellenbasiert ergänzen, inklusive Motion-/Reduced-Motion-Guards und Unterscheidung zwischen serverseitigem HTML und persistierter Folio-Dekoration. Danach verbleibende `AGENTS.md`-Duplikate mit individuellen Vertrags-Ownern abgleichen.
+**Unmittelbar als Nächstes:** `AGENTS.md` nach verbliebenen historischen
+Worker-/CI-/Branchinstruktionen durchsuchen und nur solche löschen, die
+ausdrücklich dem kanonischen direkten `dev`-/`docs`-/`testing`-Modus
+widersprechen. Außerdem neu eingetroffene Public-`dev`-Änderungen kontrolliert
+nachziehen; die Folio-Dokumentation dabei auf Codeänderungen prüfen.
 
-**Offene Langläufer:** vollständiger nativer PHP-Generator auf echtem Checkout, isolierter PostgreSQL-`pg_catalog`-Export sowie browserbasierte SPA-/Admin-Abnahme. Weder `testing` noch CI berühren.
+**Offen:** native PHP-Generatoren auf realem vollständigem Checkout,
+isolierter PostgreSQL-`pg_catalog`-Export und echte Public-/Admin-Browserläufe.
+Keine CI-Interaktion und keine Änderungen auf `testing`.
