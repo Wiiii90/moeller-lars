@@ -176,7 +176,9 @@ remains the dominant visual element.
 Illustrated entries alternate image sides by **illustrated entry index**,
 not by the position of intervening text-only entries. Summary prose flows
 beside the image and continues below it when longer, without a fabricated
-empty second column. A genuinely narrow content surface stacks the figure
+empty second column. Text previews are bounded by the canonical server-side
+240-character excerpt limit; no overflow-clipping block formatting context
+may prevent the visible text from wrapping naturally around the floated image. A genuinely narrow content surface stacks the figure
 above the text, without scaling down fonts or cropping the artwork. The image
 mount includes an unobtrusive, drawn engraving from
 `public/ornaments/journal-engraving.svg`, with no external fonts, images,

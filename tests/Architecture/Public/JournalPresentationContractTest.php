@@ -69,7 +69,8 @@ it('gives the Blog a sculpted folio and preserves art, typography and copyright 
         ->toContain('inheritsDefaultNotice($cover)')
         ->toContain('blog-page__colophon')
         ->toContain('blog-entry--text-only')
-        ->toContain('includeInheritedCopyright: false');
+        ->toContain('includeInheritedCopyright: false')
+        ->toContain('Str::limit($excerpt, 240);');
 
     expect($ornament)
         ->toContain('viewBox="0 0 128 128"')
