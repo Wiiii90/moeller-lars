@@ -4,6 +4,7 @@ import { initializeHomeHero } from './home-hero.js';
 import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
+import { advancePublicFolio } from './public-folio-motion.js';
 import { applyPublicLayoutFromMeta, markPublicSpaLinks } from './public-spa.js';
 
 // Livewire swaps the public body's contents, but module scope and document
@@ -18,6 +19,7 @@ function initializePublicApplication() {
     for (const dispose of disposers) dispose?.();
     disposers = [];
     currentContent = content;
+    advancePublicFolio();
 
     const root = document.body;
     disposers.push(initializeArtworkViewer(root));
