@@ -1,6 +1,5 @@
-// Variations of the accepted ORIGINAL folio contour. Both corners retain
-// all three joined borders at all times, including during transitions.
-// Values: left top / bottom, right top / bottom, left / right return width.
+// The accepted original remains the first variant and the CSS fallback.
+// The six typed lengths always describe complete, connected paper corners.
 export const FOLIO_VARIANTS = Object.freeze([
     ['1.10rem', '4.00rem', '3.80rem', '1.15rem', '.55rem', '.55rem'],
     ['1.75rem', '3.55rem', '3.20rem', '1.55rem', '.78rem', '.7rem'],
@@ -14,13 +13,12 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['1.3rem', '4.52rem', '4.28rem', '.72rem', '.73rem', '1rem'],
 ]);
 export const FOLIO_PROPERTIES = Object.freeze([
-    '--public-folio-left-top',
-    '--public-folio-left-bottom',
-    '--public-folio-right-top',
-    '--public-folio-right-bottom',
-    '--public-folio-left-width',
-    '--public-folio-right-width',
+    '--public-folio-left-top', '--public-folio-left-bottom',
+    '--public-folio-right-top', '--public-folio-right-bottom',
+    '--public-folio-left-width', '--public-folio-right-width',
 ]);
+let variant = 0;
+let snapshot = null;
 
 export function chooseNextFolioVariant(current, random = Math.random) {
     const from = Number.isInteger(current) && current >= 0 && current < FOLIO_VARIANTS.length
@@ -30,21 +28,52 @@ export function chooseNextFolioVariant(current, random = Math.random) {
     return pick < from ? pick : pick + 1;
 }
 
-let variant = 0;
+// Body replacement destroys CSS transitions, so capture the actual animated
+// computed geometry before Livewire swaps it. This includes interrupted motion.
+export function capturePublicFolio(root = document) {
+    snapshot = null;
+    const element = root.querySelector('.public-folio-decoration[data-folio-active]');
+    if (!element) return false;
+    const computed = getComputedStyle(element);
+    const values = FOLIO_PROPERTIES.map((name) => computed.getPropertyValue(name).trim());
+    if (values.some((value) => !value)) return false;
+    snapshot = values;
+    return true;
+}
+
 export function advancePublicFolio(root = document) {
     const element = root.querySelector('.public-folio-decoration');
-    if (!element || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-
-    // Only the FIRST actual SPA visit activates the overlay. Force its original
-    // computed geometry before retargeting, so the new endpoint interpolates.
-    if (!element.hasAttribute('data-folio-active')) {
-        element.setAttribute('data-folio-active', '');
-        element.getBoundingClientRect();
+    if (!element || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        snapshot = null;
+        return false;
     }
-
+    const start = snapshot ?? FOLIO_VARIANTS[variant];
+    snapshot = null;
     variant = chooseNextFolioVariant(variant);
-    const values = FOLIO_VARIANTS[variant];
-    FOLIO_PROPERTIES.forEach((name, index) => element.style.setProperty(name, values[index]));
+    const target = FOLIO_VARIANTS[variant];
+    const from = {};
+    const to = {};
+
+    for (let i = 0; i < FOLIO_PROPERTIES.length; i += 1) {
+        const property = FOLIO_PROPERTIES[i];
+        from[property] = start[i];
+        to[property] = target[i];
+        element.style.setProperty(property, target[i]);
+    }
+    element.setAttribute('data-folio-active', '');
     element.dataset.folioVariant = String(variant + 1);
+
+    // WAAPI explicitly interpolates on the NEW node; no persistent wrapper,
+    // forced reflow, timers, polling, or transition on a detached element.
+    if (typeof element.animate === 'function') {
+        try {
+            element.animate([from, to], {
+                duration: 920,
+                easing: 'cubic-bezier(.2, .65, .25, 1)',
+            });
+        } catch {
+            // Keep the complete static target on unsupported browsers.
+        }
+    }
     return true;
 }

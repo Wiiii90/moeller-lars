@@ -553,10 +553,9 @@ body {
         -5px 7px 0 var(--public-folio-soft),
         -6px 8px 0 var(--public-folio-depth);
 }
-/* Keep the accepted original (first) Atelier contour even if JavaScript,
-   SPA navigation or registered CSS properties do not work. The animated
-   persisted counterpart replaces it ONLY after a real navigation event.
-   These strokes intentionally live OUTSIDE the configured Content width. */
+/* The accepted original stays the CSS-only fallback. On real SPA visits
+   the next body receives a fresh overlay, animated from the old computed
+   contour. No DOM persistence or transition on a detached element. */
 #content::before,
 #content::after,
 .public-folio-decoration::before,
@@ -598,15 +597,8 @@ body {
     --public-folio-left-width: .55rem;
     --public-folio-right-width: .55rem;
     pointer-events: none;
-    transition:
-        --public-folio-left-top 850ms cubic-bezier(.2, .65, .25, 1),
-        --public-folio-left-bottom 850ms cubic-bezier(.2, .65, .25, 1),
-        --public-folio-right-top 850ms cubic-bezier(.2, .65, .25, 1),
-        --public-folio-right-bottom 850ms cubic-bezier(.2, .65, .25, 1),
-        --public-folio-left-width 850ms cubic-bezier(.2, .65, .25, 1),
-        --public-folio-right-width 850ms cubic-bezier(.2, .65, .25, 1);
 }
-/* A persisted node carries the motion between real Livewire page visits. */
+/* Visible only after an actual SPA page replacement. */
 .public-folio-decoration[data-folio-active] {
     visibility: visible;
 }
@@ -1820,9 +1812,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .public-folio-decoration {
-        transition: none;
-    }
     .public-site[data-public-spa-visit] #content > :not(.public-folio-decoration) {
         animation: none !important;
     }
