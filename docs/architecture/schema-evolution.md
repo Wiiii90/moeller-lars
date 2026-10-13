@@ -65,6 +65,19 @@ Ein rein aus Eloquent generiertes Diagramm könnte die `publication_version_rows
 3. `exhibition_media` und die historische `map_shape`-Spalte müssen wegen Snapshot-/Schema-Kompatibilität getrennt von aktuell genutzten UI-Funktionen betrachtet werden.
 4. **Datenbank-akzeptierte Werte ≠ aktive Service-Transitionen.** Die ursprünglichen CHECK-Constraints aus `2026_08_15_000003` erlaubten für Artworks und Exhibitions neben Draft/Published auch Hidden/Archived, für MediaAssets neben Available/Deleted auch Quarantined; MediaVariants kennen außerdem Stale. Die [ersten Lifecycle-Diagramme](lifecycles.md) bilden nur bereits nachverfolgte **aktuelle Mutationspfade** ab. Ob diese historischen Werte im vollständig migrierten Endschema weiterhin zulässig sind, muss der DB-Katalogexport belegen. Bestehende Daten dürfen nicht allein aus fehlenden UI-Übergängen für unmöglich erklärt werden.
 
+## Präzisierte Migrationsreihenfolge: CV und historische Backfill-Hashes
+
+Die tatsächliche **Quellreihenfolge** ist für den späteren isolierten Migrationsnachweis relevant:
+
+1. **29.08.2026** — [Staged-Publication-Migration](../../database/migrations/2026_08_29_000001_add_staged_publication.php): ihre eingefrorene `TRACKED_TABLES` enthält 16 Einträge, darunter `cv_entries`; `up()` erzeugt `committed.cv_entries` aus der damals vorhandenen `public.cv_entries` und initialisiert `publication_checkpoints`.
+2. **15.09.2026** — [Restore-Versionen-Migration](../../database/migrations/2026_09_15_000001_add_restorable_publication_versions.php): Nur **der jeweils neueste** vorhandene Checkpoint erhält `snapshot_available=true`, `snapshot_hash` und `schema_hash`. Der Backfill nach `publication_version_rows` iteriert `PublicationSnapshot::TABLES` aus dem **jetzt installierten** Anwendungscode. Dieselbe veränderliche Liste bestimmt `schemaHash()` (aus `information_schema.columns`) und `snapshotHash('committed')` (alle Tabellenzeilen). Frühere Checkpoints erhalten statt eines vollständigen Snapshots lediglich ihren Legacy-Hashanteil.
+3. **16.09.2026** — [CV-Retirement-Migration](../../database/migrations/2026_09_16_235901_finalize_legacy_cv_retirement.php): Migrationscode versucht die vorhandenen CV-Datensätze beider Schemas in `custom_page_settings.blocks` umzuwandeln und entfernt erst danach `public.cv_entries` sowie `committed.cv_entries`.
+4. **Aktueller Code** — [`PublicationSnapshot::TABLES`](../../app/Domain/Publication/PublicationSnapshot.php) enthält noch 15 Tabellen und kein `cv_entries`.
+
+**Konkrete statische Folge:** Beim erneuten Abarbeiten der 15.09.-Migration mit aktuellem Anwendungscode ist `cv_entries` noch physisch vorhanden, wird aber **nicht** in `publication_version_rows`, den `schema_hash`-Input oder den `snapshot_hash`-Input einbezogen. Frühere historische CV-Tabellenänderungen nach erneuter Codeentwicklung beeinflussen daher die Hash-/Backfill-Abdeckung nicht so wie beim ursprünglichen 16-Tabellen-Vertrag. Ob dies einen konkreten späteren Restore/Hash-Fehler oder einen regulär erfolgreichen `migrate:fresh` bewirkt, lässt sich **nicht** aus dieser Abweichung allein ableiten.
+
+Die korrekte Reparatur benötigt eine getrennt autorisierte Application-/Migration-Entscheidung und eine **vollständig isolierte, ausdrücklich wegwerfbare PostgreSQL-Rekonstruktion** mit anschließender Prüfung der erzeugten Versionen/History-Payloads. Hier wurden nur statische Quellanker gelesen; das eingefrorene historische 16er-Schema wird auf `docs` weder entfernt noch durch eine ungeprüfte alternative Liste ersetzt.
+
 ## Konkreter Quellenkonflikt, noch nicht bereinigt
 
 Die Dokumentationsregel in [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) verlangt, dass historische Migrationen ihre damaligen Publication-Tabellen **fest einbetten** und nicht die spätere Runtime-Konstante importieren.
