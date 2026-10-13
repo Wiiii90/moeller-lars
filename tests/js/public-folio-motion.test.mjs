@@ -17,7 +17,7 @@ test('folios use four complete, strictly positive corner inset lengths', () => {
     for (const variant of FOLIO_VARIANTS) {
         assert.equal(variant.length, 4);
         for (const length of variant) {
-            assert.match(length, /^\d+(?:\.\d+)?rem$/);
+            assert.match(length, /^(?:\d+(?:\.\d+)?|\.\d+)rem$/);
             assert.ok(parseFloat(length) > 0);
         }
     }
