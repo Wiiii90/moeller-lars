@@ -96,6 +96,8 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   Browserregeln verlieren und keine neuen UI-Regeln aus unakzeptierten
   Designentwürfen erfinden.
 
+**Markdown-Verweisprüfung (14.10.2026):** 62 Markdowndateien und 553 erfasste Markdown-Linkvorkommen per GitHub-`docs`-Tree `e33cc5b1` gegen reale Pfade geprüft: **keine fehlenden relativen Ziele**. Zusätzlich 19 Absatzanker-Verwendungen (14 eindeutige Ziel/Fragment-Paare) gegen tatsächliche Überschriften geprüft: **alle vorhanden**. URI-Beispiel `media:123` ist ausdrücklich kein relativer Dateipfad. Neuer reiner PHP-Linkprüfer `scripts/check-documentation-links.php` mit `--check|--summary|--self-test` erstellt. Sein **identischer Git-Blob** wurde unter lokalem PHP 8.4 mit `php -l`, `--self-test` und einem synthetischen positiven sowie absichtlich negativen Checkout-Fixture tatsächlich ausgeführt; der neue Checker wurde **noch nicht** auf einem vollständigen realen Checkout ausgeführt. Komplexe/mehrzeilige Markdown-Destinations und HTML-/MDX-Links außerhalb des Scanner-Modells; dazu siehe [docs/README.md](docs/README.md#local-documentation-link-verification).
+
 ## Offene Arbeit in Reihenfolge
 
 1. **Dokumentations-Duplikate und Owner prüfen:** `ui-skills.md` gegen

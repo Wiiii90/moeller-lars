@@ -34,8 +34,9 @@ description: Maintain source-verified architecture and concise canonical documen
 
 1. Update the owning documents, architecture index and **DOCS_SKILL.md in the same commit or explicitly paired commit** with the new findings, source versions, actual verification and next concrete step. Retire stale checkpoint claims instead of endlessly stacking contradictory statuses.
 2. Re-read remote `docs` HEAD before updating refs; reconcile concurrent commits and `dev` merges.
-3. Report committed paths/SHA, what is proved, what is still not tested and any distinct product defect uncovered. Do not silently “fix” a runtime discrepancy on the documentation branch.
-4. A new chat resumes from `DOCS_SKILL.md` rather than repeating a full repository audit.
+3. For changed documentation links, use the local, read-only `php scripts/check-documentation-links.php --check` when a full checkout exists; it validates ordinary Markdown paths and heading fragments, not HTML/MDX/dynamic destinations. Do not claim this full-repo command ran if only GitHub source/tree comparisons or isolated fixtures were available.
+4. Report committed paths/SHA, what is proved, what is still not tested and any distinct product defect uncovered. Do not silently “fix” a runtime discrepancy on the documentation branch.
+5. A new chat resumes from `DOCS_SKILL.md` rather than repeating a full repository audit.
 
 ## Current architecture index
 

@@ -11,6 +11,12 @@ The documents in this directory are split by purpose so current application cont
 - [Admin UI skill](../.agents/skills/admin-ui/SKILL.md) — Filament page composition, shared controls, tables, dialogs and responsive rules (normative details remain in `ui-skills.md` and the dedicated admin contracts).
 - [Public UI skill](../.agents/skills/public-ui/SKILL.md) — public routes, navigation, Home, journals, media and presentation (normative details remain in the public contract and live source).
 
+## Local documentation link verification
+
+Run `php scripts/check-documentation-links.php --check` from the repository root to check relative Markdown file links and heading fragments without Laravel, a database, CI or network access. `--summary` reports counts without failing and `--self-test` runs isolated parser fixtures. The scanner covers simple inline Markdown links and reference definitions, ignoring fenced/inline code and non-local URI schemes; HTML anchors, dynamic MDX, multiline destinations and arbitrary complex CommonMark are **outside its contract**.
+
+The independent authenticated GitHub-tree source audit of **62 Markdown files and 553 Markdown-link occurrences** on `docs` `e33cc5b102e519d2809d363a4d4f2d7d1f251795` found **no missing relative target path**. Its **19 cross-file heading-link occurrences (14 distinct target/fragment pairs)** matched existing Markdown headings. This GitHub-tree inspection is **not** a native full-repository run of the new PHP script; the script's exact content was checked locally under PHP 8.4 using syntax, isolated `--self-test` and positive/negative fixture-repository `--check` runs.
+
 ## Documentation method
 
 - [Documentation skill](../.agents/skills/documentation/SKILL.md) — how to maintain source-backed architecture, merge `dev` safely into `docs`, classify verification and simplify normative contracts without duplication.
