@@ -842,8 +842,9 @@ body {
 .exhibition-entry__summary {
     display: grid;
     min-width: 0;
-    grid-template-columns: var(--exhibition-date-track) minmax(0, 1fr) max-content;
+    grid-template-columns: var(--exhibition-date-track) minmax(0, 1fr);
     column-gap: var(--exhibition-column-gap);
+    row-gap: .45rem;
     padding: 1.55rem 0 1.7rem;
     align-items: start;
     list-style: none;
@@ -900,7 +901,7 @@ body {
     margin: -.08rem 0 0;
     color: #342f2b;
     font-family: var(--public-index-typeface);
-    font-size: clamp(1.13rem, 2.05vw, 1.4rem);
+    font-size: 1.32rem;
     font-weight: 400;
     letter-spacing: .008em;
     line-height: 1.28;
@@ -919,7 +920,9 @@ body {
 
 .exhibition-entry__toggle {
     display: inline-flex;
-    grid-column: 3;
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
     align-items: center;
     gap: .35rem;
     padding-top: .13rem;
@@ -1119,22 +1122,24 @@ body {
     }
 
     .exhibition-entry__summary {
-        grid-template-columns: minmax(0, 1fr) max-content;
-        gap: .55rem .9rem;
+        grid-template-columns: minmax(0, 1fr);
+        gap: .55rem;
         padding: 1.25rem 0 1.4rem;
     }
 
     .exhibition-entry__schedule {
-        grid-column: 1 / -1;
+        grid-column: 1;
+        grid-row: 1;
     }
 
     .exhibition-entry__heading {
         grid-column: 1;
+        grid-row: 2;
     }
 
     .exhibition-entry__toggle {
-        grid-column: 2;
-        grid-row: 2;
+        grid-column: 1;
+        grid-row: 3;
     }
 
     .exhibition-entry__body {
