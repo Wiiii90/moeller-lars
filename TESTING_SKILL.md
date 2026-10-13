@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `74d7c16dccb98c884bef8ef8e8d3b78577463241` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `d5172fcbddd3549a5e499f9cf98b60b74fe54d58` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -54,10 +54,10 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Replaced the Dashboard feed hook-only test with an authenticated Livewire feed search/selection workflow. Removed the Pulse recorder-configuration snapshot while retaining its admin access contract. Publication history deletion test now creates its **own real checkpoint** instead of relying on seeded history.
 - Updated `tests/README.md` with the component / E2E / profiling / full browser commands. These were **authored but not executed**.
 - Removed unnecessary preview-route registration from unrelated Publication commit/media tests; Media-retention tests no longer load unrelated Publication workflow helpers. Preview access tests keep their own isolated preview route.
-- Added a public-media publication transition contract: draft/Working asset not public before Commit, available after Commit, Working unpublish does not leak, unavailable after next Commit; also confirms admin-original endpoint refuses guests and non-admins. This is **newly authored, runtime not yet run**.
+- Added a public-media publication transition contract: draft/Working original and variant not public before Commit; protected admin Preview available; public original and variant available after Commit; Working unpublish does not leak; unavailable after next Commit. Admin-original denies guests and non-admins. **Authored, runtime NOT RUN**.
 - Reintegrated later `dev` Journal/Exhibition changes and their **new or updated Feature/Unit tests**, preserving the intentional deletion of `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php`.
 - Corrected the newly merged Journal copyright Unit test to construct `JournalMediaRenderer` with a mock `PublicMedia` dependency rather than calling `app()` without bootstrapping Laravel. All current `tests/Unit` files were scanned for `app()`; no other such calls were found.
-- Removed two brittle markup assertions from Custom Page type-conversion coverage; the test still performs the real conversion and verifies persisted component types. Deleted a separate one-row test consisting entirely of incidental drag-handle markup and copy assertions.
+- Deleted the dialog-submit implementation introspection suite (icon/name/modal property assertions); actual Edit dialog lifecycle and Add page/create workflows retain behavioral coverage. Removed two brittle markup assertions from Custom Page type-conversion coverage; the test still performs the real conversion and verifies persisted component types. Deleted a separate one-row test consisting entirely of incidental drag-handle markup and copy assertions.
 - Source-inventoried **all 125 PHP files** (115 tests, plus helpers/bootstrap) by case name and inspected obvious weak-assertion patterns. Further full code-to-contract review remains required.
 - Removed a constant-only Undo retention case and a hard-coded 256 MiB expectation; the live retention behavior test remains. Removed Home component options equality snapshot, leaving real component conversion/validation; removed Storage CSS class order and enum icon assertions while keeping actual page actions.
 - Reworked Playwright Admin filter E2E: no fixed field counts per page, verifies a single semantic Filters group and adds the real Pages status-filter behavior across compact-to-inline resize. These browser tests have **not been run**.
@@ -96,12 +96,21 @@ Track each review by **verified contract**, not by number of files. 'Source-revi
 | Gallery / Storage / media | Cases inventoried; partial behavior source-review | Cross-check deletion/variants/usage, public authorization and preview |
 | Publication / Restore | Partially source-reviewed | Execute realistic Commit/Stage/Revert and media retention cases |
 | Public / security / contact / SEO | Partial | Reverify current routes, middleware, side effects and auth |
-| Unit / Integration / Migration | Partial | Unit construction, historic migration retirement, runtime correctness |
+| Unit / Integration / Migration | All cases inventoried; migration sources inspected | Validate actual migration compatibility, historical retirement and runtime |
+
 | JS / Playwright | All browser specs inspected; filter workflow strengthened, NOT RUN | Runtime executions and fixture realism; avoid DOM/copy locks |
 | Test infrastructure / CI | Source-reviewed; browser-seeder disposable guard added | Disposable Postgres, test discovery, npm imports and safe validation |
 | Runtime suites | **NOT RUN** | No CI; local disposable execution not established |
 
 Important: `dev` is moving independently; its new features and tests must be brought over thoughtfully. A deleted Architecture test on `dev` is not evidence of missing coverage until its public behavior is inspected.
+
+### Migration retirement decisions (do not delete solely to hit a file count)
+
+- `tests/Migration/JournalEntryOrderingMigrationTest.php`: run against the `2026_09_17_000001_resequence_journal_entries_newest_first` historical data migration. Retire only when the migration itself is no longer supported/executed in the planned cutover; normal new Journal ordering is already tested separately.
+- `tests/Migration/Legacy/HomeHeroCompatibilityTest.php`: `hero_mode`/old fixed/newest/random configurations are still accepted by the compatibility resolver. Retire with the explicit migration/normalization that removes legacy input handling, not before.
+- `tests/Migration/Legacy/SiteSectionMigrationValidatorTest.php`: guards historical Gallery → SiteSection parity/one-level migration. Retire when the validator and original migration pathway are intentionally removed at cutover; permanent DB invariants remain independently covered.
+- `tests/Unit/Content/HistoricalCustomPageBlockCanonicalizerTest.php`: has migration-only semantic ownership although currently placed under Unit; preserve until the legacy custom-page canonicalization migration is no longer supported, then retire with that adapter.
+- The historical `show_in_navigation` database column persists for restorable snapshot compatibility (see `2026_10_12_000001_make_public_navigation_follow_publication.php`). Migration fixture fields are **not** automatically stale current runtime APIs.
 
 ## 8. Maintenance ritual — mandatory
 

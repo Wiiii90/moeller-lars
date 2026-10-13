@@ -65,7 +65,7 @@ it('serves a page image only while its reference is part of the committed public
         'width' => 100,
         'height' => 100,
     ]);
-    MediaVariant::query()->create([
+    $variant = MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
         'storage_key' => $variantKey,
@@ -94,7 +94,17 @@ it('serves a page image only while its reference is part of the committed public
     $editor->updatePlacement($page, 'published', null);
 
     $url = route('media.original', ['mediaAsset' => $asset->getKey()]);
+    $variantUrl = route('media.variant', ['mediaVariant' => $variant->getKey()]);
+
     $this->get($url)->assertNotFound();
+    $this->get($variantUrl)->assertNotFound();
+
+    // Authenticated Preview can inspect Working before publication, but public URLs cannot.
+    $this->get(route('preview.media.original', ['mediaAsset' => $asset->getKey()]))
+        ->assertOk()
+        ->assertHeader('Cache-Control', 'private, max-age=3600');
+    $this->get(route('preview.media.variant', ['mediaVariant' => $variant->getKey()]))
+        ->assertOk();
 
     $publication = app(PublicationService::class);
     expect($publication->commit($actor))->not->toBeNull();
@@ -103,13 +113,16 @@ it('serves a page image only while its reference is part of the committed public
         ->assertOk()
         ->assertHeader('Content-Type', 'image/jpeg')
         ->assertHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    $this->get($variantUrl)->assertOk()->assertHeader('Content-Type', 'image/webp');
 
     // An editorial change must not leak before the next explicit Commit.
     $settings->update(['blocks' => [[...$publishedImage, 'published' => false]]]);
     $this->get($url)->assertOk();
+    $this->get($variantUrl)->assertOk();
 
     expect($publication->commit($actor))->not->toBeNull();
     $this->get($url)->assertNotFound();
+    $this->get($variantUrl)->assertNotFound();
 
     // Removing the public reference does not delete the underlying stored file.
     Storage::disk(config('media.disk'))->assertExists($originalKey);
