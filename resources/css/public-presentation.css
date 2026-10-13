@@ -568,6 +568,15 @@ body {
     visibility: hidden;
 }
 
+/* Intentionally exaggerated and more legible in loopback-only opt-in debug
+   mode; never exposed by default or on production domains. */
+.public-site[data-public-folio-debug] .public-folio-decoration[data-folio-active] .public-folio-decoration__left {
+    border-color: rgba(54, 71, 63, .8);
+}
+.public-site[data-public-folio-debug] .public-folio-decoration[data-folio-active] .public-folio-decoration__right {
+    border-color: rgba(54, 71, 63, .8);
+}
+
 /* Only genuinely empty section pages without a configured heading fill the
  * remaining viewport. Match rendered element children, not whitespace text:
  * unpublished or absent entries produce no elements. Home components are
@@ -1758,12 +1767,19 @@ body {
     from { opacity: .83; transform: translateY(4px); }
     to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes public-page-settle-debug {
+    from { opacity: .52; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.public-site[data-public-folio-debug][data-public-spa-visit] #content > :not(.public-folio-decoration) {
+    animation: public-page-settle-debug 850ms ease-out both;
+}
 .public-site[data-public-spa-visit] #content > :not(.public-folio-decoration) {
     animation: public-page-settle 300ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .public-site[data-public-spa-visit] #content > :not(.public-folio-decoration) {
+    .public-site[data-public-spa-visit]:not([data-public-folio-debug]) #content > :not(.public-folio-decoration) {
         animation: none !important;
     }
     .site-header nav,

@@ -62,6 +62,18 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
+For browser review there is a loopback-only explicit motion diagnostic:
+open `http://127.0.0.1:8001/paintings?folio-motion=debug`. This stores a
+tab-scoped flag in `sessionStorage` and permits an 1800ms, strongly amplified
+and higher-contrast sequence of connected folio corners, plus a conspicuous
+content-settling effect, EVEN IF Windows/Chrome requests reduced motion.
+Navigation does not need to keep the query parameter; the tab retains the
+setting. `?folio-motion=off` restores the normal reduced-motion behavior.
+Outside localhost/127.0.0.1 the query parameter is ignored entirely.
+This deliberately exaggerated diagnostic MUST NOT be mistaken for the
+approved production visual style. The production motion remains subtle
+and respects `prefers-reduced-motion`.
+
 The original asymmetric Content folio remains the approved static CSS fallback
 (`#content::before` and `#content::after`) for initial loads, unsupported
 browsers, no JavaScript and reduced-motion users. Variant 1 matches the
