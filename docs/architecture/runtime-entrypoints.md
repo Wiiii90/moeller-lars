@@ -38,7 +38,9 @@ Der [Routenprüfer](../../scripts/check-architecture-routes.php) vergleicht `rou
 php scripts/check-architecture-routes.php --check
 ```
 
-**Durchgeführt:** `php -l`, Positivprüfung und absichtlich fehlerhafte Zeilenangabe in einer isolierten PHP-8.4-Teststruktur. Der reale Routenindex wurde zusätzlich quellenweise gegen alle 20 aktuellen Deklarationen verglichen, aber ein **nativer Skriptlauf im vollständigen Laravel-Checkout ist offen**. Die Prüfung bootet keine Framework-Routen, kennt also weder automatisch registrierte Paket-Routen noch zur Laufzeit hinzugefügte Middleware.
+**Parserhärtung (14.10.2026):** Der bisherige Regex-Matcher konnte auch in Kommentaren und PHP-Stringliteralen vorkommende `Route::get/post(...)`-Fragmente als angebliche Route erfassen. Der Quellprüfer nutzt nun `token_get_all()` und verlangt die tatsächlichen `Route`, `::`, `get/post`, `(`, ein single-quoted Pfadliteral und ein anschließendes Komma als PHP-Tokenfolge. Er erhält Methode, Pfad, Zeile und Handler-Position. `php scripts/check-architecture-routes.php --self-test` läuft ohne Laravel oder Route-Manifest und unterscheidet echte Routen von Kommentaren/Stringbeispielen; die gleichwertige Parserfunktion wurde unter PHP 8.4 isoliert mit gültigen Quellzeilen und Negativfällen ausgeführt. Es bleibt ein **statisches** Literalmodell, keine vollständige dynamische Router-Erhebung.
+
+**Bereits vorher durchgeführt:** `php -l`, Positivprüfung und absichtlich fehlerhafte Zeilenangabe in einer isolierten PHP-8.4-Teststruktur. Der reale Routenindex wurde zusätzlich quellenweise gegen alle 20 aktuellen Deklarationen verglichen, aber ein **nativer Skriptlauf im vollständigen Laravel-Checkout ist offen**. Die Prüfung bootet keine Framework-Routen, kennt also weder automatisch registrierte Paket-Routen noch zur Laufzeit hinzugefügte Middleware.
 
 ## Explizite Routengruppen
 
