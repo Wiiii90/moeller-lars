@@ -10,6 +10,7 @@
         $cover = $post->mediaUsages->firstWhere('role', \App\Models\JournalEntryMedia::ROLE_COVER);
         $gallery = $post->mediaUsages->where('role', \App\Models\JournalEntryMedia::ROLE_GALLERY)->sortBy('position');
         $postDate = $post->published_at ?? $post->scheduled_at;
+        $galleryPresentation = $post->galleryPresentation();
     @endphp
     <article class="blog-post" data-matomo-event-category="Journal" data-matomo-event-on-load="blog_view" data-matomo-event-name="{{ $post->title }}">
         <header class="blog-post__header">
@@ -19,17 +20,17 @@
             <h2 class="blog-post__title">{{ $post->title }}</h2>
         </header>
         @if ($cover instanceof \App\Models\JournalEntryMedia)
-            {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover blog-post__cover-media', true) !!}
+            <div class="blog-post__cover-mount">
+                {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover blog-post__cover-media', true, includeInheritedCopyright: false) !!}
+            </div>
         @endif
         @if (trim((string) ($post->body ?? '')) !== '')
             <div class="rich-text journal-entry-content blog-post__body">{!! $richText->render((string) $post->body) !!}</div>
         @endif
         @if ($gallery->isNotEmpty())
-            <div class="journal-entry-gallery blog-post__gallery" aria-label="Post images">
-                @foreach ($gallery as $usage)
-                    <div class="journal-entry-gallery__item">{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery') !!}</div>
-                @endforeach
-            </div>
+            <section class="blog-post__gallery" aria-label="Post images">
+                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Post images" :journal-media="$journalMedia" />
+            </section>
         @endif
         <footer class="blog-post__footer">
             <a href="{{ $preview->url($siteNodeRoute->url($section)) }}"><x-public-icon name="arrow-left" /> Back to {{ $section->title }}</a>
