@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant UI as Activity / Filament
+    participant H as AdminPublicationHistory
+    participant V as PublicationVersionService
+    participant DB as PostgreSQL
+    participant GC as PublicationMediaCleanupService
+    participant A as AdminAuditService
+    participant N as AdminNotifier
+    UI->>H: can_restore (nicht LIVE, Snapshot + kompatibler Schemahash)
+    alt Gate verweigert
+        H-->>UI: Warnung, keine Mutation
+    else Restore erlaubt
+        UI->>V: stageVersion(checkpoint, actor)
+        V->>DB: BEGIN + Advisory Lock + Schema-Paritaet
+        V->>V: assertRestorable; pendingCountAgainstCheckpoint
+        V->>GC: queueAbandonedWorkingMedia
+        V->>DB: Working leeren und Snapshot in RESTORE_TABLES-Reihenfolge laden
+        V->>DB: Custom-Page-Bloecke historisch kanonisieren
+        V->>DB: workingContext = restore + source checkpoint ID
+        V->>A: publication.version_restored
+        DB-->>V: COMMIT
+        V->>GC: drain nach Commit
+        V-->>UI: changed, checkpoint
+        UI->>N: Version restored to working state (success)
+        Note over UI,DB: LIVE bleibt bis zu einem eigenen Commit unveraendert
+    end

@@ -147,7 +147,7 @@ Die komplette beschriebene Kette wurde **quellseitig** bis zum Aufruf belegt, ni
 
 - vollständiges SQL-Schema der History-/Undo-Tabellen und sämtliche FK-/Indexgrenzen;
 - Transaktions- und Konkurrenzszenarien durch ausgeführte Tests;
-- weitere Filament-/Livewire-UI-Einstiegspunkte zu Restore, Revert und Reset (Commit-Einstieg oben jetzt quellengeprüft);
+- ein durchgeführter Browser-/DB-Test der inzwischen beschriebenen Activity-Restore-, Revert- und Reset-Einstiege (siehe [Working-Operationen](publication-working-operations.md));
 - externe Binary-Storage-Fehler und Recovery bei fehlgeschlagenem Cleanup.
 
 Diese Punkte werden nicht durch das obige Diagramm als bereits verifiziert ausgegeben.

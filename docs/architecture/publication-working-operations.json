@@ -1,0 +1,288 @@
+{
+  "format": "publication-working-operations-v1",
+  "code_ref": "337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7",
+  "scope": "Curated source-anchored UI-to-domain operations. Evidence lines are checked, not dynamic runtime traces.",
+  "flows": [
+    {
+      "id": "restore",
+      "title": "Restore: historischen Snapshot in Working laden",
+      "evidence": [
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 517,
+          "anchor": "public function restoreSelectedCommitAction()"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 579,
+          "anchor": "public function restoreVersionAction()"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 323,
+          "anchor": "private function performRestoreSelectedCommit()"
+        },
+        {
+          "path": "app/Filament/Support/AdminPublicationHistory.php",
+          "line": 282,
+          "anchor": "'can_restore' => ! $live && $restorable"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 421,
+          "anchor": "private function performRestoreVersion(int $checkpointId)"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 72,
+          "anchor": "public function stageVersion(PublicationCheckpoint $checkpoint, User $actor)"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 77,
+          "anchor": "$this->assertRestorable($checkpoint);"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 78,
+          "anchor": "$this->pendingCountAgainstCheckpoint($checkpoint);"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 81,
+          "anchor": "$this->replaceWorkingFromCheckpoint($checkpoint);"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 82,
+          "anchor": "$this->setWorkingContext('restore', (int) $checkpoint->getKey());"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 85,
+          "anchor": "'publication.version_restored'"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 295,
+          "anchor": "$this->canonicalizeRestoredCustomPageSettings();"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 441,
+          "anchor": "title: 'Version restored to working state'"
+        }
+      ],
+      "diagram": [
+        "sequenceDiagram",
+        "    participant UI as Activity / Filament",
+        "    participant H as AdminPublicationHistory",
+        "    participant V as PublicationVersionService",
+        "    participant DB as PostgreSQL",
+        "    participant GC as PublicationMediaCleanupService",
+        "    participant A as AdminAuditService",
+        "    participant N as AdminNotifier",
+        "    UI->>H: can_restore (nicht LIVE, Snapshot + kompatibler Schemahash)",
+        "    alt Gate verweigert",
+        "        H-->>UI: Warnung, keine Mutation",
+        "    else Restore erlaubt",
+        "        UI->>V: stageVersion(checkpoint, actor)",
+        "        V->>DB: BEGIN + Advisory Lock + Schema-Paritaet",
+        "        V->>V: assertRestorable; pendingCountAgainstCheckpoint",
+        "        V->>GC: queueAbandonedWorkingMedia",
+        "        V->>DB: Working leeren und Snapshot in RESTORE_TABLES-Reihenfolge laden",
+        "        V->>DB: Custom-Page-Bloecke historisch kanonisieren",
+        "        V->>DB: workingContext = restore + source checkpoint ID",
+        "        V->>A: publication.version_restored",
+        "        DB-->>V: COMMIT",
+        "        V->>GC: drain nach Commit",
+        "        V-->>UI: changed, checkpoint",
+        "        UI->>N: Version restored to working state (success)",
+        "        Note over UI,DB: LIVE bleibt bis zu einem eigenen Commit unveraendert",
+        "    end"
+      ]
+    },
+    {
+      "id": "revert",
+      "title": "Revert: Parent des aktuellen LIVE-Commits in Working bereitstellen",
+      "evidence": [
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 532,
+          "anchor": "public function revertSelectedCommitAction()"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 601,
+          "anchor": "public function revertCurrentCommitAction()"
+        },
+        {
+          "path": "app/Filament/Support/AdminPublicationHistory.php",
+          "line": 283,
+          "anchor": "'can_revert' => $live && $parentRestorable"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 343,
+          "anchor": "private function performRevertSelectedCommit()"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 447,
+          "anchor": "private function performRevertCurrentCommit()"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 133,
+          "anchor": "public function stageRevertOfCurrent(User $actor)"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 114,
+          "anchor": "$live = $this->currentLiveCheckpoint();"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 140,
+          "anchor": "$parent = $live->parent()->first();"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 148,
+          "anchor": "$this->assertRestorable($parent);"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 152,
+          "anchor": "$this->replaceWorkingFromCheckpoint($parent);"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 153,
+          "anchor": "$this->setWorkingContext('revert', (int) $live->getKey());"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 156,
+          "anchor": "'publication.commit_revert_staged'"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 462,
+          "anchor": "title: 'Commit revert staged'"
+        }
+      ],
+      "diagram": [
+        "sequenceDiagram",
+        "    participant UI as Activity / Filament",
+        "    participant H as AdminPublicationHistory",
+        "    participant V as PublicationVersionService",
+        "    participant DB as PostgreSQL",
+        "    participant GC as PublicationMediaCleanupService",
+        "    participant A as AdminAuditService",
+        "    participant N as AdminNotifier",
+        "    UI->>H: can_revert (LIVE + restorable Parent)",
+        "    alt Kein LIVE, Parent oder kompatibler Snapshot",
+        "        H-->>UI: Warnung, keine Mutation",
+        "    else Revert erlaubt",
+        "        UI->>V: stageRevertOfCurrent(actor)",
+        "        V->>DB: aktuellen LIVE-Checkpoint und Parent lesen",
+        "        V->>DB: BEGIN + Advisory Lock + Schema-Paritaet",
+        "        V->>V: assertRestorable(parent)",
+        "        V->>GC: queueAbandonedWorkingMedia",
+        "        V->>DB: Working durch Parent-Snapshot ersetzen",
+        "        V->>DB: workingContext = revert + aktuelle LIVE-ID",
+        "        V->>A: publication.commit_revert_staged",
+        "        DB-->>V: COMMIT",
+        "        V->>GC: drain nach Commit",
+        "        UI->>N: Commit revert staged (success)",
+        "        Note over UI,DB: Kein historischer Checkpoint wird geloescht",
+        "        Note over UI,DB: Erst neuer Commit publiziert den Parent-Zustand",
+        "    end"
+      ]
+    },
+    {
+      "id": "reset",
+      "title": "Reset: unpublizierte Working-Aenderungen verwerfen",
+      "evidence": [
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 487,
+          "anchor": "public function resetStagedChangesAction()"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 398,
+          "anchor": "private function performResetStagedChanges()"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 98,
+          "anchor": "public function resetStagedChanges(User $actor)"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 103,
+          "anchor": "$changed = $this->pendingCount();"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 104,
+          "anchor": "if ($changed < 1) {"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 111,
+          "anchor": "$this->replaceWorkingFromSchema('committed');"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 105,
+          "anchor": "$this->clearWorkingContext();"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 117,
+          "anchor": "'publication.stage_reset'"
+        },
+        {
+          "path": "app/Domain/Publication/PublicationVersionService.php",
+          "line": 125,
+          "anchor": "if ($changed > 0) {"
+        },
+        {
+          "path": "app/Filament/Pages/Activity.php",
+          "line": 413,
+          "anchor": "title: $changed > 0 ? 'Staged changes reset' : 'Nothing staged'"
+        }
+      ],
+      "diagram": [
+        "sequenceDiagram",
+        "    participant UI as Activity / Filament",
+        "    participant V as PublicationVersionService",
+        "    participant DB as PostgreSQL",
+        "    participant GC as PublicationMediaCleanupService",
+        "    participant A as AdminAuditService",
+        "    participant N as AdminNotifier",
+        "    UI->>UI: Reset-Bestaetigungsdialog",
+        "    UI->>V: resetStagedChanges(actor)",
+        "    V->>DB: BEGIN + Advisory Lock + Schema-Paritaet",
+        "    V->>DB: pendingCount(Working vs LIVE)",
+        "    alt Kein fachlicher Diff",
+        "        V->>DB: workingContext loeschen",
+        "        DB-->>V: COMMIT; 0",
+        "        UI->>N: Nothing staged (info)",
+        "    else Diff vorhanden",
+        "        V->>GC: queueAbandonedWorkingMedia",
+        "        V->>DB: Working durch committed.* ersetzen",
+        "        V->>DB: workingContext loeschen",
+        "        V->>A: publication.stage_reset",
+        "        DB-->>V: COMMIT",
+        "        V->>GC: drain nach Commit",
+        "        UI->>N: Staged changes reset (success)",
+        "    end",
+        "    Note over UI,DB: LIVE und vorhandene Audit-/Checkpoint-Historie bleiben bestehen"
+      ]
+    }
+  ]
+}

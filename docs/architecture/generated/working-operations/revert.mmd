@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant UI as Activity / Filament
+    participant H as AdminPublicationHistory
+    participant V as PublicationVersionService
+    participant DB as PostgreSQL
+    participant GC as PublicationMediaCleanupService
+    participant A as AdminAuditService
+    participant N as AdminNotifier
+    UI->>H: can_revert (LIVE + restorable Parent)
+    alt Kein LIVE, Parent oder kompatibler Snapshot
+        H-->>UI: Warnung, keine Mutation
+    else Revert erlaubt
+        UI->>V: stageRevertOfCurrent(actor)
+        V->>DB: aktuellen LIVE-Checkpoint und Parent lesen
+        V->>DB: BEGIN + Advisory Lock + Schema-Paritaet
+        V->>V: assertRestorable(parent)
+        V->>GC: queueAbandonedWorkingMedia
+        V->>DB: Working durch Parent-Snapshot ersetzen
+        V->>DB: workingContext = revert + aktuelle LIVE-ID
+        V->>A: publication.commit_revert_staged
+        DB-->>V: COMMIT
+        V->>GC: drain nach Commit
+        UI->>N: Commit revert staged (success)
+        Note over UI,DB: Kein historischer Checkpoint wird geloescht
+        Note over UI,DB: Erst neuer Commit publiziert den Parent-Zustand
+    end

@@ -239,6 +239,15 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Livewire-Ereignis `publication-state-changed` und optionaler HTTP-Header `X-Publication-Pending` sind **zwei** Inputpfade für denselben Navigationszustand. Der Header erscheint nur bei `X-Livewire` plus dirty Mutation-Buffer.
 - **Nicht ausgeführt:** Browser-Klickfluss, gleichzeitige Requests oder vollständiger Laravel-Runtime-Check. Als nächstes Restore/Revert/Reset-Einstiege und Filament-Actions mit den entsprechenden Admin-Service-Verzweigungen abgleichen.
 
+## 6f. Fortsetzung 2026-10-13 — Restore/Revert/Reset vollständig als Quellabläufe
+
+- [Working-Operationen](docs/architecture/publication-working-operations.md), [JSON-Quellanker](docs/architecture/publication-working-operations.json) und drei [Mermaid-Diagramme](docs/architecture/generated/working-operations/) hinzugefügt.
+- `Activity`-UI, `AdminPublicationHistory`-Eligibility, `PublicationVersionService`-Transaktionen/Audit/Media-Cleanup und nachfolgender `PublicationService::commit` abgeglichen.
+- Guards: Restore nur nicht-LIVE und restorable; Revert nur LIVE mit restorable Parent; Reset Working→LIVE. Alle drei lassen LIVE bis zum expliziten Commit unangetastet.
+- Nuancen: Restore auditiert auch ohne vorherigen Working-Diff; Reset ohne Diff löscht nur Working-Kontext. Restore kanonisiert ältere CustomPage-JSON-Blöcke; Revert liest LIVE/Parent vor dem Advisory Lock (Concurrency-Test offen).
+- Integrationstests für Restore/Revert/Reset **als Quellen gelesen, nicht ausgeführt**. Neues `scripts/generate-architecture-working-operations.php` prüft Quellzeilen und reproduziert drei Mermaid-Dateien; nativer Checkout-Lauf offen.
+- **Nächster Schritt:** bestehende PHP-Symbol- und Relationsgeneratoren tatsächlich auf vollständigem Source-Checkout ausführen und auf fehlende bzw. falsche Kanten prüfen; danach physische PostgreSQL-Schemaextraktion ausschließlich in einer isolierten Wegwerf-DB.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:
@@ -269,7 +278,7 @@ Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:
   `dac95a381419f9bb6af95d3fe2f836ea4d5dc9a0` übernommen.
 - Arbeitsregel für beide dauerhaften Sonderbranches steht bereits in
   `AGENTS.md`. Diese Datei wird zusätzlich im AGENTS-Einstieg verlinkt.
-- **Unmittelbar nächster Schritt (aktualisiert):** Restore/Revert/Reset von der Filament-Activity-UI bis zu Domain und Working-/LIVE-State als quellverankerte Sequenzen vervollständigen; anschließend die noch ausstehenden nativen PHP-Generatorläufe und den isolierten PostgreSQL-Katalogexport ermöglichen.
+- **Unmittelbar nächster Schritt (aktualisiert):** die vorhandenen PHP-Symbol-, Service- und UI-Generatoren auf einem echten vollständigen Checkout ausführen, Outputs und falsche Kanten korrigieren; danach den isolierten PostgreSQL-Schema-Katalog erstellen.
 
 **Fortsetzungsregel:** Lies diese Arbeitsakte, verifiziere neue Branch-HEADs
 und setze den unmittelbaren nächsten Schritt um. Keine erneute
