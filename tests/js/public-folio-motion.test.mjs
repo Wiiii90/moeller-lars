@@ -4,123 +4,119 @@ import {
     FOLIO_VARIANTS, chooseNextFolioVariant, capturePublicFolio, advancePublicFolio,
 } from '../../resources/js/public-folio-motion.js';
 
-function fixture({ active = false, computed = ['20px', '64px', '60px', '18px', '9px', '9px'] } = {}) {
+function withPseudoBrowser(run, { reducedMotion = false, initial = null } = {}) {
+    const previous = {
+        window: globalThis.window,
+        document: globalThis.document,
+        getComputedStyle: globalThis.getComputedStyle,
+        KeyframeEffect: globalThis.KeyframeEffect,
+        Animation: globalThis.Animation,
+    };
+    const effects = [];
     const animations = [];
-    const makeEdge = (side, values) => ({
-        side,
-        style: {},
-        computed: { top: values[0], bottom: values[1], width: values[2] },
-        animate: (frames, options) => { animations.push({ side, frames, options }); },
-    });
-    const left = makeEdge('left', [computed[0], computed[1], computed[4]]);
-    const right = makeEdge('right', [computed[2], computed[3], computed[5]]);
-    const attributes = new Set(active ? ['data-folio-active'] : []);
-    const folio = {
-        dataset: {},
-        hasAttribute: (name) => attributes.has(name),
-        setAttribute: (name) => attributes.add(name),
-        querySelector: (selector) => selector.endsWith('__left') ? left : right,
+    const content = {
+        style: { values: new Map(), setProperty(name, value) { this.values.set(name, value); } },
+        computed: {
+            '::before': { display: 'block', content: '""', top: initial?.[0] ?? '18px', bottom: initial?.[1] ?? '64px' },
+            '::after': { display: 'block', content: '""', top: initial?.[2] ?? '61px', bottom: initial?.[3] ?? '19px' },
+        },
     };
-    return {
-        root: { querySelector: () => folio },
-        left, right, folio, animations, attributes,
+    const root = { querySelector: (selector) => selector === '#content' ? content : null };
+    globalThis.window = { matchMedia: () => ({ matches: reducedMotion }) };
+    globalThis.document = { timeline: {} };
+    globalThis.getComputedStyle = (element, pseudo) => element.computed[pseudo];
+    globalThis.KeyframeEffect = class {
+        constructor(element, frames, options) { Object.assign(this, { element, frames, options }); effects.push(this); }
     };
+    globalThis.Animation = class {
+        constructor(effect, timeline) { Object.assign(this, { effect, timeline }); animations.push(this); }
+        play() { this.played = true; }
+    };
+    try { return run({ root, content, effects, animations }); }
+    finally { for (const [key, value] of Object.entries(previous)) globalThis[key] = value; }
 }
 
-function withBrowser(run, reduced = false) {
-    const previousWindow = globalThis.window;
-    const previousComputed = globalThis.getComputedStyle;
-    globalThis.window = { matchMedia: () => ({ matches: reduced }) };
-    globalThis.getComputedStyle = (element) => element.computed;
-    try { run(); } finally {
-        globalThis.window = previousWindow;
-        globalThis.getComputedStyle = previousComputed;
-    }
-}
-
-test('all ten variants contain two complete contours, with exact original geometry first', () => {
+test('all ten destinations keep exactly the original two connected edges', () => {
     assert.equal(FOLIO_VARIANTS.length, 10);
-    assert.deepEqual(FOLIO_VARIANTS[0], [
-        '1.10rem', '4.00rem', '3.80rem', '1.15rem', '.55rem', '.55rem',
-    ]);
+    assert.deepEqual(FOLIO_VARIANTS[0], ['1.10rem', '4.00rem', '3.80rem', '1.15rem']);
     for (const variant of FOLIO_VARIANTS) {
-        assert.equal(variant.length, 6);
+        assert.equal(variant.length, 4);
         assert.ok(variant.every((value) => /^\d*\.?\d+rem$/.test(value) && parseFloat(value) > 0));
+        variant.forEach((value, index) => {
+            assert.ok(Math.abs(parseFloat(value) - parseFloat(FOLIO_VARIANTS[0][index])) <= .4,
+                'original edge endpoints may only move subtly');
+        });
     }
 });
 
-test('the next variant always differs, including extreme random values', () => {
+test('random selection always differs from prior variant', () => {
     for (let prior = 0; prior < 10; prior += 1) {
-        for (const random of [0, .1, .3, .5, .8, .99, 1]) {
+        for (const random of [0, .1, .25, .5, .8, .99, 1]) {
             const next = chooseNextFolioVariant(prior, () => random);
             assert.ok(next >= 0 && next < 10 && next !== prior);
         }
     }
 });
 
-test('a real SPA visit animates ordinary top/bottom/width properties on both attached corners', () => {
-    withBrowser(() => {
-        const f = fixture();
-        assert.equal(advancePublicFolio(f.root), true);
-        assert.equal(f.attributes.has('data-folio-active'), true);
-        assert.equal(f.animations.length, 2);
-        assert.deepEqual(f.animations[0].frames[0], {
-            top: '1.10rem', bottom: '4.00rem', width: '.55rem',
-        });
-        assert.deepEqual(f.animations[1].frames[0], {
-            top: '3.80rem', bottom: '1.15rem', width: '.55rem',
-        });
-        assert.equal(f.animations[0].options.duration, 850);
-        assert.equal(f.left.style.top, f.animations[0].frames[1].top);
-        assert.equal(f.right.style.bottom, f.animations[1].frames[1].bottom);
+test('SPA visits animate the existing CSS pseudos, never create new nodes', () => {
+    withPseudoBrowser(({ root, content, effects, animations }) => {
+        assert.equal(advancePublicFolio(root), true);
+        assert.equal(effects.length, 2);
+        assert.equal(animations.length, 2);
+        assert.ok(animations.every((a) => a.played));
+        assert.deepEqual(effects.map((e) => e.options.pseudoElement), ['::before', '::after']);
+        assert.equal(effects[0].element, content);
+        assert.equal(effects[1].element, content);
+        assert.deepEqual(effects[0].frames[0], { top: '1.10rem', bottom: '4.00rem' });
+        assert.deepEqual(effects[1].frames[0], { top: '3.80rem', bottom: '1.15rem' });
+        assert.equal(effects[0].options.duration, 850);
+        assert.deepEqual([...content.style.values.keys()], [
+            '--public-folio-left-top', '--public-folio-left-bottom',
+            '--public-folio-right-top', '--public-folio-right-bottom',
+        ]);
     });
 });
 
-test('interrupted motion resumes from the rendered intermediate values after body replacement', () => {
-    withBrowser(() => {
-        const oldPage = fixture({ active: true, computed: [
-            '24px', '73px', '61px', '22px', '12px', '13px',
-        ] });
-        assert.equal(capturePublicFolio(oldPage.root), true);
-        const nextPage = fixture();
-        assert.equal(advancePublicFolio(nextPage.root), true);
-        assert.deepEqual(nextPage.animations[0].frames[0], {
-            top: '24px', bottom: '73px', width: '12px',
-        });
-        assert.deepEqual(nextPage.animations[1].frames[0], {
-            top: '61px', bottom: '22px', width: '13px',
-        });
+test('interrupted navigation starts from the preceding pseudoelements actual intermediate values', () => {
+    const captured = ['21px', '69px', '57px', '16px'];
+    withPseudoBrowser(({ root }) => {
+        assert.equal(capturePublicFolio(root), true);
+    }, { initial: captured });
+
+    withPseudoBrowser(({ root, effects }) => {
+        assert.equal(advancePublicFolio(root), true);
+        assert.deepEqual(effects[0].frames[0], { top: '21px', bottom: '69px' });
+        assert.deepEqual(effects[1].frames[0], { top: '57px', bottom: '16px' });
     });
 });
 
-test('the original fallback remains untouched when reduced motion is requested', () => {
-    withBrowser(() => {
-        const f = fixture();
-        assert.equal(advancePublicFolio(f.root), false);
-        assert.equal(f.animations.length, 0);
-        assert.equal(f.attributes.has('data-folio-active'), false);
-    }, true);
+test('reduced-motion leaves the original pseudos untouched', () => {
+    withPseudoBrowser(({ root, content, effects }) => {
+        assert.equal(advancePublicFolio(root), false);
+        assert.equal(effects.length, 0);
+        assert.equal(content.style.values.size, 0);
+    }, { reducedMotion: true });
 });
 
-test('a missing overlay never crashes an interrupted or completed page visit', () => {
-    withBrowser(() => {
+test('hidden mobile contours and missing sheets do not trigger effects', () => {
+    withPseudoBrowser(({ root, content, effects }) => {
+        content.computed['::before'].display = 'none';
+        assert.equal(capturePublicFolio(root), false);
+        assert.equal(advancePublicFolio(root), false);
+        assert.equal(effects.length, 0);
+    });
+    withPseudoBrowser(({ effects }) => {
         assert.equal(capturePublicFolio({ querySelector: () => null }), false);
         assert.equal(advancePublicFolio({ querySelector: () => null }), false);
+        assert.equal(effects.length, 0);
     });
 });
 
-
-test('all animated corners remain outside the white sheet, never exceeding original return depth', () => {
-    const original = FOLIO_VARIANTS[0].map(Number.parseFloat);
-    for (const variant of FOLIO_VARIANTS) {
-        const numbers = variant.map(Number.parseFloat);
-        for (const index of [4, 5]) {
-            assert.ok(numbers[index] <= original[index],
-                'return stroke must never reach farther into the sheet than the approved baseline');
-        }
-        for (const index of [0, 1, 2, 3]) {
-            assert.ok(Math.abs(numbers[index] - original[index]) <= .4,
-                'contour ends must only breathe subtly around the accepted original');
-        }
-    }
+test('unsupported pseudo-element WAAPI retains the existing connected CSS drawing', () => {
+    withPseudoBrowser(({ root, content, effects }) => {
+        globalThis.KeyframeEffect = undefined;
+        assert.equal(advancePublicFolio(root), true);
+        assert.equal(effects.length, 0);
+        assert.equal(content.style.values.size, 4);
+    });
 });

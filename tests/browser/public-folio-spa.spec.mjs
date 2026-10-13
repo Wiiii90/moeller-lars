@@ -4,13 +4,11 @@ import { test, expect } from '@playwright/test';
 const motionSource = readFileSync(
     new URL('../../resources/js/public-folio-motion.js', import.meta.url), 'utf8',
 );
-const drawing = '<div class="public-folio-decoration" aria-hidden="true">'
-    + '<span class="public-folio-decoration__left"></span>'
-    + '<span class="public-folio-decoration__right"></span></div>';
 const sheet = (title) => '<main id="content" class="site-content">'
-    + drawing + '<h2>' + title + '</h2></main>';
+    + '<h2>' + title + '</h2></main>';
 
-test('connected paper corners animate on a real browser from the original geometry', async ({ page }) => {
+test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.setContent('<!doctype html><html><head>'
         + '<meta name="viewport" content="width=device-width, initial-scale=1">'
         + '</head><body class="public-site">' + sheet('Painting') + '</body></html>');
@@ -19,77 +17,77 @@ test('connected paper corners animate on a real browser from the original geomet
         content: motionSource.replace(/^export /gm, '')
             + '\nwindow.publicFolioTest = { capturePublicFolio, advancePublicFolio };',
     });
+
+    const initial = await page.evaluate(() => {
+        const el = document.querySelector('#content');
+        const left = getComputedStyle(el, '::before');
+        const right = getComputedStyle(el, '::after');
+        return {
+            children: el.children.length,
+            left: { top: left.top, bottom: left.bottom, width: left.width, x: left.left },
+            right: { top: right.top, bottom: right.bottom, width: right.width, x: right.right },
+        };
+    });
+    expect(initial.children).toBe(1);
+
     await page.evaluate(() => window.publicFolioTest.advancePublicFolio());
-
-    const left = page.locator('.public-folio-decoration__left');
-    const right = page.locator('.public-folio-decoration__right');
-    await expect(page.locator('.public-folio-decoration')).toHaveAttribute('data-folio-active', '');
-    const state = await page.evaluate(() => {
-        const left = document.querySelector('.public-folio-decoration__left');
-        const right = document.querySelector('.public-folio-decoration__right');
-        const animation = left.getAnimations()[0];
+    const animations = await page.evaluate(() => {
+        const el = document.querySelector('#content');
+        const tracked = el.getAnimations().map((animation) => ({
+            pseudo: animation.effect.pseudoElement,
+            duration: animation.effect.getTiming().duration,
+            frames: animation.effect.getKeyframes(),
+        }));
         return {
-            leftAnimations: left.getAnimations().length,
-            rightAnimations: right.getAnimations().length,
-            keyframes: animation?.effect.getKeyframes(),
-            initialFallbackHidden: getComputedStyle(document.querySelector('#content'), '::before').visibility === 'hidden',
+            children: el.children.length,
+            tracked,
+            leftWidth: getComputedStyle(el, '::before').width,
+            rightWidth: getComputedStyle(el, '::after').width,
+            leftOffset: getComputedStyle(el, '::before').left,
+            rightOffset: getComputedStyle(el, '::after').right,
         };
     });
-    expect(state.leftAnimations).toBe(1);
-    expect(state.rightAnimations).toBe(1);
-    expect(state.keyframes).toHaveLength(2);
-    // The browser normalizes CSS lengths (1.10rem -> 1.1rem).
-    expect(parseFloat(state.keyframes[0].top)).toBeCloseTo(1.1, 2);
-    expect(parseFloat(state.keyframes[0].width)).toBeCloseTo(.55, 2);
-    expect(state.initialFallbackHidden).toBe(true);
-    await expect(left).toBeVisible();
-    await expect(right).toBeVisible();
+    expect(animations.children).toBe(1);
+    expect(animations.tracked).toHaveLength(2);
+    expect(animations.tracked.map((a) => a.pseudo).sort()).toEqual(['::after', '::before']);
+    expect(animations.tracked.every((a) => a.duration === 850)).toBe(true);
+    expect(animations.leftWidth).toBe(initial.left.width);
+    expect(animations.rightWidth).toBe(initial.right.width);
+    expect(animations.leftOffset).toBe(initial.left.x);
+    expect(animations.rightOffset).toBe(initial.right.x);
 
-    // Both drawn return strokes remain in the padding outside the white
-    // content sheet. Check their actual rendered geometry, not just data.
-    const exterior = await page.evaluate(() => {
-        const content = document.querySelector('#content').getBoundingClientRect();
-        const left = document.querySelector('.public-folio-decoration__left').getBoundingClientRect();
-        const right = document.querySelector('.public-folio-decoration__right').getBoundingClientRect();
-        return {
-            leftOuter: left.right <= content.left,
-            rightOuter: right.left >= content.right,
-        };
-    });
-    expect(exterior.leftOuter).toBe(true);
-    expect(exterior.rightOuter).toBe(true);
-
-    // Reproduce a second navigation DURING the animation, like Livewire's
-    // body replacement, and prove the next effect starts at the exact
-    // computed intermediate geometry rather than restarting at variant 1.
+    // Transfer an in-progress pseudo animation to a newly inserted sheet.
     await page.waitForTimeout(170);
-    const interrupted = await page.evaluate((newMarkup) => {
-        const current = document.querySelector('.public-folio-decoration__left');
-        const from = getComputedStyle(current).top;
+    const interrupted = await page.evaluate((html) => {
+        const old = document.querySelector('#content');
+        const before = getComputedStyle(old, '::before').top;
         window.publicFolioTest.capturePublicFolio();
-        document.querySelector('#content').outerHTML = newMarkup;
+        old.outerHTML = html;
         window.publicFolioTest.advancePublicFolio();
-        const next = document.querySelector('.public-folio-decoration__left').getAnimations()[0];
-        return { from, nextStart: next.effect.getKeyframes()[0].top };
+        const replacement = document.querySelector('#content');
+        const effect = replacement.getAnimations().find((a) => a.effect.pseudoElement === '::before');
+        return { before, frame: effect.effect.getKeyframes()[0].top, children: replacement.children.length };
     }, sheet('Prints'));
-    expect(interrupted.nextStart).toBe(interrupted.from);
+    expect(interrupted.frame).toBe(interrupted.before);
+    expect(interrupted.children).toBe(1);
 });
 
-test('live Laravel preview keeps one document and activates folio only after SPA navigation', async ({ page }) => {
+test('the Livewire preview retains its document across public navigation', async ({ page }) => {
     test.skip(!process.env.PUBLIC_SPA_SMOKE_URL,
-        'Set PUBLIC_SPA_SMOKE_URL to the local preview base URL for a real Laravel/Livewire test.');
+        'Set PUBLIC_SPA_SMOKE_URL to the local preview to verify the real Livewire transport.');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto(new URL('/paintings', process.env.PUBLIC_SPA_SMOKE_URL).href);
     await page.evaluate(() => { window.__publicDocumentMarker = 'unchanged'; });
     const candidate = await page.evaluate(() => [...document.querySelectorAll('.site-navigation a[wire\\:navigate]')]
         .find((link) => new URL(link.href).pathname !== location.pathname)?.href);
-    expect(candidate, 'The seeded preview should have another visible public navigation link').toBeTruthy();
+    expect(candidate).toBeTruthy();
     await page.locator('.site-navigation a[wire\\:navigate]').evaluateAll((links, destination) => {
-        const link = links.find((element) => element.href === destination);
-        link?.click();
+        links.find((element) => element.href === destination)?.click();
     }, candidate);
     await expect(page).toHaveURL(candidate);
     await expect.poll(() => page.evaluate(() => window.__publicDocumentMarker)).toBe('unchanged');
-    await expect(page.locator('.public-folio-decoration')).toHaveAttribute('data-folio-active', '');
-    await expect(page.locator('.public-folio-decoration__left')).toBeVisible();
+    await expect.poll(() => page.evaluate(() =>
+        document.querySelector('#content').style.getPropertyValue('--public-folio-left-top')
+    )).not.toBe('');
+    await expect(page.locator('.public-folio-decoration')).toHaveCount(0);
 });
-
