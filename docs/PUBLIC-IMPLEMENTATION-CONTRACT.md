@@ -62,17 +62,18 @@ The first accepted Content folio geometry is an immutable fallback:
 paper-corner contours even with JavaScript off or non-SPA navigation.
 The ten experimental variants preserve this exact form as variant 1,
 change only bounded end positions, and never detach corner return strokes.
-The animated layer is a DIRECT `x-persist="public-folio-decoration"`
-child of `#content`. This is required because Livewire 4's Blade
-`@persist` creates an enclosing `div`, which previously prevented the
-base contour from being hidden after motion activation. Real
-`livewire:navigate` / `livewire:navigated` events gate motion: no animation
-runs on first load, the overlay becomes visible only AFTER the completed
-document swap, and each subsequent visit transitions from the existing
-rendered state to one of ten different targets. Left and right return-stroke
-widths as well as endpoints interpolate. CSS keeps the original version as
-variant 1 and the guaranteed no-JavaScript fallback. The menu contours remain
-the approved static geometry, and neither media nor content width is animated.
+The animated layer is a **new ordinary child** `.public-folio-decoration`
+of each freshly rendered `#content`, **without** `@persist` or
+`x-persist`. On `livewire:navigating`, the old animated `left/right`
+geometry is captured from computed styles before the old page is disposed;
+on `livewire:navigated`, after a real visit, the new element gets the
+next variant and animates from the captured midpoint with the native
+Web Animations API for 920 ms where supported. The six values per variant
+describe the two corner end positions and return-stroke widths. The
+static pseudo-elements preserve the originally accepted geometry with
+JavaScript disabled or when the animation is not activated. No animation
+runs on first load or reduced-motion clients. The ten variations retain
+complete connected corners; their live browser acceptance remains open.
 `wire:transition.navigate` was removed because it does not implement SPA
 crossfades. Instead an explicitly gated short opacity/translateY animation
 settles the NEW content after a completed Livewire navigation, never on initial

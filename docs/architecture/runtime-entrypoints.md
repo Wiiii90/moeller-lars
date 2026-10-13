@@ -1,6 +1,6 @@
 # HTTP-, Filament- und Browser-Einstiegspunkte
 
-**Quellen:** [`routes/web.php`](../../routes/web.php), [`bootstrap/app.php`](../../bootstrap/app.php), [`AdminPanelProvider`](../../app/Providers/Filament/AdminPanelProvider.php), [`AppServiceProvider`](../../app/Providers/AppServiceProvider.php), [`resources/js/app.js`](../../resources/js/app.js). Der [Routenindex](runtime-entrypoints.json) enthält **alle 19 ausdrücklich in `routes/web.php` deklarierten GET-/POST-Routen**, mit HTTP-Methode, aufgelöstem Preview-Präfix, Controller/Action und Quellzeile. **Kein** Ersatz für eine zur Laufzeit registrierte `artisan route:list`-Ausgabe; Filament/Framework registrieren weitere Routen.
+**Quellen:** [`routes/web.php`](../../routes/web.php), [`bootstrap/app.php`](../../bootstrap/app.php), [`AdminPanelProvider`](../../app/Providers/Filament/AdminPanelProvider.php), [`AppServiceProvider`](../../app/Providers/AppServiceProvider.php), [`resources/js/app.js`](../../resources/js/app.js). Der [Routenindex](runtime-entrypoints.json) enthält **alle 20 ausdrücklich in `routes/web.php` deklarierten GET-/POST-Routen (19 Controller-Routen und ein CSP-Asset-Closure)**, mit HTTP-Methode, aufgelöstem Preview-Präfix, Controller/Action beziehungsweise Closure und Quellzeile. **Kein** Ersatz für eine zur Laufzeit registrierte `artisan route:list`-Ausgabe; Filament/Framework registrieren weitere Routen.
 
 ## Request-Pipeline und Working/LIVE
 
@@ -35,6 +35,7 @@ sequenceDiagram
 | Gruppe | Routen | Zugriffsweg |
 | --- | ---: | --- |
 | Public Basis: Home, Contact POST, Sitemap, Robots | 4 | Contact POST mit `EnforceHomePresentationGate` und `throttle:5,1` |
+| CSP-sicheres Public-Livewire-Script `/site-assets/livewire-csp.js` | 1 | Benanntes Route-Closure, temporär `livewire.csp_safe=true`, `FrontendAssets::returnJavaScriptAsFile()`; per `finally` zurückgesetzt |
 | `preview/*` | 6 | `ProtectArtistPreview` verlangt Admin, aktiviert `SitePreviewContext`, setzt Noindex und No-Store |
 | `admin/media-preview/*`, `admin/media-download/*` | 4 | `AdminMediaController::authorizeAdmin()` prüft den Admin im Controller |
 | Public Media `/media/original/*`, `/media/variant/*` | 2 | `PublicMediaController` erzwingt `PublicMedia`-Eligibility; Variant-Middleware prüft Medien-Datei |
@@ -54,7 +55,7 @@ Die genaue **Admin-Commit-UI-Sequenz** (Alpine-Event, Livewire-Methodenaufruf, o
 
 ## Public-JavaScript und Livewire Document Navigation
 
-Die öffentliche Anwendung verwendet seit dem `dev`-Stand `7c332b32762029b7e9da83491f52b12860bef9ed` **Livewire 4 `wire:navigate`** als dokumentbasierten SPA-Transport über unveränderte serverseitige Blade-/Laravel-Public-Routen. [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php) bindet Vite plus Livewire-Styles/-Scripts mit CSP-Nonce ein; [`resources/js/app.js`](../../resources/js/app.js) startet Artwork-Viewer, Home-Hero, Journal, Matomo und Navigation und delegiert Linkfreigabe/CSS-Token an `public-spa.js`. Im Gegensatz zum früheren **einmaligen `DOMContentLoaded`-Bootstrap** werden diese Seitenteile bei `livewire:navigated` nach einem echten `#content`-Wechsel erneut aufgebaut, die vorherigen globalen Listener/Observer dabei entsorgt.
+Die öffentliche Anwendung verwendet beim Quellenstand `18b0a5943aec407fa1bc57e557a2aadcdbf395da` **Livewire 4 Document Navigation** als dokumentbasierten SPA-Transport über unveränderte serverseitige Blade-/Laravel-Public-Routen. [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php) bindet Vite, Livewire-Styles und das öffentliche CSP-sichere Livewire-Script via `route('public.livewire.csp')` mit Nonce ein; [`resources/js/app.js`](../../resources/js/app.js) startet Artwork-Viewer, Home-Hero, Journal, Matomo und Navigation und delegiert eligible Content-Links durch einen einmal installierten Click-Handler via `Livewire.navigate()` und die CSS-Metadatenübernahme an `public-spa.js`. Im Gegensatz zum früheren **einmaligen `DOMContentLoaded`-Bootstrap** werden diese Seitenteile bei `livewire:navigated` nach einem echten `#content`-Wechsel erneut aufgebaut, die vorherigen globalen Listener/Observer dabei entsorgt.
 
 Der [vollständige belegte Request-/JS-Lebenszyklus](public-spa-lifecycle.md) unterscheidet die Link-Ausschlüsse, serverseitige LIVE-GET-Reads, `livewire:navigating`/`onSwap`, CSP-Layoutmetadaten, Matomo-PageViews und die Disposer der einzelnen JS-Module.
 

@@ -1,7 +1,7 @@
 {
   "format": "http-entrypoints-v1",
-  "source_code_ref": "337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7",
-  "scope": "Exact declarations in routes/web.php; excludes dynamically registered Filament/framework routes.",
+  "source_code_ref": "18b0a5943aec407fa1bc57e557a2aadcdbf395da",
+  "scope": "20 explicitly declared routes/web.php GET/POST routes, including one named public CSP-safe Livewire asset closure; excludes dynamically registered Filament/package routes.",
   "routes": [
     {
       "method": "GET",
@@ -10,7 +10,7 @@
       "action": "show",
       "group": "public-baseline",
       "source": "routes/web.php",
-      "line": 15
+      "line": 16
     },
     {
       "method": "POST",
@@ -19,7 +19,7 @@
       "action": "submit",
       "group": "public-baseline",
       "source": "routes/web.php",
-      "line": 16
+      "line": 17
     },
     {
       "method": "GET",
@@ -28,7 +28,7 @@
       "action": "sitemap",
       "group": "public-baseline",
       "source": "routes/web.php",
-      "line": 19
+      "line": 20
     },
     {
       "method": "GET",
@@ -37,7 +37,19 @@
       "action": "robots",
       "group": "public-baseline",
       "source": "routes/web.php",
-      "line": 20
+      "line": 21
+    },
+    {
+      "method": "GET",
+      "path": "/site-assets/livewire-csp.js",
+      "controller": null,
+      "action": null,
+      "handler_kind": "closure",
+      "handler": "Livewire\\Mechanisms\\FrontendAssets\\FrontendAssets::returnJavaScriptAsFile",
+      "route_name": "public.livewire.csp",
+      "group": "public-asset",
+      "source": "routes/web.php",
+      "line": 26
     },
     {
       "method": "GET",
@@ -46,7 +58,7 @@
       "action": "show",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 26
+      "line": 44
     },
     {
       "method": "GET",
@@ -55,7 +67,7 @@
       "action": "original",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 27
+      "line": 45
     },
     {
       "method": "GET",
@@ -64,7 +76,7 @@
       "action": "variant",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 28
+      "line": 46
     },
     {
       "method": "GET",
@@ -73,7 +85,7 @@
       "action": "show",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 31
+      "line": 49
     },
     {
       "method": "GET",
@@ -82,7 +94,7 @@
       "action": "journalEntry",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 32
+      "line": 50
     },
     {
       "method": "GET",
@@ -91,7 +103,7 @@
       "action": "show",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 35
+      "line": 53
     },
     {
       "method": "GET",
@@ -100,7 +112,7 @@
       "action": "original",
       "group": "admin-media",
       "source": "routes/web.php",
-      "line": 40
+      "line": 58
     },
     {
       "method": "GET",
@@ -109,7 +121,7 @@
       "action": "variant",
       "group": "admin-media",
       "source": "routes/web.php",
-      "line": 42
+      "line": 60
     },
     {
       "method": "GET",
@@ -118,7 +130,7 @@
       "action": "download",
       "group": "admin-media",
       "source": "routes/web.php",
-      "line": 45
+      "line": 63
     },
     {
       "method": "GET",
@@ -127,7 +139,7 @@
       "action": "downloadSelected",
       "group": "admin-media",
       "source": "routes/web.php",
-      "line": 47
+      "line": 65
     },
     {
       "method": "GET",
@@ -136,7 +148,7 @@
       "action": "original",
       "group": "public-media",
       "source": "routes/web.php",
-      "line": 50
+      "line": 68
     },
     {
       "method": "GET",
@@ -145,7 +157,7 @@
       "action": "variant",
       "group": "public-media",
       "source": "routes/web.php",
-      "line": 51
+      "line": 69
     },
     {
       "method": "GET",
@@ -154,7 +166,7 @@
       "action": "show",
       "group": "public-content",
       "source": "routes/web.php",
-      "line": 56
+      "line": 74
     },
     {
       "method": "GET",
@@ -163,7 +175,7 @@
       "action": "journalEntry",
       "group": "public-content",
       "source": "routes/web.php",
-      "line": 57
+      "line": 75
     },
     {
       "method": "GET",
@@ -172,7 +184,7 @@
       "action": "show",
       "group": "public-content",
       "source": "routes/web.php",
-      "line": 60
+      "line": 78
     }
   ]
 }

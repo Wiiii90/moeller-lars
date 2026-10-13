@@ -126,32 +126,14 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand:** `docs` vor diesem Commit `a35f8a1aca279ed6325d5b6d8eaf0dd0870379f5`; `dev` zuletzt
-`919eec2c088ccd7aca804ab5108a6a8378a1028e`.
-Remote-HEADs bei jeder Fortsetzung neu ermitteln.
+**Geprüfter Stand (13.10.2026):** `dev`-Quelle `18b0a5943aec407fa1bc57e557a2aadcdbf395da` per zwei echten Zwei-Eltern-Merges `aab5a6ea6289bd8432b9473dbad599ccb5251646` und `9f08044bbaf4103a3b7b9053630de509a23fd75f` nach `docs` integriert. `docs`-SHA nach dieser Änderung erneut ermitteln.
 
-**Verifiziert und korrigiert:**
-- Die vollständige einfache Markdown-Dateipfad-Prüfung am damaligen `docs`-
-  Baum umfasste **61** Markdown-Dateien und **450** relative Dateiverweise,
-  **keine** fehlenden Datei-/Verzeichnisziele (ohne Spezial-Linksyntax).
-- Zusätzlich die **13** dabei gefundenen Markdown-Abschnittsanker gegen die
-  tatsächlichen Überschriften ihrer Zieldokumente geprüft: **ein**
-  ungültiger Anker in `docs/MIGRATION-INVARIANTS.md` zeigte auf
-  `schema-evolution.md#historische-migrationsvertraege` statt auf
-  `#konkreter-quellenkonflikt-noch-nicht-bereinigt`; korrigiert.
-  Ein nativer Markdown-Linter wurde nicht ausgeführt, externe URLs und
-  komplexe Linksyntax sind nicht Teil dieser Quellenprüfung.
-- Im Migrationsvertrag die bekannte aktuelle
-  Self-Containment-Verletzung von
-  `2026_09_15_000001_add_restorable_publication_versions.php`
-  mit Quellbeleg festgehalten. **Keine** Migration verändert und
-  keinen `migrate:fresh`-Erfolg behauptet.
+**Abgeschlossene Aktualisierung:**
+- Journal Date/Timing statt Date/Schedule: **beide** Journal-Split/Fold-Gruppen wechseln bei 64rem; der bestehende `ADMIN-TABLE-CONTRACT.md` wurde mit den realen Blade-/CSS-Spalten versöhnt und `ADMIN-RESPONSIVE-TABLES.md` verlinkt nur die kanonische Regel. `ui-skills.md` bleibt gekürzt, keine doppelte alte Norm zurückkopieren.
+- [20 HTTP-Eintrittspunkte](docs/architecture/runtime-entrypoints.json) statt 19: neue benannte Public-`/site-assets/livewire-csp.js`-Closure, exakte Controller-/Closure-Quellzeilen nachgezogen.
+- [Public-SPA](docs/architecture/public-spa-lifecycle.md) jetzt korrekt mit einem **einmaligen delegierten `Livewire.navigate()`-Click-Handler**, Public-CSP-Asset mit `finally`-Config-Restore und aktualisiertem Folio-Lebenszyklus.
+- **Folio-Korrektur:** neue DOM-Knoten statt `@persist`; `capturePublicFolio()` beim Navigating, `advancePublicFolio()` nach Navigated, WAAPI **920ms** mit statischem CSS-Fallback. [Public-Implementierungsvertrag](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md) korrigiert. Kein Browsertest/keine JS-Testausführung durch `docs`.
 
-**Unmittelbarer nächster Schritt:** aktuelle `dev`-Änderungen auf Relevanz
-prüfen, dann das vollständige Architektur-/Fachvertragsinventar auf echte
-semantische Dopplungen und unbewiesene Runtime-Behauptungen abgleichen.
-Die 20 Modul-/Importdiagramme sind **Import-**, keine Aufruf-/Laufzeitgraphen.
+**Nächster ausführbarer Schritt:** Die Routen-Manifest-Quellanker automatisch und read-only validierbar machen; danach semantische Altbehauptungen in Architektur- und Fachverträgen weiter prüfen. Neue `dev`-Commits nur nach Pfadvergleich/konfliktbewusstem Merge.
 
-**Offen:** PHP-Generatoren auf komplettem Checkout, echte wegwerfbare
-PostgreSQL-`pg_catalog`-Extraktion, Public-/Admin-Browserreview sowie
-Notifier-Transport/Retries. Kein CI und kein `testing`-Eingriff.
+**Offen:** native Full-Checkout-PHP-Generatorläufe, isolierte reale PostgreSQL-`pg_catalog`-Extraktion, Public-SPA- und Admin-Browserabnahme, Notification-Retry-Transport. Nicht CI oder `testing`.

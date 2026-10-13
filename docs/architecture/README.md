@@ -14,7 +14,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 8. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
 9. [Restore, Revert und Reset](publication-working-operations.md) — Activity UI bis zum Working-Snapshot, mit drei getrennten Ablaufdiagrammen, Guards und No-ops.
 10. [Strukturierte Komponenten](structured-components.md) — die sechs persistierten JSON-Typen, Contact-/List-Kinder, Medienreferenzen und Home-Konfiguration.
-11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 19 explizite HTTP-Routen, Middleware, Filament-Discovery und Public-JS-Initialisierung.
+11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 20 explizite HTTP-Routen (inkl. CSP-Asset-Closure), Middleware, Filament-Discovery und Public-JS-Initialisierung.
 12. [Public-SPA-Dokumentlebenszyklus](public-spa-lifecycle.md) — Livewire 4 Navigation, CSP-Metadaten, JS-Disposer und Matomo pro Besuch.
 13. [Filament-/Livewire-Komposition](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits und 72 literal Actions in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
 14. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
