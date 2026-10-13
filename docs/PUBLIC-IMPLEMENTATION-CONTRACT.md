@@ -163,23 +163,24 @@ an editorial stream: publication date (when set), linked article title, optional
 cover, persisted excerpt (or escaped text-only extract), and an explicit
 **Read more** link. Blog detail is its own readable article with date, title,
 original image/media credits, sanitized body, ordered Gallery and a preview-safe
-return link. The Blog index is a readable journal folio with a compact, uncropped cover,
-full-strength serif headline, date, bounded excerpt and article link; the full
-article can display a larger work. The configured white Content surface
-remains rectangular and uses its shared width. Depth is created by real
-linework: a restrained page-edge contour, an open two-level contour around
-each editorial entry, a separately ruled text heading and a square-edged,
-layered image mount. Image positions alternate by **illustrated entry index**
-and excerpts flow naturally beside and below a float. Text-only posts need
-no empty image column. At narrow content widths the image stacks while the
-font scale remains fixed.
+return link. The Blog index is a reading sequence with fixed serif typography,
+compact original-ratio covers, bounded excerpts, and explicit article links.
+The artist-configured neutral-white Content surface stays rectangular and
+retains its width; a narrow, continuous rule runs through the page margin,
+joining short rule marks at each entry. Headlines have an open ruled headpiece
+rather than a complete card or a decorative band. Covers retain a simple
+multi-line, sharp-cornered mount that never crops or overlays the actual work.
+Illustrated entries alternate image side by illustrated-entry order; prose
+naturally flows alongside and below the image. Text-only entries need no
+empty image placeholder. At a content-fit threshold the composition stacks
+without changing type sizes.
 
-Do not introduce decorative SVG corner stickers, bitten-off/clipped corners,
-rounded UI, chips, generic card walls, blank final dividers, decorative bands,
-page-local width settings or decorative images on top of the artworks.
-The obsolete SVG `public/ornaments/journal-engraving.svg` is removed. Contours
-are drawn with CSS borders and hard-edge layering only, with no timer or
-client-side layout changes.
+Do not introduce detached SVG stickers, clipped/castle corners, payment-receipt
+numbering, repeated boxed entry contours, ornamental footer graphics, rounded
+UI, chips, generic card walls, per-post divider strips, font substitutions,
+or new admin presentation controls. Depth comes from a small number of
+connected structural lines and precise hard-edged mount layers, not an
+accumulation of separately drawn rectangles.
 
 The Blog *index* omits the repeated, inherited General copyright notice,
 including the previously detached closing colophon. Explicit media-specific
@@ -220,12 +221,20 @@ list of expanded media. Its entries preserve the artist's manual
 `position` order, including historical records with a free-form display date;
 temporal state labels (Current / Upcoming) do not reorder that editorial list.
 
-The closed entry presents the authored date, exhibition title and available
-venue/place in a typographic two-column chronology. Optional further
-information is exposed through an independent native `details` disclosure
-with the deliberately plain controls **Open / Close**. Entries with no
-additional material render a non-interactive summary. Multiple exhibitions
-may remain open simultaneously; switching one does not close another.
+The closed entry presents the authored date, exhibition title and
+available venue/place in a typographic chronology. The public list uses the
+same linework vocabulary as Blog without pretending to be the same kind of
+content: one continuous date spine and small registration/connector marks
+give each text-only record a deliberate place; a separate open heading contour
+sets its name apart. No card around each exhibition, repeated full-width
+horizontal separators, invented artwork placeholders or artificial numbering.
+The original manual entry order and fixed typographic scale remain authoritative.
+Optional further information is exposed through a native `details`
+disclosure with the deliberately plain controls **Open / Close**.
+Entries with no additional material remain non-interactive summaries.
+Multiple exhibitions may remain open simultaneously; switching one does not
+close another. Expanded bodies receive one open connecting rule and preserve
+their existing responsive composition, Gallery and map behavior.
 
 Expanded content reuses the canonical cover, rich description, ordered
 Gallery presentations (grid, mosaic or slideshow), vernissage, address and

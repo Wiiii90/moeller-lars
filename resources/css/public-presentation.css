@@ -832,46 +832,36 @@ body {
     --journal-blog-article-title-font-size: 1.88rem;
 }
 
-/* Blog folio: the linework belongs to the document, the text and the mount.
-   No SVG stickers, cut-off paper corners, rounded controls or UI cards. The
-   content shell remains configurable, and works remain uncropped. */
-#content:has(> .blog-page),
-#content:has(> .blog-post) {
-    position: relative;
-}
-
-#content:has(> .blog-page)::before,
-#content:has(> .blog-post)::before {
-    position: absolute;
-    inset: .7rem .65rem;
-    content: "";
-    border-left: 1px solid #d9cec1;
-    border-right: 1px solid #eee7dc;
-    pointer-events: none;
-}
-
+/* PUBLIC JOURNAL: LINEWORK, NOT STICKERS
+   Both Journal surfaces share a drawn registration line and quiet relief.
+   The configured white sheet and all title sizes remain unchanged. Entries
+   remain open compositions, not bordered cards. */
 .blog-page,
-.blog-post {
-    --blog-ink: #493b2f;
-    --blog-outline: #b9a997;
+.blog-post,
+.exhibitions-page {
+    --journal-rule: #c5b5a0;
+    --journal-rule-light: #e6ded3;
+    --journal-rule-ink: #917b61;
     position: relative;
     min-width: 0;
 }
 
+/* BLOG — a reading sequence with room for the works.
+   A single margin rail connects entries. Each text head and art mount has
+   its own short, deliberate contour; the entire entry is never boxed. */
 .blog-page {
-    padding: 1.75rem 0 1.6rem 1.3rem;
+    padding: 1.45rem 0 1.4rem 1.2rem;
     container-type: inline-size;
 }
 
-/* The inner folio spine is a continuous ruled contour rather than an
-   assortment of detached corner ornaments. */
 .blog-page::before {
     position: absolute;
-    top: 1.35rem;
-    bottom: 1.35rem;
-    left: .55rem;
+    top: 1.55rem;
+    bottom: 2rem;
+    left: .35rem;
     content: "";
-    border-left: 1px solid #c9b9a5;
+    border-left: 1px solid var(--journal-rule);
+    box-shadow: 2px 0 0 #f1ede7;
     pointer-events: none;
 }
 
@@ -879,98 +869,72 @@ body {
     position: relative;
     display: flow-root;
     min-width: 0;
-    margin: 0 0 1.7rem;
-    padding: 1.65rem 1.15rem 1.7rem 1.15rem;
-    border-top: 1px solid #cbbfb0;
-    border-left: 1px solid #cbbfb0;
-}
-
-/* Open opposing corners carry a second, quieter level of linework. They do
-   not form a closed card around the post. */
-.blog-entry::before {
-    position: absolute;
-    z-index: 0;
-    top: .48rem;
-    right: .35rem;
-    bottom: .38rem;
-    left: .45rem;
-    content: "";
-    border-right: 1px solid #d5cabd;
-    border-bottom: 1px solid #e1d7cb;
-    pointer-events: none;
-}
-
-.blog-entry::after {
-    position: absolute;
-    top: -.24rem;
-    left: 1.1rem;
-    width: 3.4rem;
-    height: .45rem;
-    content: "";
-    border-left: 1px solid #9c8871;
-    border-right: 1px solid #9c8871;
-    pointer-events: none;
+    margin: 0 0 2.2rem;
+    padding: .7rem .15rem .2rem .9rem;
 }
 
 .blog-entry:last-of-type {
     margin-bottom: 0;
 }
 
-.blog-entry__number {
+.blog-entry::before {
     position: absolute;
-    top: 1.55rem;
-    left: -1.65rem;
-    color: #887763;
-    font-family: var(--public-index-typeface);
-    font-size: .75rem;
-    line-height: 1.35;
-    font-variant-numeric: lining-nums tabular-nums;
-    letter-spacing: 0;
-}
-
-/* A real, square-edged image mount with successive hard contours, not a
-   clipped rectangle or simulated ornamental sticker. */
-.blog-entry__mount {
-    position: relative;
-    float: left;
-    width: min(43%, 11.75rem);
-    min-width: 0;
-    margin: .3rem 1.5rem .85rem .2rem;
-    padding: .45rem;
-    border: 1px solid var(--blog-outline);
-    background: #ede8df;
-    box-shadow:
-        3px 3px 0 #d2c6b8,
-        5px 5px 0 #fff,
-        6px 6px 0 #b8a995;
-}
-
-.blog-entry__mount::before,
-.blog-entry__mount::after {
-    position: absolute;
-    width: 1.3rem;
-    height: 1.3rem;
+    top: 1.1rem;
+    left: -1.05rem;
+    width: 1.55rem;
     content: "";
+    border-top: 1px solid var(--journal-rule-ink);
     pointer-events: none;
 }
 
-.blog-entry__mount::before {
-    top: -.4rem;
-    left: -.4rem;
-    border-top: 1px solid #aa9681;
-    border-left: 1px solid #aa9681;
+.blog-entry::after {
+    position: absolute;
+    top: .94rem;
+    left: -1.22rem;
+    width: .32rem;
+    height: .32rem;
+    content: "";
+    border: 1px solid var(--journal-rule-ink);
+    background: white;
+    pointer-events: none;
+}
+
+/* One rectilinear, multi-line frame belongs to the work itself, not the
+   article. Nothing overlaps or crops the original image. */
+.blog-entry__mount {
+    position: relative;
+    float: left;
+    width: min(43%, 11.4rem);
+    min-width: 0;
+    margin: .1rem 1.45rem .65rem 0;
+    padding: .4rem;
+    border: 1px solid #b7a58e;
+    background: #f1ece4;
+    box-shadow: 3px 3px 0 #d5c8b8, 5px 5px 0 #fff, 6px 6px 0 #c6b7a5;
 }
 
 .blog-entry__mount::after {
-    right: -.4rem;
-    bottom: -.4rem;
-    border-right: 1px solid #aa9681;
-    border-bottom: 1px solid #aa9681;
+    position: absolute;
+    top: -.35rem;
+    right: -.35rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    content: "";
+    border-top: 1px solid var(--journal-rule-ink);
+    border-right: 1px solid var(--journal-rule-ink);
+    pointer-events: none;
 }
 
 .blog-entry--reverse .blog-entry__mount {
     float: right;
-    margin: .3rem .2rem .85rem 1.5rem;
+    margin: .1rem .3rem .65rem 1.45rem;
+}
+
+.blog-entry--reverse .blog-entry__mount::after {
+    right: auto;
+    left: -.35rem;
+    border-right: 0;
+    border-left: 1px solid var(--journal-rule-ink);
 }
 
 .blog-entry__cover,
@@ -998,16 +962,25 @@ body {
     overflow-wrap: anywhere;
 }
 
-/* Typography stays fixed. The header is a genuine, separately contoured
-   reading field beside the float, while longer prose continues below it. */
+/* The heading has its own drawn headpiece: no filled band or card.
+   Prose begins alongside the floated artwork and continues beneath it. */
 .blog-entry__header {
-    display: flow-root;
     position: relative;
     min-width: 0;
     margin: 0 0 .8rem;
-    padding: .35rem .6rem .3rem .75rem;
-    border-top: 1px solid #b5a18b;
-    border-left: 2px solid #8d7962;
+    padding: .15rem 0 .78rem .6rem;
+    border-left: 2px solid var(--journal-rule-ink);
+}
+
+.blog-entry__header::after {
+    position: absolute;
+    bottom: 0;
+    left: .6rem;
+    width: min(4.5rem, 60%);
+    content: "";
+    border-bottom: 1px solid var(--journal-rule);
+    box-shadow: 0 2px 0 var(--journal-rule-light);
+    pointer-events: none;
 }
 
 .blog-entry__date,
@@ -1063,7 +1036,7 @@ body {
 }
 
 .blog-entry__excerpt {
-    margin: 0 0 .7rem;
+    margin: 0 0 .65rem;
 }
 
 .blog-entry__read-more,
@@ -1071,11 +1044,11 @@ body {
     display: inline-flex;
     align-items: center;
     gap: .4rem;
-    color: var(--blog-ink);
+    color: #493b2f;
     font-family: var(--public-index-typeface);
     font-size: .88rem;
     text-decoration: none;
-    border-bottom: 1px solid #96836d;
+    border-bottom: 1px solid var(--journal-rule-ink);
     padding-bottom: .15rem;
 }
 
@@ -1087,7 +1060,7 @@ body {
 
 .blog-entry__read-more:focus-visible,
 .blog-entry__cover:focus-visible {
-    outline: 1px dotted var(--blog-ink);
+    outline: 1px dotted currentColor;
     outline-offset: 4px;
 }
 
@@ -1096,15 +1069,16 @@ body {
     color: #71685f;
 }
 
+/* Full articles carry the same heading contour without index decoration. */
 .blog-post {
-    padding: 2.3rem .7rem 1.5rem;
+    padding: 1.9rem .3rem 1.5rem;
 }
 
 .blog-post__header {
-    margin: 0 0 1.3rem;
-    padding: .45rem 0 .55rem 1rem;
-    border-top: 1px solid #cbbfb0;
-    border-left: 2px solid #9e8b74;
+    margin: 0 0 1.35rem;
+    padding: .35rem 0 .85rem .9rem;
+    border-left: 2px solid var(--journal-rule-ink);
+    border-bottom: 1px solid var(--journal-rule-light);
 }
 
 .blog-post__cover-media {
@@ -1142,60 +1116,94 @@ body {
     max-width: 28rem;
 }
 
-/* Change the arrangement, never the type scale, when the selected Content
-   width cannot hold a legible image + text composition. */
+/* Change columns only; the fixed typographic scale is never responsive. */
 @container (max-width: 23rem) {
-    .blog-entry {
-        padding: 1.35rem .6rem 1.6rem .7rem;
+    .blog-page {
+        padding-left: .8rem;
     }
 
-    .blog-entry__number {
-        left: -1.45rem;
-        top: 1.25rem;
+    .blog-entry {
+        padding-left: .65rem;
     }
 
     .blog-entry__mount,
     .blog-entry--reverse .blog-entry__mount {
         float: none;
         width: min(100%, 12.75rem);
-        margin: .5rem 0 1.3rem .35rem;
+        margin: .3rem 0 1.25rem;
     }
 
     .blog-entry__header {
-        margin-top: .4rem;
+        margin-top: .35rem;
     }
 }
 
-/* Exhibition index: the list and its opened folios share the configured
-   content width. Dates carry the chronology; titles and authored media lead. */
+/* EXHIBITIONS — a drawn chronology, designed even when there is no media.
+   Dates sit beside one uninterrupted fine spine; small registration marks
+   connect their rows to the title measure. No enclosing entry cards and no
+   repeated full-width separator rules. */
 .exhibitions-page {
     width: 100%;
     min-width: 0;
+    padding: 1rem .3rem 1.5rem .5rem;
     container-type: inline-size;
     --exhibition-date-track: 7.25rem;
     --exhibition-column-gap: clamp(1.1rem, 2.8vw, 1.65rem);
     color: var(--public-ink);
 }
 
-.exhibition-entry {
-    min-width: 0;
-    margin: 0;
-    border-top: var(--public-divider-width) solid var(--public-divider);
+.exhibitions-page::before {
+    position: absolute;
+    top: 1.9rem;
+    bottom: 2.15rem;
+    left: calc(.5rem + var(--exhibition-date-track));
+    content: "";
+    border-left: 1px solid var(--journal-rule);
+    box-shadow: 2px 0 0 #f0ebe4;
+    pointer-events: none;
 }
 
-.exhibition-entry:first-child {
-    border-top: 0;
+.exhibition-entry {
+    position: relative;
+    min-width: 0;
+    margin: 0;
+    border: 0;
 }
 
 .exhibition-entry__summary {
+    position: relative;
     display: grid;
     min-width: 0;
     grid-template-columns: var(--exhibition-date-track) minmax(0, 1fr);
     gap: var(--exhibition-column-gap);
     align-items: start;
-    padding: 1.55rem 0 1.65rem;
+    padding: 1.48rem 0 1.6rem;
     list-style: none;
     cursor: pointer;
+}
+
+.exhibition-entry__summary::before {
+    position: absolute;
+    top: 1.78rem;
+    left: calc(var(--exhibition-date-track) - .23rem);
+    width: .45rem;
+    height: .45rem;
+    box-sizing: border-box;
+    content: "";
+    border: 1px solid var(--journal-rule-ink);
+    background: #fff;
+    box-shadow: 2px 2px 0 var(--journal-rule-light);
+    pointer-events: none;
+}
+
+.exhibition-entry__summary::after {
+    position: absolute;
+    top: calc(1.78rem + .22rem);
+    left: calc(var(--exhibition-date-track) + .29rem);
+    width: calc(var(--exhibition-column-gap) - .45rem);
+    content: "";
+    border-top: 1px solid var(--journal-rule);
+    pointer-events: none;
 }
 
 .exhibition-entry__summary::-webkit-details-marker {
@@ -1237,8 +1245,23 @@ body {
 }
 
 .exhibition-entry__heading {
+    position: relative;
     display: block;
     min-width: 0;
+    padding: .1rem 0 .1rem .65rem;
+    border-left: 1px solid #c9b9a6;
+}
+
+/* One open headpiece gives the title its own contour without enclosing the
+   whole exhibition. The current/upcoming state remains purely semantic. */
+.exhibition-entry__heading::before {
+    position: absolute;
+    top: -.48rem;
+    left: .65rem;
+    width: 3.25rem;
+    content: "";
+    border-top: 1px solid var(--journal-rule-light);
+    pointer-events: none;
 }
 
 .exhibition-entry__title {
@@ -1309,8 +1332,24 @@ body {
 }
 
 .exhibition-entry__body {
+    position: relative;
     min-width: 0;
-    padding: .35rem 0 2.2rem;
+    margin: -.15rem 0 1.05rem .5rem;
+    padding: .9rem .15rem 1.6rem 1rem;
+    border-left: 1px solid var(--journal-rule);
+}
+
+/* Open folio: the corner is part of the body structure, never a decorative
+   sticker and never placed on an artwork. */
+.exhibition-entry__body::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3.5rem;
+    content: "";
+    border-top: 1px solid var(--journal-rule);
+    box-shadow: 0 2px 0 var(--journal-rule-light);
+    pointer-events: none;
 }
 
 /* A feature has no empty companion column: its composition follows the
@@ -1510,10 +1549,29 @@ body {
 }
 
 @container (max-width: 26rem) {
+    .exhibitions-page::before {
+        left: .7rem;
+    }
+
     .exhibition-entry__summary {
         grid-template-columns: minmax(0, 1fr);
         gap: .52rem;
-        padding: 1.2rem 0 1.35rem;
+        padding: 1.25rem 0 1.4rem 1rem;
+    }
+
+    .exhibition-entry__summary::before {
+        top: 1.55rem;
+        left: -.02rem;
+    }
+
+    .exhibition-entry__summary::after {
+        top: 1.77rem;
+        left: .45rem;
+        width: .4rem;
+    }
+
+    .exhibition-entry__heading {
+        margin-left: 0;
     }
 
     .exhibition-entry__byline {
