@@ -24,7 +24,7 @@ final class JournalMediaRenderer
             ], true);
     }
 
-    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true): HtmlString
+    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true, bool $includeCopyrightNotice = true): HtmlString
     {
         $usage->loadMissing('mediaAsset.variants');
         $asset = $usage->mediaAsset;
@@ -37,13 +37,13 @@ final class JournalMediaRenderer
         $width = (int) ($variant->getAttribute('width') ?? 0);
         $height = (int) ($variant->getAttribute('height') ?? 0);
         $credit = trim((string) ($asset->getAttribute('credit') ?? ''));
-        // Journal indexes suppress only inherited General notices. Explicit
-        // per-asset overrides and authored credits still accompany each image;
-        // full articles retain their existing copyright display.
-        $inherit = $this->inheritsDefaultNotice($usage);
-        $copyright = $inherit && ! $includeInheritedCopyright
-            ? ''
-            : trim((string) ($asset->effectiveCopyrightNotice() ?? ''));
+        // Blog presentation can hide all visual copyright notices while
+        // preserving separately authored credits and the stored copyright data.
+        // Other Journal surfaces retain their own inheritance/override policy.
+        $copyright = '';
+        if ($includeCopyrightNotice && ($includeInheritedCopyright || ! $this->inheritsDefaultNotice($usage))) {
+            $copyright = trim((string) ($asset->effectiveCopyrightNotice() ?? ''));
+        }
         $caption = trim(implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== '')));
 
         $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';

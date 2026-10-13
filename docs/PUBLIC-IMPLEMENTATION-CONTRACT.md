@@ -192,11 +192,14 @@ fake old-paper textures, decorative bars, duplicated underlines or extra
 Admin controls. Neither Journal view renders a timeline. The presentation is
 reversible without changing Journal storage, publication or media contracts.
 
-The Blog index and full Blog article suppress repeated **inherited**
-General copyright captions on structured Cover/Gallery images. Explicit
-media-specific copyright overrides and authored credits stay attached to
-their original figures via `JournalMediaRenderer`. The stored General setting,
-the media-specific copyright modes and Publication history are not deleted.
+The Blog index and full Blog article temporarily suppress all visual
+copyright **notices** on structured Cover/Gallery images (both inherited
+General notices and explicit notice overrides). Separately authored media
+credits remain attached to their figures via `JournalMediaRenderer`. This
+only changes display on Blog; persisted copyright modes, authored overrides,
+the General setting and Publication history remain intact. Exhibition index
+continues to suppress only inherited General notices, retaining explicit
+copyright overrides and credits beside its works.
 The previously removed Exhibition index footer stays absent; Exhibition gallery
 presentation is otherwise unchanged. Rich Text keeps its existing authored
 content and embedded media rules. The long-term site-wide copyright/footer

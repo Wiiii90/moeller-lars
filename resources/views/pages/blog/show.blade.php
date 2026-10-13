@@ -21,7 +21,7 @@
         </header>
         @if ($cover instanceof \App\Models\JournalEntryMedia)
             <div class="blog-post__cover-mount">
-                {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover blog-post__cover-media', true, includeInheritedCopyright: false) !!}
+                {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover blog-post__cover-media', true, includeInheritedCopyright: false, includeCopyrightNotice: false) !!}
             </div>
         @endif
         @if (trim((string) ($post->body ?? '')) !== '')
@@ -29,7 +29,7 @@
         @endif
         @if ($gallery->isNotEmpty())
             <section class="blog-post__gallery" aria-label="Post images">
-                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Post images" :journal-media="$journalMedia" />
+                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Post images" :journal-media="$journalMedia" :include-copyright-notice="false" />
             </section>
         @endif
         <footer class="blog-post__footer">
