@@ -49,6 +49,8 @@ Er inventarisiert via PHP-Tokenizer alle deklarierten Typen in `app/**/*.php` ei
 
 ### Statisch belegte Beziehungen
 
+Die Syntaxprüfung des Relationship-Generators besitzt außerdem `--self-test` (ohne `php-symbols.json` oder realen Checkout). Fünf isolierte Fälle trennen globale `app()/resolve()`-Helper einschließlich vollständig qualifizierter `\\app()/\\resolve()`-Aufrufe von Methodenaufrufen (`$obj->resolve()`), statischen Calls (`Container::resolve()`), Funktionsdeklarationen und anderen Namespaces. Nur die echten globalen Helper gelten als **statische Service-Locator-Kanten**. Ein auf Quellcodesyntax gestützter Helper ist noch kein nachgewiesener Container-Laufzeitaufruf. Der lokale PHP-8.4-Fixture-Test des Erkennungsprädikats bestand; der vollständige native Aufruf des Remote-Skripts ist unabhängig offen.
+
 Zusätzlich erfasst [`scripts/generate-architecture-relations.php`](../../scripts/generate-architecture-relations.php) nur **explizite** PHP-Strukturbeziehungen: `extends`, `implements`, Trait-Nutzung, Konstruktor-Typen, direkt benannte Eloquent-Relationen und `app(Foo::class)`/`resolve(Foo::class)`. Die resultierenden Kanten haben einen Dateipfad und eine Zeile. Externe Frameworkklassen und nicht auflösbare dynamische Beziehungen sind keine implizit bestätigten Runtime-Kanten.
 
 ```sh

@@ -8,16 +8,42 @@ declare(strict_types=1);
  * First run: php scripts/generate-architecture-inventory.php --write
  * Then:      php scripts/generate-architecture-relations.php --write
  * Verify:    php scripts/generate-architecture-relations.php --check
+ * Fixtures:  php scripts/generate-architecture-relations.php --self-test (no inventory required)
  *
  * Edges are syntactic evidence, not a fully inferred runtime call graph.
  */
 
 $root = dirname(__DIR__);
+// Read-only isolated syntax probes; do not need the app inventory or Laravel.
+if ($mode === '--self-test') {
+    $cases = [
+        ['global helpers', '<?php app(A::class); resolve(B::class); \app(C::class); \resolve(D::class);', 4],
+        ['method and static calls', '<?php $x->app(A::class); $x?->resolve(B::class); C::resolve(D::class); C::app(E::class);', 0],
+        ['declarations', '<?php function app($x){} function /* comment */ & resolve($y){}', 0],
+        ['namespaced helpers', '<?php Foo\app(A::class); Other\resolve(B::class);', 0],
+        ['mixed calls', '<?php app(A::class); $obj->resolve(B::class); resolve(C::class);', 2],
+    ];
+    foreach ($cases as [$name, $sourceCode, $expected]) {
+        $tokens = graphTokens($sourceCode);
+        $found = 0;
+        foreach (array_keys($tokens) as $index) {
+            if (graphIsServiceLocatorCall($tokens, $index)) {
+                $found++;
+            }
+        }
+        if ($found !== $expected) {
+            throw new RuntimeException("Service locator fixture {$name}: expected {$expected}, found {$found}");
+        }
+        echo "PASS {$name} ({$found})\n";
+    }
+    exit(0);
+}
+
 $source = $root.'/docs/architecture/generated/php-symbols.json';
 $out = $root.'/docs/architecture/generated';
 $mode = $argv[1] ?? '--summary';
-if (count($argv) > 2 || ! in_array($mode, ['--summary', '--write', '--check'], true)) {
-    fwrite(STDERR, "Usage: php scripts/generate-architecture-relations.php [--write|--check]\n");
+if (count($argv) > 2 || ! in_array($mode, ['--summary', '--write', '--check', '--self-test'], true)) {
+    fwrite(STDERR, "Usage: php scripts/generate-architecture-relations.php [--write|--check|--self-test]\n");
     exit(2);
 }
 if (! is_file($source)) {
@@ -53,6 +79,44 @@ function graphNext(array $tokens, int $from): ?int
         }
     }
     return null;
+}
+
+/** @param list<array{id:int|string,text:string,line:int}> $tokens */
+function graphPrevious(array $tokens, int $from): ?int
+{
+    for ($i = $from; $i >= 0; $i--) {
+        if (! in_array($tokens[$i]['id'], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+            return $i;
+        }
+    }
+    return null;
+}
+
+/** @param list<array{id:int|string,text:string,line:int}> $tokens */
+function graphIsServiceLocatorCall(array $tokens, int $index): bool
+{
+    $token = $tokens[$index];
+    if (! in_array($token['id'], [T_STRING, T_NAME_FULLY_QUALIFIED], true)) {
+        return false;
+    }
+    $helper = ltrim($token['text'], '\\');
+    if (! in_array($helper, ['app', 'resolve'], true)) {
+        return false;
+    }
+    $open = graphNext($tokens, $index + 1);
+    if ($open === null || $tokens[$open]['text'] !== '(') {
+        return false;
+    }
+    $previous = graphPrevious($tokens, $index - 1);
+    if ($previous !== null && $tokens[$previous]['text'] === '&') {
+        $previous = graphPrevious($tokens, $previous - 1);
+    }
+    if ($previous !== null && in_array($tokens[$previous]['id'], [
+        T_FUNCTION, T_FN, T_NEW, T_DOUBLE_COLON, T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR,
+    ], true)) {
+        return false; // Declaration or method/static call, not a global helper.
+    }
+    return true;
 }
 
 /** @param list<array{id:int|string,text:string,line:int}> $tokens */
@@ -212,12 +276,10 @@ foreach ($inventory['php_files'] as $record) {
         }
 
         // Explicit service resolution only; unrelated function calls are not inferred.
-        if ($t['id'] === T_STRING && in_array($t['text'], ['app', 'resolve'], true)) {
+        if (graphIsServiceLocatorCall($tokens, $i)) {
             $open = graphNext($tokens, $i + 1);
-            $prev = $i ? $tokens[$i - 1]['id'] : null;
-            if ($open !== null && $tokens[$open]['text'] === '(' && $prev !== T_FUNCTION) {
-                $emit(graphLiteral($tokens, $open + 1, $ns, $aliases, $type), 'service_locator', $t['line'], $t['text']);
-            }
+            $emit(graphLiteral($tokens, $open + 1, $ns, $aliases, $type),
+                'service_locator', $t['line'], $t['text']);
         }
 
         if ($t['text'] === '{') $depth++;
@@ -242,7 +304,7 @@ ksort($modules);
 foreach ($modules as &$targets) ksort($targets);
 unset($targets);
 $payload = ['format' => 'php-relationships-v1',
-    'limitations' => 'Static named-type evidence only. No dynamic calls, Laravel container bindings or runtime verification. Files with zero/multiple declarations are skipped.',
+    'limitations' => 'Static named-type evidence only; only unqualified/global app()/resolve() helper calls count as service locators, not method/static calls. No dynamic calls, Laravel container bindings or runtime verification. Files with zero/multiple declarations are skipped.',
     'source_inventory_format' => $inventory['format'],
     'counts' => ['relations' => count($edges), 'skipped_files' => count($skipped)],
     'relationships' => $edges, 'skipped_files' => $skipped, 'module_references' => $modules];
