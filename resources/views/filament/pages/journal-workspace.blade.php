@@ -153,14 +153,12 @@
                         @if ($isBlog)
                             <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-unit journal-col--identity">
-                            <col class="admin-table__col-half-unit journal-col--status admin-table__yield--minimal">
-                            <col class="admin-table__col-one-unit journal-col--publication admin-table__yield--compact">
+                            <col class="journal-col--publication admin-table__yield--minimal">
                             <col class="journal-table__actions--blog">
                         @else
                             <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-half-units journal-col--identity">
-                            <col class="admin-table__col-half-unit journal-col--timing admin-table__yield--minimal">
-                            <col class="admin-table__col-one-half-units journal-col--schedule admin-table__yield--compact">
+                            <col class="journal-col--schedule admin-table__yield--minimal">
                             <col class="admin-table__col-two-units-minus-selection journal-table__actions--exhibitions">
                         @endif
                         <col class="admin-table__selection-col">
@@ -171,11 +169,9 @@
                             <th scope="col" class="journal-visual journal-col--visual">Image</th>
                             <th scope="col" class="journal-col--identity">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
                             @if ($isBlog)
-                                <th scope="col" class="journal-col--status admin-table__yield--minimal">Status</th>
-                                <th scope="col" class="journal-col--publication admin-table__yield--compact">Publication</th>
+                                <th scope="col" class="journal-col--publication admin-table__yield--minimal">Status</th>
                             @else
-                                <th scope="col" class="journal-col--timing admin-table__yield--minimal">Timing</th>
-                                <th scope="col" class="journal-col--schedule admin-table__yield--compact">Schedule</th>
+                                <th scope="col" class="journal-col--schedule admin-table__yield--minimal">Dates</th>
                             @endif
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
@@ -222,7 +218,7 @@
                                 <td class="admin-table__identity journal-col--identity">
                                     <strong>{{ $entry['title'] }}</strong>
                                     @if ($isBlog)
-                                        <small class="admin-responsive-meta">{{ $entry['publication'] }}</small>
+                                        @if ($entry['publication'])<small class="admin-responsive-meta">{{ $entry['publication'] }}</small>@endif
                                     @elseif ($entry['date_text'] !== '')
                                         <small class="admin-responsive-meta">{{ $entry['date_text'] }}</small>
                                     @endif
@@ -233,13 +229,15 @@
                                     @endif
                                 </td>
                                 @if ($isBlog)
-                                    <td class="journal-col--status admin-table__yield--minimal"><span class="journal-state is-{{ $entry['state'] }}">{{ ucfirst($entry['state']) }}</span></td>
-                                    <td class="journal-publication journal-col--publication admin-table__yield--compact">{{ $entry['publication'] }}</td>
+                                    <td class="journal-publication journal-col--publication admin-table__yield--minimal">
+                                        <span class="journal-state is-{{ $entry['state'] }}">{{ ucfirst($entry['state']) }}</span>
+                                        @if ($entry['publication'])<span class="journal-publication__date">{{ $entry['publication'] }}</span>@endif
+                                    </td>
                                 @else
-                                    <td class="journal-col--timing admin-table__yield--minimal"><span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span></td>
-                                    <td class="journal-schedule journal-col--schedule admin-table__yield--compact">
+                                    <td class="journal-schedule journal-col--schedule admin-table__yield--minimal">
+                                        @if ($entry['date_text'] !== '')<span class="journal-schedule__dates">{{ $entry['date_text'] }}</span>@endif
                                         @if ($entry['vernissage'])<em>Vernissage: {{ $entry['vernissage'] }}</em>@endif
-                                        @if ($entry['date_text'] !== '')<span>{{ $entry['date_text'] }}</span>@endif
+                                        <span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span>
                                     </td>
                                 @endif
                                 <td class="admin-table__actions">

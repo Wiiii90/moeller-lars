@@ -28,12 +28,8 @@
     width: auto;
 }
 
-.journal-table--blog col.journal-col--status {
-    width: 5rem;
-}
-
 .journal-table--blog col.journal-col--publication {
-    width: 6rem;
+    width: 12.5rem;
 }
 
 .journal-table col.journal-table__actions--blog {
@@ -44,12 +40,8 @@
     width: auto;
 }
 
-.journal-table--exhibitions col.journal-col--timing {
-    width: 5.5rem;
-}
-
 .journal-table--exhibitions col.journal-col--schedule {
-    width: 8rem;
+    width: 15.5rem;
 }
 
 .journal-table col.journal-table__actions--exhibitions {
@@ -84,25 +76,32 @@
 
 .journal-publication,
 .journal-schedule {
-    white-space: nowrap;
+    vertical-align: middle;
 }
 
-.journal-schedule em,
-.journal-schedule span {
+.journal-publication__date,
+.journal-schedule > em,
+.journal-schedule > .journal-schedule__dates {
     display: block;
-    overflow: hidden;
-    color: var(--admin-muted);
+    white-space: normal;
+    overflow-wrap: anywhere;
     font-size: .72rem;
     line-height: 1.4;
-    text-overflow: ellipsis;
 }
 
-.journal-schedule em {
-    font-weight: 400;
+.journal-publication__date,
+.journal-schedule > em {
+    color: var(--admin-muted);
 }
 
-.journal-schedule em + span {
+.journal-publication__date,
+.journal-schedule > em,
+.journal-schedule > .journal-timing {
     margin-top: .17rem;
+}
+
+.journal-schedule > em {
+    font-weight: 400;
 }
 
 .journal-state,

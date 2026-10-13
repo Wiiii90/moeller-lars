@@ -134,7 +134,9 @@ final class JournalEntryEditorSchema
         return AdminForm::section('Map')->schema([
             Toggle::make('map_enabled')
                 ->label('Map enabled')
-                ->live()
+                // The central Edit change event is the only persistence request.
+                // A second eager Livewire request can race with the first
+                // enable immediately after a newly entered country is saved.
                 // Enabled maps remain switchable off, even if older records
                 // lack a complete address. New maps need an identifiable place.
                 ->disabled(fn (Get $get): bool => ! (bool) $get('map_enabled')
