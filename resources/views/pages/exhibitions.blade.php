@@ -81,8 +81,8 @@
                         <div class="exhibition-entry__body">
                             {{-- Cover, practical information and long-form prose each have a
                                  stable editorial place. No empty partner column is rendered. --}}
-                            @if ($hasCover || $hasFacts || $hasActions)
-                                <div class="exhibition-entry__feature @if ($hasCover && ($hasFacts || $hasActions)) exhibition-entry__feature--paired @elseif ($hasCover) exhibition-entry__feature--solo @else exhibition-entry__feature--text @endif">
+                            @if ($hasCover || $hasFacts || $hasActions || $hasDescription)
+                                <div class="exhibition-entry__feature @if ($hasCover && $hasDescription) exhibition-entry__feature--flow @elseif ($hasCover && ($hasFacts || $hasActions)) exhibition-entry__feature--paired @elseif ($hasCover) exhibition-entry__feature--solo @else exhibition-entry__feature--text @endif">
                                     @if ($hasCover)
                                         {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false) !!}
                                     @endif
@@ -124,10 +124,10 @@
                                             @endif
                                         </div>
                                     @endif
+                                    @if ($hasDescription)
+                                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $richText->render((string) $exhibition->description) !!}</div>
+                                    @endif
                                 </div>
-                            @endif
-                            @if ($hasDescription)
-                                <div class="rich-text journal-entry-content exhibition-entry__description @unless ($hasCover) exhibition-entry__description--text @endunless">{!! $richText->render((string) $exhibition->description) !!}</div>
                             @endif
 
                             @if ($gallery->isNotEmpty())

@@ -981,8 +981,7 @@ body {
     justify-items: center;
 }
 
-.exhibition-entry__feature--text,
-.exhibition-entry__description--text {
+.exhibition-entry__feature--text {
     margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
 }
 
@@ -1060,12 +1059,20 @@ body {
     line-height: 1.7;
 }
 
-.exhibition-entry__description--text {
+.exhibition-entry__feature--text .exhibition-entry__description {
     max-width: 33rem;
 }
 
-.exhibition-entry__feature + .exhibition-entry__description {
-    margin-top: 1.3rem;
+/* A readable prose measure, not a forced second column. At sufficient
+   content width an image leads the text and prose naturally continues below
+   it; smaller folios stack with no cramped parallel text. */
+.exhibition-entry__feature--flow .exhibition-entry__description {
+    max-width: none;
+    margin-top: 1rem;
+}
+
+.exhibition-entry__feature--text .exhibition-entry__description {
+    margin-top: 1rem;
 }
 
 .exhibitions-page__copyright {
@@ -1137,6 +1144,24 @@ body {
         grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
         gap: 1.25rem;
     }
+
+    .exhibition-entry__feature--flow {
+        display: flow-root;
+    }
+
+    .exhibition-entry__feature--flow .exhibition-entry__cover {
+        float: left;
+        width: min(41%, 16rem);
+        margin: 0 1.1rem .75rem 0;
+    }
+
+    .exhibition-entry__feature--flow .exhibition-entry__info {
+        margin-bottom: 1rem;
+    }
+
+    .exhibition-entry__feature--flow .exhibition-entry__description {
+        margin-top: 0;
+    }
 }
 
 @container (max-width: 26rem) {
@@ -1158,8 +1183,7 @@ body {
         padding-bottom: 1.75rem;
     }
 
-    .exhibition-entry__feature--text,
-    .exhibition-entry__description--text {
+    .exhibition-entry__feature--text {
         margin-inline-start: 0;
     }
 }

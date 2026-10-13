@@ -178,11 +178,14 @@ content rather than alternate images by row parity:
   width supports it. At narrower widths those items stack naturally.
 - An unaccompanied cover stands alone without a fabricated empty partner
   column. Text-only entries align their information with the title column.
-- Long-form editorial text always follows the short image/visit composition
-  in a full reading measure rather than wrapping into an unreadably narrow
-  float. The optional Map action stays with visit information and opens the
-  established on-demand dialog; only external destinations carry the
-  external-link icon.
+- When a cover and long-form text coexist, prose starts beside the image
+  on a sufficiently wide content surface and continues underneath it. The
+  float is limited to a readable 41%-wide image rather than forcing text
+  into a very narrow parallel column. At narrow content widths the complete
+  feature stacks. In other cases description text retains a full-width
+  reading measure. The optional Map action stays with visit information
+  and opens the established on-demand dialog; only external destinations
+  carry the external-link icon.
 - Mosaic uses the stored source width/height to greedily distribute media
   into two balanced vertical lanes **before rendering**. Images and captions
   are never cropped, cloned, or relocated after paint. Within each lane,
