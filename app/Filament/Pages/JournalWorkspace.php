@@ -11,7 +11,6 @@ use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\PublicMedia;
-use App\Filament\Support\AdminForm;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\JournalEntryEditorSchema;
