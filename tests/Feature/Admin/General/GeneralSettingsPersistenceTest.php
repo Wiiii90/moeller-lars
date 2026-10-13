@@ -2,6 +2,7 @@
 
 use App\Domain\Admin\AdminSettingsService;
 use App\Filament\Pages\General;
+use App\Models\AdminNotification;
 use App\Models\PublicContentSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -18,26 +19,39 @@ require_once __DIR__.'/GeneralFixtures.php';
 it('persists changed text once and skips normalized no-op commits', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['public_email' => 'before@example.invalid']);
     $auditBefore = generalSettingsAuditCount();
+    $notificationsBefore = AdminNotification::query()->count();
 
     $component = Livewire::test(General::class)
-        ->set('data.public_email', 'after@example.invalid');
+        ->set('data.public_email', 'after@example.invalid')
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return $event === 'admin-header-notification'
+                && ($params['notification']['status'] ?? null) === 'success';
+        });
 
     expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('after@example.invalid')
-        ->and(generalSettingsAuditCount())->toBe($auditBefore + 1);
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 
     $component->call('persistChangedField', 'public_email')
         ->call('persistChangedField', 'public_email');
 
-    expect(generalSettingsAuditCount())->toBe($auditBefore + 1);
+    expect(generalSettingsAuditCount())->toBe($auditBefore + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    Livewire::test(General::class)
+        ->call('persistChangedField', 'public_email')
+        ->assertNotDispatched('admin-header-notification');
 
     $component->set('data.background_color', 'aabbcc')
         ->call('persistChangedField', 'background_color');
     $auditAfterColor = generalSettingsAuditCount();
+    $notificationsAfterColor = AdminNotification::query()->count();
     $component->set('data.background_color', '#AABBCC')
         ->call('persistChangedField', 'background_color');
 
     expect(PublicContentSetting::general()->getAttribute('background_color'))->toBe('#AABBCC')
-        ->and(generalSettingsAuditCount())->toBe($auditAfterColor);
+        ->and(generalSettingsAuditCount())->toBe($auditAfterColor)
+        ->and(AdminNotification::query()->count())->toBe($notificationsAfterColor);
 });
 
 
@@ -119,13 +133,23 @@ it('delivers ticker feedback for General contact legal and social mutations', fu
 it('keeps invalid event persistence visible without replacing persisted data', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['public_email' => 'valid@example.invalid']);
     $auditBefore = generalSettingsAuditCount();
+    $notificationsBefore = AdminNotification::query()->count();
 
     Livewire::test(General::class)
         ->set('data.public_email', 'not-an-email')
-        ->assertHasErrors(['data.public_email']);
+        ->assertHasErrors(['data.public_email'])
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return $event === 'admin-header-notification'
+                && ($params['notification']['status'] ?? null) === 'danger';
+        });
 
     expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('valid@example.invalid')
-        ->and(generalSettingsAuditCount())->toBe($auditBefore);
+        ->and(generalSettingsAuditCount())->toBe($auditBefore)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    $failure = AdminNotification::query()->latest('id')->firstOrFail();
+    expect($failure->getAttribute('status'))->toBe('danger')
+        ->and($failure->getAttribute('title'))->toBe('Change not saved');
 });
 
 
