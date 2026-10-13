@@ -16,6 +16,14 @@ Keep application-level dialog terminology separate from Filament's native modal 
 
 References to Filament's own `modal*` methods or native modal behavior are expected where the framework API requires them. Application-level semantic names use dialog terminology.
 
+## Backdrop, measured frame and focus placement
+
+The **blocking backdrop** covers the complete application viewport, including the Topbar and Sidebar. Light and Dark may use different scrim opacity, but **not** different modal/backdrop geometry. The actual dialog window is bounded independently to the current admin content frame **below the topbar**, including the frame's canonical inline padding, and remains horizontally centered in the available measured frame.
+
+The dialog's position must derive from the **actual post-sidebar Main/document scrollport**, including its native scrollbar width. Never translate the `.fi-main` ancestor or use viewport-width (`vw`) compensation to guess the dialog center: transformed ancestors would capture Filament's fixed modal layer and make its positioning depend on document scroll. Adding/removing a classic vertical scrollbar must not shift the modal or create asymmetric side space.
+
+Use the existing single `x-modal-opened` measurement owned by `admin-dialog-geometry.js` and persistent CSS variables, not an additional per-page layout process. Conditional form fields may alter height, not the top position. The dialog remains keyboard-reachable: native Escape, focus trap and restoration, nested popovers/select lists above the modal, scrollable lengthy content, and restoration of the original workspace state after close all remain required. These are part of the shared Filament modal lifecycle, not a reason for a second overlay implementation.
+
 ## Dialog types
 
 Exactly five semantic dialog types are supported:
@@ -126,6 +134,8 @@ All sizes are desktop maxima. The measured admin content frame and its canonical
 ## Content layout
 
 Width and content composition are separate concerns. A `Large` dialog must use its horizontal space instead of becoming a wide single-column scroll tunnel.
+
+Fields in editorial dialogs should follow the **actual editing task and related controls**, not the persistence schema's property order.
 
 For multi-field `Large` create/edit dialogs:
 

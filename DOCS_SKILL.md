@@ -126,10 +126,13 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Quellstand (13.10.2026):** Öffentliche SPA-Neuerungen von `dev` `7c332b32762029b7e9da83491f52b12860bef9ed` und Folgefix `8b0345bb819bd9f82d8af4cc6f6af497d9c2f1ed` als echte Zwei-Eltern-Merges `26048ba461e1ded0b4f47191ea911ecf5f6070e0` und `e5d01ddc5331939c1197fe99286f3b21a934656c` übernommen. Beim neuen `livewire:navigating` werden alte Viewer-/Map-/Tracker-Observer **vor** dem Swap entsorgt. [SPA-Lebenszyklus](docs/architecture/public-spa-lifecycle.md) nachgezogen; noch kein Browsertest.
+**Quellstand 13.10.2026:** weitere Public-SPA-Änderung auf `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf` per Zwei-Eltern-Merge `973b66faf981985f854375f937c532def1f78e49` übernommen. Menü-Parent-Links bleiben absichtlich außerhalb der `wire:navigate`-Markierung; [SPA-Dokumentation](docs/architecture/public-spa-lifecycle.md) aktualisiert.
 
-**Erledigte Normenkonsolidierung:** Journal-spezifische Tabellenregeln allein in `docs/ADMIN-TABLE-CONTRACT.md`; `ui-skills.md` §12 verlinkt. Allgemeine Tabellen-Rollen/Aktionsordnung, Reihen- und Marker-Achsen sowie 1-based Position im selben Table-Vertrag vereinheitlicht; `ui-skills.md` §§7–8 sind knappe Einstiegspunkte. Die bisher nur dort enthaltenen Regeln für sinnvolle zweite Textzeilen, Header-, Statusmarker- und Action-Achsen wurden im Table-Owner erhalten. **Kein** Runtime-/CSS-Code geändert.
+**Duplikatbereinigung mit erhaltener Normsemantik:**
+- Journal Split/Fold in `docs/ADMIN-TABLE-CONTRACT.md` konsolidiert, `ui-skills.md` §12 verlinkt.
+- Allgemeine Rollen-, Marker-, Position- und Aktionsachsen ebenfalls im Tabellenvertrag vereinheitlicht; `ui-skills.md` §§7–8 verlinken.
+- Dialog-Overlay und gemessene Modal-/Scrollbar-Geometrie (Topbar/Sidebar, `.fi-main`, Fokus, Popovers, Field-Reihenfolge) in `docs/ADMIN-DIALOG-CONTRACT.md` als einen Owner übernommen; `ui-skills.md` §16 ersetzt durch Verweis. **Der Filament-5-Scroll-Lock-Vertrag samt pinned Patch bleibt erhalten.**
 
-**Unmittelbarer nächster Schritt:** `ui-skills.md` §16 (Dialogs) gegen `docs/ADMIN-DIALOG-CONTRACT.md` mit dem tatsächlich bestehenden Filament-Scroll-Lock-Patch, Header-Chrome und Geometry-Owner vergleichen; redundante Normen nur nach nachweisbarer Inhaltsübernahme kürzen. Danach `ADMIN-CONTROL-CONTRACT.md` und die große Responsive-Sammlung schrittweise.
+Keine Runtime-/CSS-Änderung durch den Dokumentationsbranch, keine Browser-/CI-/DB-Tests ausgeführt.
 
-**Offen:** nativer PHP-Generator-Full-Checkout, isolierter physischer PostgreSQL-Katalog, echte SPA-/Dialog-Browserprüfung, keine CI-/`testing`-Interaktion.
+**Unmittelbarer nächster Schritt:** Die übrigen Doppelungen in `ui-skills.md` (z. B. §17–18 Rich Text/Media-Picker, große Responsive-Sammlung) mit konkreten `ADMIN-CONTROL`-/`ADMIN-TABLE`-/Domain-Ownern vergleichen und nur eindeutig redundante Regeln entfernen. Danach Source-Audit und Querverweise validieren; weiter nachziehende `dev`-Commits vor jeder Arbeit prüfen.

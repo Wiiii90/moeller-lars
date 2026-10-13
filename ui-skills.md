@@ -419,34 +419,9 @@ Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy sh
 
 ## 16. Dialogs and overlays
 
-Dialogs are a shared primitive. Read-only text/detail content uses the shared `admin-detail-dialog` grammar from the dialog contract; do not park shared dialog content geometry in a page-specific stylesheet.
+All admin dialogs use the canonical [ADMIN-DIALOG-CONTRACT.md](docs/ADMIN-DIALOG-CONTRACT.md): native Filament Action lifecycle and scroll lock, shared measured content frame, dialog types/sizes, header action rail, semantic autosave, form controls and responsive scrolling. The physical modal geometry and the version-pinned Filament scroll-lock patch belong to that one owner, **not** to page-specific CSS or an independent JavaScript lock.
 
-Confirmation dialogs use one shared `Small` width. Feature code does not override confirmation width, action spacing or header-action geometry. Confirmation submit actions use the same header rail as every other dialog action, immediately left of the native Filament `X`. `AdminDialog::confirm()` is a normal Filament Action modal with application-level confirmation semantics; do not call Filament `requiresConfirmation()`, because that introduces separate framework defaults for modal chrome and layout.
-
-Required behavior:
-
-- the blocking backdrop covers the complete application viewport, including Topbar and Sidebar. Light and Dark may use different scrim opacity, but never different geometry. The dialog window itself is independently bounded to the current admin content frame below the topbar and stays inside that frame's canonical inline padding;
-- desktop workspace centering must never use a transformed `.fi-main` or viewport-width (`vw`) arithmetic. It is derived from the actual post-sidebar Main/scrollport width so adding or removing a classic vertical scrollbar cannot alter the content midpoint or create asymmetric inline spacing; transformed ancestors would also trap Filament's fixed modal layer and make dialog position depend on document scroll;
-- Filament alone owns blocking-dialog document scroll lock, Open/Close/Focus/Escape/Destroy and lock cleanup. Its **one** Support JS implementation is adjusted by the version-locked build-time patch `scripts/patch-filament-scroll-lock.php`: long pages retain their visible native scrollbar and a frozen body/scroll position; **short pages keep the body in normal flow** and lock only root overflow, never adding a scrollbar, right gutter or even a one-frame scrollbar flash on close. Nested modals share Filament's lock counter. No second application-level scroll-lock runtime, global wheel/touch/key interception or independent counter is permitted. Project JavaScript may measure dialog placement and reset dialog-internal scroll only;
-- each actual Filament `x-modal-opened` transition measures the current Main frame once and stores geometry variables on the persistent document root; modal CSS is declarative and must survive Livewire replacement of a mounted Action. The native backdrop stops wheel/touch scroll chaining. Repeated `open-modal` signals for an already-mounted Action must never remeasure or move it;
-- horizontally centered, viewport-bounded modal with a stable top position within the admin content frame. Changing conditional fields may change dialog height, never its top position;
-- internal scrolling for long content;
-- reachable header/footer/actions;
-- Escape/close;
-- focus trap and restoration;
-- nested popovers/selects above the modal;
-- responsive sizing;
-- originating workspace state retained after close/save.
-
-Do not fix one broken dialog by creating a page-local fake modal. Do not use Livewire `wire:confirm` or browser-native confirm prompts for admin actions; route confirmations through `AdminDialog::confirm()`.
-
-The first dialog row is one shared axis: concise heading on the left, contextual icon actions immediately before the native X on the right. Header reserve follows the actual number of actions; never hard-code a large empty title gutter. Ordinary task headings are normally one or two words. Descriptions are used only for a real consequence/safety distinction and must not restate the heading or obvious form behavior.
-
-Dialog forms use the same globally registered `AdminControl` grammar as route forms. Checkbox/Toggle labels align on the shared field axis. Edit dialogs keep validation semantics but hide red required-star decoration, and required Select fields do not expose a selectable neutral placeholder. Optional semantic null choices remain explicit only where the domain actually supports them.
-
-Dialog width follows task density through the existing `Small` / `Default` / `Large` formats. Small is for compact utilities, Default for bounded medium forms, and Large for genuinely wide editorial forms/viewers. The shared adapter preserves the explicit size; do not stretch a medium form to Large or emulate a fourth size with feature CSS.
-
-Large editorial dialogs should order content according to the actual editorial task, not persistence schema order.
+For a task involving a dialog, inspect the actual shared `AdminDialog` adapter, modal/geometry CSS and the relevant Livewire/Filament Action before implementation. The dialog contract takes priority over obsolete working-round descriptions; preserve current browser-accepted behavior and do not create second modal/confirmation systems.
 
 ## 17. Rich Text editor UI
 
