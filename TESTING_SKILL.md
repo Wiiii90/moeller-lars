@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `9194235980b3772063c8db4aa236e1e1b34120d7` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `261942a282f0d396caeaf185272487b0b4d27d82` (from `dev` at `a53d59030a03e198fbba3c631d560bdffdf5e6e3`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `11e42269c43ac69beea1c6b3453987ca35a4d995` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `261942a282f0d396caeaf185272487b0b4d27d82` (from `dev` at `a53d59030a03e198fbba3c631d560bdffdf5e6e3`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -52,6 +52,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Last known snapshot after refactor: **140 files under `tests/`, approx. 542 KB**, vs **141 files / 751 KB** originally. Counts will change as quality work continues; never optimize just to reduce the number.
 - Publication/Activity split reviewed again: removed duplicated imports from the extracted suites and eliminated redundant `PublicationSnapshot::TABLES`/restore-order constant tests. An actual publication media-dependency restore scenario already covers correct ordering.
 - Strengthened the actual `PublicationStateControl` Livewire Commit test: a successful Commit must emit the immediate header notification and add one durable admin notification; a repeated no-op Commit must add none. This is **test-authored only, NOT RUN**.
+- Removed two DashboardFeed query/hydration-count implementation probes and exact type-label list snapshot. Kept feed filters, results, pagination, search and global chronological ordering; existing Livewire Dashboard test exercises selections.
 - Replaced the Dashboard feed hook-only test with an authenticated Livewire feed search/selection workflow. Removed the Pulse recorder-configuration snapshot while retaining its admin access contract. Publication history deletion test now creates its **own real checkpoint** instead of relying on seeded history.
 - Updated `tests/README.md` with the component / E2E / profiling / full browser commands. These were **authored but not executed**.
 - Removed unnecessary preview-route registration from unrelated Publication commit/media tests; Media-retention tests no longer load unrelated Publication workflow helpers. Preview access tests keep their own isolated preview route.

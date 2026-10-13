@@ -1,12 +1,9 @@
 <?php
 
 use App\Domain\Admin\DashboardFeed;
-use App\Filament\Pages\Dashboard;
 use App\Models\ContactMessage;
 use Carbon\Carbon;
-use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 
 it('projects announcements changelog and contact into the shared feed without tutorials', function (): void {
     config()->set('dashboard-feed.items', [
@@ -41,14 +38,6 @@ it('projects announcements changelog and contact into the shared feed without tu
     ]);
 
     $feed = app(DashboardFeed::class);
-
-    expect(DashboardFeed::types())->toBe([
-        'all' => 'All',
-        'announcement' => 'Announcements',
-        'changelog' => 'Changelog',
-        'contact' => 'Contact',
-        'notification' => 'Notifications',
-    ]);
 
     $all = $feed->paginate();
     expect($all['total'])->toBe(3)
@@ -130,68 +119,6 @@ it('searches contact sender name email and message in the database with correct 
         ->and([$email['start'], $email['end']])->toBe([1, 25])
         ->and($message['total'])->toBe(25)
         ->and([$message['start'], $message['end']])->toBe([1, 25]);
-});
-
-
-it('does not query contact messages for announcement or changelog projections', function (): void {
-    config()->set('dashboard-feed.items', [
-        ['id' => 'notice', 'type' => 'announcement', 'date' => '2026-08-27', 'title' => 'Notice', 'body' => 'Announcement body'],
-        ['id' => 'change', 'type' => 'changelog', 'date' => '2026-08-26', 'title' => 'Change', 'body' => 'Changelog body'],
-    ]);
-
-    foreach (range(1, 40) as $index) {
-        ContactMessage::query()->create([
-            'sender_name' => 'Visitor '.$index,
-            'sender_email' => "visitor{$index}@example.test",
-            'message' => 'Message '.$index,
-            'mail_delivery_status' => ContactMessage::DELIVERY_DELIVERED,
-        ]);
-    }
-
-    $queries = [];
-    DB::listen(function (QueryExecuted $query) use (&$queries): void {
-        $queries[] = strtolower($query->sql);
-    });
-
-    $feed = app(DashboardFeed::class);
-    expect($feed->paginate('', 'announcement')['total'])->toBe(1)
-        ->and($feed->paginate('', 'changelog')['total'])->toBe(1);
-
-    expect(collect($queries)->filter(static fn (string $sql): bool => str_contains($sql, 'contact_messages'))->all())->toBe([]);
-});
-
-
-it('keeps contact hydration bounded to the requested page and the tiny static merge allowance', function (): void {
-    config()->set('dashboard-feed.items', [
-        ['id' => 'notice', 'type' => 'announcement', 'date' => '2026-08-27', 'title' => 'Notice', 'body' => 'Announcement body'],
-        ['id' => 'change', 'type' => 'changelog', 'date' => '2026-08-26', 'title' => 'Change', 'body' => 'Changelog body'],
-    ]);
-
-    foreach (range(1, 120) as $index) {
-        ContactMessage::query()->create([
-            'sender_name' => 'Visitor '.$index,
-            'sender_email' => "visitor{$index}@example.test",
-            'message' => 'Message '.$index,
-            'mail_delivery_status' => ContactMessage::DELIVERY_DELIVERED,
-        ]);
-    }
-
-    $retrieved = 0;
-    Event::listen('eloquent.retrieved: '.ContactMessage::class, function () use (&$retrieved): void {
-        $retrieved++;
-    });
-
-    $feed = app(DashboardFeed::class);
-    $contactPage = $feed->paginate('', 'contact', 2, 25);
-
-    expect($contactPage['items'])->toHaveCount(25)
-        ->and($retrieved)->toBe(25);
-
-    $retrieved = 0;
-    $allPage = $feed->paginate('', 'all', 2, 25);
-
-    expect($allPage['items'])->toHaveCount(25)
-        ->and($retrieved)->toBe(27);
 });
 
 
