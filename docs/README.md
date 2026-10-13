@@ -63,7 +63,8 @@ Repository-root workflow documents are intentionally kept close to `AGENTS.md` b
 
 - [AGENTS.md](../AGENTS.md) — branch/orchestration/worker/reconciliation contract and central technology rules
 - [ui-skills.md](../ui-skills.md) — admin-only UI grammar for heading/action rows, metrics, filters, selection, tables, grids, DnD, dialogs and browser acceptance
-- [followup-skill.md](../followup-skill.md) — lossless continuation-prompt contract for handing a long orchestration chat to a new chat
+- [Handoff skill](../.agents/skills/handoff/SKILL.md) — concise current-branch continuation and implementation-report workflow, respecting direct-`dev` / `docs` / `testing` and no CI
+- [followup-skill.md](../followup-skill.md) — older extended context checklist, retained pending detailed historical workflow cleanup
 - [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — use when the user is doing live browser acceptance and may intentionally choose direct work on `dev` rather than worker-only orchestration
 
 The active collaboration mode is part of the handoff state. A continuation chat should not silently replace a successful direct browser-repair loop with worker delegation, or vice versa.

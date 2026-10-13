@@ -126,15 +126,10 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branchstand:** `docs` war `385229d6ccd38d3c74f95aa940ac8b16b4cf7060`, `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf` (Momentaufnahme, HEADs immer erneut prüfen).
+**Stand 13.10.2026:** `docs` auf `1acbcda364c730281c393b42e1352217491917eb` vor diesem Commit, `dev` bei `222bd0534bc7daa93acf6afad795e827a81d18bf` (vor weiterer Arbeit frisch prüfen).
 
-**Owner-Bereinigung nach Responsive-Split:**
-- [MEDIA.md](docs/MEDIA.md) ist jetzt alleiniger Owner der Gallery-/Storage-Primärmedien-Lifecycle-Garantien, die irrtümlich im Responsive-Toolbar-Abschnitt standen. Spezifischer Konflikt zwischen Gallery-/Undo-Publish-Readiness ist ausdrücklich verlinkt (quellbelegt, noch kein Runtime-Test).
-- Die Sidebar-Refresh- und Header-Notification-FIFO/Dismiss-Verträge stehen ausschließlich in [ARCHITECTURE.md](docs/ARCHITECTURE.md) und [ADMIN-NOTIFICATION-CONTRACT.md](docs/ADMIN-NOTIFICATION-CONTRACT.md), nicht länger in Responsive-Tabellen. Die ursprünglichen Anforderungen waren dort bereits vollständig dokumentiert.
-- Die fünf Admin-Responsive-Themendokumente bleiben erhalten. Keine CSS-/Runtime-Codeänderung, keine CI-/Browser-Testbehauptung.
+**Aktuelle Workflowbereinigung:** `AGENTS.md` enthält nicht mehr die historischen, gegen die aktuelle Arbeit verstoßenden optionalen CI-Run-/Log-Anweisungen und Worker-Branch-Handoffs. Das gegenwärtige **CI-Verbot** steht explizit im Root-Vertrag. Aus früheren Orchestrator-/Worker-Rollen wurde ein kurzer aktueller Kollaborationsvertrag. Neue [Handoff-Skill](.agents/skills/handoff/SKILL.md) für branchsichere konkrete Prompt-/Handoff-Übergaben; `followup-skill.md` verbleibt nur als ältere lange Referenz bis zur Quellenprüfung. Historische Ausführungsanweisungen sind weiter in Git lesbar.
 
-**Vorher erledigt:** responsive §21 aus `ui-skills.md` nach fünf Themen gesplittet; §§7–8/12/16–18 zum Table-/Dialog-/Control-Owner verdichtet, bei Rich Text URL-Vertrag an tatsächlichen Code angepasst.
+**Weitere Dokumentationsstruktur:** Drei UI-Skills (Documentation, Admin, Public), fünf Responsive-Teilowner, zentrale Table/Dialog/Control-Verträge. Gallery-/Storage-Medienlebenszyklus aus Responsive-Toolbar in `docs/MEDIA.md`, Sidebar- und Notification-Details zurück zu ihren Ownern.
 
-**Nächster Schritt:** Allgemeine Toolbar-/Tabellenregeln aus den neuen Responsive-Dokumenten nur dort streichen, wo `ADMIN-CONTROL-CONTRACT.md`/`ADMIN-TABLE-CONTRACT.md` sie nachweislich vollständig enthalten. Page-spezifische Druck-/Faltprioritäten behalten. Anschließend andere root-`ui-skills.md`-Duplikate und Links prüfen.
-
-**Offen:** vollständiger nativer PHP-Generator-Run, isoliertes PostgreSQL-`pg_catalog`, Public-SPA-/Admin-Browserprüfung.
+**Nächster Schritt:** Verbliebene root-`AGENTS.md`-Duplizierungen in §Responsive System gegen [ADMIN-RESPONSIVE-CONTRACT.md](docs/ADMIN-RESPONSIVE-CONTRACT.md) belegen, einmalig erforderliche Stage-Tokens und Shell-Monotonie zum Owner übertragen, dann den historischen Root-Responsive-Block auf Verweise reduzieren. Anschließend `followup-skill.md` auf nur gültige Regeln kürzen. Kein Runtime-Code, kein CI/`testing`.

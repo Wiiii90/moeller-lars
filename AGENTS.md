@@ -2,7 +2,7 @@
 
 This file is the default working contract for coding agents, review/orchestration chats and parallel workers in `Wiiii90/moeller-lars`.
 
-Two companion files are part of this contract:
+Task-specific companion documents are part of this contract:
 
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
 - [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
@@ -10,6 +10,7 @@ Two companion files are part of this contract:
 - [`.agents/skills/documentation/SKILL.md`](.agents/skills/documentation/SKILL.md) — stable documentation work method; `DOCS_SKILL.md` remains the living checkpoint.
 - [`.agents/skills/admin-ui/SKILL.md`](.agents/skills/admin-ui/SKILL.md) — task-oriented Admin UI entrypoint, linking the accepted shared Filament contracts.
 - [`.agents/skills/public-ui/SKILL.md`](.agents/skills/public-ui/SKILL.md) — public website entrypoint, linking public routing, composition, media and presentation owners.
+- [`.agents/skills/handoff/SKILL.md`](.agents/skills/handoff/SKILL.md) — compact current-branch scope/commit/verification handoffs; historical worker procedures are not active.
 
 ## Browser-accepted dialog scroll-lock contract — do not regress
 
@@ -185,37 +186,13 @@ older orchestration/worker/PR/CI procedures elsewhere in this document are
 historical or optional **future** modes, not permission to override this direct
 `dev`/no-CI instruction. Change execution modes only on explicit user request.
 
-## Current orchestration model
+## Current collaboration model
 
-For this accepted direct browser-repair cycle, both chats act as scoped
-Audit + Implementation + Diff-Review sessions without delegated worker branches.
-Admin and public are parallel tasks, **not parallel implementations of a
-feature**. Reuse the existing Domain/persistence services and shared media,
-publication, routing and Rich Text contracts. A public-only change must not
-fork those services; an admin-only change must not reshape public presentation
-without verifying the impact. The user can supply screenshots and feedback in
-either session; a passing source check is not browser acceptance.
+Application and artist-facing interface work follows the user's **direct-`dev`** permissions, with file ownership and HEAD reconciliation across simultaneous chats. Admin and Public share existing Domain, Media, Publication, Routing and Rich Text services; one surface must not create a second service implementation to bypass the other. `docs` and `testing` are the two explicit long-lived branch exceptions and have separate owners. Browser acceptance comes from the user's actual candidate review, not from source checks.
 
-When an actual release to `main` is later requested, follow the protected
-promotion contract in `docs/RELEASE.md` under a **new, explicit authorization**.
-Until then there is no branch choreography, CI handoff or deployment step.
+Publishing to `main`, launching CI or deployment are **not** part of this workflow. Any later release requires an explicit separate authorization under [RELEASE.md](docs/RELEASE.md).
 
-## Orchestrator and worker roles
 
-A General-/Orchestration-/Browser-Review chat is primarily the **State Keeper, Scope Designer, Worker-Prompt Author, Diff Reviewer and Reconciliation-/Browser-Review Orchestrator**.
-
-Keep the orchestrator context focused on:
-
-- exact branches and SHAs;
-- confirmed findings and root causes;
-- user/product decisions;
-- worker handoffs and their review status;
-- reconciliation state;
-- runtime/browser acceptance state.
-
-Do not use the orchestrator as the default implementation worker for large source passes when a worker is intended for that scope. In particular, avoid loading large series of source files/diffs into the general chat and then producing many implementation commits there. Larger source work belongs in dedicated worker chats so implementation detail and diff volume do not consume the orchestration context.
-
-This is scope/context discipline, not a ban on direct changes. The orchestrator may implement when the user explicitly asks it to, or when the change is very small, clearly bounded and cheaper to perform directly than to hand off.
 
 ## Routine source-inspection and remote I/O discipline
 
@@ -529,80 +506,11 @@ Use native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) 
 - Activity/Audit records successful writes but is not the persistence trigger;
 - publication, destructive operations and media references continue through canonical domain services.
 
-## Worker prompt delivery
+## Task handoffs
 
-Whenever a worker, repair, or handoff prompt is emitted for copy/paste, the entire prompt must be inside exactly one contiguous fenced Markdown code block. Do not split it across multiple fenced blocks, use quote/indent formatting for the prompt, or place any part of the prompt outside that code block.
+Use the short, current [handoff skill](.agents/skills/handoff/SKILL.md) to produce a copyable task/follow-up prompt or summarize an implementation. Branch choice is restricted to the expressly authorized `dev`, `docs` and `testing` workstreams; writing a task prompt **never authorizes** a new worker branch or CI run. For a long-running `docs` task the canonical resumption point is [DOCS_SKILL.md](DOCS_SKILL.md).
 
-A worker prompt should state:
 
-- repository;
-- exact base SHA and branch strategy;
-- exact allowed scope boundary;
-- explicit non-goals and forbidden neighboring areas;
-- confirmed browser findings and known root cause;
-- exact target state;
-- relevant concrete files/components/selectors when already known;
-- expressly allowed files/areas when the task requires a file boundary;
-- functional/domain invariants that must remain unchanged;
-- central technologies that must be reused;
-- source-verifiable acceptance criteria;
-- stop conditions;
-- checks that are and are not required;
-- commit/push rules;
-- exact handoff fields expected.
-
-Prompts must distinguish explicitly between:
-
-- **CONFIRMED / FIXED** — facts already established by user feedback, current source or contract;
-- **IMPLEMENTATION DISCRETION** — implementation choices the worker may actually make;
-- **OUT OF SCOPE** — behavior, files or neighboring surfaces the worker must not change.
-
-A worker must not re-decide what the user or current contract has already decided.
-
-Keep prompts short and operational (normally 20-60 lines); link authorities instead of
-copying their contents. Classify new tests as durable behavior coverage or temporary
-scaffolding and remove scaffolding before handoff. Runtime PowerShell instructions must
-stop on a failed prerequisite before any container replacement or mutation.
-
-When the desired geometry/structure is already known, do not make the worker infer it primarily from phrases such as “polish this”, “make it consistent”, “make it premium”, “clean it up”, “use best judgment” or “make it like the reference”. Such phrases may supplement concrete requirements, never replace them.
-
-For example, instead of only saying “make this clock more intuitive”, a prompt with an already-defined composition should name the structural changes: remove the extra header, keep the mode switch inside the stage, use a real dial with defined hands/current browser time, keep activity secondary, and preserve the existing publication-domain logic. This illustrates prompt precision; it is not a durable product requirement for any particular current page.
-
-For visual work, the prompt must additionally identify the current browser acceptance state and any user-designated reference surface. Do not describe rejected current markup as a preservation requirement unless the user explicitly accepted it.
-
-For visual work, prompts must make theme/reference reuse operational rather than aspirational: name the accepted references, require inspection of their actual source at the base, prohibit duplicate local presentation systems, and require the handoff to enumerate reused primitives and any justified feature-local CSS.
-
-## Worker handoff
-
-A normal handoff contains:
-
-- branch;
-- base SHA;
-- new head SHA;
-- changed files;
-- actual behavior/root-cause changes;
-- checks actually run;
-- remote head verification;
-- unresolved blocker if one remains.
-
-An implementation-worker handoff must also provide a compact requirement mapping:
-
-- requirement;
-- implemented / not implemented;
-- affected files;
-- relevant deviation or blocker, if any.
-
-Keep this as prompt → diff traceability, not an implementation diary.
-
-Every worker handoff also has an `Out-of-scope findings` section containing either `none` or concrete discovered items that were intentionally not implemented.
-
-For visual work, also include:
-
-- accepted reference files inspected;
-- shared Blade/CSS primitives reused;
-- new CSS/classes/tokens added and why each is task-specific.
-
-The orchestrator then reviews the code independently. Long implementation diaries are not acceptance evidence. A worker must not self-declare browser/product acceptance for a presentation it cannot see in the user's running candidate.
 
 ## Continuation handoffs
 
@@ -618,41 +526,6 @@ Preserve still-required compatibility and domain behavior. Audit references, cal
 
 Run authorized final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. In the current direct-`dev` mode **CI is prohibited**, including reads and dispatches; a later release qualification is a separate user-authorized workflow.
 
-## CI ownership and log handoff
+## CI restriction
 
-**Not applicable in the current direct-to-`dev` mode:** CI is fully forbidden, even read-only metadata/status access. This section documents optional future modes only after the user explicitly lifts that restriction.
-
-CI handling depends on branch ownership. The default assumption for `dev` is that it is shared by multiple chats/workers. Treat `dev` as exclusive only when the user explicitly says that one worker owns it for the current cycle.
-
-### Shared `dev`
-
-A worker on shared `dev` has exactly two normal choices:
-
-1. **Ignore CI for its scope.** Do not monitor, repair or comment on unrelated workflow failures.
-2. **Own only the exact canonical verification run caused by its own push.** Capture that run's concrete run ID immediately. Never substitute "latest dev run", a later run, or a run inferred from current branch state.
-
-When using exact-run ownership on shared `dev`:
-
-- compact workflow/run/job/step metadata may be read to identify the exact run and its status;
-- never call `fetch_workflow_job_logs`, download Actions logs, inspect full workflow logs, or ingest large CI reports directly into the chat;
-- once the worker has taken ownership of an exact run for the current task, stay attached to that run and keep checking it instead of handing `queued`, `pending` or `in_progress` back to the user;
-- only the literal conclusion `failure` is a red stop condition for CI troubleshooting. `queued`, `pending` and `in_progress` mean keep checking. `success` is not a stop condition: continue immediately to the next required workflow/release/Validation gate. `cancelled` is also not a completion condition: determine whether an equivalent owned run is already active or start a replacement exact run when verification is still required, then continue;
-- never end a task merely because the owned run became green or cancelled when downstream work is still required. A green verification run advances the workflow; it does not finish the user's broader task by itself;
-- when a literal `failure` occurs, stop the CI progression there and give the user a ready-to-paste PowerShell command with the concrete run ID already substituted to create the compact local `--log-failed` report. Never require the user to fill in a SHA, run ID or placeholder manually;
-- other non-success terminal conclusions must not be silently treated as `failure`; handle their actual semantics and continue the required workflow unless a real blocker exists;
-- after a red handoff, the user-provided compact report is the sole log source for that failure. Do not independently fetch the same Actions log again;
-- analyze only the failure blocks and final summary needed to repair the run. Do not read a multi-thousand-line raw report end-to-end;
-- before repairing a reported failure, re-check current `dev`. If a later worker already fixed the same root cause, do not duplicate the repair;
-- do not rerun the same SHA merely to obtain more logs. A new canonical CI run should normally follow only a source change that addresses the current failure, except for a proven infrastructure flake or explicit user request.
-
-A failure from another chat's run does not automatically become this chat's scope. Take it over only when the user explicitly hands it over or supplies its report for this chat to repair.
-
-Do not add a repository helper script solely for this chat handoff unless the user explicitly asks for one. The run-specific command is generated by the agent because the agent already knows the run ID.
-
-### Exclusive feature/fix branch
-
-A worker that alone owns a named feature/fix/chore branch may operate that branch's CI end to end, including normal log inspection and iterative repair, because another worker is not concurrently changing the same integration state. Keep those logs scoped to that branch and do not treat unrelated `dev` failures as branch failures.
-
-### Explicitly exclusive `dev`
-
-If the user explicitly appoints one worker as the sole `dev` worker for a cycle, that worker may operate `dev` CI end to end like an exclusive branch. Exclusivity must be stated; never infer it merely because no other push is visible at the moment.
+**No CI interaction is authorized in the current workstreams.** Do not start, cancel, monitor, inspect status/metadata, download logs, repair workflow configurations or use CI as a validation substitute. Source-only checks and safe local isolated tests are distinct, and must be reported truthfully. Release/CI work requires a new explicit user authorization under [RELEASE.md](docs/RELEASE.md); old worker-run procedures remain historical Git evidence, not present instructions.
