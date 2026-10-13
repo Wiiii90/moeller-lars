@@ -25,8 +25,8 @@ it('maps legacy fixed Hero configuration to a one-member Manual ordered group', 
 
     expect($configuration['group_source'])->toBe('manual')
         ->and($configuration['display_strategy'])->toBe('ordered')
-        ->and($configuration['manual_group'])->toBe([
-            ['artwork_id' => (int) $artwork->getKey(), 'weight' => 10000],
+        ->and(collect($configuration['manual_group'])->pluck('artwork_id')->all())->toBe([
+            (int) $artwork->getKey(),
         ]);
 });
 

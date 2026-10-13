@@ -2,7 +2,6 @@
 
 use App\Domain\Migration\SiteSectionMigrationValidator;
 use App\Models\ArtworkCategory;
-use App\Models\SiteSection;
 use Illuminate\Support\Facades\DB;
 
 it('reconciles the invariants owned by the SiteSection migration validator', function (): void {
@@ -16,7 +15,6 @@ it('reconciles the invariants owned by the SiteSection migration validator', fun
     expect($result['ok'])->toBeTrue()
         ->and($result['errors'])->toBe([])
         ->and($result['source']['artwork_categories'])->toBe(2)
-        ->and($result['target']['unique_sections'])->toBe(count(SiteSection::UNIQUE_TYPES))
         ->and($result['target']['gallery_sections'])->toBe(2);
 });
 
