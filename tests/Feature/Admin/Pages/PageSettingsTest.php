@@ -10,10 +10,7 @@ use App\Models\AdminNotification;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 require_once __DIR__.'/PagesFixtures.php';
 

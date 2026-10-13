@@ -10,11 +10,8 @@ use App\Models\SiteSection;
 use App\Models\User;
 use App\Routing\SiteNodeRoute;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');

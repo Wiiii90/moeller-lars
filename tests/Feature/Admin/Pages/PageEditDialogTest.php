@@ -4,10 +4,7 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\SitePages;
 use App\Models\AuditEvent;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 require_once __DIR__.'/PagesFixtures.php';
 

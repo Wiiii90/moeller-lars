@@ -10,11 +10,8 @@ use App\Models\AuditEvent;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 require_once __DIR__.'/PagesFixtures.php';
 

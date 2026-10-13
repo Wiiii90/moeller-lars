@@ -5,10 +5,7 @@ use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
 use App\Models\SiteSection;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 require_once __DIR__.'/PagesFixtures.php';
 

@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `144a73aafafc04df3e2bddc6866f35681982abce` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `38f919c06873e4b13a4096e0cf85bae7e9ba5af5` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -70,7 +70,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Added the `LocalPreviewDatabaseGuard` to `BrowserProfilingSeeder`: besides explicit `APP_ENV=testing` and Browser flag, the seeded browser run requires the existing CI/disposable DB guard. Never bypass or relax that check to get a local run. Removed historical dialog-copy assertions from Journal template autosave.
 
 - Audited named global test helpers and relative `require_once` fixtures across the complete PHP test tree: no duplicate declarations or missing relative fixture paths detected by source inspection. 
-- Removed redundant file-scoped `RefreshDatabase` imports/`uses` in Activity, Dashboard, Dialog, Journal and Notification test files (10 files in first batch); these layers are already centrally configured in `tests/Pest.php`.
+- Removed redundant file-scoped `RefreshDatabase` imports/`uses` in Activity, Dashboard, Dialog, Journal and Notification test files (10 files in first batch, then 10 Pages/Custom Page files); central Pest registration remains authoritative; these layers are already centrally configured in `tests/Pest.php`.
 
 ## 5. Explicitly unverified / risks
 
