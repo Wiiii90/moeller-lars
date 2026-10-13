@@ -43,7 +43,7 @@
     width: auto;
 }
 
-.journal-table--exhibitions col.journal-col--schedule {
+.journal-table--exhibitions col.journal-col--date {
     width: 9.5rem;
 }
 
@@ -68,7 +68,7 @@
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
-    .journal-table--exhibitions col.journal-col--schedule,
+    .journal-table--exhibitions col.journal-col--date,
     .journal-table--blog col.journal-col--publication {
         width: 11rem;
     }
@@ -114,13 +114,13 @@
 }
 
 .journal-publication,
-.journal-schedule {
+.journal-date {
     vertical-align: middle;
 }
 
 .journal-publication__date,
-.journal-schedule__details > em,
-.journal-schedule__dates {
+.journal-date__vernissage,
+.journal-date__range {
     display: block;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -129,12 +129,13 @@
 }
 
 .journal-publication__date,
-.journal-schedule__details > em {
+.journal-date__vernissage {
     color: var(--admin-muted);
 }
 
 .journal-publication__date,
-.journal-schedule__details.admin-table__folded-only {
+.journal-date__vernissage,
+.journal-date__timing {
     margin-top: .17rem;
 }
 
@@ -142,12 +143,8 @@
     margin-top: 0;
 }
 
-.journal-schedule__details > em {
+.journal-date__vernissage {
     font-weight: 400;
-}
-
-.journal-schedule__details > :not(:first-child) {
-    margin-top: .17rem;
 }
 
 .journal-state,

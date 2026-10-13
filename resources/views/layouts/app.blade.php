@@ -22,13 +22,8 @@
                 data-matomo-site-id="{{ $matomoTracking['site_id'] }}"
             >
         @endif
-        @vite([
-            'resources/css/app.css',
-            'resources/css/public-content.css',
-            'resources/css/public-presentation.css',
-            'resources/css/custom-pages.css',
-            'resources/js/app.js',
-        ])
+        {{-- All public CSS is bundled in the single app.js Vite entry. --}}
+        @vite('resources/js/app.js')
         {{-- Navigation uses Livewire's established document-swap runtime, not a
              second router. Nonces keep the public policy strict. --}}
         @livewireStyles(['nonce' => $publicStyleNonce])
@@ -142,9 +137,10 @@
             @endunless
         </header>
         <main id="content" class="site-content">
-            {{-- A direct x-persist element: @persist adds an extra div wrapper
-                 and breaks the immediate-child contour selector. --}}
-            <div class="public-folio-decoration" x-persist="public-folio-decoration" aria-hidden="true"></div>
+            <div class="public-folio-decoration" aria-hidden="true">
+                <span class="public-folio-decoration__left"></span>
+                <span class="public-folio-decoration__right"></span>
+            </div>
             @yield('content')
         </main>
         <x-artwork-viewer />

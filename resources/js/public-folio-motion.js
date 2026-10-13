@@ -1,6 +1,6 @@
-// Variations of the accepted ORIGINAL folio contour. Both corners retain
-// all three joined borders at all times, including during transitions.
-// Values: left top / bottom, right top / bottom, left / right return width.
+// Ten curated configurations of the SAME two connected Atelier corners.
+// Variant 1 is the accepted original, also rendered without JavaScript.
+// Coordinates: left(top,bottom), right(top,bottom), left/right return width.
 export const FOLIO_VARIANTS = Object.freeze([
     ['1.10rem', '4.00rem', '3.80rem', '1.15rem', '.55rem', '.55rem'],
     ['1.75rem', '3.55rem', '3.20rem', '1.55rem', '.78rem', '.7rem'],
@@ -13,14 +13,9 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['.62rem', '4.12rem', '3.62rem', '1.49rem', '1rem', '.72rem'],
     ['1.3rem', '4.52rem', '4.28rem', '.72rem', '.73rem', '1rem'],
 ]);
-export const FOLIO_PROPERTIES = Object.freeze([
-    '--public-folio-left-top',
-    '--public-folio-left-bottom',
-    '--public-folio-right-top',
-    '--public-folio-right-bottom',
-    '--public-folio-left-width',
-    '--public-folio-right-width',
-]);
+
+let variant = 0;
+let snapshot = null;
 
 export function chooseNextFolioVariant(current, random = Math.random) {
     const from = Number.isInteger(current) && current >= 0 && current < FOLIO_VARIANTS.length
@@ -30,21 +25,66 @@ export function chooseNextFolioVariant(current, random = Math.random) {
     return pick < from ? pick : pick + 1;
 }
 
-let variant = 0;
-export function advancePublicFolio(root = document) {
-    const element = root.querySelector('.public-folio-decoration');
-    if (!element || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+function edges(root) {
+    const folio = root.querySelector('.public-folio-decoration');
+    if (!folio) return null;
+    const left = folio.querySelector('.public-folio-decoration__left');
+    const right = folio.querySelector('.public-folio-decoration__right');
+    return left && right ? { folio, left, right } : null;
+}
 
-    // Only the FIRST actual SPA visit activates the overlay. Force its original
-    // computed geometry before retargeting, so the new endpoint interpolates.
-    if (!element.hasAttribute('data-folio-active')) {
-        element.setAttribute('data-folio-active', '');
-        element.getBoundingClientRect();
+function geometry(left, right) {
+    const l = getComputedStyle(left);
+    const r = getComputedStyle(right);
+    return [l.top, l.bottom, r.top, r.bottom, l.width, r.width];
+}
+
+export function capturePublicFolio(root = document) {
+    snapshot = null;
+    const current = edges(root);
+    if (!current?.folio.hasAttribute('data-folio-active')) return false;
+    snapshot = geometry(current.left, current.right);
+    return snapshot.every((value) => value !== '');
+}
+
+function frame(values, side) {
+    return side === 'left'
+        ? { top: values[0], bottom: values[1], width: values[4] }
+        : { top: values[2], bottom: values[3], width: values[5] };
+}
+
+export function advancePublicFolio(root = document) {
+    const current = edges(root);
+    if (!current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        snapshot = null;
+        return false;
     }
 
+    const start = snapshot ?? FOLIO_VARIANTS[variant];
+    snapshot = null;
     variant = chooseNextFolioVariant(variant);
-    const values = FOLIO_VARIANTS[variant];
-    FOLIO_PROPERTIES.forEach((name, index) => element.style.setProperty(name, values[index]));
-    element.dataset.folioVariant = String(variant + 1);
+    const target = FOLIO_VARIANTS[variant];
+
+    // Apply the exact destination first so unsupported WAAPI never distorts
+    // the paper. The browser then interpolates ordinary layout properties
+    // from the captured mid-animation state, on the NEW node.
+    for (const [side, element] of [['left', current.left], ['right', current.right]]) {
+        const first = frame(start, side);
+        const last = frame(target, side);
+        Object.assign(element.style, last);
+
+        if (typeof element.animate === 'function') {
+            try {
+                element.animate([first, last], {
+                    duration: 920,
+                    easing: 'cubic-bezier(.2, .65, .25, 1)',
+                });
+            } catch {
+                // Native static geometry remains available.
+            }
+        }
+    }
+    current.folio.setAttribute('data-folio-active', '');
+    current.folio.dataset.folioVariant = String(variant + 1);
     return true;
 }
