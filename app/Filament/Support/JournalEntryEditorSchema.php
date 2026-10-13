@@ -222,7 +222,7 @@ final class JournalEntryEditorSchema
         if ($latitude === false || $longitude === false || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
             return new HtmlString(
                 '<div class="journal-entry-editor__map is-empty">'
-                .'<p>The map location is resolved after an address change is saved.</p>'
+                .'<p>Map location will appear once the address has been resolved.</p>'
                 .'</div>',
             );
         }
