@@ -33,7 +33,7 @@ test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners',
     await page.evaluate(() => window.publicFolioTest.advancePublicFolio());
     const animations = await page.evaluate(() => {
         const el = document.querySelector('#content');
-        const tracked = el.getAnimations().map((animation) => ({
+        const tracked = document.getAnimations().filter((animation) => animation.effect.target === el).map((animation) => ({
             pseudo: animation.effect.pseudoElement,
             duration: animation.effect.getTiming().duration,
             frames: animation.effect.getKeyframes(),
@@ -65,7 +65,8 @@ test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners',
         old.outerHTML = html;
         window.publicFolioTest.advancePublicFolio();
         const replacement = document.querySelector('#content');
-        const effect = replacement.getAnimations().find((a) => a.effect.pseudoElement === '::before');
+        const effect = document.getAnimations().find((a) =>
+            a.effect.target === replacement && a.effect.pseudoElement === '::before');
         return { before, frame: effect.effect.getKeyframes()[0].top, children: replacement.children.length };
     }, sheet('Prints'));
     expect(interrupted.frame).toBe(interrupted.before);
