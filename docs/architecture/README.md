@@ -5,7 +5,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 ## Einstieg
 
 1. [Bestandsaufnahme](inventory.md) — nachprüfbarer Quellcodekatalog mit Klassifikation, Abhängigkeiten und bekannten Abdeckungslücken.
-2. [Eloquent-Relationen](eloquent-relations.md) — alle 26 Modeldateien, 48 explizite Relation-Aufrufe und die Grenze zum realen Datenbankschema.
+2. [Eloquent-Relationen](eloquent-relations.md) — 26 Modeldateien und 48 Relationen, jetzt zusätzlich als [generierter JSON-Graph](generated/eloquent-relationships.json) und [Mermaid-Gesamtgraph](generated/eloquent-relationships.mmd). — alle 26 Modeldateien, 48 explizite Relation-Aufrufe und die Grenze zum realen Datenbankschema.
 3. [Fachliche Lebenszyklen](lifecycles.md) — fünf getrennte Zustandsmodelle mit 35 überprüfbaren Quellbelegen.
 4. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
 5. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
