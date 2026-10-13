@@ -1,0 +1,113 @@
+<?php
+
+use App\Domain\Analytics\ArtistReportingService;
+use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkGalleryAssignmentService;
+use App\Domain\Artwork\ArtworkMaterialPresetService;
+use App\Domain\Artwork\ArtworkPrimaryMediaService;
+use App\Domain\Artwork\ArtworkPublicationService;
+use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\PublicMedia;
+use App\Filament\Support\ArtworkEditDialog;
+use App\Domain\Publication\PublicationService;
+use App\Filament\Pages\GalleryWorkspace;
+use App\Filament\Support\AdminActivityFeed;
+use App\Filament\Resources\Artworks\Pages\EditArtwork;
+use App\Models\Artwork;
+use App\Models\ArtworkCategory;
+use App\Models\ArtworkMaterialPreset;
+use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
+
+
+function polishGallery(string $state = 'published'): ArtworkCategory
+{
+    $gallery = ArtworkCategory::query()->create([
+        'slug' => 'gallery-'.fake()->unique()->uuid(),
+        'name' => 'Gallery '.fake()->unique()->word(),
+        'show_on_home' => false,
+    ]);
+    testGallerySection($gallery, ['state' => $state]);
+
+    return $gallery;
+}
+
+function polishArtwork(?ArtworkCategory $gallery, array $overrides = []): Artwork
+{
+    return Artwork::query()->create(array_merge([
+        'artwork_category_id' => $gallery?->getKey(),
+        'slug' => fake()->unique()->slug(),
+        'title' => 'Artwork '.fake()->unique()->word(),
+        'state' => 'draft',
+        'position' => 0,
+        'date_precision' => 'unknown',
+    ], $overrides));
+}
+
+function polishAsset(string $mime = 'image/jpeg', string $alt = 'Artwork media'): MediaAsset
+{
+    return MediaAsset::query()->create([
+        'storage_key' => 'originals/'.fake()->unique()->uuid().($mime === 'video/mp4' ? '.mp4' : '.jpg'),
+        'original_filename' => $mime === 'video/mp4' ? 'artwork.mp4' : 'artwork.jpg',
+        'mime_type' => $mime,
+        'byte_size' => 16,
+        'sha256' => hash('sha256', fake()->unique()->uuid()),
+        'state' => 'available',
+        'alt_text' => $alt,
+        'width' => $mime === 'video/mp4' ? null : 20,
+        'height' => $mime === 'video/mp4' ? null : 10,
+    ]);
+}
+
+function polishPrimary(Artwork $artwork, MediaAsset $asset): ArtworkMedia
+{
+    return ArtworkMedia::query()->create([
+        'artwork_id' => $artwork->getKey(),
+        'media_asset_id' => $asset->getKey(),
+        'role' => 'primary',
+        'position' => 0,
+    ]);
+}
+
+function polishThumbnail(MediaAsset $asset): MediaVariant
+{
+    return MediaVariant::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'variant_kind' => 'thumbnail',
+        'storage_key' => 'variants/'.fake()->unique()->uuid().'.webp',
+        'mime_type' => 'image/webp',
+        'byte_size' => 8,
+        'sha256' => hash('sha256', fake()->unique()->uuid()),
+        'transform_profile' => 'public-v1',
+        'state' => 'available',
+        'width' => 10,
+        'height' => 5,
+    ]);
+}
+
+function polishUnavailableGalleryAnalytics(): void
+{
+    app()->instance(ArtistReportingService::class, new class
+    {
+        /** @param list<string> $artworkAnalyticsKeys */
+        public function gallery(string $publicPath, array $artworkAnalyticsKeys, string $range = '30d'): array
+        {
+            return [
+                'status' => 'unavailable',
+                'page' => [],
+                'artworks' => [
+                    'state' => 'unavailable',
+                    'rows' => [],
+                ],
+            ];
+        }
+    });
+}

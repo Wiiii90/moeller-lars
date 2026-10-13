@@ -1,0 +1,127 @@
+<?php
+
+use App\Domain\Analytics\ArtistReportingService;
+use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkGalleryAssignmentService;
+use App\Domain\Artwork\ArtworkMaterialPresetService;
+use App\Domain\Artwork\ArtworkPrimaryMediaService;
+use App\Domain\Artwork\ArtworkPublicationService;
+use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\PublicMedia;
+use App\Filament\Support\ArtworkEditDialog;
+use App\Domain\Publication\PublicationService;
+use App\Filament\Pages\GalleryWorkspace;
+use App\Filament\Support\AdminActivityFeed;
+use App\Filament\Resources\Artworks\Pages\EditArtwork;
+use App\Models\Artwork;
+use App\Models\ArtworkCategory;
+use App\Models\ArtworkMaterialPreset;
+use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
+
+beforeEach(function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+});
+
+require_once __DIR__.'/GalleryFixtures.php';
+
+it('renders the six Gallery metrics and per-artwork analytics from one canonical reporting call', function (): void {
+    $gallery = polishGallery();
+    $artwork = polishArtwork($gallery, [
+        'state' => 'published',
+        'position' => 0,
+    ]);
+    $image = polishAsset();
+    polishPrimary($artwork, $image);
+    polishThumbnail($image);
+
+    $reporting = new class((string) $artwork->getAttribute('analytics_key'))
+    {
+        public int $calls = 0;
+
+        /** @var list<string> */
+        public array $keys = [];
+
+        public ?string $path = null;
+
+        public ?string $range = null;
+
+        public function __construct(private readonly string $analyticsKey) {}
+
+        /** @param list<string> $artworkAnalyticsKeys */
+        public function gallery(string $publicPath, array $artworkAnalyticsKeys, string $range = '30d'): array
+        {
+            $this->calls++;
+            $this->path = $publicPath;
+            $this->keys = $artworkAnalyticsKeys;
+            $this->range = $range;
+
+            return [
+                'status' => 'available',
+                'page' => [
+                    'visits' => ['state' => 'available', 'value' => 12.0],
+                    'views' => ['state' => 'available', 'value' => 18.0],
+                ],
+                'artworks' => [
+                    'state' => 'available',
+                    'rows' => [[
+                        'analytics_key' => $this->analyticsKey,
+                        'detail_views' => 4,
+                        'viewer_opens' => 3,
+                        'zooms' => 2,
+                        'navigation' => 1,
+                        'attention_seconds' => 195.0,
+                        'attention_label' => '3m 15s',
+                    ]],
+                ],
+            ];
+        }
+    };
+    app()->instance(ArtistReportingService::class, $reporting);
+
+    $response = $this->get(GalleryWorkspace::getUrl( ['gallery' => $gallery->getKey()]));
+
+    $response->assertOk()
+        ->assertSeeText('Artworks')
+        ->assertSeeText('Published')
+        ->assertSeeText('Visits')
+        ->assertSeeText('Views')
+        ->assertSeeText('Artwork opens')
+        ->assertSeeText('Attention')
+        ->assertSeeText('30d · 4 views · 3 opens · 2 zooms · 3m 15s attention');
+
+    expect($reporting->calls)->toBe(1)
+        ->and($reporting->range)->toBe('30d')
+        ->and($reporting->path)->toBe('/'.(string) $gallery->getAttribute('slug'))
+        ->and($reporting->keys)->toBe([(string) $artwork->getAttribute('analytics_key')]);
+});
+
+
+it('renders previews with incomplete drafts and invalid legacy primary rows without a 500', function (): void {
+    $gallery = polishGallery();
+    $broken = polishArtwork($gallery, ['title' => 'No primary media', 'position' => 0]);
+    $missingAlt = polishArtwork($gallery, ['title' => 'No image ALT text', 'position' => 1]);
+    $asset = polishAsset('image/jpeg', '');
+    polishThumbnail($asset);
+    polishPrimary($missingAlt, $asset);
+    $valid = polishArtwork($gallery, ['title' => 'Valid visible artwork', 'position' => 2]);
+    $video = polishAsset('video/mp4', 'Accessible moving-image description');
+    polishPrimary($valid, $video);
+
+    // Simulate a legacy published row that no longer has a primary usage.
+    $broken->forceFill(['state' => 'published'])->save();
+
+    $this->get(route('preview.site.section', ['section' => $gallery->slug]))
+        ->assertOk()
+        ->assertSee('Valid visible artwork')
+        ->assertDontSee('No primary media')
+        ->assertDontSee('No image ALT text');
+});
