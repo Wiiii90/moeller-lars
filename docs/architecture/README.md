@@ -5,7 +5,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 ## Einstieg
 
 1. [Bestandsaufnahme](inventory.md) — nachprüfbarer Quellcodekatalog mit Klassifikation, Abhängigkeiten und bekannten Abdeckungslücken.
-2. [Eloquent-Relationen](eloquent-relations.md) — 26 Modeldateien und 48 Relationen, jetzt zusätzlich als [generierter JSON-Graph](generated/eloquent-relationships.json) und [Mermaid-Gesamtgraph](generated/eloquent-relationships.mmd). — alle 26 Modeldateien, 48 explizite Relation-Aufrufe und die Grenze zum realen Datenbankschema.
+2. [Eloquent-Relationen](eloquent-relations.md) — 26 Modeldateien und 48 Relationen, jetzt zusätzlich als [generierter JSON-Graph](generated/eloquent-relationships.json) und [Mermaid-Gesamtgraph](generated/eloquent-relationships.mmd).
 3. [Fachliche Lebenszyklen](lifecycles.md) — fünf getrennte Zustandsmodelle mit 35 überprüfbaren Quellbelegen.
 4. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
 5. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
@@ -47,6 +47,10 @@ php scripts/generate-architecture-relations.php --check
 
 Ergebnis: `docs/architecture/generated/php-relationships.json` (Quellbelege) und `module-relationships.mmd` (aggregierte, mit Referenzanzahlen beschriftete Modulübersicht). Beide sind nach einem vollständigen lokalen Checkout-Lauf einzuchecken; sie sind hier noch **nicht** als vollständig erzeugt ausgegeben.
 
+### Vollständiger Eloquent-Modellgraph
+
+Der separate [Eloquent-Generator](../../scripts/generate-architecture-eloquent.php) erfasst die direkt in `app/Models/*.php` deklarierten Relation-Methoden. Ein [JSON-Index](generated/eloquent-relationships.json) mit 26 Modellen, 48 Kanten und Quellzeilen sowie ein [Gesamtgraph](generated/eloquent-relationships.mmd) sind eingecheckt. Die beiden Ausgaben sind gegeneinander geprüft; ein kompletter lokaler Generator-`--check` ist weiterhin offen. Eloquent-Relationen sind nicht mit SQL-FKs gleichzusetzen.
+
 ### Physisches Datenbankschema (read-only)
 
 [`scripts/export-architecture-postgres.php`](../../scripts/export-architecture-postgres.php) liest nach einer **separaten, kontrollierten Migration in einer wegwerfbaren PostgreSQL-Datenbank** `pg_catalog` und `information_schema`. Der Exporter selbst führt **keine** Migrationen, Schemaänderungen oder Schreibabfragen aus; er verlangt explizit `ARCH_DOC_DB_DISPOSABLE=1`, eine `pgsql:`-DSN und verwendet eine Read-only-Transaktion. Er exportiert Tabellen/Views, Spalten, Constraints, Indizes und nutzerdefinierte Trigger nach `postgresql-catalog.json` sowie FK-Quellenkanten nach `postgresql-fk-graph.mmd`. Die FK-Pfeile behaupten bewusst noch keine Kardinalitäten.
@@ -57,13 +61,13 @@ Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser
 
 | Modell | Erste Quelle | Status |
 | --- | --- | --- |
-| PHP-Klassen, Interfaces, Enums, Traits und statische Abhängigkeiten | `app/**/*.php` | Dateiinventar begonnen; vollständiger Parser/Generator offen |
+| PHP-Klassen, Interfaces, Enums, Traits und statische Abhängigkeiten | `app/**/*.php` | Tokenizer-Generator erstellt; vollständiger Checkout-Lauf und umfassende Abdeckungsprüfung offen |
 | Fachmodule und ihre Eintrittspunkte | `app/Domain`, `app/Http`, `app/Filament`, `app/Livewire` | Schwerpunktpfade quellengeprüft |
 | Physisches PostgreSQL-Schema und Constraints | ausgeführte, vollständige Migrationen in **isolierter Wegwerf-DB** | offen; Migrationsanzahl ist kein Schema |
-| Eloquent-Beziehungen | Relation-Methoden der Models | vollständiger Relation-Graph offen |
+| Eloquent-Beziehungen | Relation-Methoden der Models | 26 Modelquellen / 48 explizite Kanten als JSON und Mermaid vorhanden; **physische FKs unabhängig offen** |
 | JSON-/Rich-Text-Komponenten | Validierung und Normalisierung (z. B. `CustomPageSetting`) | erste Typfamilien geprüft, Feldschema offen |
 | Routes und Middleware | `routes/web.php`, `bootstrap/app.php`, Filament-Provider | Public-Routen und Read-Kontext geprüft, kompletter Runtime-Router offen |
-| Zustandsautomaten | Domain-Services und Guards | Blog/Home/Exhibition als Kandidaten; vollständige Übergangstabellen offen |
+| Zustandsautomaten | Domain-Services und Guards | fünf aktuell untersuchte Modelle / 35 quellverankerte Kanten; weitere Zustände und indirekte Übergänge offen |
 | Ablauf-/Sequenzdiagramme | UI/Controller → Services → Persistenz/Events | erste zwei in diesem Ordner |
 | Browserinstanzen und -übergänge | Blade, Alpine/Livewire und `resources/js` | Dateiinventar; dynamische Verifikation offen |
 | Deployment und externe Systeme | Docker-/Laravel-Konfiguration; Plattformgrenze | offen; keine erfundene Hosttopologie |
