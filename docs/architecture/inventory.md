@@ -142,6 +142,10 @@ Das zugehörige **generierende Programm** steht unter `scripts/generate-architec
 
 Die generierte Modul-Mermaid-Grafik zählt solche Kanten, **nicht** echte Aufrufhäufigkeiten. Das Datenbankschema muss unabhängig davon aus einem sauber migrierten PostgreSQL-Katalog abgeleitet werden.
 
+## Fachliche Lebenszyklen
+
+Die [fünf quellverankerten Zustandsmodelle](lifecycles.md) enthalten 35 kuratierte Übergänge und unterscheiden persistierte Zustände von zeitabhängigen Public-Prädikaten. Die maschinenlesbare Eingabe ist [lifecycles.json](lifecycles.json), der Generator liegt unter `scripts/generate-architecture-lifecycles.php`. Das ist ein erster Ausschnitt.
+
 ## 7. Nacharbeit, ohne Scheingenauigkeit
 
 - Vollständiger deterministischer PHP-Symbol- und Verwendungsgraph mit Quellpositionen.
