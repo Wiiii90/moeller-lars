@@ -47,7 +47,7 @@ The persisted site/navigation tree is represented by `SiteSection`; application 
 
 Journal template switching is non-destructive: changing a Journal from Blog to Exhibitions or back changes the active presentation/editorial projection but does not convert or delete the inactive template's retained entry rows.
 
-`ArtworkCategory` remains the persistence model behind the product concept **Gallery**. Contact is a reusable Custom Page component. CV/Vita content is composed through the current Custom Page/CV content model rather than a runtime Site Node type.
+`ArtworkCategory` remains the persistence model behind the product concept **Gallery**. Contact is a reusable Custom Page component. CV/Vita content is composed through ordinary Custom Page structured Text/List components rather than a dedicated CV persistence or Site Node type.
 
 ## Public routing
 
@@ -119,9 +119,9 @@ Canonical embedded Storage media images use:
 ![](media:<id>)
 ```
 
-`RichTextMediaReference` owns parsing/formatting. `SafeRichTextRenderer` owns safe public rendering. `CanonicalMediaImageRenderer` resolves canonical media images. Arbitrary external image URLs are not a second supported embedded-media system.
+`RichTextMediaReference` owns parsing/formatting. `SafeRichTextRenderer` owns safe public rendering. `CanonicalMediaImageRenderer` resolves canonical media images. Validated HTTP(S) image URLs are an explicit `AdminRichText` option, checked by `SafeRichTextRenderer`/`SafeLinkPolicy`; they are **not** another `MediaAsset` identity or Storage-managed media reference.
 
-This stack is used by Blog body, Exhibition description, Custom Page Text/List rich text, CV body and Home rich text. The legacy Journal TipTap/RichEditor/custom-block runtime is not part of the architecture.
+This stack is used by Blog body, Exhibition description, Custom Page Text/List rich text and Home rich text. A separate historical CV-body row is not a current runtime consumer. The legacy Journal TipTap/RichEditor/custom-block runtime is not part of the architecture.
 
 ## Media architecture
 
@@ -131,7 +131,7 @@ Media ingestion owns durable Storage files and their database records independen
 
 Gallery Artwork editing has one canonical form and writer (`ArtworkEditDialog`) shared between the Gallery workspace action and the Artwork deep-link EditRecord. The latter exists to edit unassigned drafts and as the destination of admin audit/Home links; it has no separate mutation rules. Gallery assignment changes are committed only by `ArtworkGalleryAssignmentService`, never by Filament form relationship autosave. Creation is owned by the Gallery workspace; superseded `CreateArtwork` and `ManageGalleryArtworks` resource routes/pages were removed, and callers link to `GalleryWorkspace::getUrl()` directly.
 
-Structured consumers include Artwork media, Journal Cover/Gallery, CV direct images, Custom Image components, Home Image components and site identity. Rich Text references use `media:<id>`.
+Structured consumers include Artwork media, Journal Cover/Gallery, Custom Page Image/List components, Home Image/List components and site identity. Direct-image references in historical CV rows belonged to the retired `cv_entries` table. Rich Text references use `media:<id>`.
 
 Two central questions are intentionally separate:
 
@@ -196,7 +196,7 @@ Filtered/search projections do not silently become canonical reorder sequences. 
 
 ## Custom Pages and Contact
 
-A Custom Page owns an ordered structured component list. Supported components include normal content, List, CV List and reusable Contact composition.
+A Custom Page owns an ordered structured component list. Supported persisted types are `image`, `text`, `list`, `divider`, `contact` and `legal_disclaimer`. CV/Vita uses ordinary `list` and `text`; there is no separate persisted `CV List` type. See [structured components](architecture/structured-components.md).
 
 Parent and child mutations use canonical workspace/domain state; UI hierarchy does not imply a second persistence model. Contact child types remain structured and bounded rather than free-form duplicated components.
 
@@ -216,7 +216,7 @@ See [ANALYTICS.md](ANALYTICS.md).
 
 Administrative state has three distinct owners:
 
-- **Notification** — one durable user-scoped `AdminNotification` record, projected immediately into the persistent header shell when its recipient is the current browser actor;
+- **Notification** — user-scoped `AdminNotification` messages, surfaced immediately in the header for the current browser actor; a single success call may consume **multiple** Activity messages rather than exactly one row;
 - **Activity** — append-only factual history of successful administrative changes;
 - **Publication** — Working/LIVE/version state and publication operations.
 
@@ -225,8 +225,7 @@ The Domain service and append-only audit do **not** implicitly call the
 notifier. Every authenticated admin UI mutation must explicitly bridge
 its real success/no-op result into `AdminNotifier` exactly once at its
 single Action/field mutation owner; no-op and failed changes must emit
-no success message. This is verified in Livewire tests for data + audit
-+ mailbox + header delivery, and accepted separately in the browser.
+no success message. The real Livewire action path must be verified for data + audit + mailbox + header delivery; source review or the existence of test files is not proof those checks have actually run. Browser acceptance is a separate gate.
 
 The authenticated Filament admin uses the framework-native SPA mode. The header Notification surface is rendered through the layout-level `BODY_END` hook, **after** the workspace DOM and outside Livewire page/topbar components, and is persisted with Livewire `@persist`. Page workspaces are replaced through Livewire navigation. Public-site destinations, downloads and separate application surfaces such as Pulse remain document boundaries.
 
@@ -277,4 +276,4 @@ A release is identified by exact Git SHA + immutable OCI digest. CI success or a
 
 Tests protect durable security/data/domain contracts. Browser/product acceptance protects visual interaction quality.
 
-Do not freeze temporary CSS class names or current markup through brittle snapshots when browser acceptance is the real requirement. During reconciliation, use the narrowest evidence appropriate to the changed behavior; the final `main` PR receives the canonical full verification gate.
+Do not freeze temporary CSS class names or current markup through brittle snapshots when browser acceptance is the real requirement. During reconciliation, use the narrowest evidence appropriate to the changed behavior. A later release candidate needs explicit user authorization for promotion to protected `main` and a separately authorized release-verification gate; neither CI nor a PR workflow is automatically permitted in the current branches.

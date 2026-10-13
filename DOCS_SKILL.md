@@ -126,34 +126,32 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branchstand:** `docs` vor diesem Commit `ecdf52deab13d83390a7171a4a4882b3c626693a`,
+**Stand 13.10.2026:** `docs` vor diesem Commit `af4a45ec77dba447e133479e01537b8306919cae`,
 `dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`.
-Vor Weiterarbeit beide HEADs neu prüfen und `dev`-Änderungen bewusst übernehmen.
+Remote-HEADs vor weiterer Arbeit erneut prüfen.
 
-**Erledigte Medienvertragskorrektur:** [MEDIA.md](docs/MEDIA.md)
-unterscheidet nun korrekt den `MediaReferenceQuery`-Nachweis von
-`MediaAssetEditorialService::delete()`: existierende Referenzen
-führen zum kanonischen Entfernen betroffener Usages/Custom-/Home-/Journal-
-Verweise, nicht zu einem generellen Löschverbot. Physische Dateilöschung
-berücksichtigt Working/LIVE/History-Schutz. Das alte `CvEntry`-
-Direktbild/RichText-Modell ist nicht mehr aktiv; heutige CV-Komposition
-liegt in Custom Pages. Die unterstützten, sicheren externen HTTP(S)-
-Rich-Text-Bilder wurden vom `media:<id>`-Storage-Format unterschieden.
-**Alles quellengeprüft; kein Runtime-/Browser-Test und keine App-Änderung.**
+**Hauptdokumente korrigiert:** `docs/ARCHITECTURE.md` und
+`docs/DATA-MODEL.md` wieder mit [MEDIA.md](docs/MEDIA.md) und dem
+tatsächlichen Code abgeglichen: keine aktive CV-Direct-Image-/Body-
+Datenstruktur und kein eigener `CV List`-Komponententyp; `list`/
+`text` bleiben kanonisch. Medienreferenzen führen beim autorisierten
+Löschen zu Domain-gesteuerter Usage-Entfernung statt zu einem
+pauschalen Verbot. Rich Text kann sichere externe HTTP(S)-Bilder
+verlinken, ohne sie als `MediaAsset` zu verwalten.
+`ARCHITECTURE.md` unterscheidet Activity-bedingte mehrfache
+Notifications und behauptet weder ausgeführte Livewire-Tests noch
+einen automatisch autorisierten `main`-PR/CI-Gate.
 
-**Außerdem erledigt:** einfache relative Links in allen **61** Markdown-
-Dateien / **450** erkannten Pfaden geprüft (keine fehlenden Ziele;
-Anker/externe URLs noch nicht geprüft). Root-Regeln für
-Storage-Kapazität, 300-ms-Search, Audit und Edit-Blurs verlinken jetzt
-ihre kanonischen Domain-/Control-/Notification-Owner.
-Der Reset-Null-Diff-Audit-Widerspruch wurde ebenfalls korrigiert.
+**Bereits geprüft:** 61 Markdown-Dateien / 450 erkannte relative Links
+ohne fehlende Dateiziele (keine Fragment-/externe URL-Prüfung).
+`ADMIN-ACTIVITY-PUBLICATION-CONTRACT` beschreibt Reset-Audit nur
+bei echtem Working/LIVE-Diff. Keine Runtime-/Browser-/CI-Tests gelaufen.
 
-**Nächster konkreter Schritt:** Verbleibende aktuelle Vertragswidersprüche
-in `docs/ARCHITECTURE.md`, `docs/DATA-MODEL.md` und
-`docs/ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md` am Code überprüfen,
-sowie ausgewählte interne Abschnittsanker validieren. Keine reine
-Markdown-Menge als Ersatz für fachliche Prüfung behandeln.
+**Unmittelbar weiter:** [MIGRATION-INVARIANTS.md](docs/MIGRATION-INVARIANTS.md)
+gegen die konkrete historische Migration prüfen, die noch eine
+veränderliche `PublicationSnapshot::TABLES`-Konstante importiert;
+quellbelegte Abweichung getrennt von der normativen Zielregel
+dokumentieren. Danach Anker-Verweise/weitere echte Widersprüche.
 
-**Offen:** echter nativer PHP-Generatorlauf im Full-Checkout, isolierte
-PostgreSQL-Schemaaufnahme, ausgeführte Public-/Admin-Browserchecks und
-Notifier-Transport-Retry-Test. CI und `testing` unangetastet.
+**Offen:** Full-Checkout-PHP, Wegwerf-PostgreSQL-`pg_catalog`, E2E
+und Notification-Retry. `testing`/CI unberührt.

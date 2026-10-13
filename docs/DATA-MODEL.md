@@ -176,7 +176,7 @@ Canonical original uploaded or migrated asset.
 
 Durable technical identity includes generated storage key, content-derived MIME type, bytes, SHA-256, lifecycle state and media metadata including canonical asset-level ALT.
 
-Available originals are reusable across consumers. A referenced asset cannot be destructively deleted.
+Available originals are reusable across consumers. A referenced asset is **not** automatically immune to deletion: an explicitly authorized `MediaAssetEditorialService::delete()` transaction removes supported canonical usages and dependent editorial references before marking the asset deleted. Its physical bytes remain governed by Working/LIVE/retained-history cleanup eligibility. See [MEDIA.md](MEDIA.md#deletion-and-cleanup).
 
 ### `media_variants`
 
@@ -184,7 +184,7 @@ Generated derivative of one canonical original. Variants are rebuildable and nev
 
 ### Canonical reference model
 
-Structured references include Artwork, Journal Cover/Gallery, CV direct image, Custom/Home direct Image and site identity.
+Current structured references include Artwork, Journal Cover/Gallery, Custom/Home Image and List components, and site identity. The former CV direct-image relationship is a historical `CvEntry` artifact only, not a current active SQL reference.
 
 Rich Text references use Markdown `media:<id>` and are discovered by `RichTextMediaReference`/`MediaReferenceQuery`.
 
@@ -233,7 +233,7 @@ Laravel user/session/cache/job tables support authenticated administration/runti
 - Home cannot be deleted.
 - Parent Site Nodes cannot be deleted while descendants remain.
 - Journals cannot be deleted while owned entries remain.
-- Referenced MediaAssets cannot be destructively deleted.
+- Canonical MediaAsset deletion is reference-aware: the single Domain transaction must remove/update affected usages and editorial content, then defer physical cleanup while any Working/LIVE/retained snapshot requires those bytes. A reference is not an unconditional refusal to delete.
 - disabling a presentation feature does not silently detach/delete its retained data.
 - Gallery detach is Artwork unassignment, not Artwork/Media deletion.
 - destructive/publication operations are authorized/audited and go through canonical domain services.
