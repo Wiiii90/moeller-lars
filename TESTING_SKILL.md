@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, parent HEAD `a31210d70f7128f6d23f3cf5b742d98a8640d8f7` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`. More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `32528be482cd2867f6d17548d66fb167402f7517` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -42,7 +42,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 
 ## 4. Completed work (verify actual HEAD; do not redo blindly)
 
-- Removed all **34** historical PHP Architecture test files and removed the Architecture PHPUnit/Pest/Composer/CI entry points. Moved the actual publication restore-order invariant to `tests/Unit/Publication/PublicationRestoreOrderTest.php`.
+- Removed all **34** historical PHP Architecture test files and removed the Architecture PHPUnit/Pest/Composer/CI entry points. Kept the publication restore-order invariant in the actual database-backed `tests/Integration/Publication/PublicationRestoreTest.php`; the transient constant-only Unit test was later deleted.
 - Deleted large suites of source/CSS/string/pixel checks, legacy patch simulation, fragile browser geometry checks, and private performance probes. Trimmed implementation-locked assertions embedded in Feature suites.
 - Decomposed oversized suites for Admin Pages, Custom Page, Gallery, General, Home Hero, Dashboard, Storage, Activity Undo and Publication into responsibility-specific tests and adjacent fixtures.
 - Moved Admin `SitePages` tests to `tests/Feature/Admin/Pages`; `Files` tests to `Storage`; `JournalOrderingTest.php` into `Journal`; `PulseReportTest.php` into `Observability`.
@@ -79,13 +79,33 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 5. Keep browser scenarios representative and stable; consolidate setup and ensure E2E fixtures reflect actual requirements. Report measured profiles separately from blocking correctness assertions.
 6. Coordinate revisions to test policy and obsolete path references with the `docs` branch, and keep eventual CI wiring consistent with the actual test tree.
 
-## 7. Maintenance ritual — mandatory
+## 7. Full-suite review ledger (as of 2026-10-13)
+
+Track each review by **verified contract**, not by number of files. 'Source-reviewed' never means 'runtime passed'.
+
+| Domain / test layer | Status | Still to investigate |
+| --- | --- | --- |
+| Activity / audit / undo | Partially source-reviewed | Validate split suites, permission/no-op/notification semantics end-to-end |
+| Dashboard / notifications | Partially source-reviewed | Run Livewire interaction tests, verify mutations and notifications |
+| General / Home / Pages | Partially source-reviewed | Review every workflow against traits, actions and current dialog behavior |
+| Journal / Exhibitions | Partial; recent dev merge | Map autosave + address validation, public visibility, Journal state changes |
+| Gallery / Storage / media | Partial | Cross-check deletion/variants/usage, public authorization and preview |
+| Publication / Restore | Partially source-reviewed | Execute realistic Commit/Stage/Revert and media retention cases |
+| Public / security / contact / SEO | Partial | Reverify current routes, middleware, side effects and auth |
+| Unit / Integration / Migration | Partial | Unit construction, historic migration retirement, runtime correctness |
+| JS / Playwright | Structurally reorganized | Runtime executions and fixture realism; avoid DOM/copy locks |
+| Test infrastructure / CI | Source-reviewed only | Disposable Postgres, test discovery, npm imports and safe validation |
+| Runtime suites | **NOT RUN** | No CI; local disposable execution not established |
+
+Important: `dev` is moving independently; its new features and tests must be brought over thoughtfully. A deleted Architecture test on `dev` is not evidence of missing coverage until its public behavior is inspected.
+
+## 8. Maintenance ritual — mandatory
 
 At **every substantive testing commit / merge**:
-1. Re-read this file and check current `testing`/`dev` HEADs.
-2. Update **Completed work**, **Unverified / risks**, and **Next work** to reflect reality. Remove already-resolved TODOs; don't accumulate a historical changelog.
+1. Re-read **`TESTING_SKILL.md`** and check current `testing`/`dev` HEADs.
+2. Update **Completed work**, **Unverified / risks**, **Next work** and the **full-suite review ledger** to reflect reality. Remove already-resolved TODOs; don't accumulate a historical changelog.
 3. Update the **Last reconciled** date and relevant recent merge/commit note. Exact SHA is context only; live GitHub HEAD always wins.
 4. Keep this operational file **on `testing`**, preferably in the same commit as related changes. Avoid redundant updates for formatting-only edits.
-5. Before handing work to a new chat, direct it to read **this file first**, then `tests/README.md` and relevant production/test code, and distinguish *inspected*, *authored*, *executed* and *browser-verified* evidence.
+5. Before handing work to a new chat, direct it to read **`TESTING_SKILL.md` first**, then `tests/README.md` and relevant production/test code, and distinguish *inspected*, *authored*, *executed* and *browser-verified* evidence.
 
 **No CI without the user's explicit authorization.**
