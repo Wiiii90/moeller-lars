@@ -7,25 +7,43 @@
     min-width: 0;
 }
 
-/* Native balanced columns produce a true variable-height mosaic. A row-spanned
-   CSS grid reserved empty tracks below short works, leaving visible holes. */
+/* Ordered gallery items are assigned to two balanced image lanes from
+   stored dimensions before render. No CSS multi-column breaks or grid-row
+   spans, so tall works never reserve empty tracks for the next row. */
 .journal-entry-gallery--mosaic {
-    display: block;
-    columns: 12rem 2;
-    column-gap: .9rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .9rem;
+    align-items: start;
+}
+
+.journal-entry-gallery--mosaic.journal-entry-gallery--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.journal-entry-gallery--mosaic .journal-entry-gallery__column {
+    display: grid;
+    min-width: 0;
+    gap: .9rem;
+    align-content: start;
 }
 
 .journal-entry-gallery--mosaic .journal-entry-gallery__item {
     display: block;
-    width: 100%;
-    margin: 0 0 .9rem;
-    break-inside: avoid;
-    page-break-inside: avoid;
+    min-width: 0;
 }
 
 .journal-entry-gallery--mosaic .journal-entry-media,
 .journal-entry-gallery--mosaic img {
     max-width: 100%;
+}
+
+/* Only the available gallery width decides when individual artworks need
+   the whole row. The feature never causes horizontal scrolling on phones. */
+@container (max-width: 21rem) {
+    .journal-entry-gallery--mosaic {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .journal-entry-gallery--slideshow {

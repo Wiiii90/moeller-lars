@@ -168,17 +168,31 @@ with the deliberately plain controls **Open / Close**. Entries with no
 additional material render a non-interactive summary. Multiple exhibitions
 may remain open simultaneously; switching one does not close another.
 
-Expanded content reuses the existing canonical cover, rich description,
-ordered Gallery presentation (grid, mosaic or slideshow), vernissage, address
-and external link contracts. A cover paired with editorial content flows as a
-magazine figure, alternating left/right through the ordinary entry order,
-with prose returning to full width once past the figure. On insufficient
-content width, the feature stacks naturally without extra Admin controls.
-Mosaic uses the browser's balanced CSS columns for variable-height figures,
-without explicit grid row spanning that creates empty tracks; artwork/image
-order and author-supplied captions remain in the DOM. Images remain lazy and
-uncropped. No separate Exhibition detail route or duplicate source of truth
-is introduced by this index presentation.
+Expanded content reuses the canonical cover, rich description, ordered
+Gallery presentations (grid, mosaic or slideshow), vernissage, address and
+external link contracts. Opened Exhibition folios compose their available
+content rather than alternate images by row parity:
+
+- A cover paired with vernissage, address or map/external actions uses a
+  responsive, two-column image-and-visit composition if the actual content
+  width supports it. At narrower widths those items stack naturally.
+- An unaccompanied cover stands alone without a fabricated empty partner
+  column. Text-only entries align their information with the title column.
+- Long-form editorial text always follows the short image/visit composition
+  in a full reading measure rather than wrapping into an unreadably narrow
+  float. The optional Map action stays with visit information and opens the
+  established on-demand dialog; only external destinations carry the
+  external-link icon.
+- Mosaic uses the stored source width/height to greedily distribute media
+  into two balanced vertical lanes **before rendering**. Images and captions
+  are never cropped, cloned, or relocated after paint. Within each lane,
+  authored ordering is preserved, but the visual lane composition is not a
+  strict left-to-right display of the global entry sequence. Grid or
+  Slideshow remains available when literal sequential presentation matters.
+  The authored `position` values and editorial workflows are untouched.
+
+No new Administration customization, Exhibition detail route or duplicate
+media source of truth is introduced.
 
 The existing MediaAsset copyright modes remain authoritative. Exhibition
 images keep their own authored credits and explicit copyright overrides

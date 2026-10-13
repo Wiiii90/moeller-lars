@@ -29,9 +29,10 @@
                     ->implode(' · ');
                 $hasDescription = trim((string) ($exhibition->description ?? '')) !== '';
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
-                $hasEditorial = $vernissage !== null || $address !== null || $hasDescription;
-                $hasDetails = $hasEditorial || $hasCover || $gallery->isNotEmpty()
-                    || $map !== null || $exhibition->external_url !== null;
+                $hasFacts = $vernissage !== null || $address !== null;
+                $hasActions = $map !== null || $exhibition->external_url !== null;
+                $hasDetails = $hasFacts || $hasDescription || $hasCover
+                    || $gallery->isNotEmpty() || $hasActions;
                 // Inherited General notices are consolidated once for this
                 // index; individual credits/overrides stay with each figure.
                 $displayedMedia = collect($hasCover ? [$cover] : [])->concat($gallery);
@@ -77,15 +78,17 @@
                     </span>
                 @if ($hasDetails)
                         </summary>
-                        <div class="exhibition-entry__body @unless ($hasCover) exhibition-entry__body--text @endunless">
-                            @if ($hasCover || $hasEditorial)
-                                <div class="exhibition-entry__feature @if ($hasCover && $hasEditorial) exhibition-entry__feature--paired @elseif (! $hasCover) exhibition-entry__feature--text @endif">
+                        <div class="exhibition-entry__body">
+                            {{-- Cover, practical information and long-form prose each have a
+                                 stable editorial place. No empty partner column is rendered. --}}
+                            @if ($hasCover || $hasFacts || $hasActions)
+                                <div class="exhibition-entry__feature @if ($hasCover && ($hasFacts || $hasActions)) exhibition-entry__feature--paired @elseif ($hasCover) exhibition-entry__feature--solo @else exhibition-entry__feature--text @endif">
                                     @if ($hasCover)
                                         {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false) !!}
                                     @endif
-                                    @if ($hasEditorial)
-                                        <div class="exhibition-entry__editorial">
-                                            @if ($vernissage !== null || $address !== null)
+                                    @if ($hasFacts || $hasActions)
+                                        <div class="exhibition-entry__info">
+                                            @if ($hasFacts)
                                                 <dl class="exhibition-entry__facts">
                                                     @if ($vernissage !== null)
                                                         <div class="exhibition-entry__fact">
@@ -101,18 +104,49 @@
                                                     @endif
                                                 </dl>
                                             @endif
-                                            @if ($hasDescription)
-                                                <div class="rich-text journal-entry-content exhibition-entry__description">{!! $richText->render((string) $exhibition->description) !!}</div>
+                                            @if ($hasActions)
+                                                <div class="exhibition-entry__links">
+                                                    @if ($map !== null)
+                                                        <button class="exhibition-entry__map-trigger" type="button"
+                                                            data-exhibition-map-open
+                                                            aria-haspopup="dialog"
+                                                            aria-controls="{{ $mapDialogId }}">
+                                                            Show map
+                                                        </button>
+                                                    @endif
+                                                    @if ($exhibition->external_url !== null)
+                                                        <a href="{{ $exhibition->external_url }}" target="_blank" rel="noopener noreferrer"
+                                                            data-matomo-event-category="Journal"
+                                                            data-matomo-event-action="exhibition_external_click"
+                                                            data-matomo-event-name="{{ $exhibition->title }}">More information <x-public-icon name="external-link" /></a>
+                                                    @endif
+                                                </div>
                                             @endif
                                         </div>
                                     @endif
                                 </div>
                             @endif
+                            @if ($hasDescription)
+                                <div class="rich-text journal-entry-content exhibition-entry__description @unless ($hasCover) exhibition-entry__description--text @endunless">{!! $richText->render((string) $exhibition->description) !!}</div>
+                            @endif
 
                             @if ($gallery->isNotEmpty())
-                                <div class="journal-entry-gallery journal-entry-gallery--{{ $galleryPresentation }}" aria-label="Exhibition images" @if ($galleryPresentation === 'slideshow') data-journal-slideshow @endif>
-                                    @foreach ($gallery as $usage)
-                                        <div class="journal-entry-gallery__item" @if ($galleryPresentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false) !!}</div>
+                                @php
+                                    $galleryGroups = $galleryPresentation === 'mosaic'
+                                        ? app(\App\Domain\Content\JournalMosaicColumns::class)->arrange($gallery)
+                                        : [$gallery->values()->all()];
+                                @endphp
+                                <div class="journal-entry-gallery journal-entry-gallery--{{ $galleryPresentation }} @if ($galleryPresentation === 'mosaic' && $gallery->count() === 1) journal-entry-gallery--single @endif" aria-label="Exhibition images" @if ($galleryPresentation === 'slideshow') data-journal-slideshow @endif>
+                                    @foreach ($galleryGroups as $column)
+                                        @if ($galleryPresentation === 'mosaic')
+                                            <div class="journal-entry-gallery__column">
+                                        @endif
+                                        @foreach ($column as $usage)
+                                            <div class="journal-entry-gallery__item" @if ($galleryPresentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false) !!}</div>
+                                        @endforeach
+                                        @if ($galleryPresentation === 'mosaic')
+                                            </div>
+                                        @endif
                                     @endforeach
                                     @if ($galleryPresentation === 'slideshow' && $gallery->count() > 1)
                                         <div class="journal-entry-gallery__controls" aria-label="Gallery navigation">
@@ -124,24 +158,6 @@
                                 </div>
                             @endif
 
-                            @if ($map !== null || $exhibition->external_url !== null)
-                                <div class="exhibition-entry__links">
-                                    @if ($map !== null)
-                                        <button class="exhibition-entry__map-trigger" type="button"
-                                            data-exhibition-map-open
-                                            aria-haspopup="dialog"
-                                            aria-controls="{{ $mapDialogId }}">
-                                            Show map <x-public-icon name="external-link" />
-                                        </button>
-                                    @endif
-                                    @if ($exhibition->external_url !== null)
-                                        <a href="{{ $exhibition->external_url }}" target="_blank" rel="noopener noreferrer"
-                                            data-matomo-event-category="Journal"
-                                            data-matomo-event-action="exhibition_external_click"
-                                            data-matomo-event-name="{{ $exhibition->title }}">More information</a>
-                                    @endif
-                                </div>
-                            @endif
                             @if ($map !== null)
                                 <dialog id="{{ $mapDialogId }}"
                                     class="exhibition-map-dialog"

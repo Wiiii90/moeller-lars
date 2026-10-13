@@ -968,43 +968,39 @@ body {
     padding: .35rem 0 2.2rem;
 }
 
+/* A feature has no empty companion column: its composition follows the
+   available content, never an even/odd exhibition index. */
 .exhibition-entry__feature {
     display: grid;
     min-width: 0;
-    gap: 1.2rem;
+    gap: 1.1rem;
     align-items: start;
 }
 
-/* A text-only folio follows the title column; an artwork has room to lead
-   the composition instead of becoming a narrow chronology thumbnail. */
+.exhibition-entry__feature--solo {
+    justify-items: center;
+}
+
 .exhibition-entry__feature--text,
-.exhibition-entry__body--text > .exhibition-entry__links {
+.exhibition-entry__description--text {
     margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
 }
 
-/* Standalone covers take their natural width, with occasional mirrored
-   alignment rather than an arbitrary permanent indent below the title. */
-.exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
-    width: fit-content;
-    max-width: 100%;
-    margin-inline-start: 0;
-}
-
-.exhibition-entry:nth-child(even) .exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
-    margin-inline-start: auto;
-}
-
 .exhibition-entry__cover {
-    width: min(100%, 32rem);
+    width: min(100%, 27rem);
     min-width: 0;
     margin: 0;
+}
+
+.exhibition-entry__feature--paired .exhibition-entry__cover {
+    width: 100%;
 }
 
 .exhibition-entry__cover img {
     display: block;
     width: auto;
     max-width: 100%;
-    max-height: 28rem;
+    max-height: 30rem;
     height: auto;
     object-fit: contain;
     object-position: left top;
@@ -1015,8 +1011,11 @@ body {
     overflow-wrap: anywhere;
 }
 
-.exhibition-entry__editorial {
+.exhibition-entry__info {
+    display: grid;
     min-width: 0;
+    gap: 1.1rem;
+    align-content: start;
     padding-top: .12rem;
 }
 
@@ -1024,49 +1023,49 @@ body {
     display: grid;
     min-width: 0;
     margin: 0;
-    gap: 1.05rem;
+    gap: .9rem;
 }
 
 .exhibition-entry__fact {
-    display: block;
+    display: grid;
     min-width: 0;
+    gap: .18rem;
 }
 
 .exhibition-entry__fact dt {
-    margin: 0 0 .22rem;
-    color: #8a8076;
-    font-size: .62rem;
-    font-weight: 500;
-    letter-spacing: .065em;
-    line-height: 1.4;
-    text-transform: uppercase;
-    overflow-wrap: anywhere;
+    margin: 0;
+    color: #81776e;
+    font-family: var(--public-index-typeface);
+    font-size: .82rem;
+    font-weight: 400;
+    line-height: 1.35;
 }
 
 .exhibition-entry__fact dd {
     min-width: 0;
     margin: 0;
-    color: #57504a;
-    font-size: .86rem;
-    line-height: 1.52;
+    color: #514941;
+    font-size: .85rem;
+    line-height: 1.55;
     overflow-wrap: anywhere;
 }
 
+/* Prose follows the short factual section and can always use the whole
+   reading measure. It is never squeezed into a 180px float beside a cover. */
 .exhibition-entry__description {
     max-width: 37rem;
-    margin: 1.2rem 0 0;
+    margin: 1.35rem 0 0;
     color: #534f49;
     font-size: .85rem;
     line-height: 1.7;
 }
 
-.exhibition-entry__editorial > .exhibition-entry__description:first-child {
-    margin-top: 0;
+.exhibition-entry__description--text {
+    max-width: 33rem;
 }
 
-.exhibition-entry__feature--paired .exhibition-entry__description {
-    max-width: none;
-    margin-top: .95rem;
+.exhibition-entry__feature + .exhibition-entry__description {
+    margin-top: 1.3rem;
 }
 
 .exhibitions-page__copyright {
@@ -1078,7 +1077,7 @@ body {
 }
 
 .exhibitions-page .journal-entry-gallery {
-    margin: 1.55rem 0;
+    margin: 1.6rem 0 0;
 }
 
 .exhibitions-page .journal-entry-gallery img {
@@ -1088,13 +1087,17 @@ body {
 
 .exhibition-entry__links {
     display: flex;
-    margin-top: 1rem;
+    margin: 0;
     flex-wrap: wrap;
-    gap: .6rem 1.35rem;
+    gap: .6rem 1.25rem;
 }
 
 .exhibition-entry__links a,
 .exhibition-entry__map-trigger {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: .35rem;
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -1102,18 +1105,14 @@ body {
     color: #584f47;
     font-family: var(--public-index-typeface);
     font-size: .88rem;
+    line-height: 1.55;
+    text-align: left;
     text-decoration: underline;
     text-underline-offset: .25em;
     cursor: pointer;
 }
 
-.exhibition-entry__map-trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: .45rem;
-}
-
-.exhibition-entry__map-trigger .public-icon {
+.exhibition-entry__links .public-icon {
     width: .85rem;
     height: .85rem;
 }
@@ -1125,29 +1124,18 @@ body {
     color: #211c18;
 }
 
-/* Width of the actual exhibition index, not of a presumed device. A cover and
-   editorial note can face one another once both columns remain readable. */
-/* The cover is the float of a catalogue spread: facts and descriptive
-   prose run beside it, then naturally occupy the complete line underneath.
-   Alternating the float direction varies editorial rhythm without a setting. */
+.exhibition-entry__links a:focus-visible,
+.exhibition-entry__map-trigger:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: 3px;
+}
+
+/* Available exhibition-column width, not screen width, determines whether
+   two actual items fit side by side. Their widths are never arbitrary. */
 @container (min-width: 26rem) {
     .exhibition-entry__feature--paired {
-        display: flow-root;
-    }
-
-    .exhibition-entry__feature--paired .exhibition-entry__cover {
-        float: left;
-        width: min(49%, 19rem);
-        margin: 0 1.2rem .9rem 0;
-    }
-
-    .exhibition-entry:nth-child(even) .exhibition-entry__feature--paired .exhibition-entry__cover {
-        float: right;
-        margin: 0 0 .9rem 1.2rem;
-    }
-
-    .exhibition-entry__feature--paired .exhibition-entry__editorial {
-        padding-top: .15rem;
+        grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+        gap: 1.25rem;
     }
 }
 
@@ -1171,14 +1159,8 @@ body {
     }
 
     .exhibition-entry__feature--text,
-    .exhibition-entry__body--text > .exhibition-entry__links {
-        width: 100%;
+    .exhibition-entry__description--text {
         margin-inline-start: 0;
-    }
-
-    .exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
-        max-width: 100%;
-        margin-inline: 0;
     }
 }
 
