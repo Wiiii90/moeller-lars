@@ -164,23 +164,27 @@ cover, persisted excerpt (or escaped text-only extract), and an explicit
 **Read more** link. Blog detail is its own readable article with date, title,
 original image/media credits, sanitized body, ordered Gallery and a preview-safe
 return link. The Blog index is a reading sequence with fixed serif typography,
-compact original-ratio covers, bounded excerpts, and explicit article links.
-The artist-configured neutral-white Content surface stays rectangular and
-retains its width; a narrow, continuous rule runs through the page margin,
-joining short rule marks at each entry. Headlines have an open ruled headpiece
-rather than a complete card or a decorative band. Covers retain a simple
-multi-line, sharp-cornered mount that never crops or overlays the actual work.
+compact original-ratio covers, bounded excerpts and explicit article links.
 Illustrated entries alternate image side by illustrated-entry order; prose
-naturally flows alongside and below the image. Text-only entries need no
-empty image placeholder. At a content-fit threshold the composition stacks
-without changing type sizes.
+flows beside and beneath an uncropped work. Text-only entries create no empty
+cover slots. A content-fit threshold stacks the layout without changing fonts.
 
-Do not introduce detached SVG stickers, clipped/castle corners, payment-receipt
-numbering, repeated boxed entry contours, ornamental footer graphics, rounded
-UI, chips, generic card walls, per-post divider strips, font substitutions,
-or new admin presentation controls. Depth comes from a small number of
-connected structural lines and precise hard-edged mount layers, not an
-accumulation of separately drawn rectangles.
+The public Journal uses a shared, intentionally asymmetric *Atelier sheet*
+presentation on its existing neutral-white, artist-configured Content shell.
+Layered hard-edged contours are attached to the **outside** of that single
+sheet instead of boxes around every entry. The outer lines take no Content
+width and disappear where a mobile viewport cannot accommodate them. Only
+the Blog's actual artworks have small square-edged double-line mounts; no
+artwork is cropped or covered. The white Content surface itself, its width,
+artist name and navigation retain their established ownership.
+
+This is a new, **not browser-accepted** design candidate replacing the
+rejected continuous spine/connector/timeline presentation. Do not revive
+numbering, date-axis nodes, graphical stickers, clipped/castle corners,
+rounded corners, chips, repeated bordered entries, fake old-paper textures,
+decorative bars, duplicated underlines, or extra Admin controls. Neither
+Journal view renders a timeline. The visual presentation is reversible without
+changing Journal storage, publication or media contracts.
 
 The Blog *index* omits the repeated, inherited General copyright notice,
 including the previously detached closing colophon. Explicit media-specific
@@ -192,8 +196,8 @@ Admin copyright settings; a site-wide copyright/footer policy remains open
 for a later explicit design pass.
 
 No second Blog model, route, content source, publication path, editorial
-action or settings control is introduced. Do not automatically propagate the
-Blog's entry contours to Gallery or Exhibitions.
+action or settings control is introduced. Share only the outer-sheet identity
+between Blog and Exhibitions; their internal editorial layouts remain distinct.
 
 Journal typography has one fixed scale independent of the administrator's
 chosen content width: Exhibition date 0.8rem, Exhibition title 1.34rem;
@@ -221,20 +225,19 @@ list of expanded media. Its entries preserve the artist's manual
 `position` order, including historical records with a free-form display date;
 temporal state labels (Current / Upcoming) do not reorder that editorial list.
 
-The closed entry presents the authored date, exhibition title and
-available venue/place in a typographic chronology. The public list uses the
-same linework vocabulary as Blog without pretending to be the same kind of
-content: one continuous date spine and small registration/connector marks
-give each text-only record a deliberate place; a separate open heading contour
-sets its name apart. No card around each exhibition, repeated full-width
-horizontal separators, invented artwork placeholders or artificial numbering.
-The original manual entry order and fixed typographic scale remain authoritative.
-Optional further information is exposed through a native `details`
-disclosure with the deliberately plain controls **Open / Close**.
-Entries with no additional material remain non-interactive summaries.
-Multiple exhibitions may remain open simultaneously; switching one does not
-close another. Expanded bodies receive one open connecting rule and preserve
-their existing responsive composition, Gallery and map behavior.
+The closed entry presents the authored date, exhibition title and venue/place
+as an open **exhibition catalogue**, not a timeline or a set of rectangular
+cards. Dates and titles share the measured reading area with generous whitespace
+and no fabricated image substitutes, vertical date spine, connection nodes or
+repeated horizontal separator rules. The artist's manual exhibition order and
+the fixed typography remain authoritative.
+
+Optional material is exposed through independent native `details` disclosures
+with the plain **Open / Close** control. Entries without additional material
+render non-interactive summaries, and multiple exhibitions may stay open at
+once. Opened bodies retain the existing cover/description/visit composition,
+gallery modes, map dialog, media credits and external links. Their layout may
+stack at content-fit thresholds, but fonts do not shrink.
 
 Expanded content reuses the canonical cover, rich description, ordered
 Gallery presentations (grid, mosaic or slideshow), vernissage, address and
