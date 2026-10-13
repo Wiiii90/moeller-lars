@@ -7,11 +7,14 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
-it('filters the Dashboard feed through Livewire and clears stale selections', function (): void {
-    config()->set('dashboard-feed.items', []);
+beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
+});
+
+it('filters the Dashboard feed through Livewire and clears stale selections', function (): void {
+    config()->set('dashboard-feed.items', []);
 
     $needle = ContactMessage::query()->create([
         'sender_name' => 'Distinctive Needle',
@@ -57,13 +60,15 @@ it('marks contact read on opening and can mark it unread again', function (): vo
 
     expect($message->getAttribute('read_at'))->toBeNull();
 
-    $opened = app(DashboardFeed::class)->openEntry('contact:'.$message->getKey());
+    $key = 'contact:'.$message->getKey();
+    $component = Livewire::test(Dashboard::class)
+        ->call('markFeedRead', $key)
+        ->assertHasNoErrors();
 
-    expect($opened)->not->toBeNull()
-        ->and($opened['status'])->toBe('Read')
-        ->and($message->refresh()->getAttribute('read_at'))->not->toBeNull();
+    expect($message->refresh()->getAttribute('read_at'))->not->toBeNull()
+        ->and(app(DashboardFeed::class)->entry($key)['status'])->toBe('Read');
 
-    app(DashboardFeed::class)->markContactUnread((int) $message->getKey());
+    $component->call('markFeedUnread', $key)->assertHasNoErrors();
 
     expect($message->refresh()->getAttribute('read_at'))->toBeNull()
         ->and(app(DashboardFeed::class)->entry('contact:'.$message->getKey())['status'])->toBe('Unread');
@@ -78,8 +83,38 @@ it('deletes stored contact messages cleanly', function (): void {
         'mail_delivery_status' => ContactMessage::DELIVERY_FAILED,
     ]);
 
-    app(DashboardFeed::class)->deleteContact((int) $message->getKey());
+    Livewire::test(Dashboard::class)
+        ->call('deleteFeedEntry', 'contact:'.$message->getKey())
+        ->assertHasNoErrors();
 
     expect(ContactMessage::query()->whereKey($message->getKey())->exists())->toBeFalse()
         ->and(app(DashboardFeed::class)->entry('contact:'.$message->getKey()))->toBeNull();
+});
+
+it('refuses to mutate non-actionable announcements through Dashboard feed actions', function (): void {
+    config()->set('dashboard-feed.items', [
+        [
+            'id' => 'notice',
+            'type' => 'announcement',
+            'date' => '2026-10-12',
+            'title' => 'Studio information',
+            'body' => 'Read-only studio notice',
+        ],
+    ]);
+    $message = ContactMessage::query()->create([
+        'sender_name' => 'Unrelated visitor',
+        'sender_email' => 'unrelated@example.test',
+        'message' => 'Must not be changed',
+        'mail_delivery_status' => ContactMessage::DELIVERY_DELIVERED,
+    ]);
+
+    Livewire::test(Dashboard::class)
+        ->call('markFeedRead', 'static:notice')
+        ->call('markFeedUnread', 'static:notice')
+        ->call('deleteFeedEntry', 'static:notice')
+        ->assertHasNoErrors();
+
+    expect(app(DashboardFeed::class)->entry('static:notice'))->not->toBeNull()
+        ->and($message->fresh()->getAttribute('read_at'))->toBeNull()
+        ->and(ContactMessage::query()->whereKey($message->getKey())->exists())->toBeTrue();
 });
