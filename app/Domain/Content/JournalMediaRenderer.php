@@ -12,6 +12,18 @@ final class JournalMediaRenderer
 {
     public function __construct(private readonly PublicMedia $media) {}
 
+    public function inheritsDefaultNotice(JournalEntryMedia $usage): bool
+    {
+        $usage->loadMissing('mediaAsset');
+        $asset = $usage->mediaAsset;
+
+        return $asset instanceof MediaAsset
+            && ! in_array((string) $asset->getAttribute('copyright_notice_mode'), [
+                MediaAsset::COPYRIGHT_OVERRIDE,
+                MediaAsset::COPYRIGHT_NONE,
+            ], true);
+    }
+
     public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true): HtmlString
     {
         $usage->loadMissing('mediaAsset.variants');
@@ -28,9 +40,7 @@ final class JournalMediaRenderer
         // Page indexes may print one inherited General notice beneath the
         // complete collection. Asset-specific overrides and credits remain
         // attached to their own figures, independent of that presentation.
-        $inherit = ! in_array((string) $asset->getAttribute('copyright_notice_mode'), [
-            MediaAsset::COPYRIGHT_OVERRIDE, MediaAsset::COPYRIGHT_NONE,
-        ], true);
+        $inherit = $this->inheritsDefaultNotice($usage);
         $copyright = $inherit && ! $includeInheritedCopyright
             ? ''
             : trim((string) ($asset->effectiveCopyrightNotice() ?? ''));

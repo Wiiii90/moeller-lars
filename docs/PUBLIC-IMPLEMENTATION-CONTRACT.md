@@ -163,10 +163,38 @@ an editorial stream: publication date (when set), linked article title, optional
 cover, persisted excerpt (or escaped text-only extract), and an explicit
 **Read more** link. Blog detail is its own readable article with date, title,
 original image/media credits, sanitized body, ordered Gallery and a preview-safe
-return link. The index displays a compact, uncropped cover beside its summary;
-the full article can display a large cover. When an exceptionally narrow
-content area cannot hold both columns, the index stacks without scaling down
-its text. No second Blog model, route or settings source is introduced.
+return link. The index displays a compact, uncropped cover with its summary; the full
+article can display a larger work. The public Blog uses a distinct, authored
+engraved-folio composition within the existing configured white content surface:
+a stepped outer silhouette, small sourced SVG corner etchings, numbered entries,
+and a layered, square-edged image mount. This is structural ornament on the
+paper edge and around the image, never on top of an artwork. No rounded corners,
+chips, repeated horizontal-rule dividers, cards around whole posts, decorative
+bands, stock font changes or generic UI effects are introduced. The artwork
+remains the dominant visual element.
+
+Illustrated entries alternate image sides by **illustrated entry index**,
+not by the position of intervening text-only entries. Summary prose flows
+beside the image and continues below it when longer, without a fabricated
+empty second column. A genuinely narrow content surface stacks the figure
+above the text, without scaling down fonts or cropping the artwork. The image
+mount includes an unobtrusive, drawn engraving from
+`public/ornaments/journal-engraving.svg`, with no external fonts, images,
+scripts or admin configuration. The last item has no redundant closing rule.
+Text-only entries use the same folio numbering, not a missing-image placeholder.
+
+Only inherited General copyright notices are suppressed on individual index
+figures and, when needed, displayed once in a closing folio colophon.
+Explicit asset copyright overrides, artist/photographer credits and
+no-notice choices retain their existing per-asset semantics. The renderer
+owns the single inheritance check used by both Blog and Exhibitions.
+The stored General notice still controls the text; never hardcode the
+artist name or replace an incorrect stored value through CSS.
+
+No second Blog model, route, content source, publication path, editorial action
+or settings control is introduced. This is an intentionally distinct public
+Blog art direction; do not propagate its illustration mounts automatically
+to Gallery or Exhibitions.
 
 Journal typography has one fixed scale independent of the administrator's
 chosen content width: Exhibition date 0.8rem, Exhibition title 1.34rem;

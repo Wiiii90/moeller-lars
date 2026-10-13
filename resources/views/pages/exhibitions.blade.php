@@ -37,11 +37,7 @@
                 // index; individual credits/overrides stay with each figure.
                 $displayedMedia = collect($hasCover ? [$cover] : [])->concat($gallery);
                 $hasInheritedMedia = $hasInheritedMedia || $displayedMedia->contains(
-                    fn ($usage): bool => $usage->mediaAsset instanceof \App\Models\MediaAsset
-                        && ! in_array((string) $usage->mediaAsset->getAttribute('copyright_notice_mode'), [
-                            \App\Models\MediaAsset::COPYRIGHT_OVERRIDE,
-                            \App\Models\MediaAsset::COPYRIGHT_NONE,
-                        ], true),
+                    fn ($usage): bool => $journalMedia->inheritsDefaultNotice($usage),
                 );
             @endphp
             <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">

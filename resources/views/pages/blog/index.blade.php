@@ -7,6 +7,8 @@
 @section('content')
     @php
         $preview = app(\App\Domain\Content\SitePreviewContext::class);
+        $illustratedIndex = 0;
+        $hasInheritedMedia = false;
     @endphp
     <x-public.page-heading :section="$section" />
     <section class="blog-page" aria-label="Blog posts">
@@ -14,25 +16,34 @@
             @php
                 $postUrl = $preview->url(route('journal.show', ['section' => $section->slug, 'slug' => $post->slug]));
                 $cover = $post->mediaUsages->firstWhere('role', \App\Models\JournalEntryMedia::ROLE_COVER);
+                $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
+                if ($hasCover) {
+                    $illustratedIndex++;
+                    $hasInheritedMedia = $hasInheritedMedia || $journalMedia->inheritsDefaultNotice($cover);
+                }
+                $reverseCover = $hasCover && $illustratedIndex % 2 === 0;
                 $postDate = $post->published_at ?? $post->scheduled_at;
                 $excerpt = trim((string) ($post->excerpt ?? ''));
                 if ($excerpt === '') {
                     $excerpt = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string) ($post->body ?? ''))) ?? ''), 220);
                 }
             @endphp
-            <article class="blog-entry @if ($cover instanceof \App\Models\JournalEntryMedia) blog-entry--with-cover @endif">
-                <header class="blog-entry__header">
-                    @if ($postDate instanceof \DateTimeInterface)
-                        <time class="blog-entry__date" datetime="{{ $postDate->format('Y-m-d') }}">{{ $postDate->format('j F Y') }}</time>
+            <article class="blog-entry @if ($hasCover) blog-entry--illustrated @if ($reverseCover) blog-entry--reverse @endif @else blog-entry--text-only @endif">
+                <span class="blog-entry__number" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                <div class="blog-entry__body">
+                    @if ($hasCover)
+                        <div class="blog-entry__mount">
+                            <a href="{{ $postUrl }}" class="blog-entry__cover" aria-label="Read {{ $post->title }}">
+                                {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first, includeInheritedCopyright: false) !!}
+                            </a>
+                        </div>
                     @endif
-                    <h2 class="blog-entry__title"><a href="{{ $postUrl }}">{{ $post->title }}</a></h2>
-                </header>
-                @if ($cover instanceof \App\Models\JournalEntryMedia)
-                    <a href="{{ $postUrl }}" class="blog-entry__cover" aria-label="Read {{ $post->title }}">
-                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first) !!}
-                    </a>
-                @endif
-                <div class="blog-entry__summary">
+                    <header class="blog-entry__header">
+                        @if ($postDate instanceof \DateTimeInterface)
+                            <time class="blog-entry__date" datetime="{{ $postDate->format('Y-m-d') }}">{{ $postDate->format('j F Y') }}</time>
+                        @endif
+                        <h2 class="blog-entry__title"><a href="{{ $postUrl }}">{{ $post->title }}</a></h2>
+                    </header>
                     @if ($excerpt !== '')
                         <p class="blog-entry__excerpt">{{ $excerpt }}</p>
                     @endif
@@ -42,5 +53,13 @@
         @empty
             <p class="blog-page__empty">No posts yet.</p>
         @endforelse
+        @if ($hasInheritedMedia)
+            @php
+                $defaultCopyright = trim((string) (\App\Models\PublicContentSetting::general()->getAttribute('default_media_copyright_notice') ?? ''));
+            @endphp
+            @if ($defaultCopyright !== '')
+                <footer class="blog-page__colophon" aria-label="Image copyright">{{ $defaultCopyright }}</footer>
+            @endif
+        @endif
     </section>
 @endsection
