@@ -136,6 +136,12 @@ Das zugehörige **generierende Programm** steht unter `scripts/generate-architec
 
 **Status:** Generator ist implementiert und mit einem minimalen Beispiel geprüft. Das erzeugte Inventar aus dem vollständigen Projekt ist noch auszuführen und zu überprüfen; es wäre falsch, bereits generierte Vollständigkeit zu behaupten.
 
+## Statische Beziehungskanten
+
+`scripts/generate-architecture-relations.php` liest die Token-Struktur zu den mit dem ersten Generator erfassten Dateien und verzeichnet nachweisbare Vererbungs-/Interface-/Trait-, Konstruktor-, Eloquent-Relation- und explizite Service-Locator-Beziehungen. Die Verweise werden nur auf bekannte Projekt-Typen normalisiert. Syntaktische Imports gelten **nicht** automatisch als Laufzeitabhängigkeit. Multitypdateien und dynamische Ziele werden nicht stillschweigend erfunden, sondern als Abdeckungslücke behandelt.
+
+Die generierte Modul-Mermaid-Grafik zählt solche Kanten, **nicht** echte Aufrufhäufigkeiten. Das Datenbankschema muss unabhängig davon aus einem sauber migrierten PostgreSQL-Katalog abgeleitet werden.
+
 ## 7. Nacharbeit, ohne Scheingenauigkeit
 
 - Vollständiger deterministischer PHP-Symbol- und Verwendungsgraph mit Quellpositionen.

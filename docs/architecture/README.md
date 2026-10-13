@@ -30,6 +30,20 @@ php scripts/generate-architecture-inventory.php --check
 
 Er inventarisiert via PHP-Tokenizer alle deklarierten Typen in `app/**/*.php` einschließlich Fundstelle und die syntaktischen Datei-`use`-Imports; außerdem erfasst er Domain-Moduldateien und Migrationspfade. **Ein Import ist noch keine nachgewiesene Laufzeitabhängigkeit**. Das erzeugte `docs/architecture/generated/php-symbols.json` wurde auf dieser GitHub-gestützten Arbeitsumgebung noch nicht gegen den gesamten Repository-Checkout generiert; der Generator wurde separat mit einem kleinen PHP-Beispiel syntaktisch und funktional geprüft. `--check` kann später reproduzierbar Abweichungen melden.
 
+
+### Statisch belegte Beziehungen
+
+Zusätzlich erfasst [`scripts/generate-architecture-relations.php`](../../scripts/generate-architecture-relations.php) nur **explizite** PHP-Strukturbeziehungen: `extends`, `implements`, Trait-Nutzung, Konstruktor-Typen, direkt benannte Eloquent-Relationen und `app(Foo::class)`/`resolve(Foo::class)`. Die resultierenden Kanten haben einen Dateipfad und eine Zeile. Externe Frameworkklassen und nicht auflösbare dynamische Beziehungen sind keine implizit bestätigten Runtime-Kanten.
+
+```sh
+php scripts/generate-architecture-inventory.php --write
+php scripts/generate-architecture-relations.php --write
+php scripts/generate-architecture-inventory.php --check
+php scripts/generate-architecture-relations.php --check
+```
+
+Ergebnis: `docs/architecture/generated/php-relationships.json` (Quellbelege) und `module-relationships.mmd` (aggregierte, mit Referenzanzahlen beschriftete Modulübersicht). Beide sind nach einem vollständigen lokalen Checkout-Lauf einzuchecken; sie sind hier noch **nicht** als vollständig erzeugt ausgegeben.
+
 ## Modellarten und Fertigstellung
 
 | Modell | Erste Quelle | Status |
