@@ -163,7 +163,16 @@ an editorial stream: publication date (when set), linked article title, optional
 cover, persisted excerpt (or escaped text-only extract), and an explicit
 **Read more** link. Blog detail is its own readable article with date, title,
 original image/media credits, sanitized body, ordered Gallery and a preview-safe
-return link. No second Blog model, route or settings source is introduced.
+return link. The index displays a compact, uncropped cover beside its summary;
+the full article can display a large cover. When an exceptionally narrow
+content area cannot hold both columns, the index stacks without scaling down
+its text. No second Blog model, route or settings source is introduced.
+
+Journal typography has one fixed scale independent of the administrator's
+chosen content width: Exhibition date 0.8rem, Exhibition title 1.34rem;
+Blog dates 0.8rem, index titles 1.58rem and full-article titles 1.88rem.
+Do not use content-width or viewport-relative title/date font sizing. Layout
+may stack at content-fit boundaries, but the text does not change size.
 
 ### Structured Exhibition addresses
 
@@ -210,13 +219,19 @@ content rather than alternate images by row parity:
   reading measure. The optional Map action stays with visit information
   and opens the established on-demand dialog; only external destinations
   carry the external-link icon.
-- Mosaic uses the stored source width/height to greedily distribute media
-  into two balanced vertical lanes **before rendering**. Images and captions
-  are never cropped, cloned, or relocated after paint. Within each lane,
-  authored ordering is preserved, but the visual lane composition is not a
-  strict left-to-right display of the global entry sequence. Grid or
-  Slideshow remains available when literal sequential presentation matters.
-  The authored `position` values and editorial workflows are untouched.
+- Grid preserves the authored row-wise order. Mosaic uses stored source
+  width/height to distribute images across two balanced vertical lanes
+  before rendering. A modest offset and unequal column widths distinguish
+  Mosaic as a deliberate editorial arrangement. Images and captions remain
+  uncropped and are not moved by client-side JavaScript. Within each lane
+  authored order is retained, but the visual composition is not a strict
+  left-to-right reading of the global image sequence.
+- Slideshow retains the authored sequence, has compact arrow navigation and
+  the position centered above the image, consistent with the site's Artwork
+  folio controls. Displayed images have a bounded, uncropped height.
+  No large browser-default buttons, navigation row below the work, or
+  new editorial presentation settings are introduced.
+  The authored `position` values and editorial workflows remain unchanged.
 
 No new Administration customization, Exhibition detail route or duplicate
 media source of truth is introduced.

@@ -137,6 +137,13 @@
                                         : [$gallery->values()->all()];
                                 @endphp
                                 <div class="journal-entry-gallery journal-entry-gallery--{{ $galleryPresentation }} @if ($galleryPresentation === 'mosaic' && $gallery->count() === 1) journal-entry-gallery--single @endif" aria-label="Exhibition images" @if ($galleryPresentation === 'slideshow') data-journal-slideshow @endif>
+                                    @if ($galleryPresentation === 'slideshow' && $gallery->count() > 1)
+                                        <nav class="journal-entry-gallery__controls" aria-label="Exhibition image navigation">
+                                            <button type="button" data-journal-slide-prev aria-label="Previous image"><x-public-icon name="arrow-left" /></button>
+                                            <span data-journal-slide-status aria-live="polite" aria-atomic="true">1 / {{ $gallery->count() }}</span>
+                                            <button type="button" data-journal-slide-next aria-label="Next image"><x-public-icon name="arrow-right" /></button>
+                                        </nav>
+                                    @endif
                                     @foreach ($galleryGroups as $column)
                                         @if ($galleryPresentation === 'mosaic')
                                             <div class="journal-entry-gallery__column">
@@ -148,13 +155,6 @@
                                             </div>
                                         @endif
                                     @endforeach
-                                    @if ($galleryPresentation === 'slideshow' && $gallery->count() > 1)
-                                        <div class="journal-entry-gallery__controls" aria-label="Gallery navigation">
-                                            <button type="button" data-journal-slide-prev aria-label="Previous image">Previous</button>
-                                            <span data-journal-slide-status aria-live="polite">1 / {{ $gallery->count() }}</span>
-                                            <button type="button" data-journal-slide-next aria-label="Next image">Next</button>
-                                        </div>
-                                    @endif
                                 </div>
                             @endif
 

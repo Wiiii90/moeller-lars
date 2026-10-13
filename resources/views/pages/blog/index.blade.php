@@ -20,7 +20,7 @@
                     $excerpt = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string) ($post->body ?? ''))) ?? ''), 220);
                 }
             @endphp
-            <article class="blog-entry">
+            <article class="blog-entry @if ($cover instanceof \App\Models\JournalEntryMedia) blog-entry--with-cover @endif">
                 <header class="blog-entry__header">
                     @if ($postDate instanceof \DateTimeInterface)
                         <time class="blog-entry__date" datetime="{{ $postDate->format('Y-m-d') }}">{{ $postDate->format('j F Y') }}</time>
@@ -32,10 +32,12 @@
                         {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first) !!}
                     </a>
                 @endif
-                @if ($excerpt !== '')
-                    <p class="blog-entry__excerpt">{{ $excerpt }}</p>
-                @endif
-                <a class="blog-entry__read-more" href="{{ $postUrl }}">Read more <x-public-icon name="arrow-right" /></a>
+                <div class="blog-entry__summary">
+                    @if ($excerpt !== '')
+                        <p class="blog-entry__excerpt">{{ $excerpt }}</p>
+                    @endif
+                    <a class="blog-entry__read-more" href="{{ $postUrl }}">Read more <x-public-icon name="arrow-right" /></a>
+                </div>
             </article>
         @empty
             <p class="blog-page__empty">No posts yet.</p>
