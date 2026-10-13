@@ -7,6 +7,8 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Models\Artwork;
+use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\User;
@@ -150,3 +152,38 @@ it('cleans Gallery membership when a shared primary file is deleted directly fro
         ->assertSee($kept->title)
         ->assertDontSee($first->title);
 });
+
+
+it('rolls back selected Gallery removal and deletion when one selected artwork is published', function (string $action): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $published = galleryFixtureArtwork($gallery, ['position' => 1]);
+    $shared = galleryFixtureAsset('video/mp4');
+    galleryFixturePrimary($draft, $shared);
+    galleryFixturePrimary($published, $shared);
+    app(ArtworkPublicationService::class)->publish($published);
+    galleryFixtureUnavailableAnalytics();
+
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('selectedArtworkIds', [$draft->getKey(), $published->getKey()])
+        ->mountAction($action)
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect(Artwork::query()->whereKey($draft->getKey())->exists())->toBeTrue()
+        ->and(Artwork::query()->whereKey($published->getKey())->exists())->toBeTrue()
+        ->and((int) $draft->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
+        ->and((int) $published->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
+        ->and((int) $draft->fresh()->position)->toBe(0)
+        ->and((int) $published->fresh()->position)->toBe(1)
+        ->and(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('media_asset_id', $shared->getKey())->exists())->toBeTrue()
+        ->and(ArtworkMedia::query()->where('artwork_id', $published->getKey())->where('media_asset_id', $shared->getKey())->exists())->toBeTrue()
+        ->and($shared->fresh()->state)->toBe('available')
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
+        ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
+})->with(['removeSelectedArtworks', 'deleteSelectedArtworks']);
