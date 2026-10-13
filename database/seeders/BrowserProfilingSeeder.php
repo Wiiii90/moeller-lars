@@ -36,7 +36,7 @@ final class BrowserProfilingSeeder extends Seeder
 
         // Required browser interaction fixtures: never silently skip selection tests.
         foreach ([1, 2] as $number) {
-            SiteSection::query()->create([
+            $section = SiteSection::query()->create([
                 'type' => SiteSection::TYPE_CUSTOM,
                 'template' => null,
                 'title' => 'Browser fixture page '.$number,
@@ -47,6 +47,7 @@ final class BrowserProfilingSeeder extends Seeder
                 'parent_id' => null,
                 'artwork_category_id' => null,
             ]);
+            $section->customPageSetting()->create(['blocks' => []]);
 
             ContactMessage::query()->create([
                 'sender_name' => 'Browser fixture '.$number,
