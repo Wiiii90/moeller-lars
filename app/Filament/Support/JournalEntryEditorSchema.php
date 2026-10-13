@@ -102,7 +102,19 @@ final class JournalEntryEditorSchema
         $images = self::galleryImages();
 
         if ($template === JournalTemplate::Blog) {
-            return AdminForm::section('Gallery')->schema([$images]);
+            return AdminForm::section('Gallery')->schema([
+                Select::make('gallery_presentation')
+                    ->label('Gallery presentation')
+                    ->options([
+                        'sequence' => 'Image sequence',
+                        'grid' => 'Grid',
+                        'mosaic' => 'Mosaic',
+                        'slideshow' => 'Slideshow',
+                    ])
+                    ->default('sequence')
+                    ->required(),
+                $images,
+            ]);
         }
 
         $images

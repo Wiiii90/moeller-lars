@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'body', 'state', 'position', 'excerpt', 'published_at', 'scheduled_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'body', 'state', 'position', 'excerpt', 'gallery_presentation', 'published_at', 'scheduled_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'])]
 #[Guarded(['id'])]
 class BlogPost extends Model
 {
@@ -23,6 +23,13 @@ class BlogPost extends Model
             'scheduled_at' => 'datetime',
             'migrated_at' => 'datetime',
         ];
+    }
+
+    public function galleryPresentation(): string
+    {
+        $value = (string) ($this->getAttribute('gallery_presentation') ?? 'sequence');
+
+        return in_array($value, ['sequence', 'grid', 'mosaic', 'slideshow'], true) ? $value : 'sequence';
     }
 
     public function siteSection(): BelongsTo

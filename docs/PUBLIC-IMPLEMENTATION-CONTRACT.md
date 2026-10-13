@@ -40,7 +40,7 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The public visual composition remains artist-specific. The menu and continuous Content surface now share one neutral white, without warm or blue-tinted paper coloring. The artist-configurable outer solid/gradient background remains independent and unchanged. The main and child menu share a quiet native serif catalog-index typography with a thin under-text active marker; a contextual back link is distinct from the cyclic side arrows. The artist signature stays at the accepted anchored position in mixed-case serif; actual letter spacing is now wider while the artificial word gap between its separately positioned name spans is narrower. Artwork metadata retains its established roles. The site uses no external font files, decorative content grid, shader, or menu-specific dark band. Selection does not change font weight, geometry or the stored navigation window.
+The public visual composition remains artist-specific. The menu and continuous Content surface now share one neutral white, without warm or blue-tinted paper coloring. The main/child menu rail has shallow, sharp-edged outside registration strokes and a subtle layered edge to match the accepted Journal sheet; none of these alter rail bounds or JS width measurement. The parent return control shares the same row/font axis as child page links, without changing the one-row stack or cyclic navigation. The artist name stays anchored at its accepted coordinates, receiving only gentle ink-depth lettering, while the header separator keeps its exact height/position and varies only its stroke treatment. The artist-configurable outer solid/gradient background remains independent and unchanged. The main and child menu share a quiet native serif catalog-index typography with a thin under-text active marker; a contextual back link is distinct from the cyclic side arrows. The artist signature stays at the accepted anchored position in mixed-case serif; actual letter spacing is now wider while the artificial word gap between its separately positioned name spans is narrower. Artwork metadata retains its established roles. The site uses no external font files, decorative content grid, shader, or menu-specific dark band. Selection does not change font weight, geometry or the stored navigation window.
 
 ## Home presentation
 
@@ -192,14 +192,26 @@ fake old-paper textures, decorative bars, duplicated underlines or extra
 Admin controls. Neither Journal view renders a timeline. The presentation is
 reversible without changing Journal storage, publication or media contracts.
 
-The Blog *index* omits the repeated, inherited General copyright notice,
-including the previously detached closing colophon. Explicit media-specific
-copyright overrides and authored image credits remain attached to the
-corresponding figures through `JournalMediaRenderer`. Full Blog articles
-continue to render their normal media copyright/credit notices. This is a
-presentation decision, not removal of persisted copyright data or a change to
-Admin copyright settings; a site-wide copyright/footer policy remains open
-for a later explicit design pass.
+The Blog index and full Blog article suppress repeated **inherited**
+General copyright captions on structured Cover/Gallery images. Explicit
+media-specific copyright overrides and authored credits stay attached to
+their original figures via `JournalMediaRenderer`. The stored General setting,
+the media-specific copyright modes and Publication history are not deleted.
+The previously removed Exhibition index footer stays absent; Exhibition gallery
+presentation is otherwise unchanged. Rich Text keeps its existing authored
+content and embedded media rules. The long-term site-wide copyright/footer
+policy remains open for a separate explicit design pass.
+
+Blog gallery presentation is now an authored per-post setting with four options:
+`sequence` (the existing uncropped, vertical image sequence, preserved as the
+default for old posts), `grid`, `mosaic`, and `slideshow`. This persisted
+setting is validated and updated through the canonical BlogEditorialService,
+exposed through the common Journal Editor, and stored in both tracked
+Publication schemas. `JournalMosaicColumns`, the shared `journal-gallery`
+Blade component and the existing slideshow JS own all gallery arrangements.
+Artwork images remain uncropped. The complete Blog detail is now an editorial
+folio with a framed cover, structured rich-text reading measure, optional
+gallery and return link; the accepted external sheet silhouette is retained.
 
 No second Blog model, route, content source, publication path, editorial
 action or settings control is introduced. Share only the outer-sheet identity
