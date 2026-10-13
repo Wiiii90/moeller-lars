@@ -241,6 +241,71 @@ it('rate limits repeated contact submissions', function (): void {
     expect(ContactMessage::query()->count())->toBe(5);
 });
 
+it('does not use an uncommitted private Contact recipient for public submissions', function (): void {
+    config([
+        'contact.recipient' => 'fallback@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+        'mail.from.name' => 'Lars Möller Website',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    PublicContentSetting::general()->update([
+        'contact_recipient_email' => 'private-working@example.test',
+    ]);
+
+    $this->post('/contact', contactPayload(['message' => 'Before recipient Commit']))
+        ->assertRedirect()
+        ->assertSessionHas('contact_success');
+
+    Mail::assertSent(WebsiteContactMessage::class, 1);
+    Mail::assertSent(WebsiteContactMessage::class, fn (WebsiteContactMessage $mail): bool => $mail->hasTo('fallback@example.test'));
+
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload(['message' => 'After recipient Commit']))
+        ->assertRedirect()
+        ->assertSessionHas('contact_success');
+
+    Mail::assertSent(WebsiteContactMessage::class, 2);
+    Mail::assertSent(WebsiteContactMessage::class, fn (WebsiteContactMessage $mail): bool => $mail->hasTo('private-working@example.test'));
+
+    expect(ContactMessage::query()->count())->toBe(2);
+});
+
+it('keeps accepting public Contact submissions until disabling the form is committed', function (): void {
+    config([
+        'contact.recipient' => 'artist@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    $settings = CustomPageSetting::query()
+        ->whereHas('siteSection', fn ($query) => $query->where('slug', 'contact-test-page'))
+        ->sole();
+    $settings->update(['blocks' => contactComponentBlocks(formPublished: false)]);
+
+    // The editor has removed the form from Working, but public submissions
+    // still use the already committed component configuration.
+    $this->post('/contact', contactPayload(['message' => 'Still enabled in Committed']))
+        ->assertRedirect()
+        ->assertSessionHas('contact_success');
+
+    expect(ContactMessage::query()->count())->toBe(1);
+    Mail::assertSent(WebsiteContactMessage::class, 1);
+
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload(['message' => 'Disabled after Commit']))
+        ->assertNotFound();
+
+    expect(ContactMessage::query()->count())->toBe(1);
+    Mail::assertSent(WebsiteContactMessage::class, 1);
+});
+
 it('requires an enabled Contact component on a published Custom Page', function (): void {
     Mail::fake();
 
