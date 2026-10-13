@@ -126,14 +126,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Quellstand:** `docs` bei `2c4fd9533721513c1e632800c6530b80420b5fd0` vor diesem Commit; `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf` ist nach letztem Merge synchron. Vor weiterer Arbeit HEADs erneut abfragen.
+**Stand:** `docs` war bei `df1940d563f198d12e5b4f2a727b110d30a71fb9` vor der aktuellen Dokumentationsänderung, `dev` bei `222bd0534bc7daa93acf6afad795e827a81d18bf`. HEADs vor jedem Folge-Schritt erneut prüfen.
 
-**Gesicherte Konsolidierung:** Journal Split/Fold, gewöhnliche Tabellen-/Position-Regeln und Dialog-Geometrie haben eigene Norm-Owner in `ADMIN-TABLE-CONTRACT.md` bzw. `ADMIN-DIALOG-CONTRACT.md`; `ui-skills.md` §§7–8/12/16 verlinken. Jetzt auch Rich Text / Lazy-Media-Select zentral in `docs/ADMIN-CONTROL-CONTRACT.md`, `ui-skills.md` §§17–18 verlinken.
+**Abgeschlossene Segmentierung:** Die 27.993 Zeichen umfassende responsive Sektion 21 von `ui-skills.md` wurde **inhaltserhaltend** auf fünf kurze [responsiv-thematische Dokumente](docs/ADMIN-RESPONSIVE-CONTRACT.md) aufgeteilt: Shell/Select, Metrics, Toolbars, Tabellen/Selection und Visual Stages. Der root UI-Skill enthält nur noch einen Verweis; `docs/README.md` und die Admin UI Skill verlinken den Index. Die bisherigen page-spezifischen Aussagen wurden nicht umformuliert, um ungewollten Regelverlust zu vermeiden; Browser-/Source-Validierung pro Detail steht **noch aus**. Shared Control/Table/Dialog-Owner bleiben ausdrücklich getrennt.
 
-**Wichtiger korrigierter Widerspruch:** `AdminRichText` bietet neben `media:<id>` aus Storage eine **explizite externe Bild-URL-Option**; `SafeRichTextRenderer`/`SafeLinkPolicy` erlauben validierte HTTP(S)-Bild-URLs. Das frühere pauschale Verbot externer Bild-URLs war gegenüber dem aktuellen Code **falsch**. Keine Runtime-/UI-Änderung; Unit-Testquelle gelesen, nicht ausgeführt.
+**Weitere zentrale Normenkonsolidierung:** Tabellenregeln (§§7–8 und Journal §12), Dialoge (§16), Rich Text und Lazy Media (§§17–18) sind bereits zu ihren jeweiligen Table-/Dialog-/Control-Verträgen verschoben. Erkannt und korrigiert: Validierte externe HTTP(S)-Rich-Text-Bilder sind aktuell unterstützt und nicht generell verboten.
 
-**Public SPA:** Neuer `wire:navigate`-Lebenszyklus unter [Public SPA](docs/architecture/public-spa-lifecycle.md), inklusive Vorab-Dispose und Ausschluss von Parent-Menülinks. Keine Browserabnahme behauptet.
+**Nächster Schritt:** Die **fünf neuen Responsive-Dokumente jeweils gegen Quellcode und ihre Shared-Owner prüfen**, zunächst die allgemeine Toolbar- und Tabellenredundanz. Nur bei eindeutiger Semantikgleichheit verkürzen. Danach den verbliebenen §22 CSS-Owner-Text zu bestehenden Contracts/Skill-Routing zuordnen und Langdokumente weiter vereinfachen.
 
-**Unmittelbar nächster Schritt:** Große responsive Duplikate in `ui-skills.md` §§21/22 gegen Table-/Control-/Dialog-Verträge analysieren und nur genau geprüfte allgemeine Regeln zentralisieren. Parallel neu eingetroffene `dev`-Commits aufnehmen, falls vorhanden.
-
-**Länger offen:** voller nativer PHP-Generator-Checkout, isolierter PostgreSQL-Katalog, echte Public-SPA-/Admin-Modal-E2E-Prüfung. Nicht CI oder `testing` verwenden.
+**Offen:** nativer Full-Checkout-PHP-Generatorlauf, isolierter PostgreSQL-Katalog, Browser-E2E Public SPA/Admin; niemals CI oder `testing` bedienen.
