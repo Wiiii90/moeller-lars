@@ -1,5 +1,14 @@
 <?php
 
+use App\Domain\Admin\AdminChangeSummary;
+use App\Domain\Admin\AdminSettingsService;
+use App\Domain\Artwork\ArtworkDraftService;
+use App\Filament\Support\AdminActivityFeed;
+use App\Models\Artwork;
+use App\Models\AuditEvent;
+use App\Models\PublicContentSetting;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 it('names multiple changed fields instead of a generic settings activity', function (): void {
     $actor = User::factory()->admin()->create();

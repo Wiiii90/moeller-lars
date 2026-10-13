@@ -1,5 +1,15 @@
 <?php
 
+use App\Domain\Admin\AdminActionCatalog;
+use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminSettingsService;
+use App\Domain\Admin\AdminUndoService;
+use App\Filament\Support\AdminActivityFeed;
+use App\Models\AdminActionReceipt;
+use App\Models\AuditEvent;
+use App\Models\PublicContentSetting;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 it('exposes and executes conflict-safe snapshot Undo for updated admin settings', function (): void {
     $actor = User::factory()->admin()->create();

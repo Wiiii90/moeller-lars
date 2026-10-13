@@ -1,6 +1,11 @@
 <?php
 
-
+use App\Domain\Publication\PublicationMediaCleanupService;
+use App\Domain\Publication\PublicationService;
+use App\Models\MediaAsset;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 require_once __DIR__.'/PublicationVersionFixtures.php';
 
