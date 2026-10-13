@@ -170,16 +170,32 @@ may remain open simultaneously; switching one does not close another.
 
 Expanded content reuses the existing canonical cover, rich description,
 ordered Gallery presentation (grid, mosaic or slideshow), vernissage, address
-and external link contracts. Images are constrained to the available content
-width and remain lazily loaded; they must not inflate closed entries into
-large media walls. No separate Exhibition detail route or duplicate source of
-truth is introduced by this index presentation.
+and external link contracts. A cover paired with editorial content flows as a
+magazine figure, alternating left/right through the ordinary entry order,
+with prose returning to full width once past the figure. On insufficient
+content width, the feature stacks naturally without extra Admin controls.
+Mosaic uses the browser's balanced CSS columns for variable-height figures,
+without explicit grid row spanning that creates empty tracks; artwork/image
+order and author-supplied captions remain in the DOM. Images remain lazy and
+uncropped. No separate Exhibition detail route or duplicate source of truth
+is introduced by this index presentation.
+
+The existing MediaAsset copyright modes remain authoritative. Exhibition
+images keep their own authored credits and explicit copyright overrides
+adjacent to each figure; only repeated *inherited* General copyright notices
+are consolidated into one visible notice at the end of the Exhibitions page.
+Explicit No notice stays silent, other Journal surfaces preserve their current
+per-image policy, and attribution is not inferred from an image's filename.
 
 Enabled Exhibition maps remain available for past, current and upcoming
 exhibitions. A single **Show map** action opens a native, viewport-bounded
 map dialog; inline map iframes, their Expand control, and nested map disclosures
 are retired. The dialog presents the exhibition identity, automatically adapts to the
 available viewport, and gives access to OpenStreetMap/Directions.
+The map dialog sizes its canvas from the real available viewport, with
+touch-sized zoom controls and container resizing handled through
+`ResizeObserver` (no timers or polling); device rotation must not leave tiles
+misaligned or the close/external controls outside the visible dialog.
 The map uses a locally vendored, pinned Leaflet 1.9.4 runtime; the default
 OpenStreetMap tile layer is requested **only after the visitor opens the
 map dialog**, and it shows the required visible linked

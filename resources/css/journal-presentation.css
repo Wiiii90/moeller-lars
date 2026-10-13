@@ -7,18 +7,25 @@
     min-width: 0;
 }
 
+/* Native balanced columns produce a true variable-height mosaic. A row-spanned
+   CSS grid reserved empty tracks below short works, leaving visible holes. */
 .journal-entry-gallery--mosaic {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-auto-flow: dense;
+    display: block;
+    columns: 12rem 2;
+    column-gap: .9rem;
 }
 
 .journal-entry-gallery--mosaic .journal-entry-gallery__item {
-    grid-column: span 5;
+    display: block;
+    width: 100%;
+    margin: 0 0 .9rem;
+    break-inside: avoid;
+    page-break-inside: avoid;
 }
 
-.journal-entry-gallery--mosaic .journal-entry-gallery__item:nth-child(3n + 1) {
-    grid-column: span 7;
-    grid-row: span 2;
+.journal-entry-gallery--mosaic .journal-entry-media,
+.journal-entry-gallery--mosaic img {
+    max-width: 100%;
 }
 
 .journal-entry-gallery--slideshow {
@@ -71,7 +78,7 @@
     max-width: none;
     max-height: calc(100dvh - 1.5rem);
     padding: 0;
-    overflow: auto;
+    overflow: hidden;
     border: 1px solid #d3ccc4;
     border-radius: 0;
     background: #fff;
@@ -81,7 +88,11 @@
 .exhibition-map-dialog__content {
     display: grid;
     min-width: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     gap: .9rem;
+    box-sizing: border-box;
+    height: min(91dvh, 47rem);
+    max-height: calc(100dvh - 1.5rem);
     padding: clamp(.85rem, 2.3vw, 1.5rem);
 }
 .exhibition-map-dialog__header {
@@ -142,8 +153,8 @@
     display: block;
     width: 100%;
     min-width: 0;
-    height: min(56dvh, 37rem);
-    min-height: 17rem;
+    height: 100%;
+    min-height: 0;
     overflow: hidden;
     border: 1px solid #d9d3cc;
     border-radius: 0;
@@ -189,9 +200,9 @@
 .exhibition-map-dialog .leaflet-bar a,
 .exhibition-map-dialog .leaflet-bar a:first-child,
 .exhibition-map-dialog .leaflet-bar a:last-child {
-    width: 2rem;
-    height: 2rem;
-    line-height: 2rem;
+    width: 2.4rem;
+    height: 2.4rem;
+    line-height: 2.4rem;
     border-radius: 0;
     background: #fff;
     color: #514941;
@@ -211,14 +222,52 @@
     text-decoration: underline;
 }
 @media (max-width: 620px) {
-    .journal-entry-gallery--mosaic { grid-template-columns: 1fr; }
-    .journal-entry-gallery--mosaic .journal-entry-gallery__item,
-    .journal-entry-gallery--mosaic .journal-entry-gallery__item:nth-child(3n + 1) {
-        grid-column: 1;
-        grid-row: auto;
+    .exhibition-map-dialog {
+        width: calc(100vw - .65rem);
+        max-height: calc(100dvh - .65rem);
     }
-    .exhibition-map-dialog__canvas {
-        height: min(53dvh, 26rem);
-        min-height: 14rem;
+
+    .exhibition-map-dialog__content {
+        height: calc(100dvh - .65rem);
+        max-height: calc(100dvh - .65rem);
+        gap: .6rem;
+        padding: .7rem;
+    }
+
+    .exhibition-map-dialog__header {
+        align-items: start;
+        gap: .65rem;
+    }
+
+    .exhibition-map-dialog__identity h4 {
+        font-size: 1.2rem;
+    }
+
+    .exhibition-map-dialog__eyebrow {
+        font-size: .58rem;
+    }
+
+    .exhibition-map-dialog__footer {
+        justify-content: flex-start;
+    }
+
+    .exhibition-map-dialog .leaflet-bar a,
+    .exhibition-map-dialog .leaflet-bar a:first-child,
+    .exhibition-map-dialog .leaflet-bar a:last-child {
+        width: 2.75rem;
+        height: 2.75rem;
+        line-height: 2.75rem;
+    }
+}
+
+@media (max-height: 30rem) {
+    .exhibition-map-dialog__eyebrow,
+    .exhibition-map-dialog__identity p {
+        display: none;
+    }
+
+    .exhibition-map-dialog__content {
+        gap: .45rem;
+        padding: .45rem .6rem;
     }
 }

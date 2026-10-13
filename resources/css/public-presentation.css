@@ -982,9 +982,16 @@ body {
     margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
 }
 
+/* Standalone covers take their natural width, with occasional mirrored
+   alignment rather than an arbitrary permanent indent below the title. */
 .exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
-    width: calc(100% - var(--exhibition-date-track) - var(--exhibition-column-gap));
-    margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
+    width: fit-content;
+    max-width: 100%;
+    margin-inline-start: 0;
+}
+
+.exhibition-entry:nth-child(even) .exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
+    margin-inline-start: auto;
 }
 
 .exhibition-entry__cover {
@@ -1057,6 +1064,19 @@ body {
     margin-top: 0;
 }
 
+.exhibition-entry__feature--paired .exhibition-entry__description {
+    max-width: none;
+    margin-top: .95rem;
+}
+
+.exhibitions-page__copyright {
+    margin: 1.55rem 0 .25rem;
+    color: #77716a;
+    font-family: var(--public-index-typeface);
+    font-size: .76rem;
+    line-height: 1.5;
+}
+
 .exhibitions-page .journal-entry-gallery {
     margin: 1.55rem 0;
 }
@@ -1107,14 +1127,27 @@ body {
 
 /* Width of the actual exhibition index, not of a presumed device. A cover and
    editorial note can face one another once both columns remain readable. */
-@container (min-width: 34rem) {
+/* The cover is the float of a catalogue spread: facts and descriptive
+   prose run beside it, then naturally occupy the complete line underneath.
+   Alternating the float direction varies editorial rhythm without a setting. */
+@container (min-width: 26rem) {
     .exhibition-entry__feature--paired {
-        grid-template-columns: minmax(0, 1.22fr) minmax(0, .78fr);
-        column-gap: 1.35rem;
+        display: flow-root;
     }
 
     .exhibition-entry__feature--paired .exhibition-entry__cover {
-        width: 100%;
+        float: left;
+        width: min(49%, 19rem);
+        margin: 0 1.2rem .9rem 0;
+    }
+
+    .exhibition-entry:nth-child(even) .exhibition-entry__feature--paired .exhibition-entry__cover {
+        float: right;
+        margin: 0 0 .9rem 1.2rem;
+    }
+
+    .exhibition-entry__feature--paired .exhibition-entry__editorial {
+        padding-top: .15rem;
     }
 }
 
@@ -1138,10 +1171,14 @@ body {
     }
 
     .exhibition-entry__feature--text,
-    .exhibition-entry__body--text > .exhibition-entry__links,
-    .exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
+    .exhibition-entry__body--text > .exhibition-entry__links {
         width: 100%;
         margin-inline-start: 0;
+    }
+
+    .exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
+        max-width: 100%;
+        margin-inline: 0;
     }
 }
 

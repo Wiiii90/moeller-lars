@@ -7,6 +7,7 @@
 @section('content')
     <x-public.page-heading :section="$section" />
     <section class="exhibitions-page" aria-label="Exhibitions">
+        @php($hasInheritedMedia = false)
         @foreach ($exhibitions as $exhibition)
             @php
                 $timing = $exhibition->temporalState(now());
@@ -29,6 +30,16 @@
                 $hasEditorial = $vernissage !== null || $address !== null || $hasDescription;
                 $hasDetails = $hasEditorial || $hasCover || $gallery->isNotEmpty()
                     || $map !== null || $exhibition->external_url !== null;
+                // Inherited General notices are consolidated once for this
+                // index; individual credits/overrides stay with each figure.
+                $displayedMedia = collect($hasCover ? [$cover] : [])->concat($gallery);
+                $hasInheritedMedia = $hasInheritedMedia || $displayedMedia->contains(
+                    fn ($usage): bool => $usage->mediaAsset instanceof \App\Models\MediaAsset
+                        && ! in_array((string) $usage->mediaAsset->getAttribute('copyright_notice_mode'), [
+                            \App\Models\MediaAsset::COPYRIGHT_OVERRIDE,
+                            \App\Models\MediaAsset::COPYRIGHT_NONE,
+                        ], true),
+                );
             @endphp
             <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
@@ -68,7 +79,7 @@
                             @if ($hasCover || $hasEditorial)
                                 <div class="exhibition-entry__feature @if ($hasCover && $hasEditorial) exhibition-entry__feature--paired @elseif (! $hasCover) exhibition-entry__feature--text @endif">
                                     @if ($hasCover)
-                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover') !!}
+                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false) !!}
                                     @endif
                                     @if ($hasEditorial)
                                         <div class="exhibition-entry__editorial">
@@ -99,7 +110,7 @@
                             @if ($gallery->isNotEmpty())
                                 <div class="journal-entry-gallery journal-entry-gallery--{{ $galleryPresentation }}" aria-label="Exhibition images" @if ($galleryPresentation === 'slideshow') data-journal-slideshow @endif>
                                     @foreach ($gallery as $usage)
-                                        <div class="journal-entry-gallery__item" @if ($galleryPresentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery') !!}</div>
+                                        <div class="journal-entry-gallery__item" @if ($galleryPresentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false) !!}</div>
                                     @endforeach
                                     @if ($galleryPresentation === 'slideshow' && $gallery->count() > 1)
                                         <div class="journal-entry-gallery__controls" aria-label="Gallery navigation">
@@ -175,5 +186,11 @@
                 @endif
             </article>
         @endforeach
+        @if ($hasInheritedMedia)
+            @php($defaultCopyright = trim((string) (\App\Models\PublicContentSetting::general()->getAttribute('default_media_copyright_notice') ?? '')))
+            @if ($defaultCopyright !== '')
+                <footer class="exhibitions-page__copyright" aria-label="Image copyright">{{ $defaultCopyright }}</footer>
+            @endif
+        @endif
     </section>
 @endsection

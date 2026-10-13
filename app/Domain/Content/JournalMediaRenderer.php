@@ -12,7 +12,7 @@ final class JournalMediaRenderer
 {
     public function __construct(private readonly PublicMedia $media) {}
 
-    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false): HtmlString
+    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true): HtmlString
     {
         $usage->loadMissing('mediaAsset.variants');
         $asset = $usage->mediaAsset;
@@ -25,7 +25,15 @@ final class JournalMediaRenderer
         $width = (int) ($variant->getAttribute('width') ?? 0);
         $height = (int) ($variant->getAttribute('height') ?? 0);
         $credit = trim((string) ($asset->getAttribute('credit') ?? ''));
-        $copyright = trim((string) ($asset->effectiveCopyrightNotice() ?? ''));
+        // Page indexes may print one inherited General notice beneath the
+        // complete collection. Asset-specific overrides and credits remain
+        // attached to their own figures, independent of that presentation.
+        $inherit = ! in_array((string) $asset->getAttribute('copyright_notice_mode'), [
+            MediaAsset::COPYRIGHT_OVERRIDE, MediaAsset::COPYRIGHT_NONE,
+        ], true);
+        $copyright = $inherit && ! $includeInheritedCopyright
+            ? ''
+            : trim((string) ($asset->effectiveCopyrightNotice() ?? ''));
         $caption = trim(implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== '')));
 
         $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';

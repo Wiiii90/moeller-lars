@@ -75,13 +75,20 @@ function initializeExhibitionMap(button) {
 
     let map = null;
     let opening = false;
+    // Observe the map viewport rather than guessing device breakpoints or
+    // polling after a device rotation / dialog layout change.
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            if (dialog.open && map) map.invalidateSize({ pan: false });
+        })
+        : null;
 
     button.addEventListener('click', async () => {
         if (!dialog.open) dialog.showModal();
         closeButton.focus({ preventScroll: true });
 
         if (map) {
-            map.invalidateSize();
+            map.invalidateSize({ pan: false });
             return;
         }
         if (opening) return;
@@ -116,9 +123,11 @@ function initializeExhibitionMap(button) {
             }).addTo(map);
             map.attributionControl.setPrefix(false);
             status.hidden = true;
-            map.invalidateSize();
+            resizeObserver?.observe(canvas);
+            map.invalidateSize({ pan: false });
         } catch {
             if (map) {
+                resizeObserver?.unobserve(canvas);
                 map.remove();
                 map = null;
             }
