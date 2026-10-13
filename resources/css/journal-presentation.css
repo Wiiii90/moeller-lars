@@ -149,13 +149,6 @@
     border-radius: 0;
     background: #edeae4;
 }
-.exhibition-map-dialog--square .exhibition-map-dialog__canvas {
-    width: min(100%, 32rem, calc(100dvh - 12rem));
-    height: auto;
-    min-height: 0;
-    aspect-ratio: 1;
-    justify-self: center;
-}
 .exhibition-map-dialog__status {
     position: absolute;
     inset: 0;

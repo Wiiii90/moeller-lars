@@ -177,12 +177,11 @@ Journal settings own collection title/introduction and active template. Switchin
 Exhibition editorial state includes structured venue/address fields plus optional presentation features:
 
 - `gallery_enabled`;
-- `map_enabled`;
-- `map_shape` (`wide` or `square`).
+- `map_enabled`.
 
 `location_text` is the street-address field; city and country are separate structured fields. Geocoding is an implementation detail of an enabled Map feature, not a standalone editorial “Find location” task.
 
-`ExhibitionMapPresentation` owns the canonical coordinates, shape, embed and external URL sources. The editor retains its OSM iframe preview; public Exhibitions renders a single on-demand, native Leaflet dialog using those coordinates (pinned local vendor files), with visible OpenStreetMap attribution and no inline iframe.
+`ExhibitionMapPresentation` owns canonical coordinates, embed and external URL sources. The editor retains its OSM iframe preview; public Exhibitions renders one responsive, on-demand native Leaflet dialog using those coordinates (pinned local vendor files), with visible OpenStreetMap attribution and no inline iframe. Map aspect-ratio selection has been retired from the active model, editor and public UI; the historical `map_shape` column remains physically present solely to preserve current Publication snapshot schema compatibility pending an explicitly coordinated schema cutover.
 
 Archived Exhibitions remember their prior state where available. Historical archived rows introduced before that field existed are forward-reconciled deterministically from publication evidence and restore safely through current readiness rules.
 

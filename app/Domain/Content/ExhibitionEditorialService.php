@@ -270,7 +270,7 @@ final class ExhibitionEditorialService
     {
         $allowed = [
             'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at',
-            'venue', 'location_text', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'map_shape',
+            'venue', 'location_text', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'map_enabled',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
         $slugRule = Rule::unique('exhibitions', 'slug');
@@ -295,7 +295,6 @@ final class ExhibitionEditorialService
             'gallery_enabled' => ['nullable', 'boolean'],
             'gallery_presentation' => ['nullable', Rule::in(['grid', 'mosaic', 'slideshow'])],
             'map_enabled' => ['nullable', 'boolean'],
-            'map_shape' => ['nullable', Rule::in(['wide', 'square'])],
         ])->validate();
 
         foreach (['date_text', 'venue', 'location_text', 'city', 'country', 'external_url'] as $field) {
@@ -322,7 +321,6 @@ final class ExhibitionEditorialService
             $payload['map_enabled'] = (bool) $payload['map_enabled'];
         }
         $payload['gallery_presentation'] = (string) ($payload['gallery_presentation'] ?? ($entry?->getAttribute('gallery_presentation') ?? 'grid'));
-        $payload['map_shape'] = (string) ($payload['map_shape'] ?? ($entry?->getAttribute('map_shape') ?? 'wide'));
 
         return $payload;
     }

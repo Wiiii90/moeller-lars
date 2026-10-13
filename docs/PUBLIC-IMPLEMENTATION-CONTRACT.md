@@ -149,9 +149,9 @@ Map is an explicit per-Exhibition presentation feature.
 
 - `map_enabled=true` requires valid geodata;
 - public Map visibility is not inferred merely from coordinates or timing;
-- current presentation shapes are `wide` and `square`;
+- there is one content-responsive public dialog, with no editable map aspect-ratio or per-entry shape;
 - `ExhibitionMapPresentation` owns canonical map source/presentation data;
-- public attachment below the Exhibition and editor preview should consume the same presentation contract;
+- public dialog and editor preview consume the same coordinates and URLs, though each has its own visual composition;
 - a future Rich Text map embed must reuse that renderer/contract rather than create a second mapping technology.
 
 ### Exhibition chronology and detail disclosure
@@ -178,8 +178,8 @@ truth is introduced by this index presentation.
 Enabled Exhibition maps remain available for past, current and upcoming
 exhibitions. A single **Show map** action opens a native, viewport-bounded
 map dialog; inline map iframes, their Expand control, and nested map disclosures
-are retired. The dialog presents the exhibition identity, preserves the
-configured Wide/Square shape, and gives access to OpenStreetMap/Directions.
+are retired. The dialog presents the exhibition identity, automatically adapts to the
+available viewport, and gives access to OpenStreetMap/Directions.
 The map uses a locally vendored, pinned Leaflet 1.9.4 runtime; the default
 OpenStreetMap tile layer is requested **only after the visitor opens the
 map dialog**, and it shows the required visible linked
@@ -189,6 +189,9 @@ is never hidden. The source files and BSD-2-Clause license live in
 `public/vendor/leaflet/`. The public Content Security Policy permits exactly
 the OSM raster-tile image origin, not third-party scripts. There is no new
 gallery/map setting, geocoding workflow, map-scroll owner, timer or polling.
+The obsolete `map_shape` selector, shape-dependent public classes and shape
+validation have been removed. The historic database column stays inert only
+until Publication schema compatibility allows its coordinated removal.
 The Admin's existing map preview still consumes the canonical Exhibition map
 presentation service.
 

@@ -123,9 +123,11 @@ Every Exhibition belongs to a Journal SiteSection. Important concepts include:
 - external link;
 - `gallery_enabled`;
 - `map_enabled`;
-- `map_shape` (`wide`/`square`);
+- no configurable map shape; all public maps use the same responsive dialog;
 - `archived_from_state` for safe restore;
 - migration provenance.
+
+The historical `exhibitions.map_shape` column is retained physically for Publication snapshot/schema compatibility, but it is excluded from active fillable/editorial data, not read by presentation and not written by domain services. A later explicitly coordinated schema migration may retire the column once historical snapshot restore compatibility is addressed.
 
 Map visibility is explicit presentation state, not inferred merely from coordinates/timing. Gallery visibility is explicit and does not delete stored gallery usages when turned off.
 

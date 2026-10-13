@@ -134,13 +134,6 @@ final class JournalEntryEditorSchema
                 ->label('Map enabled')
                 ->live()
                 ->columnSpanFull(),
-            Select::make('map_shape')
-                ->label('Map shape')
-                ->options(['wide' => 'Wide', 'square' => 'Square'])
-                ->default('wide')
-                ->required()
-                ->live()
-                ->visible(fn (Get $get): bool => (bool) $get('map_enabled')),
             Hidden::make('latitude')->dehydrated(false),
             Hidden::make('longitude')->dehydrated(false),
             Hidden::make('geocoded_at')->dehydrated(false),
@@ -223,18 +216,17 @@ final class JournalEntryEditorSchema
         $preview = new Exhibition;
         $preview->setAttribute('latitude', (float) $latitude);
         $preview->setAttribute('longitude', (float) $longitude);
-        $preview->setAttribute('map_shape', (string) ($get('map_shape') ?? 'wide'));
         $presentation = app(ExhibitionMapPresentation::class)->for($preview);
         if ($presentation === null) {
             return new HtmlString('<div class="journal-entry-editor__map is-empty"><p>Map preview unavailable.</p></div>');
         }
-        $key = sha1($latitude.'|'.$longitude.'|'.(string) ($get('geocoded_at') ?? '').'|'.$presentation['shape']);
+        $key = sha1($latitude.'|'.$longitude.'|'.(string) ($get('geocoded_at') ?? ''));
 
         return new HtmlString(
             '<div wire:key="journal-map-'.$key.'" x-data="{ stale: false }" x-on:journal-location-stale.window="stale = true">'
-            .'<div class="journal-entry-editor__map is-'.e($presentation['shape']).'" x-show="! stale">'
+            .'<div class="journal-entry-editor__map" x-show="! stale">'
             .'<iframe src="'.e($presentation['embed_url']).'" title="Venue map preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
-            .'<div class="journal-entry-editor__map-meta"><span>'.e(ucfirst($presentation['shape'])).' map</span>'
+            .'<div class="journal-entry-editor__map-meta">'
             .'<a href="'.e($presentation['public_url']).'" target="_blank" rel="noopener noreferrer">Open map</a></div>'
             .'</div>'
             .'<div class="journal-entry-editor__map is-empty" x-show="stale" x-cloak>'

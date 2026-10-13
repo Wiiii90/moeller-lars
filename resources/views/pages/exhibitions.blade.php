@@ -131,7 +131,7 @@
                             @endif
                             @if ($map !== null)
                                 <dialog id="{{ $mapDialogId }}"
-                                    class="exhibition-map-dialog exhibition-map-dialog--{{ $map['shape'] }}"
+                                    class="exhibition-map-dialog"
                                     aria-labelledby="exhibition-map-heading-{{ $exhibition->getKey() }}">
                                     <div class="exhibition-map-dialog__content">
                                         <header class="exhibition-map-dialog__header">

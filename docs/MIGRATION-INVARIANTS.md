@@ -104,7 +104,7 @@ Gallery and Map are explicit per-Exhibition presentation features.
 - Cover publication remains independent of Gallery enabled state;
 - `map_enabled` controls public map presentation;
 - enabled Map requires valid geodata under the canonical geocoding workflow;
-- `map_shape` is currently `wide` or `square`;
+- legacy `map_shape` values remain in the physical schema for Publication snapshot compatibility only; map aspect ratio is no longer editable or used in active presentation;
 - Map presentation is not inferred merely from Exhibition timing.
 
 ## Journal template retention invariant

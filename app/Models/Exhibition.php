@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'map_shape', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -179,7 +179,7 @@ class Exhibition extends Model
         return (bool) $this->getAttribute('map_enabled') && $this->hasCoordinates();
     }
 
-    /** @return array{embed_url:string, public_url:string, shape:string, latitude:float, longitude:float}|null */
+    /** @return array{embed_url:string, public_url:string, latitude:float, longitude:float}|null */
     public function mapPresentation(): ?array
     {
         return app(ExhibitionMapPresentation::class)->for($this);
@@ -193,11 +193,6 @@ class Exhibition extends Model
     public function publicMapUrl(): ?string
     {
         return $this->mapPresentation()['public_url'] ?? null;
-    }
-
-    public function mapShape(): string
-    {
-        return app(ExhibitionMapPresentation::class)->shape((string) ($this->getAttribute('map_shape') ?? 'wide'));
     }
 
     protected static function booted(): void

@@ -61,7 +61,7 @@ A later forward migration establishes the explicit Exhibition presentation contr
 
 - `gallery_enabled`;
 - `map_enabled`;
-- `map_shape` (`wide`/`square`);
+- the historical `map_shape` (`wide`/`square`) column, now ignored by runtime/editorial code and retained only for Publication snapshot schema compatibility until a coordinated future schema cutover;
 - deterministic handling of historical archived rows missing `archived_from_state`;
 - conservative normalization of address values where `location_text` only duplicated structured city/country information.
 
