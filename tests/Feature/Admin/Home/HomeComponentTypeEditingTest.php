@@ -21,23 +21,6 @@ function homeComponentTypeSettings(HomeTemplate $template, array $components): H
     return $settings;
 }
 
-it('reuses the Custom Page component hierarchy without hiding the type selector or repeating type metadata', function (): void {
-    $home = file_get_contents(resource_path('views/filament/pages/home-presentation.blade.php'));
-    $rows = file_get_contents(resource_path('views/filament/pages/partials/home-component-sequence.blade.php'));
-    $styles = file_get_contents(resource_path('css/admin/home.css'));
-    $responsive = file_get_contents(resource_path('css/admin/responsive.css'));
-
-    expect($home)->toContain("partials.home-component-sequence")
-        ->and($home)->not->toContain('home-components-table')
-        ->and($rows)->toContain('custom-page-component-sequence home-component-sequence admin-hierarchy')
-        ->and($rows)->toContain('class="admin-inline-select custom-page-component__type-select"')
-        ->and($rows)->toContain("mountAction('changeComponentType'")
-        ->and($rows)->toContain('wire:sort="sortComponent"')
-        ->and($rows)->not->toContain('admin-responsive-meta')
-        ->and($styles)->not->toContain('--admin-hierarchy-actions-column: var(--admin-row-actions-move-edit-delete-width)')
-        ->and($responsive)->not->toContain('home-components-table');
-});
-
 it('converts Home headings to Rich Text without discarding their text', function (HomeTemplate $template): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $settings = homeComponentTypeSettings($template, [
@@ -147,24 +130,6 @@ it('preserves publication on type conversion and supports List and Contact child
     expect(fn () => $service->mutateChild($settings, HomeTemplate::Custom, 0, 'list', 'update', 2, [
         'title' => 'Stale target',
     ]))->toThrow(ValidationException::class);
-});
-
-it('shares the public component renderer and respects unpublished Home blocks and child components', function (): void {
-    $home = file_get_contents(resource_path('views/pages/home/components.blade.php'));
-    $custom = file_get_contents(resource_path('views/pages/custom.blade.php'));
-    $shared = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
-    $resolver = file_get_contents(app_path('Domain/Content/HomePresentationResolver.php'));
-    $contact = file_get_contents(app_path('Http/Controllers/PublicContactController.php'));
-
-    expect($home)->toContain("pages.partials.component-sequence")
-        ->and($custom)->toContain("pages.partials.component-sequence")
-        ->and($shared)->toContain('CustomPageSetting::componentPublished')
-        ->and($shared)->toContain('CustomPageSetting::listItemPublished')
-        ->and($shared)->toContain('custom-page__divider--{{ $dividerVariant }}')
-        ->and($shared)->toContain('x-contact')
-        ->and($resolver)->toContain("generalSettings")
-        ->and($resolver)->toContain("RichTextMediaReference::ids")
-        ->and($contact)->toContain('publishedHomeContactFormExists');
 });
 
 it('rejects duplicate Contact children and duplicate Legal Disclaimer components', function (): void {

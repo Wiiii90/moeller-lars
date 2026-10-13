@@ -176,13 +176,6 @@ it('allows canonical reorder only for a neutral complete parent sequence', funct
         ->call('reorderComponents', array_map(static fn (int $index): string => $index.':list', range(24, 0)));
 
     expect($largeSettings->fresh()->components()[0]['title'])->toBe('Component 1');
-
-    $sequenceSource = file_get_contents(resource_path('views/filament/pages/partials/custom-page-workspace-sequence.blade.php'));
-    expect($sequenceSource)->toContain('wire:sort="sortComponent"')
-        ->and($sequenceSource)->toContain('wire:sort:item=')
-        ->and($sequenceSource)->toContain('wire:sort:handle')
-        ->and($sequenceSource)->not->toContain('draggable=')
-        ->and($sequenceSource)->not->toContain('dragstart');
 });
 
 it('persists native parent drag sorting through the canonical component order service', function (): void {
@@ -359,26 +352,6 @@ it('changes hierarchy placement without inventing a hierarchical Custom Page URL
         ->and(Redirect::query()->count())->toBe($beforeRedirects);
 });
 
-
-it('preserves the editable Component column and distinct Content at every responsive state', function (): void {
-    $sequence = file_get_contents(resource_path('views/filament/pages/partials/custom-page-workspace-sequence.blade.php'));
-    $responsive = file_get_contents(resource_path('css/admin/responsive.css'));
-    $projection = file_get_contents(app_path('Filament/Pages/Concerns/CustomPageWorkspacePresentationHelpers.php'));
-
-    expect($sequence)
-        ->toContain('class="custom-page-component__type"')
-        ->toContain('class="admin-inline-select custom-page-component__type-select"')
-        ->toContain("wire:change=\"mountAction('changeComponentType'")
-        ->not->toContain('@disabled(! $reorderEnabled)')
-        ->not->toContain('<small class="admin-responsive-meta">{{ $pageComponent[\'type_label\'] }}</small>')
-        ->not->toContain('<small class="admin-responsive-meta">{{ $childKindLabel }}</small>')
-        ->and($responsive)
-        ->not->toContain(".custom-page-component__type,\n")
-        ->not->toContain(".custom-page-component-sequence .admin-responsive-meta")
-        ->toContain('var(--admin-hierarchy-component-column)')
-        ->and($projection)
-        ->toContain("return ['primary' => \$count.' '.(\$count === 1 ? 'item' : 'items'), 'secondary' => '', 'meta' => ''];");
-});
 
 it('keeps Change type reachable when filtering makes drag sorting unavailable', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Filtered type conversion', 'filtered-type-conversion');

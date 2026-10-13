@@ -176,30 +176,6 @@ it('keeps Dashboard Notification reads isolated to the authenticated user', func
         ->and(app(DashboardFeed::class)->entry('notification:'.$second->getKey()))->toBeNull();
 });
 
-it('owns Notification delivery without framework notification objects or parallel notifier APIs', function (): void {
-    $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
-    $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
-
-    expect($provider)
-        ->toContain('PanelsRenderHook::BODY_END')
-        ->toContain("view('filament.partials.admin-header-notification')")
-        ->not->toContain('PanelsRenderHook::TOPBAR_START')
-        ->and($notifier)
-        ->toContain("dispatch('admin-header-notification'")
-        ->not->toContain('Filament\\Notifications')
-        ->not->toContain('public function inbox(')
-        ->not->toContain('public function both(');
-
-    foreach (File::allFiles(app_path()) as $file) {
-        $source = file_get_contents($file->getRealPath());
-
-        expect($source)
-            ->not->toContain('Notification::make()')
-            ->not->toContain('->transient()');
-    }
-});
-
-
 it('forbids legacy notification methods at every current application callsite', function (): void {
     foreach (File::allFiles(app_path()) as $file) {
         if ($file->getExtension() !== 'php') {

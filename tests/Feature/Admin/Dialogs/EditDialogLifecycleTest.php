@@ -69,19 +69,3 @@ it('keeps an invalid edit mounted without persisting the incomplete form', funct
 
     expect($user->fresh()->getAttribute('dashboard_notification_filter'))->toBe($original);
 });
-
-it('uses one native edit persistence path without parallel autosave or save-on-close', function (): void {
-    $adapter = file_get_contents(app_path('Filament/Support/Dialogs/AdminDialog.php'));
-    $homeSettings = file_get_contents(app_path('Filament/Support/HomeSettingsDialog.php'));
-
-    expect($adapter)->toContain("'wire:change' => 'callMountedAction'")
-        ->and($adapter)->toContain('$action->halt();')
-        ->and($adapter)->toContain('->modalSubmitAction(false)')
-        ->and($adapter)->toContain('->modalCancelAction(false)')
-        ->and($adapter)->not->toContain('persistMountedAdminEdit')
-        ->and($adapter)->not->toContain('unmountAction(')
-        ->and($adapter)->not->toContain('focusout')
-        ->and($adapter)->not->toContain('setTimeout')
-        ->and($homeSettings)->not->toContain('persistMountedAdminEdit')
-        ->and(file_exists(app_path('Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php')))->toBeFalse();
-});

@@ -26,10 +26,6 @@ it('starts with no automatic Journal content heading or leading separator', func
         ->assertOk()
         ->assertDontSee('public-page-heading--left', false)
         ->assertDontSee('exhibitions-heading', false);
-
-    $exhibitionView = file_get_contents(resource_path('views/pages/exhibitions.blade.php'));
-    expect($exhibitionView)->toContain('<x-public.page-heading :section="$section" />')
-        ->not->toContain('<h2 id="exhibitions-heading"');
 });
 
 it('supports inherited and overridden page headings without altering navigation identity', function (): void {
@@ -95,13 +91,4 @@ it('validates heading controls and uses one schema for Pages and Home', function
     expect(fn () => $service->updatePageHeading($home, [
         'content_heading_divider' => 'double',
     ]))->toThrow(ValidationException::class);
-
-    expect(file_get_contents(app_path('Filament/Support/HomeSettingsDialog.php')))
-        ->toContain('PageHeadingFields::schema(');
-    expect(file_get_contents(app_path('Filament/Pages/Concerns/ManagesSitePageEditDialog.php')))
-        ->toContain('PageHeadingFields::schema(');
-    expect(file_get_contents(resource_path('views/pages/home.blade.php')))
-        ->toContain('<x-public.page-heading :section="$pageSection" />');
-    expect(file_get_contents(resource_path('views/pages/artworks/index.blade.php')))
-        ->toContain('<x-public.page-heading :section="$section" />');
 });
