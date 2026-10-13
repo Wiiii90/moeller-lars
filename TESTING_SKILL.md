@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `5410ef90753afe7569864257404747425ecfc2a4` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `722670a68a0b71a6eb9f3773b018e4a70e5d7b0a` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -55,6 +55,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Replaced the Dashboard feed hook-only test with an authenticated Livewire feed search/selection workflow. Removed the Pulse recorder-configuration snapshot while retaining its admin access contract. Publication history deletion test now creates its **own real checkpoint** instead of relying on seeded history.
 - Updated `tests/README.md` with the component / E2E / profiling / full browser commands. These were **authored but not executed**.
 - Removed unnecessary preview-route registration from unrelated Publication commit/media tests; Media-retention tests no longer load unrelated Publication workflow helpers. Preview access tests keep their own isolated preview route.
+- Added a security regression to `MediaVariantReclamationTest`: requesting an unreferenced Committed variant as a guest does not regenerate a missing generated file; access remains 404. This crosses public middleware and disk behavior, runtime NOT RUN.
 - Added a public-media publication transition contract: draft/Working original and variant not public before Commit; protected admin Preview available; public original and variant available after Commit; Working unpublish does not leak; unavailable after next Commit. Admin-original denies guests and non-admins. **Authored, runtime NOT RUN**.
 - Reintegrated later `dev` Journal/Exhibition changes and their **new or updated Feature/Unit tests**, preserving the intentional deletion of `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php`.
 - Corrected the newly merged Journal copyright Unit test to construct `JournalMediaRenderer` with a mock `PublicMedia` dependency rather than calling `app()` without bootstrapping Laravel. All current `tests/Unit` files were scanned for `app()`; no other such calls were found.
@@ -96,7 +97,7 @@ Track each review by **verified contract**, not by number of files. 'Source-revi
 | Dashboard / notifications | Partially source-reviewed | Run Livewire interaction tests, verify mutations and notifications |
 | General / Home / Pages | Cases inventoried; partial behavior source-review | Review every workflow against traits, actions and current dialog behavior |
 | Journal / Exhibitions | Partial; map autosave feedback/no-op strengthened | Map autosave + address validation, public visibility, Journal state changes |
-| Gallery / Storage / media | Cases inventoried; partial behavior source-review | Cross-check deletion/variants/usage, public authorization and preview |
+| Gallery / Storage / media | Cases inventoried; public variant access/regeneration security strengthened | Cross-check deletion/variants/usage, public authorization and preview |
 | Publication / Restore | Partially source-reviewed; Commit notification/no-op strengthened | Execute realistic Commit/Stage/Revert and media retention cases |
 | Public / security / contact / SEO | Partial | Reverify current routes, middleware, side effects and auth |
 | Unit / Integration / Migration | All cases inventoried; migration sources inspected | Validate actual migration compatibility, historical retirement and runtime |

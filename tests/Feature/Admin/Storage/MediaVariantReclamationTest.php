@@ -2,6 +2,7 @@
 
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaVariantRegenerationService;
+use App\Domain\Publication\PublicationService;
 use App\Domain\Storage\SiteStorageReclaimService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -70,4 +71,24 @@ it('keeps a generated file when the current transform cannot reproduce its recor
 
     expect($result)->toBe(['files' => 0, 'bytes' => 0]);
     Storage::disk(config('media.disk'))->assertExists($variantKey);
+});
+
+it('never regenerates an unreferenced committed variant for an unauthenticated public request', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+
+    $asset = app(MediaIngestService::class)->ingest(
+        UploadedFile::fake()->image('private-variant.jpg', 640, 480),
+    );
+    $variant = $asset->variants()->sole();
+    $key = (string) $variant->getAttribute('storage_key');
+
+    // Committed existence alone cannot grant public access.
+    expect(app(PublicationService::class)->commit($actor))->not->toBeNull();
+    Storage::disk(config('media.disk'))->delete($key);
+    Storage::disk(config('media.disk'))->assertMissing($key);
+    Auth::guard('web')->logout();
+
+    $this->get(route('media.variant', $variant))->assertNotFound();
+    Storage::disk(config('media.disk'))->assertMissing($key);
 });
