@@ -6,6 +6,7 @@ use App\Domain\Media\PublicMedia;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
+use App\Models\AdminNotification;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
 use App\Models\MediaAsset;
@@ -178,4 +179,36 @@ it('does not create an audit event when assigning an artwork to its current Gall
 
     expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
         ->and(AuditEvent::query()->count())->toBe($auditsBefore);
+});
+
+
+
+it('rolls back every selected Gallery move when a published artwork cannot enter the destination', function (): void {
+    $source = galleryFixtureCategory('published');
+    $destination = galleryFixtureCategory('hidden');
+    $draft = galleryFixtureArtwork($source, ['position' => 0]);
+    $published = galleryFixtureArtwork($source, ['position' => 1]);
+    galleryFixturePrimary($published, galleryFixtureAsset('video/mp4'));
+    app(ArtworkPublicationService::class)->publish($published);
+    galleryFixtureUnavailableAnalytics();
+
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
+        ->set('selectedArtworkIds', [$draft->getKey(), $published->getKey()])
+        ->mountAction('moveSelectedToGallery')
+        ->fillForm(['target_gallery_id' => $destination->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect((int) $draft->fresh()->artwork_category_id)->toBe((int) $source->getKey())
+        ->and((int) $published->fresh()->artwork_category_id)->toBe((int) $source->getKey())
+        ->and($draft->fresh()->position)->toBe(0)
+        ->and($published->fresh()->position)->toBe(1)
+        ->and(Artwork::query()->where('artwork_category_id', $destination->getKey())->count())->toBe(0)
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
+        ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 });

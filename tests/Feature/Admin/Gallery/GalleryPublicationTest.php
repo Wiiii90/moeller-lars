@@ -6,6 +6,7 @@ use App\Domain\Media\PublicMedia;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Models\Artwork;
+use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
@@ -136,4 +137,31 @@ it('notifies only when a Gallery publication action actually changes the artwork
 
     expect(\App\Models\AdminNotification::query()->count())->toBe($notificationCount)
         ->and(AuditEvent::query()->count())->toBe($auditCount);
+});
+
+
+
+it('rolls back a batch publication when one selected artwork is not publishable', function (): void {
+    $gallery = galleryFixtureCategory();
+    $ready = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $incomplete = galleryFixtureArtwork($gallery, ['position' => 1]);
+    galleryFixturePrimary($ready, galleryFixtureAsset('video/mp4'));
+    galleryFixtureUnavailableAnalytics();
+
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('selectedArtworkIds', [$ready->getKey(), $incomplete->getKey()])
+        ->mountAction('publishSelectedArtworks')
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect($ready->fresh()->state)->toBe('draft')
+        ->and($incomplete->fresh()->state)->toBe('draft')
+        ->and($ready->fresh()->published_at)->toBeNull()
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
+        ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 });
