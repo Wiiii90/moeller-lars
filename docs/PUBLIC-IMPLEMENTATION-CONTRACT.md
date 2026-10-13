@@ -48,7 +48,12 @@ retain native browser navigation. The canonical server routes remain the
 source of content/publication/preview authority. JavaScript page initializers
 must dispose global listeners/observers on each document swap; Matomo records
 one page view per visit and does not inject a second tracker script. The
-public CSP remains nonce-based and does not enable `unsafe-eval`. General
+public CSP remains nonce-based and does not enable `unsafe-eval`. The entire
+Public CSS cascade is bundled through the single `resources/js/app.js` Vite
+entrypoint (foundation, content, presentation, custom pages and journal);
+the Public layout no longer requests individual CSS entrypoints or their
+preloads. The Admin Vite entrypoints and Filament bundle stay unchanged.
+General
 layout CSS variables are reapplied from server-rendered metadata at the swap
 boundary, so new nonces cannot invalidate the artist's configured background
 or widths. This SPA transport is independent of future contour animation.
@@ -57,32 +62,25 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The first accepted Content folio geometry is an immutable fallback:
-`#content::before` and `::after` render the ORIGINAL asymmetric complete
-paper-corner contours even with JavaScript off or non-SPA navigation.
-The ten experimental variants preserve this exact form as variant 1,
-change only bounded end positions, and never detach corner return strokes.
-The animated layer is a **new ordinary child** `.public-folio-decoration`
-of each freshly rendered `#content`, **without** `@persist` or
-`x-persist`. On `livewire:navigating`, the old animated `left/right`
-geometry is captured from computed styles before the old page is disposed;
-on `livewire:navigated`, after a real visit, the new element gets the
-next variant and animates from the captured midpoint with the native
-Web Animations API for 920 ms where supported. The six values per variant
-describe the two corner end positions and return-stroke widths. The
-static pseudo-elements preserve the originally accepted geometry with
-JavaScript disabled or when the animation is not activated. No animation
-runs on first load or reduced-motion clients. The ten variations retain
-complete connected corners; their live browser acceptance remains open.
-`wire:transition.navigate` was removed because it does not implement SPA
-crossfades. Instead an explicitly gated short opacity/translateY animation
-settles the NEW content after a completed Livewire navigation, never on initial
-load or reduced-motion clients. The same-origin content-link delegation invokes
-`Livewire.navigate()` for eligible links not predeclared with `wire:navigate`
-(adding Alpine directives after initialization did not activate them).
-Neither a second router nor timers, polling or synthetic page transitions
-are introduced. Actual CSP activation and SPA behavior still require
-running-preview verification.
+The original asymmetric Content folio remains the approved static CSS fallback
+(`#content::before` and `#content::after`) for initial loads, unsupported
+browsers, no JavaScript and reduced-motion users. Variant 1 matches the
+original exactly. The current motion experiment uses two ordinary connected
+HTML corner elements inside `.public-folio-decoration`; it no longer uses
+`@persist`, Alpine persistence wrappers, CSS custom-property registration
+or pseudo-element animation. On `livewire:navigating`, the module reads the
+CURRENT computed `top`, `bottom` and `width` of both edges (including
+interrupted animation values). On `livewire:navigated`, the new page receives
+an explicit Web Animations API interpolation from this snapshot to a different
+one of ten curated variants. The static destination and its complete corner
+borders remain intact when WAAPI is unsupported. The menu's accepted fixed
+contours are separate and never animated; Content widths and artworks never
+move. A short Content-only settling animation is gated on a completed actual
+SPA visit and obeys reduced motion. The existing link delegate handles
+eligible non-menu Content links with `Livewire.navigate()`; predefined
+`wire:navigate` menu links remain owned by Livewire. No custom Fetch/History
+router, timers or polling are introduced. The actual SPA runtime and animation
+must be verified using the browser preview before declaring acceptance.
 
 The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`, `--public-folio-depth`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
 
