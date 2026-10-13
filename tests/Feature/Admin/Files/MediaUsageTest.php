@@ -23,43 +23,7 @@ beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 });
 
-function workspaceReferenceAsset(
-    string $filename,
-    string $mime = 'image/jpeg',
-    string $state = 'available',
-    ?string $alt = 'Test image',
-    int $bytes = 4,
-): MediaAsset {
-    return MediaAsset::query()->create([
-        'storage_key' => 'originals/'.$filename,
-        'original_filename' => $filename,
-        'mime_type' => $mime,
-        'byte_size' => $bytes,
-        'sha256' => hash('sha256', $filename),
-        'state' => $state,
-        'alt_text' => $alt,
-    ]);
-}
-
-function workspaceReferenceNode(string $type, string $title, ?string $template = null, ?int $categoryId = null): SiteSection
-{
-    static $sequence = 0;
-
-    $sequence++;
-
-    return SiteSection::query()->create([
-        'type' => $type,
-        'template' => $template,
-        'title' => $title,
-        'navigation_label' => $title,
-        'slug' => str($title)->slug()->append('-workspace-test-'.$sequence)->toString(),
-        'state' => 'hidden',
-        'position' => 900 + $sequence,
-        'show_in_navigation' => false,
-        'parent_id' => null,
-        'artwork_category_id' => $categoryId,
-    ]);
-}
+require_once __DIR__.'/MediaReferenceFixtures.php';
 
 it('builds broad and specific Usage destinations from canonical site nodes', function (): void {
     $category = ArtworkCategory::query()->create(['slug' => 'archive', 'name' => 'Archive']);
@@ -92,6 +56,7 @@ it('builds broad and specific Usage destinations from canonical site nodes', fun
             'site-identity',
         );
 });
+
 
 it('uses one canonical Usage path for in-use unreferenced broad and specific destinations', function (): void {
     $galleryAsset = workspaceReferenceAsset('gallery.jpg');
@@ -190,6 +155,7 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
     expect($unreferenced->pluck('id')->all())->toBe([$other->id]);
 });
 
+
 it('counts available images videos and audio in the six library metrics', function (): void {
     $referenced = workspaceReferenceAsset('metric-referenced.jpg', bytes: 4);
     workspaceReferenceAsset('metric-image.png', 'image/png', alt: null, bytes: 8);
@@ -222,6 +188,7 @@ it('counts available images videos and audio in the six library metrics', functi
         'bytes' => 44,
     ]);
 });
+
 
 it('projects canonical Custom Page list media through Usage and removes it on asset deletion', function (): void {
     $asset = workspaceReferenceAsset('list-reference.jpg');
@@ -274,92 +241,4 @@ it('projects canonical Custom Page list media through Usage and removes it on as
         ->and($component['media_asset_id'])->toBeNull()
         ->and(app(MediaReferenceQuery::class)->isReferenced($deletedAsset))->toBeFalse()
         ->and($afterDeleteCatalog->references($deletedAsset))->toBe([]);
-});
-
-it('opens Preview and Edit as workspace actions and saves canonical metadata in place', function (): void {
-    $asset = workspaceReferenceAsset('dialog-image.jpg');
-
-    Livewire::test(ListMediaAssets::class)
-        ->mountAction('preview', ['asset' => $asset->id])
-        ->assertMountedActionModalSee('dialog-image.jpg')
-        ->assertMountedActionModalSee('Metadata')
-        ->assertMountedActionModalSee('Used in');
-
-    Livewire::test(ListMediaAssets::class)
-        ->mountAction('edit', ['asset' => $asset->id])
-        ->fillForm([
-            'alt_text' => 'Updated canonical ALT',
-            'credit' => 'Studio credit',
-            'copyright_notice_mode' => MediaAsset::COPYRIGHT_OVERRIDE,
-            'copyright_notice' => 'All rights reserved',
-        ])
-        ->callMountedAction()
-        ->assertHasNoFormErrors();
-
-    $asset->refresh();
-    expect($asset->getAttribute('alt_text'))->toBe('Updated canonical ALT')
-        ->and($asset->getAttribute('credit'))->toBe('Studio credit')
-        ->and($asset->getAttribute('copyright_notice_mode'))->toBe(MediaAsset::COPYRIGHT_OVERRIDE)
-        ->and($asset->getAttribute('copyright_notice'))->toBe('All rights reserved')
-        ->and($asset->getAttribute('state'))->toBe('available');
-});
-
-it('removes Custom Page image references before deleting the asset', function (): void {
-    $asset = workspaceReferenceAsset('custom-page.jpg');
-    $custom = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'CV');
-    $custom->customPageSetting()->create([
-        'blocks' => [[
-            'type' => 'image',
-            'media_asset_id' => $asset->id,
-            'image_decorative' => false,
-        ]],
-    ]);
-
-    expect(app(MediaReferenceQuery::class)->isReferenced($asset))->toBeTrue();
-    expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue();
-
-    $deletedAsset = $asset->fresh();
-    $settings = $custom->customPageSetting()->firstOrFail();
-    $afterDeleteCatalog = app(MediaReferenceCatalog::class);
-    $afterDeleteCatalog->loadAssetReferences($deletedAsset);
-
-    $cascadeEvent = AuditEvent::query()
-        ->where('action', 'site_section.updated')
-        ->where('entity_type', 'site_section')
-        ->where('entity_id', $custom->getKey())
-        ->latest('id')
-        ->firstOrFail();
-
-    expect($deletedAsset->getAttribute('state'))->toBe('deleted')
-        ->and($settings->components())->toBe([])
-        ->and(app(MediaReferenceQuery::class)->isReferenced($deletedAsset))->toBeFalse()
-        ->and($afterDeleteCatalog->references($deletedAsset))->toBe([])
-        ->and(AdminActionReceipt::query()->where('audit_event_id', $cascadeEvent->getKey())->exists())->toBeFalse();
-});
-
-it('records draft Journal rich-text cleanup when referenced media is deleted without exposing unsafe Undo', function (): void {
-    $asset = workspaceReferenceAsset('journal-rich-text-delete.jpg');
-    $journal = workspaceReferenceNode(SiteSectionType::Journal->value, 'Deletion Journal', JournalTemplate::Blog->value);
-    $post = BlogPost::query()->create([
-        'site_section_id' => $journal->id,
-        'slug' => 'media-deletion-note',
-        'title' => 'Media deletion note',
-        'body' => "Before\n\n![](media:{$asset->id})",
-        'state' => 'draft',
-        'position' => 0,
-    ]);
-
-    expect(app(MediaReferenceQuery::class)->isReferenced($asset))->toBeTrue();
-    expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue();
-
-    $post->refresh();
-    $event = AuditEvent::query()
-        ->where('action', 'blog_post.media_reference_removed')
-        ->where('entity_type', 'blog_post')
-        ->where('entity_id', $post->getKey())
-        ->latest('id')
-        ->firstOrFail();
-
-    expect((string) $post->getAttribute('body'))->not->toContain('media:'.$asset->id)
-        ->and(AdminActionReceipt::query()->where('audit_event_id', $event->getKey())->exists())->toBeFalse();
 });

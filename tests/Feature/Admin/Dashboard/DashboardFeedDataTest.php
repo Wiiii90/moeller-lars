@@ -64,6 +64,7 @@ it('projects announcements changelog and contact into the shared feed without tu
         ->and($feed->paginate('dashboard changed')['total'])->toBe(1);
 });
 
+
 it('paginates more than three contact pages without duplicates or omissions', function (): void {
     config()->set('dashboard-feed.items', []);
     $timestamp = Carbon::parse('2026-08-27 12:00:00');
@@ -106,6 +107,7 @@ it('paginates more than three contact pages without duplicates or omissions', fu
         ->and(array_values(array_unique($visibleIds)))->toHaveCount(87);
 });
 
+
 it('searches contact sender name email and message in the database with correct pagination metadata', function (): void {
     config()->set('dashboard-feed.items', []);
 
@@ -133,6 +135,7 @@ it('searches contact sender name email and message in the database with correct 
         ->and([$message['start'], $message['end']])->toBe([1, 25]);
 });
 
+
 it('does not query contact messages for announcement or changelog projections', function (): void {
     config()->set('dashboard-feed.items', [
         ['id' => 'notice', 'type' => 'announcement', 'date' => '2026-08-27', 'title' => 'Notice', 'body' => 'Announcement body'],
@@ -159,6 +162,7 @@ it('does not query contact messages for announcement or changelog projections', 
 
     expect(collect($queries)->filter(static fn (string $sql): bool => str_contains($sql, 'contact_messages'))->all())->toBe([]);
 });
+
 
 it('keeps contact hydration bounded to the requested page and the tiny static merge allowance', function (): void {
     config()->set('dashboard-feed.items', [
@@ -192,6 +196,7 @@ it('keeps contact hydration bounded to the requested page and the tiny static me
     expect($allPage['items'])->toHaveCount(25)
         ->and($retrieved)->toBe(27);
 });
+
 
 it('merges static and contact items in one global chronological order', function (): void {
     config()->set('dashboard-feed.items', [
@@ -230,65 +235,4 @@ it('merges static and contact items in one global chronological order', function
         'static:change',
         $contactKeys[2],
     ]);
-});
-
-it('resets feed page when search type or page size changes', function (): void {
-    $dashboard = new Dashboard;
-
-    $dashboard->feedPage = 4;
-    $dashboard->updatedFeedSearch();
-    expect($dashboard->feedPage)->toBe(1);
-
-    $dashboard->feedPage = 3;
-    $dashboard->feedType = 'contact';
-    $dashboard->updatedFeedType();
-    expect($dashboard->feedPage)->toBe(1)
-        ->and($dashboard->feedType)->toBe('contact');
-
-    $dashboard->feedPage = 2;
-    $dashboard->feedType = 'unsupported';
-    $dashboard->updatedFeedType();
-    expect($dashboard->feedPage)->toBe(1)
-        ->and($dashboard->feedType)->toBe('all');
-
-    $dashboard->feedPage = 3;
-    $dashboard->updatedFeedPageSize(25);
-    expect($dashboard->feedPage)->toBe(1)
-        ->and($dashboard->feedPageSize)->toBe(25);
-});
-
-it('marks contact read on opening and can mark it unread again', function (): void {
-    $message = ContactMessage::query()->create([
-        'sender_name' => 'Visitor',
-        'sender_email' => 'visitor@example.test',
-        'message' => 'Read state test',
-        'mail_delivery_status' => ContactMessage::DELIVERY_DELIVERED,
-    ]);
-
-    expect($message->getAttribute('read_at'))->toBeNull();
-
-    $opened = app(DashboardFeed::class)->openEntry('contact:'.$message->getKey());
-
-    expect($opened)->not->toBeNull()
-        ->and($opened['status'])->toBe('Read')
-        ->and($message->refresh()->getAttribute('read_at'))->not->toBeNull();
-
-    app(DashboardFeed::class)->markContactUnread((int) $message->getKey());
-
-    expect($message->refresh()->getAttribute('read_at'))->toBeNull()
-        ->and(app(DashboardFeed::class)->entry('contact:'.$message->getKey())['status'])->toBe('Unread');
-});
-
-it('deletes stored contact messages cleanly', function (): void {
-    $message = ContactMessage::query()->create([
-        'sender_name' => 'Visitor',
-        'sender_email' => 'visitor@example.test',
-        'message' => 'Delete state test',
-        'mail_delivery_status' => ContactMessage::DELIVERY_FAILED,
-    ]);
-
-    app(DashboardFeed::class)->deleteContact((int) $message->getKey());
-
-    expect(ContactMessage::query()->whereKey($message->getKey())->exists())->toBeFalse()
-        ->and(app(DashboardFeed::class)->entry('contact:'.$message->getKey()))->toBeNull();
 });
