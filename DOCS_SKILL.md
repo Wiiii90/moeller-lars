@@ -260,6 +260,14 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Änderungen: `JournalMediaRenderer`, Journal-Gallery-Blade und Blog-Index/Detail sowie `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`; kein Code in den neuen Architecture-Scripts verändert. Keine neuen SQL-Migrationen in diesem Merge.
 - **Nächster Schritt bleibt:** vollständiger PHP-Generatorlauf und Quellen-Coverage, dann Datenbankschema aus Wegwerf-PostgreSQL.
 
+## 6i. Fortsetzung 2026-10-13 — vollumfängliche App-PHP-Quelle erfasst
+
+- [Quellenkatalog](docs/architecture/generated/app-source-audit.json), [Modulgraph](docs/architecture/generated/app-module-imports.mmd) und [Analyse](docs/architecture/php-source-audit.md) committed.
+- `app/**/*.php` über GitHub für Quellstand `ca162bcd5e5bbaf50bc6bdb9c6bc01640269d027` **vollständig gelesen**: 248 Dateien, 214 Klassen, 27 Traits, 7 Enums, keine mehrdeutigen benannten Typen.
+- Alle **900** `use App\\...`-Imports auf bestehende App-Typen aufgelöst, davon **717** modulübergreifend. Die 20 Modulgruppen und tatsächlichen Quellenpfade sind enthalten. **Import ≠ Methodenaufruf oder Runtime-DI.**
+- Die lokale PHP-8.4-Runtime besitzt **keinen GitHub-DNS-/Netzwerkzugriff** auf das private Repository; ein nativer Full-Checkout-Lauf von `generate-architecture-inventory.php` / `generate-architecture-relations.php` wurde weiterhin **nicht** behauptet. Unabhängiger Regex-Scanner im Remote-Zugriff, nicht identisch mit PHP-Tokenizer.
+- **Nächster Schritt:** PHP-Tokenizer-Generatoren anhand kleiner konkreter Quellfälle auf falsche Kanten prüfen und reparieren; danach Quelländerungen aus `dev` synchronisieren und weitere Laufzeitauflösung konkret belegen.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:

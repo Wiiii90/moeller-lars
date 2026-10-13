@@ -1,0 +1,93 @@
+%% Import declarations only; NOT actual runtime calls, invocations or instantiated dependencies.
+flowchart LR
+    M1["Database"]
+    M2["Domain/Admin"]
+    M3["Domain/Analytics"]
+    M4["Domain/Artwork"]
+    M5["Domain/Contact"]
+    M6["Domain/Content"]
+    M7["Domain/Media"]
+    M8["Domain/Migration"]
+    M9["Domain/Publication"]
+    M10["Domain/Storage"]
+    M11["Filament"]
+    M12["Http"]
+    M13["Jobs"]
+    M14["Livewire"]
+    M15["Mail"]
+    M16["Models"]
+    M17["Notifications"]
+    M18["Providers"]
+    M19["Routing"]
+    M20["Support"]
+    M1 -->|2 imports| M9
+    M2 -->|2 imports| M4
+    M2 -->|5 imports| M6
+    M2 -->|3 imports| M9
+    M2 -->|45 imports| M16
+    M3 -->|1 imports| M7
+    M3 -->|7 imports| M16
+    M4 -->|7 imports| M2
+    M4 -->|4 imports| M6
+    M4 -->|8 imports| M7
+    M4 -->|23 imports| M16
+    M5 -->|1 imports| M16
+    M6 -->|14 imports| M2
+    M6 -->|3 imports| M4
+    M6 -->|7 imports| M7
+    M6 -->|53 imports| M16
+    M6 -->|4 imports| M19
+    M7 -->|2 imports| M2
+    M7 -->|1 imports| M4
+    M7 -->|13 imports| M6
+    M7 -->|2 imports| M9
+    M7 -->|1 imports| M10
+    M7 -->|29 imports| M16
+    M8 -->|1 imports| M4
+    M8 -->|6 imports| M7
+    M8 -->|15 imports| M16
+    M9 -->|1 imports| M2
+    M9 -->|1 imports| M6
+    M9 -->|2 imports| M7
+    M9 -->|7 imports| M16
+    M10 -->|2 imports| M2
+    M10 -->|2 imports| M7
+    M10 -->|2 imports| M9
+    M10 -->|1 imports| M16
+    M11 -->|42 imports| M2
+    M11 -->|10 imports| M3
+    M11 -->|29 imports| M4
+    M11 -->|78 imports| M6
+    M11 -->|29 imports| M7
+    M11 -->|4 imports| M9
+    M11 -->|135 imports| M16
+    M11 -->|1 imports| M17
+    M11 -->|4 imports| M19
+    M12 -->|1 imports| M2
+    M12 -->|2 imports| M3
+    M12 -->|1 imports| M4
+    M12 -->|1 imports| M5
+    M12 -->|20 imports| M6
+    M12 -->|5 imports| M7
+    M12 -->|3 imports| M9
+    M12 -->|1 imports| M13
+    M12 -->|1 imports| M15
+    M12 -->|26 imports| M16
+    M12 -->|2 imports| M19
+    M13 -->|1 imports| M3
+    M14 -->|3 imports| M2
+    M14 -->|1 imports| M9
+    M14 -->|1 imports| M10
+    M14 -->|2 imports| M11
+    M16 -->|1 imports| M2
+    M16 -->|10 imports| M6
+    M18 -->|1 imports| M1
+    M18 -->|2 imports| M2
+    M18 -->|1 imports| M6
+    M18 -->|2 imports| M9
+    M18 -->|14 imports| M11
+    M18 -->|1 imports| M12
+    M18 -->|1 imports| M16
+    M18 -->|2 imports| M20
+    M19 -->|1 imports| M6
+    M19 -->|1 imports| M16

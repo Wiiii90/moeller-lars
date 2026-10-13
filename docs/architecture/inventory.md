@@ -154,6 +154,10 @@ Die [Schema-Evolution](schema-evolution.md) erfasst nachgeprüfte Migrations-Eta
 
 [21 direkte Methodenaufrufe](admin-publication-calls.md) in der Admin-/Publication-Achse sind mit Klasse, Methode, Dateipfad, exakter Zeile und Textanker modelliert. Die zugehörige [JSON-Quelle](admin-publication-calls.json) und das [Mermaid-Diagramm](generated/admin-publication-calls.mmd) sind ein überprüfter Querschnitt, **kein vollständiger Laufzeitaufrufgraph**.
 
+## Vollständige Anwendungs-PHP-Klassen und Imports
+
+Der [Quellenkatalog](php-source-audit.md) erfasst auf festem Git-Ref alle **248 PHP-Dateien** unter `app/` mit **214 Klassen**, **27 Traits**, **7 Enums** und **900** intern auflösbaren Importdeklarationen. Das [Moduldiagramm](generated/app-module-imports.mmd) zählt ausschließlich deklarative Imports, nicht Laufzeitaufrufe. Der native PHP-Generatorlauf bleibt ausstehend.
+
 ## 7. Nacharbeit, ohne Scheingenauigkeit
 
 - Vollständiger deterministischer PHP-Symbol- und Verwendungsgraph mit Quellpositionen.
