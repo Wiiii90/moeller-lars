@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Publication\PublicationService;
 use App\Models\ContactMessage;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -59,6 +60,35 @@ final class BrowserProfilingSeeder extends Seeder
                 'message' => 'Disposable fixture for dashboard selection',
                 'mail_delivery_status' => ContactMessage::DELIVERY_PENDING,
             ]);
+        }
+
+        // A committed public pair is necessary for genuine SPA navigation,
+        // History back/forward and content-swap browser tests. Keep the two
+        // editorial draft fixtures above unchanged for the filter tests.
+        foreach ([1, 2] as $number) {
+            $section = SiteSection::query()->create([
+                'type' => SiteSection::TYPE_CUSTOM,
+                'template' => null,
+                'title' => 'Browser public SPA '.$number,
+                'navigation_label' => 'Browser public SPA '.$number,
+                'slug' => 'browser-public-spa-'.$number,
+                'state' => 'published',
+                'position' => 1100 + $number * 10,
+                'parent_id' => null,
+                'artwork_category_id' => null,
+            ]);
+            $section->customPageSetting()->create([
+                'blocks' => [[
+                    'type' => 'text',
+                    'published' => true,
+                    'title' => 'Public SPA content '.$number,
+                    'body' => null,
+                ]],
+            ]);
+        }
+
+        if (app(PublicationService::class)->commit($admin, 'Browser public SPA fixtures') === null) {
+            throw new RuntimeException('Browser SPA fixtures must be published before running public E2E tests.');
         }
     }
 }
