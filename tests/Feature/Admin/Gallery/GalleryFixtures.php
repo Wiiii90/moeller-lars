@@ -10,9 +10,12 @@ use App\Models\MediaVariant;
 
 function galleryFixtureCategory(string $state = 'published'): ArtworkCategory
 {
+    static $sequence = 0;
+    $sequence++;
+
     $gallery = ArtworkCategory::query()->create([
-        'slug' => 'gallery-'.fake()->unique()->uuid(),
-        'name' => 'Gallery '.fake()->unique()->word(),
+        'slug' => 'gallery-fixture-'.$sequence,
+        'name' => 'Gallery fixture '.$sequence,
         'show_on_home' => false,
     ]);
     testGallerySection($gallery, ['state' => $state]);
@@ -22,10 +25,13 @@ function galleryFixtureCategory(string $state = 'published'): ArtworkCategory
 
 function galleryFixtureArtwork(?ArtworkCategory $gallery, array $overrides = []): Artwork
 {
+    static $sequence = 0;
+    $sequence++;
+
     return Artwork::query()->create(array_merge([
         'artwork_category_id' => $gallery?->getKey(),
-        'slug' => fake()->unique()->slug(),
-        'title' => 'Artwork '.fake()->unique()->word(),
+        'slug' => 'gallery-artwork-fixture-'.$sequence,
+        'title' => 'Artwork fixture '.$sequence,
         'state' => 'draft',
         'position' => 0,
         'date_precision' => 'unknown',
@@ -34,12 +40,15 @@ function galleryFixtureArtwork(?ArtworkCategory $gallery, array $overrides = [])
 
 function galleryFixtureAsset(string $mime = 'image/jpeg', string $alt = 'Artwork media'): MediaAsset
 {
+    static $sequence = 0;
+    $sequence++;
+
     return MediaAsset::query()->create([
-        'storage_key' => 'originals/'.fake()->unique()->uuid().($mime === 'video/mp4' ? '.mp4' : '.jpg'),
+        'storage_key' => 'originals/gallery-media-fixture-'.$sequence.($mime === 'video/mp4' ? '.mp4' : '.jpg'),
         'original_filename' => $mime === 'video/mp4' ? 'artwork.mp4' : 'artwork.jpg',
         'mime_type' => $mime,
         'byte_size' => 16,
-        'sha256' => hash('sha256', fake()->unique()->uuid()),
+        'sha256' => hash('sha256', 'gallery-media-fixture-'.$sequence),
         'state' => 'available',
         'alt_text' => $alt,
         'width' => $mime === 'video/mp4' ? null : 20,
@@ -59,13 +68,16 @@ function galleryFixturePrimary(Artwork $artwork, MediaAsset $asset): ArtworkMedi
 
 function galleryFixtureThumbnail(MediaAsset $asset): MediaVariant
 {
+    static $sequence = 0;
+    $sequence++;
+
     return MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/'.fake()->unique()->uuid().'.webp',
+        'storage_key' => 'variants/gallery-thumbnail-fixture-'.$sequence.'.webp',
         'mime_type' => 'image/webp',
         'byte_size' => 8,
-        'sha256' => hash('sha256', fake()->unique()->uuid()),
+        'sha256' => hash('sha256', 'gallery-thumbnail-fixture-'.$sequence),
         'transform_profile' => 'public-v1',
         'state' => 'available',
         'width' => 10,

@@ -63,6 +63,8 @@ Current test file inventory after this cleanup: **114 PHP `*Test.php` files** (7
 
 25. Integration source audit: `PublicationStateResponseTest` now verifies that ordinary requests never receive Livewire publication-status headers, committed state stays clear after an identical editorial write, and uses deterministic fixture content instead of Faker UUID. `ExhibitionGeocodingTest` now exercises invalid out-of-range provider coordinates, retry after error without poisoning the cache, and subsequent successful cache hits; uses the existing virtual clock and mocked HTTP responses (no real sleeping/network). Read `AttachPublicationState`, `ExhibitionGeocodingService`, and `NominatimRequestThrottle`. **Not run.**
 
+26. Gallery fixture determinism: replaced Faker-generated UUID/words/slugs in the shared Gallery category, artwork, media asset and thumbnail test factories with monotonically unique, descriptively prefixed in-process sequences. Explicit model overrides and image/video metadata are unchanged; Gallery workflows still exercise distinct identities without relying on randomness. No application/DB behavior changed. **Not run.**
+
 ## Current blocking risks and evidence
 
 **All tests and test layers remain NOT RUN under this refactor. CI not triggered.** Gallery and Storage changes documented above have only been matched to source. No full PHP syntax/Pest discovery, Postgres Unit/Integration/Feature/Migration, Node, Vite build or Chromium test suite has run. Static reading and GitHub commits do not establish green status. A safe verified disposable environment is a prerequisite before any DB tests; preserve the current CI-only safety guard.
