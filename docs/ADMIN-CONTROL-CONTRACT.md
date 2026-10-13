@@ -85,6 +85,14 @@ Use discrete semantic commits:
 - text / email / URL / numeric input: normal change or blur; Enter may explicitly commit where supported;
 - textarea: normal change or blur;
 - select / checkbox / toggle: discrete selection/state change;
+
+Filament 5's Toggle renders an Alpine-backed switch button, not a native
+input. `AdminControl::register()` gives Toggles a single post-click semantic
+`change` event **only inside** `AdminDialog::edit()` so its existing
+`wire:change` owner performs the one normal editorial save. This bridge
+does not call an Action, save directly, intercept Filament's click, or use
+timers. Live entanglement alone is state synchronization, not persistence.
+Gallery and Exhibition map switches use the same central control contract.
 - date / datetime: completed picker change;
 - Media File selection: completed asset selection/removal;
 - color: completed color value change, never each intermediate drag sample;
