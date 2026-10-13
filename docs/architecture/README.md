@@ -19,6 +19,17 @@ Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative
 
 Dokumentierte Quellbelege beziehen sich auf den Ausgangsstand `82879135c0ab18dd88b07663c1e214a4ade0e45b`. Diese SHA ist **Belegstand, kein festzuhaltender Arbeits-HEAD**. Beim Einholen von `dev` werden betroffene Belege und Diagramme neu geprüft. Wo in den folgenden Dokumenten eine Klassenreferenz steht, verweist sie auf einen Repositorypfad; generierte Kataloge dürfen niemals vorgeben, die gesamte Laufzeitdynamik allein aus Imports abzuleiten.
 
+## Wiederholbare PHP-Quellinventur
+
+Der erste lokale Generator liegt in [`scripts/generate-architecture-inventory.php`](../../scripts/generate-architecture-inventory.php). Er benötigt lediglich PHP und bootet weder Laravel noch Datenbank oder CI:
+
+```sh
+php scripts/generate-architecture-inventory.php --write
+php scripts/generate-architecture-inventory.php --check
+```
+
+Er inventarisiert via PHP-Tokenizer alle deklarierten Typen in `app/**/*.php` einschließlich Fundstelle und die syntaktischen Datei-`use`-Imports; außerdem erfasst er Domain-Moduldateien und Migrationspfade. **Ein Import ist noch keine nachgewiesene Laufzeitabhängigkeit**. Das erzeugte `docs/architecture/generated/php-symbols.json` wurde auf dieser GitHub-gestützten Arbeitsumgebung noch nicht gegen den gesamten Repository-Checkout generiert; der Generator wurde separat mit einem kleinen PHP-Beispiel syntaktisch und funktional geprüft. `--check` kann später reproduzierbar Abweichungen melden.
+
 ## Modellarten und Fertigstellung
 
 | Modell | Erste Quelle | Status |

@@ -130,6 +130,12 @@ Die konkreten Verzweigungen und Belegstellen stehen in [Publication](publication
 | „Referenzierte Medien können nicht gelöscht werden“ als pauschale Aussage | `MediaAssetEditorialService::delete` kann referenzierte Einträge bewusst lösen und Auswirkungen auditieren | Lösch-/Reclamation-Vertrag präzisieren |
 | Pro `AdminNotifier::notification` stets nur ein Datensatz | Bei mehreren aufgezeichneten Activity-Meldungen ruft die Implementierung `recordAndSurface` mehrfach auf | Kardinalität korrekt und mit Ausnahmebedingungen dokumentieren |
 
+## Reproduzierbarer Typindex
+
+Das zugehörige **generierende Programm** steht unter `scripts/generate-architecture-inventory.php` und nutzt `token_get_all` statt eines regulären Ausdrucks über Kommentare und Zeichenketten. Ergebnis nach lokalem `--write`: `docs/architecture/generated/php-symbols.json`, mit konkreten FQCNs, Typkategorien, Zeilen, Dateipfaden, syntaktischen Imports und einer vollständigen PHP-Migrationsdateiliste. Ein vorhandenes Ergebnis lässt sich über `--check` vergleichen.
+
+**Status:** Generator ist implementiert und mit einem minimalen Beispiel geprüft. Das erzeugte Inventar aus dem vollständigen Projekt ist noch auszuführen und zu überprüfen; es wäre falsch, bereits generierte Vollständigkeit zu behaupten.
+
 ## 7. Nacharbeit, ohne Scheingenauigkeit
 
 - Vollständiger deterministischer PHP-Symbol- und Verwendungsgraph mit Quellpositionen.
