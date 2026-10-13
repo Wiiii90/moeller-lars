@@ -60,18 +60,19 @@
    behaupten, eine Laufzeit-, PHP- oder DB-Verifikation durchgeführt zu haben.
    GitHub-Connector mit atomarem Tree/Commit und expected-SHA-Ref-Update nutzen.
 
-## 3. Zuletzt verifizierter Branchstand (vor Anlage dieser Datei)
+## 3. Zuletzt verifizierter Branchstand
 
-| Referenz | Zuletzt geprüfte SHA / Einordnung |
+| Referenz | Stand zum Arbeitscheckpoint 2026-10-13 |
 | --- | --- |
-| `docs` | `dfc28d210081ec0819b5ac1d79723454021a2db2` |
-| `dev` | `a71ec7d1b28d09cec1399998239b09bdaefdea11` |
-| `docs` relativ zu `dev` | **19 voraus, 0 zurück**, nach letztem Merge |
-| `testing` | unabhängig vorhanden; wird von diesem Workstream nicht verändert |
+| `docs` | `26d33e6bdcd6dd9d4a9b51ec67818c8742285df0` (HEAD vor dieser Aktualisierung) |
+| `dev` | `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7` |
+| `docs` relativ zu `dev` | **28 Commits voraus, 0 zurück** vor diesem Checkpoint |
+| `testing` | eigenständiger Workstream; vom Dokumentationsteam nicht geändert |
 
-Nach dieser Datei wird der `docs`-HEAD naturgemäß eine neue SHA haben. Künftige
-Chats müssen den tatsächlichen Stand abrufen und den Tabellenwert ersetzen,
-nicht die Momentaufnahme blind übernehmen.
+**Vor jedem weiteren Schritt Remote-HEADs erneut abrufen.** Diese SHA ist eine
+historische Momentaufnahme; spätere Änderungen durch parallele Chats können
+jederzeit eintreffen. `dev`-Merges bewahren beide Parent-Commits und lösen
+Überschneidungen bewusst; kein Rewrite.
 
 ## 4. Bereits implementiert und committed
 
@@ -268,9 +269,7 @@ Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:
   `dac95a381419f9bb6af95d3fe2f836ea4d5dc9a0` übernommen.
 - Arbeitsregel für beide dauerhaften Sonderbranches steht bereits in
   `AGENTS.md`. Diese Datei wird zusätzlich im AGENTS-Einstieg verlinkt.
-- **Unmittelbar nächster Schritt:** Verifizierbarkeit und
-  Abdeckungsreport der PHP-Generatoren verbessern; dann weitere reale
-  Service- und UI-Abhängigkeiten erfassen.
+- **Unmittelbar nächster Schritt (aktualisiert):** Restore/Revert/Reset von der Filament-Activity-UI bis zu Domain und Working-/LIVE-State als quellverankerte Sequenzen vervollständigen; anschließend die noch ausstehenden nativen PHP-Generatorläufe und den isolierten PostgreSQL-Katalogexport ermöglichen.
 
 **Fortsetzungsregel:** Lies diese Arbeitsakte, verifiziere neue Branch-HEADs
 und setze den unmittelbaren nächsten Schritt um. Keine erneute
