@@ -32,6 +32,11 @@ function initializePublicApplication() {
 // into CSSOM before paint rather than relying on a newly inserted inline
 // style element that the current document's CSP cannot authorize.
 document.addEventListener('livewire:navigating', (event) => {
+    // Navigation is about to replace the old body: release modal maps, image
+    // attention tracking and global observers before their elements detach.
+    for (const dispose of disposers) dispose?.();
+    disposers = [];
+    currentContent = null;
     event.detail.onSwap?.(applyPublicLayoutFromMeta);
 });
 document.addEventListener('livewire:navigated', initializePublicApplication);
