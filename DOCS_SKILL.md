@@ -126,29 +126,27 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branch-/Quellstand 13.10.2026:** Die Public-Änderungen bis `dev`
-`a85930b4fedbb1416463e22a4e515f751a430112` wurden als
-Zwei-Eltern-Merge `c37fbd05568184e4c63855386879fe65750ab2ca` nach
-`docs` übernommen. `dev` kann zwischenzeitlich weitergelaufen sein:
-`docs`- und `dev`-HEAD sowie Überschneidungen neu vergleichen.
+**Branchstand 13.10.2026:** `docs` vor diesem Dokumentations-Commit
+`0aa31b37a5ca561880f5fe8f634500a84afd2cde`; `dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`
+und per Zwei-Eltern-Merge `0aa31b37a5ca561880f5fe8f634500a84afd2cde`
+nach `docs` übernommen (nur Folio-JS-Testquelle). Vor jeder Weiterarbeit
+die tatsächlichen HEADs erneut lesen.
 
-**Erledigt:**
-- [Handoff-Skill](.agents/skills/handoff/SKILL.md) ist jetzt alleiniger
-  Prozess-Owner. `followup-skill.md` ist ein kurzer Kompatibilitätseinstieg
-  ohne historischen Worker-Branch-Modus; die noch relevanten
-  Copy-/Paste-/PowerShell-/Browser-Übergaben wurden erhalten.
-- [Public-SPA-Lebenszyklus](docs/architecture/public-spa-lifecycle.md)
-  enthält jetzt das persistierte `@persist`-Folio, den
-  `livewire:navigating`-Animationsstart, vier registrierte CSS-Werte,
-  zehn Varianten, 780-ms-Transition und den Reduced-Motion-Guard.
-  Die JS-Testquelle wurde **gelesen, nicht ausgeführt**; Browserabnahme offen.
+**Abgeschlossen:** Alte temporäre Worker-/Side-Branch-Anweisungen aus
+`AGENTS.md` in quellbewusste Regeln für read-only Audits, begrenzte
+Implementierung, gemeinsame direkte `dev`-Änderungen, `docs`-Merges,
+HEAD-/Diff-Verifikation und Issue-Disziplin überführt. Zwei redundante
+Handoff-Abschnitte vereinheitlicht. Widersprüchliche „CI verifies PRs“-
+Formulierung und CI-Status als Remote-Nachschlagebeispiel entfernt.
+[`followup-skill.md`](followup-skill.md) verweist jetzt ausschließlich
+auf den [kanonischen Handoff-Skill](.agents/skills/handoff/SKILL.md).
+Keine Runtime-Anwendung geändert.
 
-**Unmittelbar als Nächstes:** `AGENTS.md` nach verbliebenen historischen
-Worker-/CI-/Branchinstruktionen durchsuchen und nur solche löschen, die
-ausdrücklich dem kanonischen direkten `dev`-/`docs`-/`testing`-Modus
-widersprechen. Außerdem neu eingetroffene Public-`dev`-Änderungen kontrolliert
-nachziehen; die Folio-Dokumentation dabei auf Codeänderungen prüfen.
+**Unmittelbar nächster Schritt:** weitere `AGENTS.md`-Regelüberschneidungen
+mit Admin-/Public-/Media-/Activity-Verträgen gezielt prüfen. Nicht das
+gesamte Root-Dokument auf einmal löschen. Parallel eintreffende
+`dev`-Änderungen nach Bedarf synchronisieren und Public-SPA-Dokumentation
+aktuell halten.
 
-**Offen:** native PHP-Generatoren auf realem vollständigem Checkout,
-isolierter PostgreSQL-`pg_catalog`-Export und echte Public-/Admin-Browserläufe.
-Keine CI-Interaktion und keine Änderungen auf `testing`.
+**Noch offen:** Full-Checkout-PHP-Generator, isolierter PostgreSQL-`pg_catalog`-
+Export und echte Browser-E2E-Abnahme. CI und `testing` bleiben unberührt.

@@ -147,11 +147,10 @@ on `dev`**, not these two explicitly approved special workstreams.
 
 ## Direct-`dev` collaboration (2026-10-12)
 
-The previously parallel public-facing chat has ended. The current continuation
-owns the full repository across admin, public and shared Domain code, subject
-to the user's requested scope and the same direct-`dev` constraints.
-If multiple chats resume concurrently, each must establish explicit file
-ownership and reconcile shared changes. Never assume the branch remained
+Admin and Public work may proceed in separate chats directly on `dev`, but each
+chat owns only its requested task scope. Concurrent edits require explicit file
+ownership, fresh-HEAD reconciliation and deliberate merging of shared Domain
+or presentation changes before any commit. Never assume the branch remained
 unchanged between work sessions.
 
 Hard restrictions for all direct-`dev` work:
@@ -200,7 +199,7 @@ Routine browser fixes and other small bounded changes must be investigated from 
 
 Treat `AGENTS.md`, `ui-skills.md` and the current orchestration/handoff context as already-established working context. Do not repeatedly re-read them in full during the same task unless they changed or a concrete conflict requires it.
 
-When the canonical local checkout is available, use `P:\moeller-lars` for normal source inspection, grep/search, diffs, status and history. Remote GitHub reads are for facts that are genuinely remote — for example branch heads, worker branches, PRs, CI state or final push verification — or when the required source is not available locally. Do not substitute repeated remote reads for cheap local inspection.
+When the canonical local checkout is available, use `P:\moeller-lars` for normal source inspection, grep/search, diffs, status and history. Remote GitHub reads are for current branch heads, required remote diffs and final push verification, or when the needed source is not available locally. CI metadata, logs and status remain prohibited. Do not substitute repeated remote reads for cheap local inspection.
 
 For a routine UI/browser defect, the normal diagnostic budget is intentionally small:
 
@@ -218,33 +217,12 @@ Do not repeatedly fetch the same file/blob/commit in one workflow when the resul
 
 If a routine fix unexpectedly appears to require a broad repository audit, large vendor/generated reads, repeated remote retries or many unrelated source files, stop and report that scope expansion before spending the time. The default is fast, local, targeted inspection — not exhaustive remote archaeology.
 
-### Audit worker
+## Scoped audits and implementation
 
-An **audit worker** is read-only.
+An explicitly **read-only audit** changes no source. It identifies deviations from the user's current accepted contract, names the directly responsible files/classes/selectors and distinguishes evidence from hypotheses. An authorized **implementation** modifies only the agreed scope; it does not become a repo-wide redesign.
 
-It must:
+When a different bug or architectural issue is discovered during a task, record it under **out-of-scope findings**. Do not fix it automatically. If the requested work genuinely cannot be completed without crossing scope, identify the blocker and obtain a separate decision. No new worker/feature branch, worktree or CI operation is implied by separating audit from implementation.
 
-- change no code;
-- identify concrete deviations from the requested/current contract;
-- provide source evidence, root cause and the affected files/components/selectors/structures;
-- report findings without repairing them “while already there”.
-
-### Implementation worker
-
-An **implementation worker** receives confirmed findings and implements only the explicitly described scope.
-
-It must not reopen a general redesign/audit while implementing, nor treat neighboring code as permission for opportunistic cleanup. If audit and implementation are intentionally combined in one worker, the prompt must say so explicitly and still define the audit boundary, implementation boundary and stop conditions.
-
-### No scope expansion
-
-When any worker discovers another bug, UI drift, architecture issue or improvement outside the explicitly allowed scope:
-
-- do **not** repair it automatically;
-- record it under `Out-of-scope findings`;
-- touch it only when the requested change is technically impossible without resolving that point;
-- in that exceptional case, prefer stopping and reporting the blocker rather than inventing a broader scope.
-
-A worker must not interpret instructions such as “polish this” as permission to polish adjacent surfaces.
 
 ## Browser-review loop
 
@@ -315,7 +293,7 @@ Unless a concrete risk requires more, browser-polish workers should not automati
 - CI waits;
 - Validation deployments.
 
-Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. CI verifies PRs to `dev` and `main`; `docs/RELEASE.md` owns the workflow details. Local Feature/Pest suites are forbidden against the persistent browser database. Source-string tests are scaffolding unless they protect a durable invariant.
+Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. CI is outside the current workflow entirely; `docs/RELEASE.md` describes a separately authorized future release. Local Feature/Pest suites are forbidden against the persistent browser database. Source-string tests are scaffolding unless they protect a durable invariant.
 
 Tests added during browser work should encode durable product/domain behavior, not temporary orchestration states. Avoid durable test names tied to repair rounds, browser passes, branch choreography or candidate labels when a stable behavior-based name is available. Do not add a broad “acceptance” test merely to memorialize an intermediate browser candidate.
 
@@ -323,22 +301,10 @@ The user's repeated request to inspect a change quickly is not an invitation to 
 
 ## Git and remote verification
 
-Never trust a worker handoff text by itself. For every returned worker candidate:
+Before each authorized commit, inspect the real source changes against the user's requested behavior. Verify the active branch, refresh its **current HEAD**, compare all intervening commits, reconcile overlapping changes and recheck the net diff. Use an atomic expected-SHA fast-forward update; on a failed lease, reread the branch and reconcile. Do not reset, rebase or force-push over another chat's changes.
 
-- verify the remote branch head;
-- verify the expected parent/base;
-- compare exact base→head;
-- inspect the actual changed files and critical implementation;
-- map every material prompt requirement to the actual base→head **net diff**;
-- inspect unexpected files, non-requested layout/domain changes, missing requirements, unnecessary parallel primitives and any scope expansion;
-- distinguish reported checks from checks actually evidenced;
-- reject unexpected scope before reconciliation.
+On `docs`, review the incoming `dev` file list, merge with **both parents** and record conflicts explicitly. On direct `dev`, commit only onto its latest reconciled HEAD. `testing` is independently owned. Verify requirements against actual source/diff and distinguish claimed checks from those run. Accidental public changes require a forward repair when safe; check the final tree, not just the last commit title.
 
-A worker handoff is a navigation aid, not proof of scope compliance. The orchestrator's review is requirement → diff, not merely “does this diff look plausible?”.
-
-When a side branch was intentionally created from an older shared base, review it against that base, then reconcile onto the newest combined head deliberately.
-
-Avoid force pushes during browser reconciliation. If an accidental bad commit is already public but a normal forward repair can restore the correct tree, prefer a repair commit and verify the **net tree diff** afterward.
 
 ## PowerShell safety
 
@@ -417,11 +383,10 @@ Local browser acceptance and protected Validation are different environments. Do
 - no secrets, credentials, private Production data or authoritative private media in Git;
 - `server-platform` owns runtime topology, ingress, backups, operational mail, resource limits and deployment/rollback.
 
-## Issue / PR discipline
+## Issue discipline
 
-Issues contain durable current product scope, acceptance criteria, dependencies and blockers. PRs contain implementation detail, changed files, technical decisions and verification evidence.
+Issues describe current durable product scope, acceptance criteria, dependencies and blockers. Do not use them as worker diaries or store temporary candidate SHAs as product requirements. Record implementation evidence in commits and current handoffs. A PR/release workflow is not authorized by the existence of an issue; it requires a separate decision and does not override the no-CI rule.
 
-Do not use issues as worker diaries. Temporary branch SHAs and browser-candidate choreography belong in handoffs/orchestration, not durable product issues unless they establish a blocker that needs tracking.
 
 ## Iterative redesign discipline
 
@@ -478,15 +443,10 @@ Use native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) 
 - Activity/Audit records successful writes but is not the persistence trigger;
 - publication, destructive operations and media references continue through canonical domain services.
 
-## Task handoffs
+## Task and continuation handoffs
 
-Use the short, current [handoff skill](.agents/skills/handoff/SKILL.md) to produce a copyable task/follow-up prompt or summarize an implementation. Branch choice is restricted to the expressly authorized `dev`, `docs` and `testing` workstreams; writing a task prompt **never authorizes** a new worker branch or CI run. For a long-running `docs` task the canonical resumption point is [DOCS_SKILL.md](DOCS_SKILL.md).
+The canonical [handoff skill](.agents/skills/handoff/SKILL.md) covers both scoped implementation returns and complete follow-up prompts. The root [followup-skill.md](followup-skill.md) remains only as a compatibility entrypoint; it no longer governs temporary worker branches or a `dev`-only workflow. A document-only continuation reads the current [DOCS_SKILL.md](DOCS_SKILL.md). A handoff never grants permission for a new branch, worktree, CI run or release.
 
-
-
-## Continuation handoffs
-
-Use the authoritative [handoff skill](.agents/skills/handoff/SKILL.md) for source-verified, branch-safe continuation prompts. The legacy [followup-skill.md](followup-skill.md) is a compatibility entrypoint pointing to the same workflow; it no longer defines temporary worker branches or a separate `dev`-only policy. For documentation sessions [DOCS_SKILL.md](DOCS_SKILL.md) is the living checkpoint.
 
 ## Completion gates
 
