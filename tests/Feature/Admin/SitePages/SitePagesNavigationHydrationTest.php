@@ -27,8 +27,8 @@ it('refreshes the existing Sidebar and reorders its data after Pages moves', fun
     $editor = app(SiteSectionEditorialService::class);
     $first = $editor->createCustomPage('First Sidebar Page', 'first-sidebar-page');
     $second = $editor->createCustomPage('Second Sidebar Page', 'second-sidebar-page');
-    $editor->updatePlacement($first, 'published', true, null);
-    $editor->updatePlacement($second, 'published', true, null);
+    $editor->updatePlacement($first, 'published', null);
+    $editor->updatePlacement($second, 'published', null);
 
     $before = navigationLabels();
     expect($before)->toContain('First Sidebar Page', 'Second Sidebar Page');
@@ -49,39 +49,34 @@ it('refreshes the existing Sidebar and reorders its data after Pages moves', fun
         ->toBeLessThan(array_search('First Sidebar Page', $public, true));
 });
 
-it('keeps drafts and public-navigation-hidden pages editable in the Sidebar while the public menu follows visibility', function (): void {
+it('keeps unpublished pages in the editorial Sidebar while the public navigation tracks publication', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    $editor = app(SiteSectionEditorialService::class);
-    $page = $editor->createCustomPage('Navigation Visibility Target', 'navigation-visibility-target');
-    $editor->updatePlacement($page, 'published', true, null);
+    $page = app(SiteSectionEditorialService::class)->createCustomPage('Navigation Visibility Target', 'navigation-visibility-target');
+
     expect(navigationLabels())->toContain('Navigation Visibility Target');
+    expect(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain('Navigation Visibility Target');
 
     $component = Livewire::test(SitePages::class);
-    $component->call('toggleSectionNavigation', (int) $page->getKey())
+    $component->call('toggleSectionState', (int) $page->getKey())
         ->assertDispatched('refresh-sidebar');
 
-    expect(navigationLabels())->toContain('Navigation Visibility Target')
-        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())
-        ->not->toContain('Navigation Visibility Target')
-        ->and(SiteSection::query()->whereKey($page->getKey())->exists())->toBeTrue();
-
-    $component->call('toggleSectionNavigation', (int) $page->getKey())
-        ->assertDispatched('refresh-sidebar');
-    expect(navigationLabels())->toContain('Navigation Visibility Target');
+    expect($page->fresh()->state)->toBe('published')
+        ->and(navigationLabels())->toContain('Navigation Visibility Target')
+        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->toContain('Navigation Visibility Target');
 
     $component->call('toggleSectionState', (int) $page->getKey())
         ->assertDispatched('refresh-sidebar');
-    expect(navigationLabels())->toContain('Navigation Visibility Target')
-        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())
-        ->not->toContain('Navigation Visibility Target')
-        ->and($page->fresh()->state)->toBe('hidden');
+
+    expect($page->fresh()->state)->toBe('hidden')
+        ->and(navigationLabels())->toContain('Navigation Visibility Target')
+        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain('Navigation Visibility Target');
 });
 
 it('hides Home in both navigation projections immediately on Skip Home, then restores it', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $editor = app(SiteSectionEditorialService::class);
     $destination = $editor->createCustomPage('Skip Navigation Destination', 'skip-navigation-destination');
-    $editor->updatePlacement($destination, 'published', true, null);
+    $editor->updatePlacement($destination, 'published', null);
 
     $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
     $homeLabel = (string) ($home->navigation_label ?: $home->title);
@@ -160,31 +155,6 @@ it('does not add a Sidebar entry or fire refresh when Add page validation fails'
 
     expect(SiteSection::query()->where('slug', 'invalid-empty-name')->exists())->toBeFalse();
 });
-
-it('keeps the new sidebar draft after opening Pages again and updates its published state without duplicating it', function (): void {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
-    $editor = app(SiteSectionEditorialService::class);
-    $draft = $editor->createCustomPage('Live Draft', 'live-draft');
-
-    expect(navigationLabels())->toContain('Live Draft');
-    expect(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain('Live Draft');
-
-    Livewire::test(SitePages::class)
-        ->call('toggleSectionState', (int) $draft->getKey())
-        ->assertDispatched('refresh-sidebar');
-
-    expect(navigationLabels())->toContain('Live Draft')
-        ->and(array_count_values(navigationLabels())['Live Draft'])->toBe(1)
-        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain('Live Draft');
-
-    Livewire::test(SitePages::class)
-        ->call('toggleSectionNavigation', (int) $draft->getKey())
-        ->assertDispatched('refresh-sidebar');
-
-    expect(navigationLabels())->toContain('Live Draft')
-        ->and(app(PublicNavigationService::class)->items()->pluck('label')->all())->toContain('Live Draft');
-});
-
 
 it('removes a deleted draft from the Sidebar through the same native refresh', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');

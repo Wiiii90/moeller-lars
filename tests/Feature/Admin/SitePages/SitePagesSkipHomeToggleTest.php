@@ -16,7 +16,7 @@ it('toggles Skip Home directly without mounting an Action dialog and records bot
 
     $pages = app(SiteSectionEditorialService::class);
     $next = $pages->createCustomPage('Direct Skip Target', 'direct-skip-target');
-    $pages->updatePlacement($next, 'published', true, null);
+    $pages->updatePlacement($next, 'published', null);
     $routing = app(HomeRoutingSettingsService::class);
     $resolver = app(HomePresentationResolver::class);
     $settings = $resolver->settings();
@@ -56,8 +56,8 @@ it('selects and clears a Skip Home destination directly from Pages without any d
     $pages = app(SiteSectionEditorialService::class);
     $first = $pages->createCustomPage('Skip Destination One', 'skip-destination-one');
     $second = $pages->createCustomPage('Skip Destination Two', 'skip-destination-two');
-    $pages->updatePlacement($first, 'published', true, null);
-    $pages->updatePlacement($second, 'published', true, null);
+    $pages->updatePlacement($first, 'published', null);
+    $pages->updatePlacement($second, 'published', null);
     $routing = app(HomeRoutingSettingsService::class);
     $settings = app(HomePresentationResolver::class)->settings();
 
@@ -83,7 +83,7 @@ it('rejects invalid or unpublished direct destinations without mutating routing'
     $pages = app(SiteSectionEditorialService::class);
     $valid = $pages->createCustomPage('Valid Target', 'valid-target');
     $invalid = $pages->createCustomPage('Unpublished Target', 'unpublished-target');
-    $pages->updatePlacement($valid, 'published', true, null);
+    $pages->updatePlacement($valid, 'published', null);
 
     $routing = app(HomeRoutingSettingsService::class);
     $settings = app(HomePresentationResolver::class)->settings();

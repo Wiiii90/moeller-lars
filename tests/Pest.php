@@ -43,7 +43,6 @@ function testGallerySection(ArtworkCategory $category, array $overrides = []): S
         'navigation_label' => (string) $category->getAttribute('name'),
         'slug' => (string) $category->getAttribute('slug'),
         'state' => 'published',
-        'show_in_navigation' => false,
         'parent_id' => $parentId,
         'artwork_category_id' => (int) $category->getKey(),
     ], $overrides));

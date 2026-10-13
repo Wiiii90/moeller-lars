@@ -51,7 +51,6 @@ function workspaceReferenceNode(string $type, string $title, ?string $template =
         'slug' => str($title)->slug()->append('-workspace-test-'.$sequence)->toString(),
         'state' => 'hidden',
         'position' => 900 + $sequence,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => $categoryId,
     ]);
