@@ -5,10 +5,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\BlogPost;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-
-uses(RefreshDatabase::class);
 
 it('defaults older Blog galleries to their original image sequence and saves an authored presentation', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');

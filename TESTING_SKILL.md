@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `b31f2d4c8809a5179ee0b27249e45bc2fd484522` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `a53d59030a03e198fbba3c631d560bdffdf5e6e3` (from `dev` at `a53d59030a03e198fbba3c631d560bdffdf5e6e3`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `261942a282f0d396caeaf185272487b0b4d27d82` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `a53d59030a03e198fbba3c631d560bdffdf5e6e3` (from `dev` at `a53d59030a03e198fbba3c631d560bdffdf5e6e3`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -60,6 +60,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Removed redundant General request-cache object-identity test: canonical General autosave tests already verify fresh persisted values from the same request. Replaced an exact CSS gradient-string assertion in Committed/Public/Preview test with committed-versus-working content checks (still verifies the public HTTP response and preview headers).
 - Strengthened admin Storage route security tests: guest and non-admin access denied for original, generated thumbnail, single download and selected archive; bulk selection rejects missing/malformed IDs without altering originals. These cases have been **authored, not executed**.
 - Added a public-media publication transition contract: draft/Working original and variant not public before Commit; protected admin Preview available; public original and variant available after Commit; Working unpublish does not leak; unavailable after next Commit. Admin-original denies guests and non-admins. **Authored, runtime NOT RUN**.
+- Integrated dev `a53d590` Blog gallery presentation: new `blog_posts.gallery_presentation` migration/model/editor/public renderers, plus new Integration test. The incoming test's duplicate RefreshDatabase registration was removed during merge; runtime NOT RUN.
 - Reintegrated later `dev` Journal/Exhibition changes and their **new or updated Feature/Unit tests**, preserving the intentional deletion of `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php`.
 - Reintegrated October 13 Blog gallery presentation (sequence/mosaic/slideshow), the canonical Blog model/editor and aligned migration in both schemas, plus a new Integration behavior test from `dev`. Review accompanying **public rendering/JS behavior** and publication/restore contracts next.
 - Corrected the newly merged Journal copyright Unit test to construct `JournalMediaRenderer` with a mock `PublicMedia` dependency rather than calling `app()` without bootstrapping Laravel. All current `tests/Unit` files were scanned for `app()`; no other such calls were found.
@@ -103,7 +104,7 @@ Track each review by **verified contract**, not by number of files. 'Source-revi
 | Activity / audit / undo | Cases inventoried; partial behavior source-review | Validate split suites, permission/no-op/notification semantics end-to-end |
 | Dashboard / notifications | Partially source-reviewed | Run Livewire interaction tests, verify mutations and notifications |
 | General / Home / Pages | Cases inventoried; partial behavior source-review | Review every workflow against traits, actions and current dialog behavior |
-| Journal / Exhibitions | Partial; map autosave feedback/no-op strengthened | Map autosave + address validation, public visibility, Journal state changes |
+| Journal / Exhibitions | Partial; Blog gallery presentation + map autosave tests synchronized | Map autosave + address validation, public visibility, Journal state changes |
 | Gallery / Storage / media | Cases inventoried; public variant access/regeneration security strengthened | Cross-check deletion/variants/usage, public authorization and preview |
 | Publication / Restore | Partially source-reviewed; Commit notification/no-op strengthened | Execute realistic Commit/Stage/Revert and media retention cases |
 | Public / security / contact / SEO | Partial; published-vs-Working test simplified | Reverify current routes, middleware, side effects and auth |
