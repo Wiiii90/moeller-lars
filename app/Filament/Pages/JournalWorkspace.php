@@ -545,7 +545,7 @@ final class JournalWorkspace extends Page
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
             ->modalHeading('Edit exhibition')
-            ->action(function (Action $action, array $data, array $arguments): void {
+            ->action(function (Action $action, Schema $schema, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
                 $before = $this->journalEntryMutationState($entry);
                 $data['site_section_id'] = $this->sectionId;
@@ -558,6 +558,14 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $changed = $before !== $this->journalEntryMutationState($updated);
+                // Domain geocoding owns coordinate changes. Keep the mounted
+                // Editor schema synchronized with the committed coordinates
+                // without re-filling unrelated, possibly focused fields.
+                $schema->partialRawState([
+                    'latitude' => $updated->getAttribute('latitude'),
+                    'longitude' => $updated->getAttribute('longitude'),
+                    'geocoded_at' => $updated->getAttribute('geocoded_at')?->toIso8601String(),
+                ]);
                 $this->loadExhibitions(false);
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
