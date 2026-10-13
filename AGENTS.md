@@ -6,6 +6,7 @@ Two companion files are part of this contract:
 
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
 - [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
+- [`DOCS_SKILL.md`](DOCS_SKILL.md) — living `docs`-branch work state, verified architecture inventory, outstanding tasks and fresh-chat resumption procedure; keep current on documentation commits.
 
 ## Browser-accepted dialog scroll-lock contract — do not regress
 

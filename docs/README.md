@@ -6,6 +6,10 @@ The documents in this directory are split by purpose so current application cont
 
 - [Architecture source inventory and models](architecture/README.md) — evidence-backed, source-versioned inventory with concrete Publication and Exhibition Map flows; coverage gaps are explicit. This is a staged replacement, not a second normative source of contracts.
 
+## Living documentation work state
+
+- [DOCS_SKILL.md](../DOCS_SKILL.md) — persistent root-level working memory for the long-lived `docs` workstream. Resume here in a new chat; update after meaningful architecture/doc changes, newly merged `dev` work and verification results. This is a handoff/checkpoint, not a duplicate normative product contract.
+
 ## Branch ownership for documentation
 
 Two exceptional, long-lived branches are explicitly authorized: `docs` for
