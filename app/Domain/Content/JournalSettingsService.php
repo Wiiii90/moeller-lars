@@ -29,6 +29,15 @@ final class JournalSettingsService
         if ($navigationLabel !== null && ! is_string($navigationLabel)) {
             throw ValidationException::withMessages(['navigation_label' => 'The navigation label must be text.']);
         }
+        // If the original label just repeated the old title, changing the
+        // title updates that label too. Explicitly customized labels remain.
+        $currentTitle = trim((string) $section->getAttribute('title'));
+        $currentLabel = trim((string) $section->getAttribute('navigation_label'));
+        if ($navigationLabel === null || trim($navigationLabel) === '' || (
+            $currentLabel === $currentTitle && trim($navigationLabel) === $currentLabel
+        )) {
+            $navigationLabel = $title;
+        }
 
         // Use Pages' existing identity and template owners. The outer
         // transaction keeps redirects, title/label, and template atomic.
@@ -60,5 +69,4 @@ final class JournalSettingsService
 
         return $value;
     }
-
 }

@@ -19,6 +19,8 @@ use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
+use App\Models\AdminNotification;
+use App\Models\Redirect;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\User;
@@ -114,6 +116,32 @@ function polishUnavailableGalleryAnalytics(): void
         }
     });
 }
+
+it('autosaves Gallery Settings once and retains the old slug as a redirect', function (): void {
+    $gallery = polishGallery();
+    polishUnavailableGalleryAnalytics();
+
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('gallerySettings');
+    $notifications = AdminNotification::query()->count();
+    $newSlug = 'gallery-settings-updated';
+
+    $editor->set('mountedActions.0.data.slug', $newSlug)
+        ->set('mountedActions.0.data.show_on_home', true)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'gallerySettings')
+        ->assertDispatched('admin-header-notification');
+
+    expect($gallery->fresh()->getAttribute('slug'))->toBe($newSlug)
+        ->and((bool) $gallery->fresh()->getAttribute('show_on_home'))->toBeTrue()
+        ->and(Redirect::query()->where('source_path', '/'.$gallery->getRawOriginal('slug'))
+            ->where('target_path', '/'.$newSlug)->where('status_code', 301)->exists())->toBeTrue()
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+
+    $editor->call('callMountedAction')->assertHasNoFormErrors();
+    expect(AdminNotification::query()->count())->toBe($notifications + 1);
+});
 
 it('detaches a draft from its Gallery without deleting artwork media or shared MediaAssets', function (): void {
     $gallery = polishGallery();

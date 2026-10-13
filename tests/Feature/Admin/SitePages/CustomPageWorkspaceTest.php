@@ -5,6 +5,7 @@ use App\Domain\Content\SiteSectionPathPolicy;
 use App\Filament\Pages\CustomPageWorkspace;
 use App\Http\Controllers\PublicSiteSectionController;
 use App\Models\CustomPageSetting;
+use App\Models\PublicContentSetting;
 use App\Models\Redirect;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -312,6 +313,27 @@ it('updates Custom Page identity placement and flat public path through the cano
         ->and($fresh->state)->toBe('published')
         ->and((int) $fresh->parent_id)->toBe((int) $parent->id)
         ->and(app(SiteNodeRoute::class)->path($fresh))->toBe('/updated-page-slug');
+});
+
+it('hides Custom Page parent settings when global nesting is disabled and rejects a stale parent', function (): void {
+    $sections = app(SiteSectionEditorialService::class);
+    $parent = $sections->createNavigationGroup('Parent');
+    [$section] = customPageWorkspaceRecord('No nesting', 'no-nesting');
+
+    PublicContentSetting::general()->update(['navigation_nesting_enabled' => false]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('pageSettings')
+        ->assertDontSee('Navigation parent')
+        ->set('mountedActions.0.data.title', 'Renamed without nesting')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    expect($section->fresh()->getAttribute('title'))->toBe('Renamed without nesting')
+        ->and($section->fresh()->getAttribute('parent_id'))->toBeNull();
+
+    expect(fn () => $sections->updatePlacement($section->fresh(), 'hidden', (int) $parent->getKey()))
+        ->toThrow(ValidationException::class, 'Enable nested pages in Pages settings');
 });
 
 it('retains old Custom Page slugs as direct 301 redirects collapses chains and protects redirect sources from loops', function (): void {
