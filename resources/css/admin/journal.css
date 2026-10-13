@@ -9,9 +9,8 @@
     max-width: 100%;
 }
 
-/* Row-action recipes live in table-contract.css. Journal binds its Wide
- * columns to those shared rail widths; identity absorbs the remaining space.
- * This guarantees complete labels without a horizontal overflow contract. */
+/* The shared row-action rail determines Actions width at each state.
+ * Supporting data yields before it squeezes the identity track. */
 .journal-table--blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
 }
@@ -29,11 +28,15 @@
 }
 
 .journal-table--blog col.journal-col--publication {
-    width: 12.5rem;
+    width: 7rem;
+}
+
+.journal-table--blog col.journal-col--publication-date {
+    width: 9rem;
 }
 
 .journal-table col.journal-table__actions--blog {
-    width: var(--admin-row-actions-journal-blog-width);
+    width: var(--admin-row-actions-width);
 }
 
 .journal-table--exhibitions col.journal-col--identity {
@@ -41,11 +44,52 @@
 }
 
 .journal-table--exhibitions col.journal-col--schedule {
-    width: 15.5rem;
+    width: 9.5rem;
+}
+
+.journal-table--exhibitions col.journal-col--timing {
+    width: 10rem;
 }
 
 .journal-table col.journal-table__actions--exhibitions {
-    width: var(--admin-row-actions-move-state-delete-width);
+    width: var(--admin-row-actions-width);
+}
+
+/* One Journal track owner. The matching action column and heading inherit
+ * the rail width of the responsive row controls. */
+@container admin-table (max-width: 88rem) {
+    .journal-table--blog {
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
+    }
+}
+
+@container admin-table (max-width: 74rem) {
+    .journal-table--exhibitions col.journal-col--schedule {
+        width: 11rem;
+    }
+}
+
+@container admin-table (max-width: 64rem) {
+    .journal-table--exhibitions {
+        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
+    }
+
+    .journal-table--blog col.journal-col--publication {
+        width: 11rem;
+    }
+}
+
+/* Display identity metadata only when its separate supporting column yields. */
+@container admin-table (max-width: 54rem) {
+    .journal-table .admin-responsive-meta {
+        display: block;
+    }
+}
+
+@container admin-table (max-width: 38rem) {
+    .journal-table col.admin-table__col-drag {
+        width: 1.75rem;
+    }
 }
 
 .journal-row-actions {
@@ -80,8 +124,8 @@
 }
 
 .journal-publication__date,
-.journal-schedule > em,
-.journal-schedule > .journal-schedule__dates {
+.journal-schedule__details > em,
+.journal-schedule__dates {
     display: block;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -90,18 +134,25 @@
 }
 
 .journal-publication__date,
-.journal-schedule > em {
+.journal-schedule__details > em {
     color: var(--admin-muted);
 }
 
 .journal-publication__date,
-.journal-schedule > em,
-.journal-schedule > .journal-timing {
+.journal-schedule__details.admin-table__folded-only {
     margin-top: .17rem;
 }
 
-.journal-schedule > em {
+.journal-publication-date .journal-publication__date {
+    margin-top: 0;
+}
+
+.journal-schedule__details > em {
     font-weight: 400;
+}
+
+.journal-schedule__details > :not(:first-child) {
+    margin-top: .17rem;
 }
 
 .journal-state,

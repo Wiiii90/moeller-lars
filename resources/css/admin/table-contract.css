@@ -119,7 +119,37 @@
  *
  * Consumers only declare WHEN supportive columns may yield. The shared table
  * owner performs the actual state transition so Actions + terminal Selection
- * can never be pushed outside the visible table box by page-local width math. */
+ * can never be pushed outside the visible table box by page-local width math.
+ *
+ * Split/fold pairs retain the primary semantic column at all widths, hiding
+ * only the extra detail column. The same detail appears inside the primary
+ * column at the chosen pressure boundary. This keeps the row's reading order
+ * and the trailing Actions/Selection rails stable. */
+.admin-table__folded-only {
+    display: none !important;
+}
+
+@container admin-table (max-width: 64rem) {
+    .admin-table--fold-at-compact .admin-table__split-only,
+    .admin-table--fold-at-compact .admin-table__split-label {
+        display: none !important;
+    }
+
+    .admin-table--fold-at-compact .admin-table__folded-only {
+        display: block !important;
+    }
+}
+
+@container admin-table (max-width: 74rem) {
+    .admin-table--fold-at-actions .admin-table__split-only,
+    .admin-table--fold-at-actions .admin-table__split-label {
+        display: none !important;
+    }
+
+    .admin-table--fold-at-actions .admin-table__folded-only {
+        display: block !important;
+    }
+}
 @container admin-table (max-width: 64rem) {
     .admin-table__yield--compact {
         display: none !important;
@@ -284,9 +314,9 @@
 
 /* Stable action buttons share the base style; semantic slots set axes. */
 
-/* Seven-action Blog rows have an independent longest state label:
- * "Cancel schedule". Yield labels before its semantic columns become crowded. */
-@container admin-table (max-width: 74rem) {
+/* Seven-action Blog rows have a long "Cancel schedule" slot. Its label rail
+ * yields before it competes with the separate Post data columns. */
+@container admin-table (max-width: 88rem) {
     .admin-row-actions--journal-blog {
         --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);

@@ -714,52 +714,6 @@
     }
 }
 
-/* ---------- Journal tables ---------- */
-.journal-table col.admin-table__col-position{
-    width: 3rem !important;
-}
-
-.journal-table col.admin-table__col-drag{
-    width: 2rem !important;
-}
-
-/* Blog's longer, seven-action vocabulary yields earlier than Exhibitions.
- * Both still preserve the complete action/selection order and icon axes. */
-@container admin-table (max-width: 74rem){
-    .journal-table col.journal-table__actions--blog{
-        width: var(--admin-row-actions-journal-blog-compact-width) !important;
-    }
-
-    .journal-table--blog .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
-    }
-}
-
-@container admin-table (max-width: 64rem){
-    .journal-table col.journal-table__actions--exhibitions{
-        width: var(--admin-row-actions-move-state-delete-compact-width) !important;
-    }
-
-    .journal-table--exhibitions .admin-row-actions-heading{
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
-    }
-
-    .journal-table .admin-responsive-meta{
-        display: block !important;
-    }
-
-    .journal-table--blog col.journal-col--identity,
-    .journal-table--exhibitions col.journal-col--identity{
-        width: auto !important;
-    }
-}
-
-@container admin-table (max-width: 38rem){
-    .journal-table col.admin-table__col-drag{
-        width: 1.75rem !important;
-    }
-}
-
 /* Home selects semantic members for the shared Dashboard-style 6 / 3 / 2
  * metric geometry. Divider axes and track sizing belong to
  * .admin-metrics--six-state, not to individual metric children. */

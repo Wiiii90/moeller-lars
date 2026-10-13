@@ -328,20 +328,18 @@ audit event.
 
 ## 12. Journal table references
 
-Current Blog table role order:
+The Journal has separate data columns at full width, and folds them as the table becomes tighter:
 
 ```text
-[Position] [Drag] [Image] [Post] [Status] [Publication] [Actions] [Selection]
+Blog · Wide:            [Position] [Drag] [Image] [Post] [Status] [Publication] [Actions] [Selection]
+Blog · Folded:          [Position] [Drag] [Image] [Post] [Publication]          [Actions] [Selection]
+Exhibitions · Wide:     [Position] [Drag] [Image] [Exhibition] [Date] [Schedule] [Actions] [Selection]
+Exhibitions · Folded:   [Position] [Drag] [Image] [Exhibition] [Dates]          [Actions] [Selection]
 ```
 
-Current Journal table role order:
+Blog's long seven-action rail switches to icons at 88rem, but Status and Publication remain separate down to 64rem of actual table width; they then merge into Publication. Exhibition Date and Schedule merge as Dates at 74rem. The combined supporting track uses 11rem, not a fixed oversized width. In Blog, Status is the editorial state and Publication is its scheduled/published date; the folded Publication cell contains both, just as the former full-width cell did. In Exhibitions, Date is the exhibition date range, while Schedule contains optional vernissage and derived timing (Past/Current/Upcoming); the folded Dates cell contains all of these. Long dates wrap rather than truncate.
 
-```text
-Exhibitions: [Position] [Drag] [Image] [Exhibition] [Dates]  [Actions] [Selection]
-Blog:        [Position] [Drag] [Image] [Post]       [Status] [Actions] [Selection]
-```
-
-Blog and Exhibitions use the same canonical Cover/feature-media preview when one is configured; an empty preview cell is the neutral fallback. Position and Drag share the leading ordering region; Selection remains the trailing utility. Blog Status contains its relevant publication/scheduled date beneath the state. Exhibition Dates contains the complete date range, optional vernissage and secondary derived timing (Past/Current/Upcoming). Long dates wrap rather than truncating. The semantic Status/Dates column remains visible through Compact and Narrow, and yields only at Minimal, when identity metadata keeps the essential date. Actions and Selection never yield.
+Blog and Exhibitions use the same canonical Cover/feature-media preview when configured; an empty preview is the neutral fallback. Position and Drag share the leading ordering region; Selection remains trailing. At Narrow (54rem), the merged Publication/Dates column yields before the primary identity can be squeezed. Post identity displays the editorial state and date; Exhibition identity displays the date, derived timing and optional vernissage. These metadata lines are hidden while a dedicated column is still visible. Actions and Selection never yield. Split/fold visibility stays in the shared table-pressure contract; Journal-specific track sizing and responsive metadata live only in `journal.css`.
 
 For Exhibition identity, keep the secondary line concise, e.g. `Venue · City`; do not dump full street/country metadata into the collection row.
 

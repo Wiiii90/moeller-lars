@@ -25,7 +25,7 @@ Protected media equivalents live below `/preview/media/...`; authenticated previ
 Only publicly eligible content appears in public rendering/navigation/sitemap/viewer sequences.
 
 - Home is public according to its active presentation/gate behavior;
-- content headings are opt-in on Home, Gallery, Journal (Blog and Exhibitions) and Custom Page. The same public component renders the inherited or overridden heading, alignment and optional divider. Journal index templates must not inject a second title or an implicit divider before their first item;
+- content headings are opt-in on Home, Gallery, Journal (Blog and Exhibitions) and Custom Page. The shared `public/page-heading` component renders the inherited or overridden heading, alignment and optional divider. Page headings use one compact, readable serif editorial title in authored case, visually related to the menu and artist name without being a duplicate menu label. The shared heading has a reduced vertical footprint and no synthetic text-shadow. The saved alignment and divider choice remain authoritative; absent dividers create no implicit rule. The four existing divider styles (`thin`, `subtle`, `strong`, `dotted`) are drawn centrally in `custom-pages.css` for **both** headings and Custom Page Divider components: thin has a tapered graphite line, subtle a shorter faded impression, strong a single weightier stroke, dotted fine separated marks with soft ends. No redundant second navigation title, extra divider model or new admin controls. Journal index templates must not inject a second title or an implicit divider before their first item;
 - Gallery/Journal/Custom availability follows Site Node publication state;
 - Navigation Nodes have no content page;
 - Journal entries satisfy active template + lifecycle requirements;
@@ -36,11 +36,23 @@ A canonical media **reference** does not automatically mean the asset is publicl
 
 ## Site navigation
 
+Public visits use the already installed Livewire 4 `wire:navigate` document-swap
+runtime over the existing Blade routes. Only eligible same-origin public links
+are opted in; downloads, cross-origin links, anchors and admin/system paths
+retain native browser navigation. The canonical server routes remain the
+source of content/publication/preview authority. JavaScript page initializers
+must dispose global listeners/observers on each document swap; Matomo records
+one page view per visit and does not inject a second tracker script. The
+public CSP remains nonce-based and does not enable `unsafe-eval`. General
+layout CSS variables are reapplied from server-rendered metadata at the swap
+boundary, so new nonces cannot invalidate the artist's configured background
+or widths. This SPA transport is independent of future contour animation.
+
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The public visual composition remains artist-specific. The menu and continuous Content surface now share one neutral white, without warm or blue-tinted paper coloring. The main/child menu rail has shallow, sharp-edged outside registration strokes and a subtle layered edge to match the accepted Journal sheet; none of these alter rail bounds or JS width measurement. The parent return control shares the same row/font axis as child page links, without changing the one-row stack or cyclic navigation. The artist name stays anchored at its accepted coordinates, receiving only gentle ink-depth lettering, while the header separator keeps its exact height/position and varies only its stroke treatment. The artist-configurable outer solid/gradient background remains independent and unchanged. The main and child menu share a quiet native serif catalog-index typography with a thin under-text active marker; a contextual back link is distinct from the cyclic side arrows. The artist signature stays at the accepted anchored position in mixed-case serif; actual letter spacing is now wider while the artificial word gap between its separately positioned name spans is narrower. Artwork metadata retains its established roles. The site uses no external font files, decorative content grid, shader, or menu-specific dark band. Selection does not change font weight, geometry or the stored navigation window.
+The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`, `--public-folio-depth`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
 
 ## Home presentation
 
@@ -169,14 +181,15 @@ Illustrated entries alternate image side by illustrated-entry order; prose
 flows beside and beneath an uncropped work. Text-only entries create no empty
 cover slots. A content-fit threshold stacks the layout without changing fonts.
 
-The public Journal uses a shared, intentionally asymmetric *Atelier sheet*
-presentation on its existing neutral-white, artist-configured Content shell.
-Layered hard-edged contours are attached to the **outside** of that single
-sheet instead of boxes around every entry. The outer lines take no Content
-width and disappear where a mobile viewport cannot accommodate them. Only
-the Blog's actual artworks have small square-edged double-line mounts; no
-artwork is cropped or covered. The white Content surface itself, its width,
-artist name and navigation retain their established ownership.
+Every public page, including Home, Gallery, Blog, Exhibitions, artwork detail
+and Custom Page, shares the intentionally asymmetric *Atelier sheet* on its
+existing neutral-white, artist-configured `#content` shell. The common hard-
+edged external contours belong to the shell owner in `public-presentation.css`,
+not to a Journal content selector or copied page-specific CSS. They consume no
+Content width, disappear on narrow viewports, and never change artist-configured
+background, reading insets or media size. Only the Blog's actual artworks have
+small square-edged double-line mounts; no artwork is cropped or covered.
+The existing artist name and navigation retain their independent layout owners.
 
 The layered outer-sheet silhouette and the Blog's small angled corner strokes
 on individual entries are the only accepted new interior accents. These Blog

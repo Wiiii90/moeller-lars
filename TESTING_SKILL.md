@@ -1,6 +1,6 @@
 # Testing workstream — living handoff / TESTING_SKILL
 
-**Active as of 2026-10-13.** Repository: `Wiiii90/moeller-lars`. Long-lived branch: **`testing`**, prior observed HEAD `8f37cd366da58983fb7fa81a76e4159f559b4818`; latest observed `dev`: `5b1d02d013452b7980d08786c1f5339bd36fdbfc`. The latest *actual merge commit* already on testing is `9194235980b3772063c8db4aa236e1e1b34120d7` (dev parent `7294d19ae48a58624fc5f0883e63aee207198edb`). **Always inspect live heads and ancestry; these recorded SHAs become stale.** Initially forked dev `82879135c0ab18dd88b07663c1e214a4ade0e45b`.
+**Active as of 2026-10-13.** Repository: `Wiiii90/moeller-lars`. Long-lived branch: **`testing`**, prior observed HEAD `61fdbefbe9d051eabf401d8f62d0ac9f80a7c7f5`; latest merged `dev`: `7c332b32762029b7e9da83491f52b12860bef9ed`. Newest merged dev parent on testing is `7c332b32762029b7e9da83491f52b12860bef9ed` (prior integration: `9194235980b3772063c8db4aa236e1e1b34120d7`). This update is a genuine two-parent merge; inspect ancestry on resumption. **Always inspect live heads and ancestry; these recorded SHAs become stale.** Initially forked dev `82879135c0ab18dd88b07663c1e214a4ade0e45b`.
 
 This is the **single living operational handoff** for a full test-suite refactor. Read it first in each new conversation, then read `tests/README.md`, `tests/Pest.php`, relevant test and production code. Update this file **in the same commit** as each substantive testing change. Replace stale status/next steps; do not just append historical notes.
 
@@ -66,6 +66,8 @@ Current test file inventory after this cleanup: **114 PHP `*Test.php` files** (7
 26. Gallery fixture determinism: replaced Faker-generated UUID/words/slugs in the shared Gallery category, artwork, media asset and thumbnail test factories with monotonically unique, descriptively prefixed in-process sequences. Explicit model overrides and image/video metadata are unchanged; Gallery workflows still exercise distinct identities without relying on randomness. No application/DB behavior changed. **Not run.**
 
 27. Publication preview authorization: extended the real `ProtectArtistPreview` route test with an authenticated non-admin negative case and a Working-only secret. The same route must return 404 without leaking content to non-admins, while an admin can read the staged value; guest, noindex and no-cache behavior remains covered separately. Matched source against `ProtectArtistPreview` and `SitePreviewContext`. **Not run.**
+
+28. Synchronized production baseline: incorporated `dev` `7c332b32762029b7e9da83491f52b12860bef9ed` into `testing` as a genuine two-parent merge (10 non-overlapping paths; UI/docs/public templates only, no test file touched on dev). Kept all testing-only changes and deletions. **No CI, PHP tests, browser, deployment or server action.**
 
 ## Current blocking risks and evidence
 
