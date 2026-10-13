@@ -15,9 +15,10 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 9. [Restore, Revert und Reset](publication-working-operations.md) — Activity UI bis zum Working-Snapshot, mit drei getrennten Ablaufdiagrammen, Guards und No-ops.
 10. [Strukturierte Komponenten](structured-components.md) — die sechs persistierten JSON-Typen, Contact-/List-Kinder, Medienreferenzen und Home-Konfiguration.
 11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 19 explizite HTTP-Routen, Middleware, Filament-Discovery und Public-JS-Initialisierung.
-12. [Filament-/Livewire-Komposition](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits und 72 literal Actions in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
-13. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
-14. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
+12. [Public-SPA-Dokumentlebenszyklus](public-spa-lifecycle.md) — Livewire 4 Navigation, CSP-Metadaten, JS-Disposer und Matomo pro Besuch.
+13. [Filament-/Livewire-Komposition](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits und 72 literal Actions in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
+14. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
+15. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 

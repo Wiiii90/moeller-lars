@@ -126,10 +126,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Aktueller Stand (13.10.2026):** Die bereits konsolidierte Arbeitsakte wurde beibehalten. Neuer `dev`-Stand `5b1d02d013452b7980d08786c1f5339bd36fdbfc` mit Journal-/Public-Präsentationsänderungen wurde als Zwei-Eltern-Merge `0c0be8a4eba37ef688923a6b9816c7216597c951` auf `docs` übernommen.
+**Stand 13.10.2026:** neuer `dev`-SHA `7c332b32762029b7e9da83491f52b12860bef9ed` per echten Merge `26048ba461e1ded0b4f47191ea911ecf5f6070e0` auf `docs` integriert. Diese Änderung hat den öffentlichen Seitenwechsel fundamental verbessert: Livewire 4 `wire:navigate` auf serverseitigen Blade-Routen, statt statischem vollständigem Seitenwechsel.
 
-**Erste abgeschlossene Duplikatbereinigung:** Journal-Tabelle (Blog Status/Publication, Exhibition Date/Schedule) mit Codevergleich für Blade + `journal.css` + `table-contract.css` in `docs/ADMIN-TABLE-CONTRACT.md` als alleiniger Norm-Owner. `ui-skills.md` Abschnitt 12 wurde auf einen knappen Link reduziert. Keine Semantik, Breakpoints oder Runtime-CSS geändert, keine Browser-/CI-Tests ausgeführt.
+**Neue Architekturaufnahme:** [Public-SPA-Lifecycle](docs/architecture/public-spa-lifecycle.md) samt Sequenz, eindeutiger Link-Freigabe, `livewire:navigating`/`onSwap`, `livewire:navigated`, `#content`-Identitätsguard, Event-/Observer-Disposern und Matomo-PageView. [Runtime-Einstiegspunkte](docs/architecture/runtime-entrypoints.md) aktualisiert; dies wurde **nur anhand des Codes gelesen**, kein Browser-/Testlauf.
 
-**Unmittelbar fortsetzen:** Weitere kleine Überschneidungen `ui-skills.md` gegen `ADMIN-TABLE-CONTRACT`, `ADMIN-DIALOG-CONTRACT` und `ADMIN-CONTROL-CONTRACT` systematisch prüfen, nur bei identischen Vorgaben den zweiten Volltext entfernen. Quell-/Owner-Bezug erhalten und nach jeder Etappe diesen Abschnitt **ersetzen**.
+**Vorher erledigte Duplikatbereinigung:** Journal-spezifische Split/Fold-Tabelle unter `ADMIN-TABLE-CONTRACT.md` konsolidiert; `ui-skills.md` verweist auf den einen Owner.
 
-**Später noch offen:** echter PHP-Tokenizer-Full-Checkout-Lauf, isolierter physischer PostgreSQL-Export, weitere nachgewiesene Runtime-Sequenzen; keine Vollständigkeit behaupten.
+**Unmittelbarer nächster Schritt:** Weitere allgemeine Tabellen-/Dialog-/Controls-Duplizierungen in `ui-skills.md` gegen ihre kanonischen Verträge vergleichen, nur eindeutig redundante Texte kürzen. Public-SPA-Quelle bei weiteren `dev`-Commits nachziehen. Die alten statischen Public-Bootstrap-Aussagen nicht wiederherstellen.
+
+**Längere offene Prüfungen:** nativer PHP-Full-Checkout, isolierter PostgreSQL-Katalogexport, browserbasierte SPA-/Interaktions-/Livewire-Verifikation. CI und `testing` bleiben tabu.

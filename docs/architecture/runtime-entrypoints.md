@@ -52,8 +52,10 @@ Eine Datei unter Storage hat deshalb **zwei getrennte Zugriffspolicies**: Admin-
 
 Die genaue **Admin-Commit-UI-Sequenz** (Alpine-Event, Livewire-Methodenaufruf, optionaler Header, Notification) ist jetzt in [Publication](publication.md#admin-commit-navigation-livewire-und-notification) dokumentiert.
 
-## Public-JavaScript
+## Public-JavaScript und Livewire Document Navigation
 
-`layouts/app.blade.php` bindet über Vite `resources/js/app.js` sowie Public-CSS-Entries ein. `app.js` initialisiert beim `DOMContentLoaded` oder direkt bei bereits bereitem Dokument: `artwork-viewer.js`, `home-hero.js`, `journal-presentation.js`, `matomo.js` und `public-navigation.js`. Dies sind belegte Import-/Initialisierungsbeziehungen, **noch keine** dynamisch verifizierten Browserzustände.
+Die öffentliche Anwendung verwendet seit dem `dev`-Stand `7c332b32762029b7e9da83491f52b12860bef9ed` **Livewire 4 `wire:navigate`** als dokumentbasierten SPA-Transport über unveränderte serverseitige Blade-/Laravel-Public-Routen. [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php) bindet Vite plus Livewire-Styles/-Scripts mit CSP-Nonce ein; [`resources/js/app.js`](../../resources/js/app.js) startet Artwork-Viewer, Home-Hero, Journal, Matomo und Navigation und delegiert Linkfreigabe/CSS-Token an `public-spa.js`. Im Gegensatz zum früheren **einmaligen `DOMContentLoaded`-Bootstrap** werden diese Seitenteile bei `livewire:navigated` nach einem echten `#content`-Wechsel erneut aufgebaut, die vorherigen globalen Listener/Observer dabei entsorgt.
 
-**Offen:** tatsächlich registrierte Framework-/Plugin-Routen, dynamische Livewire-Actions, Package-Middleware, Controller-Verzweigungen, UI-Events und Runtime-Checks in einer sicheren isolierten Umgebung. Keine CI- oder Preview-DB-Interaktion.
+Der [vollständige belegte Request-/JS-Lebenszyklus](public-spa-lifecycle.md) unterscheidet die Link-Ausschlüsse, serverseitige LIVE-GET-Reads, `livewire:navigating`/`onSwap`, CSP-Layoutmetadaten, Matomo-PageViews und die Disposer der einzelnen JS-Module.
+
+**Offen:** tatsächliche Laravel-/Package-Route-Registrierung, interaktive SPA-/Browser-/Back-Forward-Läufe, Nonce-Rotation, Scroll-/Focus-Verhalten, dynamische Filament-/Livewire-Actions und eine sichere integrierte Laufzeitumgebung. Kein CI- oder Preview-DB-Zugriff.
