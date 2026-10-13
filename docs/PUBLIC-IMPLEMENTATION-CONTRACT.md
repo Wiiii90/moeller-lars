@@ -154,6 +154,17 @@ Map is an explicit per-Exhibition presentation feature.
 - public dialog and editor preview consume the same coordinates and URLs, though each has its own visual composition;
 - a future Rich Text map embed must reuse that renderer/contract rather than create a second mapping technology.
 
+### Public Blog Journal stream
+
+Blog and Exhibitions share the canonical Journal owner, publication/preview
+query, structured Cover/Gallery media, rich-text rendering and editorial
+audit/notifications, not a forced identical public layout. Blog's index is
+an editorial stream: publication date (when set), linked article title, optional
+cover, persisted excerpt (or escaped text-only extract), and an explicit
+**Read more** link. Blog detail is its own readable article with date, title,
+original image/media credits, sanitized body, ordered Gallery and a preview-safe
+return link. No second Blog model, route or settings source is introduced.
+
 ### Exhibition chronology and detail disclosure
 
 The public Exhibitions Journal is an exhibition chronology, not an unbounded
@@ -209,7 +220,11 @@ exhibitions. A single **Show map** action opens a native, viewport-bounded
 map dialog; inline map iframes, their Expand control, and nested map disclosures
 are retired. The dialog presents the exhibition identity, automatically adapts to the
 available viewport, and gives access to OpenStreetMap/Directions.
-The map dialog sizes its canvas from the real available viewport, with
+The map dialog has equal inset margins and a bounded inner three-row layout
+(header, map, footer) on phone and desktop, with no nested scrollbar. The public
+document is scroll-locked only while that modal is open, retaining its scrollbar
+geometry so the main content does not jump. The map sizes its canvas from the
+real available viewport, with
 touch-sized zoom controls and container resizing handled through
 `ResizeObserver` (no timers or polling); device rotation must not leave tiles
 misaligned or the close/external controls outside the visible dialog.
@@ -287,3 +302,4 @@ The target does not preserve insecure HTTP behavior, blanket legacy query dispat
 ## Acceptance
 
 Public acceptance requires durable publication/routing/data verification, media integrity, viewer interaction checks, isolated Validation, representative browser comparison and explicit editorial/artist review before Production cutover.
+

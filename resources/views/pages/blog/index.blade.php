@@ -5,21 +5,40 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($siteNodeRoute->path($section)))
 
 @section('content')
-    @php $preview = app(\App\Domain\Content\SitePreviewContext::class); @endphp
+    @php
+        $preview = app(\App\Domain\Content\SitePreviewContext::class);
+    @endphp
     <x-public.page-heading :section="$section" />
-    <section class="blog-page" aria-label="Blog">
-        @foreach ($posts as $post)
+    <section class="blog-page" aria-label="Blog posts">
+        @forelse ($posts as $post)
             @php
                 $postUrl = $preview->url(route('journal.show', ['section' => $section->slug, 'slug' => $post->slug]));
                 $cover = $post->mediaUsages->firstWhere('role', \App\Models\JournalEntryMedia::ROLE_COVER);
+                $postDate = $post->published_at ?? $post->scheduled_at;
+                $excerpt = trim((string) ($post->excerpt ?? ''));
+                if ($excerpt === '') {
+                    $excerpt = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string) ($post->body ?? ''))) ?? ''), 220);
+                }
             @endphp
             <article class="blog-entry">
-                <h3><a href="{{ $postUrl }}">{{ $post->title }}</a></h3>
+                <header class="blog-entry__header">
+                    @if ($postDate instanceof \DateTimeInterface)
+                        <time class="blog-entry__date" datetime="{{ $postDate->format('Y-m-d') }}">{{ $postDate->format('j F Y') }}</time>
+                    @endif
+                    <h2 class="blog-entry__title"><a href="{{ $postUrl }}">{{ $post->title }}</a></h2>
+                </header>
                 @if ($cover instanceof \App\Models\JournalEntryMedia)
-                    <a href="{{ $postUrl }}" class="blog-entry__cover">{!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first) !!}</a>
+                    <a href="{{ $postUrl }}" class="blog-entry__cover" aria-label="Read {{ $post->title }}">
+                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first) !!}
+                    </a>
                 @endif
-                @if ($post->excerpt !== null)<p>{{ $post->excerpt }}</p>@endif
+                @if ($excerpt !== '')
+                    <p class="blog-entry__excerpt">{{ $excerpt }}</p>
+                @endif
+                <a class="blog-entry__read-more" href="{{ $postUrl }}">Read more <x-public-icon name="arrow-right" /></a>
             </article>
-        @endforeach
+        @empty
+            <p class="blog-page__empty">No posts yet.</p>
+        @endforelse
     </section>
 @endsection

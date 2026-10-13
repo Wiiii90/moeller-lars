@@ -17,6 +17,14 @@ html:has(> body.public-site) {
 /* The document stays the only scroll container. Flex layout lets a short
  * public page fill the available viewport without a height calculation or
  * affecting the sticky header and naturally scrolling long pages. */
+/* The map is modal, not a second page scroll owner. Freeze document
+ * scrolling while it is open; reserve only the existing scrollbar geometry
+ * for the duration of the modal. The dialog itself is viewport-contained. */
+html:has(> body.public-site .exhibition-map-dialog:modal) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
 body.public-site {
     display: flex;
     width: 100%;

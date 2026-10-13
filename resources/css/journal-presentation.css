@@ -92,9 +92,14 @@
 /* Exhibition maps are loaded only inside one native dialog. Leaflet's
    required OSM attribution remains visible on the map. */
 .exhibition-map-dialog {
-    width: min(calc(100vw - 1.5rem), 70rem);
+    position: fixed;
+    inset: 0;
+    box-sizing: border-box;
+    width: min(calc(100dvw - 2rem), 70rem);
+    height: min(calc(100dvh - 2rem), 46rem);
     max-width: none;
-    max-height: calc(100dvh - 1.5rem);
+    max-height: none;
+    margin: auto;
     padding: 0;
     overflow: hidden;
     border: 1px solid #d3ccc4;
@@ -109,8 +114,8 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
     gap: .9rem;
     box-sizing: border-box;
-    height: min(91dvh, 47rem);
-    max-height: calc(100dvh - 1.5rem);
+    height: 100%;
+    min-height: 0;
     padding: clamp(.85rem, 2.3vw, 1.5rem);
 }
 .exhibition-map-dialog__header {
@@ -167,6 +172,7 @@
     outline-offset: 4px;
 }
 .exhibition-map-dialog__canvas {
+    box-sizing: border-box;
     position: relative;
     display: block;
     width: 100%;
@@ -241,15 +247,13 @@
 }
 @media (max-width: 620px) {
     .exhibition-map-dialog {
-        width: calc(100vw - .65rem);
-        max-height: calc(100dvh - .65rem);
+        width: calc(100dvw - 1.5rem);
+        height: calc(100dvh - 1.5rem);
     }
 
     .exhibition-map-dialog__content {
-        height: calc(100dvh - .65rem);
-        max-height: calc(100dvh - .65rem);
-        gap: .6rem;
-        padding: .7rem;
+        gap: .65rem;
+        padding: .75rem;
     }
 
     .exhibition-map-dialog__header {
