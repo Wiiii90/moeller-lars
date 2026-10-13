@@ -289,6 +289,14 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - `docs/MIGRATION-PLAN.md`: historische v0.3-Akzeptanz wird nicht mehr als Abnahme der noch laufenden v0.4-Arbeit oder automatische Promotion nach `main` verstanden; v0.5-Cutover bleibt bedingt geplanter Schritt.
 - **Nächster Schritt:** Dokumentations-Skill als eigene knapp gehaltene Arbeitsanleitung etablieren; die großen `AGENTS.md` und `ui-skills.md` nur abschnittsweise und belegbar entflechten, ohne akzeptierte UI-Contracts zu verlieren.
 
+## 6m. Fortsetzung 2026-10-13 — Dokumentations-Skill etabliert
+
+- Neue [`.agents/skills/documentation/SKILL.md`](.agents/skills/documentation/SKILL.md) enthält die dauerhafte Methode. `DOCS_SKILL.md` bleibt ausschließlich die **lebende Arbeitsakte** und wird weiter nach jedem Abschnitt aktualisiert.
+- Die Skill trennt Quellenprüfung, statische Diagramme, echten Generator-/DB-/Browserlauf und fordert je normativem Vertrag genau einen Owner. Controlled `dev`-Merges, `docs`-Ownership und absolutes CI-Verbot sind klar dokumentiert.
+- `AGENTS.md` und `docs/README.md` verlinken den Skill, ohne die große vorhandene UI-Grammatik vorzeitig zu löschen.
+- Neuer `dev`-Stand `bee4297b50aec3e07b219125fbc79a854211d0b8` (Journal-Admin-Tabelle und `ui-skills.md`) per Zwei-Eltern-Merge `e002980db2b508de0e2985541b54c56c070e958a` übernommen.
+- **Nächster Schritt:** `ui-skills.md` und die Public-/Admin-Verträge nach echten Owners und überschneidenden Bereichen inventarisieren; danach sicher in kürzere getrennte Skills überführen, ohne akzeptierte Browserregeln zu verlieren.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:
