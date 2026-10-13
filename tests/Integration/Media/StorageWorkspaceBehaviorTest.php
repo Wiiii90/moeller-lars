@@ -59,7 +59,6 @@ function storageBehaviorGallery(string $name): ArtworkCategory
         'slug' => str($name)->slug()->append('-storage-behavior-page-'.$sequence)->toString(),
         'state' => 'hidden',
         'position' => 900 + $sequence,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => $category->getKey(),
     ]);
@@ -98,7 +97,6 @@ function storageBehaviorJournal(string $title): SiteSection
         'slug' => str($title)->slug()->append('-storage-behavior-journal-'.$sequence)->toString(),
         'state' => 'hidden',
         'position' => 950 + $sequence,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);

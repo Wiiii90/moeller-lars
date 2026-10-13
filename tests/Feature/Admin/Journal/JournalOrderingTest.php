@@ -19,7 +19,6 @@ it('reserves position one for a new Journal entry and keeps existing order conti
         'slug' => 'blog-ordering-test',
         'state' => 'hidden',
         'position' => 100,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);
@@ -69,7 +68,6 @@ it('records one logical Activity event when a Journal reorder rewrites several p
         'slug' => 'activity-blog-ordering-test',
         'state' => 'hidden',
         'position' => 100,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);

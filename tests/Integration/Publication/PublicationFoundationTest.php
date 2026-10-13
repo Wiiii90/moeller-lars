@@ -45,7 +45,6 @@ it('reads Contact publication decisions in a short committed transaction and wri
         'slug' => 'committed-contact',
         'state' => 'published',
         'position' => 920,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);

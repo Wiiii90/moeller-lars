@@ -44,7 +44,6 @@ function enablePublishedContactForm(): void
         'slug' => 'contact-test-page',
         'state' => 'published',
         'position' => $position,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);
@@ -258,7 +257,6 @@ it('requires an enabled Contact component on a published Custom Page', function 
         'slug' => 'private-contact',
         'state' => 'hidden',
         'position' => 901,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);

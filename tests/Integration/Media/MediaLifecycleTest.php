@@ -87,7 +87,6 @@ function lifecycleJournal(string $template, string $slug): SiteSection
         'slug' => $slug,
         'state' => 'hidden',
         'position' => random_int(600, 800),
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);
