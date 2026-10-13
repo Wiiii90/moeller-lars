@@ -76,7 +76,7 @@ Die Gallery-Action-Aufrufstellen in [GalleryWorkspaceArtworkActions](../../app/F
 
 **Indirekte Änderung:** [MediaAssetEditorialService](../../app/Domain/Media/MediaAssetEditorialService.php) kann bei der Löschung des Primärmediums ein veröffentlichtes Artwork auf Draft zurücksetzen und aus der Gallery lösen. Dieser bereichsübergreifende Übergang gehört ins Modell.
 
-**Offener Architekturkonflikt:** Auch `ArtworkEditorialService` enthält `publish()/unpublish()`. Die genannten Gallery-Einstiegspunkte benutzen `ArtworkPublicationService`, aber erst die vollständige Aufrufstellenanalyse wird zeigen, ob die andere Implementierung noch aktiv ist. Unterschiedliche Readiness-Regeln dürfen nicht stillschweigend als identisch beschrieben werden.
+**Tatsächlich zwei verwendete Publish-Pfade:** Die Gallery nutzt `ArtworkPublicationService`, während `AdminLifecycleRegistry` als Undo-Inverse `ArtworkEditorialService::publish()` verwendet. Beide besitzen derzeit **nicht identische Medien-Readiness-Guards**: Asset-ALT versus ALT-Override sowie die Video-/Thumbnail-Anforderung. Belege, Auswirkungen und die noch ausstehende Testverifikation stehen unter [Importgrenzen und Undo-Publish](import-boundaries.md).
 
 ## 4. SiteSection
 

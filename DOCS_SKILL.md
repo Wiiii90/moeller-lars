@@ -268,6 +268,13 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Die lokale PHP-8.4-Runtime besitzt **keinen GitHub-DNS-/Netzwerkzugriff** auf das private Repository; ein nativer Full-Checkout-Lauf von `generate-architecture-inventory.php` / `generate-architecture-relations.php` wurde weiterhin **nicht** behauptet. Unabhängiger Regex-Scanner im Remote-Zugriff, nicht identisch mit PHP-Tokenizer.
 - **Nächster Schritt:** PHP-Tokenizer-Generatoren anhand kleiner konkreter Quellfälle auf falsche Kanten prüfen und reparieren; danach Quelländerungen aus `dev` synchronisieren und weitere Laufzeitauflösung konkret belegen.
 
+## 6j. Fortsetzung 2026-10-13 — Importgrenzen und Undo-Publish
+
+- [Importgrenzen](docs/architecture/import-boundaries.md) dokumentieren acht gemeinsam importverbundene Module, mit direkten beidseitigen Kanten. Das ist keine automatische Diagnose eines Runtime-Zyklus.
+- **Neu verifiziert:** Gallery-Actions publizieren über `ArtworkPublicationService`; `AdminLifecycleRegistry` verwendet für Undo-Inversen `ArtworkEditorialService::publish`. Die Guards unterscheiden sich bei ALT-Override und Video/Thumbnail. Konkrete Verhaltens-Testhypothese; **kein** ausgeführter End-to-End-Test.
+- Nur Docs auf `docs`; kein Runtime-Code und kein `testing`/CI.
+- **Nächster Schritt:** native PHP-Tokenizer-Generatoren an kritischen Syntax-Randfällen prüfen und korrigieren, Ergebnisse mit dem vollständigen Source-Audit vergleichen.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:

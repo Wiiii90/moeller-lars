@@ -45,6 +45,10 @@ Der Gesamtgraph [`app-module-imports.mmd`](generated/app-module-imports.mmd) bil
 - [UI-Komposition](ui-surfaces.md): tatsächliche `use TraitName;`-Komposition in Filament-Pages und Concerns.
 - **Dieser Quellenkatalog:** jedes benannte App-Typobjekt und alle deklarativen projektinternen Imports. Weitere Instanz-/Provider-/DI-Beziehungen bleiben gesondert zu modellieren.
 
+## Gegenseitige Modulimporte und konkrete Aufrufpfade
+
+Die [Importgrenzen-Analyse](import-boundaries.md) beschreibt die stark zusammenhängende Komponente aus acht Modulen und einen konkreten Unterschied zwischen Gallery- und Undo-Publish. Solche Funde werden gegen tatsächliche Methodenaufrufe geprüft, nicht allein aus Importzählungen gefolgert.
+
 ## Abgrenzung und weitere Verifikation
 
 Die lokale Containerumgebung hat PHP 8.4, kann das private GitHub-Repository aber mangels GitHub-DNS/Netzwerkzugriff nicht direkt klonen. Ein **vollständiger nativer Durchlauf** von `generate-architecture-inventory.php` und `generate-architecture-relations.php` wurde **nicht durchgeführt**; deren PHP-Tokenizer-Semantik kann von der hier verwendeten unabhängigen Regex-Quellenaufnahme abweichen. Auch `::class`-Hinweise werden deshalb lediglich roh gesammelt und **nicht** als bewiesene Kanten interpretiert. Framework-/Vendor-Typen, JSON-Medienreferenzen, Livewire-Events und PostgreSQL-FKs werden in ihren eigenen Katalogen behandelt.
