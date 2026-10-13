@@ -7,7 +7,7 @@
                     :artwork="$heroArtwork"
                     :media="$media"
                     :show-details="$showDetails"
-                    :show-category-link="$showGalleryLink"
+                    :show-category-link="$showGalleryLink || $navigableHero"
                     :hero-navigation="$navigableHero"
                     :enable-viewer="$enableViewer"
                     :eager="$heroArtwork->is($artwork)"
