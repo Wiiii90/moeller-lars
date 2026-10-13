@@ -45,6 +45,20 @@ test('connected paper corners animate on a real browser from the original geomet
     await expect(left).toBeVisible();
     await expect(right).toBeVisible();
 
+    // Both drawn return strokes remain in the padding outside the white
+    // content sheet. Check their actual rendered geometry, not just data.
+    const exterior = await page.evaluate(() => {
+        const content = document.querySelector('#content').getBoundingClientRect();
+        const left = document.querySelector('.public-folio-decoration__left').getBoundingClientRect();
+        const right = document.querySelector('.public-folio-decoration__right').getBoundingClientRect();
+        return {
+            leftOuter: left.right <= content.left,
+            rightOuter: right.left >= content.right,
+        };
+    });
+    expect(exterior.leftOuter).toBe(true);
+    expect(exterior.rightOuter).toBe(true);
+
     // Reproduce a second navigation DURING the animation, like Livewire's
     // body replacement, and prove the next effect starts at the exact
     // computed intermediate geometry rather than restarting at variant 1.

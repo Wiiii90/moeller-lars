@@ -109,3 +109,18 @@ test('a missing overlay never crashes an interrupted or completed page visit', (
     });
 });
 
+
+test('all animated corners remain outside the white sheet, never exceeding original return depth', () => {
+    const original = FOLIO_VARIANTS[0].map(Number.parseFloat);
+    for (const variant of FOLIO_VARIANTS) {
+        const numbers = variant.map(Number.parseFloat);
+        for (const index of [4, 5]) {
+            assert.ok(numbers[index] <= original[index],
+                'return stroke must never reach farther into the sheet than the approved baseline');
+        }
+        for (const index of [0, 1, 2, 3]) {
+            assert.ok(Math.abs(numbers[index] - original[index]) <= .4,
+                'contour ends must only breathe subtly around the accepted original');
+        }
+    }
+});
