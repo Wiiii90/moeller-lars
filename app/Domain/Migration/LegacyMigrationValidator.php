@@ -378,6 +378,19 @@ final class LegacyMigrationValidator
                 'state' => 'published',
             ];
             foreach ($checks as $field => $value) {
+                if ($field === 'location_text') {
+                    $normalized = app(\App\Domain\Content\ExhibitionAddressNormalizer::class)->parse($value);
+                    $matchesLegacy = ($actual->location_text ?? null) === $value;
+                    $matchesStructured = $normalized !== null
+                        && ($actual->location_text ?? null) === $normalized['location_text']
+                        && ($actual->postal_code ?? null) === $normalized['postal_code']
+                        && ($actual->city ?? null) === $normalized['city'];
+                    if (! $matchesLegacy && ! $matchesStructured) {
+                        $errors[] = "Legacy exhibition entry {$position} has an unexpected address transformation.";
+                    }
+
+                    continue;
+                }
                 if (($actual->{$field} ?? null) !== $value) {
                     $errors[] = "Legacy exhibition entry {$position} field {$field} does not match the verified source.";
                 }

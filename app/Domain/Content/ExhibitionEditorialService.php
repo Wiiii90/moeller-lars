@@ -76,6 +76,7 @@ final class ExhibitionEditorialService
             $payload = $this->validatedEditorialData($data, $fresh);
             $location = [
                 'location_text' => array_key_exists('location_text', $payload) ? $payload['location_text'] : $fresh->getAttribute('location_text'),
+                'postal_code' => array_key_exists('postal_code', $payload) ? $payload['postal_code'] : $fresh->getAttribute('postal_code'),
                 'city' => array_key_exists('city', $payload) ? $payload['city'] : $fresh->getAttribute('city'),
                 'country' => array_key_exists('country', $payload) ? $payload['country'] : $fresh->getAttribute('country'),
             ];
@@ -270,7 +271,7 @@ final class ExhibitionEditorialService
     {
         $allowed = [
             'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at',
-            'venue', 'location_text', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'map_enabled',
+            'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'map_enabled',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
         $slugRule = Rule::unique('exhibitions', 'slug');
@@ -289,6 +290,7 @@ final class ExhibitionEditorialService
             'vernissage_at' => ['nullable', 'date'],
             'venue' => ['nullable', 'string', 'max:240'],
             'location_text' => ['nullable', 'string', 'max:500'],
+            'postal_code' => ['nullable', 'string', 'max:16'],
             'city' => ['nullable', 'string', 'max:160'],
             'country' => ['nullable', 'string', 'max:160'],
             'external_url' => ['nullable', 'string', 'max:2048'],
@@ -297,7 +299,7 @@ final class ExhibitionEditorialService
             'map_enabled' => ['nullable', 'boolean'],
         ])->validate();
 
-        foreach (['date_text', 'venue', 'location_text', 'city', 'country', 'external_url'] as $field) {
+        foreach (['date_text', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url'] as $field) {
             if (array_key_exists($field, $payload) && is_string($payload[$field])) {
                 $payload[$field] = trim($payload[$field]) === '' ? null : trim($payload[$field]);
             }
@@ -328,12 +330,18 @@ final class ExhibitionEditorialService
     /** @param array<string,mixed> $values */
     private function geocodePayload(array $values): array
     {
-        $parts = collect([$values['location_text'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
+        $postal = trim((string) ($values['postal_code'] ?? ''));
+        $city = trim((string) ($values['city'] ?? ''));
+        $parts = collect([
+            $values['location_text'] ?? null,
+            trim($postal.' '.$city) ?: null,
+            $values['country'] ?? null,
+        ])
             ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
             ->map(static fn (string $value): string => trim($value))
             ->values();
         if ($parts->isEmpty()) {
-            throw ValidationException::withMessages(['location_text' => 'Enter a street address, city or country to enable the map.']);
+            throw ValidationException::withMessages(['location_text' => 'Enter a street, postal code, city or country to enable the map.']);
         }
 
         try {
@@ -346,7 +354,7 @@ final class ExhibitionEditorialService
         }
         if ($match === null) {
             throw ValidationException::withMessages([
-                'location_text' => 'No map location was found for this address. Check Street address, City and Country.',
+                'location_text' => 'No map location was found for this address. Check Street address, Postal code, City and Country.',
             ]);
         }
 
@@ -379,7 +387,7 @@ final class ExhibitionEditorialService
     /** @param array<string, mixed> $values */
     private function locationSignature(array $values): string
     {
-        return collect([$values['location_text'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
+        return collect([$values['location_text'] ?? null, $values['postal_code'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
             ->map(static fn (mixed $value): string => is_string($value) ? mb_strtolower(trim($value)) : '')
             ->implode('|');
     }

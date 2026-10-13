@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'postal_code', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -134,9 +134,13 @@ class Exhibition extends Model
 
     public function address(): ?string
     {
+        $postal = trim((string) ($this->getAttribute('postal_code') ?? ''));
+        $city = trim((string) ($this->getAttribute('city') ?? ''));
+        $postalCity = trim($postal.' '.$city);
+
         $parts = collect([
             $this->streetAddress(),
-            $this->getAttribute('city'),
+            $postalCity !== '' ? $postalCity : null,
             $this->getAttribute('country'),
         ])->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
             ->map(static fn (string $value): string => trim($value));

@@ -55,6 +55,17 @@ After canonicalization:
 - structured Journal media roles are Cover/Gallery only;
 - legacy inline role/token runtime is gone.
 
+### Exhibition postal address cutover
+
+A forward migration adds optional `exhibitions.postal_code` to both tracked
+`public` and `committed` schemas. Local source records are deliberately not
+rewritten as part of this schema migration: use the explicit read-only
+`exhibitions:normalize-addresses` preview, then `--apply` for unambiguous
+legacy strings only. Old publication checkpoints keep their original schema
+fingerprints and cannot be considered restorable without an explicitly
+reviewed compatible schema migration; do not falsify historical hashes or
+silently reset local audit/publication histories.
+
 ### Exhibition presentation/restore canonicalization
 
 A later forward migration establishes the explicit Exhibition presentation contract:

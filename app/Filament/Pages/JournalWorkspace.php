@@ -732,7 +732,7 @@ final class JournalWorkspace extends Page
         if ($term !== '') {
             $query->where(function (Builder $search) use ($term): void {
                 $search->where('title', 'ilike', '%'.$term.'%')->orWhere('venue', 'ilike', '%'.$term.'%')
-                    ->orWhere('location_text', 'ilike', '%'.$term.'%')->orWhere('city', 'ilike', '%'.$term.'%')
+                    ->orWhere('location_text', 'ilike', '%'.$term.'%')->orWhere('postal_code', 'ilike', '%'.$term.'%')->orWhere('city', 'ilike', '%'.$term.'%')
                     ->orWhere('country', 'ilike', '%'.$term.'%')->orWhere('date_text', 'ilike', '%'.$term.'%');
             });
         }

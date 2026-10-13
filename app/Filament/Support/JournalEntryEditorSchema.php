@@ -80,8 +80,9 @@ final class JournalEntryEditorSchema
             TextInput::make('venue')->label('Venue')->maxLength(240)->nullable()->columnSpan(3),
             TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable()->columnSpan(3),
             self::locationField('location_text', 'Street address', 500)->columnSpan(2),
+            self::locationField('postal_code', 'Postal code', 16)->columnSpan(1),
             self::locationField('city', 'City', 160)->columnSpan(2),
-            self::locationField('country', 'Country', 160)->columnSpan(2),
+            self::locationField('country', 'Country', 160)->columnSpan(1),
         ])->columns(6);
     }
 
@@ -208,7 +209,7 @@ final class JournalEntryEditorSchema
         if ($latitude === false || $longitude === false || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
             return new HtmlString(
                 '<div class="journal-entry-editor__map is-empty">'
-                .'<p>The map location will be resolved from Street address, City and Country when you save.</p>'
+                .'<p>The map location will be resolved from Street address, Postal code, City and Country when you save.</p>'
                 .'</div>',
             );
         }

@@ -117,7 +117,7 @@ Every Exhibition belongs to a Journal SiteSection. Important concepts include:
 - display/normalized dates and vernissage/opening information;
 - venue + venue website;
 - `location_text` as street address only;
-- separate city/country;
+- optional `postal_code` (no country inferred), plus separate city/country;
 - latitude/longitude/geocoding evidence;
 - canonical Markdown description;
 - external link;

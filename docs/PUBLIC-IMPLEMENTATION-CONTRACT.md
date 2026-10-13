@@ -165,6 +165,19 @@ cover, persisted excerpt (or escaped text-only extract), and an explicit
 original image/media credits, sanitized body, ordered Gallery and a preview-safe
 return link. No second Blog model, route or settings source is introduced.
 
+### Structured Exhibition addresses
+
+Exhibition Venue includes optional Street address, Postal code, City and Country.
+The canonical public address joins postal code and city without repeating
+location fragments, and Map geocoding consumes the structured components.
+The 29 imported Vita/Exhibition rows originally retained an unstructured
+`location_text`; normalize them locally with the preview-first,
+local-only `php artisan exhibitions:normalize-addresses` and explicit
+`--apply` only after applying the forward schema migration. Ambiguous
+locations remain unchanged for individual review. Historic geocoding
+coordinates are not silently rewritten, and no Admin action or publication
+snapshot is forged by this maintenance command.
+
 ### Exhibition chronology and detail disclosure
 
 The public Exhibitions Journal is an exhibition chronology, not an unbounded

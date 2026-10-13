@@ -74,12 +74,15 @@ Public CV/Vita placement is a Custom Page composition, not a dedicated runtime S
 Canonical Exhibition address fields are structured:
 
 - `location_text` = street address only;
+- `postal_code` = independently editable postcode (optional);
 - `city` = city;
-- `country` = country.
+- `country` = country (never inferred solely from a five-digit postcode).
 
 Forward cleanup may remove only conservative obvious duplicates where `location_text` equals city, country or the already-structured city/country combination. It must not invent a street address when none is known.
 
-Public/admin composition deduplicates Street, City and Country rather than storing combined location prose in the street field.
+Public/admin composition deduplicates Street, Postal code, City and Country rather than storing combined location prose in the street field. Postcode schema is mirrored in `public` and `committed` to maintain working/LIVE parity. Historic publication snapshots retain their original schema hashes; this forward schema change does not forge compatibility with older retained payloads.
+
+The local-only `exhibitions:normalize-addresses` command provides a read-only preview by default and an explicit `--apply` conversion for confidently parsed legacy entries. It does not invent countries, geocode automatically, change coordinates, overwrite already structured entries or silently guess ambiguous compound locations. The original legacy importer record remains the provenance source; read-only legacy validation allows either its original raw address or the explicit canonical normalized form.
 
 ## Exhibition archived-state invariant
 

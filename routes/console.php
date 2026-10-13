@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Admin\AdminLocalHistoryResetService;
+use App\Domain\Content\ExhibitionAddressNormalizer;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
@@ -17,6 +18,89 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
+
+// Legacy Exhibition addresses are normalised only by explicit local action:
+// the preview is the default; ambiguous strings and edited structured fields
+// are not inferred, and existing geocoded coordinates remain untouched.
+Artisan::command('exhibitions:normalize-addresses {--apply : Apply the displayed unambiguous changes}', function (ExhibitionAddressNormalizer $normalizer) {
+    if (! app()->environment('local')) {
+        $this->error('Address normalization is restricted to the local environment.');
+
+        return 1;
+    }
+
+    $records = DB::table('exhibitions')
+        ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
+        ->orderBy('position')
+        ->get(['id', 'title', 'location_text', 'postal_code', 'city', 'country']);
+
+    $candidates = [];
+    $review = [];
+    $preserved = 0;
+
+    foreach ($records as $entry) {
+        if (filled($entry->city) || filled($entry->postal_code) || filled($entry->country)) {
+            $preserved++;
+
+            continue;
+        }
+
+        $parsed = $normalizer->parse($entry->location_text);
+        if ($parsed === null) {
+            $review[] = [(int) $entry->id, (string) $entry->title, (string) ($entry->location_text ?? '')];
+
+            continue;
+        }
+
+        $candidates[] = [
+            'id' => (int) $entry->id,
+            'title' => (string) $entry->title,
+            'old' => $entry->location_text,
+            'new' => $parsed,
+        ];
+    }
+
+    $this->table(['ID', 'Exhibition', 'Street', 'Postal code', 'City'], array_map(
+        static fn (array $item): array => [
+            $item['id'], $item['title'], $item['new']['location_text'] ?? '—',
+            $item['new']['postal_code'] ?? '—', $item['new']['city'] ?? '—',
+        ],
+        $candidates,
+    ));
+
+    if ($review !== []) {
+        $this->warn('Ambiguous legacy locations require manual review; no changes will be guessed for them.');
+        $this->table(['ID', 'Exhibition', 'Unstructured location'], $review);
+    }
+
+    $this->info(count($candidates).' candidates · '.count($review).' to review · '.$preserved.' already structured/preserved');
+
+    if (! $this->option('apply')) {
+        $this->comment('Preview only. Run with --apply to update eligible local records.');
+
+        return 0;
+    }
+
+    $changed = DB::transaction(function () use ($candidates): int {
+        $changed = 0;
+        foreach ($candidates as $item) {
+            $changed += DB::table('exhibitions')
+                ->where('id', $item['id'])
+                ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
+                ->where('location_text', $item['old'])
+                ->whereNull('city')
+                ->whereNull('postal_code')
+                ->whereNull('country')
+                ->update([...$item['new'], 'updated_at' => now()]);
+        }
+
+        return $changed;
+    });
+
+    $this->info($changed.' existing legacy Exhibitions normalized. Other records and map coordinates were preserved.');
+
+    return 0;
+})->purpose('Preview or apply conservative local legacy Exhibition address normalization');
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
