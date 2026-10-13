@@ -227,7 +227,8 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 
 - [Filament-/Livewire-Komposition](docs/architecture/ui-surfaces.md) erfasst: **9** Filament-Page-Klassen, **26** Concern-Dateien, **2** eigenständige Livewire-Controls; Slugs und Abgrenzung zur Filament-Route-Discovery sind quellengeprüft.
 - Neuer lokaler `scripts/generate-architecture-ui-surfaces.php`: extrahiert Page/Concern/Livewire-Klassen, direkte Trait-Nutzungen, öffentliche Methoden und literal definierte Actions zu JSON/Mermaid.
-- PHP 8.4 **tatsächlich** geprüft: Syntax, `--write`, `--check`, Fixture mit Page/Trait/Livewire und negativer Stale-Action-Fall. Kein vollständiger Repository-Durchlauf; Outputs `generated/ui-surfaces.*` daher noch offen.
+- PHP 8.4 **tatsächlich** geprüft: Syntax, `--write`, `--check`, Fixture mit Page/Trait/Livewire und negativer Stale-Action-Fall. Die 37 Originaldateien wurden jetzt zusätzlich über den GitHub-Connector erfasst und der [JSON-Gesamtkatalog](docs/architecture/generated/ui-surfaces.json) samt [Mermaid-Komposition](docs/architecture/generated/ui-composition.mmd) eingecheckt: **26** interne Trait-Kanten (22 direkt, 4 verschachtelt) und **72** statisch benannte Action-Fundstellen. Der native PHP-Full-Checkout-Generatorlauf ist noch offen.
+- **Generatorfehler korrigiert:** Typkörper-Suche fixiert gegen nachfolgendes `::class`; Concern-zu-Concern-Traitbeziehungen werden jetzt mitgezählt. Im lokalen PHP-8.4-Fixture inklusive Nested-Trait nachgeprüft.
 - **Nächster Schritt:** vollständigen PHP-Checkout für Generatorläufe herstellen bzw. statischen Scope konservativ ausweiten; verschachtelte Trait-Nutzung und konkrete Filament-/Livewire-Event-Callbacks untersuchen.
 
 ## 7. Arbeits- und Updateprotokoll

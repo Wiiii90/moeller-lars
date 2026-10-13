@@ -11,7 +11,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 5. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
 6. [Strukturierte Komponenten](structured-components.md) — die sechs persistierten JSON-Typen, Contact-/List-Kinder, Medienreferenzen und Home-Konfiguration.
 7. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 19 explizite HTTP-Routen, Middleware, Filament-Discovery und Public-JS-Initialisierung.
-8. [Filament-/Livewire-Komposition](ui-surfaces.md) — 9 Pages, 26 Concerns und 2 Livewire-Controls; Slugs, direkte Traits und Source-Extractor.
+8. [Filament-/Livewire-Komposition](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits und 72 literal Actions in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
 9. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
 10. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
 
