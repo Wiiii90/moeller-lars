@@ -54,6 +54,5 @@ it('cannot invoke Filament attachment uploads from the canonical Rich Text toolb
         ->not->toContain('new MutationObserver(')
         ->not->toContain('setTimeout(')
         ->and($trigger)->toContain('Insert image')
-        ->and($css)->toContain('.admin-rich-text {')
-        ->toContain('min-height: 17rem;');
+        ->and($css)->not->toContain('min-height: 17rem;');
 });
