@@ -12,12 +12,15 @@ beforeEach(function (): void {
 
 function copyrightAsset(?string $notice = null, string $mode = MediaAsset::COPYRIGHT_INHERIT): MediaAsset
 {
+    static $sequence = 0;
+    $sequence++;
+
     return MediaAsset::query()->create([
-        'storage_key' => 'originals/'.uniqid('', true).'.jpg',
+        'storage_key' => 'originals/copyright-fixture-'.$sequence.'.jpg',
         'original_filename' => 'copyright.jpg',
         'mime_type' => 'image/jpeg',
         'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('', true)),
+        'sha256' => hash('sha256', 'copyright-fixture-'.$sequence),
         'state' => 'available',
         'alt_text' => 'Copyright test',
         'copyright_notice_mode' => $mode,
