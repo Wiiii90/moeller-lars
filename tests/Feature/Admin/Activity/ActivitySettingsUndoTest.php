@@ -9,6 +9,7 @@ use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\PublicContentSetting;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -96,6 +97,40 @@ it('hides and rejects an older snapshot Undo after the same row changes again', 
         ->and(AuditEvent::query()->where('action', 'admin.undo_applied')->count())->toBe(0);
 });
 
+
+it('rejects an Undo from another administrator or an expired receipt without changing history', function (): void {
+    $owner = User::factory()->admin()->create();
+    $otherAdmin = User::factory()->admin()->create();
+    $this->actingAs($owner, 'web');
+
+    $settings = PublicContentSetting::general();
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'public_email' => 'owner-change@example.test',
+    ]);
+    $event = AuditEvent::query()->where('action', 'public_content_setting.updated')
+        ->latest('id')->firstOrFail();
+    $receipt = AdminActionReceipt::query()->where('audit_event_id', $event->getKey())->firstOrFail();
+    $auditsBefore = AuditEvent::query()->count();
+    $receiptsBefore = AdminActionReceipt::query()->count();
+
+    $this->actingAs($otherAdmin, 'web');
+    expect(fn () => app(AdminUndoService::class)->undo((int) $receipt->getKey()))
+        ->toThrow(AuthorizationException::class);
+    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('owner-change@example.test')
+        ->and($receipt->fresh()?->getAttribute('undone_at'))->toBeNull()
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore);
+
+    $this->actingAs($owner, 'web');
+    $receipt->forceFill(['expires_at' => now()->subMinute()])->save();
+    expect(fn () => app(AdminUndoService::class)->undo((int) $receipt->getKey()))
+        ->toThrow(ValidationException::class, 'This Undo receipt has expired.');
+
+    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('owner-change@example.test')
+        ->and($receipt->fresh()?->getAttribute('undone_at'))->toBeNull()
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore)
+        ->and(AdminActionReceipt::query()->count())->toBe($receiptsBefore)
+        ->and(AuditEvent::query()->where('action', 'admin.undo_applied')->count())->toBe(0);
+});
 
 it('does not create snapshot receipts for no-op settings writes and accepts Journal settings audit actions', function (): void {
     $actor = User::factory()->admin()->create();
