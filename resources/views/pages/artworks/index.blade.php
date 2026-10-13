@@ -8,7 +8,7 @@
     <x-public.page-heading :section="$section" />
     <div class="artwork-list" data-artwork-viewer-sequence>
         @foreach ($artworks as $artwork)
-            <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->index < 5" />
+            <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->first" />
         @endforeach
     </div>
 @endsection
