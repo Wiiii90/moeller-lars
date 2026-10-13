@@ -141,7 +141,10 @@
                 </div>
             @endunless
         </header>
-        <main id="content" class="site-content">
+        <main id="content" class="site-content" wire:transition.navigate>
+            @persist('public-folio-decoration')
+                <div class="public-folio-decoration" aria-hidden="true"></div>
+            @endpersist
             @yield('content')
         </main>
         <x-artwork-viewer />

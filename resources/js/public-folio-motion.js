@@ -1,46 +1,43 @@
-// One centrally owned, viewport-independent contour language.
-// Variants are curated geometry, not page-type styling or random pixel noise.
+// Hand-composed variations of the SAME external paper corner contours.
+// Each array: top/bottom of left edge, top/bottom of right edge.
+// The pair of return strokes is always painted together with its side.
 export const FOLIO_VARIANTS = Object.freeze([
-    ['1.1rem', '4rem', '3.8rem', '1.15rem', '.35rem', '-1.1rem'],
-    ['.8rem', '4.65rem', '4.25rem', '1.35rem', '.15rem', '-1.35rem'],
-    ['1.65rem', '3.35rem', '3.25rem', '.75rem', '.6rem', '-.9rem'],
-    ['.65rem', '5rem', '4.75rem', '1rem', '.3rem', '-1.65rem'],
-    ['1.3rem', '3.8rem', '2.9rem', '1.55rem', '.55rem', '-1.25rem'],
-    ['1.9rem', '4.25rem', '3.6rem', '.65rem', '.12rem', '-1.55rem'],
-    ['.95rem', '5.25rem', '4.1rem', '1.8rem', '.7rem', '-.75rem'],
-    ['1.5rem', '3.1rem', '5.1rem', '1.25rem', '.2rem', '-1.2rem'],
-    ['.7rem', '4.3rem', '2.75rem', '.9rem', '.45rem', '-1.75rem'],
-    ['1.25rem', '5.55rem', '3.3rem', '1.5rem', '.28rem', '-1rem'],
+    ['1.10rem', '4.00rem', '3.80rem', '1.15rem'],
+    ['1.50rem', '3.65rem', '3.35rem', '1.45rem'],
+    ['.92rem', '4.45rem', '4.15rem', '.95rem'],
+    ['1.25rem', '3.55rem', '3.65rem', '1.32rem'],
+    ['1.65rem', '4.10rem', '3.30rem', '.86rem'],
+    ['1.02rem', '4.30rem', '4.45rem', '1.12rem'],
+    ['1.38rem', '3.82rem', '3.98rem', '1.53rem'],
+    ['.82rem', '4.18rem', '3.55rem', '1.22rem'],
+    ['1.58rem', '3.42rem', '4.05rem', '.92rem'],
+    ['1.18rem', '4.48rem', '3.24rem', '1.36rem'],
 ]);
-const FOLIO_PROPERTIES = [
+const PROPERTIES = [
     '--public-folio-left-top',
     '--public-folio-left-bottom',
     '--public-folio-right-top',
     '--public-folio-right-bottom',
-    '--public-folio-menu-left-top',
-    '--public-folio-menu-right-top',
 ];
 
-// Uniform draw from all variants except the one already reached.
-// The next navigation is free to interrupt the CSS transition at any instant.
 export function chooseNextFolioVariant(current, random = Math.random) {
     const from = Number.isInteger(current) && current >= 0 && current < FOLIO_VARIANTS.length
         ? current : 0;
-    const value = Math.max(0, Math.min(1 - Number.EPSILON, random()));
-    const offset = Math.floor(value * (FOLIO_VARIANTS.length - 1));
-    return offset >= from ? offset + 1 : offset;
+    const candidate = Math.min(FOLIO_VARIANTS.length - 2, Math.max(0,
+        Math.floor(random() * (FOLIO_VARIANTS.length - 1)),
+    ));
+    return candidate < from ? candidate : candidate + 1;
 }
 
-let currentVariant = null;
-export function advancePublicFolio() {
-    if (currentVariant === null) {
-        // First response already uses CSS @property initial geometry.
-        currentVariant = 0;
-        return;
-    }
-    currentVariant = chooseNextFolioVariant(currentVariant);
-    const dimensions = FOLIO_VARIANTS[currentVariant];
-    for (let i = 0; i < FOLIO_PROPERTIES.length; i += 1) {
-        document.documentElement.style.setProperty(FOLIO_PROPERTIES[i], dimensions[i]);
-    }
+let variant = 0;
+export function advancePublicFolio(root = document) {
+    const element = root.querySelector('.public-folio-decoration');
+    if (!element || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    variant = chooseNextFolioVariant(variant);
+    const values = FOLIO_VARIANTS[variant];
+    // This is the persisted DOM node, not the new document's replacement.
+    // The CSS engine retargets an interrupted typed-property transition from
+    // its CURRENT rendered value: no animation timers or frame loops.
+    PROPERTIES.forEach((name, index) => element.style.setProperty(name, values[index]));
 }

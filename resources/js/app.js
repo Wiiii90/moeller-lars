@@ -19,7 +19,6 @@ function initializePublicApplication() {
     for (const dispose of disposers) dispose?.();
     disposers = [];
     currentContent = content;
-    advancePublicFolio();
 
     const root = document.body;
     disposers.push(initializeArtworkViewer(root));
@@ -34,6 +33,7 @@ function initializePublicApplication() {
 // into CSSOM before paint rather than relying on a newly inserted inline
 // style element that the current document's CSP cannot authorize.
 document.addEventListener('livewire:navigating', (event) => {
+    advancePublicFolio();
     // Navigation is about to replace the old body: release modal maps, image
     // attention tracking and global observers before their elements detach.
     for (const dispose of disposers) dispose?.();
