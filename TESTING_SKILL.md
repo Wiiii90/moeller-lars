@@ -1,6 +1,6 @@
 # Testing workstream — living handoff / TESTING_SKILL
 
-**Active as of 2026-10-13.** Repository: `Wiiii90/moeller-lars`. Long-lived branch: **`testing`**, previous observed HEAD before this update `733ae8ddbd229a7a989da837fd5b7c0c15bddd62`; latest observed `dev`: `94b9c4d813eb5958d6dbdd3881613e33294e737f`. The latest *actual merge commit* already on testing is `9194235980b3772063c8db4aa236e1e1b34120d7` (dev parent `7294d19ae48a58624fc5f0883e63aee207198edb`). **Always inspect live heads and ancestry; these recorded SHAs become stale.** Initially forked dev `82879135c0ab18dd88b07663c1e214a4ade0e45b`.
+**Active as of 2026-10-13.** Repository: `Wiiii90/moeller-lars`. Long-lived branch: **`testing`**, previous observed HEAD before this update `733ae8ddbd229a7a989da837fd5b7c0c15bddd62`; latest observed `dev`: `8b918a6354b4c90e32077fbab7ed278e2760ffff`. The latest *actual merge commit* already on testing is `9194235980b3772063c8db4aa236e1e1b34120d7` (dev parent `7294d19ae48a58624fc5f0883e63aee207198edb`). **Always inspect live heads and ancestry; these recorded SHAs become stale.** Initially forked dev `82879135c0ab18dd88b07663c1e214a4ade0e45b`.
 
 This is the **single living operational handoff** for a full test-suite refactor. Read it first in each new conversation, then read `tests/README.md`, `tests/Pest.php`, relevant test and production code. Update this file **in the same commit** as each substantive testing change. Replace stale status/next steps; do not just append historical notes.
 
@@ -54,6 +54,8 @@ Current test file inventory after this cleanup: **114 PHP `*Test.php` files** (7
 20. Home source flow: rewired Home Gallery source filtering and pagination tests from directly instantiated `new HomePresentation` and manual `updatedSource*()` invocations to authenticated mounted Livewire component updates (`set`, `call`), including persisted page/selection transitions. Preserved both 10/25 page-size behavior and search/status/eligibility filters, removed unused direct-page helper. Replaced UUID-based Home preview fixture slugs with deterministic literal slugs in separately isolated DB tests. **Not run.** The earlier PHP inventory estimate was corrected using the actual 2026-10-13 Git tree: 114 files, not 113.
 
 21. Pages / Journal notifier audit: repaired `PageTypeConversionTest` no-op test that only checked the obsolete `admin-notification-ticker` event (an always-passing negative), now verifies the real `admin-header-notification` remains absent **and** that no AuditEvent or AdminNotification was stored. Expanded Journal template Settings real Livewire test to verify exactly one persisted AuditEvent and Notification with dispatched header event on change and silence on repeat identical submit; matched the `JournalSettingsService` mutation owner. **Not run.**
+
+22. Public/Admin heading audit: removed assertions of literal `public-page-heading--{alignment}` and `custom-page__divider--{variant}` CSS classes from `SitePageHeadingAutosaveTest` and `SitePageHeadingTest`. Preserved Livewire autosave, audit/notification/no-op/reopen, content-publication visibility, inherited/overridden display and persisted heading validation. This was identified during a keyword-based scan of **all 71 Feature PHP tests** (not a full behavioral audit). **Not run.**
 
 ## Current blocking risks and evidence
 

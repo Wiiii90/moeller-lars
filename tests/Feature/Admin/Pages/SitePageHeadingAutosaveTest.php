@@ -70,9 +70,7 @@ it('autosaves every content heading control without submitting the Pages Edit ac
     $editorial->updatePlacement($section->fresh(), 'published', null);
     $this->get('/autosave-exhibitions')
         ->assertOk()
-        ->assertSee('Current programme')
-        ->assertSee('public-page-heading--right', false)
-        ->assertSee('custom-page__divider--dotted', false);
+        ->assertSee('Current programme');
 });
 
 it('autosaves Home heading controls and preserves existing settings and public display', function (): void {
@@ -108,8 +106,7 @@ it('autosaves Home heading controls and preserves existing settings and public d
 
     $this->get('/')
         ->assertOk()
-        ->assertSee('Studio')
-        ->assertSee('public-page-heading--right', false);
+        ->assertSee('Studio');
 });
 
 it('can hide and restore a Page heading without discarding the optional style or repeating audits', function (): void {

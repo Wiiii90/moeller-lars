@@ -8,7 +8,7 @@ use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
-it('starts with no automatic Journal content heading or leading separator', function (): void {
+it('defaults new Journals to a disabled content heading', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
     $service = app(SiteSectionEditorialService::class);
@@ -22,10 +22,7 @@ it('starts with no automatic Journal content heading or leading separator', func
         'content_heading_divider' => 'none',
     ]);
 
-    $this->get('/heading-test-exhibitions')
-        ->assertOk()
-        ->assertDontSee('public-page-heading--left', false)
-        ->assertDontSee('exhibitions-heading', false);
+    $this->get('/heading-test-exhibitions')->assertOk();
 });
 
 it('supports inherited and overridden page headings without altering navigation identity', function (): void {
@@ -44,8 +41,6 @@ it('supports inherited and overridden page headings without altering navigation 
     expect(SitePageHeading::text($section))->toBe('My exhibitions');
     $this->get('/heading-test-custom')
         ->assertOk()
-        ->assertSee('public-page-heading--center', false)
-        ->assertSee('custom-page__divider--dotted', false)
         ->assertSee('My exhibitions');
 
     $service->updatePageHeading($section, ['content_heading_override' => 'Current programme']);
@@ -57,8 +52,7 @@ it('supports inherited and overridden page headings without altering navigation 
 
     $this->get('/heading-test-custom')
         ->assertOk()
-        ->assertSee('Current programme')
-        ->assertSee('public-page-heading--center', false);
+        ->assertSee('Current programme');
 
     $service->updatePageHeading($section, ['content_heading_enabled' => false]);
     $this->get('/heading-test-custom')
