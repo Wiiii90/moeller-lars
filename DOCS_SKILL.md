@@ -297,6 +297,12 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Neuer `dev`-Stand `bee4297b50aec3e07b219125fbc79a854211d0b8` (Journal-Admin-Tabelle und `ui-skills.md`) per Zwei-Eltern-Merge `e002980db2b508de0e2985541b54c56c070e958a` übernommen.
 - **Nächster Schritt:** `ui-skills.md` und die Public-/Admin-Verträge nach echten Owners und überschneidenden Bereichen inventarisieren; danach sicher in kürzere getrennte Skills überführen, ohne akzeptierte Browserregeln zu verlieren.
 
+## 6n. Fortsetzung 2026-10-13 — Admin/Public Skills als getrennte Einstiegspunkte
+
+- [Admin UI Skill](.agents/skills/admin-ui/SKILL.md) und [Public UI Skill](.agents/skills/public-ui/SKILL.md) erstellt. Kurze Routings auf **verschiedene** bestehende Owner-Verträge/Code, keine 67KB-Kopie von `ui-skills.md`.
+- `AGENTS.md` und `docs/README.md` verlinken beide; `ui-skills.md` bleibt bis zur kontrollierten Content-Migration intakt, einschließlich der auf `dev` neu eingetroffenen Journal-/Tabellenregeln.
+- **Nächster Schritt:** segmentweise identifizieren, welche `ui-skills.md`-Teile im Admin Table/Dialog/Control Vertrag schon doppelt liegen, wie Public-Bestand durch den zuletzt geänderten Public-Vertrag abgedeckt wird, und welche alte Regel mit direktem Code-/Browserbeleg gestrichen werden kann.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:

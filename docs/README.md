@@ -6,6 +6,11 @@ The documents in this directory are split by purpose so current application cont
 
 - [Architecture source inventory and models](architecture/README.md) — evidence-backed, source-versioned inventory with concrete Publication and Exhibition Map flows; coverage gaps are explicit. This is a staged replacement, not a second normative source of contracts.
 
+## Task-specific UI entrypoints
+
+- [Admin UI skill](../.agents/skills/admin-ui/SKILL.md) — Filament page composition, shared controls, tables, dialogs and responsive rules (normative details remain in `ui-skills.md` and the dedicated admin contracts).
+- [Public UI skill](../.agents/skills/public-ui/SKILL.md) — public routes, navigation, Home, journals, media and presentation (normative details remain in the public contract and live source).
+
 ## Documentation method
 
 - [Documentation skill](../.agents/skills/documentation/SKILL.md) — how to maintain source-backed architecture, merge `dev` safely into `docs`, classify verification and simplify normative contracts without duplication.
