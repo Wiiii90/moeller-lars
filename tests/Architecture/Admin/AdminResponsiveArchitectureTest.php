@@ -117,7 +117,12 @@ it('keeps ordinary table pressure centralized and selection terminal', function 
         ->not->toContain('@container admin-table (max-width: 74rem)')
         ->toContain('@container admin-table (max-width: 72rem)')
         ->toContain('.admin-table--fold-dense .admin-table__split-only')
-        ->toContain('.admin-row-actions--journal-blog .admin-action__label');
+        ->toContain('.admin-row-actions--journal-blog .admin-action__label')
+        ->toContain('.admin-row-actions--stable.admin-row-actions--journal-blog')
+        ->toContain('display: flex !important;')
+        ->toContain('width: max-content;')
+        ->toContain('display: grid !important;')
+        ->not->toContain('minmax(var(--admin-row-action-slot-journal-state-width), max-content)');
 
     expect($activity)
         ->toContain('activity-col--who admin-table__yield--compact')
@@ -201,4 +206,27 @@ it('keeps archived Blog Restore in the Archive slot', function (): void {
         ->toContain('AdminRowAction::Restore')
         ->toContain('restorePostDraft')
         ->toContain('AdminRowAction::Archive');
+});
+
+it('preserves the shared Blog action rail budget without fixed gaps between short labels', function (): void {
+    $root = dirname(__DIR__, 3);
+    $table = file_get_contents($root.'/resources/css/admin/table-contract.css');
+    $journalCss = file_get_contents($root.'/resources/css/admin/journal.css');
+
+    expect($table)
+        ->toContain('.journal-table--blog {')
+        ->toContain('--admin-row-actions-width: var(--admin-row-actions-journal-blog-width)')
+        ->toContain('.admin-row-actions--stable.admin-row-actions--journal-blog {')
+        ->toContain('display: flex !important;')
+        ->toContain('width: max-content;')
+        ->toContain('max-width: 100%;')
+        ->toContain('flex-wrap: nowrap;')
+        ->toContain('@container admin-table (max-width: 72rem)')
+        ->toContain('display: grid !important;')
+        ->not->toContain('minmax(var(--admin-row-action-slot-journal-state-width), max-content)');
+
+    expect($journalCss)
+        ->toContain('col.journal-table__actions--blog')
+        ->not->toContain('display: flex !important')
+        ->not->toContain('admin-row-actions--journal-blog');
 });

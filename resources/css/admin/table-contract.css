@@ -270,23 +270,24 @@
     --admin-row-actions-columns: minmax(7rem, max-content) minmax(7.25rem, max-content);
 }
 
-/* The Blog table Actions track and seven-action rail share one width owner.
- * At up to 80rem workspace width, the full text rail must remain reachable. */
+/* Blog reserves room for the longest legitimate seven-action row, but does
+ * not force every shorter state label into a large empty fixed-width slot.
+ * Keep Delete at the terminal end; only the internal axes vary with labels.
+ * This recipe stays in the shared table owner, not in Journal page CSS. */
 .journal-table--blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
 }
 
 .admin-row-actions--journal-blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
-    --admin-row-actions-columns:
-        minmax(var(--admin-row-action-slot-move-up-width), max-content)
-        minmax(var(--admin-row-action-slot-move-down-width), max-content)
-        minmax(var(--admin-row-action-slot-edit-width), max-content)
-        minmax(var(--admin-row-action-slot-journal-state-width), max-content)
-        minmax(var(--admin-row-action-slot-schedule-width), max-content)
-        minmax(var(--admin-row-action-slot-archive-width), max-content)
-        minmax(var(--admin-row-action-slot-delete-width), max-content);
     --admin-row-actions-gap: .18rem;
+}
+
+.admin-row-actions--stable.admin-row-actions--journal-blog {
+    display: flex !important;
+    width: max-content;
+    max-width: 100%;
+    flex-wrap: nowrap;
 }
 
 .admin-row-actions--two-static {
@@ -331,6 +332,11 @@
         --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);
         --admin-row-actions-gap: .45rem;
+    }
+
+    .admin-row-actions--stable.admin-row-actions--journal-blog {
+        display: grid !important;
+        width: var(--admin-row-actions-width);
     }
 
     .admin-row-actions--journal-blog .admin-action {

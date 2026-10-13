@@ -14,6 +14,11 @@ declare(strict_types=1);
  */
 
 $root = dirname(__DIR__);
+$mode = $argv[1] ?? '--summary';
+if (count($argv) > 2 || ! in_array($mode, ['--summary', '--write', '--check', '--self-test'], true)) {
+    fwrite(STDERR, "Usage: php scripts/generate-architecture-relations.php [--write|--check|--self-test]\n");
+    exit(2);
+}
 // Read-only isolated syntax probes; do not need the app inventory or Laravel.
 if ($mode === '--self-test') {
     $cases = [
@@ -41,11 +46,6 @@ if ($mode === '--self-test') {
 
 $source = $root.'/docs/architecture/generated/php-symbols.json';
 $out = $root.'/docs/architecture/generated';
-$mode = $argv[1] ?? '--summary';
-if (count($argv) > 2 || ! in_array($mode, ['--summary', '--write', '--check', '--self-test'], true)) {
-    fwrite(STDERR, "Usage: php scripts/generate-architecture-relations.php [--write|--check|--self-test]\n");
-    exit(2);
-}
 if (! is_file($source)) {
     fwrite(STDERR, "Missing PHP inventory. Run generate-architecture-inventory.php --write first.\n");
     exit(1);
