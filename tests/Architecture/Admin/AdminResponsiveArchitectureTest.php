@@ -103,11 +103,21 @@ it('keeps ordinary table pressure centralized and selection terminal', function 
 
     expect($journal)
         ->toContain('<th scope="col" class="journal-visual journal-col--visual">Image</th>')
-        ->toContain('journal-col--status admin-table__yield--minimal')
-        ->toContain('journal-col--timing admin-table__yield--minimal')
-        ->toContain('journal-col--publication admin-table__yield--compact')
-        ->toContain('journal-col--schedule admin-table__yield--compact')
+        ->toContain('journal-table--blog admin-table--fold-dense')
+        ->toContain('journal-table--exhibitions admin-table--fold-at-compact')
+        ->toContain('admin-table__identity--ellipsis-meta journal-col--identity')
+        ->toContain('journal-col--publication-date admin-table__yield--narrow')
+        ->toContain('journal-col--status admin-table__split-only')
+        ->toContain('journal-col--date admin-table__yield--narrow')
+        ->toContain('journal-col--timing admin-table__split-only')
+        ->toContain('journal-date__vernissage')
         ->not->toContain('journal-col--visual admin-table__yield--compact');
+
+    expect($tableContract)
+        ->toContain('@container admin-table (max-width: 74rem)')
+        ->toContain('.admin-table--fold-dense .admin-table__split-only')
+        ->toContain('@container admin-table (max-width: 72rem)')
+        ->toContain('.admin-row-actions--journal-blog .admin-action__label');
 
     expect($activity)
         ->toContain('activity-col--who admin-table__yield--compact')

@@ -129,6 +129,19 @@
     display: none !important;
 }
 
+/* Dense tables yield secondary columns before their labeled action rail.
+ * A seven-action row otherwise consumes the primary identity's space. */
+@container admin-table (max-width: 74rem) {
+    .admin-table--fold-dense .admin-table__split-only,
+    .admin-table--fold-dense .admin-table__split-label {
+        display: none !important;
+    }
+
+    .admin-table--fold-dense .admin-table__folded-only {
+        display: block !important;
+    }
+}
+
 @container admin-table (max-width: 64rem) {
     .admin-table--fold-at-compact .admin-table__split-only,
     .admin-table--fold-at-compact .admin-table__split-label {
@@ -310,9 +323,9 @@
 
 /* Stable action buttons share the base style; semantic slots set axes. */
 
-/* Keep labeled Blog actions in the 80rem-wide workspace. Only yield to
- * seven icon slots when the actual table falls below its usable width. */
-@container admin-table (max-width: 78rem) {
+/* Blog gives up its secondary Status column first (at 74rem), preserving
+ * the labeled seven-action rail until 72rem without crushing Post identity. */
+@container admin-table (max-width: 72rem) {
     .journal-table--blog {
         --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
     }

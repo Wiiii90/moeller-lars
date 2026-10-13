@@ -112,7 +112,7 @@
 
 .journal-publication__date,
 .journal-date__range,
-.journal-date__vernissage-value {
+.journal-date__vernissage {
     display: block;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -133,19 +133,16 @@
     font-variant-numeric: tabular-nums;
 }
 
+.journal-date__vernissage {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .journal-date__vernissage,
 .journal-date__timing,
 .journal-publication__state {
     margin-top: .17rem;
-}
-
-.journal-date__vernissage-label,
-.journal-date__vernissage-value {
-    display: block;
-}
-
-.journal-date__vernissage-label {
-    font-size: var(--admin-font-size-table-support);
 }
 
 .journal-publication-date .journal-publication__date {
