@@ -1,11 +1,12 @@
 <?php
 
 use App\Domain\Content\JournalMediaRenderer;
+use App\Domain\Media\PublicMedia;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 
 it('distinguishes inherited Journal notices from per-asset copyright overrides', function (): void {
-    $renderer = app(JournalMediaRenderer::class);
+    $renderer = new JournalMediaRenderer(\Mockery::mock(PublicMedia::class));
     $usage = new JournalEntryMedia;
     $asset = new MediaAsset;
     $usage->setRelation('mediaAsset', $asset);
