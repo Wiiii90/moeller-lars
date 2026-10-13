@@ -1,0 +1,175 @@
+{
+  "format": "curated-method-calls-v1",
+  "source_code_ref": "a71ec7d1b28d09cec1399998239b09bdaefdea11",
+  "scope": "Source-anchored direct calls in Admin/Publication services. Not an exhaustive runtime call graph.",
+  "edges": [
+    {
+      "from": "AdminAuditService",
+      "to": "AdminActionReceiptService",
+      "method": "recordForAuditEvent",
+      "path": "app/Domain/Admin/AdminAuditService.php",
+      "line": 174,
+      "anchor": "$this->receipts->recordForAuditEvent($event, $actor)"
+    },
+    {
+      "from": "AdminAuditService",
+      "to": "AdminActionReceiptService",
+      "method": "discardPendingSnapshotForEvent",
+      "path": "app/Domain/Admin/AdminAuditService.php",
+      "line": 172,
+      "anchor": "$this->receipts->discardPendingSnapshotForEvent($event)"
+    },
+    {
+      "from": "AdminAuditService",
+      "to": "AdminActivityOrderingProjector",
+      "method": "record",
+      "path": "app/Domain/Admin/AdminAuditService.php",
+      "line": 86,
+      "anchor": "$this->orderingProjector->record($event, $ordering)"
+    },
+    {
+      "from": "AdminAuditService",
+      "to": "AdminActivityNotificationContext",
+      "method": "push",
+      "path": "app/Domain/Admin/AdminAuditService.php",
+      "line": 104,
+      "anchor": "$this->notificationContext->push("
+    },
+    {
+      "from": "AdminUndoService",
+      "to": "AdminAuditService",
+      "method": "recordOrdering",
+      "path": "app/Domain/Admin/AdminUndoService.php",
+      "line": 75,
+      "anchor": "$this->audit->recordOrdering("
+    },
+    {
+      "from": "AdminUndoService",
+      "to": "AdminAuditService",
+      "method": "record",
+      "path": "app/Domain/Admin/AdminUndoService.php",
+      "line": 84,
+      "anchor": "$this->audit->record("
+    },
+    {
+      "from": "AdminUndoService",
+      "to": "AdminSnapshotReceiptService",
+      "method": "restore",
+      "path": "app/Domain/Admin/AdminUndoService.php",
+      "line": 96,
+      "anchor": "$this->snapshots->restore($receipt)"
+    },
+    {
+      "from": "AdminUndoService",
+      "to": "AdminLifecycleRegistry",
+      "method": "applyInverse",
+      "path": "app/Domain/Admin/AdminUndoService.php",
+      "line": 125,
+      "anchor": "$this->lifecycle->applyInverse("
+    },
+    {
+      "from": "AdminUndoService",
+      "to": "AdminOrderingState",
+      "method": "restore",
+      "path": "app/Domain/Admin/AdminUndoService.php",
+      "line": 71,
+      "anchor": "$this->orderingState->restore("
+    },
+    {
+      "from": "AdminUndoService",
+      "to": "AdminUndoContext",
+      "method": "withoutReceipts",
+      "path": "app/Domain/Admin/AdminUndoService.php",
+      "line": 53,
+      "anchor": "$this->undoContext->withoutReceipts("
+    },
+    {
+      "from": "AdminNotifier",
+      "to": "AdminActivityNotificationContext",
+      "method": "consumeRecorded",
+      "path": "app/Domain/Admin/AdminNotifier.php",
+      "line": 43,
+      "anchor": "$this->notificationContext->consumeRecorded()"
+    },
+    {
+      "from": "AdminNotifier",
+      "to": "AdminActivityNotificationContext",
+      "method": "discard",
+      "path": "app/Domain/Admin/AdminNotifier.php",
+      "line": 69,
+      "anchor": "$this->notificationContext->discard()"
+    },
+    {
+      "from": "PublicationService",
+      "to": "PublicationSchemaGuard",
+      "method": "assertParity",
+      "path": "app/Domain/Publication/PublicationService.php",
+      "line": 138,
+      "anchor": "$this->schemaGuard->assertParity()"
+    },
+    {
+      "from": "PublicationService",
+      "to": "PublicationVersionService",
+      "method": "capture",
+      "path": "app/Domain/Publication/PublicationService.php",
+      "line": 220,
+      "anchor": "$this->versions->capture("
+    },
+    {
+      "from": "PublicationService",
+      "to": "PublicationVersionService",
+      "method": "workingContext",
+      "path": "app/Domain/Publication/PublicationService.php",
+      "line": 194,
+      "anchor": "$this->versions->workingContext()"
+    },
+    {
+      "from": "PublicationService",
+      "to": "PublicationVersionService",
+      "method": "clearWorkingContext",
+      "path": "app/Domain/Publication/PublicationService.php",
+      "line": 178,
+      "anchor": "$this->versions->clearWorkingContext()"
+    },
+    {
+      "from": "PublicationService",
+      "to": "PublicationMediaCleanupService",
+      "method": "drain",
+      "path": "app/Domain/Publication/PublicationService.php",
+      "line": 249,
+      "anchor": "$this->mediaCleanup->drain()"
+    },
+    {
+      "from": "PublicationVersionService",
+      "to": "PublicationSchemaGuard",
+      "method": "assertParity",
+      "path": "app/Domain/Publication/PublicationVersionService.php",
+      "line": 26,
+      "anchor": "$this->schemaGuard->assertParity()"
+    },
+    {
+      "from": "PublicationVersionService",
+      "to": "PublicationMediaCleanupService",
+      "method": "queueAbandonedWorkingMedia",
+      "path": "app/Domain/Publication/PublicationVersionService.php",
+      "line": 80,
+      "anchor": "$this->mediaCleanup->queueAbandonedWorkingMedia()"
+    },
+    {
+      "from": "PublicationVersionService",
+      "to": "PublicationMediaCleanupService",
+      "method": "drain",
+      "path": "app/Domain/Publication/PublicationVersionService.php",
+      "line": 93,
+      "anchor": "$this->mediaCleanup->drain()"
+    },
+    {
+      "from": "PublicationVersionService",
+      "to": "AdminAuditService",
+      "method": "record",
+      "path": "app/Domain/Publication/PublicationVersionService.php",
+      "line": 83,
+      "anchor": "$this->audit->record("
+    }
+  ]
+}

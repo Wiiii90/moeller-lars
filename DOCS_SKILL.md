@@ -198,6 +198,15 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
   parallel ändern. Vor Änderungen daran `testing`-/`dev`-Entwicklung prüfen;
   Testpolicy nicht überschreiben oder Tests heimlich auf `docs` refactoren.
 
+## 6a. Fortsetzung 2026-10-13 — Admin/Publication-Call-Sites
+
+- [Admin-/Publication-Aufrufkatalog](docs/architecture/admin-publication-calls.md) mit **21** direkten Methodenaufrufstellen, **14** Klassen und **5** PHP-Quellen.
+- Machine-readable `docs/architecture/admin-publication-calls.json`, generiertes `docs/architecture/generated/admin-publication-calls.mmd`.
+- Lokal mit PHP 8.4: `generate-architecture-call-graph.php` in einem isolierten Quellfixture syntaktisch geprüft, `--write` und `--check` ausgeführt, absichtlich veraltete Zeilenangabe wird zuverlässig abgelehnt. **Nicht** als Full-Checkout-Verifikation ausgeben.
+- Alle echten 21 Source-Anker anhand der GitHub-Dateien und Zeilen geprüft.
+- Neue Erkenntnis: Admin-Audit bereitet Receipts/Activity vor, aber Notification-Versand ist ein separater expliziter Schritt; Undo besitzt separate Ordering-/Snapshot-/Media-/State-Inversen.
+- **Nächster Schritt:** Generator-Abdeckung und Korrektheit auf vollständigem Checkout prüfen bzw. PHP-Typgraph-Lücken (u. a. dynamische Resolver und skipped declarations) methodisch sichtbar machen. Parallel die verbleibenden Domain- und Filament-Einstiegspunkte inventarisieren.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:

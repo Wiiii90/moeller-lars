@@ -150,6 +150,10 @@ Die [fünf quellverankerten Zustandsmodelle](lifecycles.md) enthalten 35 kuratie
 
 Die [Schema-Evolution](schema-evolution.md) erfasst nachgeprüfte Migrations-Etappen und verwechselt `publication_version_rows` nicht mit einer aktuellen physischen Tabelle; seit dem Shared-History-Payload-Refactor ist es eine SQL-View mit Triggern. Ein tatsächlicher `pg_catalog`-Export bleibt offen.
 
+## Überprüfte Service-Aufrufstellen
+
+[21 direkte Methodenaufrufe](admin-publication-calls.md) in der Admin-/Publication-Achse sind mit Klasse, Methode, Dateipfad, exakter Zeile und Textanker modelliert. Die zugehörige [JSON-Quelle](admin-publication-calls.json) und das [Mermaid-Diagramm](generated/admin-publication-calls.mmd) sind ein überprüfter Querschnitt, **kein vollständiger Laufzeitaufrufgraph**.
+
 ## 7. Nacharbeit, ohne Scheingenauigkeit
 
 - Vollständiger deterministischer PHP-Symbol- und Verwendungsgraph mit Quellpositionen.
