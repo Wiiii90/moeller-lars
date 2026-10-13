@@ -30,3 +30,19 @@ it('keeps Preview authentication and private indexing protections unchanged', fu
         ->assertHeader('Pragma', 'no-cache');
     publicationWorkflowAssertPrivateNoCache($preview);
 });
+
+
+it('denies a signed-in non-admin access to Working preview content', function (): void {
+    $secret = 'Private unfinished legal copy';
+    PublicContentSetting::general()->update(['legal_disclaimer' => $secret]);
+
+    $this->actingAs(User::factory()->create(), 'web')
+        ->get('/preview/__publication/probe/value')
+        ->assertNotFound()
+        ->assertDontSee($secret);
+
+    $this->actingAs($this->actor, 'web')
+        ->get('/preview/__publication/probe/value')
+        ->assertOk()
+        ->assertSee($secret);
+});
