@@ -127,7 +127,7 @@ final class HomeSettingsDialog
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
                     $this->heroDisplayToggle('show_details', 'Show artwork information', $persistHeroToggle),
-                    $this->heroDisplayToggle('show_gallery_link', 'Show Gallery link', $persistHeroToggle),
+                    $this->heroDisplayToggle('show_gallery_link', 'Show Gallery link for single Hero', $persistHeroToggle),
                     $this->heroDisplayToggle('show_navigation', 'Navigate Hero group', $persistHeroToggle),
                     $this->heroDisplayToggle('enable_viewer', 'Open artwork viewer', $persistHeroToggle),
                     Toggle::make('public_site_gate')
