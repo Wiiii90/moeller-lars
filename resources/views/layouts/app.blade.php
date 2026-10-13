@@ -32,7 +32,6 @@
         {{-- Navigation uses Livewire's established document-swap runtime, not a
              second router. Nonces keep the public policy strict. --}}
         @livewireStyles(['nonce' => $publicStyleNonce])
-        @livewireScripts(['nonce' => $publicStyleNonce])
         <meta data-public-layout
             data-public-layout-background="{{ $publicBackgroundCss ?? '' }}"
             data-public-layout-shell="{{ $publicLayoutCss['shell'] }}"
@@ -146,5 +145,6 @@
             @yield('content')
         </main>
         <x-artwork-viewer />
+        @livewireScripts(['nonce' => $publicStyleNonce])
     </body>
 </html>
