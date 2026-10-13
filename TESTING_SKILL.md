@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `c1579da2d3acd082fcbbd0280ac0e59f6e2b3952` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `cf3aabb1519149da1083aeaceeb53100121276cb` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -61,6 +61,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Deleted the dialog-submit implementation introspection suite (icon/name/modal property assertions); actual Edit dialog lifecycle and Add page/create workflows retain behavioral coverage. Removed two brittle markup assertions from Custom Page type-conversion coverage; the test still performs the real conversion and verifies persisted component types. Deleted a separate one-row test consisting entirely of incidental drag-handle markup and copy assertions.
 - Source-inventoried **all 125 PHP files** (115 tests, plus helpers/bootstrap) by case name and inspected obvious weak-assertion patterns. Further full code-to-contract review remains required.
 - Removed a constant-only Undo retention case and a hard-coded 256 MiB expectation; the live retention behavior test remains. Removed Home component options equality snapshot, leaving real component conversion/validation; removed Storage CSS class order and enum icon assertions while keeping actual page actions.
+- Strengthened Exhibition map Livewire autosave scenarios with immediate header event on a real change and an audit/mailbox no-op boundary after repeat save; source-reviewed `JournalEntryEditorSchema` and existing mailbox assertions, runtime NOT RUN.
 - Reworked Playwright Admin filter E2E: no fixed field counts per page, verifies a single semantic Filters group and adds the real Pages status-filter behavior across compact-to-inline resize. These browser tests have **not been run**.
 - Added the `LocalPreviewDatabaseGuard` to `BrowserProfilingSeeder`: besides explicit `APP_ENV=testing` and Browser flag, the seeded browser run requires the existing CI/disposable DB guard. Never bypass or relax that check to get a local run. Removed historical dialog-copy assertions from Journal template autosave.
 
@@ -93,7 +94,7 @@ Track each review by **verified contract**, not by number of files. 'Source-revi
 | Activity / audit / undo | Cases inventoried; partial behavior source-review | Validate split suites, permission/no-op/notification semantics end-to-end |
 | Dashboard / notifications | Partially source-reviewed | Run Livewire interaction tests, verify mutations and notifications |
 | General / Home / Pages | Cases inventoried; partial behavior source-review | Review every workflow against traits, actions and current dialog behavior |
-| Journal / Exhibitions | Partial; recent dev merge | Map autosave + address validation, public visibility, Journal state changes |
+| Journal / Exhibitions | Partial; map autosave feedback/no-op strengthened | Map autosave + address validation, public visibility, Journal state changes |
 | Gallery / Storage / media | Cases inventoried; partial behavior source-review | Cross-check deletion/variants/usage, public authorization and preview |
 | Publication / Restore | Partially source-reviewed; Commit notification/no-op strengthened | Execute realistic Commit/Stage/Revert and media retention cases |
 | Public / security / contact / SEO | Partial | Reverify current routes, middleware, side effects and auth |

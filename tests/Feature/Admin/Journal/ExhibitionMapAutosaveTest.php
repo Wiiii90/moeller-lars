@@ -60,6 +60,7 @@ it('persists map switch on/off through normal Edit and hydrates coordinates with
         ->set('mountedActions.0.data.map_enabled', true)
         ->call('callMountedAction')
         ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
         ->assertSet('mountedActions.0.data.latitude', 53.550341)
         ->assertSet('mountedActions.0.data.longitude', 9.992477);
 
@@ -92,6 +93,7 @@ it('enables an exhibition map after adding missing Country within the same open 
         ->set('mountedActions.0.data.country', 'Deutschland')
         ->call('callMountedAction')
         ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
         ->assertSet('mountedActions.0.data.map_enabled', false);
     expect($entry->fresh()->getAttribute('country'))->toBe('Deutschland')
         ->and(AdminNotification::query()->count())->toBe($initialNotifications + 1);
@@ -127,9 +129,14 @@ it('re-geocodes changed addresses once and updates the mounted map preview state
     expect($entry->fresh()->getAttribute('city'))->toBe('Berlin')
         ->and((float) $entry->fresh()->getAttribute('latitude'))->toBe(52.520008);
     Http::assertSentCount(2);
+    $notificationCount = AdminNotification::query()->count();
+    $auditCount = AuditEvent::query()->count();
 
     $editor->call('callMountedAction')->assertHasNoFormErrors();
+
     Http::assertSentCount(2);
+    expect(AdminNotification::query()->count())->toBe($notificationCount)
+        ->and(AuditEvent::query()->count())->toBe($auditCount);
 });
 
 it('rejects an incomplete map address without persisting a fake enabled state', function (): void {
