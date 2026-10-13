@@ -678,7 +678,7 @@ body {
 .artwork-list > .artwork-card + .artwork-card::before {
     position: absolute;
     top: calc(-.52 * var(--public-section-gap));
-    left: calc(-.52 * var(--public-content-inset));
+    left: calc(1.1rem - var(--public-content-inset));
     width: 1.2rem;
     height: .8rem;
     content: "";
@@ -687,7 +687,7 @@ body {
     pointer-events: none;
 }
 .artwork-list > .artwork-card:nth-child(even)::before {
-    right: calc(-.52 * var(--public-content-inset));
+    right: calc(1.1rem - var(--public-content-inset));
     left: auto;
     border-right: 1px solid rgba(142, 126, 109, .2);
     border-left: 0;
@@ -1376,7 +1376,7 @@ body {
 .exhibition-entry + .exhibition-entry::before {
     position: absolute;
     top: .4rem;
-    left: calc(-.52 * var(--public-content-inset));
+    left: calc(1.1rem - var(--public-content-inset));
     width: .62rem;
     height: 1.15rem;
     content: "";
