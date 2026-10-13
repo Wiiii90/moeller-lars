@@ -22,40 +22,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Livewire\Livewire;
 
-function publicationWorkflowSetGradientBaseline(string $end = '#C9C3C3'): void
-{
-    $appearance = [
-        'background_mode' => 'gradient',
-        'background_gradient_start' => '#555555',
-        'background_gradient_end' => $end,
-        'background_gradient_angle' => 2,
-    ];
-
-    foreach (['public', 'committed'] as $schema) {
-        DB::table($schema.'.public_content_settings')
-            ->where('scope', PublicContentSetting::SCOPE_GENERAL)
-            ->update($appearance);
-    }
-}
-
-function publicationWorkflowUseRenderableHome(): void
-{
-    foreach (['public', 'committed'] as $schema) {
-        DB::table($schema.'.home_presentation_settings')->update([
-            'template' => 'custom',
-        ]);
-    }
-}
-
-function publicationWorkflowAssertPrivateNoCache(TestResponse $response): void
-{
-    $directives = array_map('trim', explode(',', (string) $response->headers->get('Cache-Control')));
-    $expected = ['private', 'no-store', 'max-age=0', 'must-revalidate'];
-    sort($directives);
-    sort($expected);
-
-    expect($directives)->toBe($expected);
-}
+require_once __DIR__.'/PublicationWorkflowFixtures.php';
 
 beforeEach(function (): void {
     $this->actor = User::factory()->admin()->create();
@@ -141,6 +108,7 @@ it('keeps the real public layout on committed appearance until one idempotent Co
 
 });
 
+
 it('keeps Commit truth exact for a Working mutation and a net-zero revert', function (): void {
     publicationWorkflowSetGradientBaseline();
 
@@ -158,6 +126,7 @@ it('keeps Commit truth exact for a Working mutation and a net-zero revert', func
 
     expect(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
 });
+
 
 it('commits current Pending state in one component action and repeated clicks stay idempotent', function (): void {
     publicationWorkflowSetGradientBaseline();
@@ -181,96 +150,6 @@ it('commits current Pending state in one component action and repeated clicks st
     expect(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1);
 });
 
-it('keeps Preview authentication and private indexing protections unchanged', function (): void {
-    Auth::guard('web')->logout();
-
-    $this->get('/preview/__publication/probe/value')->assertNotFound();
-
-    $preview = $this->actingAs($this->actor, 'web')
-        ->get('/preview/__publication/probe/value');
-    $preview
-        ->assertOk()
-        ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-        ->assertHeader('Pragma', 'no-cache');
-    publicationWorkflowAssertPrivateNoCache($preview);
-});
-
-it('retains files referenced by a retained publication snapshot after a later Commit', function (): void {
-    Storage::fake(config('media.disk'));
-
-    $asset = MediaAsset::query()->create([
-        'storage_key' => 'originals/committed-delete.jpg',
-        'original_filename' => 'committed-delete.jpg',
-        'mime_type' => 'image/jpeg',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'orig'),
-        'state' => 'available',
-        'alt_text' => 'Committed delete',
-    ]);
-    $variant = MediaVariant::query()->create([
-        'media_asset_id' => $asset->getKey(),
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/committed-delete.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 7,
-        'sha256' => hash('sha256', 'variant'),
-        'transform_profile' => 'public-v1',
-        'state' => 'available',
-    ]);
-
-    Storage::disk(config('media.disk'))->put($asset->getAttribute('storage_key'), 'orig');
-    Storage::disk(config('media.disk'))->put($variant->getAttribute('storage_key'), 'variant');
-
-    expect(app(PublicationService::class)->commit($this->actor))->toBeInstanceOf(PublicationCheckpoint::class);
-
-    app(MediaAssetEditorialService::class)->delete($asset);
-
-    Storage::disk(config('media.disk'))->assertExists($asset->getAttribute('storage_key'));
-    Storage::disk(config('media.disk'))->assertExists($variant->getAttribute('storage_key'));
-    expect(DB::table('publication_media_cleanups')->count())->toBe(2)
-        ->and(app(PublicationService::class)->hasPendingChanges())->toBeTrue();
-
-    expect(app(PublicationService::class)->commit($this->actor))->toBeInstanceOf(PublicationCheckpoint::class);
-
-    Storage::disk(config('media.disk'))->assertExists($asset->getAttribute('storage_key'));
-    Storage::disk(config('media.disk'))->assertExists($variant->getAttribute('storage_key'));
-    expect(DB::table('publication_media_cleanups')->count())->toBe(2);
-});
-
-it('retains working-only media while a Working reference still needs the file', function (): void {
-    Storage::fake(config('media.disk'));
-
-    $asset = MediaAsset::query()->create([
-        'storage_key' => 'originals/working-reference.jpg',
-        'original_filename' => 'working-reference.jpg',
-        'mime_type' => 'image/jpeg',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'orig'),
-        'state' => 'available',
-        'alt_text' => 'Working reference',
-    ]);
-    Storage::disk(config('media.disk'))->put($asset->getAttribute('storage_key'), 'orig');
-
-    $settings = PublicContentSetting::general();
-    $settings->setAttribute('favicon_media_asset_id', $asset->getKey());
-    $settings->save();
-    $asset->setAttribute('state', 'deleted');
-    $asset->save();
-
-    $cleanup = app(PublicationMediaCleanupService::class);
-    $cleanup->queue((int) $asset->getKey(), [(string) $asset->getAttribute('storage_key')]);
-    $cleanup->drain();
-
-    Storage::disk(config('media.disk'))->assertExists($asset->getAttribute('storage_key'));
-    expect(DB::table('publication_media_cleanups')->count())->toBe(1);
-
-    $settings->setAttribute('favicon_media_asset_id', null);
-    $settings->save();
-    $cleanup->drain();
-
-    Storage::disk(config('media.disk'))->assertMissing($asset->getAttribute('storage_key'));
-    expect(DB::table('publication_media_cleanups')->count())->toBe(0);
-});
 
 it('tracks the publication-owned tables copied into committed snapshots', function (): void {
     expect(PublicationSnapshot::TABLES)->toBe([
