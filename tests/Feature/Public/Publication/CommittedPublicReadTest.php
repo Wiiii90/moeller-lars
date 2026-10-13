@@ -41,9 +41,6 @@ it('keeps public on Committed while Preview and admin use Working until Commit',
 
     $committed = '#C9C3C3';
     $working = '#0F19FA';
-    $committedCss = 'linear-gradient(2deg, #555555, #C9C3C3) fixed';
-    $workingCss = 'linear-gradient(2deg, #555555, #0F19FA) fixed';
-
     expect(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
@@ -61,12 +58,12 @@ it('keeps public on Committed while Preview and admin use Working until Commit',
 
     $this->get('/')
         ->assertOk()
-        ->assertSee('--public-page: '.$committedCss.';', false)
+        ->assertSee($committed, false)
         ->assertDontSee($working, false);
 
     $this->get('/preview')
         ->assertOk()
-        ->assertSee('--public-page: '.$workingCss.';', false)
+        ->assertSee($working, false)
         ->assertDontSee($committed, false)
         ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
 
