@@ -8,7 +8,6 @@
     @php
         $preview = app(\App\Domain\Content\SitePreviewContext::class);
         $illustratedIndex = 0;
-        $hasInheritedMedia = false;
     @endphp
     <x-public.page-heading :section="$section" />
     <section class="blog-page" aria-label="Blog posts">
@@ -19,7 +18,6 @@
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
                 if ($hasCover) {
                     $illustratedIndex++;
-                    $hasInheritedMedia = $hasInheritedMedia || $journalMedia->inheritsDefaultNotice($cover);
                 }
                 $reverseCover = $hasCover && $illustratedIndex % 2 === 0;
                 $postDate = $post->published_at ?? $post->scheduled_at;
@@ -30,7 +28,6 @@
                 $excerpt = \Illuminate\Support\Str::limit($excerpt, 240);
             @endphp
             <article class="blog-entry @if ($hasCover) blog-entry--illustrated @if ($reverseCover) blog-entry--reverse @endif @else blog-entry--text-only @endif">
-                <span class="blog-entry__number" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                 <div class="blog-entry__body">
                     @if ($hasCover)
                         <div class="blog-entry__mount">
@@ -54,13 +51,5 @@
         @empty
             <p class="blog-page__empty">No posts yet.</p>
         @endforelse
-        @if ($hasInheritedMedia)
-            @php
-                $defaultCopyright = trim((string) (\App\Models\PublicContentSetting::general()->getAttribute('default_media_copyright_notice') ?? ''));
-            @endphp
-            @if ($defaultCopyright !== '')
-                <footer class="blog-page__colophon" aria-label="Image copyright">{{ $defaultCopyright }}</footer>
-            @endif
-        @endif
     </section>
 @endsection
