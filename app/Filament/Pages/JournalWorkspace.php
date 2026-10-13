@@ -26,12 +26,11 @@ use App\Routing\SiteNodeRoute;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -372,37 +371,22 @@ final class JournalWorkspace extends Page
 
                 return [
                     'template' => (string) $section->getAttribute('template'),
-                    'confirm_template_change' => false,
                     'title' => $section->getAttribute('title'),
                     'navigation_label' => $section->getAttribute('navigation_label'),
                     'slug' => $section->getAttribute('slug'),
                 ];
             })
             ->schema([
-                AdminForm::section('Journal')->schema([
+                Grid::make()->columns(2)->schema([
                     Select::make('template')->label('Template')->options(JournalTemplate::options())->required()->live(),
-                    Checkbox::make('confirm_template_change')
-                        ->label('Confirm template switch')
-                        ->helperText('Existing entries are kept intact. Entries from the inactive template are hidden until you switch back.')
-                        ->visible(fn (Get $get): bool => (string) $get('template') !== $this->template),
                     TextInput::make('title')->label('Journal title')->required()->maxLength(160),
                     TextInput::make('navigation_label')->label('Navigation label')->required()->maxLength(120),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')->helperText('Changing this changes the public Journal URL.'),
-                ])->columns(2),
+                ]),
             ])
             ->modalHeading('Journal settings')
             ->action(function (Action $action, array $data): void {
-                $newTemplate = (string) ($data['template'] ?? '');
-                if ($newTemplate !== $this->template && ! (bool) ($data['confirm_template_change'] ?? false)) {
-                    $this->notifyValidationFailure('Journal settings unchanged', ValidationException::withMessages([
-                        'template' => 'Confirm the template switch before saving.',
-                    ]));
-                    $action->halt();
-
-                    return;
-                }
-                unset($data['confirm_template_change']);
                 $updated = app(JournalSettingsService::class)->update($this->section(), $data);
                 $template = $updated->journalTemplate();
                 abort_unless($template instanceof JournalTemplate, 404);
