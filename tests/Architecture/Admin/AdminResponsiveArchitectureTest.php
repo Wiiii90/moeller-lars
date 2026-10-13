@@ -118,11 +118,10 @@ it('keeps ordinary table pressure centralized and selection terminal', function 
         ->toContain('@container admin-table (max-width: 72rem)')
         ->toContain('.admin-table--fold-dense .admin-table__split-only')
         ->toContain('.admin-row-actions--journal-blog .admin-action__label')
-        ->toContain('.admin-row-actions--stable.admin-row-actions--journal-blog')
-        ->toContain('display: flex !important;')
-        ->toContain('width: max-content;')
-        ->toContain('display: grid !important;')
-        ->not->toContain('minmax(var(--admin-row-action-slot-journal-state-width), max-content)');
+        ->toContain('--admin-row-actions-columns:')
+        ->toContain('minmax(var(--admin-row-action-slot-state-width), max-content)')
+        ->not->toContain('--admin-row-action-slot-journal-state-width')
+        ->not->toContain('.admin-row-actions--stable.admin-row-actions--journal-blog');
 
     expect($activity)
         ->toContain('activity-col--who admin-table__yield--compact')
@@ -208,25 +207,31 @@ it('keeps archived Blog Restore in the Archive slot', function (): void {
         ->toContain('AdminRowAction::Archive');
 });
 
-it('preserves the shared Blog action rail budget without fixed gaps between short labels', function (): void {
+it('keeps Blog icons on stable seven-slot axes without a Cancel schedule gap', function (): void {
     $root = dirname(__DIR__, 3);
     $table = file_get_contents($root.'/resources/css/admin/table-contract.css');
     $journalCss = file_get_contents($root.'/resources/css/admin/journal.css');
+    $journal = file_get_contents($root.'/resources/views/filament/pages/journal-workspace.blade.php');
 
     expect($table)
-        ->toContain('.journal-table--blog {')
-        ->toContain('--admin-row-actions-width: var(--admin-row-actions-journal-blog-width)')
-        ->toContain('.admin-row-actions--stable.admin-row-actions--journal-blog {')
-        ->toContain('display: flex !important;')
-        ->toContain('width: max-content;')
-        ->toContain('max-width: 100%;')
-        ->toContain('flex-wrap: nowrap;')
-        ->toContain('@container admin-table (max-width: 72rem)')
+        ->toContain('.admin-row-actions--stable {')
         ->toContain('display: grid !important;')
-        ->not->toContain('minmax(var(--admin-row-action-slot-journal-state-width), max-content)');
+        ->toContain('.admin-row-actions--journal-blog {')
+        ->toContain('minmax(var(--admin-row-action-slot-state-width), max-content)')
+        ->toContain('--admin-row-actions-journal-blog-width: calc(')
+        ->toContain('@container admin-table (max-width: 72rem)')
+        ->toContain('--admin-row-actions-columns: repeat(7, 1.35rem)')
+        ->not->toContain('--admin-row-action-slot-journal-state-width')
+        ->not->toContain('.admin-row-actions--stable.admin-row-actions--journal-blog');
+
+    expect($journal)
+        ->toContain('AdminRowAction::CancelSchedule')
+        ->toContain('label="Cancel"')
+        ->toContain('title="Cancel schedule"')
+        ->toContain('aria-label="Cancel schedule"');
 
     expect($journalCss)
         ->toContain('col.journal-table__actions--blog')
-        ->not->toContain('display: flex !important')
-        ->not->toContain('admin-row-actions--journal-blog');
+        ->not->toContain('admin-row-actions--journal-blog')
+        ->not->toContain('display: flex !important');
 });

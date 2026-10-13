@@ -28,8 +28,8 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| `docs` unmittelbar vor diesem Merge | `7296d02b4e3bd91cad9de04a10ab610edfc64bc3` |
-| `dev`, für diesen Merge geprüfter Stand | `62abc92ffc8621b00adb50b93d198f59bc36dcd5` |
+| `docs` unmittelbar vor diesem Merge | `b05c28730065381674c16eaec9c5e99348eab7d5` |
+| `dev`, für diesen Merge geprüfter Stand | `1ca4014cae997b0b4a40422944b90a0328524f53` |
 | Synchronisierung | echter Zwei-Eltern-Merge; neue `docs`-SHA danach frisch abrufen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
@@ -126,7 +126,9 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branch-Checkpoint (14.10.2026):** Zwei neue `dev`-Commits bis `62abc92ffc8621b00adb50b93d198f59bc36dcd5` nach Pfadprüfung als echten Zwei-Eltern-Merge nach `docs` übernommen. Weitere `dev`-Fortschritte vor jedem Ref-Update frisch vergleichen. Keine Änderungen an `dev`, `testing`, `main`, CI oder persistenten Daten.
+**Branch-Checkpoint (14.10.2026):** Drei neue `dev`-Commits bis `1ca4014cae997b0b4a40422944b90a0328524f53` nach Pfadprüfung als echten Zwei-Eltern-Merge nach `docs` übernommen. Weitere `dev`-Fortschritte vor jedem Ref-Update frisch vergleichen. Keine Änderungen an `dev`, `testing`, `main`, CI oder persistenten Daten.
+
+**Constructor-Relationen:** Der Relationsgenerator trennt Konstruktorparameter nun nur an **top-level Commas** und ignoriert PHP-Attribute sowie verschachtelte Default-Werte als Typkandidaten. Union-/Intersection-Hints vor dem echten Parameter-`$variable` bleiben erhalten. Vier lokale PHP-8.4-Fixtures erfolgreich, `php -l` der isolierten Fixture-Datei bestanden. Das aktualisierte Remote-Gesamtskript und sein voller Graph sind **noch nicht nativ ausgeführt**; eine veränderte Kantenanzahl wird nicht ohne Checkout behauptet.
 
 **PHP-Generatorfehler behoben:** `generate-architecture-relations.php` hatte einen tatsächlich sichtbaren CLI-Bug: `$mode` wurde erst **nach** dem neuen `--self-test`-Zweig initialisiert. Der Modus wird jetzt unmittelbar am Skriptbeginn validiert; der Fixture-Zweig liegt vor dem Lesen von `php-symbols.json`. Die Unterscheidung von globalen `app()/resolve()`-Helpern und Methoden-/Static-Calls bleibt erhalten. Verifikation: Quellprüfung des reparierten Skripts, **nicht** ein vollständiger nativer Generatorskriptlauf.
 
@@ -134,12 +136,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 **Eloquent-Generator verbessert:** `generate-architecture-eloquent.php` verwendet statt eines formatabhängigen Regex einen eng begrenzten PHP-Tokenizer: direkte öffentliche, parameterlose Relation-Methoden, passende Return-Type/Methoden-Kombination, eindeutiges Literal-Target `Model::class` oder `self::class`. Kommentare, Zeilenumbrüche, direkte Methodenchains, falsche Rückgabetypen und dynamische Targets werden kontrolliert behandelt. Fünf isolierte Positiv-/Negativ-Fixtures wurden im lokalen PHP 8.4 mit der entsprechenden Parserfunktion tatsächlich ausgeführt und bestanden; `php -l` des lokalen vollständigen Generatorentwurfs bestand ebenfalls. **Keine native Ausführung der hier hochgeladenen exakten Remote-Datei** und keine vollständige 26-Model-Regeneration behauptet; die ursprünglichen 48 Kanten bleiben statisch belegter Altstand.
 
-**Admin Journal:** Der neue `dev`-Stand ersetzt im Wide-Blog die starren langen Action-Grids durch ein zentriert am Tabellenende ausgerichtetes, content-sized Flex-Rail mit nach rechts fixiertem Delete; dadurch verschwinden künstliche Leerräume vor Schedule. Bei **72rem Tabellenbreite** bleibt die gemeinsame Status-Faltung/Umstellung auf sieben feste Icon-Slots. Restore bleibt in Archive-Slot 6 und nicht in Publish-Slot 4. Der [Tabellenvertrag](docs/ADMIN-TABLE-CONTRACT.md) ist kanonisch aktualisiert, `ui-skills.md` bleibt knapper Verweis. Source-/Testdateien **nur gelesen**, nicht im Browser geprüft.
+**Admin Journal:** Der jüngste `dev`-Stand **nimmt das kurzlebige Flex-Rail zurück** und verwendet wieder ein stabiles siebenachsiges Grid. Die Publication-State-Achse nutzt jetzt zentral 6rem statt der ehemaligen 9rem Cancel-schedule-Achse; die sichtbare Beschriftung lautet `Cancel`, der zugängliche Name bleibt `Cancel schedule`. Damit bleibt jede Icon-Achse von der Label-Länge unabhängig und die ursprüngliche Lücke entfällt. Bei **72rem Tabellenbreite** bleibt die gemeinsame Status-Faltung/Umstellung auf sieben feste Icon-Slots. Restore bleibt in Archive-Slot 6 und nicht in Publish-Slot 4. Der [Tabellenvertrag](docs/ADMIN-TABLE-CONTRACT.md) ist kanonisch aktualisiert, `ui-skills.md` bleibt knapper Verweis. Source-/Testdateien **nur gelesen**, nicht im Browser geprüft.
 
 **Public SPA:** Die jüngsten `dev`-Änderungen ergänzen Browser-/JS-Testquellen für die kleine native Pseudoelement-/Schattenanimation auch unter reduziertem Bewegungssignal. Verhalten und bewusstes Ignorieren von `prefers-reduced-motion` waren bereits im Public-Vertrag dokumentiert. Die neuen Tests sind **nicht hier ausgeführt**; die visuelle und Accessibility-Abnahme bleibt offen.
 
 **Admin-Notification-Transport quellenbasiert geschlossen:** Der neue [Transport-Graph](docs/architecture/admin-notification-transport.md) trennt Admin-Actions → Audit-Context → `AdminNotifier` → user-scoped `firstOrCreate` → Livewire/Event oder Session → persistiertes Header-JS → Dashboard-Mailbox/Retention. **Kein automatischer Transport allein durch Audit oder DB-Write.** `firstOrCreate` dedupliziert nur den Inbox-Datensatz, nicht den pro Invocation neu erzeugten Header-Payload. Retention-Grenzfall: Bei mindestens so vielen gepinnten Notifications wie dem konfigurierten Limit kann eine gerade erzeugte ungepinnte Notification unmittelbar herausfallen. Der Fall ist source-abgeleitet, nicht runtimegeprüft; Testing-/Browser-Akzeptanz bleibt offen. Die separate Contact-E-Mail-Pipeline wurde nicht als AdminNotifier-Mail-Versand ausgegeben.
 
-**Nächster konkreter Schritt:** Parser für `generate-architecture-relations.php` auf gruppierte `use`-Aliases, Konstruktor-Union-Typen und Namespace-/Class-Scopes prüfen. Danach native `--self-test` der gesamten eingecheckten Generatoren und schließlich `--write`/`--check` nur in einem vollständigen sicheren Checkout ausführen. Parallel weitere belastbare Dokumentationsduplikate reduzieren und `dev` bewusst mergen.
+**Nächster konkreter Schritt:** Verbleibende Namespace-/Class-Scope-Fälle der Relationsgenerierung gegen reale Quellen prüfen und den statischen Routes-Quellprüfer auf kommentierte/falsch-positive Route-Deklarationen testen. Danach native `--self-test` der gesamten eingecheckten Generatoren und schließlich `--write`/`--check` nur in einem vollständigen sicheren Checkout ausführen. Parallel weitere belastbare Dokumentationsduplikate reduzieren und `dev` bewusst mergen.
 
 **Offen:** Vollständige native PHP-Generator-Checks, isolierte vollständig migrierte PostgreSQL-`pg_catalog`-Prüfung, Notification-Transport-Runtimeabnahme und Browser-/Produktabnahme. Weder CI noch `testing` für diese Arbeit verwenden.

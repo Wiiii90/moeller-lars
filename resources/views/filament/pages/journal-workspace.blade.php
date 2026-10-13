@@ -288,6 +288,9 @@
                                             @elseif ($entry['state'] === 'scheduled')
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::CancelSchedule"
+                                                    label="Cancel"
+                                                    title="Cancel schedule"
+                                                    aria-label="Cancel schedule"
                                                     wire:click="restorePostDraft({{ $entry['id'] }})"
                                                 />
                                             @elseif ($entry['state'] === 'archived')

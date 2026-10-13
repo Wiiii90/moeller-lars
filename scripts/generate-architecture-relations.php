@@ -41,6 +41,52 @@ if ($mode === '--self-test') {
         }
         echo "PASS {$name} ({$found})\n";
     }
+    $constructorFixtures = [
+        ['promoted union and attributes', <<<'PHP'
+<?php
+class Example {
+    public function __construct(
+        #[Inject(Foo::class, options: [1,2])] private Foo|Bar $service,
+        private array $items = [1,2],
+        protected readonly ?Baz $target = null,
+    ) {}
+}
+PHP, ['Foo','Bar','Baz']],
+        ['intersection and nested defaults', <<<'PHP'
+<?php
+class Example {
+    public function __construct(Foo&Bar $service, private array $values = ['a,b', [1,2]], private Qux $record) {}
+}
+PHP, ['Foo','Bar','Qux']],
+        ['single typed argument', <<<'PHP'
+<?php
+class Example { public function __construct(private readonly Thing $thing) {} }
+PHP, ['Thing']],
+        ['attribute is not a type', <<<'PHP'
+<?php
+class Example { public function __construct(#[Custom] private object $thing) {} }
+PHP, ['object']],
+    ];
+    foreach ($constructorFixtures as [$name, $sourceCode, $expected]) {
+        $tokens = graphTokens($sourceCode);
+        $open = null;
+        $close = null;
+        foreach ($tokens as $i => $token) {
+            if ($token['text'] === '__construct') {
+                $open = graphNext($tokens, $i + 1);
+                $close = graphClose($tokens, $open);
+                break;
+            }
+        }
+        if ($open === null || $close === null) {
+            throw new RuntimeException("Constructor fixture missing delimiters: {$name}");
+        }
+        $actual = array_column(graphConstructorParameterTypes($tokens, $open, $close), 'name');
+        if ($actual !== $expected) {
+            throw new RuntimeException("Constructor fixture {$name}: ".json_encode($actual));
+        }
+        echo "PASS constructor: {$name}\n";
+    }
     exit(0);
 }
 
@@ -128,6 +174,56 @@ function graphClose(array $tokens, int $at): ?int
         if ($tokens[$i]['text'] === ')' && --$depth === 0) return $i;
     }
     return null;
+}
+
+/**
+ * Extract only parameter type tokens before the first variable. Do not
+ * misclassify constructor attributes or default-value expressions as types.
+ * Commas inside nested arguments/arrays never start a new parameter.
+ *
+ * @param list<array{id:int|string,text:string,line:int}> $tokens
+ * @return list<array{name:string,line:int}>
+ */
+function graphConstructorParameterTypes(array $tokens, int $open, int $close): array
+{
+    $found = [];
+    $start = $open + 1;
+    $parenthesis = 0;
+    $square = 0;
+    $braces = 0;
+    for ($j = $open + 1; $j <= $close; $j++) {
+        $t = $tokens[$j];
+        $txt = $t['text'];
+        if ($j === $close || ($txt === ',' && $parenthesis === 0 && $square === 0 && $braces === 0)) {
+            $attributeDepth = 0;
+            for ($k = $start; $k < $j; $k++) {
+                $current = $tokens[$k];
+                $value = $current['text'];
+                if ($current['id'] === T_ATTRIBUTE || $value === '[') {
+                    $attributeDepth++;
+                    continue;
+                }
+                if ($value === ']' && $attributeDepth > 0) {
+                    $attributeDepth--;
+                    continue;
+                }
+                if ($attributeDepth > 0) continue;
+                if ($current['id'] === T_VARIABLE) break;
+                if (in_array($current['id'], [T_STRING, T_NAME_QUALIFIED, T_NAME_FULLY_QUALIFIED], true)) {
+                    $found[] = ['name' => $value, 'line' => $current['line']];
+                }
+            }
+            $start = $j + 1;
+            continue;
+        }
+        if ($txt === '(') $parenthesis++;
+        elseif ($txt === ')') $parenthesis--;
+        elseif ($t['id'] === T_ATTRIBUTE || $txt === '[') $square++;
+        elseif ($txt === ']') $square--;
+        elseif ($txt === '{') $braces++;
+        elseif ($txt === '}') $braces--;
+    }
+    return $found;
 }
 
 /** @return array<string,string> */
@@ -243,21 +339,12 @@ foreach ($inventory['php_files'] as $record) {
                 $open = graphNext($tokens, $name + 1);
                 $close = $open !== null && $tokens[$open]['text'] === '(' ? graphClose($tokens, $open) : null;
                 if ($close !== null) {
-                    $start = $open + 1;
-                    for ($j = $start; $j <= $close; $j++) {
-                        if ($j === $close || $tokens[$j]['text'] === ',') {
-                            $variable = null;
-                            for ($k = $start; $k < $j; $k++) if ($tokens[$k]['id'] === T_VARIABLE) { $variable = $k; break; }
-                            if ($variable !== null) {
-                                for ($k = $start; $k < $variable; $k++) {
-                                    if (in_array($tokens[$k]['id'], [T_STRING, T_NAME_QUALIFIED, T_NAME_FULLY_QUALIFIED], true)
-                                        && ! in_array(strtolower($tokens[$k]['text']), ['public','private','protected','readonly'], true)) {
-                                        $emit(graphResolve($tokens[$k]['text'], $ns, $aliases), 'constructor_type', $tokens[$k]['line']);
-                                    }
-                                }
-                            }
-                            $start = $j + 1;
-                        }
+                    foreach (graphConstructorParameterTypes($tokens, $open, $close) as $hint) {
+                        $emit(
+                            graphResolve($hint['name'], $ns, $aliases),
+                            'constructor_type',
+                            $hint['line'],
+                        );
                     }
                 }
             }
