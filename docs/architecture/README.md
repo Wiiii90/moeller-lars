@@ -44,6 +44,12 @@ php scripts/generate-architecture-relations.php --check
 
 Ergebnis: `docs/architecture/generated/php-relationships.json` (Quellbelege) und `module-relationships.mmd` (aggregierte, mit Referenzanzahlen beschriftete Modulübersicht). Beide sind nach einem vollständigen lokalen Checkout-Lauf einzuchecken; sie sind hier noch **nicht** als vollständig erzeugt ausgegeben.
 
+### Physisches Datenbankschema (read-only)
+
+[`scripts/export-architecture-postgres.php`](../../scripts/export-architecture-postgres.php) liest nach einer **separaten, kontrollierten Migration in einer wegwerfbaren PostgreSQL-Datenbank** `pg_catalog` und `information_schema`. Der Exporter selbst führt **keine** Migrationen, Schemaänderungen oder Schreibabfragen aus; er verlangt explizit `ARCH_DOC_DB_DISPOSABLE=1`, eine `pgsql:`-DSN und verwendet eine Read-only-Transaktion. Er exportiert Tabellen/Views, Spalten, Constraints, Indizes und nutzerdefinierte Trigger nach `postgresql-catalog.json` sowie FK-Quellenkanten nach `postgresql-fk-graph.mmd`. Die FK-Pfeile behaupten bewusst noch keine Kardinalitäten.
+
+Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser Arbeitsumgebung keine migrierte PostgreSQL-Testinstanz vorhanden ist. Es gibt deshalb weiterhin **kein als vollständig behauptetes ERD**. Die vollständige Erhebung folgt erst nach sicherer Bereitstellung einer Wegwerf-DB; produktive und lokale persistente Vorschau-Datenbanken sind tabu.
+
 ## Modellarten und Fertigstellung
 
 | Modell | Erste Quelle | Status |
