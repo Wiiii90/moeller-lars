@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Content\ExhibitionMapAddress;
 use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\JournalTemplate;
 use App\Models\Exhibition;
@@ -134,6 +135,15 @@ final class JournalEntryEditorSchema
             Toggle::make('map_enabled')
                 ->label('Map enabled')
                 ->live()
+                // Enabled maps remain switchable off, even if older records
+                // lack a complete address. New maps need an identifiable place.
+                ->disabled(fn (Get $get): bool => ! (bool) $get('map_enabled')
+                    && ! ExhibitionMapAddress::isSufficient([
+                        'postal_code' => $get('postal_code'),
+                        'city' => $get('city'),
+                        'country' => $get('country'),
+                    ]))
+                ->helperText('Requires Country and either City or Postal code.')
                 ->columnSpanFull(),
             Hidden::make('latitude')->dehydrated(false),
             Hidden::make('longitude')->dehydrated(false),
@@ -194,11 +204,14 @@ final class JournalEntryEditorSchema
             ->label($label)
             ->maxLength($max)
             ->nullable()
+            ->live(onBlur: true)
+            // The preview is derived from coordinates; hide the old ones as
+            // soon as an address edit is committed, then let the save action
+            // replace them with the coordinates returned by the domain.
             ->afterStateUpdatedJs(<<<'JS'
                 $set('latitude', null)
                 $set('longitude', null)
                 $set('geocoded_at', null)
-                window.dispatchEvent(new CustomEvent('journal-location-stale'))
             JS);
     }
 
@@ -209,7 +222,7 @@ final class JournalEntryEditorSchema
         if ($latitude === false || $longitude === false || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
             return new HtmlString(
                 '<div class="journal-entry-editor__map is-empty">'
-                .'<p>The map location will be resolved from Street address, Postal code, City and Country when you save.</p>'
+                .'<p>The map location is resolved after an address change is saved.</p>'
                 .'</div>',
             );
         }
@@ -221,18 +234,11 @@ final class JournalEntryEditorSchema
         if ($presentation === null) {
             return new HtmlString('<div class="journal-entry-editor__map is-empty"><p>Map preview unavailable.</p></div>');
         }
-        $key = sha1($latitude.'|'.$longitude.'|'.(string) ($get('geocoded_at') ?? ''));
-
         return new HtmlString(
-            '<div wire:key="journal-map-'.$key.'" x-data="{ stale: false }" x-on:journal-location-stale.window="stale = true">'
-            .'<div class="journal-entry-editor__map" x-show="! stale">'
+            '<div class="journal-entry-editor__map">'
             .'<iframe src="'.e($presentation['embed_url']).'" title="Venue map preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
             .'<div class="journal-entry-editor__map-meta">'
             .'<a href="'.e($presentation['public_url']).'" target="_blank" rel="noopener noreferrer">Open map</a></div>'
-            .'</div>'
-            .'<div class="journal-entry-editor__map is-empty" x-show="stale" x-cloak>'
-            .'<p>Address changed. The map location will be refreshed when you save.</p>'
-            .'</div>'
             .'</div>',
         );
     }
