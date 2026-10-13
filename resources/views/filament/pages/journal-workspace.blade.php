@@ -146,7 +146,7 @@
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data admin-table--ranked">
-                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog' : 'journal-table--exhibitions' }}">
+                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog admin-table--fold-early' : 'journal-table--exhibitions admin-table--fold-at-actions' }}">
                     <colgroup>
                         <col class="admin-table__col-quarter-unit admin-table__col-position">
                         <col class="admin-table__col-quarter-unit admin-table__col-drag">
@@ -154,11 +154,13 @@
                             <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-unit journal-col--identity">
                             <col class="journal-col--publication admin-table__yield--minimal">
+                            <col class="journal-col--publication-date admin-table__split-only">
                             <col class="journal-table__actions--blog">
                         @else
                             <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-half-units journal-col--identity">
                             <col class="journal-col--schedule admin-table__yield--minimal">
+                            <col class="journal-col--timing admin-table__split-only">
                             <col class="admin-table__col-two-units-minus-selection journal-table__actions--exhibitions">
                         @endif
                         <col class="admin-table__selection-col">
@@ -169,9 +171,17 @@
                             <th scope="col" class="journal-visual journal-col--visual">Image</th>
                             <th scope="col" class="journal-col--identity">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
                             @if ($isBlog)
-                                <th scope="col" class="journal-col--publication admin-table__yield--minimal">Status</th>
+                                <th scope="col" class="journal-col--publication admin-table__yield--minimal">
+                                    <span class="admin-table__split-label">Status</span>
+                                    <span class="admin-table__folded-only">Publication</span>
+                                </th>
+                                <th scope="col" class="journal-col--publication-date admin-table__split-only">Publication</th>
                             @else
-                                <th scope="col" class="journal-col--schedule admin-table__yield--minimal">Dates</th>
+                                <th scope="col" class="journal-col--schedule admin-table__yield--minimal">
+                                    <span class="admin-table__split-label">Date</span>
+                                    <span class="admin-table__folded-only">Dates</span>
+                                </th>
+                                <th scope="col" class="journal-col--timing admin-table__split-only">Schedule</th>
                             @endif
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
@@ -231,13 +241,24 @@
                                 @if ($isBlog)
                                     <td class="journal-publication journal-col--publication admin-table__yield--minimal">
                                         <span class="journal-state is-{{ $entry['state'] }}">{{ ucfirst($entry['state']) }}</span>
-                                        @if ($entry['publication'])<span class="journal-publication__date">{{ $entry['publication'] }}</span>@endif
+                                        @if ($entry['publication'])<span class="journal-publication__date admin-table__folded-only">{{ $entry['publication'] }}</span>@endif
+                                    </td>
+                                    <td class="journal-publication-date journal-col--publication-date admin-table__split-only">
+                                        @if ($entry['publication'])<span class="journal-publication__date">{{ $entry['publication'] }}</span>@else<span aria-label="No publication date">—</span>@endif
                                     </td>
                                 @else
                                     <td class="journal-schedule journal-col--schedule admin-table__yield--minimal">
                                         @if ($entry['date_text'] !== '')<span class="journal-schedule__dates">{{ $entry['date_text'] }}</span>@endif
-                                        @if ($entry['vernissage'])<em>Vernissage: {{ $entry['vernissage'] }}</em>@endif
-                                        <span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span>
+                                        <div class="journal-schedule__details admin-table__folded-only">
+                                            @if ($entry['vernissage'])<em>Vernissage: {{ $entry['vernissage'] }}</em>@endif
+                                            <span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="journal-schedule journal-col--timing admin-table__split-only">
+                                        <div class="journal-schedule__details">
+                                            @if ($entry['vernissage'])<em>Vernissage: {{ $entry['vernissage'] }}</em>@endif
+                                            <span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span>
+                                        </div>
                                     </td>
                                 @endif
                                 <td class="admin-table__actions">
