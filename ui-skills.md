@@ -285,7 +285,7 @@ audit event.
 
 ## 12. Journal table references
 
-Journal uses the canonical split/fold behavior in [ADMIN-TABLE-CONTRACT.md](docs/ADMIN-TABLE-CONTRACT.md#journals-splitfold-composition). That contract is the **single owner** of the Blog Status/Publication and Exhibition Date/Schedule column priority, action-rail pressure and responsive identity metadata. Check the actual Journal Blade, `journal.css` and shared `table-contract.css` before changing the behavior; do not redefine these breakpoints in page-local CSS.
+Journal uses the canonical split/fold behavior in [ADMIN-TABLE-CONTRACT.md](docs/ADMIN-TABLE-CONTRACT.md#journals-splitfold-composition). That contract is the **single owner** of the Blog Date/Status and Exhibition Date/Status column priority, action-rail pressure and responsive identity metadata. Check the actual Journal Blade, `journal.css` and shared `table-contract.css` before changing the behavior; do not redefine these breakpoints in page-local CSS.
 
 ## 13. Gallery and Storage are accepted style references
 

@@ -126,12 +126,14 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand:** `docs` war vor diesem Commit `3b35877351f4dc44ff2bf3eadb1f44258d650b49`, `dev` zuletzt `18b0a5943aec407fa1bc57e557a2aadcdbf395da`. Vor weiteren Änderungen **aktuelle HEADs** ermitteln.
+**Stand (13.10.2026):** `dev` bei `05895de6db92832b8c3b47ea003780ffde0513cc` nach vollständigem Pfadvergleich via echtem Zwei-Eltern-Merge in `docs` übernommen. `docs`-SHA nach dem Merge frisch ermitteln, ebenso weitere neue `dev`-Commits.
 
-**Abgeschlossen:** Die 20 expliziten GET/POST-Webrouten einschließlich Public-CSP-Asset-Closure sind nun auch durch [`scripts/check-architecture-routes.php`](scripts/check-architecture-routes.php) als Quellmanifest prüfbar. Der Prüfer kontrolliert Anzahl, Reihenfolge, Zeile, Pfad, Methode, Controller-/Closure-Art. **Tatsächlich lokal mit PHP 8.4 ausgeführt:** Syntaxcheck, Positivtest an einem Fixture mit Public-/Preview-/CSP-Routen, erwarteter Fehler bei veraltetem Zeilenanker. Die 20 Original-Quellbelege wurden über GitHub geprüft; vollständiger nativer Checkout-Lauf bleibt offen.
+**Aktuell geltender Journal-Vertrag:** Blog **Date + Status** (bei 64rem gefaltet zu Date), Exhibition **Date + Status** (bei 64rem gefaltet zu Dates). Exhibition-Date kommt aus `starts_on`/`ends_on`, Vernissage aus strukturiertem Zeitstempel mit Legacy-Fallback, **niemals** aus dem frei formulierten Public-Date-Override; separate abgeleitete Statusspalte nur Past/Current/Upcoming. Bei Narrow erscheinen Identity-Datumsinformationen erst nach dem Yield der Supporting Column. Alle diesbezüglichen Zwischenstände (Status/Publication, Date/Schedule, Date/Timing) sind aus den **aktiven** kanonischen Tabellenregeln entfernt. Die Vorgaben sind in `ADMIN-TABLE-CONTRACT.md`, `ADMIN-RESPONSIVE-TABLES.md` und dem knappen `ui-skills.md`-Verweis synchronisiert.
 
-**Weitere zuletzt aktualisierte Verträge:** SPA mit `Livewire.navigate()`-Delegation und sicherem öffentlichem Livewire-CSP-Script; Folio-Kontur als **neu gerenderte DOM-Knoten** mit Computed-Style-Snapshot und WAAPI (kein `@persist`), Journal Date/Timing 64rem in Table-Owner. Keine Browserabnahme behauptet.
+**Weiter verifiziert:** Statische Prüfung aller **61** Markdown-Dateien auf spezifisch überholte Public-`@persist`-, Journal-Fold- und Routenbegriffe; nur die zwei belegten Altstellen wurden geändert. Persistenzangaben der **Admin-Notifications** bleiben davon unberührt.
 
-**Nächster Schritt:** verbliebene Fach-/Architekturdokumente gezielt auf Widersprüche mit dem neuesten `dev`-Quellstand und auf semantische Doppelungen prüfen; Generatorsyntax und einzelne Strukturinventare bei konkreten Änderungen nachziehen. Vor weiteren Arbeiten `dev`-Diff und Mergefähigkeit kontrollieren.
+**Routenprüfer:** `scripts/check-architecture-routes.php` für die 20 expliziten HTTP-Routen; PHP-8.4-Fixture mit positivem und absichtlich falschem Zeilenbeleg geprüft, noch kein native Full-Checkout-Lauf.
 
-**Länger offen:** nativer Full-Checkout-PHP-Generatorlauf, isoliertes migriertes PostgreSQL-`pg_catalog`, echte Browserabnahme, Notification-Transport-Verifikation. Kein CI/`testing`.
+**Nächster Schritt:** aktuelle `dev`-HEADs neu prüfen; das Source-Audit nur bei tatsächlich geänderten `app/`-Quellen ergänzen, außerdem Tabellen- und Public-Browser-Testquellen als **nicht ausgeführte** Evidenz aufnehmen, sofern ihre neuen Invarianten dokumentationsrelevant sind.
+
+**Offen:** echte Browserabnahme, PostgreSQL-Katalog aus isolierter Migrierumgebung, vollständige native PHP-Generatorläufe, Notification-Transport. CI und `testing` tabu.
