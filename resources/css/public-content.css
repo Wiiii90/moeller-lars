@@ -200,43 +200,6 @@
     margin: 0;
 }
 
-.exhibition-entry__timing {
-    margin: 0 0 .35rem;
-    color: #777;
-    font-size: .68rem;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-}
-
-.exhibition-entry__timing.is-current {
-    color: #444;
-    font-weight: 600;
-}
-
-.exhibition-entry__cover {
-    margin: 1rem 0;
-}
-
-.exhibition-entry__map {
-    width: min(100%, 44rem);
-    margin: 1.2rem 0;
-}
-
-.exhibition-entry__map iframe {
-    display: block;
-    width: 100%;
-    height: clamp(14rem, 36vw, 22rem);
-    border: 1px solid #d7d3cf;
-    background: #f5f3f1;
-}
-
-.exhibition-entry__links {
-    display: flex;
-    margin-top: .9rem;
-    gap: .9rem;
-    flex-wrap: wrap;
-}
-
 .contact-status {
     display: block;
     width: 100%;
