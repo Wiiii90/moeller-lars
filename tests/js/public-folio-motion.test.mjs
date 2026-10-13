@@ -67,7 +67,7 @@ test('folio navigation changes connected corner properties once without overridi
         assert.equal(attributes.has('data-folio-active'), true);
         assert.equal(measured, 1);
         assert.deepEqual([...properties.keys()], FOLIO_PROPERTIES);
-        assert.match(dataset.folioVariant, /^\\d+$/);
+        assert.match(dataset.folioVariant, /^\d+$/);
         const previousValues = [...properties.values()];
         assert.ok(FOLIO_VARIANTS.some((variant) =>
             variant.every((value, index) => value === previousValues[index])));
