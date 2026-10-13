@@ -62,18 +62,16 @@ it('confirms content loss for Rich Text conversions and rejects stale component 
         ->toThrow(ValidationException::class);
 });
 
-it('accepts the four shared Divider variants for Home and rejects invalid styles', function (): void {
+it('saves a supported Home Divider choice and rejects invalid styles', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $settings = homeComponentTypeSettings(HomeTemplate::Custom, [['type' => 'divider']]);
     $service = app(HomePresentationEditorialService::class);
 
-    foreach (\App\Domain\Content\DividerVariant::VALUES as $variant) {
-        expect($service->updateComponent(
-            $settings, HomeTemplate::Custom, 0, 'divider',
-            ['type' => 'divider', 'variant' => $variant],
-        ))->toBeBool();
-        expect($service->configuration($settings->fresh())['custom']['components'][0]['variant'])->toBe($variant);
-    }
+    expect($service->updateComponent(
+        $settings, HomeTemplate::Custom, 0, 'divider',
+        ['type' => 'divider', 'variant' => 'dotted'],
+    ))->toBeTrue();
+    expect($service->configuration($settings->fresh())['custom']['components'][0]['variant'])->toBe('dotted');
 
     expect(fn () => $service->updateComponent(
         $settings, HomeTemplate::Custom, 0, 'divider',

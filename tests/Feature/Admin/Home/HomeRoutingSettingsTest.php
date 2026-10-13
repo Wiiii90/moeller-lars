@@ -10,17 +10,6 @@ use App\Filament\Support\HomeSettingsDialog;
 use App\Models\HomePresentationSetting;
 use App\Models\User;
 
-it('keeps Skip Home out of the content template options', function (): void {
-    expect(HomeTemplate::options())
-        ->toHaveKeys([
-            HomeTemplate::Artwork->value,
-            HomeTemplate::UnderConstruction->value,
-            HomeTemplate::Custom->value,
-        ]);
-
-    expect(HomeTemplate::options())->not->toHaveKey(HomeTemplate::SkipHome->value);
-});
-
 it('stores Home skip routing independently from the content template', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 

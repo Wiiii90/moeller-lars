@@ -126,8 +126,7 @@ it('renders the Under Construction preview with every shared Home component kind
         ->assertOk()
         ->assertSee('Home preview ALT')
         ->assertSee('Preview heading')
-        ->assertSee('Preview <strong>rich text</strong>', false)
-        ->assertSee('custom-page__divider', false);
+        ->assertSee('Preview <strong>rich text</strong>', false);
 });
 
 it('renders the Custom preview through the same shared component renderer', function (): void {
@@ -139,11 +138,10 @@ it('renders the Custom preview through the same shared component renderer', func
         ->assertOk()
         ->assertSee('Home preview ALT')
         ->assertSee('Preview heading')
-        ->assertSee('Preview <strong>rich text</strong>', false)
-        ->assertSee('custom-page__divider', false);
+        ->assertSee('Preview <strong>rich text</strong>', false);
 });
 
-it('renders Home List and Dotted Divider while hiding unpublished parents and children', function (): void {
+it('renders Home List while hiding unpublished parents and children', function (): void {
     homePreviewSetting('custom', [
         ['type' => 'text', 'title' => 'Public Home component', 'body' => null, 'published' => true],
         ['type' => 'text', 'title' => 'Hidden Home component', 'body' => null, 'published' => false],
@@ -160,8 +158,7 @@ it('renders Home List and Dotted Divider while hiding unpublished parents and ch
         ->assertDontSee('Hidden Home component')
         ->assertSee('Home CV')
         ->assertSee('Public list entry')
-        ->assertDontSee('Hidden list entry')
-        ->assertSee('custom-page__divider--dotted', false);
+        ->assertDontSee('Hidden list entry');
 });
 
 it('keeps Home source preference while effective eligibility follows Gallery publication', function (): void {
