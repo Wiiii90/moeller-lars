@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
+    Storage::fake(config('media.disk'));
     $this->actingAs(User::factory()->admin()->create(), 'web');
 });
 
@@ -102,6 +103,9 @@ it('detaches Gallery artworks after their shared primary Media File is deleted f
     galleryFixturePrimary($deletedFromSource, $asset);
     galleryFixturePrimary($alsoAffected, $asset);
     galleryFixtureUnavailableAnalytics();
+    $disk = Storage::disk(config('media.disk'));
+    $disk->put($asset->storage_key, 'Shared original fixture');
+    expect($disk->exists($asset->storage_key))->toBeTrue();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
         ->mountAction('deletePrimaryMedia', ['artwork' => $deletedFromSource->getKey()])
@@ -112,7 +116,8 @@ it('detaches Gallery artworks after their shared primary Media File is deleted f
         ->and($alsoAffected->fresh()->getAttribute('artwork_category_id'))->toBeNull()
         ->and((int) $remainingInSource->fresh()->position)->toBe(0)
         ->and(ArtworkMedia::query()->where('media_asset_id', $asset->getKey())->exists())->toBeFalse()
-        ->and($asset->fresh()->getAttribute('state'))->toBe('deleted');
+        ->and($asset->fresh()->getAttribute('state'))->toBe('deleted')
+        ->and($disk->exists($asset->storage_key))->toBeFalse();
 });
 
 
@@ -127,8 +132,13 @@ it('cleans Gallery membership when a shared primary file is deleted directly fro
     galleryFixturePrimary($first, $shared);
     galleryFixturePrimary($second, $shared);
     galleryFixturePrimary($kept, $other);
-    galleryFixtureThumbnail($shared);
-    galleryFixtureThumbnail($other);
+    $sharedThumbnail = galleryFixtureThumbnail($shared);
+    $otherThumbnail = galleryFixtureThumbnail($other);
+    $disk = Storage::disk(config('media.disk'));
+    foreach ([$shared, $other, $sharedThumbnail, $otherThumbnail] as $file) {
+        $disk->put($file->storage_key, 'Media lifecycle fixture');
+        expect($disk->exists($file->storage_key))->toBeTrue();
+    }
 
     app(ArtworkPublicationService::class)->publish($first);
     app(ArtworkPublicationService::class)->publish($second);
@@ -145,7 +155,11 @@ it('cleans Gallery membership when a shared primary file is deleted directly fro
         ->and(ArtworkMedia::query()->where('media_asset_id', $shared->getKey())->exists())->toBeFalse()
         ->and($kept->fresh()->artwork_category_id)->toBe($firstGallery->getKey())
         ->and((int) $kept->fresh()->position)->toBe(0)
-        ->and($other->fresh()->state)->toBe('available');
+        ->and($other->fresh()->state)->toBe('available')
+        ->and($disk->exists($shared->storage_key))->toBeFalse()
+        ->and($disk->exists($sharedThumbnail->storage_key))->toBeFalse()
+        ->and($disk->exists($other->storage_key))->toBeTrue()
+        ->and($disk->exists($otherThumbnail->storage_key))->toBeTrue();
 
     $this->get(route('preview.site.section', ['section' => $firstGallery->slug]))
         ->assertOk()
