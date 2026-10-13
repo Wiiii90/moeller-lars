@@ -1,0 +1,307 @@
+{
+  "format": "curated-state-machines-v1",
+  "limitations": "Transitions manually reviewed against domain methods. Source anchor presence does not prove semantic equivalence; review on relevant code changes.",
+  "models": [
+    {
+      "id": "blog-post",
+      "title": "BlogPost",
+      "states": [
+        "draft",
+        "scheduled",
+        "published",
+        "unpublished",
+        "archived",
+        "removed"
+      ],
+      "transitions": [
+        {
+          "from": "[*]",
+          "to": "draft",
+          "action": "createDraft",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function createDraft("
+        },
+        {
+          "from": "draft",
+          "to": "published",
+          "action": "publish",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function publish("
+        },
+        {
+          "from": "scheduled",
+          "to": "published",
+          "action": "publish",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function publish("
+        },
+        {
+          "from": "unpublished",
+          "to": "published",
+          "action": "publish",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function publish("
+        },
+        {
+          "from": "draft",
+          "to": "scheduled",
+          "action": "schedule",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function schedule("
+        },
+        {
+          "from": "unpublished",
+          "to": "scheduled",
+          "action": "schedule",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function schedule("
+        },
+        {
+          "from": "scheduled",
+          "to": "scheduled",
+          "action": "reschedule",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "$fresh->setAttribute('scheduled_at', $date)"
+        },
+        {
+          "from": "published",
+          "to": "unpublished",
+          "action": "unpublish",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "onlyFrom: 'published'"
+        },
+        {
+          "from": "draft",
+          "to": "archived",
+          "action": "archive",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "return $this->transition($post, 'archived', 'archived')"
+        },
+        {
+          "from": "scheduled",
+          "to": "archived",
+          "action": "archive",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "return $this->transition($post, 'archived', 'archived')"
+        },
+        {
+          "from": "published",
+          "to": "archived",
+          "action": "archive",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "return $this->transition($post, 'archived', 'archived')"
+        },
+        {
+          "from": "unpublished",
+          "to": "archived",
+          "action": "archive",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "return $this->transition($post, 'archived', 'archived')"
+        },
+        {
+          "from": "scheduled",
+          "to": "draft",
+          "action": "restoreDraft",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function restoreDraft("
+        },
+        {
+          "from": "unpublished",
+          "to": "draft",
+          "action": "restoreDraft",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function restoreDraft("
+        },
+        {
+          "from": "archived",
+          "to": "draft",
+          "action": "restoreDraft",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function restoreDraft("
+        },
+        {
+          "from": "draft",
+          "to": "removed",
+          "action": "delete",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function delete("
+        },
+        {
+          "from": "unpublished",
+          "to": "removed",
+          "action": "delete",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function delete("
+        },
+        {
+          "from": "archived",
+          "to": "removed",
+          "action": "delete",
+          "source": "app/Domain/Content/BlogEditorialService.php",
+          "anchor": "public function delete("
+        }
+      ]
+    },
+    {
+      "id": "exhibition",
+      "title": "Exhibition",
+      "states": [
+        "draft",
+        "published",
+        "archived",
+        "removed"
+      ],
+      "transitions": [
+        {
+          "from": "[*]",
+          "to": "draft",
+          "action": "createDraft",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "public function createDraft("
+        },
+        {
+          "from": "draft",
+          "to": "published",
+          "action": "publish",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "return $this->transition($entry, 'published', ['draft', 'archived']"
+        },
+        {
+          "from": "archived",
+          "to": "published",
+          "action": "publish",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "return $this->transition($entry, 'published', ['draft', 'archived']"
+        },
+        {
+          "from": "published",
+          "to": "draft",
+          "action": "unpublish",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "return $this->transition($entry, 'draft', ['published']"
+        },
+        {
+          "from": "draft",
+          "to": "archived",
+          "action": "archive",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "$fresh->setAttribute('archived_from_state', $current)"
+        },
+        {
+          "from": "published",
+          "to": "archived",
+          "action": "archive",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "$fresh->setAttribute('archived_from_state', $current)"
+        },
+        {
+          "from": "archived",
+          "to": "published",
+          "action": "restore if ready",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "if ($target === 'published')"
+        },
+        {
+          "from": "archived",
+          "to": "draft",
+          "action": "restore / downgrade",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "$target = 'draft';"
+        },
+        {
+          "from": "draft",
+          "to": "removed",
+          "action": "delete",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "public function delete("
+        },
+        {
+          "from": "archived",
+          "to": "removed",
+          "action": "delete",
+          "source": "app/Domain/Content/ExhibitionEditorialService.php",
+          "anchor": "public function delete("
+        }
+      ]
+    },
+    {
+      "id": "artwork",
+      "title": "Artwork",
+      "states": [
+        "draft",
+        "published"
+      ],
+      "transitions": [
+        {
+          "from": "draft",
+          "to": "published",
+          "action": "publish",
+          "source": "app/Domain/Artwork/ArtworkPublicationService.php",
+          "anchor": "public function publish("
+        },
+        {
+          "from": "published",
+          "to": "draft",
+          "action": "unpublish",
+          "source": "app/Domain/Artwork/ArtworkPublicationService.php",
+          "anchor": "public function unpublish("
+        },
+        {
+          "from": "published",
+          "to": "draft",
+          "action": "primary media deleted",
+          "source": "app/Domain/Media/MediaAssetEditorialService.php",
+          "anchor": "if ($removedPrimary && (string) $artwork->getAttribute('state') === 'published')"
+        }
+      ]
+    },
+    {
+      "id": "site-section",
+      "title": "SiteSection",
+      "states": [
+        "hidden",
+        "published"
+      ],
+      "transitions": [
+        {
+          "from": "hidden",
+          "to": "published",
+          "action": "updatePlacement",
+          "source": "app/Domain/Content/SiteSectionEditorialService.php",
+          "anchor": "public function updatePlacement("
+        },
+        {
+          "from": "published",
+          "to": "hidden",
+          "action": "updatePlacement (not Home)",
+          "source": "app/Domain/Content/SiteSectionEditorialService.php",
+          "anchor": "Home is always published."
+        }
+      ]
+    },
+    {
+      "id": "media-asset",
+      "title": "MediaAsset",
+      "states": [
+        "available",
+        "deleted"
+      ],
+      "transitions": [
+        {
+          "from": "[*]",
+          "to": "available",
+          "action": "ingest",
+          "source": "app/Domain/Media/MediaIngestService.php",
+          "anchor": "private function storePreparedLocked("
+        },
+        {
+          "from": "available",
+          "to": "deleted",
+          "action": "logical delete",
+          "source": "app/Domain/Media/MediaAssetEditorialService.php",
+          "anchor": "$locked->setAttribute('state', 'deleted')"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+%% Curated; source anchors checked; semantic correctness requires review
+stateDiagram-v2
+    [*] --> draft: createDraft
+    draft --> published: publish
+    archived --> published: publish
+    published --> draft: unpublish
+    draft --> archived: archive
+    published --> archived: archive
+    archived --> published: restore if ready
+    archived --> draft: restore / downgrade
+    draft --> removed: delete
+    archived --> removed: delete
