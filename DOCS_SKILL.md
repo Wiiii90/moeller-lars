@@ -126,12 +126,10 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand:** `docs` war `2861c1f7ac94ca2918165b27a5548e61954b3898`, `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf` (Momentaufnahme; vor Weiterarbeit aktualisieren).
+**Branchstand 13.10.2026:** `docs` hatte vor diesem Abschnitt den HEAD `c37fbd05568184e4c63855386879fe65750ab2ca`. Public-`dev` bei `a85930b4fedbb1416463e22a4e515f751a430112` per echtem Zwei-Eltern-Merge `c37fbd05568184e4c63855386879fe65750ab2ca` übernommen (neuer Folio-Motion-Controller, Public SPA/Artworks-CSS und zugehörige JS-Testquelle). `dev` entwickelt sich parallel weiter; HEADs beim Wiedereinstieg immer frisch lesen.
 
-**Root-Regeln vereinfacht:** Die rund 6 KB umfassende `AGENTS.md`-Sektion „Responsive system“ wurde gegen die fünf [Admin Responsive-Owner](docs/ADMIN-RESPONSIVE-CONTRACT.md) abgeglichen und auf einen Einstieg verkürzt. Die zuvor nur dort festgehaltenen globalen Regeln sind ausdrücklich umgezogen: monotone Sidebar-/Burger-Zustandswechsel, kein Livewire-Resize-State, drei gleichmäßige Narrow-/zwei Minimal-Metrictracks mit festen Dividern, Analytics/Storage/Activity-Gridachsen, kanonische Stage-Höhe/-Orbit via `--admin-visual-stage-height`/`--admin-stage-orbit-size` und Legacy-Public-Breakpoints nur als historische Evidenz. Keine CSS-/Runtime-Änderung und keine Browser-Abnahme behauptet.
+**Abgeschlossen:** `followup-skill.md` (zuvor 13 KB mit historischen Side-Worker-Branches und `dev`-only-Vorgaben) in einen kleinen rückwärtskompatiblen Einstieg umgewandelt; einmalige aktuelle Anleitung in `.agents/skills/handoff/SKILL.md`. `AGENTS.md` verlinkt diesen kanonischen Owner. Erhalten: sichere portable Folgeprompts, exakte SHAs, laufende Browserabnahme, lokale Umgebungsfakten nur bei Beleg, PowerShell-Qualität und zwei selbständige Prompts auf Anfrage.
 
-**Weitere Root-Bereinigung:** Historische CI-/Worker-Branch-Anweisungen sind bereits aus `AGENTS.md` entfernt; der [Handoff Skill](.agents/skills/handoff/SKILL.md) enthält die aktuellen branchsicheren Continuation-Schritte.
+**Unmittelbar nächster Schritt:** die neue `resources/js/public-folio-motion.js`-Integration entlang des Public-SPA-Lebenszyklus quellenbasiert ergänzen, inklusive Motion-/Reduced-Motion-Guards und Unterscheidung zwischen serverseitigem HTML und persistierter Folio-Dekoration. Danach verbleibende `AGENTS.md`-Duplikate mit individuellen Vertrags-Ownern abgleichen.
 
-**Unmittelbar weiter:** `followup-skill.md` mit Handoff-Skill und dem aktuellen direct-`dev` / `docs` / `testing`-Modus abgleichen; obsolete Worker-/CI-/temporäre-Branch-Vorgaben quellenbewusst entfernen. Anschließend weitere Owner-Duplikate in `AGENTS.md` reduzieren.
-
-**Offen:** vollständiger PHP-Generator auf echtem Checkout, isolierter PostgreSQL-`pg_catalog`-Export und interaktive Public-/Admin-SPA-Browserprüfung; `testing` und CI unberührt.
+**Offene Langläufer:** vollständiger nativer PHP-Generator auf echtem Checkout, isolierter PostgreSQL-`pg_catalog`-Export sowie browserbasierte SPA-/Admin-Abnahme. Weder `testing` noch CI berühren.

@@ -486,7 +486,7 @@ Use the short, current [handoff skill](.agents/skills/handoff/SKILL.md) to produ
 
 ## Continuation handoffs
 
-When the orchestration chat itself is becoming too large, follow [`followup-skill.md`](followup-skill.md). The new chat should be able to continue from exact Git/browser/runtime state without asking the user to reconstruct it manually.
+Use the authoritative [handoff skill](.agents/skills/handoff/SKILL.md) for source-verified, branch-safe continuation prompts. The legacy [followup-skill.md](followup-skill.md) is a compatibility entrypoint pointing to the same workflow; it no longer defines temporary worker branches or a separate `dev`-only policy. For documentation sessions [DOCS_SKILL.md](DOCS_SKILL.md) is the living checkpoint.
 
 ## Completion gates
 
