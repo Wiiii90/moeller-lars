@@ -720,6 +720,23 @@ body {
     cursor: default;
 }
 
+/* A tiny gallery-only light response; the unmodified Artwork Viewer, Hero
+   and original assets retain their source-faithful presentation. */
+@media (hover: hover) and (pointer: fine) {
+    .artwork-list .artwork-card__image {
+        transition: filter .28s ease-out;
+    }
+    .artwork-list .artwork-card__link:hover .artwork-card__image,
+    .artwork-list .artwork-card__link:focus-visible .artwork-card__image {
+        filter: contrast(1.018) saturate(1.028) brightness(1.006);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .artwork-list .artwork-card__image {
+        transition: none;
+    }
+}
+
 /* Hidden Hero members are rendered once and remain out of layout and the
  * accessibility tree until the active member changes. */
 [data-home-hero-slide][hidden] {
