@@ -270,6 +270,12 @@
     --admin-row-actions-columns: minmax(7rem, max-content) minmax(7.25rem, max-content);
 }
 
+/* The Blog table Actions track and seven-action rail share one width owner.
+ * At up to 80rem workspace width, the full text rail must remain reachable. */
+.journal-table--blog {
+    --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
+}
+
 .admin-row-actions--journal-blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
     --admin-row-actions-columns:
@@ -304,9 +310,13 @@
 
 /* Stable action buttons share the base style; semantic slots set axes. */
 
-/* Seven-action Blog rows have a long "Cancel schedule" slot. Its label rail
- * yields before it competes with the separate Post data columns. */
-@container admin-table (max-width: 88rem) {
+/* Keep labeled Blog actions in the 80rem-wide workspace. Only yield to
+ * seven icon slots when the actual table falls below its usable width. */
+@container admin-table (max-width: 78rem) {
+    .journal-table--blog {
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
+    }
+
     .admin-row-actions--journal-blog {
         --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);
