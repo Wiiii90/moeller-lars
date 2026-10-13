@@ -67,25 +67,19 @@ Dieser Mechanismus ist aus [`routes/web.php`](../../routes/web.php), [`layouts/a
 
 ## Neuer DOM-Knoten, übertragene Folio-Geometrie und WAAPI-Animation
 
-Der Folio-Lebenszyklus in [`public-folio-motion.js`](../../resources/js/public-folio-motion.js) beim Quellstand `8fb60db6a1a427ce6f905e5d8a65454c7d39ec45` **verwendet keinen persistierten Knoten**. [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php) rendert **in jedem neuen `#content`** eine normale `.public-folio-decoration` mit zwei absoluten, nichtinteraktiven Kindknoten `__left` und `__right`. Das ursprüngliche, vollständige asymmetrische Atelier-Konturpaar existiert weiterhin ohne JavaScript über `#content::before/::after` als statischer Fallback.
+Der Folio-Lebenszyklus in [`public-folio-motion.js`](../../resources/js/public-folio-motion.js) beim Quellstand `dev` **`06ca0c00c8148787150800480d7cf1da4e7ffb81`** verwendet keinen persistierten Knoten und keinen eigenen Router. Blade rendert die zwei verbundenen, nichtinteraktiven HTML-Konturen in `.public-folio-decoration` auf jedem `#content`. Variante 1 bleibt das ursprünglich akzeptierte statische Atelier-Folio für Initialloads, fehlendes JS und reduzierte Bewegung.
 
-Die genaue Reihenfolge aus [`app.js`](../../resources/js/app.js) ist:
+Aus [`app.js`](../../resources/js/app.js) und dem Modul ergibt sich:
 
-1. Beim ersten Dokument wird `initializePage()` ausgeführt. `advancePublicFolio()` läuft **nicht** auf Initialladung.
-2. `livewire:navigate` setzt `pendingVisit=true`.
-3. Bei `livewire:navigating` erfasst `capturePublicFolio()` die **berechneten** Positionen (links/rechts `top`, `bottom`, `width`) der alten Kontur, **sofern** sie bereits `data-folio-active` besitzt; danach laufen die Page-Disposer, und `onSwap(applyPublicLayoutFromMeta)` wird registriert.
-4. Nach dem Dokument-Swap startet `livewire:navigated` die normalen Page-Instanzen für das neue `#content`. Nur bei `pendingVisit` aktiviert `advancePublicFolio()` am **neuen** DOM-Knoten die nächste der zehn kuratierten Varianten. Ihre sechs Werte beschreiben vier vertikale Randpositionen und zwei Return-Stroke-Breiten; die unmittelbar vorige Variante wird ausgeschlossen. Ein vorhandener Snapshot wird als Startgeometrie verwendet, andernfalls die gespeicherte Variante.
-5. Für beide Seiten werden die Zielwerte **zuerst als normale Style-Eigenschaften** gesetzt. Wenn `Element.animate()` verfügbar ist, interpoliert die native Web Animations API von der erfassten Startgeometrie zum Ziel über **920 ms**. Bei fehlender WAAPI oder einem Animationsfehler bleiben die Zielwerte statisch gültig. Erst danach aktiviert `data-folio-active` die neue Kontur und unterdrückt via `:has()` die statischen Pseudoelemente.
+1. Initial wird die Page normal aufgebaut, ohne Folio-Transition. Ein echter `livewire:navigate` markiert die nächste SPA-Seite.
+2. `livewire:navigating` ruft `capturePublicFolio()` auf und übernimmt bei aktiver alter Dekoration deren aktuelle berechnete `top`, `bottom` und `width`-Werte, auch bei unterbrochener WAAPI-Animation. Page-Disposer entfernen die alten Instanzen; Layout-Metadaten werden im Swap erneut angewandt.
+3. `livewire:navigated` initialisiert die neue Page und `advancePublicFolio()` wählt eine **andere** der zehn kuratierten Varianten. Die sechs Parameter beschreiben vier vertikale Eckpositionen und die Breiten der zwei horizontalen Returns.
+4. Zielgeometrie wird zuerst unmittelbar am neuen DOM-Knoten gesetzt; falls unterstützt, interpoliert die native Web Animations API die beiden Konturen **850ms** lang. Ohne WAAPI bleibt das gültige statische Ziel. Alle Returns sind **höchstens .55rem** tief und liegen vollständig außerhalb der weißen Content-Fläche.
+5. `prefers-reduced-motion: reduce` und fehlende Konturelemente verhindern die Animation. Menü-Konturen bleiben statisch. Es gibt keinen Content-Slide/Fade, keine Änderung an Content-/Artwork-Geometrie und kein eigenes History-/Fetch-/Polling-System.
 
-### Folio motion and local review mode
+**Aktuelle Rücknahme:** Die zwischenzeitlich eingeführten lokalen `?folio-motion=debug/off`-Parameter, `sessionStorage`-Debugflags, auffälligen Zusatzkonturen und Content-Settling-Effekte wurden auf `dev` entfernt. Sie sind **keine** gültigen Konfigurationen oder Test-/Designverträge mehr.
 
-`public-folio-motion.js` erlaubt ausschließlich auf Loopback-Hosts (`localhost`, `127.0.0.1`, `::1`) den expliziten Diagnoseparameter `?folio-motion=debug`. Er setzt einen tab-lokalen `sessionStorage`-Wert, der bei internen SPA-Wechseln erhalten bleibt; `?folio-motion=off` beendet ihn. Im Modus `debug` verwendet das Modul eine deterministische Variantensequenz, markiert den Body mit `data-public-folio-debug` und interpoliert die sichtbaren Konturen **1800ms** statt normal **920ms**. Nur diese lokale Opt-in-Vorschau übersteuert reduzierte Bewegung. Der Debugmodus ist kein zweiter Router oder Persistenzpfad und auf fremden Hosts nicht aktivierbar.
-
-**Beleggrenze:** JS-Modul und zugehörige Testquellen beim `dev`-Stand `8fb60db6` statisch geprüft; kein Browser- oder Testlauf in diesem Dokumentationsdurchgang. Der überzeichnete Debugmodus ist keine Produktionsabnahme.
-
-`prefers-reduced-motion: reduce` und fehlende Konturelemente verhindern die dekorative Aktivierung; es gibt keine App-Polling-Timer oder eigenen Frame-Loops. Die Animation ändert nicht die Content-Breite, Navigation oder Speicherung. Der Code ist **keine** `@persist`-DOM-Übernahme und **keine** CSS-`@property`-Transition auf dem alten Element.
-
-Die [JS-Testquelle](../../tests/js/public-folio-motion.test.mjs) deckt Variantenlogik und Geometrie in isolierten Fällen ab; sie wurde hier **gelesen, nicht ausgeführt**. Offen bleiben der reale Livewire-Swap, WAAPI-Interpolation bei schnellen Navigationen, `:has()`-Fallback, History/Back-Forward, Reduced-Motion und die ausdrückliche Browser-Abnahme der experimentellen Varianten. Der [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md) beschreibt die beabsichtigte Folio-Darstellung, nicht ihren bereits nachgewiesenen Abnahmestatus.
+**Verifikation:** Aktuelle Source-Dateien, Public-Vertrag und vorhandene Testdateien betrachtet; kein Test oder Browserlauf in diesem Dokumentationsdurchgang. Das reale Zusammenspiel bei schnellem SPA-Wechsel, Back/Forward, WAAPI-Fallback, Reduced Motion und die visuelle Produktabnahme bleiben offen.
 
 ## Fachliche und technische Grenzen
 

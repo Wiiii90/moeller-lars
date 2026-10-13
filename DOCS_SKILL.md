@@ -29,7 +29,7 @@
 | Zuletzt geprüfte Referenz (13.10.2026) | SHA |
 | --- | --- |
 | `docs` unmittelbar vor diesem Merge | `45adb4b164f403484deb9499ee59a48e05811966` |
-| `dev`, für diesen Merge geprüfter Stand | `8fb60db6a1a427ce6f905e5d8a65454c7d39ec45` |
+| `dev`, für diesen Merge geprüfter Stand | `06ca0c00c8148787150800480d7cf1da4e7ffb81` |
 | Synchronisierung | echter Zwei-Eltern-Merge; neue `docs`-SHA danach frisch abrufen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
@@ -126,11 +126,11 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branch-Checkpoint (13.10.2026):** Den `dev`-Stand `8fb60db6a1a427ce6f905e5d8a65454c7d39ec45` (sechs Commits seit dem letzten übernommenen Stand `2ced9565`) nach Pfadprüfung als echten Zwei-Eltern-Merge in `docs` übernommen. `docs`-HEAD nach dem Merge frisch prüfen; künftig eingehende `dev`-Commits nicht blind überschreiben. `testing`, `main` und CI unberührt.
+**Branch-Checkpoint (13.10.2026):** Den `dev`-Stand `06ca0c00c8148787150800480d7cf1da4e7ffb81` nach Pfadprüfung über echte Zwei-Eltern-Merges in `docs` übernommen. `docs`-HEAD nach dem Merge frisch prüfen; künftig eingehende `dev`-Commits nicht blind überschreiben. `testing`, `main` und CI unberührt.
 
 **Journal:** Kanonischer `ADMIN-TABLE-CONTRACT.md` an Quellstand angepasst. Blog Status faltet bei **74rem** tatsächlicher Tabellenbreite in Date; die sieben Actions behalten Labels bis **72rem**, danach gemeinsamer icon-only Rail- und Spaltenwechsel. Exhibition Status/Date faltet bei **64rem**; Date-Range und `Vernissage: dd.mm.yyyy, HH:mm` bleiben getrennte einzelne Zeilen, die Vernissage kann ellipsieren. Blog-Excerpt verwendet vorhandenen Text oder einen auf **140 Zeichen** begrenzten, normalisierten Body-Preview. Gemeinsamer `admin-table__identity--ellipsis-meta`-Modifier für einzeilige Überschrift und zweite Zeile. Die obsolete 78rem-/Zwei-Zeilen-Vernissage-Dokumentation und doppelte responsive Journal-Breakpoints entfernt. Umsetzung in PHP/Blade/CSS quellengeprüft, **kein neuer Browserlauf**.
 
-**Public-SPA:** Loopback-only `?folio-motion=debug`, persistiert pro Tab, mit überzeichneter **1800ms**-Diagnoseanimation und `?folio-motion=off` statisch verifiziert und im Public-Vertrag plus `public-spa-lifecycle.md` dokumentiert. Normaler Reduced-Motion-Vertrag bleibt bestehen. Aktualisierte JS-/Testquellen **nur gelesen**, nicht ausgeführt; keine Produktabnahme aus dem Debugmodus abgeleitet.
+**Public-SPA:** Der aktuelle `dev`-Stand entfernt den lokalen Debugmodus samt URL-Toggles, Debug-Session-Flags und Content-Settling. Zehn Varianten ändern nur noch dezente Außenkonturen (**850ms**, Returns höchstens **.55rem**), ohne Content-Geometrie zu bewegen; Reduced Motion bleibt verbindlich. Public-Vertrag und `public-spa-lifecycle.md` vollständig an die Rücknahme angepasst. JS-/CSS-/Testquellen nur gelesen, **nicht ausgeführt**; Browser-/Produktabnahme offen.
 
 **Duplikatabbau:** Vier am Ende von `ui-skills.md` fehlplatzierte Metrics-/Stage-Bullets gelöscht, nachdem die Regeln bereits in `ADMIN-RESPONSIVE-METRICS.md` und `ADMIN-RESPONSIVE-STAGES.md` verortet wurden. Keine Anwendungscode-Korrektur auf `docs`.
 

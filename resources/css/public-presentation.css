@@ -40,7 +40,6 @@
     --public-artwork-line: #c7c0b5;
     --public-artwork-line-hover: #81786f;
     --public-divider-width: 1px;
-    --public-header-separator: rgba(255, 255, 255, .72);
 }
 
 html {
@@ -71,19 +70,18 @@ body {
     padding: 0;
     flex-direction: column;
     background: var(--public-page);
-    /* One engraved horizontal line retains the exact title/content boundary.
-       Its middle is darker, breaking the previous continuous white stripe;
-       the artist's configured page background remains untouched. */
+    /* A light, asymmetrically modulated WHITE separator. No grey middle
+       pigment, hard midpoint, or new band on the artist's background. */
     border-bottom: 2px solid transparent;
     border-image: linear-gradient(
         90deg,
-        rgba(255, 255, 255, .48) 0%,
-        var(--public-header-separator) 16%,
-        rgba(239, 242, 239, .84) 32%,
-        rgba(156, 167, 160, .74) 53%,
-        rgba(236, 240, 236, .83) 73%,
-        var(--public-header-separator) 88%,
-        rgba(255, 255, 255, .42) 100%
+        rgba(255, 255, 255, .55) 0%,
+        rgba(255, 255, 255, .79) 13%,
+        rgba(255, 255, 255, .92) 36%,
+        rgba(255, 255, 255, .64) 57%,
+        rgba(255, 255, 255, .88) 76%,
+        rgba(255, 255, 255, .73) 91%,
+        rgba(255, 255, 255, .49) 100%
     ) 1;
 }
 
@@ -566,15 +564,6 @@ body {
 #content:has(> .public-folio-decoration[data-folio-active])::before,
 #content:has(> .public-folio-decoration[data-folio-active])::after {
     visibility: hidden;
-}
-
-/* Intentionally exaggerated and more legible in loopback-only opt-in debug
-   mode; never exposed by default or on production domains. */
-.public-site[data-public-folio-debug] .public-folio-decoration[data-folio-active] .public-folio-decoration__left {
-    border-color: rgba(54, 71, 63, .8);
-}
-.public-site[data-public-folio-debug] .public-folio-decoration[data-folio-active] .public-folio-decoration__right {
-    border-color: rgba(54, 71, 63, .8);
 }
 
 /* Only genuinely empty section pages without a configured heading fill the
@@ -1760,28 +1749,8 @@ body {
 
 }
 
-/* A real Livewire navigation completes before this animation starts.
-   The new page settles as one subtle visual unit, without animating the
-   persisted drawing, loading artwork, shell width, or the entire header. */
-@keyframes public-page-settle {
-    from { opacity: .83; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes public-page-settle-debug {
-    from { opacity: .52; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-.public-site[data-public-folio-debug][data-public-spa-visit] #content > :not(.public-folio-decoration) {
-    animation: public-page-settle-debug 850ms ease-out both;
-}
-.public-site[data-public-spa-visit] #content > :not(.public-folio-decoration) {
-    animation: public-page-settle 300ms ease-out both;
-}
-
+/* Artwork and page content do not shift when decorative paper edges move. */
 @media (prefers-reduced-motion: reduce) {
-    .public-site[data-public-spa-visit]:not([data-public-folio-debug]) #content > :not(.public-folio-decoration) {
-        animation: none !important;
-    }
     .site-header nav,
     .site-navigation__control > .public-icon {
         transition: none !important;
