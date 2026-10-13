@@ -64,9 +64,9 @@
 
 | Referenz | Stand bei diesem Update (2026-10-13) |
 | --- | --- |
-| `docs` | `13edcfb45e829e7ecb6ffbcb9489fae1b241f813` (HEAD vor dem Dokumentations-Commit dieses Updates) |
-| `dev` | `a53d59030a03e198fbba3c631d560bdffdf5e6e3` |
-| `docs` relativ zu `dev` | **31 voraus, 0 zurück** vor diesem Commit (inkl. des neuen Merge-Commits) |
+| `docs` | `c34407e3bfff0de56596457c965918c4a01d294c` (HEAD vor diesem Handoff-Commit) |
+| `dev` | `7294d19ae48a58624fc5f0883e63aee207198edb` |
+| `docs` relativ zu `dev` | **33 voraus, 0 zurück** vor diesem Commit (mit den letzten beiden `dev`-Merges) |
 | `testing` | Eigenständiger paralleler Branch, nicht verändert |
 
 **Vor Weiterarbeit immer aktuelle Remote-HEADs nachlesen**; diese Werte sind
@@ -253,6 +253,12 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Die 15 getrackten Publication-Tabellen und 26 Eloquent-Modeldateien bleiben unverändert; es ist ein neues Feld, keine neue Model-Relation. Für Browser-/Slideshow-Abläufe folgt separate Quellenanalyse.
 - Restore/Revert/Reset-Katalog nach dem Merge erneut gegen seine **36 Quellanker** überprüft; alle vorhanden, alle drei gespeicherten Mermaid-Dateien mit dem JSON-Material identisch.
 - **Nächster Schritt:** PHP-Generatoren auf echtem Gesamtcheckout verifizieren; Source-Extractor-/Coverage-Defizite beheben und generierte Relation-/Klassendiagramme aktualisieren. Kein `testing`- oder CI-Zugriff.
+
+## 6h. Weiterer `dev`-Merge (2026-10-13)
+
+- `dev` bei `7294d19ae48a58624fc5f0883e63aee207198edb` synchronisiert mit echtem Zwei-Eltern-Merge `c34407e3bfff0de56596457c965918c4a01d294c`.
+- Änderungen: `JournalMediaRenderer`, Journal-Gallery-Blade und Blog-Index/Detail sowie `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`; kein Code in den neuen Architecture-Scripts verändert. Keine neuen SQL-Migrationen in diesem Merge.
+- **Nächster Schritt bleibt:** vollständiger PHP-Generatorlauf und Quellen-Coverage, dann Datenbankschema aus Wegwerf-PostgreSQL.
 
 ## 7. Arbeits- und Updateprotokoll
 
