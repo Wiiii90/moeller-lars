@@ -4,6 +4,8 @@ This contract preserves the corresponding task-specific responsive requirements 
 
 ## Visual Stages
 
+**Stage geometry is centrally owned by [stage.css](../resources/css/admin/stage.css):** the stage height uses `--admin-visual-stage-height` and common orbit graphics use `--admin-stage-orbit-size`. Both remain canonical across responsive states; do not redefine those tokens in a breakpoint or add page-local alternative stage-height/orbit-size tokens without an explicit accepted contract change. Change component visibility/composition, not the central stage height. This does not authorize generic narrow vertical stacking.
+
 Shared desktop stage geometry does not imply shared narrow composition.
 
 - Never automatically stack the existing desktop panes vertically as the generic responsive solution.

@@ -4,6 +4,8 @@ This contract preserves the corresponding task-specific responsive requirements 
 
 ## Metrics
 
+**Central geometry:** `.admin-metrics` owns Narrow as **three equal columns**, with dividers at 1/3 and 2/3, and Minimal as **two equal columns** with one centered divider (true 50/50). Feature code chooses semantic visibility/priority, not its own responsive spans or duplicate metric divider borders; no one-column metric lists. Analytics, Storage and Activity explicitly use full-cell columns 1/2/3 in Narrow and columns 1/2 in Minimal, rather than preserving stale spans that yield asymmetric geometry. These tracks do not force visual-stage breakpoints.
+
 - Wide keeps the accepted single-row strip where it fits cleanly.
 - Compact reduces non-essential detail before changing the grid.
 - Six-metric strips normally move to a three-column intermediate grid before the smallest retained two-column grid. Track count and semantic visibility switch atomically; six visible metrics in a three-column 3+3 intermediate state is invalid.

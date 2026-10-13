@@ -126,10 +126,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand 13.10.2026:** `docs` auf `1acbcda364c730281c393b42e1352217491917eb` vor diesem Commit, `dev` bei `222bd0534bc7daa93acf6afad795e827a81d18bf` (vor weiterer Arbeit frisch prüfen).
+**Stand:** `docs` war `2861c1f7ac94ca2918165b27a5548e61954b3898`, `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf` (Momentaufnahme; vor Weiterarbeit aktualisieren).
 
-**Aktuelle Workflowbereinigung:** `AGENTS.md` enthält nicht mehr die historischen, gegen die aktuelle Arbeit verstoßenden optionalen CI-Run-/Log-Anweisungen und Worker-Branch-Handoffs. Das gegenwärtige **CI-Verbot** steht explizit im Root-Vertrag. Aus früheren Orchestrator-/Worker-Rollen wurde ein kurzer aktueller Kollaborationsvertrag. Neue [Handoff-Skill](.agents/skills/handoff/SKILL.md) für branchsichere konkrete Prompt-/Handoff-Übergaben; `followup-skill.md` verbleibt nur als ältere lange Referenz bis zur Quellenprüfung. Historische Ausführungsanweisungen sind weiter in Git lesbar.
+**Root-Regeln vereinfacht:** Die rund 6 KB umfassende `AGENTS.md`-Sektion „Responsive system“ wurde gegen die fünf [Admin Responsive-Owner](docs/ADMIN-RESPONSIVE-CONTRACT.md) abgeglichen und auf einen Einstieg verkürzt. Die zuvor nur dort festgehaltenen globalen Regeln sind ausdrücklich umgezogen: monotone Sidebar-/Burger-Zustandswechsel, kein Livewire-Resize-State, drei gleichmäßige Narrow-/zwei Minimal-Metrictracks mit festen Dividern, Analytics/Storage/Activity-Gridachsen, kanonische Stage-Höhe/-Orbit via `--admin-visual-stage-height`/`--admin-stage-orbit-size` und Legacy-Public-Breakpoints nur als historische Evidenz. Keine CSS-/Runtime-Änderung und keine Browser-Abnahme behauptet.
 
-**Weitere Dokumentationsstruktur:** Drei UI-Skills (Documentation, Admin, Public), fünf Responsive-Teilowner, zentrale Table/Dialog/Control-Verträge. Gallery-/Storage-Medienlebenszyklus aus Responsive-Toolbar in `docs/MEDIA.md`, Sidebar- und Notification-Details zurück zu ihren Ownern.
+**Weitere Root-Bereinigung:** Historische CI-/Worker-Branch-Anweisungen sind bereits aus `AGENTS.md` entfernt; der [Handoff Skill](.agents/skills/handoff/SKILL.md) enthält die aktuellen branchsicheren Continuation-Schritte.
 
-**Nächster Schritt:** Verbliebene root-`AGENTS.md`-Duplizierungen in §Responsive System gegen [ADMIN-RESPONSIVE-CONTRACT.md](docs/ADMIN-RESPONSIVE-CONTRACT.md) belegen, einmalig erforderliche Stage-Tokens und Shell-Monotonie zum Owner übertragen, dann den historischen Root-Responsive-Block auf Verweise reduzieren. Anschließend `followup-skill.md` auf nur gültige Regeln kürzen. Kein Runtime-Code, kein CI/`testing`.
+**Unmittelbar weiter:** `followup-skill.md` mit Handoff-Skill und dem aktuellen direct-`dev` / `docs` / `testing`-Modus abgleichen; obsolete Worker-/CI-/temporäre-Branch-Vorgaben quellenbewusst entfernen. Anschließend weitere Owner-Duplikate in `AGENTS.md` reduzieren.
+
+**Offen:** vollständiger PHP-Generator auf echtem Checkout, isolierter PostgreSQL-`pg_catalog`-Export und interaktive Public-/Admin-SPA-Browserprüfung; `testing` und CI unberührt.

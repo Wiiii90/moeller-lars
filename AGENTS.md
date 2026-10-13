@@ -438,37 +438,9 @@ The admin is still under browser acceptance. Existing work is a starting point, 
 
 ## Responsive system
 
-Responsive behavior is content-driven, not device-name driven. Issue #15 owns the current public/admin responsive contract.
+Current admin Wide/Compact/Narrow/Minimal priorities and monotone responsiveness are owned by the [Admin Responsive Contract](docs/ADMIN-RESPONSIVE-CONTRACT.md), split into Shell, Metrics, Toolbars, Tables/Selection and Visual Stages. The shared implementation authorities remain the Admin Control, Table and Dialog contracts, not page-local CSS.
 
-- preserve accepted wide/desktop presentation unless current browser feedback changes it;
-- use semantic width states (Wide, Compact, Narrow, Minimal) as behavior states, not fixed device classes;
-- admin shell-level changes may follow viewport width, but task components should prefer their actually available container/workspace width;
-- shell changes must be monotonic: collapsing the desktop sidebar into the burger/mobile shell must never promote a task component back into a wider responsive state merely because the content area became wider;
-- do not track browser width through Livewire/Laravel or persist resize state;
-- admin toolbars are exactly one row at every supported responsive state, with canonical order Query/Filter -> Task actions -> Selection; two-row toolbars are forbidden;
-- width pressure is solved within that one row by redistributing width, collapsing lower-priority filters behind a local Filters overlay when necessary, and switching actions from complete labels to icon-only/overflow states; never show clipped pseudo-labels such as `O…` or `P…`;
-- any filter overlay state is presentation-only client state and must not introduce resize-driven Livewire traffic;
-- Selection remains the terminal table utility and its selected-count, select-all and row checkboxes stay on one rail while the surface remains tabular;
-- Metric separators are the preferred soft alignment grid for toolbar regions and major table columns; align to the page's six-cell metric boundaries when semantics and fit allow;
-- Dashboard toolbar keeps right-side controls intrinsically compact; Search absorbs the remaining width and may shrink only to one metric cell, so right-side controls consume Search width only when required;
-- filter-reset UI is named Clear, not Reset, and uses the shared Clear action/icon; Selection triggers use the shared multi-selection icon;
-- ordinary admin tables must fit without horizontal scrolling or reserved horizontal-scrollbar space; reduce supportive/optional columns and compact actions instead;
-- shared Position/Drag rails and hierarchy ordering cells must never clip their square position badge or drag control; Pages/Custom Page/Journal consume that shared geometry rather than page-local offset hacks;
-- Pages, Custom Page and Journal toolbars remain one row with elastic Search and compact right-side controls; Gallery follows the same principle in its custom toolbar; Analytics, Storage and Activity also remain one row, with Storage/Activity preserving all four filters and compacting Clear/View/Selection before any wrap;
-- burger/sidebar collapse is monotonic across Dashboard, General, Pages, Gallery, Custom Page, Journal, Analytics, Storage and Activity; freed workspace may not reintroduce wider metrics, hidden stage panes, table columns, labels or denser grids;
-- metrics reduce deliberately by feature semantics; Dashboard, General, Pages/Gallery/Custom Page/Journal and Analytics/Storage/Activity use 6 / 6 / 3 / 2 with their feature-specific priorities recorded in ui-skills.md; every two-metric Minimal strip is exactly 50/50 and no metric strip becomes a one-column list;
-- responsive metric geometry is centralized in `.admin-metrics`: Narrow = three equal tracks with container-owned dividers at 1/3 and 2/3; Minimal = two equal tracks with one divider at 1/2. Feature rules may only choose visibility/priority and must not assign responsive metric spans or their own vertical dividers;
-- Analytics/Storage/Activity Narrow metrics explicitly own columns 1/2/3 with full-cell stretch and both dividers; Minimal explicitly owns columns 1/2 with one centered divider, so source order or prior grid spans cannot produce 1/3–2/3 geometry;
-- shared Visual Stage desktop geometry does not imply generic mobile stacking. Analytics/Storage/Activity keep their desktop multi-cell stage axes through Narrow and collapse only at Minimal: Analytics -> full-width Map, Storage -> full-width Upload + compact capacity/actions, Activity -> full-width Next Publication with Review/Reset/Commit preserved; the shared fixed stage height remains unchanged across these transitions;
-- General removes Live Preview at Narrow/Minimal and expands Appearance to the full stage; burger/sidebar collapse must not reintroduce the preview; Site icon keeps a stable reserved field footprint so selected media never shifts subsequent controls;
-- shared Visual Stage height is fixed across responsive widths via the single `--admin-visual-stage-height` token; do not redefine that token in breakpoints or add page-local responsive stage-height tokens unless the product contract is explicitly changed;
-- shared stage orbit size is canonical via `--admin-stage-orbit-size`; paired stage visuals must consume it directly and must not introduce page-local responsive orbit-size overrides;
-- Dashboard specifically keeps all three stage panes (Storage | Activity | Analytics) visible through Wide, Compact and Narrow; only Minimal may use the local selector and show one stage pane at a time; burger/sidebar collapse alone is not a Dashboard stage breakpoint;
-- Dashboard stage captions/facts remain one-line and visible through Narrow, and its visual row must scale smoothly without footer-driven height jumps;
-- Dashboard feed priority is monotonic: action labels yield before Title is damaged, Sender yields next, then Type + Date + Time fold together into complete Title metadata; burger/sidebar collapse may add breathing room but never unfold a state already reached;
-- responsive action density may progress from label+icon to icon-only to essential icons plus an overflow menu, while preserving accessible labels and semantic order;
-- legacy public breakpoint values are historical evidence only, not target layout authorities;
-- browser review must sweep continuously through transition widths, including sidebar-expanded/constrained desktop states, to catch broken intermediate compositions.
+The accepted Wide composition is retained until real content pressure requires a named transition. A Sidebar/Burger collapse must not re-expand already compacted task controls, metrics, table columns or stages. Presentation-only responsive state remains CSS/Alpine, never a new persisted Livewire resize model or polling system. Browser acceptance requires continuous resizing through intermediate widths, not a code review alone. Historical public legacy breakpoints are not current target values.
 
 ## Central technology rules
 
