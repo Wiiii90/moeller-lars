@@ -20,11 +20,15 @@ it('adds publication state to the same Livewire response only after a publicatio
     expect($unchanged->headers->has(AttachPublicationState::HEADER))->toBeFalse();
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
-        'legal_disclaimer' => 'Response state '.fake()->uuid(),
+        'legal_disclaimer' => 'Pending publication response update',
     ]);
 
     expect(app(AdminMutationSnapshotBuffer::class)->publicationStateMayHaveChanged())->toBeTrue()
         ->and(app(PublicationService::class)->hasPendingChanges())->toBeTrue();
+
+    $ordinaryRequest = Request::create('/admin/pages', 'GET');
+    $ordinaryResponse = $middleware->handle($ordinaryRequest, static fn () => response('ok'));
+    expect($ordinaryResponse->headers->has(AttachPublicationState::HEADER))->toBeFalse();
 
     $changed = $middleware->handle($request, static fn () => response('ok'));
     expect($changed->headers->get(AttachPublicationState::HEADER))->toBe('1');
@@ -32,5 +36,14 @@ it('adds publication state to the same Livewire response only after a publicatio
     app(PublicationService::class)->commit($actor, 'Response state test');
 
     $committed = $middleware->handle($request, static fn () => response('ok'));
-    expect($committed->headers->get(AttachPublicationState::HEADER))->toBe('0');
+    expect($committed->headers->get(AttachPublicationState::HEADER))->toBe('0')
+        ->and(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
+
+    // An unchanged editorial write cannot return the UI to pending state.
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'legal_disclaimer' => 'Pending publication response update',
+    ]);
+    expect($middleware->handle($request, static fn () => response('ok'))
+        ->headers->get(AttachPublicationState::HEADER))->not->toBe('1')
+        ->and(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
 });
