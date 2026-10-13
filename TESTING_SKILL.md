@@ -57,6 +57,8 @@ Current test file inventory after this cleanup: **114 PHP `*Test.php` files** (7
 
 22. Public/Admin heading audit: removed assertions of literal `public-page-heading--{alignment}` and `custom-page__divider--{variant}` CSS classes from `SitePageHeadingAutosaveTest` and `SitePageHeadingTest`. Preserved Livewire autosave, audit/notification/no-op/reopen, content-publication visibility, inherited/overridden display and persisted heading validation. This was identified during a keyword-based scan of **all 71 Feature PHP tests** (not a full behavioral audit). **Not run.**
 
+23. Pure Unit review: retained dimensional round trips, artwork selection ordering, address normalization/eligibility, escaping and HTML safety, retirement-bound historical block canonicalization, mosaic item-preservation and copyright-inheritance tests because these have actual observable/domain consequences. Replaced the obsolete `map_shape` wide/square equality test (both inputs were intentionally ignored in production) with real HTTPS OpenStreetMap embed marker and external location-link coordinate checks, retaining missing-location exclusion. Reviewed all ten `tests/Unit` cases. **Not run.**
+
 ## Current blocking risks and evidence
 
 **All tests and test layers remain NOT RUN under this refactor. CI not triggered.** Gallery and Storage changes documented above have only been matched to source. No full PHP syntax/Pest discovery, Postgres Unit/Integration/Feature/Migration, Node, Vite build or Chromium test suite has run. Static reading and GitHub commits do not establish green status. A safe verified disposable environment is a prerequisite before any DB tests; preserve the current CI-only safety guard.
