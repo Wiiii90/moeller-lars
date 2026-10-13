@@ -92,6 +92,26 @@ presentation or an eligible published Custom Page. Home and Custom media
 references (including List media and child Rich Text) use the canonical
 MediaAsset reference/publication contracts.
 
+## Gallery delivery and loading
+
+Gallery index markup keeps its complete canonical Artwork sequence (including
+viewer order), but only its first image has `loading=eager` and
+`fetchpriority=high`. Every following image uses the browser's native
+viewport-buffered lazy loading, rather than competing at high priority for
+the initial network connection. This is a targeted initial-display improvement,
+not server cursor pagination or incremental HTML rendering. A future
+unbounded-inventory design must consider cursor batches, prefetch buffers,
+SEO/indexability, Artwork Viewer ordering and SPA back/forward restoration
+together; it must not silently truncate the canonical viewer's sequence.
+
+Public thumbnail URLs are generated MediaVariant resources served through
+`EnsureMediaVariantFile` and `PublicMediaController`; deleted-but-rebuildable
+variants can be regenerated synchronously during the first request.
+A slow image therefore cannot be diagnosed from lazy-loading attributes
+alone. Confirm response timing / variant existence and sendfile delivery in
+the running preview before changing media correctness, publication access,
+regeneration, headers or transport.
+
 ## Gallery and Artwork ordering
 
 Gallery presentation uses persisted Artwork `position` as authoritative order.
