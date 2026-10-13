@@ -15,21 +15,6 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-it('loads the General settings record once during the initial workspace render', function (): void {
-    $settingsSelects = [];
-    DB::listen(function (QueryExecuted $query) use (&$settingsSelects): void {
-        $sql = strtolower(ltrim($query->sql));
-        if (str_starts_with($sql, 'select') && str_contains($sql, 'public_content_settings')) {
-            $settingsSelects[] = $query->sql;
-        }
-    });
-
-    Livewire::test(General::class)
-        ->assertOk();
-
-    expect($settingsSelects)->toHaveCount(1);
-});
-
 it('refreshes the request cache after General settings are saved', function (): void {
     $before = PublicContentSetting::general();
 

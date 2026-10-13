@@ -20,7 +20,7 @@ afterEach(function (): void {
     CarbonImmutable::setTestNow();
 });
 
-require_once __DIR__.'/HomeHeroFixtures.php';
+require_once __DIR__.'/../../Integration/Content/HomeHeroFixtures.php';
 
 it('maps legacy fixed Hero configuration to a one-member Manual ordered group', function (): void {
     $artwork = heroDomainArtwork(heroDomainCategory(), 'Fixed');

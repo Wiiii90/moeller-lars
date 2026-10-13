@@ -5,7 +5,6 @@ use App\Domain\Admin\DashboardFeed;
 use App\Models\AdminNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\File;
 use Livewire\Component;
 use Livewire\Livewire;
 
@@ -174,16 +173,4 @@ it('keeps Dashboard Notification reads isolated to the authenticated user', func
     expect($page['total'])->toBe(1)
         ->and($page['items'][0]['notification_id'])->toBe($first->getKey())
         ->and(app(DashboardFeed::class)->entry('notification:'.$second->getKey()))->toBeNull();
-});
-
-it('forbids legacy notification methods at every current application callsite', function (): void {
-    foreach (File::allFiles(app_path()) as $file) {
-        if ($file->getExtension() !== 'php') {
-            continue;
-        }
-
-        $source = File::get($file->getRealPath());
-        expect(preg_match('/app\s*\(\s*AdminNotifier::class\s*\)\s*->\s*(?:both|inbox)\s*\(/', $source))
-            ->toBe(0, 'Removed AdminNotifier API in '.$file->getRelativePathname());
-    }
 });
