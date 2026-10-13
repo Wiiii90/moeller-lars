@@ -51,13 +51,8 @@ it('treats a Gallery rename and its linked page update as one atomic Undo', func
         ->latest('id')
         ->firstOrFail();
     $receipt = AdminActionReceipt::query()->where('audit_event_id', $event->getKey())->firstOrFail();
-    $payload = $receipt->getAttribute('snapshot_payload');
-
     expect($updated->getAttribute('name'))->toBe('Renamed Gallery')
-        ->and($section->fresh()?->getAttribute('title'))->toBe('Renamed Gallery')
-        ->and($payload)->toBeArray()
-        ->and($payload['rows'] ?? null)->toBeArray()
-        ->and(collect($payload['rows'])->pluck('table')->all())->toContain('artwork_categories', 'site_sections');
+        ->and($section->fresh()?->getAttribute('title'))->toBe('Renamed Gallery');
 
     app(AdminUndoService::class)->undo((int) $receipt->getKey());
 

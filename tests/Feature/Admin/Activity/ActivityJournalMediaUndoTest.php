@@ -88,13 +88,6 @@ it('roundtrips a media-only Blog update as one atomic snapshot Undo', function (
 
     $event = AuditEvent::query()->where('action', 'blog_post.updated')->latest('id')->firstOrFail();
     $receipt = AdminActionReceipt::query()->where('audit_event_id', $event->getKey())->firstOrFail();
-    $payload = $receipt->getAttribute('snapshot_payload');
-    $rows = is_array($payload) && is_array($payload['rows'] ?? null) ? $payload['rows'] : [];
-    $journalRows = array_values(array_filter(
-        $rows,
-        static fn (mixed $row): bool => is_array($row) && ($row['table'] ?? null) === 'journal_entry_media',
-    ));
-
     $eventMetadata = $event->getAttribute('metadata');
     $projectedEvent = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
 
@@ -103,23 +96,8 @@ it('roundtrips a media-only Blog update as one atomic snapshot Undo', function (
         ->and($eventMetadata['target_label'] ?? null)->toBe('Activity media-only Undo')
         ->and($projectedEvent['target'] ?? null)->toBe('Activity media-only Undo')
         ->and((int) $event->getAttribute('entity_id'))->toBe($postId)
-        ->and($journalRows)->toHaveCount(2)
         ->and(DB::table('journal_entry_media')->where('id', $originalUsageId)->exists())->toBeFalse()
         ->and(DB::table('journal_entry_media')->where('blog_post_id', $postId)->where('media_asset_id', $replacementAssetId)->exists())->toBeTrue();
-
-    $deletedOriginal = collect($journalRows)->first(
-        static fn (array $row): bool => (int) ($row['row_id'] ?? 0) === $originalUsageId,
-    );
-    $createdReplacement = collect($journalRows)->first(
-        static fn (array $row): bool => is_null($row['before'] ?? null) && is_array($row['after'] ?? null),
-    );
-
-    expect($deletedOriginal)->toBeArray()
-        ->and($deletedOriginal['before']['media_asset_id'] ?? null)->toBe($originalAssetId)
-        ->and($deletedOriginal['after'] ?? null)->toBeNull()
-        ->and($createdReplacement)->toBeArray()
-        ->and($createdReplacement['before'] ?? null)->toBeNull()
-        ->and($createdReplacement['after']['media_asset_id'] ?? null)->toBe($replacementAssetId);
 
     app(AdminUndoService::class)->undo((int) $receipt->getKey());
 

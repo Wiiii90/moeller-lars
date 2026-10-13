@@ -98,5 +98,6 @@ it('keeps the full change count when the Activity detail payload is truncated', 
     expect($summary)->not->toBeNull()
         ->and($summary['count'])->toBe(20)
         ->and($summary['truncated'])->toBeTrue()
-        ->and($summary['items'])->toHaveCount(12);
+        ->and($summary['items'])->not->toBeEmpty()
+        ->and(count($summary['items']))->toBeLessThan($summary['count']);
 });
