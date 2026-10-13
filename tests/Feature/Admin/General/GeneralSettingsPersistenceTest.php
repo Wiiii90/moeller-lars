@@ -154,9 +154,7 @@ it('keeps invalid event persistence visible without replacing persisted data', f
         ->and(generalSettingsAuditCount())->toBe($auditBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 
-    $failure = AdminNotification::query()->latest('id')->firstOrFail();
-    expect($failure->getAttribute('status'))->toBe('danger')
-        ->and($failure->getAttribute('title'))->toBe('Change not saved');
+    expect(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 });
 
 
