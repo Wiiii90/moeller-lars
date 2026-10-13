@@ -3,8 +3,8 @@
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\PublicMedia;
-use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Pages\GalleryWorkspace;
+use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;

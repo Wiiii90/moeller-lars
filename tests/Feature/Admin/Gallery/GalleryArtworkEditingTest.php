@@ -1,9 +1,9 @@
 <?php
 
 use App\Domain\Artwork\ArtworkPublicationService;
-use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
+use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
