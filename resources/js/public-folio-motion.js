@@ -1,7 +1,6 @@
-// Animate the ORIGINAL #content::before/::after contours directly.
-// No duplicated corners, overlay nodes or new lines are ever created.
-// Variant 1 is the accepted static geometry; every variant retains the
-// original lateral offsets, stroke widths, bends and paper edge colors.
+// One folio language: animate the EXISTING paper outlines and shadows.
+// No new DOM, no timers or polling; the browser's native animation timeline
+// gently cycles the original ::before and ::after on Content AND navigation.
 export const FOLIO_VARIANTS = Object.freeze([
     ['1.10rem', '4.00rem', '3.80rem', '1.15rem'],
     ['1.30rem', '3.82rem', '3.95rem', '1.28rem'],
@@ -14,14 +13,35 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['.89rem', '4.08rem', '3.88rem', '1.37rem'],
     ['1.17rem', '3.74rem', '4.02rem', '1.06rem'],
 ]);
-
-// Only the existing three paper shadows move, each by a few pixels.
-// The first (nearest) layer remains fixed; the other two breathe vertically.
-// Each entry is [middleY, rearY]. No extra shadow layers or new marks.
+export const MENU_VARIANTS = Object.freeze([
+    ['.35rem', '-.38rem', '.48rem', '-.44rem'],
+    ['.46rem', '-.47rem', '.61rem', '-.51rem'],
+    ['.26rem', '-.31rem', '.39rem', '-.35rem'],
+    ['.42rem', '-.43rem', '.56rem', '-.56rem'],
+    ['.35rem', '-.38rem', '.48rem', '-.44rem'],
+]);
 export const FOLIO_SHADOW_DEPTHS = Object.freeze([
     [7, 8], [9, 11], [6, 9], [8, 10], [5, 7],
     [10, 12], [6, 8], [9, 10], [7, 11], [5, 9],
 ]);
+const CONTENT_SEQUENCE = Object.freeze([0, 3, 8, 5, 1, 0]);
+const SHADOW_SEQUENCE = Object.freeze([0, 3, 7, 5, 1, 0]);
+let snapshot = null;
+
+function visiblePseudo(element, pseudo) {
+    if (!element) return null;
+    const style = getComputedStyle(element, pseudo);
+    return style.display === 'none' || style.content === 'none'
+        ? null : style;
+}
+
+function geometry(element) {
+    const before = visiblePseudo(element, '::before');
+    const after = visiblePseudo(element, '::after');
+    if (!before || !after) return null;
+    const values = [before.top, before.bottom, after.top, after.bottom];
+    return values.some(value => !value || value === 'auto') ? null : values;
+}
 
 function shadowFor(index) {
     const [middleY, rearY] = FOLIO_SHADOW_DEPTHS[index];
@@ -32,100 +52,84 @@ function shadowFor(index) {
     ].join(', ');
 }
 
-let variant = 0;
-let snapshot = null;
-
-export function chooseNextFolioVariant(current, random = Math.random) {
-    const from = Number.isInteger(current) && current >= 0 && current < FOLIO_VARIANTS.length
-        ? current : 0;
-    const draw = Math.max(0, Math.min(1 - Number.EPSILON, Number(random()) || 0));
-    const pick = Math.floor(draw * (FOLIO_VARIANTS.length - 1));
-    return pick < from ? pick : pick + 1;
-}
-
-function visibleCorners(content) {
-    if (!content) return null;
-    const left = getComputedStyle(content, '::before');
-    const right = getComputedStyle(content, '::after');
-    if (left.display === 'none' || right.display === 'none'
-        || left.content === 'none' || right.content === 'none') return null;
-    return [left, right];
-}
-
-// Read the exact in-flight coordinates before Livewire replaces #content.
-// Computed pseudo-element styles include the current WAAPI interpolation.
+// Capture *computed* intermediate values before Livewire replaces its body.
 export function capturePublicFolio(root = document) {
-    snapshot = null;
     const content = root.querySelector('#content');
-    const corners = visibleCorners(content);
-    if (!corners) return false;
-    const values = [corners[0].top, corners[0].bottom, corners[1].top, corners[1].bottom];
-    if (values.some((value) => !value || value === 'auto')) return false;
-    snapshot = { corners: values, shadow: getComputedStyle(content).boxShadow };
-    return true;
+    const menu = root.querySelector('.site-navigation');
+    snapshot = {
+        content: geometry(content),
+        menu: geometry(menu),
+        shadow: content ? getComputedStyle(content).boxShadow : null,
+    };
+    return Boolean(snapshot.content || snapshot.menu);
 }
 
+function playPseudo(element, pseudo, frames, duration) {
+    if (typeof KeyframeEffect !== 'function' || typeof Animation !== 'function') return;
+    try {
+        const effect = new KeyframeEffect(element, frames, {
+            pseudoElement: pseudo,
+            duration,
+            iterations: Infinity,
+        });
+        new Animation(effect, document.timeline).play();
+    } catch {
+        // The exact accepted CSS contours remain visible without native WAAPI.
+    }
+}
+
+function cycleStates(start, states, order) {
+    // First and final frame coincide: no visible restart at loop boundaries.
+    const values = [start, ...order.slice(1, -1).map(index => states[index]), start];
+    return values.map((value, index) => ({
+        top: value[0], bottom: value[1],
+        offset: index / (values.length - 1),
+        easing: 'ease-in-out',
+    }));
+}
+
+function animateCorners(element, start, states, order, leftDuration, rightDuration) {
+    if (!start || !element) return;
+    const frames = cycleStates(start, states, order);
+    playPseudo(element, '::before', frames.map(({ top, bottom, offset, easing }) =>
+        ({ top, bottom, offset, easing })), leftDuration);
+    playPseudo(element, '::after', frames.map((item, index) => ({
+        top: (index === 0 || index === frames.length - 1 ? start : states[order[index]])[2],
+        bottom: (index === 0 || index === frames.length - 1 ? start : states[order[index]])[3],
+        offset: item.offset,
+        easing: item.easing,
+    })), rightDuration);
+}
+
+// Called on initial page load AND each completed Livewire visit.
+// The original first shape is visible immediately; movement then continues
+// slowly on its own, without navigating and without interval callbacks.
 export function advancePublicFolio(root = document) {
     const content = root.querySelector('#content');
-    const corners = visibleCorners(content);
-    if (!corners) {
-        snapshot = null;
-        return false;
-    }
-
-    // The artist explicitly wants these restrained decorative movements even
-    // when the local browser reports reduced motion. No sliding, parallax,
-    // flashing or artwork movement: only a few pixels of existing paper edges.
-    const from = snapshot?.corners ?? FOLIO_VARIANTS[variant];
-    const fromShadow = snapshot?.shadow ?? getComputedStyle(content).boxShadow;
+    const menu = root.querySelector('.site-navigation');
+    const contentStart = snapshot?.content ?? geometry(content);
+    const menuStart = snapshot?.menu ?? geometry(menu);
+    const shadowStart = snapshot?.shadow ?? (content && getComputedStyle(content).boxShadow);
     snapshot = null;
-    variant = chooseNextFolioVariant(variant);
-    const to = FOLIO_VARIANTS[variant];
-    const toShadow = shadowFor(variant);
 
-    // Keep target geometry in the existing CSS pseudos after the effect ends.
-    // Width, left/right position, color and edge shadows never change.
-    content.style.setProperty('--public-folio-left-top', to[0]);
-    content.style.setProperty('--public-folio-left-bottom', to[1]);
-    content.style.setProperty('--public-folio-right-top', to[2]);
-    content.style.setProperty('--public-folio-right-bottom', to[3]);
-    content.style.boxShadow = toShadow;
+    animateCorners(content, contentStart, FOLIO_VARIANTS, CONTENT_SEQUENCE, 16000, 19400);
+    animateCorners(menu, menuStart, MENU_VARIANTS, [0, 1, 3, 2, 0], 17400, 20800);
 
-    // The three existing paper layers already belong to #content. Animate
-    // their offsets directly; never add separate line or surface elements.
-    if (typeof content.animate === 'function') {
+    if (content && contentStart && shadowStart && typeof content.animate === 'function') {
         try {
-            content.animate([
-                { boxShadow: fromShadow },
-                { boxShadow: toShadow },
-            ], {
-                duration: 1150,
-                easing: 'cubic-bezier(.22, .62, .32, 1)',
-            });
+            const shadows = [
+                shadowStart,
+                ...SHADOW_SEQUENCE.slice(1, -1).map(shadowFor),
+                shadowStart,
+            ];
+            content.animate(shadows.map((boxShadow, index) => ({
+                boxShadow,
+                offset: index / (shadows.length - 1),
+                easing: 'ease-in-out',
+            })), { duration: 18200, iterations: Infinity });
         } catch {
-            // The original layered folio remains complete without WAAPI.
+            // The original three real sheet shadows remain unchanged.
         }
     }
-
-    if (typeof KeyframeEffect !== 'function' || typeof Animation !== 'function') return true;
-
-    for (const [pseudoElement, indices] of [
-        ['::before', [0, 1]],
-        ['::after', [2, 3]],
-    ]) {
-        try {
-            const effect = new KeyframeEffect(content, [
-                { top: from[indices[0]], bottom: from[indices[1]] },
-                { top: to[indices[0]], bottom: to[indices[1]] },
-            ], {
-                pseudoElement,
-                duration: 1150,
-                easing: 'cubic-bezier(.22, .62, .32, 1)',
-            });
-            new Animation(effect, document.timeline).play();
-        } catch {
-            // In unsupported browsers the accepted connected pseudos remain.
-        }
-    }
-    return true;
+    return Boolean(contentStart || menuStart);
 }
