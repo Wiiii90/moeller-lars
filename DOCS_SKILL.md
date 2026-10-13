@@ -126,12 +126,15 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand:** `docs` war bei `df1940d563f198d12e5b4f2a727b110d30a71fb9` vor der aktuellen Dokumentationsänderung, `dev` bei `222bd0534bc7daa93acf6afad795e827a81d18bf`. HEADs vor jedem Folge-Schritt erneut prüfen.
+**Branchstand:** `docs` war `385229d6ccd38d3c74f95aa940ac8b16b4cf7060`, `dev` `222bd0534bc7daa93acf6afad795e827a81d18bf` (Momentaufnahme, HEADs immer erneut prüfen).
 
-**Abgeschlossene Segmentierung:** Die 27.993 Zeichen umfassende responsive Sektion 21 von `ui-skills.md` wurde **inhaltserhaltend** auf fünf kurze [responsiv-thematische Dokumente](docs/ADMIN-RESPONSIVE-CONTRACT.md) aufgeteilt: Shell/Select, Metrics, Toolbars, Tabellen/Selection und Visual Stages. Der root UI-Skill enthält nur noch einen Verweis; `docs/README.md` und die Admin UI Skill verlinken den Index. Die bisherigen page-spezifischen Aussagen wurden nicht umformuliert, um ungewollten Regelverlust zu vermeiden; Browser-/Source-Validierung pro Detail steht **noch aus**. Shared Control/Table/Dialog-Owner bleiben ausdrücklich getrennt.
+**Owner-Bereinigung nach Responsive-Split:**
+- [MEDIA.md](docs/MEDIA.md) ist jetzt alleiniger Owner der Gallery-/Storage-Primärmedien-Lifecycle-Garantien, die irrtümlich im Responsive-Toolbar-Abschnitt standen. Spezifischer Konflikt zwischen Gallery-/Undo-Publish-Readiness ist ausdrücklich verlinkt (quellbelegt, noch kein Runtime-Test).
+- Die Sidebar-Refresh- und Header-Notification-FIFO/Dismiss-Verträge stehen ausschließlich in [ARCHITECTURE.md](docs/ARCHITECTURE.md) und [ADMIN-NOTIFICATION-CONTRACT.md](docs/ADMIN-NOTIFICATION-CONTRACT.md), nicht länger in Responsive-Tabellen. Die ursprünglichen Anforderungen waren dort bereits vollständig dokumentiert.
+- Die fünf Admin-Responsive-Themendokumente bleiben erhalten. Keine CSS-/Runtime-Codeänderung, keine CI-/Browser-Testbehauptung.
 
-**Weitere zentrale Normenkonsolidierung:** Tabellenregeln (§§7–8 und Journal §12), Dialoge (§16), Rich Text und Lazy Media (§§17–18) sind bereits zu ihren jeweiligen Table-/Dialog-/Control-Verträgen verschoben. Erkannt und korrigiert: Validierte externe HTTP(S)-Rich-Text-Bilder sind aktuell unterstützt und nicht generell verboten.
+**Vorher erledigt:** responsive §21 aus `ui-skills.md` nach fünf Themen gesplittet; §§7–8/12/16–18 zum Table-/Dialog-/Control-Owner verdichtet, bei Rich Text URL-Vertrag an tatsächlichen Code angepasst.
 
-**Nächster Schritt:** Die **fünf neuen Responsive-Dokumente jeweils gegen Quellcode und ihre Shared-Owner prüfen**, zunächst die allgemeine Toolbar- und Tabellenredundanz. Nur bei eindeutiger Semantikgleichheit verkürzen. Danach den verbliebenen §22 CSS-Owner-Text zu bestehenden Contracts/Skill-Routing zuordnen und Langdokumente weiter vereinfachen.
+**Nächster Schritt:** Allgemeine Toolbar-/Tabellenregeln aus den neuen Responsive-Dokumenten nur dort streichen, wo `ADMIN-CONTROL-CONTRACT.md`/`ADMIN-TABLE-CONTRACT.md` sie nachweislich vollständig enthalten. Page-spezifische Druck-/Faltprioritäten behalten. Anschließend andere root-`ui-skills.md`-Duplikate und Links prüfen.
 
-**Offen:** nativer Full-Checkout-PHP-Generatorlauf, isolierter PostgreSQL-Katalog, Browser-E2E Public SPA/Admin; niemals CI oder `testing` bedienen.
+**Offen:** vollständiger nativer PHP-Generator-Run, isoliertes PostgreSQL-`pg_catalog`, Public-SPA-/Admin-Browserprüfung.

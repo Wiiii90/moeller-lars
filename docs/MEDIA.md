@@ -145,6 +145,18 @@ Normal media deletion is conservative and reference-aware.
 
 Presentation toggles such as Exhibition Gallery/Map do not silently detach unrelated media.
 
+### Gallery, Artwork usage and Storage deletion
+
+A `MediaAsset` is a reusable Storage file; an `Artwork` is a separate editorial record. **When explicit Storage deletion is authorized**, [`MediaAssetEditorialService`](../app/Domain/Media/MediaAssetEditorialService.php) must remove all related usages within its single canonical transaction, unpublish any Artwork losing its primary usage and remove that Artwork from its Gallery without deleting unrelated assets. An unassigned Artwork remains as historical/editorial metadata; a Gallery card must never be left orphaned. Do **not** add a second Gallery-local cleanup mechanism. Ordinary reference-protected deletion remains conservative as described above.
+
+The Gallery editor may retain incomplete Draft artworks. Public and artist-preview artwork-card queries are limited to media-renderable Artworks with exactly one available image/video primary, effective ALT and (for images) a valid thumbnail. `PublicMedia` must not hide a violated invariant as a successful render. Newly created Artworks remain Draft until explicitly published.
+
+Add Artwork ingests an upload into reusable Storage first and then atomically persists the Artwork, its primary link and ALT override. Edit follows the same boundary: ingestion occurs **outside** any enclosing Artwork database transaction, while metadata, primary linkage and Artwork-specific ALT update together **inside** it. Failure of an Artwork mutation must not claim to roll back a Storage `MediaAsset` after its files were written; failed linkage must not leave an orphan Gallery Draft. Existing incomplete Drafts can be repaired in Edit by selecting/uploading new primary media and entering an ALT.
+
+Usage-specific ALT is authored per Artwork through `ArtworkMedia.alt_text_override` and the canonical `MediaAssetEditorialService`, rather than mutating the shared Storage asset's ALT. The intended public readiness and publishing guards must use the **same effective ALT** (override or asset), and Preview must not fail with HTTP 500 for incomplete drafts. **Current implementation discrepancy:** [Gallery and Undo use different publish-guards](architecture/import-boundaries.md), so this final invariant is a requirement and **not yet fully verified for Undo**.
+
+Required regression coverage includes Storage/Gallery primary deletion, shared usage, Add/Edit ALT, incomplete Draft repair and Draft→Published.
+
 ## Storage workspace
 
 The artist-facing reusable media and capacity workspace is **Storage** at `/admin/storage`. It combines the reusable media library with storage-capacity context rather than maintaining separate Files and Storage workspaces.
