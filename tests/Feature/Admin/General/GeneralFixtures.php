@@ -1,18 +1,7 @@
 <?php
 
-use App\Domain\Admin\AdminSettingsService;
-use App\Domain\Content\PublicAppearance;
-use App\Domain\Publication\PublicationService;
-use App\Filament\Pages\General;
-use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
-use App\Filament\Support\MediaAssetSelect;
 use App\Models\AuditEvent;
 use App\Models\MediaAsset;
-use App\Models\PublicContentSetting;
-use App\Models\User;
-use Filament\Facades\Filament;
-use Illuminate\Validation\ValidationException;
-use Livewire\Livewire;
 
 
 function generalStatusFavicon(): MediaAsset

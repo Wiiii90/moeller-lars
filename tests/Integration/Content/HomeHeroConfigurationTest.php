@@ -2,11 +2,6 @@
 
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
-use App\Domain\Content\HomePresentationEditorialService;
-use App\Domain\Content\HomePresentationResolver;
-use App\Models\Artwork;
-use App\Models\ArtworkCategory;
-use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Models\User;
 use Carbon\CarbonImmutable;
