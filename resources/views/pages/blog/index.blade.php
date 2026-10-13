@@ -28,7 +28,6 @@
                 $excerpt = \Illuminate\Support\Str::limit($excerpt, 240);
             @endphp
             <article class="blog-entry @if ($hasCover) blog-entry--illustrated @if ($reverseCover) blog-entry--reverse @endif @else blog-entry--text-only @endif">
-                <span class="blog-entry__number" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                 <div class="blog-entry__body">
                     @if ($hasCover)
                         <div class="blog-entry__mount">
