@@ -176,8 +176,7 @@ it('publishes an entire ready Gallery selection once and leaves repeated publica
         ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2);
 
     // One batch action is one successful user mutation, irrespective of how
-    // many individual artwork audits it records. Current AdminNotifier audit
-    // fan-out is expected to violate this until the production owner fixes it.
+    // many individual artwork audits it records.
     expect(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])

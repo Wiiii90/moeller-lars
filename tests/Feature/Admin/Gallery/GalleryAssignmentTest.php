@@ -124,8 +124,10 @@ it('edits per-artwork ALT text and publishes an uploaded image without changing 
     expect($form['primary_alt_text'])->toBeNull();
     $form['primary_alt_text'] = 'Oil painting depicting figures under tangled branches';
 
-    expect($dialog->save($artwork, $form))->toBeTrue()
-        ->and($dialog->save($artwork, $form))->toBeFalse()
+    expect($dialog->save($artwork, $form))->toBeTrue();
+    $auditsAfterSave = AuditEvent::query()->count();
+    expect($dialog->save($artwork, $form))->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($auditsAfterSave)
         ->and($image->fresh()->alt_text)->toBe('');
 
     $primary = $artwork->artworkMedia()->where('role', 'primary')->firstOrFail();
@@ -139,6 +141,45 @@ it('edits per-artwork ALT text and publishes an uploaded image without changing 
     $this->get(route('preview.site.section', ['section' => $gallery->slug]))
         ->assertOk()
         ->assertSee($artwork->title);
+});
+
+it('saves a combined Gallery artwork edit once and preserves no-op silence after reopening', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $image = galleryFixtureAsset();
+    galleryFixtureThumbnail($image);
+    galleryFixturePrimary($artwork, $image);
+    galleryFixtureUnavailableAnalytics();
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+    $arguments = ['artwork' => $artwork->getKey()];
+
+    $component = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', $arguments)
+        ->fillForm(['title' => 'Edited artwork', 'primary_alt_text' => 'An edited media description'])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertActionMounted('editArtwork')
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return ($params['notification']['status'] ?? null) === 'success';
+        });
+
+    expect(collect($component->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1)
+        ->and($artwork->fresh()->title)->toBe('Edited artwork')
+        ->and($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))->toBe('An edited media description')
+        ->and($image->fresh()->alt_text)->toBe('Artwork media')
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    $component->callMountedAction()->assertNotDispatched('admin-header-notification');
+    $component->unmountAction()->mountAction('editArtwork', $arguments)
+        ->assertActionDataSet(['title' => 'Edited artwork', 'primary_alt_text' => 'An edited media description'])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertNotDispatched('admin-header-notification');
+
+    expect(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
 
 

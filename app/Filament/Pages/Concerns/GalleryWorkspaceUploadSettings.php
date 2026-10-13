@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceUploadSettings
 {
@@ -57,22 +58,34 @@ trait GalleryWorkspaceUploadSettings
                 $currentSlug = (string) $gallery->getAttribute('slug');
                 $service = app(GalleryEditorialService::class);
 
-                $changed = DB::transaction(function () use ($service, $gallery, $currentSlug, $data): bool {
-                    $updated = $service->update($gallery, [
-                        'name' => $data['name'],
-                        'description' => $data['description'] ?? null,
-                        'show_on_home' => (bool) ($data['show_on_home'] ?? false),
-                    ]);
-                    $changed = $updated->wasChanged();
+                try {
+                    $changed = DB::transaction(function () use ($service, $gallery, $currentSlug, $data): bool {
+                        $updated = $service->update($gallery, [
+                            'name' => $data['name'],
+                            'description' => $data['description'] ?? null,
+                            'show_on_home' => (bool) ($data['show_on_home'] ?? false),
+                        ]);
+                        $changed = $updated->wasChanged();
 
-                    $newSlug = trim((string) ($data['slug'] ?? ''));
-                    if ($newSlug !== $currentSlug) {
-                        $service->changeSlug($gallery, $newSlug);
-                        $changed = true;
+                        $newSlug = trim((string) ($data['slug'] ?? ''));
+                        if ($newSlug !== $currentSlug) {
+                            $service->changeSlug($gallery, $newSlug);
+                            $changed = true;
+                        }
+
+                        return $changed;
+                    });
+                } catch (ValidationException $exception) {
+                    // Domain errors use field names; the mounted Filament form
+                    // owns their presentation path, including nested actions.
+                    $statePath = $this->getMountedActionSchema()->getStatePath();
+                    $errors = [];
+                    foreach ($exception->errors() as $field => $messages) {
+                        $errors[$statePath.'.'.$field] = $messages;
                     }
 
-                    return $changed;
-                });
+                    throw ValidationException::withMessages($errors);
+                }
 
                 $this->loadGallery((int) $gallery->getKey());
                 $this->loadMoveTargets();

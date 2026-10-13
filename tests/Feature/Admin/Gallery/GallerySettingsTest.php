@@ -74,7 +74,7 @@ it('rolls back Gallery name changes when the requested slug belongs to another G
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
 
-    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+    $component = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('gallerySettings')
         ->fillForm([
             'name' => 'Must not persist',
@@ -84,6 +84,7 @@ it('rolls back Gallery name changes when the requested slug belongs to another G
         ])
         ->callMountedAction()
         ->assertHasFormErrors(['slug'])
+        ->assertActionMounted('gallerySettings')
         ->assertNotDispatched('admin-header-notification');
 
     $fresh = ArtworkCategory::query()->findOrFail($gallery->getKey());
@@ -94,6 +95,24 @@ it('rolls back Gallery name changes when the requested slug belongs to another G
         ->and($fresh->siteSection()->firstOrFail()->title)->toBe($previousName)
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
+
+    $component->fillForm([
+        'name' => 'Recovered Gallery title',
+        'slug' => $previousSlug,
+        'description' => null,
+        'show_on_home' => false,
+    ])->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect(collect($component->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1)
+        ->and($gallery->fresh()->name)->toBe('Recovered Gallery title')
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    $component->callMountedAction()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($auditsBefore + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
 
 

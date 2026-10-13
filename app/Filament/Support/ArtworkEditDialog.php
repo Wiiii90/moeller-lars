@@ -142,6 +142,9 @@ final class ArtworkEditDialog
     /** @param array<string, mixed> $data */
     public function save(Artwork $artwork, array $data, bool $allowGalleryAssignment = false): bool
     {
+        // Services below persist fresh models rather than updating the caller's
+        // instance. Compare against persisted state, including on repeated saves.
+        $artwork = Artwork::query()->findOrFail($artwork->getKey());
         $currentPrimary = $artwork->artworkMedia()->where('role', 'primary')->first();
         $currentAssetId = $currentPrimary === null ? 0 : (int) $currentPrimary->getAttribute('media_asset_id');
         $before = [
