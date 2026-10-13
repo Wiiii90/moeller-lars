@@ -2,7 +2,6 @@
 
 namespace App\Domain\Content;
 
-use App\Domain\Admin\AdminAuditService;
 use App\Models\SiteSection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -10,8 +9,8 @@ use Illuminate\Validation\ValidationException;
 final class JournalSettingsService
 {
     public function __construct(
-        private readonly AdminAuditService $audit,
-        private readonly SiteSectionPathPolicy $pathPolicy,
+        private readonly SiteSectionIdentityService $identity,
+        private readonly SiteSectionEditorialService $sections,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -26,34 +25,26 @@ final class JournalSettingsService
             throw ValidationException::withMessages(['template' => 'Choose Blog or Exhibitions.']);
         }
         $title = $this->requiredText($data['title'] ?? null, 'title', 160, 'A Journal title is required.');
-        $navigationLabel = $this->requiredText($data['navigation_label'] ?? null, 'navigation_label', 120, 'A navigation label is required.');
-        $slug = $this->slug($data['slug'] ?? null);
-        $actor = $this->audit->requireActor();
+        $navigationLabel = $data['navigation_label'] ?? null;
+        if ($navigationLabel !== null && ! is_string($navigationLabel)) {
+            throw ValidationException::withMessages(['navigation_label' => 'The navigation label must be text.']);
+        }
 
-        return DB::transaction(function () use ($section, $templateValue, $title, $navigationLabel, $slug, $actor): SiteSection {
-            /** @var SiteSection $fresh */
-            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if ($fresh->nodeType() !== SiteSectionType::Journal) {
-                throw ValidationException::withMessages(['section' => 'This page is no longer a Journal.']);
+        // Use Pages' existing identity and template owners. The outer
+        // transaction keeps redirects, title/label, and template atomic.
+        return DB::transaction(function () use ($section, $title, $navigationLabel, $templateValue, $data): SiteSection {
+            $updated = $this->identity->update(
+                $section,
+                $title,
+                is_string($data['slug'] ?? null) ? $data['slug'] : null,
+                $navigationLabel,
+            );
+
+            if ((string) $updated->getAttribute('template') !== $templateValue) {
+                $updated = $this->sections->updateJournalTemplate($updated, $templateValue);
             }
 
-            $currentSlug = (string) $fresh->getAttribute('slug');
-            if ($slug !== $currentSlug && ! $this->pathPolicy->available($slug)) {
-                throw ValidationException::withMessages(['slug' => 'This public URL slug is reserved or already in use.']);
-            }
-
-            $fresh->fill([
-                'template' => $templateValue,
-                'title' => $title,
-                'navigation_label' => $navigationLabel,
-                'slug' => $slug,
-            ]);
-            if ($fresh->isDirty()) {
-                $fresh->save();
-                $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
-            }
-
-            return $fresh;
+            return $updated;
         });
     }
 
@@ -70,16 +61,4 @@ final class JournalSettingsService
         return $value;
     }
 
-    private function slug(mixed $value): string
-    {
-        if (! is_string($value)) {
-            throw ValidationException::withMessages(['slug' => 'A public URL slug is required.']);
-        }
-        $slug = trim($value);
-        if ($slug === '' || mb_strlen($slug) > 80 || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
-            throw ValidationException::withMessages(['slug' => 'Use lowercase letters, numbers and hyphens for the public URL slug.']);
-        }
-
-        return $slug;
-    }
 }

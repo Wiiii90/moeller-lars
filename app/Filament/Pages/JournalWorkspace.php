@@ -376,29 +376,34 @@ final class JournalWorkspace extends Page
                 ];
             })
             ->schema([
-                Grid::make()->columns(2)->schema([
+                Grid::make()->columns(['md' => 2])->schema([
                     Select::make('template')->label('Template')->options(JournalTemplate::options())->required(),
                     TextInput::make('title')->label('Journal title')->required()->maxLength(160),
-                    TextInput::make('navigation_label')->label('Navigation label')->required()->maxLength(120),
+                    TextInput::make('navigation_label')->label('Navigation label')->maxLength(160),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
-                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')->helperText('Changing this changes the public Journal URL.'),
+                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                 ]),
             ])
             ->modalHeading('Journal settings')
             ->action(function (Action $action, array $data): void {
-                $updated = app(JournalSettingsService::class)->update($this->section(), $data);
+                $section = $this->section();
+                $before = $section->only(['template', 'title', 'navigation_label', 'slug']);
+                $updated = app(JournalSettingsService::class)->update($section, $data);
                 $template = $updated->journalTemplate();
                 abort_unless($template instanceof JournalTemplate, 404);
+                $templateChanged = $before['template'] !== $template->value;
                 $this->template = $template->value;
-                $this->search = '';
-                $this->statusFilter = 'any';
-                $this->timingFilter = 'any';
-                $this->selectedPostIds = [];
-                $this->selectedExhibitionIds = [];
-                $this->page = 1;
+                if ($templateChanged) {
+                    $this->search = '';
+                    $this->statusFilter = 'any';
+                    $this->timingFilter = 'any';
+                    $this->selectedPostIds = [];
+                    $this->selectedExhibitionIds = [];
+                    $this->page = 1;
+                }
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
-                if ($updated->wasChanged()) {
+                if ($before !== $updated->only(['template', 'title', 'navigation_label', 'slug'])) {
                     app(AdminNotifier::class)->notification(
                         title: 'Journal settings saved',
                         status: 'success',

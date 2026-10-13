@@ -150,6 +150,10 @@ trait CustomPageWorkspacePresentationHelpers
     /** @return array<int,string> */
     private function parentOptions(): array
     {
+        if (! \App\Models\PublicContentSetting::navigationNestingEnabled()) {
+            return [];
+        }
+
         return SiteSection::query()
             ->whereNull('parent_id')
             ->whereKeyNot($this->sectionId)
