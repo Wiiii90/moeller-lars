@@ -18,9 +18,7 @@ it('switches Journal template through native Edit autosave without an extra conf
 
     $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
         ->mountAction('journalSettings')
-        ->assertMountedActionModalSee('Template')
-        ->assertDontSee('Confirm template switch')
-        ->assertDontSee('Existing entries are kept intact.');
+        ->assertMountedActionModalSee('Template');
 
     $editor->set('mountedActions.0.data.template', JournalTemplate::Exhibitions->value)
         ->call('callMountedAction')

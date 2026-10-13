@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `7a10574c2dab1f88a981024cddd1c99551e7eff1` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `74d7c16dccb98c884bef8ef8e8d3b78577463241` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -60,6 +60,8 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Removed two brittle markup assertions from Custom Page type-conversion coverage; the test still performs the real conversion and verifies persisted component types. Deleted a separate one-row test consisting entirely of incidental drag-handle markup and copy assertions.
 - Source-inventoried **all 125 PHP files** (115 tests, plus helpers/bootstrap) by case name and inspected obvious weak-assertion patterns. Further full code-to-contract review remains required.
 - Removed a constant-only Undo retention case and a hard-coded 256 MiB expectation; the live retention behavior test remains. Removed Home component options equality snapshot, leaving real component conversion/validation; removed Storage CSS class order and enum icon assertions while keeping actual page actions.
+- Reworked Playwright Admin filter E2E: no fixed field counts per page, verifies a single semantic Filters group and adds the real Pages status-filter behavior across compact-to-inline resize. These browser tests have **not been run**.
+- Added the `LocalPreviewDatabaseGuard` to `BrowserProfilingSeeder`: besides explicit `APP_ENV=testing` and Browser flag, the seeded browser run requires the existing CI/disposable DB guard. Never bypass or relax that check to get a local run. Removed historical dialog-copy assertions from Journal template autosave.
 
 ## 5. Explicitly unverified / risks
 
@@ -95,8 +97,8 @@ Track each review by **verified contract**, not by number of files. 'Source-revi
 | Publication / Restore | Partially source-reviewed | Execute realistic Commit/Stage/Revert and media retention cases |
 | Public / security / contact / SEO | Partial | Reverify current routes, middleware, side effects and auth |
 | Unit / Integration / Migration | Partial | Unit construction, historic migration retirement, runtime correctness |
-| JS / Playwright | Structurally reorganized | Runtime executions and fixture realism; avoid DOM/copy locks |
-| Test infrastructure / CI | Source-reviewed only | Disposable Postgres, test discovery, npm imports and safe validation |
+| JS / Playwright | All browser specs inspected; filter workflow strengthened, NOT RUN | Runtime executions and fixture realism; avoid DOM/copy locks |
+| Test infrastructure / CI | Source-reviewed; browser-seeder disposable guard added | Disposable Postgres, test discovery, npm imports and safe validation |
 | Runtime suites | **NOT RUN** | No CI; local disposable execution not established |
 
 Important: `dev` is moving independently; its new features and tests must be brought over thoughtfully. A deleted Architecture test on `dev` is not evidence of missing coverage until its public behavior is inspected.

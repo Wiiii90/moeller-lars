@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\ContactMessage;
 use App\Models\SiteSection;
 use App\Models\User;
+use App\Support\LocalPreviewDatabaseGuard;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use RuntimeException;
@@ -16,6 +17,9 @@ final class BrowserProfilingSeeder extends Seeder
         if (! app()->environment('testing') || env('MOELLER_LARS_BROWSER_PROFILE') !== '1') {
             throw new RuntimeException('Browser profiling fixtures may only be created in the explicit disposable testing context.');
         }
+
+        // Match the Pest guard: fixtures may never touch the persistent local preview.
+        LocalPreviewDatabaseGuard::assertDisposableTestContext();
 
         $email = trim((string) env('PLAYWRIGHT_ADMIN_EMAIL'));
         $password = (string) env('PLAYWRIGHT_ADMIN_PASSWORD');
