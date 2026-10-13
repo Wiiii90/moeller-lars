@@ -114,9 +114,9 @@ it('keeps ordinary table pressure centralized and selection terminal', function 
         ->not->toContain('journal-col--visual admin-table__yield--compact');
 
     expect($tableContract)
-        ->toContain('@container admin-table (max-width: 74rem)')
-        ->toContain('.admin-table--fold-dense .admin-table__split-only')
+        ->not->toContain('@container admin-table (max-width: 74rem)')
         ->toContain('@container admin-table (max-width: 72rem)')
+        ->toContain('.admin-table--fold-dense .admin-table__split-only')
         ->toContain('.admin-row-actions--journal-blog .admin-action__label');
 
     expect($activity)
@@ -176,4 +176,29 @@ it('owns filter overflow centrally by filter count and workspace pressure', func
 
     expect($icons)
         ->toContain("case Filter = 'heroicon-o-funnel';");
+});
+
+it('keeps archived Blog Restore in the Archive slot', function (): void {
+    $journal = file_get_contents(dirname(__DIR__, 3).'/resources/views/filament/pages/journal-workspace.blade.php');
+    $publishStart = strpos($journal, "@if (\$entry['state'] === 'published')");
+    $scheduleStart = strpos($journal, "@if (in_array(\$entry['state'], ['draft', 'unpublished'], true))", $publishStart);
+    $archiveStart = strpos($journal, "@if (\$entry['state'] === 'archived')", $scheduleStart);
+    $deleteStart = strpos($journal, 'AdminRowAction::Delete', $archiveStart);
+
+    expect($publishStart)->not->toBeFalse();
+    expect($scheduleStart)->not->toBeFalse();
+    expect($archiveStart)->not->toBeFalse();
+    expect($deleteStart)->not->toBeFalse();
+
+    $publishSlot = substr($journal, $publishStart, $scheduleStart - $publishStart);
+    $archiveSlot = substr($journal, $archiveStart, $deleteStart - $archiveStart);
+
+    expect($publishSlot)
+        ->toContain('AdminRowAction::Publish')
+        ->toContain('disabled')
+        ->not->toContain('AdminRowAction::Restore');
+    expect($archiveSlot)
+        ->toContain('AdminRowAction::Restore')
+        ->toContain('restorePostDraft')
+        ->toContain('AdminRowAction::Archive');
 });
