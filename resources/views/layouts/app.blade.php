@@ -137,7 +137,10 @@
             @endunless
         </header>
         <main id="content" class="site-content">
-            <div class="public-folio-decoration" aria-hidden="true"></div>
+            <div class="public-folio-decoration" aria-hidden="true">
+                <span class="public-folio-decoration__left"></span>
+                <span class="public-folio-decoration__right"></span>
+            </div>
             @yield('content')
         </main>
         <x-artwork-viewer />

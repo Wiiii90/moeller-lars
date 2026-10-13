@@ -1,5 +1,6 @@
-// The accepted original remains the first variant and the CSS fallback.
-// The six typed lengths always describe complete, connected paper corners.
+// Ten curated configurations of the SAME two connected Atelier corners.
+// Variant 1 is the accepted original, also rendered without JavaScript.
+// Coordinates: left(top,bottom), right(top,bottom), left/right return width.
 export const FOLIO_VARIANTS = Object.freeze([
     ['1.10rem', '4.00rem', '3.80rem', '1.15rem', '.55rem', '.55rem'],
     ['1.75rem', '3.55rem', '3.20rem', '1.55rem', '.78rem', '.7rem'],
@@ -12,11 +13,7 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['.62rem', '4.12rem', '3.62rem', '1.49rem', '1rem', '.72rem'],
     ['1.3rem', '4.52rem', '4.28rem', '.72rem', '.73rem', '1rem'],
 ]);
-export const FOLIO_PROPERTIES = Object.freeze([
-    '--public-folio-left-top', '--public-folio-left-bottom',
-    '--public-folio-right-top', '--public-folio-right-bottom',
-    '--public-folio-left-width', '--public-folio-right-width',
-]);
+
 let variant = 0;
 let snapshot = null;
 
@@ -28,52 +25,66 @@ export function chooseNextFolioVariant(current, random = Math.random) {
     return pick < from ? pick : pick + 1;
 }
 
-// Body replacement destroys CSS transitions, so capture the actual animated
-// computed geometry before Livewire swaps it. This includes interrupted motion.
+function edges(root) {
+    const folio = root.querySelector('.public-folio-decoration');
+    if (!folio) return null;
+    const left = folio.querySelector('.public-folio-decoration__left');
+    const right = folio.querySelector('.public-folio-decoration__right');
+    return left && right ? { folio, left, right } : null;
+}
+
+function geometry(left, right) {
+    const l = getComputedStyle(left);
+    const r = getComputedStyle(right);
+    return [l.top, l.bottom, r.top, r.bottom, l.width, r.width];
+}
+
 export function capturePublicFolio(root = document) {
     snapshot = null;
-    const element = root.querySelector('.public-folio-decoration[data-folio-active]');
-    if (!element) return false;
-    const computed = getComputedStyle(element);
-    const values = FOLIO_PROPERTIES.map((name) => computed.getPropertyValue(name).trim());
-    if (values.some((value) => !value)) return false;
-    snapshot = values;
-    return true;
+    const current = edges(root);
+    if (!current?.folio.hasAttribute('data-folio-active')) return false;
+    snapshot = geometry(current.left, current.right);
+    return snapshot.every((value) => value !== '');
+}
+
+function frame(values, side) {
+    return side === 'left'
+        ? { top: values[0], bottom: values[1], width: values[4] }
+        : { top: values[2], bottom: values[3], width: values[5] };
 }
 
 export function advancePublicFolio(root = document) {
-    const element = root.querySelector('.public-folio-decoration');
-    if (!element || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const current = edges(root);
+    if (!current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         snapshot = null;
         return false;
     }
+
     const start = snapshot ?? FOLIO_VARIANTS[variant];
     snapshot = null;
     variant = chooseNextFolioVariant(variant);
     const target = FOLIO_VARIANTS[variant];
-    const from = {};
-    const to = {};
 
-    for (let i = 0; i < FOLIO_PROPERTIES.length; i += 1) {
-        const property = FOLIO_PROPERTIES[i];
-        from[property] = start[i];
-        to[property] = target[i];
-        element.style.setProperty(property, target[i]);
-    }
-    element.setAttribute('data-folio-active', '');
-    element.dataset.folioVariant = String(variant + 1);
+    // Apply the exact destination first so unsupported WAAPI never distorts
+    // the paper. The browser then interpolates ordinary layout properties
+    // from the captured mid-animation state, on the NEW node.
+    for (const [side, element] of [['left', current.left], ['right', current.right]]) {
+        const first = frame(start, side);
+        const last = frame(target, side);
+        Object.assign(element.style, last);
 
-    // WAAPI explicitly interpolates on the NEW node; no persistent wrapper,
-    // forced reflow, timers, polling, or transition on a detached element.
-    if (typeof element.animate === 'function') {
-        try {
-            element.animate([from, to], {
-                duration: 920,
-                easing: 'cubic-bezier(.2, .65, .25, 1)',
-            });
-        } catch {
-            // Keep the complete static target on unsupported browsers.
+        if (typeof element.animate === 'function') {
+            try {
+                element.animate([first, last], {
+                    duration: 920,
+                    easing: 'cubic-bezier(.2, .65, .25, 1)',
+                });
+            } catch {
+                // Native static geometry remains available.
+            }
         }
     }
+    current.folio.setAttribute('data-folio-active', '');
+    current.folio.dataset.folioVariant = String(variant + 1);
     return true;
 }
