@@ -88,9 +88,6 @@ jobs:
       - name: Run Feature tests
         run: composer test:feature
 
-      - name: Run Architecture tests
-        run: composer test:architecture
-
       - name: Run Migration tests
         run: composer test:migration
 

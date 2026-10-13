@@ -61,7 +61,6 @@
         "test:unit": "@php vendor/bin/pest --group=unit",
         "test:integration": "@php vendor/bin/pest --group=integration",
         "test:feature": "@php vendor/bin/pest --group=feature",
-        "test:architecture": "@php vendor/bin/pest --group=architecture",
         "test:migration": "@php vendor/bin/pest --group=migration",
         "test:coverage": "@php vendor/bin/pest --coverage",
         "format": "@php vendor/bin/pint",

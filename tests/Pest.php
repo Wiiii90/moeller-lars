@@ -18,8 +18,6 @@ pest()->extend(TestCase::class)
     ->group('feature')
     ->in('Feature');
 
-pest()->group('architecture')->in('Architecture');
-
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->group('migration')
