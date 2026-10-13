@@ -90,7 +90,7 @@ function homeSourceCategory(bool $showOnHome, string $sectionState = 'published'
 {
     $category = new ArtworkCategory;
     $category->fill([
-        'slug' => 'home-source-'.fake()->unique()->uuid(),
+        'slug' => 'home-source-fixture',
         'name' => 'Home source',
         'show_on_home' => $showOnHome,
     ]);
@@ -105,7 +105,7 @@ function homeSourceArtwork(ArtworkCategory $category, string $state = 'published
     $artwork = new Artwork;
     $artwork->fill([
         'artwork_category_id' => $category->getKey(),
-        'slug' => 'home-artwork-'.fake()->unique()->uuid(),
+        'slug' => 'home-artwork-fixture',
         'title' => 'Home artwork',
         'state' => $state,
         'position' => 0,

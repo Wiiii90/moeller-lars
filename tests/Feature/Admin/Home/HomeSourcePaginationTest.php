@@ -6,9 +6,13 @@ use App\Models\ArtworkCategory;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Models\User;
+use Filament\Facades\Filament;
+use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 function homeSourcePaginationSettings(): HomePresentationSetting
@@ -44,22 +48,14 @@ function homeSourcePaginationGallery(int $index): ArtworkCategory
     return $gallery;
 }
 
-function homeSourcePaginationPage(HomePresentationSetting $settings): HomePresentation
-{
-    $page = new HomePresentation;
-    $page->settingsId = (int) $settings->getKey();
-
-    return $page;
-}
-
 it('paginates more than ten Gallery sources with the existing 10 and 25 page sizes', function (): void {
-    $settings = homeSourcePaginationSettings();
+    homeSourcePaginationSettings();
     foreach (range(1, 12) as $index) {
         homeSourcePaginationGallery($index);
     }
 
-    $page = homeSourcePaginationPage($settings);
-    $firstPage = $page->sourceRows();
+    $component = Livewire::test(HomePresentation::class);
+    $firstPage = $component->instance()->sourceRows();
 
     expect($firstPage->total())->toBe(12)
         ->and($firstPage->perPage())->toBe(10)
@@ -69,70 +65,66 @@ it('paginates more than ten Gallery sources with the existing 10 and 25 page siz
         ->and($firstPage->lastItem())->toBe(10)
         ->and($firstPage->hasMorePages())->toBeTrue();
 
-    $page->selectedSourceIds = [(int) $firstPage->items()[0]['id']];
-    $page->goToSourcePage(2);
-    $secondPage = $page->sourceRows();
+    $component->set('selectedSourceIds', [(int) $firstPage->items()[0]['id']])
+        ->call('goToSourcePage', 2)
+        ->assertSet('selectedSourceIds', []);
+    $secondPage = $component->instance()->sourceRows();
 
-    expect($page->selectedSourceIds)->toBe([])
+    expect($component->get('selectedSourceIds'))->toBe([])
         ->and($secondPage->currentPage())->toBe(2)
         ->and($secondPage->count())->toBe(2)
         ->and($secondPage->firstItem())->toBe(11)
         ->and($secondPage->lastItem())->toBe(12)
         ->and($secondPage->hasMorePages())->toBeFalse();
 
-    $page->goToSourcePage(1);
-    expect($page->sourceRows()->currentPage())->toBe(1);
+    $component->call('goToSourcePage', 1);
+    expect($component->instance()->sourceRows()->currentPage())->toBe(1);
 
-    $page->selectedSourceIds = [(int) $firstPage->items()[0]['id']];
-    $page->sourcePerPage = 25;
-    $page->updatedSourcePerPage();
-    $allRows = $page->sourceRows();
+    $component->set('selectedSourceIds', [(int) $firstPage->items()[0]['id']])
+        ->set('sourcePerPage', 25);
+    $allRows = $component->instance()->sourceRows();
 
-    expect($page->sourcePage)->toBe(1)
-        ->and($page->selectedSourceIds)->toBe([])
+    expect($component->get('sourcePage'))->toBe(1)
+        ->and($component->get('selectedSourceIds'))->toBe([])
         ->and($allRows->perPage())->toBe(25)
         ->and($allRows->count())->toBe(12)
         ->and($allRows->hasMorePages())->toBeFalse();
 });
 
 it('resets Home source paging and selection when Search Status or Source filters change', function (): void {
-    $settings = homeSourcePaginationSettings();
+    homeSourcePaginationSettings();
     foreach (range(1, 12) as $index) {
         homeSourcePaginationGallery($index);
     }
 
-    $page = homeSourcePaginationPage($settings);
-    $page->sourcePage = 2;
-    $page->selectedSourceIds = [1, 2];
-    $page->sourceSearch = 'Gallery 12';
-    $page->updatedSourceSearch();
+    $component = Livewire::test(HomePresentation::class)
+        ->set('sourcePage', 2)
+        ->set('selectedSourceIds', [1, 2])
+        ->set('sourceSearch', 'Gallery 12');
 
-    expect($page->sourcePage)->toBe(1)
-        ->and($page->selectedSourceIds)->toBe([])
-        ->and($page->sourceRows()->total())->toBe(1);
+    expect($component->get('sourcePage'))->toBe(1)
+        ->and($component->get('selectedSourceIds'))->toBe([])
+        ->and($component->instance()->sourceRows()->total())->toBe(1);
 
-    $page->resetSourceFilters();
-    $page->sourcePage = 2;
-    $page->selectedSourceIds = [1];
-    $page->sourceStatusFilter = 'published';
-    $page->updatedSourceStatusFilter();
+    $component->call('resetSourceFilters')
+        ->set('sourcePage', 2)
+        ->set('selectedSourceIds', [1])
+        ->set('sourceStatusFilter', 'published');
 
-    expect($page->sourcePage)->toBe(1)
-        ->and($page->selectedSourceIds)->toBe([])
-        ->and($page->sourceRows()->total())->toBe(10);
+    expect($component->get('sourcePage'))->toBe(1)
+        ->and($component->get('selectedSourceIds'))->toBe([])
+        ->and($component->instance()->sourceRows()->total())->toBe(10);
 
-    $page->resetSourceFilters();
-    $page->sourcePage = 2;
-    $page->selectedSourceIds = [1];
-    $page->sourceHomeFilter = 'enabled';
-    $page->updatedSourceHomeFilter();
+    $component->call('resetSourceFilters')
+        ->set('sourcePage', 2)
+        ->set('selectedSourceIds', [1])
+        ->set('sourceHomeFilter', 'enabled');
 
-    expect($page->sourcePage)->toBe(1)
-        ->and($page->selectedSourceIds)->toBe([])
-        ->and($page->sourceRows()->total())->toBe(5);
+    expect($component->get('sourcePage'))->toBe(1)
+        ->and($component->get('selectedSourceIds'))->toBe([])
+        ->and($component->instance()->sourceRows()->total())->toBe(5);
 
-    $page->sourceHomeFilter = 'disabled';
-    $page->updatedSourceHomeFilter();
+    $component->set('sourceHomeFilter', 'disabled');
 
-    expect($page->sourceRows()->total())->toBe(7);
+    expect($component->instance()->sourceRows()->total())->toBe(7);
 });

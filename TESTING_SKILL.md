@@ -18,7 +18,7 @@ Every retained test should detect meaningful wrong behavior: **observable admin/
 
 ## Current structure, progress and tooling
 
-Current test file inventory after this cleanup: **113 PHP `*Test.php` files** (counts by directory to be rechecked from repository tree), 11 browser files including support, 4 Node test files, zero `tests/Architecture/`. The counts are observational, not a target. Earlier full test tree inventory was 141 files / 545564 bytes before removing redundant StoragePage tests and moving the capacity domain test.
+Current test file inventory after this cleanup: **114 PHP `*Test.php` files** (71 Feature, 30 Integration, 3 Migration, 10 Unit; verified against current Git tree), 11 browser files including support, 4 Node test files, zero `tests/Architecture/`. The counts are observational, not a target. Earlier full test tree inventory was 141 files / 545564 bytes before removing redundant StoragePage tests and moving the capacity domain test.
 
 - `tests/Unit`: pure classes without Laravel app/DB. `tests/Integration`: DB-backed domain boundaries. `tests/Feature/Admin`: Filament/Livewire, HTTP, mutations. `tests/Feature/Public`: visibility, contact, publication, media, security/SEO. `tests/Migration`: historical cutover coverage only.
 - `tests/js`: Node test runner, real JS exports. `tests/browser/component/public`: production JS in isolated Chromium DOM. `tests/browser/e2e/admin`: real authenticated web flows with disposable seeded DB. `tests/browser/profiling`: non-blocking diagnostic metrics + runtime errors.
@@ -50,6 +50,8 @@ Current test file inventory after this cleanup: **113 PHP `*Test.php` files** (c
 18. General audit: removed the separate `GeneralOverviewTest` exact-six-metrics/labels/timestamp snapshot because canonical route and redirect remain tested and the real controls/metrics source is otherwise behaviorally exercised. Preserved the legacy route redirect assertion; strengthened the Contact/Legal/Social Livewire feedback test to check the actual persisted values, and favicon search to exclude unavailable images as well as non-images. Corrected a misleading Appearance test name (the test checks persisted color-mode separation, not geometry). **Not run.**
 
 19. Home cleanup: removed `HomeSettingsTest.php` (direct form keys/save duplicated by real Livewire Hero autosave/reopen coverage), dropped the `HomeTemplate::options()` static enum-key snapshot (Skip Home/template independence remains tested via routing behavior), removed CSS divider class assertions from Home public Preview tests while preserving rich text, image ALT, publication and hidden-content assertions, and replaced iteration over the Divider enum constant list with a real valid dotted edit plus invalid choice rejection. **Not run.**
+
+20. Home source flow: rewired Home Gallery source filtering and pagination tests from directly instantiated `new HomePresentation` and manual `updatedSource*()` invocations to authenticated mounted Livewire component updates (`set`, `call`), including persisted page/selection transitions. Preserved both 10/25 page-size behavior and search/status/eligibility filters, removed unused direct-page helper. Replaced UUID-based Home preview fixture slugs with deterministic literal slugs in separately isolated DB tests. **Not run.** The earlier PHP inventory estimate was corrected using the actual 2026-10-13 Git tree: 114 files, not 113.
 
 ## Current blocking risks and evidence
 
