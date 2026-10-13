@@ -1,8 +1,11 @@
 <?php
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Admin\DashboardFeed;
 use App\Models\AdminNotification;
+use App\Models\AuditEvent;
+use App\Models\PublicContentSetting;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\Livewire;
@@ -14,6 +17,22 @@ final class AdminHeaderNotificationProbe extends Component
         app(AdminNotifier::class)->notification(
             title: 'Changes saved',
             body: 'Background gradient updated.',
+            status: 'success',
+        );
+    }
+
+    public function emitCombinedSettings(): void
+    {
+        $settings = app(AdminSettingsService::class);
+        $settings->updatePublicContent(PublicContentSetting::general(), [
+            'public_email' => 'studio@example.invalid',
+        ]);
+        $settings->updatePublicContent(PublicContentSetting::general(), [
+            'contact_recipient_email' => 'private@example.invalid',
+        ]);
+
+        app(AdminNotifier::class)->notification(
+            title: 'Contact settings saved',
             status: 'success',
         );
     }
@@ -63,6 +82,35 @@ it('persists an authenticated admin Notification and projects it into the header
         ->and($notification->getAttribute('body'))->toBe('Background gradient updated.')
         ->and($notification->getAttribute('status'))->toBe('success')
         ->and((string) $notification->getAttribute('source_id'))->toStartWith('notification:');
+});
+
+
+it('sends one action Notification for two persisted setting changes while retaining both audits', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+    $auditsBefore = AuditEvent::query()->count();
+
+    Livewire::test(AdminHeaderNotificationProbe::class)
+        ->call('emitCombinedSettings')
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return $event === 'admin-header-notification'
+                && ($params['notification']['title'] ?? null) === 'Contact settings saved'
+                && ($params['notification']['status'] ?? null) === 'success';
+        });
+
+    $changes = AuditEvent::query()->where('action', 'public_content_setting.updated')
+        ->orderBy('id')->pluck('id')->map(static fn ($id): int => (int) $id)->all();
+    $notice = AdminNotification::query()->where('user_id', $actor->getKey())->sole();
+
+    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('studio@example.invalid')
+        ->and(PublicContentSetting::general()->getAttribute('contact_recipient_email'))->toBe('private@example.invalid')
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(count($changes))->toBe(2)
+        ->and($notice->getAttribute('title'))->toBe('Contact settings saved')
+        ->and($notice->getAttribute('status'))->toBe('success')
+        ->and($notice->getAttribute('source_id'))->toBe('activity:'.$changes[1])
+        ->and((int) $notice->getAttribute('audit_event_id'))->toBe($changes[1])
+        ->and($notice->getAttribute('metadata'))->toBe(['audit_event_ids' => $changes]);
 });
 
 it('persists structured Notifications without requiring a browser session', function (): void {
