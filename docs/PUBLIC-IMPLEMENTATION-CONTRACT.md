@@ -154,6 +154,36 @@ Map is an explicit per-Exhibition presentation feature.
 - public attachment below the Exhibition and editor preview should consume the same presentation contract;
 - a future Rich Text map embed must reuse that renderer/contract rather than create a second mapping technology.
 
+### Exhibition chronology and detail disclosure
+
+The public Exhibitions Journal is an exhibition chronology, not an unbounded
+list of expanded media. Its entries preserve the artist's manual
+`position` order, including historical records with a free-form display date;
+temporal state labels (Current / Upcoming) do not reorder that editorial list.
+
+The closed entry presents the authored date, exhibition title and available
+venue/place in a typographic two-column chronology. Optional further
+information is exposed through an independent native `details` disclosure
+with the deliberately plain controls **Open / Close**. Entries with no
+additional material render a non-interactive summary. Multiple exhibitions
+may remain open simultaneously; switching one does not close another.
+
+Expanded content reuses the existing canonical cover, rich description,
+ordered Gallery presentation (grid, mosaic or slideshow), vernissage, address
+and external link contracts. Images are constrained to the available content
+width and remain lazily loaded; they must not inflate closed entries into
+large media walls. No separate Exhibition detail route or duplicate source of
+truth is introduced by this index presentation.
+
+Enabled Exhibition maps remain available for past, current and upcoming
+exhibitions. A second native `details` control exposes the inline map only
+at the visitor's request. The external OpenStreetMap/Directions link remains
+available independently; the embedded frame source is not assigned until
+the map disclosure is opened, and the enlarged dialog's frame loads only on
+its own open action. No automatic temporal restriction is added to
+`map_enabled`, no existing geocoding or editorial configuration is removed,
+and no timer, polling or additional scroll-lock owner is introduced.
+
 ## Public media delivery
 
 Only media valid for the requesting public consumer is exposed.
