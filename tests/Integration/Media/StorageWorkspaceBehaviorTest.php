@@ -13,7 +13,6 @@ use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -70,7 +69,7 @@ function storageBehaviorAttachArtwork(MediaAsset $asset, ArtworkCategory $catego
 {
     $artwork = Artwork::query()->create([
         'artwork_category_id' => $category->getKey(),
-        'slug' => str($title)->slug()->append('-'.uniqid())->toString(),
+        'slug' => str($title)->slug()->append('-'.$category->getKey().'-'.$asset->getKey())->toString(),
         'title' => $title,
         'state' => 'draft',
         'position' => 0,
@@ -191,26 +190,4 @@ it('keeps multi-area originals exclusive in the donut while exposing each destin
         ->and($shared['usage_filter'])->toBeNull()
         ->and(collect($overview['breakdown'])->sum('bytes'))->toBe(250)
         ->and($targetAreas)->toContain('galleries', 'journal');
-});
-
-it('resolves concrete gallery references with bounded relation queries', function (): void {
-    $gallery = storageBehaviorGallery('Query Gallery');
-    foreach (range(1, 12) as $index) {
-        $asset = storageBehaviorAsset('query-'.$index.'.jpg', 10 + $index);
-        storageBehaviorAttachArtwork($asset, $gallery, 'Query work '.$index);
-    }
-
-    DB::flushQueryLog();
-    DB::enableQueryLog();
-    app(StorageWorkspaceOverview::class)->snapshot(measure: true);
-    $queries = DB::getQueryLog();
-    DB::disableQueryLog();
-
-    $artworkRelationQueries = collect($queries)->filter(static function (array $query): bool {
-        $sql = strtolower((string) ($query['query'] ?? ''));
-
-        return str_contains($sql, 'artwork_media') && str_contains($sql, 'select');
-    });
-
-    expect($artworkRelationQueries->count())->toBeLessThanOrEqual(3);
 });

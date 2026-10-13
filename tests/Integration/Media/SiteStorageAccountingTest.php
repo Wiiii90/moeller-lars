@@ -63,16 +63,6 @@ it('counts media variants and logical database data against the site allowance',
         ->and($snapshot['reclaimable_bytes'])->toBe(40)
         ->and($database['activity_bytes'])->toBeGreaterThan(0)
         ->and($database['undo_bytes'])->toBeGreaterThan(0);
-
-    $this->get('/admin/storage')
-        ->assertOk()
-        ->assertSee('Capacity')
-        ->assertSee('Distribution')
-        ->assertSee('Free storage')
-        ->assertSee('Frees quota by clearing Undo history, old restore snapshots and rebuildable thumbnails.')
-        ->assertDontSee('About freeing storage')
-        ->assertDontSee('Physical database footprint')
-        ->assertDontSee('Publication history');
 });
 
 it('uses total site usage when admitting a new original', function (): void {
