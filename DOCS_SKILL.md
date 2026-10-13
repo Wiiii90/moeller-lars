@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (13.10.2026) | SHA |
 | --- | --- |
-| `docs` vor dieser Aktualisierung | `f36a745bed61533a5e5529d07b662cf479dd6f67` |
-| `dev` | `bee4297b50aec3e07b219125fbc79a854211d0b8` |
-| Differenz zum damaligen `dev` | 44 voraus, 0 zurück |
+| `docs` vor letzter Dokumentationsphase | `0c0be8a4eba37ef688923a6b9816c7216597c951` |
+| `dev` | `5b1d02d013452b7980d08786c1f5339bd36fdbfc` |
+| Differenz zum damaligen `dev` | neu abgeglichen; tatsächlichen Vergleich immer frisch abrufen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -126,18 +126,10 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Stand 13.10.2026:** vollständige remote PHP-Quelle, 20 Klassengraphen,
-Importzyklus-/Artwork-Undo-Befund, korrigierte Home/CV/Migrations-Hauptdokumente
-und drei task-spezifische Skills auf `docs` committed. Letzter `dev`-Merge:
-`e002980db2b508de0e2985541b54c56c070e958a` (Journal-Admin-Tabelle,
-`ui-skills.md`).
+**Aktueller Stand (13.10.2026):** Die bereits konsolidierte Arbeitsakte wurde beibehalten. Neuer `dev`-Stand `5b1d02d013452b7980d08786c1f5339bd36fdbfc` mit Journal-/Public-Präsentationsänderungen wurde als Zwei-Eltern-Merge `0c0be8a4eba37ef688923a6b9816c7216597c951` auf `docs` übernommen.
 
-**Unmittelbarer nächster Schritt:** Bei aktuellen Branch-HEADs beginnen und
-die **Duplikate in `ui-skills.md` versus Admin-Tabellen-/Dialog-/Controls-Verträge**
-abschnittsweise mit Quelltext vergleichen. Nur eine vollständig abgeglichene
-und sichere Teilstrecke pro Commit konsolidieren. Danach diesen Abschnitt
-**ersetzen** und die Prüfergebnisse festhalten.
+**Erste abgeschlossene Duplikatbereinigung:** Journal-Tabelle (Blog Status/Publication, Exhibition Date/Schedule) mit Codevergleich für Blade + `journal.css` + `table-contract.css` in `docs/ADMIN-TABLE-CONTRACT.md` als alleiniger Norm-Owner. `ui-skills.md` Abschnitt 12 wurde auf einen knappen Link reduziert. Keine Semantik, Breakpoints oder Runtime-CSS geändert, keine Browser-/CI-Tests ausgeführt.
 
-**Fortsetzungsregel:** Fortfahren mit der Arbeit, nicht das Repository
-nochmals von vorne inventarisieren. Kein CI, keine anderen Branches, keine
-Versprechen über nicht ausgeführte Prüfungen.
+**Unmittelbar fortsetzen:** Weitere kleine Überschneidungen `ui-skills.md` gegen `ADMIN-TABLE-CONTRACT`, `ADMIN-DIALOG-CONTRACT` und `ADMIN-CONTROL-CONTRACT` systematisch prüfen, nur bei identischen Vorgaben den zweiten Volltext entfernen. Quell-/Owner-Bezug erhalten und nach jeder Etappe diesen Abschnitt **ersetzen**.
+
+**Später noch offen:** echter PHP-Tokenizer-Full-Checkout-Lauf, isolierter physischer PostgreSQL-Export, weitere nachgewiesene Runtime-Sequenzen; keine Vollständigkeit behaupten.

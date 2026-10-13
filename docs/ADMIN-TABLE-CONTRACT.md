@@ -173,7 +173,26 @@ Metrics, tables, toolbars and stages may transition at different widths because 
 
 When two meaningful columns fit in Wide but should combine under table pressure, keep one primary column and one additional detail column. The shared table-pressure owner offers `admin-table--fold-at-compact` (64rem) and `admin-table--fold-at-actions` (74rem) with `admin-table__split-only` for the extra column and `admin-table__split-label` / `admin-table__folded-only` for its counterpart in the primary column. Apply `admin-table__split-only` to its `<col>`, `<th>` and every `<td>` together; only the extra column yields. The folded primary column can use the normal Narrow-yield contract (54rem), with essential metadata shown in primary identity only after it disappears.
 
-Journal uses this for Blog Status + Publication and Exhibition Date + Schedule. Blog's seven-action label rail yields to icons at 88rem, before it can squeeze Post identity; Exhibition actions compact at 64rem. The Actions `<col>` and heading inherit the same responsive rail width as the row action controls. Journal-specific geometry and responsive identity metadata live solely in `journal.css`, not duplicate responsive.css overrides. This is presentation of existing data, not a domain change. Actions and Selection remain stable.
+### Journal's split/fold composition
+
+The Journal has **separate full-width columns**. The only fold transitions are actual **table-container widths**; neither the viewport width nor the metric state is a surrogate:
+
+```text
+Blog Wide:          Position | Drag | Image | Post | Status | Publication | Actions | Selection
+Blog Folded:        Position | Drag | Image | Post | Publication          | Actions | Selection
+Exhibitions Wide:   Position | Drag | Image | Exhibition | Date | Schedule | Actions | Selection
+Exhibitions Folded: Position | Drag | Image | Exhibition | Dates          | Actions | Selection
+```
+
+Blog's seven-action rail becomes icon-only at **88rem** before the Post track is squeezed. Blog keeps **Status** (editorial state) and **Publication** (scheduled/published date) in separate tracks until **64rem**, then folds both into the primary **Publication** track (11rem at that breakpoint). Exhibition **Date** (exhibition range) and **Schedule** (optional vernissage plus derived Past/Current/Upcoming) remain separate until **74rem**, then become **Dates** in an 11rem supporting track. Exhibition actions compact at **64rem**. Both types let long dates wrap without arbitrary truncation.
+
+Blog and Exhibitions use the same Cover/feature-media preview when configured, with a neutral fallback when no preview is available. Position and Drag share the leading ordering region and Selection remains the trailing utility rail. At **54rem**, the remaining Publication/Dates column yields **before** the primary Post/Exhibition identity becomes unusable. The Post identity then provides its editorial state and date; Exhibition identity provides date range, derived timing and optional vernissage. These extra identity lines are hidden while the dedicated data column remains visible. Exhibition location metadata stays concise (e.g. `Venue · City` rather than a street/country dump).
+
+The canonical `admin-table--fold-at-compact` / `admin-table--fold-at-actions` classes own split visibility; `resources/css/admin/journal.css` alone owns Journal track widths, preview styling and responsive identity presentation. The action `<col>` and heading inherit the same shared responsive rail width as the controls. **Actions and Selection never yield.** These are presentation rules, not a change to the stored Blog/Exhibition publication state.
+
+**Code references:** [Journal Blade](../resources/views/filament/pages/journal-workspace.blade.php), [feature CSS](../resources/css/admin/journal.css), [shared CSS](../resources/css/admin/table-contract.css).
+
+
 
 ## Implementation authority
 
