@@ -6,6 +6,16 @@ The documents in this directory are split by purpose so current application cont
 
 - [Architecture source inventory and models](architecture/README.md) — evidence-backed, source-versioned inventory with concrete Publication and Exhibition Map flows; coverage gaps are explicit. This is a staged replacement, not a second normative source of contracts.
 
+## Branch ownership for documentation
+
+Two exceptional, long-lived branches are explicitly authorized: `docs` for
+documentation, architecture inventories and their read-only/local generators;
+`testing` for a separate test-refactor workstream. Ordinary application work
+still uses `dev`, and `main` remains the release branch. `docs` periodically
+merges new `dev` commits after conflict review; it does not overwrite `dev`
+or edit `testing`. No additional branches/worktrees or CI interaction are
+authorized. See [AGENTS.md](../AGENTS.md).
+
 ## Current application contracts
 
 These describe the durable current application architecture and behavior. Browser/product milestone acceptance, release-candidate promotion and environment-specific evidence are tracked separately through the current review/release workflow:

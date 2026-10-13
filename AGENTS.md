@@ -111,6 +111,35 @@ Use the current artist-facing concepts:
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
 
+## Explicit long-lived branch exceptions (2026-10-13)
+
+The user expressly authorized two additional **permanent** branches: `docs`
+(documentation and architectural inventory) and `testing` (test-suite redesign).
+These are narrow exceptions to the normal direct-`dev` branch prohibition below,
+which remains in force for application/UI changes unless explicitly changed.
+
+- `docs` belongs to the documentation workstream. Modify architecture inventory,
+  documentation, skills and strictly local documentation generators here; do not
+  use it for opportunistic changes to runtime application behavior.
+- `testing` belongs to its own separately coordinated workstream. The documentation
+  worker must not create, move, overwrite or commit to `testing`. Test references
+  may be inspected as evidence, never presented as successful test execution.
+- `dev` remains the application integration source. Regularly compare and **merge**
+  new `dev` commits into `docs` without rewriting either branch's history; inspect
+  changed files and resolve overlapping edits consciously. Never force push.
+- Neither `docs` nor `testing` is an invitation to create additional worktrees,
+  temporary branches or PR-based orchestration. Do not merge `docs` to `dev` or
+  `main` without a separate explicit integration decision.
+- The existing prohibition on CI interaction remains absolute for this workstream.
+  Source-only local checks are not CI, but never execute a checker that touches
+  a persistent Preview/Production database or assumes a safe schema by filename.
+- Source-/test-/runtime-verification claims must remain separate. Machine-generated
+  diagrams must state their extraction limitations, version/inputs and unverified
+  dynamic edges.
+
+The following direct-`dev` instructions govern **direct application development
+on `dev`**, not these two explicitly approved special workstreams.
+
 ## Direct-`dev` collaboration (2026-10-12)
 
 The previously parallel public-facing chat has ended. The current continuation
