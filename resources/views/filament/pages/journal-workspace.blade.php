@@ -146,7 +146,7 @@
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data admin-table--ranked">
-                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog admin-table--fold-at-compact' : 'journal-table--exhibitions admin-table--fold-at-actions' }}">
+                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog admin-table--fold-at-compact' : 'journal-table--exhibitions admin-table--fold-at-compact' }}">
                     <colgroup>
                         <col class="admin-table__col-quarter-unit admin-table__col-position">
                         <col class="admin-table__col-quarter-unit admin-table__col-drag">
