@@ -4,6 +4,8 @@ Die **20** [Mermaid-Detaildiagramme](generated/class-imports/) umfassen insgesam
 
 **Eindeutige Semantik:** Ein Pfeil `A -->|import| B` bedeutet nur, dass die Quell-PHP-Datei A einen Import von B **deklariert**. Er beweist nicht, dass A B instanziiert, eine Methode aufruft, die Container-Bindung auflöst oder die Klassendatei zur Laufzeit lädt. [Der Gesamtmodulgraph](generated/app-module-imports.mmd) fasst dieselben Kanten zusammen; [Call-Sites](admin-publication-calls.md) und [UI-Traits](ui-surfaces.md) besitzen separate, stärkere Evidenz.
 
+**Aktualitätsprüfung (14.10.2026):** Der [inkrementelle 248-Dateien-Git-Blob-Abgleich](php-source-audit.md#änderungsabgleich-gegen-aktuellen-git-tree-14102026) bestätigt, dass seit der ursprünglichen Quellaufnahme nur zwei PHP-Dateien verändert wurden und deren benannte Typen/Projektimports unverändert sind. Die **900 Typ-Importkanten** und 20 Klassengraphen bleiben daher für den geprüften `dev`-Stand strukturell passend. Andere auditierte Roh-Quellanker bleiben an die ursprüngliche `source_ref` gebunden; keine nativen Generatorläufe werden behauptet.
+
 ## Modulansichten
 
 | Modul | Eigene Typen | App-Imports | Diagramm |

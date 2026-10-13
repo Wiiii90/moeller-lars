@@ -21,6 +21,19 @@ Die 248 Quelldateien wurden einzeln über den authentifizierten GitHub-Zugriff g
 
 **Klassenebene:** [Alle 20 Modul-Klassendiagramme](class-import-diagrams.md) geben die Quelltypen und Importkanten einzeln wieder, statt einen einzigen unlesbaren 248-Node-Graphen zu erzeugen.
 
+## Änderungsabgleich gegen aktuellen Git-Tree (14.10.2026)
+
+Der ursprüngliche vollständige Katalog wurde bei `ca162bcd5e5bbaf50bc6bdb9c6bc01640269d027` erstellt. Die beiden **vollständigen rekursiven Git-Trees** dieses Commits und des überprüften `dev`-Commits `1ca4014cae997b0b4a40422944b90a0328524f53` enthalten jeweils **248** Dateien unter `app/**/*.php`, ohne hinzugefügte oder gelöschte Pfade. Der SHA-Vergleich aller 248 PHP-Blobs weist exakt **zwei veränderte Dateien** aus:
+
+| Geänderte Quelle | Gegen das alte Inventar erneut geprüft |
+| --- | --- |
+| [`JournalWorkspace.php`](../../app/Filament/Pages/JournalWorkspace.php) | Benannte Typdeklaration bleibt `App\\Filament\\Pages\\JournalWorkspace`; alle **20** `use App\\...`-Importe stimmen textgleich mit dem Inventar; **39** öffentliche Methoden haben dieselben Namen |
+| [`SecurityHeaders.php`](../../app/Http/Middleware/SecurityHeaders.php) | Benannte Typdeklaration `App\\Http\\Middleware\\SecurityHeaders`, weiterhin **keine** projektinternen Imports; öffentliche Methode `handle()` unverändert |
+
+**Präzise Folgerung:** Da sämtliche übrigen 246 PHP-Blobs unverändert sind und die beiden veränderten Quellen keine Import-/Typänderung haben, bleiben der **248-Typen-Katalog, 900 deklarierten internen Imports und die daraus erzeugten 20 Klassendiagramme als Typ-/Importgraph** für diesen geprüften Stand unverändert richtig. Das ist eine **inkrementelle Git-Blob-/Quelltextprüfung**, keine neue Ausführung des nativen PHP-Generators.
+
+**Nicht erneuert:** Die im [JSON-Audit](generated/app-source-audit.json) bewusst fixierte `source_ref` bleibt der ursprüngliche vollständige Lese-Commit. Insbesondere gespeicherte **Dateibytes, rohe `::class`-Hinweise und andere zeilenbezogene Anker** veränderter Dateien sind nicht automatisch die heutigen Werte. Das JSON wird daher nicht durch einen fälschlich als vollständige Neugenerierung ausgegebenen Teilpatch umetikettiert. Bei späteren `dev`-PHP-Änderungen muss diese Delta-Abdeckung erneut geprüft werden.
+
 ## Modulübergreifende Imports
 
 | Quellmodul → importiertes Modul | Explizite Deklarationen |
