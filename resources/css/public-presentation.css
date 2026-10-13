@@ -94,8 +94,9 @@ body {
     background: var(--public-surface);
 }
 
-/* The menu belongs to the shared folio language. Its left/bottom trace
-   and the unequal upward right edge remain outside the measured menu rail. */
+/* Menu folio: two existing strokes, never additional decoration.
+   West edge turns INTO the sheet near its top (no bottom wrap).
+   East edge returns a few pixels INTO the white sheet at both ends. */
 .site-navigation {
     position: relative;
     order: 1;
@@ -107,26 +108,31 @@ body {
 .site-navigation::before,
 .site-navigation::after {
     position: absolute;
+    box-sizing: border-box;
     content: "";
     pointer-events: none;
 }
+/* Left: the outer vertical meets a short upper return on the western
+   sheet edge, not a long horizontal rule wrapping around underneath. */
 .site-navigation::before {
     top: .35rem;
-    right: 1.15rem;
-    bottom: -.48rem;
+    bottom: -.38rem;
     left: -.5rem;
-    border-left: 1px solid var(--public-folio-light);
-    border-bottom: 1px solid var(--public-folio-soft);
-}
-/* A different, taller right-side pencil trace opens above the menu.
-   It neither extends the rail nor duplicates the Content sheet silhouette. */
-.site-navigation::after {
-    top: -1.1rem;
-    right: -.52rem;
-    bottom: .48rem;
     width: .52rem;
     border-top: 1px solid var(--public-folio-soft);
+    border-left: 1px solid var(--public-folio-light);
+}
+/* Right: the same connected paper-edge language as #content::after.
+   The .76rem width with a .52rem outer offset makes both returns meet
+   the white menu face by .24rem; no stroke traverses the menu itself. */
+.site-navigation::after {
+    top: .48rem;
+    bottom: -.44rem;
+    right: -.52rem;
+    width: .76rem;
+    border-top: 1px solid var(--public-folio-soft);
     border-right: 1px solid var(--public-folio-light);
+    border-bottom: 1px solid var(--public-folio-soft);
 }
 
 .site-navigation__rail,

@@ -15,7 +15,6 @@ import { applyPublicLayoutFromMeta, initializePublicSpaLinks } from './public-sp
 // The module and delegation are loaded once. Page-local resources aren't.
 let currentContent = null;
 let disposers = [];
-let pendingVisit = false;
 
 function disposePage() {
     for (const dispose of disposers) dispose?.();
@@ -34,20 +33,15 @@ function initializePage() {
     disposers.push(initializeJournalPresentation());
     disposers.push(initializeMatomoTracking(root));
     disposers.push(initializePublicNavigation());
+    advancePublicFolio();
 }
 
-document.addEventListener('livewire:navigate', () => { pendingVisit = true; });
 document.addEventListener('livewire:navigating', (event) => {
     capturePublicFolio();
     disposePage();
     event.detail.onSwap?.(applyPublicLayoutFromMeta);
 });
-document.addEventListener('livewire:navigated', () => {
-    initializePage();
-    if (!pendingVisit) return; // Livewire also fires this event on initial load.
-    pendingVisit = false;
-    advancePublicFolio();
-});
+document.addEventListener('livewire:navigated', initializePage);
 
 initializePublicSpaLinks();
 if (document.readyState === 'loading') {

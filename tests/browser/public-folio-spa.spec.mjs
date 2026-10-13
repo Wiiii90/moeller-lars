@@ -1,103 +1,111 @@
 import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const motionSource = readFileSync(
-    new URL('../../resources/js/public-folio-motion.js', import.meta.url), 'utf8',
-);
-const sheet = (title) => '<main id="content" class="site-content">'
-    + '<h2>' + title + '</h2></main>';
+const motionSource = readFileSync(new URL('../../resources/js/public-folio-motion.js', import.meta.url), 'utf8');
+const sheet = (name) => '<header class="site-header"><div class="site-navigation">'
+    + '<nav>' + name + '</nav></div></header>'
+    + '<main id="content" class="site-content"><h2>' + name + '</h2></main>';
 
-test('the ORIGINAL CSS pseudos animate directly, without drawing extra corners', async ({ page }) => {
+test('content and menu animate their EXISTING strokes continuously, with no extra elements', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.setContent('<!doctype html><html><head>'
-        + '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        + '</head><body class="public-site">' + sheet('Painting') + '</body></html>');
+    await page.setContent('<!doctype html><html><head><meta name="viewport" '
+        + 'content="width=device-width, initial-scale=1"></head><body class="public-site">'
+        + sheet('Paintings') + '</body></html>');
     await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
     await page.addScriptTag({
         content: motionSource.replace(/^export /gm, '')
             + '\nwindow.publicFolioTest = { capturePublicFolio, advancePublicFolio };',
     });
-
-    const initial = await page.evaluate(() => {
-        const el = document.querySelector('#content');
-        const left = getComputedStyle(el, '::before');
-        const right = getComputedStyle(el, '::after');
-        return {
-            children: el.children.length,
-            left: { top: left.top, bottom: left.bottom, width: left.width, x: left.left },
-            right: { top: right.top, bottom: right.bottom, width: right.width, x: right.right },
-        };
-    });
-    expect(initial.children).toBe(1);
-
     await page.evaluate(() => window.publicFolioTest.advancePublicFolio());
-    const animations = await page.evaluate(() => {
-        const el = document.querySelector('#content');
-        const tracked = document.getAnimations().filter((animation) =>
-            animation.effect.target === el && !!animation.effect.pseudoElement).map((animation) => ({
-            pseudo: animation.effect.pseudoElement,
-            duration: animation.effect.getTiming().duration,
-            frames: animation.effect.getKeyframes(),
+    const state = await page.evaluate(() => {
+        const content = document.querySelector('#content');
+        const menu = document.querySelector('.site-navigation');
+        const effects = document.getAnimations().map(a => ({
+            target: a.effect.target === content ? 'content' :
+                a.effect.target === menu ? 'menu' : 'other',
+            pseudo: a.effect.pseudoElement || null,
+            duration: a.effect.getTiming().duration,
+            iterations: a.effect.getTiming().iterations,
+            frames: a.effect.getKeyframes(),
         }));
         return {
-            children: el.children.length,
-            tracked,
-            shadows: document.getAnimations().filter((animation) =>
-                animation.effect.target === el && !animation.effect.pseudoElement).map((animation) => ({
-                duration: animation.effect.getTiming().duration,
-                frames: animation.effect.getKeyframes(),
-            })),
-            leftWidth: getComputedStyle(el, '::before').width,
-            rightWidth: getComputedStyle(el, '::after').width,
-            leftOffset: getComputedStyle(el, '::before').left,
-            rightOffset: getComputedStyle(el, '::after').right,
+            contentChildren: content.children.length,
+            menuChildren: menu.children.length,
+            contentLeftWidth: getComputedStyle(content, '::before').width,
+            menuRightWidth: getComputedStyle(menu, '::after').width,
+            effects,
         };
     });
-    expect(animations.children).toBe(1);
-    expect(animations.tracked).toHaveLength(2);
-    expect(animations.shadows).toHaveLength(1);
-    expect(animations.shadows[0].duration).toBe(1150);
-    expect(animations.shadows[0].frames[1].boxShadow).toContain('var(--public-folio-depth)');
-    expect(animations.tracked.map((a) => a.pseudo).sort()).toEqual(['::after', '::before']);
-    expect(animations.tracked.every((a) => a.duration === 1150)).toBe(true);
-    expect(animations.leftWidth).toBe(initial.left.width);
-    expect(animations.rightWidth).toBe(initial.right.width);
-    expect(animations.leftOffset).toBe(initial.left.x);
-    expect(animations.rightOffset).toBe(initial.right.x);
+    expect(state.contentChildren).toBe(1);
+    expect(state.menuChildren).toBe(1);
+    expect(state.effects.filter(x => x.pseudo)).toHaveLength(4);
+    expect(state.effects.filter(x => x.target === 'content' && !x.pseudo)).toHaveLength(1);
+    expect(state.effects.every(x => x.iterations === Infinity)).toBe(true);
+    expect(state.effects.every(x => x.frames[0].top === undefined
+        || x.frames[0].top === x.frames.at(-1).top)).toBe(true);
 
-    // Transfer an in-progress pseudo animation to a newly inserted sheet.
-    await page.waitForTimeout(170);
-    const interrupted = await page.evaluate((html) => {
-        const old = document.querySelector('#content');
-        const before = getComputedStyle(old, '::before').top;
+    // The menu left trace cannot wrap around the bottom; the right side
+    // physically reaches a few pixels into the white sheet.
+    const geometry = await page.evaluate(() => {
+        const menu = document.querySelector('.site-navigation');
+        const left = getComputedStyle(menu, '::before');
+        const right = getComputedStyle(menu, '::after');
+        return {
+            leftNoBottom: left.borderBottomStyle === 'none',
+            leftHasTop: left.borderTopStyle === 'solid',
+            rightHasBottom: right.borderBottomStyle === 'solid',
+            rightInside: parseFloat(right.width) > Math.abs(parseFloat(right.right)),
+        };
+    });
+    expect(geometry).toEqual({
+        leftNoBottom: true, leftHasTop: true,
+        rightHasBottom: true, rightInside: true,
+    });
+
+    // A Livewire-like swap during the ongoing animation must start from
+    // the exact rendered intermediate state of BOTH original drawings.
+    await page.waitForTimeout(250);
+    const replaced = await page.evaluate((newMarkup) => {
+        const oldContent = document.querySelector('#content');
+        const oldMenu = document.querySelector('.site-navigation');
+        const priorContent = getComputedStyle(oldContent, '::before').top;
+        const priorMenu = getComputedStyle(oldMenu, '::after').top;
         window.publicFolioTest.capturePublicFolio();
-        old.outerHTML = html;
+        document.body.innerHTML = newMarkup;
         window.publicFolioTest.advancePublicFolio();
-        const replacement = document.querySelector('#content');
-        const effect = document.getAnimations().find((a) =>
-            a.effect.target === replacement && a.effect.pseudoElement === '::before');
-        return { before, frame: effect.effect.getKeyframes()[0].top, children: replacement.children.length };
+        const content = document.querySelector('#content');
+        const menu = document.querySelector('.site-navigation');
+        const effects = document.getAnimations();
+        const nextContent = effects.find(a =>
+            a.effect.target === content && a.effect.pseudoElement === '::before');
+        const nextMenu = effects.find(a =>
+            a.effect.target === menu && a.effect.pseudoElement === '::after');
+        return {
+            priorContent, priorMenu,
+            nextContent: nextContent?.effect.getKeyframes()[0].top,
+            nextMenu: nextMenu?.effect.getKeyframes()[0].top,
+            contentChildren: content.children.length,
+            menuChildren: menu.children.length,
+        };
     }, sheet('Prints'));
-    expect(interrupted.frame).toBe(interrupted.before);
-    expect(interrupted.children).toBe(1);
+    expect(replaced.nextContent).toBe(replaced.priorContent);
+    expect(replaced.nextMenu).toBe(replaced.priorMenu);
+    expect(replaced.contentChildren).toBe(1);
+    expect(replaced.menuChildren).toBe(1);
 });
 
-test('the Livewire preview retains its document across public navigation', async ({ page }) => {
+test('Livewire page navigation stays in one document and restarts ongoing native motion', async ({ page }) => {
     test.skip(!process.env.PUBLIC_SPA_SMOKE_URL,
-        'Set PUBLIC_SPA_SMOKE_URL to the local preview to verify the real Livewire transport.');
-    await page.emulateMedia({ reducedMotion: 'reduce' });
+        'Set PUBLIC_SPA_SMOKE_URL to the local Laravel preview.');
     await page.goto(new URL('/paintings', process.env.PUBLIC_SPA_SMOKE_URL).href);
-    await page.evaluate(() => { window.__publicDocumentMarker = 'unchanged'; });
+    await page.evaluate(() => { window.__navigationMarker = 'preserved'; });
     const candidate = await page.evaluate(() => [...document.querySelectorAll('.site-navigation a[wire\\:navigate]')]
-        .find((link) => new URL(link.href).pathname !== location.pathname)?.href);
+        .find(link => new URL(link.href).pathname !== location.pathname)?.href);
     expect(candidate).toBeTruthy();
-    await page.locator('.site-navigation a[wire\\:navigate]').evaluateAll((links, destination) => {
-        links.find((element) => element.href === destination)?.click();
-    }, candidate);
+    await page.locator('.site-navigation a[wire\\:navigate]').evaluateAll((links, url) =>
+        links.find(link => link.href === url)?.click(), candidate);
     await expect(page).toHaveURL(candidate);
-    await expect.poll(() => page.evaluate(() => window.__publicDocumentMarker)).toBe('unchanged');
-    await expect.poll(() => page.evaluate(() =>
-        document.querySelector('#content').style.getPropertyValue('--public-folio-left-top')
-    )).not.toBe('');
-    await expect(page.locator('.public-folio-decoration')).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => window.__navigationMarker)).toBe('preserved');
+    await expect.poll(() => page.evaluate(() => document.getAnimations()
+        .filter(a => a.effect.pseudoElement).length)).toBeGreaterThanOrEqual(2);
 });
