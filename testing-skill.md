@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, parent HEAD `def6d2406c7519023dacbe48d8c429f2f4390d0d` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `4d2b97edb9b29297c7204be62f7582dca00a0e07`. More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, parent HEAD `e71117a7d1d3cf7a06ad186f6ba39d09abcb2194` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `4d2b97edb9b29297c7204be62f7582dca00a0e07`. More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -50,7 +50,9 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Browser tests are split into `component-chromium`, `e2e-chromium`, `profiling-chromium`. New E2E cases cover page creation, selection, filters, notification dismissal and dialog lifecycle. Disposable browser seeder creates actual Page configuration alongside Pages and Contacts. Browser CI workflow is prepared for all projects but **has not run**.
 - Added public behavior checks for sitemap committed/draft visibility (`tests/Feature/Public/Seo/SeoRoutesTest.php`) and private unreferenced media access (`tests/Feature/Public/Media/OriginalAccessTest.php`).
 - Last known snapshot after refactor: **140 files under `tests/`, approx. 542 KB**, vs **141 files / 751 KB** originally. Counts will change as quality work continues; never optimize just to reduce the number.
-- Latest completed domain split before creating this handoff: commit `def6d2406c7519023dacbe48d8c429f2f4390d0d`, splitting Publication workflows by commit, media retention and Preview security.
+- Publication/Activity split reviewed again: removed duplicated imports from the extracted suites and eliminated redundant `PublicationSnapshot::TABLES`/restore-order constant tests. An actual publication media-dependency restore scenario already covers correct ordering.
+- Replaced the Dashboard feed hook-only test with an authenticated Livewire feed search/selection workflow. Removed the Pulse recorder-configuration snapshot while retaining its admin access contract. Publication history deletion test now creates its **own real checkpoint** instead of relying on seeded history.
+- Updated `tests/README.md` with the component / E2E / profiling / full browser commands. These were **authored but not executed**.
 
 ## 5. Explicitly unverified / risks
 
@@ -58,15 +60,15 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 
 - **First priority when a safe local disposable runtime is available:** validate PHP syntax, Composer/Pest test discovery, imports/helpers, Unit, Integration, Feature, Migration, Node tests and Playwright separately. Fix genuine failures without disguising them. CI must remain off until explicitly authorized.
 - Database test setup must retain `Tests\\TestCase` → `LocalPreviewDatabaseGuard::assertDisposableTestContext()`. Never run `migrate:fresh` on an ambiguous, persistent local preview or production database. Require explicit disposable PostgreSQL context.
-- Watch for helper redeclarations after splitting Pest files, misplaced `require_once` paths, unused imports, source/history-based assertions, and test cases tied to stale production APIs.
+- Watch for helper redeclarations after splitting Pest files, misplaced `require_once` paths, remaining unused imports, source/history-based assertions, and test cases tied to stale production APIs. The newly rewritten Dashboard Livewire test specifically requires runtime confirmation.
 - Browser testing depends on the disposable admin seeder, built Vite assets, current Filament markup and actual interactions; neither static fixture review nor HTML-only component tests can establish full-stack behavior.
 - **Documentation drift to reconcile with the `docs` owner:** `AGENTS.md` and `followup-skill.md` may still say “`dev` only,” or reference deleted tests; `docs/TESTING.md` on `testing` still describes an obsolete Architecture layer and old browser paths. Do not unilaterally edit `docs/TESTING.md`; flag specific changes for the docs branch / later integration.
 - New public tests and the split Publication/Activity tests deserve runtime verification, not exemption because the refactor authored them.
 
 ## 6. Next work, in recommended order
 
-1. Audit remaining existing test assertions **against live production code**, not filenames alone. Remove empty signal, stale user interactions, duplicated checks, arbitrary constants and hidden dependency on test order.
-2. Review the split test files as standalone PHP: import correctness, setup/teardown scope, global helper collisions, nondeterminism, and correctness of failure expectations. Prefer simplifying rather than mechanically splitting.
+1. Continue auditing existing test assertions **against live production code**, not filenames alone. Remove empty signal, stale user interactions, duplicated checks, arbitrary constants and hidden dependency on test order.
+2. Review remaining split test files as standalone PHP: unused global fixtures, setup/teardown scope, function redeclarations, nondeterminism, and correctness of failure expectations. In particular, Publication media tests still register unrelated preview routes via shared `beforeEach`; simplify this.
 3. Strengthen only the important gaps: permissions, audit/persistence correctness, Livewire reopen/no-op/error behavior, publication Working vs LIVE, rollback, public privacy and media authorization. Use **few, strong** tests.
 4. Validate test discovery, syntax, and runtime using a verified disposable environment **without CI**, if one becomes available; otherwise mark each unexecuted layer as `NOT RUN`.
 5. Keep browser scenarios representative and stable; consolidate setup and ensure E2E fixtures reflect actual requirements. Report measured profiles separately from blocking correctness assertions.

@@ -1,26 +1,5 @@
 <?php
 
-use App\Domain\Admin\AdminSettingsService;
-use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Publication\PublicationMediaCleanupService;
-use App\Domain\Publication\PublicationService;
-use App\Domain\Publication\PublicationSnapshot;
-use App\Filament\Support\AdminActivityFeed;
-use App\Http\Middleware\ProtectArtistPreview;
-use App\Livewire\Admin\PublicationStateControl;
-use App\Models\AuditEvent;
-use App\Models\MediaAsset;
-use App\Models\MediaVariant;
-use App\Models\PublicationCheckpoint;
-use App\Models\PublicationCheckpointEvent;
-use App\Models\PublicContentSetting;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Testing\TestResponse;
-use Livewire\Livewire;
 
 require_once __DIR__.'/PublicationWorkflowFixtures.php';
 

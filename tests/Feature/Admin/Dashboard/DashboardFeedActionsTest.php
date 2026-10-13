@@ -1,39 +1,43 @@
 <?php
 
-use App\Domain\Admin\DashboardFeed;
-use App\Filament\Pages\Dashboard;
-use App\Models\ContactMessage;
-use Carbon\Carbon;
-use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 
 uses(RefreshDatabase::class);
 
-it('resets feed page when search type or page size changes', function (): void {
-    $dashboard = new Dashboard;
+it('filters the Dashboard feed through Livewire and clears stale selections', function (): void {
+    config()->set('dashboard-feed.items', []);
+    $this->actingAs(\\App\\Models\\User::factory()->admin()->create(), 'web');
 
-    $dashboard->feedPage = 4;
-    $dashboard->updatedFeedSearch();
-    expect($dashboard->feedPage)->toBe(1);
+    $needle = ContactMessage::query()->create([
+        'sender_name' => 'Distinctive Needle',
+        'sender_email' => 'needle@example.test',
+        'message' => 'Find this contact',
+        'mail_delivery_status' => ContactMessage::DELIVERY_DELIVERED,
+    ]);
+    $other = ContactMessage::query()->create([
+        'sender_name' => 'Other Visitor',
+        'sender_email' => 'other@example.test',
+        'message' => 'Another contact',
+        'mail_delivery_status' => ContactMessage::DELIVERY_DELIVERED,
+    ]);
 
-    $dashboard->feedPage = 3;
-    $dashboard->feedType = 'contact';
-    $dashboard->updatedFeedType();
-    expect($dashboard->feedPage)->toBe(1)
-        ->and($dashboard->feedType)->toBe('contact');
+    $component = \\Livewire\\Livewire::test(Dashboard::class)
+        ->set('feedType', 'contact')
+        ->call('toggleSelectAll');
 
-    $dashboard->feedPage = 2;
-    $dashboard->feedType = 'unsupported';
-    $dashboard->updatedFeedType();
-    expect($dashboard->feedPage)->toBe(1)
-        ->and($dashboard->feedType)->toBe('all');
+    expect($component->get('selectedFeedKeys'))->toEqualCanonicalizing([
+        'contact:'.$needle->getKey(),
+        'contact:'.$other->getKey(),
+    ]);
 
-    $dashboard->feedPage = 3;
-    $dashboard->updatedFeedPageSize(25);
-    expect($dashboard->feedPage)->toBe(1)
-        ->and($dashboard->feedPageSize)->toBe(25);
+    $component->set('feedSearch', 'Distinctive Needle');
+    expect($component->get('selectedFeedKeys'))->toBe([]);
+
+    $component->call('toggleSelectAll');
+    expect($component->get('selectedFeedKeys'))->toBe(['contact:'.$needle->getKey()]);
+
+    $component->set('feedType', 'unsupported');
+    expect($component->get('feedType'))->toBe('all')
+        ->and($component->get('selectedFeedKeys'))->toBe([]);
 });
 
 

@@ -1,15 +1,5 @@
 <?php
 
-use App\Domain\Publication\PublicationMediaCleanupService;
-use App\Domain\Publication\PublicationService;
-use App\Domain\Publication\PublicationVersionService;
-use App\Models\AuditEvent;
-use App\Models\MediaAsset;
-use App\Models\PublicationCheckpoint;
-use App\Models\User;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 
 require_once __DIR__.'/PublicationVersionFixtures.php';

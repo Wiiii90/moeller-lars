@@ -22,7 +22,10 @@ composer test:integration
 composer test:feature
 composer test:migration
 npm run test:js
-npm run test:browser:profile
+npm run test:browser:component   # isolated real-browser component behavior
+npm run test:browser:e2e         # disposable Laravel admin workflows
+npm run test:browser:profile     # browser profiling and evidence
+npm run test:browser             # all Playwright projects
 ```
 
 Only run database suites in an explicitly disposable PostgreSQL testing context. The `Tests\\TestCase` database guard must remain active. Browser tests must use a disposable application with deterministic fixtures, not the persistent local preview or production database.
