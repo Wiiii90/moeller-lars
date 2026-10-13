@@ -690,9 +690,9 @@ final class JournalWorkspace extends Page
             $published = $post->getAttribute('published_at');
             $scheduled = $post->getAttribute('scheduled_at');
             $publication = match (true) {
-                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => 'Scheduled '.$scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
+                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => $scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
                 $published instanceof DateTimeInterface => $published->format('M j, Y'),
-                default => 'Not published',
+                default => null,
             };
             $rank = ((int) ($ranks[(int) $post->getKey()] ?? 0)) + 1;
 
