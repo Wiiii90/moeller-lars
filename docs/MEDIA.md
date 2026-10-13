@@ -145,6 +145,8 @@ Normal media deletion is conservative and reference-aware.
 
 Presentation toggles such as Exhibition Gallery/Map do not silently detach unrelated media.
 
+**Aktuelle Source-Abweichung (14.10.2026):** Home Custom/Under Construction besitzen List-Blöcke mit eigener `media_asset_id` und Rich-Text-Medien in `items[].body`. `MediaReferenceQuery::mediaIdsForHome()` und `MediaAssetEditorialService::removeHomeReferences()` berücksichtigen aktuell nur Home-`image` und `text` und **übersehen Home-`list`**. Damit sind Referenzfilter und autorisierte Cleanup-Transaktionen für Home-Listen nicht vollständig symmetrisch. Die [genaue Quellmatrix und das isolierte Testprotokoll](architecture/media-reference-and-cleanup.md) markieren diese **nicht runtimegetestete Produktabweichung**. Bitte nicht mit einem page-local Workaround oder ungesicherten Storage-Löschaufruf korrigieren; der Fix gehört in die kanonischen Media-Owner auf `dev`.
+
 ### Gallery, Artwork usage and Storage deletion
 
 A `MediaAsset` is a reusable Storage file; an `Artwork` is a separate editorial record. **When explicit Storage deletion is authorized**, [`MediaAssetEditorialService`](../app/Domain/Media/MediaAssetEditorialService.php) must remove all related usages within its single canonical transaction, unpublish any Artwork losing its primary usage and remove that Artwork from its Gallery without deleting unrelated assets. An unassigned Artwork remains as historical/editorial metadata; a Gallery card must never be left orphaned. Do **not** add a second Gallery-local cleanup mechanism. Reference discovery is an input to this removal transaction, **not** a general hard block; subsequent physical-media removal is subject to Working, LIVE and retained-history protection.
