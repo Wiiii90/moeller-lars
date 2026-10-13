@@ -1,10 +1,7 @@
 <?php
 
 use App\Domain\Publication\PublicationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-
-uses(RefreshDatabase::class);
 
 it('reports concrete changed records and fields for staged publication review', function (): void {
     $id = (int) DB::table('public_content_settings')->where('scope', 'general')->value('id');

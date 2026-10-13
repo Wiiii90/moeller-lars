@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `12939c38e92480c55d39f67cfcb86a44df6e52b7` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, previous HEAD `734d574604cd7ce23f67f1209ace0c9b674bb5ea` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `59f1cd436d598b79665de03c7c564578725cc6f9` (from `dev` at `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -61,12 +61,15 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Reintegrated later `dev` Journal/Exhibition changes and their **new or updated Feature/Unit tests**, preserving the intentional deletion of `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php`.
 - Corrected the newly merged Journal copyright Unit test to construct `JournalMediaRenderer` with a mock `PublicMedia` dependency rather than calling `app()` without bootstrapping Laravel. All current `tests/Unit` files were scanned for `app()`; no other such calls were found.
 - Deleted the dialog-submit implementation introspection suite (icon/name/modal property assertions); actual Edit dialog lifecycle and Add page/create workflows retain behavioral coverage. Removed two brittle markup assertions from Custom Page type-conversion coverage; the test still performs the real conversion and verifies persisted component types. Deleted a separate one-row test consisting entirely of incidental drag-handle markup and copy assertions.
-- Source-inventoried **all 125 PHP files** (115 tests, plus helpers/bootstrap) by case name and inspected obvious weak-assertion patterns. Further full code-to-contract review remains required.
+- Source-inventoried all PHP test files by case name and inspected obvious weak-assertion patterns. Further full code-to-contract review remains required.
 - Removed a constant-only Undo retention case and a hard-coded 256 MiB expectation; the live retention behavior test remains. Removed Home component options equality snapshot, leaving real component conversion/validation; removed Storage CSS class order and enum icon assertions while keeping actual page actions.
 - Removed wall-clock-dependent page names from Playwright creation E2E; deterministic retry/repeat-index suffix preserves a fresh slug on retries. A new browser run still requires recreating the disposable seeded database.
 - Strengthened Exhibition map Livewire autosave scenarios with immediate header event on a real change and an audit/mailbox no-op boundary after repeat save; source-reviewed `JournalEntryEditorSchema` and existing mailbox assertions, runtime NOT RUN.
 - Reworked Playwright Admin filter E2E: no fixed field counts per page, verifies a single semantic Filters group and adds the real Pages status-filter behavior across compact-to-inline resize. These browser tests have **not been run**.
 - Added the `LocalPreviewDatabaseGuard` to `BrowserProfilingSeeder`: besides explicit `APP_ENV=testing` and Browser flag, the seeded browser run requires the existing CI/disposable DB guard. Never bypass or relax that check to get a local run. Removed historical dialog-copy assertions from Journal template autosave.
+
+- Audited named global test helpers and relative `require_once` fixtures across the complete PHP test tree: no duplicate declarations or missing relative fixture paths detected by source inspection. 
+- Removed redundant file-scoped `RefreshDatabase` imports/`uses` in Activity, Dashboard, Dialog, Journal and Notification test files (10 files in first batch); these layers are already centrally configured in `tests/Pest.php`.
 
 ## 5. Explicitly unverified / risks
 

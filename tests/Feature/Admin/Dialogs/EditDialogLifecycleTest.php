@@ -4,10 +4,7 @@ use App\Filament\Pages\Dashboard;
 use App\Models\AdminNotification;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');

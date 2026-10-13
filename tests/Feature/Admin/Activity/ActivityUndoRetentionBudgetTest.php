@@ -3,10 +3,7 @@
 use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-
-uses(RefreshDatabase::class);
 
 it('retains Undo receipts by age count and logical byte budget without deleting Activity', function (): void {
     $actor = User::factory()->admin()->create();

@@ -5,11 +5,8 @@ use App\Filament\Pages\Dashboard;
 use App\Models\ContactMessage;
 use Carbon\Carbon;
 use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-
-uses(RefreshDatabase::class);
 
 it('projects announcements changelog and contact into the shared feed without tutorials', function (): void {
     config()->set('dashboard-feed.items', [

@@ -6,9 +6,6 @@ use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 it('reserves position one for a new Journal entry and keeps existing order contiguous', function (): void {
     $section = SiteSection::query()->create([

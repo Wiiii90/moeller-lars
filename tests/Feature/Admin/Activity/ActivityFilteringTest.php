@@ -7,9 +7,6 @@ use App\Models\PublicationCheckpoint;
 use App\Models\PublicationCheckpointEvent;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 it('filters Activity by time without requiring a date', function (): void {
     $actor = User::factory()->admin()->create();

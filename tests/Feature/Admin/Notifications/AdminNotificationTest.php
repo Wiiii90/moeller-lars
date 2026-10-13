@@ -4,11 +4,8 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Models\AdminNotification;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Component;
 use Livewire\Livewire;
-
-uses(RefreshDatabase::class);
 
 final class AdminHeaderNotificationProbe extends Component
 {

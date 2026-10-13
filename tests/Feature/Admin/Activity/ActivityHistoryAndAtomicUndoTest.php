@@ -7,9 +7,6 @@ use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 it('keeps the default Activity feed complete beyond the former 180 day window', function (): void {
     $actor = User::factory()->admin()->create();
