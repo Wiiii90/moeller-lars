@@ -37,6 +37,34 @@ Die UI meldet danach `Commit revert staged`. Erst ein späterer `PublicationServ
 
 **Offene konkurrierende Änderungsgrenze:** Die Ermittlung von `currentLiveCheckpoint()` und `parent()` erfolgt im Code **vor** der Transaktion mit Advisory Lock. Eine mögliche Race-Bedingung mit parallelem Commit muss gesondert unter realen DB-Transaktionen geprüft werden; die bloße Existenz des Locks beweist keine vollständige Serialisierung dieses vorgelagerten Reads. Keine eigenmächtige Runtime-Reparatur auf dem Dokumentationsbranch.
 
+### Statische Race-Sequenz: Revert-Ziel vor dem Lock
+
+```mermaid
+sequenceDiagram
+    participant R as Request R: Revert current
+    participant C as Request C: Publish new commit
+    participant DB as PostgreSQL / Publication
+
+    R->>DB: currentLiveCheckpoint() -> H
+    R->>DB: H.parent() -> P
+    Note over R,DB: Noch keine Revert-Transaktion und kein Advisory Lock
+    C->>DB: BEGIN; pg_advisory_xact_lock
+    C->>DB: Working -> committed; checkpoint H2 (parent H)
+    C->>DB: COMMIT; Lock frei
+    R->>DB: BEGIN; pg_advisory_xact_lock
+    R->>DB: assertParity(); assertRestorable(P)
+    R->>DB: Replace Working from P
+    R->>DB: Set working_context(revert, source = H)
+    R->>DB: COMMIT; Lock frei
+```
+
+In diesem zulässigen **hypothetischen Interleaving** wird nach dem neu erstellten LIVE **H2** weiterhin der ursprünglich gelesene historische Parent **P** ins Working gestellt; die Revert-Metadaten beziehen sich jedoch auf **H**. [`stageRevertOfCurrent()`](../../app/Domain/Publication/PublicationVersionService.php) prüft innerhalb des Locks `assertRestorable(P)`, berechnet einen Pending-Diff und ändert Working, prüft aber **nicht erneut**, ob `currentLiveCheckpoint() === H`. Der Checkpoint-Reihenfolgeanker im späteren [`PublicationService::commit()`](../../app/Domain/Publication/PublicationService.php) ist unabhängig davon **unter Lock** und kann H2 als Parent der neu veröffentlichten Version verwenden, während der gespeicherte Revert-Source noch H ist.
+
+Das ist eine mögliche **Auseinanderentwicklung von Nutzerintention, gewähltem Working-Snapshot und Revert-Provenienz**, kein Beleg für eine bereits durchgeführte Doppelveröffentlichung, verlorene Daten oder fehlgeschlagene Transaktion. Eine spätere kanonische Korrektur müsste unter der **gleichen** Serialisierungsgrenze sowohl LIVE und Parent bestimmen beziehungsweise die ursprünglich vom Nutzer bestätigte aktuelle HEAD-ID erneut gegen LIVE prüfen, bevor Working überschrieben und der Revert-Kontext gespeichert wird. Sie darf den bestehenden History-/Receipt-Vertrag nicht umgehen.
+
+**Reproduzierbarer Testauftrag für isolierte PostgreSQL-Instanz:** mit zwei unabhängigen DB-Sessions/Revert-vor-Lock- und Commit-Interleaving H→H2 erzwingen, den Revert-Guard und seine erwartete Validation/Retry-Semantik prüfen, danach Working-Hash, `publication_working_context`, Parent/Source des nächsten Commits, Audit und User-Notification kontrollieren. Keine Änderung am Produktions- oder Preview-Schema für diesen Nachweis.
+
+
 ## 3. Reset: Working → aktueller LIVE-Inhalt
 
 [Sequenzdiagramm](generated/working-operations/reset.mmd)
