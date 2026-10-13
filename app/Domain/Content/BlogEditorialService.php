@@ -52,6 +52,7 @@ final class BlogEditorialService
     {
         $actor = $this->audit->requireActor();
         $data['site_section_id'] = $post->getAttribute('site_section_id');
+        $data['gallery_presentation'] ??= $post->galleryPresentation();
         $validated = $this->validate($data, (int) $post->getKey());
 
         return DB::transaction(function () use ($post, $data, $validated, $actor): BlogPost {
@@ -284,6 +285,10 @@ final class BlogEditorialService
         if ($body !== null && ! is_string($body)) {
             throw ValidationException::withMessages(['body' => 'The blog content must be text.']);
         }
+        $presentation = $data['gallery_presentation'] ?? null;
+        if ($presentation !== null && (! is_string($presentation) || ! in_array($presentation, ['sequence', 'grid', 'mosaic', 'slideshow'], true))) {
+            throw ValidationException::withMessages(['gallery_presentation' => 'Choose a supported Gallery presentation.']);
+        }
         $excerpt = $data['excerpt'] ?? null;
         if ($excerpt !== null && (! is_string($excerpt) || mb_strlen($excerpt) > 1000)) {
             throw ValidationException::withMessages(['excerpt' => 'The blog excerpt is invalid.']);
@@ -297,6 +302,7 @@ final class BlogEditorialService
             'state' => $state,
             'position' => (int) $position,
             'excerpt' => is_string($excerpt) && trim($excerpt) !== '' ? trim($excerpt) : null,
+            'gallery_presentation' => $presentation ?? 'sequence',
             'published_at' => $this->dateTime($data['published_at'] ?? null, 'published_at'),
             'scheduled_at' => $this->dateTime($data['scheduled_at'] ?? null, 'scheduled_at'),
         ];

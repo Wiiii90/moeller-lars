@@ -108,6 +108,12 @@ Body is canonical Markdown and may reference Storage media through `media:<id>`.
 
 Structured Cover/Gallery usage lives in `journal_entry_media`.
 
+Blog posts retain an editor-controlled `gallery_presentation` (`sequence` default,
+`grid`, `mosaic`, or `slideshow`). The forward migration adds it to
+`public.blog_posts` and `committed.blog_posts` together; preexisting records
+keep their original sequential presentation. This is a presentation attribute,
+not a second Journal media table or a modification to the ordered media usages.
+
 ### `exhibitions`
 
 Every Exhibition belongs to a Journal SiteSection. Important concepts include:

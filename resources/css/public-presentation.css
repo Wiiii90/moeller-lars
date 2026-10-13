@@ -68,7 +68,8 @@ body {
     padding: 0;
     flex-direction: column;
     background: var(--public-page);
-    border-bottom: 2px solid var(--public-header-separator);
+    border-bottom: 2px solid transparent;
+    border-image: linear-gradient(90deg, rgba(255,255,255,.33), var(--public-header-separator) 24%, var(--public-header-separator) 76%, rgba(255,255,255,.33)) 1;
 }
 
 /* Header navigation and page content share one centered shell geometry. */
@@ -84,7 +85,34 @@ body {
     position: relative;
     order: 1;
     /* An inset hairline is visually a printed catalog edge, not new geometry. */
-    box-shadow: inset 0 -1px 0 var(--public-index-rule);
+    box-shadow: inset 0 -1px 0 var(--public-index-rule),
+                -2px 2px 0 rgba(255,255,255,.24),
+                -3px 3px 0 rgba(45,40,35,.12);
+}
+
+/* The menu and the artist's folio share one offset line vocabulary.
+   These strokes are outside the rail; they do not affect row geometry,
+   overflow measurement, selection or the child level. */
+.site-navigation::before,
+.site-navigation::after {
+    position: absolute;
+    bottom: -.34rem;
+    width: 2.3rem;
+    height: .6rem;
+    content: "";
+    pointer-events: none;
+}
+.site-navigation::before {
+    left: -.35rem;
+    border-left: 1px solid rgba(255,255,255,.58);
+    border-bottom: 1px solid rgba(255,255,255,.46);
+    transform: skewY(-3deg);
+}
+.site-navigation::after {
+    right: -.35rem;
+    border-right: 1px solid rgba(255,255,255,.58);
+    border-bottom: 1px solid rgba(255,255,255,.46);
+    transform: skewY(3deg);
 }
 
 .site-navigation__rail,
@@ -278,11 +306,12 @@ body {
 .site-navigation__back {
     display: inline-flex;
     min-height: 2.95rem;
+    height: 100%;
     min-width: 0;
     max-width: min(38%, 10rem);
     flex: 0 1 auto;
     margin: 0;
-    padding: .7rem 0;
+    padding: .9rem .4rem .82rem 0;
     align-items: center;
     justify-content: flex-start;
     gap: .38rem;
@@ -291,7 +320,7 @@ body {
     background: transparent;
     color: var(--public-index-ink);
     font-family: var(--public-index-typeface);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 400;
     letter-spacing: 0;
     line-height: 1.15;
@@ -405,6 +434,7 @@ body {
     font-size: 2.05rem;
     font-weight: 400;
     letter-spacing: .055em;
+    text-shadow: 1px 1px 0 rgba(16,19,17,.28), -1px -1px 0 rgba(255,255,255,.09);
     line-height: 1.1;
     text-transform: none;
     white-space: nowrap;
@@ -1057,43 +1087,123 @@ body {
     padding-inline-start: min(1.5rem, 4%);
 }
 
+/* ARTICLE — a composed reading spread, not a gallery index enlarged.
+   Angular headpiece, artwork relief, an open reading field and independent
+   presentation for the authored image sequence. */
 .blog-post {
-    padding: 1.9rem .3rem 1.5rem;
+    position: relative;
+    padding: 1.9rem .3rem 1.55rem;
+    container-type: inline-size;
 }
-
 .blog-post__header {
-    margin: 0 0 1.4rem;
+    position: relative;
+    margin: 0 0 1.7rem;
+    padding: .45rem 0 1.05rem .85rem;
 }
-
+.blog-post__header::before {
+    position: absolute;
+    top: -.45rem;
+    left: -.55rem;
+    width: 4.5rem;
+    height: 2.5rem;
+    content: "";
+    border-top: 1px solid rgba(151, 134, 115, .62);
+    border-left: 1px solid rgba(151, 134, 115, .38);
+    transform: rotate(-1.1deg);
+    pointer-events: none;
+}
+.blog-post__header::after {
+    position: absolute;
+    bottom: 0;
+    left: .85rem;
+    width: min(8rem, 38%);
+    content: "";
+    border-bottom: 1px solid rgba(145, 128, 108, .34);
+    pointer-events: none;
+}
+.blog-post__cover-mount {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 2rem;
+    padding: .36rem;
+    outline: 1px solid rgba(137, 120, 99, .55);
+    box-shadow: 3px 3px 0 rgba(206, 198, 187, .46),
+                5px 5px 0 #fff,
+                6px 6px 0 rgba(159, 146, 128, .55);
+}
+.blog-post__cover-mount::after {
+    position: absolute;
+    top: -.3rem;
+    right: -.3rem;
+    width: 1.55rem;
+    height: 1.55rem;
+    content: "";
+    border-top: 1px solid rgba(146, 128, 108, .65);
+    border-right: 1px solid rgba(146, 128, 108, .65);
+    pointer-events: none;
+}
 .blog-post__cover-media {
     display: block;
-    width: 100%;
+    width: fit-content;
     max-width: 100%;
-    margin: 1.2rem 0 1.6rem;
+    margin: 0;
 }
-
 .blog-post__cover-media img {
     display: block;
     width: auto;
     max-width: 100%;
-    max-height: 36rem;
+    max-height: 35rem;
+    height: auto;
     object-fit: contain;
 }
-
 .blog-post__body {
     max-width: 38rem;
-    margin: 1.2rem 0;
+    margin: 1.45rem 0 2.1rem;
     font-size: .9rem;
-    line-height: 1.75;
+    line-height: 1.77;
 }
-
+.blog-post__body > :is(h1, h2, h3, h4) {
+    font-family: var(--public-index-typeface);
+    font-weight: 400;
+    color: #302a25;
+}
+.blog-post__body blockquote {
+    padding-left: 1.2rem;
+    border-left: 1px solid rgba(145, 128, 108, .62);
+}
 .blog-post__gallery {
-    margin: 1.6rem 0;
+    position: relative;
+    min-width: 0;
+    margin: 2.1rem 0 2.45rem;
+    padding: 1.25rem 0 .55rem;
 }
-
+.blog-post__gallery::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: min(8rem, 38%);
+    content: "";
+    border-top: 1px solid rgba(145, 128, 108, .46);
+    pointer-events: none;
+}
+.blog-post__gallery .journal-entry-gallery {
+    margin-top: 0;
+    min-width: 0;
+}
 .blog-post__footer {
-    margin-top: 2.4rem;
-    padding-top: 1.1rem;
+    position: relative;
+    margin: 2rem 0 0;
+    padding: 1.05rem 0 0;
+}
+.blog-post__footer::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3.5rem;
+    content: "";
+    border-top: 1px solid rgba(145, 128, 108, .43);
+    pointer-events: none;
 }
 
 @container (max-width: 23rem) {
