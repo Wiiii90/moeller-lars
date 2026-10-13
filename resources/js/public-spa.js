@@ -26,6 +26,7 @@ export function isPublicSpaDestination(href, currentHref, target = '', isDownloa
 export function markPublicSpaLinks(root = document.body) {
     for (const link of root.querySelectorAll('a[href]')) {
         if (link.hasAttribute('download') || link.hasAttribute('data-public-full-load')
+            || link.hasAttribute('data-navigation-parent-link')
             || link.relList?.contains('external')
             || !isPublicSpaDestination(link.getAttribute('href'), window.location.href, link.target)) {
             continue;

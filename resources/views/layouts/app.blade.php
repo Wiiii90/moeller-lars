@@ -70,7 +70,8 @@
                                 <div class="site-navigation__item @if ($navigationItem['active']) is-active @endif" data-navigation-item data-navigation-key="{{ $navigationItem['tie_breaker'] }}:{{ $navigationItem['label'] }}">
                                     <div class="site-navigation__primary">
                                         @if ($navigationItem['url'] !== null)
-                                            <a href="{{ $navigationItem['url'] }}" wire:navigate
+                                            <a href="{{ $navigationItem['url'] }}"
+                                                @if ($navigationItem['children'] === []) wire:navigate @endif
                                                 @if ($navigationItem['current']) aria-current="page" @endif
                                                 @if ($navigationItem['children'] !== [])
                                                     aria-expanded="{{ $selectedChildParent ? 'true' : 'false' }}"

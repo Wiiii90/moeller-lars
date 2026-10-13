@@ -276,6 +276,8 @@ export function initializeArtworkViewer(root = document) {
         next.disabled = adjacentIndex(index, 1, items.length) === null;
         pageLink.hidden = false;
         pageLink.href = item.page;
+        // The link is populated on demand, after initial SPA link discovery.
+        pageLink.setAttribute('wire:navigate', '');
         expectedSrc = item.src;
         clearMedia();
         missing.hidden = true;
