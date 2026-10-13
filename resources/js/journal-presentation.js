@@ -36,6 +36,11 @@ function initializeMapDialog(button) {
     if (!(dialog instanceof HTMLDialogElement)) return;
 
     button.addEventListener('click', () => {
+        const frame = dialog.querySelector('iframe[data-exhibition-dialog-src]');
+        if (frame) {
+            frame.src = frame.dataset.exhibitionDialogSrc;
+            frame.removeAttribute('data-exhibition-dialog-src');
+        }
         if (!dialog.open) dialog.showModal();
     });
     dialog.querySelector('[data-exhibition-map-close]')?.addEventListener('click', () => dialog.close());
@@ -44,7 +49,21 @@ function initializeMapDialog(button) {
     });
 }
 
+function initializeExhibitionMapDisclosure(disclosure) {
+    disclosure.addEventListener('toggle', () => {
+        if (!disclosure.open) return;
+
+        // Do not request historical map embeds until a visitor asks for one.
+        const frame = disclosure.querySelector('iframe[data-exhibition-map-src]');
+        if (frame) {
+            frame.src = frame.dataset.exhibitionMapSrc;
+            frame.removeAttribute('data-exhibition-map-src');
+        }
+    });
+}
+
 export function initializeJournalPresentation() {
+    document.querySelectorAll('[data-exhibition-map-disclosure]').forEach(initializeExhibitionMapDisclosure);
     document.querySelectorAll('[data-journal-slideshow]').forEach(initializeSlideshow);
     document.querySelectorAll('[data-exhibition-map-expand]').forEach(initializeMapDialog);
 }
