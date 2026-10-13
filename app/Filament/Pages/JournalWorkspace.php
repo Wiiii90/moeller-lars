@@ -378,7 +378,7 @@ final class JournalWorkspace extends Page
             })
             ->schema([
                 Grid::make()->columns(2)->schema([
-                    Select::make('template')->label('Template')->options(JournalTemplate::options())->required()->live(),
+                    Select::make('template')->label('Template')->options(JournalTemplate::options())->required(),
                     TextInput::make('title')->label('Journal title')->required()->maxLength(160),
                     TextInput::make('navigation_label')->label('Navigation label')->required()->maxLength(120),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
