@@ -50,16 +50,6 @@ body.public-site .site-header {
     letter-spacing: .12em;
 }
 
-.exhibition-entry__map--wide .exhibition-entry__map-frame,
-.exhibition-entry__map--wide .exhibition-map-dialog__frame {
-    aspect-ratio: 16 / 9;
-}
-
-.exhibition-entry__map--square .exhibition-entry__map-frame,
-.exhibition-entry__map--square .exhibition-map-dialog__frame {
-    aspect-ratio: 1 / 1;
-}
-
 .artwork-card__video,
 .artwork-detail__video {
     display: block;

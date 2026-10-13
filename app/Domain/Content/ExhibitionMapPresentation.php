@@ -6,7 +6,7 @@ use App\Models\Exhibition;
 
 final class ExhibitionMapPresentation
 {
-    /** @return array{embed_url:string, public_url:string, shape:string}|null */
+    /** @return array{embed_url:string, public_url:string, shape:string, latitude:float, longitude:float}|null */
     public function for(Exhibition $exhibition): ?array
     {
         if (! $exhibition->hasCoordinates()) {
@@ -35,6 +35,8 @@ final class ExhibitionMapPresentation
                 'mlon' => $longitude,
             ]).'#map=16/'.$latitude.'/'.$longitude,
             'shape' => $shape,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
         ];
     }
 

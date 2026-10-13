@@ -64,7 +64,8 @@ final class SecurityHeaders
         $styleSources = ["'self'", "'nonce-{$styleNonce}'"];
         $connectSources = ["'self'"];
         $imageSources = ["'self'", 'data:'];
-        $frameSources = ["'self'", 'https://www.openstreetmap.org'];
+        // Interactive Exhibition tiles are requested only after opening the map dialog.
+        $imageSources[] = 'https://tile.openstreetmap.org';
 
         if ((bool) config('analytics.matomo.tracking_enabled')) {
             $baseUrl = config('analytics.matomo.base_url');
@@ -96,7 +97,7 @@ final class SecurityHeaders
             'img-src '.implode(' ', $imageSources),
             "font-src 'self' data:",
             'connect-src '.implode(' ', $connectSources),
-            'frame-src '.implode(' ', $frameSources),
+            "frame-src 'self'",
             "object-src 'none'",
             "base-uri 'self'",
             'frame-ancestors '.($allowSameOriginFraming ? "'self'" : "'none'"),

@@ -47,9 +47,7 @@
     font-size: .68rem;
 }
 
-.journal-entry-gallery__controls button,
-.exhibition-entry__map-expand,
-.exhibition-map-dialog__close {
+.journal-entry-gallery__controls button {
     border: 1px solid #d8d5d2;
     background: rgba(255, 255, 255, .94);
     color: #68635f;
@@ -66,98 +64,168 @@
 .journal-entry-gallery__controls button:first-child { justify-self: start; }
 .journal-entry-gallery__controls button:last-child { justify-self: end; }
 
-.exhibitions-page .exhibition-entry__map--wide {
-    width: min(100%, 44rem);
-    max-width: 44rem;
-}
-
-.exhibitions-page .exhibition-entry__map--square {
-    width: min(100%, 32rem);
-    max-width: 32rem;
-}
-
-.exhibition-entry__map-frame {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-}
-
-.exhibition-entry__map-frame > iframe,
-.exhibition-map-dialog__frame > iframe {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border: 0;
-}
-
-.exhibition-entry__map-expand {
-    position: absolute;
-    top: .55rem;
-    right: .55rem;
-    min-height: 1.9rem;
-    padding: .35rem .5rem;
-    box-shadow: 0 .15rem .5rem rgba(0, 0, 0, .08);
-}
-
-.exhibition-entry__map-expand:hover,
-.exhibition-entry__map-expand:focus-visible,
-.exhibition-map-dialog__close:hover,
-.exhibition-map-dialog__close:focus-visible,
-.journal-entry-gallery__controls button:hover,
-.journal-entry-gallery__controls button:focus-visible {
-    border-color: #97908a;
-    color: #33302d;
-    outline: none;
-}
-
+/* Exhibition maps are loaded only inside one native dialog. Leaflet's
+   required OSM attribution remains visible on the map. */
 .exhibition-map-dialog {
-    width: min(calc(100vw - 2rem), 72rem);
+    width: min(calc(100vw - 1.5rem), 70rem);
     max-width: none;
-    max-height: calc(100dvh - 2rem);
+    max-height: calc(100dvh - 1.5rem);
     padding: 0;
     overflow: auto;
-    border: 1px solid #d8d5d2;
+    border: 1px solid #d3ccc4;
+    border-radius: 0;
     background: #fff;
+    color: #463e36;
 }
-
-.exhibition-map-dialog::backdrop {
-    background: rgba(35, 33, 31, .72);
-}
-
+.exhibition-map-dialog::backdrop { background: rgba(28, 26, 24, .78); }
 .exhibition-map-dialog__content {
     display: grid;
-    gap: .65rem;
-    padding: .75rem;
+    min-width: 0;
+    gap: .9rem;
+    padding: clamp(.85rem, 2.3vw, 1.5rem);
 }
-
+.exhibition-map-dialog__header {
+    display: flex;
+    min-width: 0;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.exhibition-map-dialog__identity { min-width: 0; }
+.exhibition-map-dialog__eyebrow {
+    color: #887d73;
+    font-size: .62rem;
+    line-height: 1.5;
+    letter-spacing: .085em;
+    text-transform: uppercase;
+}
+.exhibition-map-dialog__identity h4 {
+    margin: .15rem 0 0;
+    color: #342c25;
+    font-family: var(--public-index-typeface);
+    font-size: clamp(1.15rem, 2.3vw, 1.5rem);
+    font-weight: 400;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+.exhibition-map-dialog__identity p {
+    margin: .28rem 0 0;
+    color: #777069;
+    font-size: .76rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
 .exhibition-map-dialog__close {
-    justify-self: end;
-    min-height: 2rem;
-    padding: .4rem .6rem;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: .45rem;
+    padding: .3rem 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #514941;
+    font-family: var(--public-index-typeface);
+    font-size: .83rem;
+    cursor: pointer;
 }
-
-.exhibition-map-dialog__frame {
-    width: min(100%, 68rem);
-    max-height: calc(100dvh - 6rem);
-    margin-inline: auto;
+.exhibition-map-dialog__close .public-icon { width: 1rem; height: 1rem; }
+.exhibition-map-dialog__close:hover,
+.exhibition-map-dialog__close:focus-visible { color: #111; }
+.exhibition-map-dialog__close:focus-visible,
+.exhibition-map-dialog__footer a:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: 4px;
 }
-
-.exhibition-map-dialog--square .exhibition-map-dialog__frame {
-    width: min(100%, calc(100dvh - 6rem), 52rem);
+.exhibition-map-dialog__canvas {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: min(56dvh, 37rem);
+    min-height: 17rem;
+    overflow: hidden;
+    border: 1px solid #d9d3cc;
+    border-radius: 0;
+    background: #edeae4;
 }
-
+.exhibition-map-dialog--square .exhibition-map-dialog__canvas {
+    width: min(100%, 32rem, calc(100dvh - 12rem));
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1;
+    justify-self: center;
+}
+.exhibition-map-dialog__status {
+    position: absolute;
+    inset: 0;
+    z-index: 800;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 1rem;
+    color: #6a6259;
+    font-size: .8rem;
+    text-align: center;
+    background: #eeebe6;
+}
+.exhibition-map-dialog__status[hidden] { display: none; }
+.exhibition-map-dialog__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: .1rem;
+}
+.exhibition-map-dialog__footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    color: #514941;
+    font-family: var(--public-index-typeface);
+    font-size: .85rem;
+    text-decoration: underline;
+    text-underline-offset: .25em;
+}
+.exhibition-map-dialog__footer .public-icon { width: .9rem; height: .9rem; }
+.exhibition-map-dialog .leaflet-container { background: #edeae4; font-family: inherit; }
+.exhibition-map-dialog .leaflet-bar {
+    margin: .75rem;
+    border: 1px solid #d3ccc4;
+    border-radius: 0;
+    box-shadow: none;
+}
+.exhibition-map-dialog .leaflet-bar a,
+.exhibition-map-dialog .leaflet-bar a:first-child,
+.exhibition-map-dialog .leaflet-bar a:last-child {
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
+    border-radius: 0;
+    background: #fff;
+    color: #514941;
+    font-family: var(--public-index-typeface);
+    font-size: 1.2rem;
+}
+.exhibition-map-dialog .leaflet-bar a:hover,
+.exhibition-map-dialog .leaflet-bar a:focus-visible { background: #f3f1ed; }
+.exhibition-map-dialog .leaflet-control-attribution {
+    padding: .2rem .4rem;
+    background: rgba(255, 255, 255, .92);
+    color: #5f574f;
+    font: 10px/1.4 Arial, sans-serif;
+}
+.exhibition-map-dialog .leaflet-control-attribution a {
+    color: #4e4640;
+    text-decoration: underline;
+}
 @media (max-width: 620px) {
-    .journal-entry-gallery--mosaic {
-        grid-template-columns: 1fr;
-    }
-
+    .journal-entry-gallery--mosaic { grid-template-columns: 1fr; }
     .journal-entry-gallery--mosaic .journal-entry-gallery__item,
     .journal-entry-gallery--mosaic .journal-entry-gallery__item:nth-child(3n + 1) {
         grid-column: 1;
         grid-row: auto;
     }
-
-    .exhibitions-page .exhibition-entry__map--square {
-        width: min(100%, 28rem);
+    .exhibition-map-dialog__canvas {
+        height: min(53dvh, 26rem);
+        min-height: 14rem;
     }
 }

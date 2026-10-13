@@ -64,9 +64,9 @@
                     </span>
                 @if ($hasDetails)
                         </summary>
-                        <div class="exhibition-entry__body">
+                        <div class="exhibition-entry__body @unless ($hasCover) exhibition-entry__body--text @endunless">
                             @if ($hasCover || $hasEditorial)
-                                <div class="exhibition-entry__feature @if ($hasCover && $hasEditorial) exhibition-entry__feature--paired @endif">
+                                <div class="exhibition-entry__feature @if ($hasCover && $hasEditorial) exhibition-entry__feature--paired @elseif (! $hasCover) exhibition-entry__feature--text @endif">
                                     @if ($hasCover)
                                         {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover') !!}
                                     @endif
@@ -111,39 +111,62 @@
                                 </div>
                             @endif
 
-                            @if ($map !== null)
-                                <div class="exhibition-entry__map-access">
-                                    <details class="exhibition-entry__map-disclosure" data-exhibition-map-disclosure>
-                                        <summary>
-                                            <span class="exhibition-entry__show-map">Show map</span>
-                                            <span class="exhibition-entry__hide-map">Hide map</span>
-                                        </summary>
-                                        <div class="exhibition-entry__map exhibition-entry__map--{{ $map['shape'] }}">
-                                            <div class="exhibition-entry__map-frame">
-                                                <iframe data-exhibition-map-src="{{ $map['embed_url'] }}" title="Map for {{ $exhibition->title }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                                                <button class="exhibition-entry__map-expand" type="button" data-exhibition-map-expand aria-controls="{{ $mapDialogId }}" aria-label="Enlarge map for {{ $exhibition->title }}">Enlarge</button>
-                                            </div>
-                                            <dialog id="{{ $mapDialogId }}" class="exhibition-map-dialog exhibition-map-dialog--{{ $map['shape'] }}">
-                                                <div class="exhibition-map-dialog__content">
-                                                    <button class="exhibition-map-dialog__close" type="button" data-exhibition-map-close>Close</button>
-                                                    <div class="exhibition-map-dialog__frame">
-                                                        <iframe data-exhibition-dialog-src="{{ $map['embed_url'] }}" title="Enlarged map for {{ $exhibition->title }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                                                    </div>
-                                                </div>
-                                            </dialog>
-                                        </div>
-                                    </details>
+                            @if ($map !== null || $exhibition->external_url !== null)
+                                <div class="exhibition-entry__links">
+                                    @if ($map !== null)
+                                        <button class="exhibition-entry__map-trigger" type="button"
+                                            data-exhibition-map-open
+                                            aria-haspopup="dialog"
+                                            aria-controls="{{ $mapDialogId }}">
+                                            Show map <x-public-icon name="external-link" />
+                                        </button>
+                                    @endif
+                                    @if ($exhibition->external_url !== null)
+                                        <a href="{{ $exhibition->external_url }}" target="_blank" rel="noopener noreferrer"
+                                            data-matomo-event-category="Journal"
+                                            data-matomo-event-action="exhibition_external_click"
+                                            data-matomo-event-name="{{ $exhibition->title }}">More information</a>
+                                    @endif
                                 </div>
                             @endif
-                            @if ($exhibition->external_url !== null || $map !== null)
-                                <div class="exhibition-entry__links">
-                                    @if ($exhibition->external_url !== null)
-                                        <a href="{{ $exhibition->external_url }}" target="_blank" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_external_click" data-matomo-event-name="{{ $exhibition->title }}">More information</a>
-                                    @endif
-                                    @if ($map !== null)
-                                        <a href="{{ $map['public_url'] }}" target="_blank" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_directions_click" data-matomo-event-name="{{ $exhibition->title }}">{{ in_array($timing, ['current', 'upcoming'], true) ? 'Directions' : 'Open in OpenStreetMap' }}</a>
-                                    @endif
-                                </div>
+                            @if ($map !== null)
+                                <dialog id="{{ $mapDialogId }}"
+                                    class="exhibition-map-dialog exhibition-map-dialog--{{ $map['shape'] }}"
+                                    aria-labelledby="exhibition-map-heading-{{ $exhibition->getKey() }}">
+                                    <div class="exhibition-map-dialog__content">
+                                        <header class="exhibition-map-dialog__header">
+                                            <div class="exhibition-map-dialog__identity">
+                                                <span class="exhibition-map-dialog__eyebrow">Exhibition location</span>
+                                                <h4 id="exhibition-map-heading-{{ $exhibition->getKey() }}">{{ $exhibition->title }}</h4>
+                                                @if ($location !== '')
+                                                    <p>{{ $location }}</p>
+                                                @endif
+                                            </div>
+                                            <button class="exhibition-map-dialog__close" type="button" data-exhibition-map-close>
+                                                Close <x-public-icon name="close" />
+                                            </button>
+                                        </header>
+                                        <div class="exhibition-map-dialog__canvas"
+                                            data-exhibition-map-canvas
+                                            data-latitude="{{ $map['latitude'] }}"
+                                            data-longitude="{{ $map['longitude'] }}"
+                                            data-leaflet-script="{{ asset('vendor/leaflet/leaflet.js') }}"
+                                            data-leaflet-style="{{ asset('vendor/leaflet/leaflet.css') }}"
+                                            role="region"
+                                            aria-label="Map for {{ $exhibition->title }}">
+                                            <p class="exhibition-map-dialog__status" data-exhibition-map-status role="status">Loading map…</p>
+                                        </div>
+                                        <footer class="exhibition-map-dialog__footer">
+                                            <a href="{{ $map['public_url'] }}" target="_blank" rel="noopener noreferrer"
+                                                data-matomo-event-category="Journal"
+                                                data-matomo-event-action="exhibition_directions_click"
+                                                data-matomo-event-name="{{ $exhibition->title }}">
+                                                {{ in_array($timing, ['current', 'upcoming'], true) ? 'Directions in OpenStreetMap' : 'Open in OpenStreetMap' }}
+                                                <x-public-icon name="external-link" />
+                                            </a>
+                                        </footer>
+                                    </div>
+                                </dialog>
                             @endif
                         </div>
                     </details>

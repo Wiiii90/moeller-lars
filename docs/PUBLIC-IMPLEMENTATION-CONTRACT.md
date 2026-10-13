@@ -176,13 +176,21 @@ large media walls. No separate Exhibition detail route or duplicate source of
 truth is introduced by this index presentation.
 
 Enabled Exhibition maps remain available for past, current and upcoming
-exhibitions. A second native `details` control exposes the inline map only
-at the visitor's request. The external OpenStreetMap/Directions link remains
-available independently; the embedded frame source is not assigned until
-the map disclosure is opened, and the enlarged dialog's frame loads only on
-its own open action. No automatic temporal restriction is added to
-`map_enabled`, no existing geocoding or editorial configuration is removed,
-and no timer, polling or additional scroll-lock owner is introduced.
+exhibitions. A single **Show map** action opens a native, viewport-bounded
+map dialog; inline map iframes, their Expand control, and nested map disclosures
+are retired. The dialog presents the exhibition identity, preserves the
+configured Wide/Square shape, and gives access to OpenStreetMap/Directions.
+The map uses a locally vendored, pinned Leaflet 1.9.4 runtime; the default
+OpenStreetMap tile layer is requested **only after the visitor opens the
+map dialog**, and it shows the required visible linked
+**© OpenStreetMap contributors** attribution. OSM iframe extras (donations,
+reporting, API terms) are not part of the new map UI; its tile attribution
+is never hidden. The source files and BSD-2-Clause license live in
+`public/vendor/leaflet/`. The public Content Security Policy permits exactly
+the OSM raster-tile image origin, not third-party scripts. There is no new
+gallery/map setting, geocoding workflow, map-scroll owner, timer or polling.
+The Admin's existing map preview still consumes the canonical Exhibition map
+presentation service.
 
 ## Public media delivery
 

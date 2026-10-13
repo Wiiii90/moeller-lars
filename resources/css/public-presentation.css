@@ -848,7 +848,7 @@ body {
     grid-template-columns: var(--exhibition-date-track) minmax(0, 1fr);
     gap: var(--exhibition-column-gap);
     align-items: start;
-    padding: 1.45rem 0 1.55rem;
+    padding: 1.55rem 0 1.65rem;
     list-style: none;
     cursor: pointer;
 }
@@ -874,9 +874,9 @@ body {
 }
 
 .exhibition-entry__date {
-    color: #675f56;
+    color: #504941;
     font-family: var(--public-index-typeface);
-    font-size: .97rem;
+    font-size: 1rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.45;
     overflow-wrap: break-word;
@@ -901,7 +901,7 @@ body {
     margin: -.1rem 0 0;
     color: #302b27;
     font-family: var(--public-index-typeface);
-    font-size: 1.48rem;
+    font-size: 1.53rem;
     font-weight: 400;
     letter-spacing: .005em;
     line-height: 1.25;
@@ -921,7 +921,7 @@ body {
 .exhibition-entry__location {
     display: block;
     min-width: 0;
-    color: #726b64;
+    color: #5f574f;
     font-size: .79rem;
     line-height: 1.5;
     overflow-wrap: break-word;
@@ -965,7 +965,7 @@ body {
 
 .exhibition-entry__body {
     min-width: 0;
-    padding: .15rem 0 2.2rem;
+    padding: .35rem 0 2.2rem;
 }
 
 .exhibition-entry__feature {
@@ -973,6 +973,18 @@ body {
     min-width: 0;
     gap: 1.2rem;
     align-items: start;
+}
+
+/* A text-only folio follows the title column; an artwork has room to lead
+   the composition instead of becoming a narrow chronology thumbnail. */
+.exhibition-entry__feature--text,
+.exhibition-entry__body--text > .exhibition-entry__links {
+    margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
+}
+
+.exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
+    width: calc(100% - var(--exhibition-date-track) - var(--exhibition-column-gap));
+    margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
 }
 
 .exhibition-entry__cover {
@@ -1054,45 +1066,6 @@ body {
     object-fit: contain;
 }
 
-.exhibition-entry__map-access {
-    margin-top: 1.2rem;
-}
-
-.exhibition-entry__map-disclosure > summary {
-    width: max-content;
-    max-width: 100%;
-    color: #584f47;
-    font-family: var(--public-index-typeface);
-    font-size: .88rem;
-    line-height: 1.5;
-    text-decoration: underline;
-    text-underline-offset: .25em;
-    cursor: pointer;
-    list-style: none;
-}
-
-.exhibition-entry__map-disclosure > summary::-webkit-details-marker {
-    display: none;
-}
-
-.exhibition-entry__map-disclosure > summary:focus-visible {
-    outline: 1px dotted currentColor;
-    outline-offset: 3px;
-}
-
-.exhibition-entry__hide-map,
-.exhibition-entry__map-disclosure[open] .exhibition-entry__show-map {
-    display: none;
-}
-
-.exhibition-entry__map-disclosure[open] .exhibition-entry__hide-map {
-    display: inline;
-}
-
-.exhibition-entry__map {
-    margin: .85rem 0 1.1rem;
-}
-
 .exhibition-entry__links {
     display: flex;
     margin-top: 1rem;
@@ -1100,24 +1073,43 @@ body {
     gap: .6rem 1.35rem;
 }
 
-.exhibition-entry__links a {
+.exhibition-entry__links a,
+.exhibition-entry__map-trigger {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: #584f47;
     font-family: var(--public-index-typeface);
     font-size: .88rem;
     text-decoration: underline;
     text-underline-offset: .25em;
+    cursor: pointer;
+}
+
+.exhibition-entry__map-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+}
+
+.exhibition-entry__map-trigger .public-icon {
+    width: .85rem;
+    height: .85rem;
 }
 
 .exhibition-entry__links a:hover,
-.exhibition-entry__links a:focus-visible {
+.exhibition-entry__links a:focus-visible,
+.exhibition-entry__map-trigger:hover,
+.exhibition-entry__map-trigger:focus-visible {
     color: #211c18;
 }
 
 /* Width of the actual exhibition index, not of a presumed device. A cover and
    editorial note can face one another once both columns remain readable. */
-@container (min-width: 27.5rem) {
+@container (min-width: 34rem) {
     .exhibition-entry__feature--paired {
-        grid-template-columns: minmax(0, 1.18fr) minmax(0, .82fr);
+        grid-template-columns: minmax(0, 1.22fr) minmax(0, .78fr);
         column-gap: 1.35rem;
     }
 
@@ -1143,6 +1135,13 @@ body {
 
     .exhibition-entry__body {
         padding-bottom: 1.75rem;
+    }
+
+    .exhibition-entry__feature--text,
+    .exhibition-entry__body--text > .exhibition-entry__links,
+    .exhibition-entry__feature:not(.exhibition-entry__feature--paired) .exhibition-entry__cover {
+        width: 100%;
+        margin-inline-start: 0;
     }
 }
 

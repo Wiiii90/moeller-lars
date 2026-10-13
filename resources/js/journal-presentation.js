@@ -28,42 +28,114 @@ function initializeSlideshow(root) {
     render();
 }
 
-function initializeMapDialog(button) {
-    const dialogId = button.getAttribute('aria-controls');
-    if (!dialogId) return;
+// Leaflet is a local, version-pinned asset. Only visitors explicitly opening
+// an Exhibition map load the library, its stylesheet, or third-party map tiles.
+let leafletAssetsPromise;
 
-    const dialog = document.getElementById(dialogId);
+function loadLeaflet(scriptUrl, stylesheetUrl) {
+    if (window.L?.map) return Promise.resolve(window.L);
+
+    leafletAssetsPromise ??= new Promise((resolve, reject) => {
+        const style = document.createElement('link');
+        style.rel = 'stylesheet';
+        style.href = stylesheetUrl;
+        const script = document.createElement('script');
+        script.src = scriptUrl;
+        script.async = true;
+
+        let loaded = 0;
+        const ready = () => {
+            loaded++;
+            if (loaded !== 2) return;
+            if (window.L?.map) resolve(window.L);
+            else reject(new Error('Leaflet did not initialize'));
+        };
+        style.addEventListener('load', ready, { once: true });
+        script.addEventListener('load', ready, { once: true });
+        style.addEventListener('error', () => reject(new Error('Map styles unavailable')), { once: true });
+        script.addEventListener('error', () => reject(new Error('Map library unavailable')), { once: true });
+        document.head.append(style, script);
+    }).catch((error) => {
+        leafletAssetsPromise = undefined;
+        throw error;
+    });
+
+    return leafletAssetsPromise;
+}
+
+function initializeExhibitionMap(button) {
+    const dialogId = button.getAttribute('aria-controls');
+    const dialog = dialogId ? document.getElementById(dialogId) : null;
     if (!(dialog instanceof HTMLDialogElement)) return;
 
-    button.addEventListener('click', () => {
-        const frame = dialog.querySelector('iframe[data-exhibition-dialog-src]');
-        if (frame) {
-            frame.src = frame.dataset.exhibitionDialogSrc;
-            frame.removeAttribute('data-exhibition-dialog-src');
-        }
+    const canvas = dialog.querySelector('[data-exhibition-map-canvas]');
+    const status = dialog.querySelector('[data-exhibition-map-status]');
+    const closeButton = dialog.querySelector('[data-exhibition-map-close]');
+    if (!canvas || !status || !closeButton) return;
+
+    let map = null;
+    let opening = false;
+
+    button.addEventListener('click', async () => {
         if (!dialog.open) dialog.showModal();
+        closeButton.focus({ preventScroll: true });
+
+        if (map) {
+            map.invalidateSize();
+            return;
+        }
+        if (opening) return;
+        opening = true;
+        status.hidden = false;
+        status.textContent = 'Loading map…';
+
+        try {
+            const L = await loadLeaflet(canvas.dataset.leafletScript, canvas.dataset.leafletStyle);
+            if (!dialog.open) return;
+
+            const latitude = Number(canvas.dataset.latitude);
+            const longitude = Number(canvas.dataset.longitude);
+            if (!Number.isFinite(latitude) || Math.abs(latitude) > 90
+                || !Number.isFinite(longitude) || Math.abs(longitude) > 180) {
+                throw new Error('Invalid exhibition map coordinates');
+            }
+
+            map = L.map(canvas, {
+                zoomControl: false,
+                scrollWheelZoom: false,
+            }).setView([latitude, longitude], 15);
+
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+            }).addTo(map);
+
+            L.control.zoom({ position: 'topright', zoomInTitle: 'Zoom in', zoomOutTitle: 'Zoom out' }).addTo(map);
+            L.circleMarker([latitude, longitude], {
+                radius: 7, weight: 2, color: '#fff', fillColor: '#4b443d', fillOpacity: 1,
+            }).addTo(map);
+            map.attributionControl.setPrefix(false);
+            status.hidden = true;
+            map.invalidateSize();
+        } catch {
+            if (map) {
+                map.remove();
+                map = null;
+            }
+            status.hidden = false;
+            status.textContent = 'Map unavailable. Open in OpenStreetMap instead.';
+        } finally {
+            opening = false;
+        }
     });
-    dialog.querySelector('[data-exhibition-map-close]')?.addEventListener('click', () => dialog.close());
+
+    closeButton.addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
     });
 }
 
-function initializeExhibitionMapDisclosure(disclosure) {
-    disclosure.addEventListener('toggle', () => {
-        if (!disclosure.open) return;
-
-        // Do not request historical map embeds until a visitor asks for one.
-        const frame = disclosure.querySelector('iframe[data-exhibition-map-src]');
-        if (frame) {
-            frame.src = frame.dataset.exhibitionMapSrc;
-            frame.removeAttribute('data-exhibition-map-src');
-        }
-    });
-}
-
 export function initializeJournalPresentation() {
-    document.querySelectorAll('[data-exhibition-map-disclosure]').forEach(initializeExhibitionMapDisclosure);
     document.querySelectorAll('[data-journal-slideshow]').forEach(initializeSlideshow);
-    document.querySelectorAll('[data-exhibition-map-expand]').forEach(initializeMapDialog);
+    document.querySelectorAll('[data-exhibition-map-open]').forEach(initializeExhibitionMap);
 }

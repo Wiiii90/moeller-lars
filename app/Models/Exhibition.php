@@ -179,7 +179,7 @@ class Exhibition extends Model
         return (bool) $this->getAttribute('map_enabled') && $this->hasCoordinates();
     }
 
-    /** @return array{embed_url:string, public_url:string, shape:string}|null */
+    /** @return array{embed_url:string, public_url:string, shape:string, latitude:float, longitude:float}|null */
     public function mapPresentation(): ?array
     {
         return app(ExhibitionMapPresentation::class)->for($this);
