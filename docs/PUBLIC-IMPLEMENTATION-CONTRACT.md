@@ -37,8 +37,13 @@ A canonical media **reference** does not automatically mean the asset is publicl
 ## Site navigation
 
 Public visits use the already installed Livewire 4 `wire:navigate` document-swap
-runtime over the existing Blade routes. Only eligible same-origin public links
-are opted in; downloads, cross-origin links, anchors and admin/system paths
+runtime over the existing Blade routes. The public layout loads its own
+Livewire 4 CSP-safe asset endpoint (`/site-assets/livewire-csp.js`) so that
+the strict no-`unsafe-eval` public CSP does not block the client runtime;
+this deliberately does not change the Admin/Filament Livewire bundle or
+globally enable CSP-safe Alpine evaluation. Only eligible same-origin public links
+are opted in, including dynamically rendered content links through the
+document-level Livewire.navigate() delegate; downloads, cross-origin links, anchors and admin/system paths
 retain native browser navigation. The canonical server routes remain the
 source of content/publication/preview authority. JavaScript page initializers
 must dispose global listeners/observers on each document swap; Matomo records
@@ -52,23 +57,31 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-After the first browser rejection, the experimental folio movement is
-limited to ten hand-composed arrangements of the central Content outside
-contours; the approved menu corners are static. Each moving side retains
-both return strokes (top and bottom), with small bounded offsets instead of
-long unanchored strokes. A single `@persist('public-folio-decoration')`
-element inside the public Main remains physically continuous across
-Livewire navigation swaps. Interpolated, registered CSS lengths are applied
-to that element as the navigation begins; the registrations use independent
-`0px` defaults with `rem` authored base positions on the element (a `rem`
-`@property initial-value` invalidates the registration and would prevent
-interpolation). Another visit retargets the in-flight transition; neither
-the artwork nor Content box geometry moves.
-The first document uses accepted base geometry. Livewire 4
-`wire:transition.navigate` applies a brief element-scoped crossfade to
-Content while keeping the Header steady. Unsupported transitions and
-reduced-motion users get immediate content without decorative motion.
-This remains an experimental candidate awaiting browser acceptance.
+The first accepted Content folio geometry is an immutable fallback:
+`#content::before` and `::after` render the ORIGINAL asymmetric complete
+paper-corner contours even with JavaScript off or non-SPA navigation.
+The ten experimental variants preserve this exact form as variant 1,
+change only bounded end positions, and never detach corner return strokes.
+The animated layer is a DIRECT `x-persist="public-folio-decoration"`
+child of `#content`. This is required because Livewire 4's Blade
+`@persist` creates an enclosing `div`, which previously prevented the
+base contour from being hidden after motion activation. Real
+`livewire:navigate` / `livewire:navigated` events gate motion: no animation
+runs on first load, the overlay becomes visible only AFTER the completed
+document swap, and each subsequent visit transitions from the existing
+rendered state to one of ten different targets. Left and right return-stroke
+widths as well as endpoints interpolate. CSS keeps the original version as
+variant 1 and the guaranteed no-JavaScript fallback. The menu contours remain
+the approved static geometry, and neither media nor content width is animated.
+`wire:transition.navigate` was removed because it does not implement SPA
+crossfades. Instead an explicitly gated short opacity/translateY animation
+settles the NEW content after a completed Livewire navigation, never on initial
+load or reduced-motion clients. The same-origin content-link delegation invokes
+`Livewire.navigate()` for eligible links not predeclared with `wire:navigate`
+(adding Alpine directives after initialization did not activate them).
+Neither a second router nor timers, polling or synthetic page transitions
+are introduced. Actual CSP activation and SPA behavior still require
+running-preview verification.
 
 The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`, `--public-folio-depth`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
 
@@ -226,12 +239,12 @@ edged external contours belong to the shell owner in `public-presentation.css`,
 not to a Journal content selector or copied page-specific CSS. They consume no
 Content width, disappear on narrow viewports, and never change artist-configured
 background, reading insets or media size. Only the Blog's actual artworks have
-small square-edged double-line mounts. Gallery uses quiet alternating corner impressions in the OUTER padding
-alongside the gaps between artworks, away from all pixels and labels.
-Exhibitions uses only small consistent LEFT margin marks just outside its
-date rail rather than alternating right-hand Open-action ornaments. Both
-disappear as usable padding contracts; neither adds full-width rules,
-framed records, timelines, or repeated card treatments.
+small square-edged double-line mounts. The additional Gallery item corners have been rejected and entirely removed:
+artwork images and existing labels are separated by their natural white space.
+All extra Exhibition entry separators have been removed after browser rejection;
+the open chronological catalogue is intentionally undecorated between entries.
+Neither surface gets framed records, date-axis timelines, decorative stickers,
+repeated corner ornaments or new entry rules.
 No artwork is cropped or covered.
 The existing artist name and navigation retain their independent layout owners.
 

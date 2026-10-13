@@ -1,51 +1,58 @@
+import '../css/app.css';
+import '../css/public-content.css';
+import '../css/public-presentation.css';
+import '../css/custom-pages.css';
 import '../css/journal-presentation.css';
+
 import { initializeArtworkViewer } from './artwork-viewer.js';
 import { initializeHomeHero } from './home-hero.js';
 import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
-import { advancePublicFolio } from './public-folio-motion.js';
-import { applyPublicLayoutFromMeta, markPublicSpaLinks } from './public-spa.js';
+import { capturePublicFolio, advancePublicFolio } from './public-folio-motion.js';
+import { applyPublicLayoutFromMeta, initializePublicSpaLinks } from './public-spa.js';
 
-// Livewire swaps the public body's contents, but module scope and document
-// event listeners persist. Dispose page-specific observers/listeners each visit.
+// The module and delegation are loaded once. Page-local resources aren't.
 let currentContent = null;
 let disposers = [];
+let pendingVisit = false;
 
-function initializePublicApplication() {
-    const content = document.querySelector('#content');
-    if (!content || content === currentContent) return;
-
+function disposePage() {
     for (const dispose of disposers) dispose?.();
     disposers = [];
-    currentContent = content;
+    currentContent = null;
+}
 
+function initializePage() {
+    const content = document.querySelector('#content');
+    if (!content || content === currentContent) return;
+    disposePage();
+    currentContent = content;
     const root = document.body;
     disposers.push(initializeArtworkViewer(root));
     initializeHomeHero(root);
     disposers.push(initializeJournalPresentation());
     disposers.push(initializeMatomoTracking(root));
     disposers.push(initializePublicNavigation());
-    markPublicSpaLinks(root);
 }
 
-// A new response has a fresh style nonce; copy its validated layout values
-// into CSSOM before paint rather than relying on a newly inserted inline
-// style element that the current document's CSP cannot authorize.
+document.addEventListener('livewire:navigate', () => { pendingVisit = true; });
 document.addEventListener('livewire:navigating', (event) => {
-    advancePublicFolio();
-    // Navigation is about to replace the old body: release modal maps, image
-    // attention tracking and global observers before their elements detach.
-    for (const dispose of disposers) dispose?.();
-    disposers = [];
-    currentContent = null;
+    capturePublicFolio();
+    disposePage();
     event.detail.onSwap?.(applyPublicLayoutFromMeta);
 });
-document.addEventListener('livewire:navigated', initializePublicApplication);
+document.addEventListener('livewire:navigated', () => {
+    initializePage();
+    if (!pendingVisit) return; // Livewire also fires this event on initial load.
+    pendingVisit = false;
+    advancePublicFolio();
+    document.body.dataset.publicSpaVisit = 'true';
+});
 
-// Harmless initial fallback if scripts initialize in a different order.
+initializePublicSpaLinks();
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializePublicApplication, { once: true });
+    document.addEventListener('DOMContentLoaded', initializePage, { once: true });
 } else {
-    initializePublicApplication();
+    initializePage();
 }

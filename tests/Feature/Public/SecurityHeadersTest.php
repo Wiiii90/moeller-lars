@@ -37,3 +37,13 @@ it('uses a Pulse-specific CSP without weakening the public CSP', function (): vo
         ->not->toContain("'unsafe-inline'")
         ->not->toContain("'unsafe-eval'");
 });
+
+it('serves the public CSP-safe Livewire script without changing the Admin runtime configuration', function (): void {
+    $before = config('livewire.csp_safe', false);
+
+    $response = $this->get(route('public.livewire.csp'));
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toContain('javascript')
+        ->and(config('livewire.csp_safe', false))->toBe($before);
+});

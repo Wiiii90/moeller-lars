@@ -181,7 +181,7 @@ Metrics, tables, toolbars and stages may transition at different widths because 
 
 ## Split/fold columns
 
-When two meaningful columns fit in Wide but should combine under table pressure, keep one primary column and one additional detail column. The shared table-pressure owner offers `admin-table--fold-at-compact` (64rem) and `admin-table--fold-at-actions` (74rem) with `admin-table__split-only` for the extra column and `admin-table__split-label` / `admin-table__folded-only` for its counterpart in the primary column. Apply `admin-table__split-only` to its `<col>`, `<th>` and every `<td>` together; only the extra column yields. The folded primary column can use the normal Narrow-yield contract (54rem), with essential metadata shown in primary identity only after it disappears.
+When two meaningful columns fit in Wide but should combine under table pressure, keep one primary column and one additional detail column. The shared table-pressure owner offers `admin-table--fold-at-compact` (64rem) with `admin-table__split-only` for the extra column and `admin-table__split-label` / `admin-table__folded-only` for its counterpart in the primary column. Both Journal templates now fold at the same actual table width; Exhibition Date/Timing are separate at full width with modest supporting tracks to protect identity. Apply `admin-table__split-only` to its `<col>`, `<th>` and every `<td>` together; only the extra column yields. The folded primary column can use the normal Narrow-yield contract (54rem), with essential metadata shown in primary identity only after it disappears.
 
 ### Journal's split/fold composition
 
@@ -190,11 +190,11 @@ The Journal has **separate full-width columns**. The only fold transitions are a
 ```text
 Blog Wide:          Position | Drag | Image | Post | Status | Publication | Actions | Selection
 Blog Folded:        Position | Drag | Image | Post | Publication          | Actions | Selection
-Exhibitions Wide:   Position | Drag | Image | Exhibition | Date | Schedule | Actions | Selection
+Exhibitions Wide:   Position | Drag | Image | Exhibition | Date | Timing | Actions | Selection
 Exhibitions Folded: Position | Drag | Image | Exhibition | Dates          | Actions | Selection
 ```
 
-Blog's seven-action rail becomes icon-only at **88rem** before the Post track is squeezed. Blog keeps **Status** (editorial state) and **Publication** (scheduled/published date) in separate tracks until **64rem**, then folds both into the primary **Publication** track (11rem at that breakpoint). Exhibition **Date** (exhibition range) and **Schedule** (optional vernissage plus derived Past/Current/Upcoming) remain separate until **74rem**, then become **Dates** in an 11rem supporting track. Exhibition actions compact at **64rem**. Both types let long dates wrap without arbitrary truncation.
+Blog's seven-action rail becomes icon-only at **88rem** before the Post track is squeezed. Blog keeps **Status** (editorial state) and **Publication** (scheduled/published date) in separate tracks until **64rem**, then folds both into the primary **Publication** track (11rem at that breakpoint). Exhibition **Date** (date range with optional Vernissage underneath) and **Timing** (only derived Past/Current/Upcoming) remain separate until **64rem** (9.5rem and 8rem respectively at wider widths), then fold into **Dates** in an 11rem supporting track. The folded Dates cell preserves range, optional Vernissage and timing in that order. Exhibition actions compact at **64rem**. Both types let long dates wrap without arbitrary truncation.
 
 Blog and Exhibitions use the same Cover/feature-media preview when configured, with a neutral fallback when no preview is available. Position and Drag share the leading ordering region and Selection remains the trailing utility rail. At **54rem**, the remaining Publication/Dates column yields **before** the primary Post/Exhibition identity becomes unusable. The Post identity then provides its editorial state and date; Exhibition identity provides date range, derived timing and optional vernissage. These extra identity lines are hidden while the dedicated data column remains visible. Exhibition location metadata stays concise (e.g. `Venue · City` rather than a street/country dump).
 

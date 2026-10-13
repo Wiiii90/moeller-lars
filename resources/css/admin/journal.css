@@ -48,7 +48,7 @@
 }
 
 .journal-table--exhibitions col.journal-col--timing {
-    width: 10rem;
+    width: 8rem;
 }
 
 .journal-table col.journal-table__actions--exhibitions {
@@ -63,17 +63,12 @@
     }
 }
 
-@container admin-table (max-width: 74rem) {
-    .journal-table--exhibitions col.journal-col--schedule {
-        width: 11rem;
-    }
-}
-
 @container admin-table (max-width: 64rem) {
     .journal-table--exhibitions {
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
+    .journal-table--exhibitions col.journal-col--schedule,
     .journal-table--blog col.journal-col--publication {
         width: 11rem;
     }

@@ -140,16 +140,6 @@
     }
 }
 
-@container admin-table (max-width: 74rem) {
-    .admin-table--fold-at-actions .admin-table__split-only,
-    .admin-table--fold-at-actions .admin-table__split-label {
-        display: none !important;
-    }
-
-    .admin-table--fold-at-actions .admin-table__folded-only {
-        display: block !important;
-    }
-}
 @container admin-table (max-width: 64rem) {
     .admin-table__yield--compact {
         display: none !important;

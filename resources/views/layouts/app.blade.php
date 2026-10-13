@@ -22,13 +22,8 @@
                 data-matomo-site-id="{{ $matomoTracking['site_id'] }}"
             >
         @endif
-        @vite([
-            'resources/css/app.css',
-            'resources/css/public-content.css',
-            'resources/css/public-presentation.css',
-            'resources/css/custom-pages.css',
-            'resources/js/app.js',
-        ])
+        {{-- All public CSS is bundled in the single app.js Vite entry. --}}
+        @vite('resources/js/app.js')
         {{-- Navigation uses Livewire's established document-swap runtime, not a
              second router. Nonces keep the public policy strict. --}}
         @livewireStyles(['nonce' => $publicStyleNonce])
@@ -141,13 +136,11 @@
                 </div>
             @endunless
         </header>
-        <main id="content" class="site-content" wire:transition.navigate>
-            @persist('public-folio-decoration')
-                <div class="public-folio-decoration" aria-hidden="true"></div>
-            @endpersist
+        <main id="content" class="site-content">
+            <div class="public-folio-decoration" aria-hidden="true"></div>
             @yield('content')
         </main>
         <x-artwork-viewer />
-        @livewireScripts(['nonce' => $publicStyleNonce])
+        @livewireScripts(['nonce' => $publicStyleNonce, 'url' => route('public.livewire.csp')])
     </body>
 </html>
