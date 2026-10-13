@@ -63,6 +63,8 @@ php scripts/generate-architecture-inventory.php --check
 php scripts/generate-architecture-relations.php --check
 ```
 
+**Geprüfte Eingabegrenze (14.10.2026):** Das Skript liest zwingend die vom Inventory-Generator erzeugte Datei `docs/architecture/generated/php-symbols.json`; diese Datei ist auf dem aktuellen `docs`-Tree **nicht vorhanden**. Somit ist `--check` derzeit nicht unabhängig ausführbar, bevor der vorgeschaltete Tokenizer in einem echten Checkout durch `--write` die Eingabe erzeugt hat. Die gesondert vorliegende `generated/app-source-audit.json` ist ein anders entstandener, quellenverankerter Katalog und darf nicht als gleichwertiger nativer Input ausgegeben werden. In den dort nachgewiesenen **900** internen `App\...`-Importdeklarationen der 248 PHP-Quellen gibt es derzeit **keinen** gruppierten `use` und **keine** `as`-Aliasdeklaration. Der Alias-Zweig des Relationsparsers bleibt eine isoliert zu prüfende Syntaxfähigkeit, keine aktuell nachgewiesene Produktionsabweichung. Der bestehende inkrementelle Git-Blob-Abgleich bestätigt unveränderte interne Imports auf dem geprüften `dev`-Stand.
+
 Ergebnis: `docs/architecture/generated/php-relationships.json` (Quellbelege) und `module-relationships.mmd` (aggregierte, mit Referenzanzahlen beschriftete Modulübersicht). Beide sind nach einem vollständigen lokalen Checkout-Lauf einzuchecken; sie sind hier noch **nicht** als vollständig erzeugt ausgegeben.
 
 ### Vollständiger Eloquent-Modellgraph
