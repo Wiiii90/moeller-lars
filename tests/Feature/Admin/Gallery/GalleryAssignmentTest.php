@@ -63,6 +63,51 @@ it('moves an artwork through the Gallery workspace action without losing its des
 });
 
 
+
+it('moves a selected Gallery batch in source order while preserving media and emitting one action feedback', function (): void {
+    $source = galleryFixtureCategory();
+    $destination = galleryFixtureCategory();
+    $first = galleryFixtureArtwork($source, ['position' => 0]);
+    $second = galleryFixtureArtwork($source, ['position' => 1]);
+    $remaining = galleryFixtureArtwork($source, ['position' => 2]);
+    $existingDestination = galleryFixtureArtwork($destination, ['position' => 0]);
+    $firstMedia = galleryFixtureAsset();
+    $secondMedia = galleryFixtureAsset();
+    galleryFixturePrimary($first, $firstMedia);
+    galleryFixturePrimary($second, $secondMedia);
+    galleryFixtureUnavailableAnalytics();
+
+    $selected = [$second->getKey(), $first->getKey()];
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
+        ->set('selectedArtworkIds', $selected)
+        ->mountAction('moveSelectedToGallery')
+        ->fillForm(['target_gallery_id' => $destination->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertSet('selectedArtworkIds', [])
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return $event === 'admin-header-notification'
+                && ($params['notification']['status'] ?? null) === 'success';
+        });
+
+    expect((int) $first->fresh()->artwork_category_id)->toBe((int) $destination->getKey())
+        ->and((int) $second->fresh()->artwork_category_id)->toBe((int) $destination->getKey())
+        ->and((int) $first->fresh()->position)->toBe(1)
+        ->and((int) $second->fresh()->position)->toBe(2)
+        ->and((int) $existingDestination->fresh()->position)->toBe(0)
+        ->and((int) $remaining->fresh()->position)->toBe(0)
+        ->and((int) ArtworkMedia::query()->where('artwork_id', $first->getKey())->value('media_asset_id'))->toBe((int) $firstMedia->getKey())
+        ->and((int) ArtworkMedia::query()->where('artwork_id', $second->getKey())->value('media_asset_id'))->toBe((int) $secondMedia->getKey())
+        ->and(MediaAsset::query()->whereKey($firstMedia->getKey())->exists())->toBeTrue()
+        ->and(MediaAsset::query()->whereKey($secondMedia->getKey())->exists())->toBeTrue()
+        ->and(AuditEvent::query()->where('action', 'artwork.updated')->whereIn('entity_id', $selected)->count())->toBe(2)
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+});
+
 it('edits per-artwork ALT text and publishes an uploaded image without changing shared Storage metadata', function (): void {
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\PublicMedia;
@@ -180,6 +181,50 @@ it('publishes an entire ready Gallery selection once and leaves repeated publica
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->set('selectedArtworkIds', $selected)
         ->mountAction('publishSelectedArtworks')
+        ->callMountedAction()
+        ->assertNotDispatched('admin-header-notification');
+
+    expect(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+});
+
+
+it('unpublishes a selected batch while preserving each publication date and sending one success feedback', function (): void {
+    $gallery = galleryFixtureCategory();
+    $first = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $second = galleryFixtureArtwork($gallery, ['position' => 1]);
+    galleryFixturePrimary($first, galleryFixtureAsset('video/mp4'));
+    galleryFixturePrimary($second, galleryFixtureAsset('video/mp4'));
+    $publication = app(ArtworkPublicationService::class);
+    $firstDate = $publication->publish($first)->published_at?->toISOString();
+    $secondDate = $publication->publish($second)->published_at?->toISOString();
+    app(AdminActivityNotificationContext::class)->discard();
+    galleryFixtureUnavailableAnalytics();
+    $selected = [$first->getKey(), $second->getKey()];
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('selectedArtworkIds', $selected)
+        ->mountAction('unpublishSelectedArtworks')
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return $event === 'admin-header-notification'
+                && ($params['notification']['status'] ?? null) === 'success';
+        });
+
+    expect($first->fresh()->state)->toBe('draft')
+        ->and($second->fresh()->state)->toBe('draft')
+        ->and($first->fresh()->published_at?->toISOString())->toBe($firstDate)
+        ->and($second->fresh()->published_at?->toISOString())->toBe($secondDate)
+        ->and(AuditEvent::query()->where('action', 'artwork.unpublished')->whereIn('entity_id', $selected)->count())->toBe(2)
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('selectedArtworkIds', $selected)
+        ->mountAction('unpublishSelectedArtworks')
         ->callMountedAction()
         ->assertNotDispatched('admin-header-notification');
 

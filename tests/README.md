@@ -30,6 +30,16 @@ npm run test:browser             # all Playwright projects
 
 Only run database suites in an explicitly disposable PostgreSQL testing context. The `Tests\\TestCase` database guard must remain active. Browser tests must use a disposable application with deterministic fixtures, not the persistent local preview or production database.
 
+## Short local Codex validation sessions
+
+Codex can execute PHPUnit/Pest, Node and Playwright in a **local checkout** when PHP/Composer, Node, project dependencies and browser runtimes are installed. It must not use GitHub Actions or a server environment. Keep this as a targeted handoff rather than asking Codex to re-audit the whole repository.
+
+1. First inspect the local branch/working tree and read `AGENTS.md`, `TESTING_SKILL.md`, this file and `tests/TestCase.php`. Use `testing`; do not reset, force-push or overwrite newer `dev` changes.
+2. Start with `npm run test:js` (no DB). Report failing test names and traces without silently changing expected behavior. Run Playwright component tests independently if browser dependencies are installed.
+3. **Before any database test or seeded browser E2E**, independently verify that the configured `testing` PostgreSQL database is disposable, not the normal local preview or production database. Confirm the environment guard in `tests/TestCase.php`; do not bypass or weaken it. `GITHUB_ACTIONS=true` and `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` are necessary but do not by themselves prove database isolation.
+4. Run one focused PHP test at a time using the project's existing runner, then the remaining suite only after the isolated DB check. For E2E, use the protected `BrowserProfilingSeeder` and a disposable app. Record exact commands, pass/fail counts and underlying errors.
+5. Stop at the agreed session boundary and record the actual `testing` HEAD, changed files, runtime environment and remaining failures in `TESTING_SKILL.md`. Mark unexecuted suites honestly. Do not start CI, deploy or merge to `dev`.
+
 ## Changes and refactors
 
 1. Name the user-visible or domain contract.

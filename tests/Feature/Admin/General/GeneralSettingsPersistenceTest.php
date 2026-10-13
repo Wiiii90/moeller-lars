@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminSettingsService;
 use App\Filament\Pages\General;
 use App\Models\AdminNotification;
@@ -55,40 +56,44 @@ it('persists changed text once and skips normalized no-op commits', function ():
 });
 
 
-it('delivers ticker feedback for General layout changes', function (): void {
+it('saves distinct General layout changes with one audit and one success feedback each', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'public_page_width' => 1080,
         'public_content_padding' => 48,
     ]);
+    // Domain fixture setup and Livewire mutations represent separate user requests.
+    app(AdminActivityNotificationContext::class)->discard();
+    $auditBefore = generalSettingsAuditCount();
+    $notificationsBefore = AdminNotification::query()->count();
 
-    Livewire::test(General::class)
+    $component = Livewire::test(General::class)
         ->assertSet('data.public_page_width', 1080)
         ->assertSet('data.public_content_padding', 48)
         ->set('data.public_page_width', 1160)
         ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
-            $message = $params['notification'] ?? [];
-
             return $event === 'admin-header-notification'
-                && ($message['body'] ?? null) === 'Public page width updated.'
-                && ($message['status'] ?? null) === 'success';
+                && ($params['notification']['status'] ?? null) === 'success';
         })
         ->set('data.public_content_padding', 64)
         ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
-            $message = $params['notification'] ?? [];
-
             return $event === 'admin-header-notification'
-                && ($message['body'] ?? null) === 'Public content padding updated.'
-                && ($message['status'] ?? null) === 'success';
+                && ($params['notification']['status'] ?? null) === 'success';
         });
 
     $fresh = PublicContentSetting::general();
-
     expect((int) $fresh->getAttribute('public_page_width'))->toBe(1160)
-        ->and((int) $fresh->getAttribute('public_content_padding'))->toBe(64);
+        ->and((int) $fresh->getAttribute('public_content_padding'))->toBe(64)
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 2);
+
+    $component->call('persistChangedField', 'public_page_width')
+        ->call('persistChangedField', 'public_content_padding');
+
+    expect(generalSettingsAuditCount())->toBe($auditBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 2);
 });
 
-
-it('delivers ticker feedback for General contact legal and social mutations', function (): void {
+it('persists contact legal and social edits with success feedback and unchanged-value no-ops', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'contact_recipient_email' => 'before@example.invalid',
         'legal_disclaimer' => 'Before legal text.',
@@ -96,39 +101,41 @@ it('delivers ticker feedback for General contact legal and social mutations', fu
             ['platform' => 'instagram', 'url' => 'https://example.invalid/before'],
         ],
     ]);
+    app(AdminActivityNotificationContext::class)->discard();
+    $auditBefore = generalSettingsAuditCount();
+    $notificationsBefore = AdminNotification::query()->count();
 
-    Livewire::test(General::class)
+    $component = Livewire::test(General::class)
         ->set('data.contact_recipient_email', 'after@example.invalid')
         ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
-            $message = $params['notification'] ?? [];
-
             return $event === 'admin-header-notification'
-                && ($message['body'] ?? null) === 'Contact form recipient updated.'
-                && ($message['status'] ?? null) === 'success';
+                && ($params['notification']['status'] ?? null) === 'success';
         })
         ->set('data.legal_disclaimer', 'After legal text.')
         ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
-            $message = $params['notification'] ?? [];
-
             return $event === 'admin-header-notification'
-                && ($message['body'] ?? null) === 'Legal disclaimer updated.'
-                && ($message['status'] ?? null) === 'success';
+                && ($params['notification']['status'] ?? null) === 'success';
         })
         ->call('updateSocialLink', 0, 'url', 'https://example.invalid/after')
         ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
-            $message = $params['notification'] ?? [];
-
             return $event === 'admin-header-notification'
-                && ($message['body'] ?? null) === 'Social links updated.'
-                && ($message['status'] ?? null) === 'success';
+                && ($params['notification']['status'] ?? null) === 'success';
         });
 
     $saved = PublicContentSetting::general();
     expect($saved->getAttribute('contact_recipient_email'))->toBe('after@example.invalid')
         ->and($saved->getAttribute('legal_disclaimer'))->toBe('After legal text.')
-        ->and($saved->getAttribute('social_links')[0]['url'])->toBe('https://example.invalid/after');
-});
+        ->and($saved->getAttribute('social_links')[0]['url'])->toBe('https://example.invalid/after')
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 3)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 3);
 
+    $component->call('persistChangedField', 'contact_recipient_email')
+        ->call('persistChangedField', 'legal_disclaimer')
+        ->call('updateSocialLink', 0, 'url', 'https://example.invalid/after');
+
+    expect(generalSettingsAuditCount())->toBe($auditBefore + 3)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 3);
+});
 
 it('keeps invalid event persistence visible without replacing persisted data', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['public_email' => 'valid@example.invalid']);
