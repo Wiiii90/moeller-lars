@@ -3,29 +3,17 @@
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationService;
-use App\Http\Middleware\ProtectArtistPreview;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\PublicationCheckpoint;
 use App\Models\PublicContentSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-
-require_once __DIR__.'/PublicationWorkflowFixtures.php';
 
 beforeEach(function (): void {
     $this->actor = User::factory()->admin()->create();
     $this->actingAs($this->actor, 'web');
-
-    Route::middleware('web')->get('/__publication/probe/value', static function () {
-        return response((string) PublicContentSetting::general()->getAttribute('legal_disclaimer'));
-    });
-
-    Route::middleware(['web', ProtectArtistPreview::class])->get('/preview/__publication/probe/value', static function () {
-        return response((string) PublicContentSetting::general()->getAttribute('legal_disclaimer'));
-    });
 });
 
 it('retains files referenced by a retained publication snapshot after a later Commit', function (): void {

@@ -126,7 +126,6 @@ it('selects all visible Pages from none or mixed, and clears them from all', fun
     expect(count($visibleIds))->toBeGreaterThan(1)
         ->and($component->get('selectedSectionIds'))->toBe([]);
 
-    // Screenshot sequence: All -> uncheck one -> All -> clear All.
     $component->call('toggleSelectAll');
     expect(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($visibleIds);
 

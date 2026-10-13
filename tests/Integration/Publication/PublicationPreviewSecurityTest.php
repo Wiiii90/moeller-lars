@@ -12,10 +12,6 @@ beforeEach(function (): void {
     $this->actor = User::factory()->admin()->create();
     $this->actingAs($this->actor, 'web');
 
-    Route::middleware('web')->get('/__publication/probe/value', static function () {
-        return response((string) PublicContentSetting::general()->getAttribute('legal_disclaimer'));
-    });
-
     Route::middleware(['web', ProtectArtistPreview::class])->get('/preview/__publication/probe/value', static function () {
         return response((string) PublicContentSetting::general()->getAttribute('legal_disclaimer'));
     });
