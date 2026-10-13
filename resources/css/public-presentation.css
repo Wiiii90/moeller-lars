@@ -93,22 +93,27 @@ body {
     background: var(--public-surface);
 }
 
-/* A single sharp-edged folio. The continuous offset impression follows
-   the whole menu surface instead of the rejected dangling corner strokes.
-   Shadows are paint-only; the configured width, grid and overflow rail do
-   not change. Main and child levels share this one owner. */
+/* One paper surface and a single partial outside contour, akin to the
+   accepted Content folio. No ghost rectangles or dangling corner brackets.
+   The decorative stroke is outside the menu's measured grid bounds. */
 .site-navigation {
     position: relative;
     order: 1;
     box-shadow:
-        inset 1px 0 0 rgba(91, 78, 64, .14),
-        inset -1px 0 0 rgba(91, 78, 64, .14),
-        inset 0 1px 0 rgba(91, 78, 64, .14),
         inset 0 -1px 0 var(--public-index-rule),
-        -2px 2px 0 rgba(255, 255, 255, .29),
-        -3px 3px 0 rgba(44, 39, 33, .23),
-        -5px 5px 0 rgba(255, 255, 255, .13),
-        -6px 6px 0 rgba(44, 39, 33, .12);
+        -2px 3px 0 rgba(32, 33, 30, .19),
+        -3px 4px 0 rgba(255, 255, 255, .24);
+}
+.site-navigation::before {
+    position: absolute;
+    top: .35rem;
+    right: 1.15rem;
+    bottom: -.48rem;
+    left: -.5rem;
+    content: "";
+    border-left: 1px solid rgba(255, 255, 255, .73);
+    border-bottom: 1px solid rgba(255, 255, 255, .63);
+    pointer-events: none;
 }
 
 .site-navigation__rail,
@@ -520,18 +525,30 @@ body {
     text-transform: uppercase;
 }
 
-/* One optional content heading for every public SiteSection template.
- * An absent heading adds no border, spacing, or wrapper before the content. */
+/* An authored page title is an editorial heading, never another menu
+   label. Keep the existing alignments, width and opt-in divider. */
 .public-page-heading {
+    position: relative;
     width: min(100%, var(--public-art-max));
     min-width: 0;
-    margin: 0 auto 1.35rem;
+    margin: 0 auto 1.75rem;
+    padding: .32rem 0 .1rem;
 }
 
-.public-page-heading > .category-heading {
+.public-page-heading > .public-page-heading__title {
     width: 100%;
     margin: 0;
+    color: #38322b;
+    font-family: var(--public-index-typeface);
+    font-size: 1.68rem;
+    font-weight: 400;
+    letter-spacing: .015em;
+    line-height: 1.3;
     text-align: inherit;
+    text-transform: none;
+    text-shadow: .4px .55px 0 rgba(75, 66, 57, .14);
+    text-wrap: pretty;
+    overflow-wrap: break-word;
 }
 
 .public-page-heading--left { text-align: left; }
@@ -540,7 +557,7 @@ body {
 
 .public-page-heading > .public-page-heading__divider {
     width: 100%;
-    margin: 1.3rem 0 0;
+    margin: 1.1rem 0 0;
 }
 
 .artwork-list {
