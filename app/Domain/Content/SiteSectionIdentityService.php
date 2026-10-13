@@ -16,16 +16,26 @@ final class SiteSectionIdentityService
         private readonly SiteSectionPathPolicy $pathPolicy,
     ) {}
 
-    public function update(SiteSection $section, string $name, ?string $slug): SiteSection
+    public function update(SiteSection $section, string $name, ?string $slug, ?string $navigationLabel = null): SiteSection
     {
         $name = trim($name);
         if ($name === '' || mb_strlen($name) > 160) {
             throw ValidationException::withMessages(['name' => 'A short page name is required.']);
         }
 
+        // Pages without a separately authored label keep the page title.
+        // Journal Settings may supply a different label; blank resets to title.
+        $navigationLabel = trim((string) $navigationLabel);
+        if ($navigationLabel === '') {
+            $navigationLabel = $name;
+        }
+        if (mb_strlen($navigationLabel) > 160) {
+            throw ValidationException::withMessages(['navigation_label' => 'The navigation label may contain at most 160 characters.']);
+        }
+
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($section, $name, $slug, $actor): SiteSection {
+        return DB::transaction(function () use ($section, $name, $slug, $navigationLabel, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             $type = $fresh->nodeType();
@@ -47,7 +57,7 @@ final class SiteSectionIdentityService
             if ($type === SiteSectionType::Journal) {
                 /** @var JournalSetting|null $settings */
                 $settings = JournalSetting::query()->where('site_section_id', $fresh->getKey())->lockForUpdate()->first();
-                if ($settings instanceof JournalSetting && trim((string) $settings->getAttribute('listing_title')) === $oldName) {
+                if ($name !== $oldName && $settings instanceof JournalSetting && trim((string) $settings->getAttribute('listing_title')) === $oldName) {
                     $settings->setAttribute('listing_title', $name);
                     $settings->save();
                 }
@@ -55,7 +65,7 @@ final class SiteSectionIdentityService
 
             $fresh->fill([
                 'title' => $name,
-                'navigation_label' => $name,
+                'navigation_label' => $navigationLabel,
                 'slug' => $newSlug,
             ]);
 

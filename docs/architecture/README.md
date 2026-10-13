@@ -5,8 +5,8 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 ## Einstieg
 
 1. [Bestandsaufnahme](inventory.md) — nachprüfbarer Quellcodekatalog mit Klassifikation, Abhängigkeiten und bekannten Abdeckungslücken.
-2. [Vollständiger PHP-Quellenkatalog](php-source-audit.md) — 248 PHP-Dateien, 248 Typen, 900 interne Imports, [Modulgraph](generated/app-module-imports.mmd).
-3. [Klassen-Importdiagramme](class-import-diagrams.md) — 20 vollständige Modulansichten mit 248 Quelltypen und 900 Importkanten.
+2. [Vollständiger PHP-Quellenkatalog](php-source-audit.md) — 248 PHP-Dateien und Typen; **900 Imports im eingefrorenen Quellkatalog, neuer Quellenstand +1**, [Modulgraph](generated/app-module-imports.mmd).
+3. [Klassen-Importdiagramme](class-import-diagrams.md) — 20 vollständige Modulansichten des eingefrorenen 900er-Importstands; neuer Quell-Delta separat nachgewiesen.
 4. [Importgrenzen und Artwork-Publish-Abweichung](import-boundaries.md) — Modulzyklus und konkret unterschiedliche Gallery-/Undo-Guards.
 5. [Eloquent-Relationen](eloquent-relations.md) — 26 Modeldateien und 48 Relationen, jetzt zusätzlich als [generierter JSON-Graph](generated/eloquent-relationships.json) und [Mermaid-Gesamtgraph](generated/eloquent-relationships.mmd).
 6. [Fachliche Lebenszyklen](lifecycles.md) — fünf getrennte Zustandsmodelle mit 35 überprüfbaren Quellbelegen.
@@ -82,7 +82,7 @@ Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser
 
 | Modell | Erste Quelle | Status |
 | --- | --- | --- |
-| PHP-Klassen, Interfaces, Enums, Traits und statische Abhängigkeiten | `app/**/*.php` | **248 Typen und 900 interne Importkanten** als unabhängiger Quellkatalog, mit inkrementellem Blob-Diff gegen `dev` überprüft; nativer Tokenizer-Lauf offen |
+| PHP-Klassen, Interfaces, Enums, Traits und statische Abhängigkeiten | `app/**/*.php` | **248 Typen und 900 Importkanten** im eingefrorenen unabhängigen Quellkatalog; neuester `dev`-Stand hat **+1 Import** (901), Diagramme noch nicht regeneriert; nativer Tokenizer-Lauf offen |
 | Fachmodule und ihre Eintrittspunkte | `app/Domain`, `app/Http`, `app/Filament`, `app/Livewire` | Schwerpunktpfade quellengeprüft |
 | Physisches PostgreSQL-Schema und Constraints | ausgeführte, vollständige Migrationen in **isolierter Wegwerf-DB** | offen; Migrationsanzahl ist kein Schema |
 | Eloquent-Beziehungen | Relation-Methoden der Models | 26 Modelquellen / 48 explizite Kanten als JSON und Mermaid vorhanden; **physische FKs unabhängig offen** |

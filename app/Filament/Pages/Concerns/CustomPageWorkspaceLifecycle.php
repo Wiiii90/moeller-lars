@@ -8,6 +8,7 @@ use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\CustomPageSetting;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -157,7 +158,8 @@ trait CustomPageWorkspaceLifecycle
                             ->label('Navigation parent')
                             ->options(fn (): array => $this->parentOptions())
                             ->nullable()
-                            ->placeholder('Top level'),
+                            ->placeholder('Top level')
+                            ->visible(fn (): bool => PublicContentSetting::navigationNestingEnabled()),
                     ]),
             ])
             ->modalHeading('Page settings')
@@ -183,7 +185,8 @@ trait CustomPageWorkspaceLifecycle
                     $service->updatePlacement(
                         $section,
                         ($data['publication_state'] ?? 'unpublished') === 'published' ? 'published' : 'hidden',
-                        is_numeric($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null,
+                        PublicContentSetting::navigationNestingEnabled() && is_numeric($data['parent_id'] ?? null)
+                            ? (int) $data['parent_id'] : null,
                     );
                 });
 
@@ -194,7 +197,7 @@ trait CustomPageWorkspaceLifecycle
                         'navigation_label',
                         'slug',
                         'state',
-                            'parent_id',
+                        'parent_id',
                         'position',
                     ]);
                 $section ??= $this->section();
@@ -208,6 +211,6 @@ trait CustomPageWorkspaceLifecycle
                 }
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 }

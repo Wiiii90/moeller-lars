@@ -34,6 +34,20 @@ Der ursprüngliche vollständige Katalog wurde bei `ca162bcd5e5bbaf50bc6bdb9c6bc
 
 **Nicht erneuert:** Die im [JSON-Audit](generated/app-source-audit.json) bewusst fixierte `source_ref` bleibt der ursprüngliche vollständige Lese-Commit. Insbesondere gespeicherte **Dateibytes, rohe `::class`-Hinweise und andere zeilenbezogene Anker** veränderter Dateien sind nicht automatisch die heutigen Werte. Das JSON wird daher nicht durch einen fälschlich als vollständige Neugenerierung ausgegebenen Teilpatch umetikettiert. Bei späteren `dev`-PHP-Änderungen muss diese Delta-Abdeckung erneut geprüft werden.
 
+## Neuer Source-Delta nach Journal-/Settings-Refactor (14.10.2026)
+
+Ein nachfolgender `dev`-Commit `2cd299354e42f565144b4b13752f6ec8e3192fe1` ändert **sieben App-PHP-Dateien**. Die konkreten alten/neuen `use App\\...`-Deklarationen aller sieben Dateien wurden einzeln verglichen (kein Generator- oder Runtime-Test). Drei Deklarationen änderten sich:
+
+| PHP-Quelle | Präziser Import-Delta |
+| --- | --- |
+| [`JournalSettingsService`](../../app/Domain/Content/JournalSettingsService.php) | **−1** `App\\Domain\\Admin\\AdminAuditService`; Identity und Template werden jetzt über Klassen **im gleichen Namespace** delegiert, ohne neuen `use App\\...` |
+| [`SiteSectionEditorialService`](../../app/Domain/Content/SiteSectionEditorialService.php) | **+1** `App\\Models\\PublicContentSetting` |
+| [`CustomPageWorkspaceLifecycle`](../../app/Filament/Pages/Concerns/CustomPageWorkspaceLifecycle.php) | **+1** `App\\Models\\PublicContentSetting` |
+
+Die vier übrigen geänderten PHP-Dateien behalten ihre projektinternen Imports unverändert. Daher hat die aktuelle Quelle gegenüber dem bisher eingecheckten JSON **netto +1 Importdeklaration**: rechnerisch **901 interne Imports statt 900**, davon **718 modulübergreifende statt 717**. Die Anzahl der benannten Typen und PHP-Dateien bleibt unverändert, soweit diese geänderten Dateien und der verifizierte Change-Set reichen.
+
+**Wichtige Generationgrenze:** [`generated/app-source-audit.json`](generated/app-source-audit.json), [Modulimportgraph](generated/app-module-imports.mmd) und [20 Klassendiagramme](class-import-diagrams.md) haben weiterhin **900/717** aus ihrer ursprünglichen `source_ref` und sind auf diesem neuen Stand **für Importkanten nicht mehr vollständig aktuell**. Sie wurden bewusst nicht manuell auf eine angeblich nativ regenerierte Version umetikettiert. Der Delta ist ein überprüfbarer Ergänzungsbeleg; ein echter vollständiger Generator-/Diagrammlauf bleibt offen.
+
 ## Modulübergreifende Imports
 
 | Quellmodul → importiertes Modul | Explizite Deklarationen |

@@ -145,6 +145,14 @@ For multi-field `Large` create/edit dialogs:
 - keep related fields adjacent where practical (for example title/slug, start/end, width/height);
 - do not remove, hide or truncate form fields merely to make a dialog shorter.
 
+For the Journal (Blog and Exhibitions), Custom Page and Gallery Settings dialogs:
+
+- use the same responsive `md` two-column form grammar as Pages; compact Settings stay at `Default` width without introducing special dialog geometry;
+- resolve Journal identity (title, optional navigation label, slug redirect and synchronized uncustomized listing title) through the existing `SiteSectionIdentityService`, and its non-destructive template switch through `SiteSectionEditorialService` just as Pages Edit does;
+- a blank navigation label resolves to the page title, and a previous label that merely repeated the previous title follows a title change; a separately customized navigation label remains independent;
+- Custom Page navigation parent follows the global nested-navigation policy from Pages Settings, including domain validation; and
+- do not add explanatory helper text to settings fields when the label is self-explanatory (notably URL/redirect narration and Material presets).
+
 For media/detail viewers:
 
 - keep the primary visual first;
