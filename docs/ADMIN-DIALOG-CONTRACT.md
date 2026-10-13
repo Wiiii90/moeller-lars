@@ -201,6 +201,17 @@ success Notification. Test both form-level and field-level callbacks. See
 
 Undo must extend the existing Activity/Audit receipt architecture. Do not create an independent dialog snapshot/rollback system. An Undo action may only be shown for mutations that have safe current receipts; applying Undo creates inverse editorial actions through the canonical `AdminUndoService` path.
 
+## Pages and General Social Media dialog identities
+
+These examples apply the existing shared Create/Edit Action lifecycle; they do not introduce a page-specific persistence engine.
+
+- **General · Add profile:** `General::addSocialLinkAction()` uses a `Small` `AdminDialog::create()` with required Platform, Profile URL and Position. It creates only on the default checkmark commit; the Create form retains required markers.
+- **General · Edit profile:** `General::editSocialLinkAction()` uses a `Small` `AdminDialog::edit()` for those fields, without a Save/Commit footer or red required markers. Each valid semantic change follows the shared autosave path; an invalid change must leave the last persisted profile intact. **The mounted editor is identified by the unique persisted platform**, not by its mutable row index. After platform change the owner updates this identity; Move up/down remounts the action against its newly located record. The Social table's `wire:key` also uses the stable platform value. Never substitute a positional row identity or create a second social editor.
+- **Pages · Add page:** `ManagesSitePageCreateDialog::addPageAction()` is a full Create dialog; its submit uses the canonical `AdminIcon::Pages` instead of the generic checkmark. Other Create tasks retain their normal shared confirmation icon.
+- **Pages · Edit page:** `ManagesSitePageEditDialog::editPageAction()` uses `AdminDialog::edit()`. Its save comparison operates on the **latest persisted Site Section**, not the original modal form-fill snapshot. Stable Site Section IDs protect mounted Edit actions when row order changes.
+
+**Source:** [General actions](../app/Filament/Pages/General.php), [Social Blade stable keys](../resources/views/filament/schemas/components/general-social-links.blade.php), [Pages Create](../app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php) and [Pages Edit](../app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php). Actual browser interaction was not re-executed for this documentation change.
+
 ## Exhibition map autosave
 
 The Exhibition Map uses the ordinary Edit dialog and its semantic `change`

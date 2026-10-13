@@ -134,6 +134,8 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 **Duplikatabbau:** Vier am Ende von `ui-skills.md` fehlplatzierte Metrics-/Stage-Bullets gelöscht, nachdem die Regeln bereits in `ADMIN-RESPONSIVE-METRICS.md` und `ADMIN-RESPONSIVE-STAGES.md` verortet wurden. Keine Anwendungscode-Korrektur auf `docs`.
 
+**Weitere Owner-Klärung:** General Social Add/Edit und Pages Add/Edit aus `ADMIN-RESPONSIVE-TABLES.md` zum kanonischen `ADMIN-DIALOG-CONTRACT.md` verlagert, einschließlich stabiler Social-Platform-Identität und aktueller Pages-Speicherreferenz. Tabellenindex enthält nur weiterhin nötige responsive Seitenkomposition; generische No-Scroll-/Selection-/Pagination-/Typografie-Vorgaben verweisen auf den bereits vorhandenen Tabellen-Owner. Klassen und Social-Blade quellgeprüft, nicht browsergetestet.
+
 **Nächster Schritt:** Weitere thematische Duplikate mit realen Code-Owners abgleichen und PHP-Tokenizer/Generatoren an isolierten Syntax-Fixtures validieren, bis ein sicherer vollständiger Checkout zur Verfügung steht. Eingehende `dev`-Änderungen mit neuem Compare prüfen.
 
 **Offen:** native Full-Checkout-PHP-Generatorprüfungen, isoliertes vollständig migriertes PostgreSQL-`pg_catalog`, Notification-Transport und Browser-Produktabnahme. Weder `testing` noch CI für diese Arbeit verwenden.
