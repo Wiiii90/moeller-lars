@@ -126,35 +126,32 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Git-Stand:** `docs` vor diesem Commit `97b9116cef0a896c9c9797cc559bc5f8dfef62a0`,
-`dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`.
-Bei Fortsetzung immer aktuellen HEAD- und Merge-Status prüfen.
+**Stand:** `docs` vor diesem Commit `a35f8a1aca279ed6325d5b6d8eaf0dd0870379f5`; `dev` zuletzt
+`919eec2c088ccd7aca804ab5108a6a8378a1028e`.
+Remote-HEADs bei jeder Fortsetzung neu ermitteln.
 
-**Abgeschlossen:** Haupt-Architektur und Datenmodell sind mit
-den aktuellen CV-/Media-/Notification-Implementierungen abgeglichen.
-Im [Migrationsvertrag](docs/MIGRATION-INVARIANTS.md) steht jetzt
-explizit die tatsächliche **bekannte Verletzung** der historischen
-Self-Containment-Regel: Migration
-`2026_09_15_000001_add_restorable_publication_versions.php` importiert
-`PublicationSnapshot::TABLES` beim Backfill sowie bei
-`schemaHash()`/`snapshotHash()`. Damals waren 16 Publication-Tabellen
-aktiv, aktuell sind 15 getrackt; [Schema-Evolution](docs/architecture/schema-evolution.md)
-enthält den konkreten Quellnachweis. Dies ist **ein Quellrisiko, kein
-beobachteter `migrate:fresh`-Fehler**; nur isolierte und separat
-autorisierte Runtime-Prüfung kann Korrektur freigeben. Kein
-Migration-/Runtime-Code auf `docs` verändert.
+**Verifiziert und korrigiert:**
+- Die vollständige einfache Markdown-Dateipfad-Prüfung am damaligen `docs`-
+  Baum umfasste **61** Markdown-Dateien und **450** relative Dateiverweise,
+  **keine** fehlenden Datei-/Verzeichnisziele (ohne Spezial-Linksyntax).
+- Zusätzlich die **13** dabei gefundenen Markdown-Abschnittsanker gegen die
+  tatsächlichen Überschriften ihrer Zieldokumente geprüft: **ein**
+  ungültiger Anker in `docs/MIGRATION-INVARIANTS.md` zeigte auf
+  `schema-evolution.md#historische-migrationsvertraege` statt auf
+  `#konkreter-quellenkonflikt-noch-nicht-bereinigt`; korrigiert.
+  Ein nativer Markdown-Linter wurde nicht ausgeführt, externe URLs und
+  komplexe Linksyntax sind nicht Teil dieser Quellenprüfung.
+- Im Migrationsvertrag die bekannte aktuelle
+  Self-Containment-Verletzung von
+  `2026_09_15_000001_add_restorable_publication_versions.php`
+  mit Quellbeleg festgehalten. **Keine** Migration verändert und
+  keinen `migrate:fresh`-Erfolg behauptet.
 
-**Vorher erledigt:** die in Root-/Medien-/Activity-Dokumentation
-gefundenen Verwechslungen zu Gallery-Löschung, ehemaligem CV-Modell,
-safe external RichText, Notifier-Mehrfachkontext und Reset-Audit bei
-Null-Diff sind quellenorientiert korrigiert. Die einfache Dateipfadprüfung
-der 61 Markdown-Dateien/450 Links fand keinen fehlenden Pfad.
+**Unmittelbarer nächster Schritt:** aktuelle `dev`-Änderungen auf Relevanz
+prüfen, dann das vollständige Architektur-/Fachvertragsinventar auf echte
+semantische Dopplungen und unbewiesene Runtime-Behauptungen abgleichen.
+Die 20 Modul-/Importdiagramme sind **Import-**, keine Aufruf-/Laufzeitgraphen.
 
-**Nächster konkreter Schritt:** interne Markdown-Abschnittsanker gezielt
-gegen wirkliche Überschriften prüfen; danach evtl. neue `dev`-Änderungen
-übernehmen und die architekturrelevanten Quellen nachziehen.
-Restarbeiten nur bei konkreter Quellenlage, nicht pro forma wiederholen.
-
-**Weiter offen:** isoliertes `pg_catalog` inkl. Migrationstest,
-native PHP-Generatoren im vollen Checkout, echter Browser-/Livewire-Test
-und Notification-Header-Retry-Kardinalität. CI/`testing` bleiben tabu.
+**Offen:** PHP-Generatoren auf komplettem Checkout, echte wegwerfbare
+PostgreSQL-`pg_catalog`-Extraktion, Public-/Admin-Browserreview sowie
+Notifier-Transport/Retries. Kein CI und kein `testing`-Eingriff.

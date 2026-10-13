@@ -189,7 +189,7 @@ that a particular `migrate:fresh` run failed. Do not patch historical
 tables on the `docs` workstream or change snapshot/hash values by
 guessing; a separately authorized and isolated migrated PostgreSQL
 reconstruction must establish the correct historical behavior first.
-See [schema evolution](architecture/schema-evolution.md#historische-migrationsvertraege).
+See [schema evolution](architecture/schema-evolution.md#konkreter-quellenkonflikt-noch-nicht-bereinigt).
 
 
 ## Legacy evidence and internal schema retirement
