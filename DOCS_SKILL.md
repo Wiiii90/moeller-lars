@@ -223,6 +223,13 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Public JS Einstieg in `layouts/app.blade.php` und fünf tatsächlich importierte Module verifiziert.
 - **Nächster Schritt:** PHP-Symbol-/Beziehungs-Generatoren mit vollständigem Checkout ausführen und nicht erfasste Typen/Runtime-Einstiege offenlegen. Anschließend UI-/Livewire-Signalfluss detailliert erfassen.
 
+## 6d. Fortsetzung 2026-10-13 — Filament und Livewire
+
+- [Filament-/Livewire-Komposition](docs/architecture/ui-surfaces.md) erfasst: **9** Filament-Page-Klassen, **26** Concern-Dateien, **2** eigenständige Livewire-Controls; Slugs und Abgrenzung zur Filament-Route-Discovery sind quellengeprüft.
+- Neuer lokaler `scripts/generate-architecture-ui-surfaces.php`: extrahiert Page/Concern/Livewire-Klassen, direkte Trait-Nutzungen, öffentliche Methoden und literal definierte Actions zu JSON/Mermaid.
+- PHP 8.4 **tatsächlich** geprüft: Syntax, `--write`, `--check`, Fixture mit Page/Trait/Livewire und negativer Stale-Action-Fall. Kein vollständiger Repository-Durchlauf; Outputs `generated/ui-surfaces.*` daher noch offen.
+- **Nächster Schritt:** vollständigen PHP-Checkout für Generatorläufe herstellen bzw. statischen Scope konservativ ausweiten; verschachtelte Trait-Nutzung und konkrete Filament-/Livewire-Event-Callbacks untersuchen.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:
