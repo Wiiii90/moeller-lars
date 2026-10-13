@@ -77,3 +77,13 @@ it('enforces non-frameable public pages and same-origin administrator Preview wi
         ->and($previewCsp)->toContain("'nonce-{$previewNonce[1]}'")
         ->and((string) $preview->getContent())->toContain('nonce="'.$previewNonce[1].'"');
 });
+
+it('serves the public CSP-safe Livewire script without changing the Admin runtime configuration', function (): void {
+    $before = config('livewire.csp_safe', false);
+
+    $response = $this->get(route('public.livewire.csp'));
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toContain('javascript')
+        ->and(config('livewire.csp_safe', false))->toBe($before);
+});

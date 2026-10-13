@@ -28,3 +28,17 @@ test('extreme random draws and missing prior state cannot select an invalid vari
     assert.equal(chooseNextFolioVariant(9, () => 1), 8);
     assert.ok(chooseNextFolioVariant(-1, () => .5) > 0);
 });
+
+test('first folio is the exact approved original rather than an arbitrary replacement', () => {
+    assert.deepEqual(FOLIO_VARIANTS[0], ['1.10rem', '4.00rem', '3.80rem', '1.15rem']);
+});
+
+test('folio variants never remove return corners or greatly displace the accepted silhouette', () => {
+    const original = FOLIO_VARIANTS[0].map(parseFloat);
+    FOLIO_VARIANTS.forEach((values) => {
+        values.forEach((value, position) => {
+            assert.ok(Math.abs(parseFloat(value) - original[position]) <= 0.5,
+                'outside contour end must stay close to the accepted position');
+        });
+    });
+});
