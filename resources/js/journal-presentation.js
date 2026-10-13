@@ -75,6 +75,7 @@ function initializeExhibitionMap(button) {
 
     let map = null;
     let opening = false;
+    let disposed = false;
     // Observe the map viewport rather than guessing device breakpoints or
     // polling after a device rotation / dialog layout change.
     const resizeObserver = typeof ResizeObserver !== 'undefined'
@@ -98,7 +99,7 @@ function initializeExhibitionMap(button) {
 
         try {
             const L = await loadLeaflet(canvas.dataset.leafletScript, canvas.dataset.leafletStyle);
-            if (!dialog.open) return;
+            if (disposed || !dialog.isConnected || !dialog.open) return;
 
             const latitude = Number(canvas.dataset.latitude);
             const longitude = Number(canvas.dataset.longitude);
@@ -142,9 +143,18 @@ function initializeExhibitionMap(button) {
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) dialog.close();
     });
+
+    return () => {
+        disposed = true;
+        resizeObserver?.disconnect();
+        if (map) map.remove();
+        if (dialog.open) dialog.close();
+    };
 }
 
 export function initializeJournalPresentation() {
     document.querySelectorAll('[data-journal-slideshow]').forEach(initializeSlideshow);
-    document.querySelectorAll('[data-exhibition-map-open]').forEach(initializeExhibitionMap);
+    const disposers = Array.from(document.querySelectorAll('[data-exhibition-map-open]'))
+        .map(initializeExhibitionMap).filter(Boolean);
+    return () => disposers.forEach((dispose) => dispose());
 }

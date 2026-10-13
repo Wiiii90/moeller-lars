@@ -29,6 +29,15 @@
             'resources/css/custom-pages.css',
             'resources/js/app.js',
         ])
+        {{-- Navigation uses Livewire's established document-swap runtime, not a
+             second router. Nonces keep the public policy strict. --}}
+        @livewireStyles(['nonce' => $publicStyleNonce])
+        @livewireScripts(['nonce' => $publicStyleNonce])
+        <meta data-public-layout
+            data-public-layout-background="{{ $publicBackgroundCss ?? '' }}"
+            data-public-layout-shell="{{ $publicLayoutCss['shell'] }}"
+            data-public-layout-art="{{ $publicLayoutCss['art'] }}"
+            data-public-layout-padding="{{ $publicLayoutCss['padding'] }}">
         @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
             <style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; }</style>
         @endif

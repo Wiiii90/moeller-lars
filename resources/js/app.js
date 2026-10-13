@@ -4,15 +4,39 @@ import { initializeHomeHero } from './home-hero.js';
 import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
+import { applyPublicLayoutFromMeta, markPublicSpaLinks } from './public-spa.js';
+
+// Livewire swaps the public body's contents, but module scope and document
+// event listeners persist. Dispose page-specific observers/listeners each visit.
+let currentContent = null;
+let disposers = [];
 
 function initializePublicApplication() {
-    initializeArtworkViewer();
-    initializeHomeHero();
-    initializeJournalPresentation();
-    initializeMatomoTracking();
-    initializePublicNavigation();
+    const content = document.querySelector('#content');
+    if (!content || content === currentContent) return;
+
+    for (const dispose of disposers) dispose?.();
+    disposers = [];
+    currentContent = content;
+
+    const root = document.body;
+    disposers.push(initializeArtworkViewer(root));
+    initializeHomeHero(root);
+    disposers.push(initializeJournalPresentation());
+    disposers.push(initializeMatomoTracking(root));
+    disposers.push(initializePublicNavigation());
+    markPublicSpaLinks(root);
 }
 
+// A new response has a fresh style nonce; copy its validated layout values
+// into CSSOM before paint rather than relying on a newly inserted inline
+// style element that the current document's CSP cannot authorize.
+document.addEventListener('livewire:navigating', (event) => {
+    event.detail.onSwap?.(applyPublicLayoutFromMeta);
+});
+document.addEventListener('livewire:navigated', initializePublicApplication);
+
+// Harmless initial fallback if scripts initialize in a different order.
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializePublicApplication, { once: true });
 } else {
