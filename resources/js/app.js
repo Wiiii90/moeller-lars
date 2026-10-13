@@ -4,6 +4,7 @@ import { initializeHomeHero } from './home-hero.js';
 import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
+import { advancePublicFolio } from './public-folio-motion.js';
 import { applyPublicLayoutFromMeta, markPublicSpaLinks } from './public-spa.js';
 
 // Livewire swaps the public body's contents, but module scope and document
@@ -32,6 +33,7 @@ function initializePublicApplication() {
 // into CSSOM before paint rather than relying on a newly inserted inline
 // style element that the current document's CSP cannot authorize.
 document.addEventListener('livewire:navigating', (event) => {
+    advancePublicFolio();
     // Navigation is about to replace the old body: release modal maps, image
     // attention tracking and global observers before their elements detach.
     for (const dispose of disposers) dispose?.();

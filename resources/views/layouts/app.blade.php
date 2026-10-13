@@ -32,7 +32,6 @@
         {{-- Navigation uses Livewire's established document-swap runtime, not a
              second router. Nonces keep the public policy strict. --}}
         @livewireStyles(['nonce' => $publicStyleNonce])
-        @livewireScripts(['nonce' => $publicStyleNonce])
         <meta data-public-layout
             data-public-layout-background="{{ $publicBackgroundCss ?? '' }}"
             data-public-layout-shell="{{ $publicLayoutCss['shell'] }}"
@@ -142,9 +141,13 @@
                 </div>
             @endunless
         </header>
-        <main id="content" class="site-content">
+        <main id="content" class="site-content" wire:transition.navigate>
+            @persist('public-folio-decoration')
+                <div class="public-folio-decoration" aria-hidden="true"></div>
+            @endpersist
             @yield('content')
         </main>
         <x-artwork-viewer />
+        @livewireScripts(['nonce' => $publicStyleNonce])
     </body>
 </html>
