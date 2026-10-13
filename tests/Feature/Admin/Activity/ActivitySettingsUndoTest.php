@@ -10,6 +10,7 @@ use App\Models\AuditEvent;
 use App\Models\PublicContentSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 it('exposes and executes conflict-safe snapshot Undo for updated admin settings', function (): void {
     $actor = User::factory()->admin()->create();
@@ -62,7 +63,7 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
 });
 
 
-it('hides an older snapshot Undo after the same row changes again', function (): void {
+it('hides and rejects an older snapshot Undo after the same row changes again', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor);
 
@@ -70,6 +71,7 @@ it('hides an older snapshot Undo after the same row changes again', function ():
     $settings = PublicContentSetting::general();
     $settings = $service->updatePublicContent($settings, ['public_email' => 'first@example.test']);
     $firstEvent = AuditEvent::query()->where('action', 'public_content_setting.updated')->latest('id')->firstOrFail();
+    $firstReceipt = AdminActionReceipt::query()->where('audit_event_id', $firstEvent->getKey())->firstOrFail();
 
     $service->updatePublicContent($settings, ['public_email' => 'second@example.test']);
     $secondEvent = AuditEvent::query()->where('action', 'public_content_setting.updated')->latest('id')->firstOrFail();
@@ -80,6 +82,18 @@ it('hides an older snapshot Undo after the same row changes again', function ():
 
     expect($first['undo'] ?? null)->toBeNull()
         ->and($second['undo'] ?? null)->not->toBeNull();
+
+    $eventsBefore = AuditEvent::query()->count();
+    $receiptsBefore = AdminActionReceipt::query()->count();
+
+    expect(fn () => app(AdminUndoService::class)->undo((int) $firstReceipt->getKey()))
+        ->toThrow(ValidationException::class, 'Undo is no longer available because this action or related data changed afterwards.');
+
+    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('second@example.test')
+        ->and($firstReceipt->fresh()?->getAttribute('undone_at'))->toBeNull()
+        ->and(AuditEvent::query()->count())->toBe($eventsBefore)
+        ->and(AdminActionReceipt::query()->count())->toBe($receiptsBefore)
+        ->and(AuditEvent::query()->where('action', 'admin.undo_applied')->count())->toBe(0);
 });
 
 
