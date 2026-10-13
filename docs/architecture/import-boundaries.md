@@ -28,6 +28,24 @@ Zwei Publish-Pfade sind tatsächlich **aktiv referenziert**:
 
 **Konsequenz:** Ein von der Gallery regulär publizierbares Artwork könnte beim späteren Undo einer Unpublication durch den strengeren alternativen Publish-Guard abgewiesen werden. Das ist eine **quellbelegte Guard-Differenz und konkrete Testhypothese**, noch kein ausgeführter Browser-/Datenbank-Fehlernachweis.
 
+### Negativfallmatrix für eine kanonische Publish-Readiness
+
+Alle Zeilen setzen eine vorhandene, veröffentlichte Gallery SiteSection, genau eine Primärrelation und einen verfügbaren `MediaAsset` voraus. **Gallery** bezeichnet den tatsächlich verwendeten `ArtworkPublicationService::mediaReady()`-Guard; **Undo-Re-Publish** bezeichnet `ArtworkEditorialService::publish()` im `AdminLifecycleRegistry`. Ohne ausdrücklich genannten verfügbaren Bild-Thumbnail existiert keiner.
+
+| Primärmedium und ALT-Quelle | Gallery Publish | Undo-Re-Publish nach Unpublish | Beleg |
+| --- | --- | --- | --- |
+| Bild, Asset-ALT vorhanden, **genau ein** verfügbarer passender Thumbnail | akzeptiert | akzeptiert | gemeinsamer Positivfall, sofern weitere Invarianten erfüllt bleiben |
+| Bild, Asset-ALT leer, **ArtworkMedia ALT-Override** vorhanden, genau ein passender Thumbnail | akzeptiert | **abgewiesen** | Gallery prüft `altOverride || asset.alt_text`; Editorial prüft nur `asset.alt_text` |
+| Video, gültiger Asset-ALT, **kein** Bild-Thumbnail | akzeptiert | **abgewiesen** | Gallery akzeptiert `MediaTypePolicy::isVideo()` ohne Thumbnail; Editorial fordert dennoch genau ein verfügbares Thumbnail |
+| Video, **nur** ALT-Override, kein Thumbnail | akzeptiert | **abgewiesen** | beide abweichenden Voraussetzungen zusammen |
+| Bild, Asset-ALT vorhanden, **keine** verfügbare passende Thumbnail-Variante | abgewiesen | abgewiesen | Thumbnail ist für beide Bildpfade nötig |
+| Video oder nichtbildliches Asset mit verfügbarer passender Thumbnail-Variante und Asset-ALT | Gallery nur für unterstütztes Video; anderer MIME abgewiesen | Editorial hat **keine eigene MIME-Guard-Klausel** im geprüften `publish()` | mögliche umgekehrte Guard-Lücke; Erreichbarkeit eines solchen Datensatzes separat testen |
+
+Die Matrix zeigt **Quellbedingungen**, keine erfolgreich gespeicherten Demonstrationsdatensätze. Bei einem Undo einer `artwork.unpublished`-Activity führt der Inverse-Schlüssel `artwork.published` im Registry-Code zur strengeren Editorial-Methode. Deren `ValidationException` entsteht **vor** dem eigentlichen DB-Mutationsblock; aus dem gezeigten Code ist daher nicht abzuleiten, dass sie trotz Abbruch den Zustand auf Published setzt. Ob die übergeordnete Undo-Action den Fehler korrekt sichtbar meldet und den Receipt behält, ist eine zusätzliche Livewire-/DB-Akzeptanz.
+
+**Separat zu prüfen:** konsistente Gallery-UI-Readiness, Domain-Publish und Undo-Wiederveröffentlichung; ALT-Override für Bilder; Video mit Asset-ALT und ohne Thumbnail; Primärmedien-/Galerie-Zustände; bereits publiziertes Artwork/No-op; invalidierte Medienvarianten; Validation/Rollback; Audit/Notification genau bei realen Änderungen. Die geplante Korrektur muss die **eine kanonische Domain-Readiness** zum gemeinsamen Owner machen; keine dritte UI-Heuristik oder Anpassung historischer Undo-Receipts auf `docs`.
+
+
 Die kanonische Ownership der Public-Readiness ist vor einer Produktkorrektur zu entscheiden; beide legitimen Aktionswege sollten dieselben fachlichen Publikationsvoraussetzungen einhalten. Auf `docs` wird **kein Runtime-Code** verändert und der parallele `testing`-Branch nicht berührt.
 
 ## Prüfstatus

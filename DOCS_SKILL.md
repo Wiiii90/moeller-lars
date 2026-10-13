@@ -77,13 +77,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   Vertragskonflikt, **nicht** ungeprüft zu reparieren.
 - [Importgrenzen](docs/architecture/import-boundaries.md): acht Module in
   gemeinsamer Importkomponente. Direkte Imports ≠ Runtime-Zyklus.
-- **Konkrete Produktabweichung:** Gallery nutzt
-  `ArtworkPublicationService::publish()`, Undo über
-  `AdminLifecycleRegistry` aber `ArtworkEditorialService::publish()`.
-  Letzterer verlangt einen Asset-ALT und Thumbnail auch für Fälle, in denen
-  Gallery ALT-Override/Video zulässt. Quellenbelegt, **nicht runtimegetestet**;
-  künftige kanonische Readiness-/Undo-Prüfung nötig, keine Runtime-Änderung
-  auf `docs`.
+- **Produktabweichung (Quelle, nicht runtimegetestet):** Gallery-Publish über `ArtworkPublicationService` akzeptiert ALT-Override und unterstützte Videos ohne Bild-Thumbnail; Undo-Re-Publish über `AdminLifecycleRegistry` benutzt den strengeren `ArtworkEditorialService` mit Asset-ALT/Thumbnail-Pflicht. [Testmatrix](docs/architecture/import-boundaries.md#negativfallmatrix-für-eine-kanonische-publish-readiness) einschließlich möglicher umgekehrter MIME-Guard-Lücke und Validation-/Receipt-Fragen ist erfasst. Kein Application-Fix auf `docs`; später eine einzige kanonische Domain-Readiness abnehmen.
 - Restore/Revert/Reset arbeiten zunächst nur auf **Working**. Revert liest
   LIVE-/Parent-Checkpoint vor dem Advisory Lock; mögliche Konkurrenzprüfung
   offen. Historische Custom-Page-Blöcke werden beim Restore kanonisiert.
