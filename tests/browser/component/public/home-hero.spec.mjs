@@ -19,7 +19,7 @@ test('Hero group arrows cycle only the rendered group members and retain keyboar
     ].join(''));
 
     const source = readFileSync(
-        new URL('../../resources/js/home-hero.js', import.meta.url), 'utf8',
+        new URL('../../../../resources/js/home-hero.js', import.meta.url), 'utf8',
     );
     await page.addScriptTag({
         content: source.replace(/^export /gm, '')

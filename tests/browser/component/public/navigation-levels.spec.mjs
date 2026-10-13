@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 // Isolated real-browser regression: no Laravel server, DB or application session.
-const style = readFileSync(new URL('../../resources/css/public-presentation.css', import.meta.url), 'utf8');
-const navigationScript = readFileSync(new URL('../../resources/js/public-navigation.js', import.meta.url), 'utf8');
+const style = readFileSync(new URL('../../../../resources/css/public-presentation.css', import.meta.url), 'utf8');
+const navigationScript = readFileSync(new URL('../../../../resources/js/public-navigation.js', import.meta.url), 'utf8');
 
 function fixture(path) {
     const withinAbout = path === '/about' || path === '/biography';

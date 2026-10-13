@@ -1,4 +1,4 @@
-name: Browser interaction profiling
+name: Browser behavior and interaction profiling
 
 on:
   push:
@@ -95,8 +95,8 @@ jobs:
           cat storage/logs/playwright-server.log
           exit 1
 
-      - name: Run admin interaction profiling
-        run: npm run test:browser:profile
+      - name: Run browser component, E2E and profiling suites
+        run: npm run test:browser
 
       - name: Summarize interaction metrics
         if: always()

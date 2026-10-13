@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\SiteSection;
+use App\Models\ContactMessage;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use RuntimeException;
@@ -31,5 +33,27 @@ final class BrowserProfilingSeeder extends Seeder
             'is_admin' => true,
         ]);
         $admin->save();
+
+        // Required browser interaction fixtures: never silently skip selection tests.
+        foreach ([1, 2] as $number) {
+            SiteSection::query()->create([
+                'type' => SiteSection::TYPE_CUSTOM,
+                'template' => null,
+                'title' => 'Browser fixture page '.$number,
+                'navigation_label' => 'Browser fixture page '.$number,
+                'slug' => 'browser-fixture-page-'.$number,
+                'state' => 'hidden',
+                'position' => 1000 + $number * 10,
+                'parent_id' => null,
+                'artwork_category_id' => null,
+            ]);
+
+            ContactMessage::query()->create([
+                'sender_name' => 'Browser fixture '.$number,
+                'sender_email' => 'fixture-'.$number.'@example.test',
+                'message' => 'Disposable fixture for dashboard selection',
+                'mail_delivery_status' => ContactMessage::DELIVERY_PENDING,
+            ]);
+        }
     }
 }
