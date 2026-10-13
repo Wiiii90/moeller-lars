@@ -28,6 +28,12 @@ Die ursprüngliche Publication-Migration [`2026_08_29_000001_add_staged_publicat
 
 Wichtig für das spätere ERD: `journal_entry_media` ist kein generisch polymorphes Eloquent-Morphing. Der SQL-Owner-CHECK verlangt genau eine der beiden expliziten Eigentümerspalten.
 
+### Neuer Journal-Presentation-Schritt (Merge aus `dev`, 2026-10-13)
+
+[`2026_10_13_000002_add_blog_gallery_presentation.php`](../../database/migrations/2026_10_13_000002_add_blog_gallery_presentation.php) ergänzt `blog_posts.gallery_presentation` mit `varchar(24) NOT NULL DEFAULT 'sequence'` in Working und ausdrücklich auch in `committed.blog_posts`. Damit bleibt die 15-Tabellen-Publication-Parität erhalten, **ohne** eine neue Publication-Tabelle einzuführen. Die Migration ist absichtlich forward-only.
+
+[`BlogPost::galleryPresentation()`](../../app/Models/BlogPost.php) normalisiert die akzeptierten Darstellungswerte `sequence`, `grid`, `mosaic` und `slideshow` und fällt bei unbekanntem Altwert auf `sequence` zurück. [`BlogEditorialService::validate()`](../../app/Domain/Content/BlogEditorialService.php) prüft die Benutzer-Eingabe. [`journal-gallery.blade.php`](../../resources/views/components/journal-gallery.blade.php) rendert die Gallery entsprechend, für `mosaic` über `JournalMosaicColumns`, für `slideshow` mit dedizierten Prev-/Next-/Status-Knoten. Die Gallery-Medien bleiben `JournalEntryMedia` und werden **nicht** zu neuen Eloquent-Relationen. Die exakte DOM-/JS-Lifecycle-Verifikation bleibt separat offen.
+
 ## Publication-Snapshot und History-Payloads
 
 ```mermaid

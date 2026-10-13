@@ -62,17 +62,15 @@
 
 ## 3. Zuletzt verifizierter Branchstand
 
-| Referenz | Stand zum Arbeitscheckpoint 2026-10-13 |
+| Referenz | Stand bei diesem Update (2026-10-13) |
 | --- | --- |
-| `docs` | `26d33e6bdcd6dd9d4a9b51ec67818c8742285df0` (HEAD vor dieser Aktualisierung) |
-| `dev` | `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7` |
-| `docs` relativ zu `dev` | **28 Commits voraus, 0 zurück** vor diesem Checkpoint |
-| `testing` | eigenständiger Workstream; vom Dokumentationsteam nicht geändert |
+| `docs` | `13edcfb45e829e7ecb6ffbcb9489fae1b241f813` (HEAD vor dem Dokumentations-Commit dieses Updates) |
+| `dev` | `a53d59030a03e198fbba3c631d560bdffdf5e6e3` |
+| `docs` relativ zu `dev` | **31 voraus, 0 zurück** vor diesem Commit (inkl. des neuen Merge-Commits) |
+| `testing` | Eigenständiger paralleler Branch, nicht verändert |
 
-**Vor jedem weiteren Schritt Remote-HEADs erneut abrufen.** Diese SHA ist eine
-historische Momentaufnahme; spätere Änderungen durch parallele Chats können
-jederzeit eintreffen. `dev`-Merges bewahren beide Parent-Commits und lösen
-Überschneidungen bewusst; kein Rewrite.
+**Vor Weiterarbeit immer aktuelle Remote-HEADs nachlesen**; diese Werte sind
+Momentaufnahmen und können durch andere Arbeitschats überholt sein.
 
 ## 4. Bereits implementiert und committed
 
@@ -247,6 +245,14 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Nuancen: Restore auditiert auch ohne vorherigen Working-Diff; Reset ohne Diff löscht nur Working-Kontext. Restore kanonisiert ältere CustomPage-JSON-Blöcke; Revert liest LIVE/Parent vor dem Advisory Lock (Concurrency-Test offen).
 - Integrationstests für Restore/Revert/Reset **als Quellen gelesen, nicht ausgeführt**. Neues `scripts/generate-architecture-working-operations.php` prüft Quellzeilen und reproduziert drei Mermaid-Dateien; nativer Checkout-Lauf offen.
 - **Nächster Schritt:** bestehende PHP-Symbol- und Relationsgeneratoren tatsächlich auf vollständigem Source-Checkout ausführen und auf fehlende bzw. falsche Kanten prüfen; danach physische PostgreSQL-Schemaextraktion ausschließlich in einer isolierten Wegwerf-DB.
+
+## 6g. Fortsetzung 2026-10-13 — `dev`-Merge und Journal-Gallery-Parität
+
+- Neuen `dev`-Stand `a53d59030a03e198fbba3c631d560bdffdf5e6e3` per echtem Merge `13edcfb45e829e7ecb6ffbcb9489fae1b241f813` nach `docs` übernommen. 13 geänderte/neu hinzugefügte Dateien, keine Überschneidung mit den neuen Architekturdateien.
+- [Schema-Evolution](docs/architecture/schema-evolution.md) aktualisiert: Migration `2026_10_13_000002_add_blog_gallery_presentation.php` ergänzt `blog_posts.gallery_presentation` in Working und LIVE. Vier Modellwerte: `sequence`, `grid`, `mosaic`, `slideshow`.
+- Die 15 getrackten Publication-Tabellen und 26 Eloquent-Modeldateien bleiben unverändert; es ist ein neues Feld, keine neue Model-Relation. Für Browser-/Slideshow-Abläufe folgt separate Quellenanalyse.
+- Restore/Revert/Reset-Katalog nach dem Merge erneut gegen seine **36 Quellanker** überprüft; alle vorhanden, alle drei gespeicherten Mermaid-Dateien mit dem JSON-Material identisch.
+- **Nächster Schritt:** PHP-Generatoren auf echtem Gesamtcheckout verifizieren; Source-Extractor-/Coverage-Defizite beheben und generierte Relation-/Klassendiagramme aktualisieren. Kein `testing`- oder CI-Zugriff.
 
 ## 7. Arbeits- und Updateprotokoll
 
