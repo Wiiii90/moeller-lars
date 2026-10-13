@@ -32,6 +32,12 @@ it('defaults older Blog galleries to their original image sequence and saves an 
 
     $editor->update($post, [
         ...$post->fresh()->attributesToArray(),
+        'gallery_presentation' => 'grid',
+    ]);
+    expect($post->fresh()->galleryPresentation())->toBe('grid');
+
+    $editor->update($post, [
+        ...$post->fresh()->attributesToArray(),
         'gallery_presentation' => 'slideshow',
     ]);
 
@@ -41,4 +47,7 @@ it('defaults older Blog galleries to their original image sequence and saves an 
         ...$post->fresh()->attributesToArray(),
         'gallery_presentation' => 'unknown',
     ]))->toThrow(ValidationException::class);
+
+    // Invalid edits leave the last authored presentation intact.
+    expect($post->fresh()->galleryPresentation())->toBe('slideshow');
 });
