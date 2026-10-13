@@ -2,8 +2,8 @@
 
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionPathPolicy;
+use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\CustomPageWorkspace;
-use App\Http\Controllers\PublicSiteSectionController;
 use App\Models\CustomPageSetting;
 use App\Models\Redirect;
 use App\Models\SiteSection;
@@ -71,9 +71,14 @@ it('retains old Custom Page slugs as direct 301 redirects collapses chains and p
         ->and($owned->pluck('status_code')->all())->toBe([301, 301])
         ->and($owned->contains(fn (Redirect $redirect): bool => $redirect->source_path === $redirect->target_path))->toBeFalse();
 
-    $response = app(PublicSiteSectionController::class)->show('redirect-a');
-    expect($response->getStatusCode())->toBe(301)
-        ->and($response->getTargetUrl())->toEndWith('/redirect-c');
+    // A Working redirect must not affect public URLs until an explicit Commit.
+    $this->get('/redirect-a')->assertNotFound();
+
+    expect(app(PublicationService::class)->commit(auth()->user()))->not->toBeNull();
+
+    $this->get('/redirect-a')->assertStatus(301)->assertRedirect('/redirect-c');
+    $this->get('/redirect-b')->assertStatus(301)->assertRedirect('/redirect-c');
+    $this->get('/redirect-c')->assertOk();
 
     expect(fn () => $service->updateCustomPageIdentity($section, 'Redirect page', null, 'redirect-a'))
         ->toThrow(ValidationException::class, 'This public URL slug is reserved or already in use.');
