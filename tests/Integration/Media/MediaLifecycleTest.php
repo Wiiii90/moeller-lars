@@ -53,12 +53,14 @@ function lifecycleIngestService(): MediaIngestService
 
 function lifecycleAsset(): MediaAsset
 {
+    // Multiple assets in one isolated test stay distinct without wall-clock IDs.
+    $suffix = (string) (((int) MediaAsset::query()->max('id')) + 1);
     $asset = MediaAsset::create([
-        'storage_key' => 'originals/'.uniqid().'.jpg',
+        'storage_key' => 'originals/test-asset-'.$suffix.'.jpg',
         'original_filename' => 'asset.jpg',
         'mime_type' => 'image/jpeg',
         'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('', true)),
+        'sha256' => hash('sha256', 'asset-fixture-'.$suffix),
         'state' => 'available',
         'alt_text' => 'Asset ALT',
     ]);
@@ -66,10 +68,10 @@ function lifecycleAsset(): MediaAsset
     MediaVariant::create([
         'media_asset_id' => $asset->id,
         'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/'.uniqid().'.webp',
+        'storage_key' => 'variants/test-asset-'.$suffix.'.webp',
         'mime_type' => 'image/webp',
         'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('', true)),
+        'sha256' => hash('sha256', 'variant-fixture-'.$suffix),
         'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
@@ -86,7 +88,7 @@ function lifecycleJournal(string $template, string $slug): SiteSection
         'navigation_label' => ucfirst($slug),
         'slug' => $slug,
         'state' => 'hidden',
-        'position' => random_int(600, 800),
+        'position' => ((int) SiteSection::query()->whereNull('parent_id')->max('position')) + 10,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);
