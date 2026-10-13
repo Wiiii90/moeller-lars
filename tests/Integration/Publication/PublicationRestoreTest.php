@@ -8,50 +8,11 @@ use App\Models\MediaAsset;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-uses(RefreshDatabase::class);
 
-function publicationVersionSettingId(): int
-{
-    return (int) DB::table('public_content_settings')->where('scope', 'general')->value('id');
-}
-
-function publicationVersionSetDisclaimer(?string $value): void
-{
-    DB::table('public_content_settings')
-        ->where('id', publicationVersionSettingId())
-        ->update(['legal_disclaimer' => $value]);
-}
-
-function publicationVersionDisclaimer(string $schema = 'public'): ?string
-{
-    $value = DB::table($schema.'.public_content_settings')
-        ->where('id', publicationVersionSettingId())
-        ->value('legal_disclaimer');
-
-    return is_string($value) ? $value : null;
-}
-
-it('creates immutable SHA-256 commits with retained restorable snapshots', function (): void {
-    $actor = User::factory()->admin()->create();
-    $publication = app(PublicationService::class);
-
-    publicationVersionSetDisclaimer('Version A');
-    $checkpoint = $publication->commit($actor, 'Version A');
-
-    expect($checkpoint)->toBeInstanceOf(PublicationCheckpoint::class)
-        ->and((string) $checkpoint->getAttribute('hash'))->toMatch('/^[a-f0-9]{64}$/')
-        ->and((string) $checkpoint->getAttribute('snapshot_hash'))->toMatch('/^[a-f0-9]{64}$/')
-        ->and((string) $checkpoint->getAttribute('schema_hash'))->toMatch('/^[a-f0-9]{64}$/')
-        ->and((bool) $checkpoint->getAttribute('snapshot_available'))->toBeTrue()
-        ->and((string) $checkpoint->getAttribute('operation'))->toBe('commit')
-        ->and(DB::table('publication_version_rows')->where('publication_checkpoint_id', $checkpoint->getKey())->count())->toBeGreaterThan(0)
-        ->and(publicationVersionDisclaimer('committed'))->toBe('Version A')
-        ->and(app(PublicationVersionService::class)->isRestorable($checkpoint))->toBeTrue();
-});
+require_once __DIR__.'/PublicationVersionFixtures.php';
 
 it('resets the complete working publication state to the current live version without deleting Activity', function (): void {
     $actor = User::factory()->admin()->create();
@@ -70,6 +31,7 @@ it('resets the complete working publication state to the current live version wi
         ->and(AuditEvent::query()->count())->toBe($beforeEvents + 1)
         ->and(AuditEvent::query()->latest('id')->value('action'))->toBe('publication.stage_reset');
 });
+
 
 it('restores an old snapshot into working state and records the restore as a new commit when published', function (): void {
     $actor = User::factory()->admin()->create();
@@ -106,6 +68,7 @@ it('restores an old snapshot into working state and records the restore as a new
         ]);
 });
 
+
 it('reverts only the current LIVE commit by staging its parent and publishing a new revert commit', function (): void {
     $actor = User::factory()->admin()->create();
     $publication = app(PublicationService::class);
@@ -136,6 +99,7 @@ it('reverts only the current LIVE commit by staging its parent and publishing a 
         ->and(publicationVersionDisclaimer('committed'))->toBe('Parent state')
         ->and(PublicationCheckpoint::query()->whereKey($live->getKey())->exists())->toBeTrue();
 });
+
 
 it('restores media parents before artwork media when reverting the current LIVE commit', function (): void {
     $actor = User::factory()->admin()->create();
@@ -198,51 +162,4 @@ it('restores media parents before artwork media when reverting the current LIVE 
         ->and(DB::table('committed.artwork_media')->where('id', $usageId)->value('media_asset_id'))->toBe((int) $asset->getKey())
         ->and(PublicationCheckpoint::query()->whereKey($parent->getKey())->exists())->toBeTrue()
         ->and(PublicationCheckpoint::query()->whereKey($live->getKey())->exists())->toBeTrue();
-});
-
-it('keeps physical media while any retained publication version still references the asset', function (): void {
-    config()->set('media.disk', 'publication-version-test');
-    Storage::fake('publication-version-test');
-    $actor = User::factory()->admin()->create();
-    $publication = app(PublicationService::class);
-    $key = 'media/versioned-file.jpg';
-
-    $asset = MediaAsset::query()->create([
-        'storage_key' => $key,
-        'original_filename' => 'versioned-file.jpg',
-        'mime_type' => 'image/jpeg',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'test'),
-        'state' => 'available',
-        'copyright_notice_mode' => MediaAsset::COPYRIGHT_INHERIT,
-    ]);
-    Storage::disk('publication-version-test')->put($key, 'test');
-    $publication->commit($actor, 'Publish media');
-
-    $asset->setAttribute('state', 'deleted');
-    $asset->save();
-    $publication->commit($actor, 'Delete media from live state');
-
-    app(PublicationMediaCleanupService::class)->deleteNow([$key]);
-
-    Storage::disk('publication-version-test')->assertExists($key);
-    expect(DB::table('publication_media_cleanups')
-        ->where('media_asset_id', $asset->getKey())
-        ->where('storage_key', $key)
-        ->exists())->toBeTrue();
-});
-
-it('keeps publication commit history permanent at the database boundary', function (): void {
-    $checkpoint = PublicationCheckpoint::query()->latest('id')->firstOrFail();
-    $pdo = DB::connection()->getPdo();
-    $pdo->exec('SAVEPOINT publication_history_guard');
-
-    try {
-        expect(fn () => DB::table('publication_checkpoints')->where('id', $checkpoint->getKey())->delete())
-            ->toThrow(QueryException::class);
-    } finally {
-        $pdo->exec('ROLLBACK TO SAVEPOINT publication_history_guard');
-    }
-
-    expect(PublicationCheckpoint::query()->whereKey($checkpoint->getKey())->exists())->toBeTrue();
 });
