@@ -832,165 +832,150 @@ body {
     --journal-blog-article-title-font-size: 1.88rem;
 }
 
-/* JOURNAL / THE PRINTED FOLIO
-   The configured white content surface remains white, but the Blog receives
-   a deliberate, stepped silhouette and engraved contours rather than a stack
-   of rectangular cards or generic shadows. This is a public Blog composition,
-   not a change to Gallery, Exhibitions, navigation or artist identity. */
+/* Blog folio: the linework belongs to the document, the text and the mount.
+   No SVG stickers, cut-off paper corners, rounded controls or UI cards. The
+   content shell remains configurable, and works remain uncropped. */
 #content:has(> .blog-page),
 #content:has(> .blog-post) {
-    clip-path: polygon(
-        0 1.15rem, 1.15rem 1.15rem, 1.15rem 0,
-        calc(100% - 1.15rem) 0, calc(100% - 1.15rem) 1.15rem,
-        100% 1.15rem, 100% calc(100% - 1.15rem),
-        calc(100% - 1.15rem) calc(100% - 1.15rem),
-        calc(100% - 1.15rem) 100%, 1.15rem 100%,
-        1.15rem calc(100% - 1.15rem), 0 calc(100% - 1.15rem)
-    );
+    position: relative;
 }
 
-/* The artist's paintings remain the subject. The engraving sits on the
-   paper margins, never on an artwork and never on a floating UI chip. */
+#content:has(> .blog-page)::before,
+#content:has(> .blog-post)::before {
+    position: absolute;
+    inset: .7rem .65rem;
+    content: "";
+    border-left: 1px solid #d9cec1;
+    border-right: 1px solid #eee7dc;
+    pointer-events: none;
+}
+
 .blog-page,
 .blog-post {
-    --blog-engraving: url("/ornaments/journal-engraving.svg");
     --blog-ink: #493b2f;
-    --blog-relief: #d8cfc0;
+    --blog-outline: #b9a997;
     position: relative;
-    isolation: isolate;
     min-width: 0;
 }
 
 .blog-page {
-    display: block;
-    padding: 2.35rem 0 1.85rem;
+    padding: 1.75rem 0 1.6rem 1.3rem;
     container-type: inline-size;
 }
 
-.blog-page::before,
-.blog-page::after,
-.blog-post::before {
+/* The inner folio spine is a continuous ruled contour rather than an
+   assortment of detached corner ornaments. */
+.blog-page::before {
     position: absolute;
-    z-index: -1;
-    display: block;
-    width: 5rem;
-    height: 5rem;
+    top: 1.35rem;
+    bottom: 1.35rem;
+    left: .55rem;
     content: "";
-    background: var(--blog-engraving) no-repeat center / contain;
+    border-left: 1px solid #c9b9a5;
     pointer-events: none;
 }
 
-.blog-page::before {
-    top: -.8rem;
-    left: -1.5rem;
-}
-
-.blog-page::after {
-    right: -1.4rem;
-    bottom: -.7rem;
-    transform: rotate(180deg);
-}
-
-/* Entry numbers are real list positions, etched into the folio margin. */
 .blog-entry {
     position: relative;
     display: flow-root;
     min-width: 0;
-    padding: 2.05rem 0 2.55rem 1.65rem;
+    margin: 0 0 1.7rem;
+    padding: 1.65rem 1.15rem 1.7rem 1.15rem;
+    border-top: 1px solid #cbbfb0;
+    border-left: 1px solid #cbbfb0;
 }
 
-.blog-entry:first-child {
-    padding-top: .5rem;
+/* Open opposing corners carry a second, quieter level of linework. They do
+   not form a closed card around the post. */
+.blog-entry::before {
+    position: absolute;
+    z-index: 0;
+    top: .48rem;
+    right: .35rem;
+    bottom: .38rem;
+    left: .45rem;
+    content: "";
+    border-right: 1px solid #d5cabd;
+    border-bottom: 1px solid #e1d7cb;
+    pointer-events: none;
+}
+
+.blog-entry::after {
+    position: absolute;
+    top: -.24rem;
+    left: 1.1rem;
+    width: 3.4rem;
+    height: .45rem;
+    content: "";
+    border-left: 1px solid #9c8871;
+    border-right: 1px solid #9c8871;
+    pointer-events: none;
 }
 
 .blog-entry:last-of-type {
-    padding-bottom: .5rem;
+    margin-bottom: 0;
 }
 
 .blog-entry__number {
     position: absolute;
-    top: 2.2rem;
-    left: 0;
-    color: #958673;
+    top: 1.55rem;
+    left: -1.65rem;
+    color: #887763;
     font-family: var(--public-index-typeface);
     font-size: .75rem;
-    line-height: 1.4;
+    line-height: 1.35;
     font-variant-numeric: lining-nums tabular-nums;
-    writing-mode: vertical-rl;
-    letter-spacing: .1em;
+    letter-spacing: 0;
 }
 
-.blog-entry:first-child .blog-entry__number {
-    top: .65rem;
-}
-
-/* A shaped mount is a small physical object supporting a work; it is not a
-   card around the article. A pair of engraved corner turns meet a stepped
-   rebate around the unchanged image and its individual credit. */
+/* A real, square-edged image mount with successive hard contours, not a
+   clipped rectangle or simulated ornamental sticker. */
 .blog-entry__mount {
     position: relative;
     float: left;
     width: min(43%, 11.75rem);
     min-width: 0;
-    margin: 0 1.4rem .6rem 0;
-    padding: .65rem;
-    filter: drop-shadow(.22rem .25rem 0 rgba(70, 54, 39, .17));
+    margin: .3rem 1.5rem .85rem .2rem;
+    padding: .45rem;
+    border: 1px solid var(--blog-outline);
+    background: #ede8df;
+    box-shadow:
+        3px 3px 0 #d2c6b8,
+        5px 5px 0 #fff,
+        6px 6px 0 #b8a995;
+}
+
+.blog-entry__mount::before,
+.blog-entry__mount::after {
+    position: absolute;
+    width: 1.3rem;
+    height: 1.3rem;
+    content: "";
+    pointer-events: none;
 }
 
 .blog-entry__mount::before {
-    position: absolute;
-    z-index: 0;
-    inset: 0;
-    content: "";
-    background: #e8e1d6;
-    clip-path: polygon(
-        0 0, calc(100% - .95rem) 0, 100% .95rem,
-        100% 100%, .95rem 100%, 0 calc(100% - .95rem)
-    );
-    box-shadow:
-        inset 0 0 0 1px #b5a592,
-        inset 0 0 0 .26rem #f5f2eb,
-        inset 0 0 0 .32rem #aea08c;
-    pointer-events: none;
+    top: -.4rem;
+    left: -.4rem;
+    border-top: 1px solid #aa9681;
+    border-left: 1px solid #aa9681;
 }
 
-/* The engraving lives entirely OUTSIDE the actual image rectangle. */
 .blog-entry__mount::after {
-    position: absolute;
-    z-index: 2;
-    top: -2.05rem;
-    left: -2.05rem;
-    width: 2.65rem;
-    height: 2.65rem;
-    content: "";
-    background: var(--blog-engraving) no-repeat center / contain;
-    opacity: .83;
-    pointer-events: none;
+    right: -.4rem;
+    bottom: -.4rem;
+    border-right: 1px solid #aa9681;
+    border-bottom: 1px solid #aa9681;
 }
 
 .blog-entry--reverse .blog-entry__mount {
     float: right;
-    margin: 0 0 .65rem 1.4rem;
-}
-
-.blog-entry--reverse .blog-entry__mount::before {
-    clip-path: polygon(
-        .95rem 0, 100% 0, 100% calc(100% - .95rem),
-        calc(100% - .95rem) calc(100% - .95rem),
-        calc(100% - .95rem) 100%, 0 100%, 0 .95rem
-    );
-}
-
-.blog-entry--reverse .blog-entry__mount::after {
-    right: -2.05rem;
-    left: auto;
-    transform: scaleX(-1);
+    margin: .3rem .2rem .85rem 1.5rem;
 }
 
 .blog-entry__cover,
 .blog-entry__cover .journal-entry-media {
     position: relative;
-    z-index: 1;
     display: block;
     min-width: 0;
     margin: 0;
@@ -1006,25 +991,29 @@ body {
 }
 
 .blog-entry__cover figcaption {
-    margin-top: .4rem;
+    margin-top: .35rem;
     color: #55483a;
     font-size: .66rem;
     line-height: 1.4;
     overflow-wrap: anywhere;
 }
 
-/* The prose shares the artwork's space, then naturally returns to full width
-   below it. Text-only articles keep the same numbered folio, without a
-   fabricated image placeholder or empty column. */
+/* Typography stays fixed. The header is a genuine, separately contoured
+   reading field beside the float, while longer prose continues below it. */
 .blog-entry__header {
+    display: flow-root;
+    position: relative;
     min-width: 0;
-    margin: .1rem 0 .7rem;
+    margin: 0 0 .8rem;
+    padding: .35rem .6rem .3rem .75rem;
+    border-top: 1px solid #b5a18b;
+    border-left: 2px solid #8d7962;
 }
 
 .blog-entry__date,
 .blog-post__date {
     display: block;
-    margin: 0 0 .55rem;
+    margin: 0 0 .5rem;
     color: #74675b;
     font-family: var(--public-index-typeface);
     font-size: var(--journal-date-font-size);
@@ -1085,8 +1074,9 @@ body {
     color: var(--blog-ink);
     font-family: var(--public-index-typeface);
     font-size: .88rem;
-    text-decoration: underline;
-    text-underline-offset: .22em;
+    text-decoration: none;
+    border-bottom: 1px solid #96836d;
+    padding-bottom: .15rem;
 }
 
 .blog-entry__read-more .public-icon,
@@ -1106,44 +1096,15 @@ body {
     color: #71685f;
 }
 
-/* A colophon closes the folio; it is not a detached copyright caption below
-   every thumbnail or an orphaned final horizontal rule. */
-.blog-page__colophon {
-    position: relative;
-    margin: 2rem 0 0;
-    padding: 1.25rem 1.3rem .3rem;
-    color: #776b5f;
-    font-family: var(--public-index-typeface);
-    font-size: .76rem;
-    line-height: 1.55;
-}
-
-.blog-page__colophon::before {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 2.7rem;
-    height: 2.7rem;
-    content: "";
-    background: var(--blog-engraving) no-repeat center / contain;
-    pointer-events: none;
-}
-
-/* The article has its own reading measure; the index's numbered mounts are
-   not copied into full articles. The same etched page grammar returns at the
-   article head without hiding or resizing its full artwork. */
 .blog-post {
-    padding: 2.4rem 0 1.7rem;
-}
-
-.blog-post::before {
-    top: -.8rem;
-    left: -1.35rem;
+    padding: 2.3rem .7rem 1.5rem;
 }
 
 .blog-post__header {
-    position: relative;
-    margin: 0 0 1.35rem;
+    margin: 0 0 1.3rem;
+    padding: .45rem 0 .55rem 1rem;
+    border-top: 1px solid #cbbfb0;
+    border-left: 2px solid #9e8b74;
 }
 
 .blog-post__cover-media {
@@ -1181,26 +1142,27 @@ body {
     max-width: 28rem;
 }
 
-/* Reflow structure only. The artist's configured content width never
-   changes date/title sizes and image dimensions do not dictate text scale. */
+/* Change the arrangement, never the type scale, when the selected Content
+   width cannot hold a legible image + text composition. */
 @container (max-width: 23rem) {
     .blog-entry {
-        padding-left: 1.15rem;
+        padding: 1.35rem .6rem 1.6rem .7rem;
+    }
+
+    .blog-entry__number {
+        left: -1.45rem;
+        top: 1.25rem;
     }
 
     .blog-entry__mount,
     .blog-entry--reverse .blog-entry__mount {
         float: none;
         width: min(100%, 12.75rem);
-        margin: .1rem 0 1.1rem;
-    }
-
-    .blog-entry__number {
-        left: -.2rem;
+        margin: .5rem 0 1.3rem .35rem;
     }
 
     .blog-entry__header {
-        margin-top: .5rem;
+        margin-top: .4rem;
     }
 }
 

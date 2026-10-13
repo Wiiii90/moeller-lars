@@ -47,33 +47,30 @@ it('keeps the Blog index compact and the Exhibition Slideshow navigation above t
 });
 
 
-it('gives the Blog a sculpted folio and preserves art, typography and copyright contracts', function (): void {
+it('builds Blog depth from structural contours without ornamental graphics or faux cut corners', function (): void {
     $root = dirname(__DIR__, 3);
     $css = file_get_contents($root.'/resources/css/public-presentation.css');
     $blog = file_get_contents($root.'/resources/views/pages/blog/index.blade.php');
-    $ornament = file_get_contents($root.'/public/ornaments/journal-engraving.svg');
 
     expect($css)
         ->toContain('#content:has(> .blog-page)')
-        ->toContain('clip-path: polygon(')
+        ->toContain('.blog-entry::before')
+        ->toContain('.blog-entry__header {')
         ->toContain('.blog-entry--reverse .blog-entry__mount')
-        ->toContain('.blog-entry__mount::before {')
-        ->toContain('.blog-entry__mount::after {')
-        ->toContain('top: -2.05rem;')
-        ->toContain('blog-page__colophon')
-        ->not->toContain('blog-entry--with-cover')
-        ->not->toContain('.blog-entry:last-child {');
+        ->toContain('.blog-entry__mount::after')
+        ->toContain('border-left: 2px solid #8d7962;')
+        ->not->toContain('clip-path: polygon(')
+        ->not->toContain('journal-engraving.svg')
+        ->not->toContain('blog-page__colophon')
+        ->not->toContain('blog-engraving');
 
     expect($blog)
         ->toContain('$illustratedIndex++')
-        ->toContain('inheritsDefaultNotice($cover)')
-        ->toContain('blog-page__colophon')
         ->toContain('blog-entry--text-only')
         ->toContain('includeInheritedCopyright: false')
-        ->toContain('Str::limit($excerpt, 240);');
+        ->toContain('Str::limit($excerpt, 240);')
+        ->not->toContain('hasInheritedMedia')
+        ->not->toContain('blog-page__colophon');
 
-    expect($ornament)
-        ->toContain('viewBox="0 0 128 128"')
-        ->toContain('<path')
-        ->not->toContain('<image');
+    expect(file_exists($root.'/public/ornaments/journal-engraving.svg'))->toBeFalse();
 });

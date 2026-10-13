@@ -163,40 +163,36 @@ an editorial stream: publication date (when set), linked article title, optional
 cover, persisted excerpt (or escaped text-only extract), and an explicit
 **Read more** link. Blog detail is its own readable article with date, title,
 original image/media credits, sanitized body, ordered Gallery and a preview-safe
-return link. The index displays a compact, uncropped cover with its summary; the full
-article can display a larger work. The public Blog uses a distinct, authored
-engraved-folio composition within the existing configured white content surface:
-a stepped outer silhouette, small sourced SVG corner etchings, numbered entries,
-and a layered, square-edged image mount. This is structural ornament on the
-paper edge and around the image, never on top of an artwork. No rounded corners,
-chips, repeated horizontal-rule dividers, cards around whole posts, decorative
-bands, stock font changes or generic UI effects are introduced. The artwork
-remains the dominant visual element.
+return link. The Blog index is a readable journal folio with a compact, uncropped cover,
+full-strength serif headline, date, bounded excerpt and article link; the full
+article can display a larger work. The configured white Content surface
+remains rectangular and uses its shared width. Depth is created by real
+linework: a restrained page-edge contour, an open two-level contour around
+each editorial entry, a separately ruled text heading and a square-edged,
+layered image mount. Image positions alternate by **illustrated entry index**
+and excerpts flow naturally beside and below a float. Text-only posts need
+no empty image column. At narrow content widths the image stacks while the
+font scale remains fixed.
 
-Illustrated entries alternate image sides by **illustrated entry index**,
-not by the position of intervening text-only entries. Summary prose flows
-beside the image and continues below it when longer, without a fabricated
-empty second column. Text previews are bounded by the canonical server-side
-240-character excerpt limit; no overflow-clipping block formatting context
-may prevent the visible text from wrapping naturally around the floated image. A genuinely narrow content surface stacks the figure
-above the text, without scaling down fonts or cropping the artwork. The image
-mount includes an unobtrusive, drawn engraving from
-`public/ornaments/journal-engraving.svg`, with no external fonts, images,
-scripts or admin configuration. The last item has no redundant closing rule.
-Text-only entries use the same folio numbering, not a missing-image placeholder.
+Do not introduce decorative SVG corner stickers, bitten-off/clipped corners,
+rounded UI, chips, generic card walls, blank final dividers, decorative bands,
+page-local width settings or decorative images on top of the artworks.
+The obsolete SVG `public/ornaments/journal-engraving.svg` is removed. Contours
+are drawn with CSS borders and hard-edge layering only, with no timer or
+client-side layout changes.
 
-Only inherited General copyright notices are suppressed on individual index
-figures and, when needed, displayed once in a closing folio colophon.
-Explicit asset copyright overrides, artist/photographer credits and
-no-notice choices retain their existing per-asset semantics. The renderer
-owns the single inheritance check used by both Blog and Exhibitions.
-The stored General notice still controls the text; never hardcode the
-artist name or replace an incorrect stored value through CSS.
+The Blog *index* omits the repeated, inherited General copyright notice,
+including the previously detached closing colophon. Explicit media-specific
+copyright overrides and authored image credits remain attached to the
+corresponding figures through `JournalMediaRenderer`. Full Blog articles
+continue to render their normal media copyright/credit notices. This is a
+presentation decision, not removal of persisted copyright data or a change to
+Admin copyright settings; a site-wide copyright/footer policy remains open
+for a later explicit design pass.
 
-No second Blog model, route, content source, publication path, editorial action
-or settings control is introduced. This is an intentionally distinct public
-Blog art direction; do not propagate its illustration mounts automatically
-to Gallery or Exhibitions.
+No second Blog model, route, content source, publication path, editorial
+action or settings control is introduced. Do not automatically propagate the
+Blog's entry contours to Gallery or Exhibitions.
 
 Journal typography has one fixed scale independent of the administrator's
 chosen content width: Exhibition date 0.8rem, Exhibition title 1.34rem;
