@@ -97,9 +97,8 @@ body {
     background: var(--public-surface);
 }
 
-/* The menu is one sharp-edged folio: a lighter, continuous outside
-   impression, not the bright detached stripe or nested rectangles.
-   The line stays outside the navigation's measured grid. */
+/* The menu belongs to the shared folio language. Its left/bottom trace
+   and the unequal upward right edge remain outside the measured menu rail. */
 .site-navigation {
     position: relative;
     order: 1;
@@ -108,16 +107,29 @@ body {
         -2px 3px 0 var(--public-folio-depth),
         -3px 4px 0 var(--public-folio-soft);
 }
-.site-navigation::before {
+.site-navigation::before,
+.site-navigation::after {
     position: absolute;
+    content: "";
+    pointer-events: none;
+}
+.site-navigation::before {
     top: .35rem;
     right: 1.15rem;
     bottom: -.48rem;
     left: -.5rem;
-    content: "";
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
-    pointer-events: none;
+}
+/* A different, taller right-side pencil trace opens above the menu.
+   It neither extends the rail nor duplicates the Content sheet silhouette. */
+.site-navigation::after {
+    top: -1.1rem;
+    right: -.52rem;
+    bottom: .48rem;
+    width: .52rem;
+    border-top: 1px solid var(--public-folio-soft);
+    border-right: 1px solid var(--public-folio-light);
 }
 
 .site-navigation__rail,
@@ -215,7 +227,7 @@ body {
     font-family: var(--public-index-typeface);
     font-size: 15px;
     font-weight: 400;
-    letter-spacing: .018em;
+    letter-spacing: 0;
     line-height: 1.15;
     text-decoration: none;
     text-transform: none;
@@ -223,30 +235,22 @@ body {
     transition: color .14s ease;
 }
 
-/* Distinct editorial ink across the lettering and one hand-pressure active
-   stroke beneath the word; no geometry or selection-induced width changes. */
+/* Real opaque ink renders cleanly on Windows and under font antialiasing;
+   the active rule is horizontal, never tilted or text-clipped. */
 .site-navigation__label {
     position: relative;
+    color: #363c38;
     text-decoration: none;
-    color: #424541;
-    background-image: linear-gradient(168deg, #272c29, #434b45 31%, #555b53 61%, #343b36);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 }
 .site-navigation__label::after {
-    content: "";
     position: absolute;
     right: 0;
-    bottom: -.31em;
+    bottom: -.28em;
     left: 0;
     height: 1px;
-    background: linear-gradient(90deg,
-        rgba(50, 56, 50, .19), rgba(39, 46, 40, .84) 25%,
-        rgba(63, 68, 61, .63) 80%, rgba(50, 56, 50, .13));
+    content: "";
+    background: rgba(54, 60, 56, .7);
     opacity: 0;
-    transform: rotate(-.8deg);
-    transform-origin: center;
     transition: opacity .14s ease;
 }
 
@@ -337,7 +341,7 @@ body {
     font-family: var(--public-index-typeface);
     font-size: 15px;
     font-weight: 400;
-    letter-spacing: .018em;
+    letter-spacing: 0;
     line-height: 1.15;
     cursor: pointer;
     transition: color .14s ease;
@@ -429,12 +433,8 @@ body {
 .site-navigation__control:focus-visible > .public-icon {
     transform: scale(1.13);
 }
-/* Retain readable labels when the system forces colors. */
+/* Active rules remain visible when the system forces colors. */
 @media (forced-colors: active) {
-    .site-navigation__label {
-        background: none;
-        -webkit-text-fill-color: currentColor;
-    }
     .site-navigation__label::after { background: currentColor; }
 }
 .site-navigation__control[hidden] { display: none; }
@@ -507,11 +507,42 @@ body {
     outline-offset: .45rem;
 }
 
-/* All pages keep their normal content-driven height by default. */
+/* Every public page shares the same outer Atelier sheet, regardless of
+   its content type or whether it currently contains journal entries. */
 #content {
+    position: relative;
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
     background: var(--public-surface);
+    box-shadow:
+        -2px 3px 0 rgba(28, 35, 32, .09),
+        -5px 7px 0 var(--public-folio-soft),
+        -6px 8px 0 var(--public-folio-depth);
+}
+#content::before,
+#content::after {
+    position: absolute;
+    width: .55rem;
+    content: "";
+    pointer-events: none;
+}
+#content::before {
+    top: 1.1rem;
+    bottom: 4rem;
+    left: -.7rem;
+    border-left: 1px solid var(--public-folio-light);
+    border-top: 1px solid var(--public-folio-soft);
+    border-bottom: 1px solid var(--public-folio-soft);
+    transform: skewY(-.6deg);
+}
+#content::after {
+    top: 3.8rem;
+    right: -.55rem;
+    bottom: 1.15rem;
+    border-right: 1px solid rgba(255, 255, 255, .41);
+    border-top: 1px solid var(--public-folio-soft);
+    border-bottom: 1px solid var(--public-folio-light);
+    transform: skewY(.7deg);
 }
 
 /* Only genuinely empty section pages without a configured heading fill the
@@ -545,28 +576,27 @@ body {
     text-transform: uppercase;
 }
 
-/* An authored page title is an editorial heading, never another menu
-   label. Keep the existing alignments, width and opt-in divider. */
+/* One compact, legible editorial heading for Gallery, Journal, Home and
+   Custom Pages. It belongs to the menu/name type family, not to artwork labels. */
 .public-page-heading {
     position: relative;
     width: min(100%, var(--public-art-max));
     min-width: 0;
-    margin: 0 auto 1.75rem;
-    padding: .32rem 0 .1rem;
+    margin: 0 auto 1.25rem;
+    padding: 0;
 }
 
 .public-page-heading > .public-page-heading__title {
     width: 100%;
     margin: 0;
-    color: #38322b;
+    color: #363c38;
     font-family: var(--public-index-typeface);
-    font-size: 1.68rem;
+    font-size: 1.42rem;
     font-weight: 400;
-    letter-spacing: .015em;
-    line-height: 1.3;
+    letter-spacing: 0;
+    line-height: 1.25;
     text-align: inherit;
     text-transform: none;
-    text-shadow: .4px .55px 0 rgba(75, 66, 57, .14);
     text-wrap: pretty;
     overflow-wrap: break-word;
 }
@@ -577,7 +607,7 @@ body {
 
 .public-page-heading > .public-page-heading__divider {
     width: 100%;
-    margin: 1.1rem 0 0;
+    margin: .76rem 0 0;
 }
 
 .artwork-list {
@@ -911,49 +941,6 @@ body {
     --journal-blog-article-title-font-size: 1.88rem;
 }
 
-/* PUBLIC JOURNAL — ATELIER SHEET
-   The public shell retains its configured dimensions and pure white surface.
-   Its edge, not each individual entry, carries the drawn spatial identity.
-   Asymmetric layered contours give the sheet a physical edge without clipped
-   corners, cards, decorative stickers, floating ornament or rounded UI. */
-#content:has(> .blog-page > .blog-entry, > .blog-post, > .exhibitions-page > .exhibition-entry) {
-    position: relative;
-    box-shadow:
-        -2px 3px 0 rgba(28, 35, 32, .09),
-        -5px 7px 0 var(--public-folio-soft),
-        -6px 8px 0 var(--public-folio-depth);
-}
-
-/* Two intentionally unequal edge drawings run outside the paper. They are
-   never repeated per post or exhibition and consume no reading space. */
-#content:has(> .blog-page > .blog-entry, > .blog-post, > .exhibitions-page > .exhibition-entry)::before,
-#content:has(> .blog-page > .blog-entry, > .blog-post, > .exhibitions-page > .exhibition-entry)::after {
-    position: absolute;
-    width: .55rem;
-    content: "";
-    pointer-events: none;
-}
-
-#content:has(> .blog-page > .blog-entry, > .blog-post, > .exhibitions-page > .exhibition-entry)::before {
-    top: 1.1rem;
-    bottom: 4rem;
-    left: -.7rem;
-    border-left: 1px solid var(--public-folio-light);
-    border-top: 1px solid var(--public-folio-soft);
-    border-bottom: 1px solid var(--public-folio-soft);
-    transform: skewY(-.6deg);
-}
-
-#content:has(> .blog-page > .blog-entry, > .blog-post, > .exhibitions-page > .exhibition-entry)::after {
-    top: 3.8rem;
-    right: -.55rem;
-    bottom: 1.15rem;
-    border-right: 1px solid rgba(255, 255, 255, .41);
-    border-top: 1px solid var(--public-folio-soft);
-    border-bottom: 1px solid var(--public-folio-light);
-    transform: skewY(.7deg);
-}
-
 .blog-page,
 .blog-post,
 .exhibitions-page {
@@ -1271,8 +1258,10 @@ body {
 /* The external paper edges never cause horizontal scrolling when the
    configured shell already nearly fills the viewport. */
 @media (max-width: 40rem) {
-    #content:has(> .blog-page > .blog-entry, > .blog-post, > .exhibitions-page > .exhibition-entry)::before,
-    #content:has(> .blog-page > .blog-entry, > .blog-post, > .exhibitions-page > .exhibition-entry)::after {
+    #content::before,
+    #content::after,
+    .site-navigation::before,
+    .site-navigation::after {
         display: none;
     }
 }

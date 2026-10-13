@@ -146,20 +146,20 @@
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data admin-table--ranked">
-                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog admin-table--fold-early' : 'journal-table--exhibitions admin-table--fold-at-actions' }}">
+                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog admin-table--fold-at-compact' : 'journal-table--exhibitions admin-table--fold-at-actions' }}">
                     <colgroup>
                         <col class="admin-table__col-quarter-unit admin-table__col-position">
                         <col class="admin-table__col-quarter-unit admin-table__col-drag">
                         @if ($isBlog)
                             <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-unit journal-col--identity">
-                            <col class="journal-col--publication admin-table__yield--minimal">
+                            <col class="journal-col--publication admin-table__yield--narrow">
                             <col class="journal-col--publication-date admin-table__split-only">
                             <col class="journal-table__actions--blog">
                         @else
                             <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-half-units journal-col--identity">
-                            <col class="journal-col--schedule admin-table__yield--minimal">
+                            <col class="journal-col--schedule admin-table__yield--narrow">
                             <col class="journal-col--timing admin-table__split-only">
                             <col class="admin-table__col-two-units-minus-selection journal-table__actions--exhibitions">
                         @endif
@@ -171,13 +171,13 @@
                             <th scope="col" class="journal-visual journal-col--visual">Image</th>
                             <th scope="col" class="journal-col--identity">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
                             @if ($isBlog)
-                                <th scope="col" class="journal-col--publication admin-table__yield--minimal">
+                                <th scope="col" class="journal-col--publication admin-table__yield--narrow">
                                     <span class="admin-table__split-label">Status</span>
                                     <span class="admin-table__folded-only">Publication</span>
                                 </th>
                                 <th scope="col" class="journal-col--publication-date admin-table__split-only">Publication</th>
                             @else
-                                <th scope="col" class="journal-col--schedule admin-table__yield--minimal">
+                                <th scope="col" class="journal-col--schedule admin-table__yield--narrow">
                                     <span class="admin-table__split-label">Date</span>
                                     <span class="admin-table__folded-only">Dates</span>
                                 </th>
@@ -228,9 +228,10 @@
                                 <td class="admin-table__identity journal-col--identity">
                                     <strong>{{ $entry['title'] }}</strong>
                                     @if ($isBlog)
-                                        @if ($entry['publication'])<small class="admin-responsive-meta">{{ $entry['publication'] }}</small>@endif
-                                    @elseif ($entry['date_text'] !== '')
-                                        <small class="admin-responsive-meta">{{ $entry['date_text'] }}</small>
+                                        <small class="admin-responsive-meta">{{ ucfirst($entry['state']) }}@if ($entry['publication']) · {{ $entry['publication'] }}@endif</small>
+                                    @else
+                                        <small class="admin-responsive-meta">@if ($entry['date_text'] !== ''){{ $entry['date_text'] }} · @endif{{ ucfirst($entry['timing']) }}</small>
+                                        @if ($entry['vernissage'])<small class="admin-responsive-meta">Vernissage: {{ $entry['vernissage'] }}</small>@endif
                                     @endif
                                     @if ($isBlog && $entry['excerpt'])
                                         <small>{{ $entry['excerpt'] }}</small>
@@ -239,7 +240,7 @@
                                     @endif
                                 </td>
                                 @if ($isBlog)
-                                    <td class="journal-publication journal-col--publication admin-table__yield--minimal">
+                                    <td class="journal-publication journal-col--publication admin-table__yield--narrow">
                                         <span class="journal-state is-{{ $entry['state'] }}">{{ ucfirst($entry['state']) }}</span>
                                         @if ($entry['publication'])<span class="journal-publication__date admin-table__folded-only">{{ $entry['publication'] }}</span>@endif
                                     </td>
@@ -247,7 +248,7 @@
                                         @if ($entry['publication'])<span class="journal-publication__date">{{ $entry['publication'] }}</span>@else<span aria-label="No publication date">—</span>@endif
                                     </td>
                                 @else
-                                    <td class="journal-schedule journal-col--schedule admin-table__yield--minimal">
+                                    <td class="journal-schedule journal-col--schedule admin-table__yield--narrow">
                                         @if ($entry['date_text'] !== '')<span class="journal-schedule__dates">{{ $entry['date_text'] }}</span>@endif
                                         <div class="journal-schedule__details admin-table__folded-only">
                                             @if ($entry['vernissage'])<em>Vernissage: {{ $entry['vernissage'] }}</em>@endif
