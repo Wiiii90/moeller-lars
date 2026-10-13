@@ -821,134 +821,264 @@ body {
     color: #222;
 }
 
+/* Exhibition chronology: the closed row reads like an exhibition index;
+   rich media and practical visitor information belong to its open folio. */
 .exhibitions-page {
+    --exhibition-date-track: 7.25rem;
+    --exhibition-column-gap: clamp(1.15rem, 2.8vw, 1.8rem);
     color: var(--public-ink);
 }
 
 .exhibition-entry {
-    display: grid;
-    grid-template-columns: 7.25rem minmax(0, 1fr);
-    gap: clamp(1.15rem, 2.8vw, 1.8rem);
+    min-width: 0;
     margin: 0;
-    padding: 1.55rem 0 1.7rem;
-    border: 0;
     border-top: var(--public-divider-width) solid var(--public-divider);
-    color: var(--public-ink);
-    font-size: .78rem;
-    line-height: 1.55;
 }
 
 .exhibition-entry:first-child {
-    padding-top: .15rem;
     border-top: 0;
+}
+
+.exhibition-entry__summary {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: var(--exhibition-date-track) minmax(0, 1fr) max-content;
+    column-gap: var(--exhibition-column-gap);
+    padding: 1.55rem 0 1.7rem;
+    align-items: start;
+    list-style: none;
+    cursor: pointer;
+}
+
+.exhibition-entry__summary::-webkit-details-marker {
+    display: none;
+}
+
+.exhibition-entry__summary--static {
+    cursor: default;
+}
+
+.exhibition-entry__summary:focus-visible {
+    outline: 1px dotted var(--public-artwork-line-hover);
+    outline-offset: 4px;
 }
 
 .exhibition-entry__schedule {
     display: grid;
-    align-content: start;
-    gap: .62rem;
+    min-width: 0;
+    gap: .35rem;
+    grid-column: 1;
 }
 
 .exhibition-entry__date {
     display: block;
-    margin: .08rem 0 0;
-    color: #615c58;
-    font-size: .7rem;
-    font-weight: 500;
+    color: #6f655b;
+    font-family: var(--public-index-typeface);
+    font-size: .86rem;
     font-variant-numeric: tabular-nums;
-    letter-spacing: .01em;
     line-height: 1.45;
+    overflow-wrap: break-word;
 }
 
-.exhibition-entry__opening {
-    display: grid;
-    gap: .12rem;
-    color: #706a65;
-    font-size: .64rem;
-    line-height: 1.45;
-}
-
-.exhibition-entry__opening-label {
-    color: #928b85;
-    font-size: .54rem;
+.exhibition-entry__timing {
+    color: #746b62;
+    font-size: .62rem;
     font-weight: 500;
-    letter-spacing: .075em;
+    letter-spacing: .07em;
+    line-height: 1.35;
     text-transform: uppercase;
 }
 
-.exhibition-entry__content {
+.exhibition-entry__heading {
     display: block;
     min-width: 0;
+    grid-column: 2;
 }
 
-.exhibition-entry__content h3 {
+.exhibition-entry__title {
     display: block;
-    max-width: 38rem;
-    margin: 0;
-    color: #403c39;
-    font-size: .9rem;
-    font-weight: 500;
-    letter-spacing: .005em;
-    line-height: 1.42;
+    margin: -.08rem 0 0;
+    color: #342f2b;
+    font-family: var(--public-index-typeface);
+    font-size: clamp(1.13rem, 2.05vw, 1.4rem);
+    font-weight: 400;
+    letter-spacing: .008em;
+    line-height: 1.28;
     overflow-wrap: break-word;
     text-wrap: pretty;
 }
 
-.exhibition-entry__facts {
-    display: grid;
-    margin-top: .62rem;
-    gap: .28rem;
-}
-
-.exhibition-entry__fact {
-    display: grid;
-    grid-template-columns: 3.8rem minmax(0, 1fr);
-    min-width: 0;
-    align-items: baseline;
-    gap: .65rem;
-}
-
-.exhibition-entry__fact-label {
-    color: #89827c;
-    font-size: .56rem;
-    font-weight: 500;
-    letter-spacing: .08em;
-    line-height: 1.3;
-    text-transform: uppercase;
-}
-
-.exhibition-entry__fact-value {
-    color: #595552;
-    font-size: .71rem;
+.exhibition-entry__location {
+    display: block;
+    margin-top: .42rem;
+    color: #77716a;
+    font-size: .75rem;
     line-height: 1.45;
     overflow-wrap: break-word;
 }
 
-.exhibition-entry__description {
-    display: block;
+.exhibition-entry__toggle {
+    display: inline-flex;
+    grid-column: 3;
+    align-items: center;
+    gap: .35rem;
+    padding-top: .13rem;
+    color: #77716a;
+    font-family: var(--public-index-typeface);
+    font-size: .8rem;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.exhibition-entry__toggle .public-icon {
+    width: .9rem;
+    height: .9rem;
+    stroke-width: 1.35;
+}
+
+.exhibition-entry__close-label,
+.exhibition-entry__disclosure[open] .exhibition-entry__open-label {
+    display: none;
+}
+
+.exhibition-entry__disclosure[open] .exhibition-entry__close-label {
+    display: inline;
+}
+
+.exhibition-entry__disclosure[open] .exhibition-entry__toggle .public-icon {
+    transform: rotate(90deg);
+}
+
+.exhibition-entry__disclosure > .exhibition-entry__summary:hover .exhibition-entry__title,
+.exhibition-entry__disclosure > .exhibition-entry__summary:focus-visible .exhibition-entry__title {
+    color: #151311;
+}
+
+.exhibition-entry__body {
+    min-width: 0;
+    margin-left: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
+    padding: 0 0 2.25rem;
+    color: #5d5752;
+}
+
+.exhibition-entry__facts {
+    display: grid;
     max-width: 36rem;
-    margin-top: .88rem;
-    color: #5d5955;
-    font-size: .73rem;
-    line-height: 1.62;
+    gap: .42rem;
+    margin-bottom: 1.15rem;
+}
+
+.exhibition-entry__fact {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: .7rem;
+}
+
+.exhibition-entry__fact-label {
+    color: #89827c;
+    font-size: .6rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.exhibition-entry__fact-value {
+    color: #625b54;
+    font-size: .77rem;
+    line-height: 1.55;
+    overflow-wrap: break-word;
+}
+
+.exhibition-entry__description {
+    max-width: 37rem;
+    margin: 1rem 0;
+    font-size: .83rem;
+    line-height: 1.7;
+}
+
+.exhibition-entry__cover {
+    width: min(100%, 38rem);
+    margin: 1.25rem 0;
+}
+
+.exhibition-entry__cover img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: 30rem;
+    height: auto;
+}
+
+.exhibitions-page .journal-entry-gallery {
+    margin: 1.35rem 0;
+}
+
+.exhibitions-page .journal-entry-gallery img {
+    max-height: 28rem;
+    object-fit: contain;
+}
+
+.exhibition-entry__map-access {
+    margin-top: 1.2rem;
+}
+
+.exhibition-entry__map-disclosure > summary {
+    width: max-content;
+    max-width: 100%;
+    color: #635a52;
+    font-family: var(--public-index-typeface);
+    font-size: .86rem;
+    line-height: 1.5;
+    text-decoration: underline;
+    text-underline-offset: .25em;
+    cursor: pointer;
+    list-style: none;
+}
+
+.exhibition-entry__map-disclosure > summary::-webkit-details-marker {
+    display: none;
+}
+
+.exhibition-entry__map-disclosure > summary:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: 3px;
+}
+
+.exhibition-entry__hide-map,
+.exhibition-entry__map-disclosure[open] .exhibition-entry__show-map {
+    display: none;
+}
+
+.exhibition-entry__map-disclosure[open] .exhibition-entry__hide-map {
+    display: inline;
+}
+
+.exhibition-entry__map {
+    width: min(100%, 32rem);
+    margin: .85rem 0 1.1rem;
 }
 
 .exhibition-entry__links {
     display: flex;
-    margin-top: .8rem;
+    margin-top: 1rem;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: .6rem 1.5rem;
 }
 
 .exhibition-entry__links a {
-    color: #66605b;
-    font-size: .68rem;
-    text-decoration: none;
+    color: #635a52;
+    font-family: var(--public-index-typeface);
+    font-size: .86rem;
+    text-decoration: underline;
+    text-underline-offset: .25em;
 }
 
 .exhibition-entry__links a:hover,
 .exhibition-entry__links a:focus-visible {
-    color: #222;
+    color: #211c18;
 }
 
 /* Compact: preserve the desktop composition but simplify title geometry before
@@ -975,9 +1105,9 @@ body {
 /* Narrow: only the Exhibition composition changes. Shared shell,
  * navigation controls, padding and title do not switch geometry here. */
 @media (max-width: 46rem) {
-    .exhibition-entry {
-        grid-template-columns: 6.1rem minmax(0, 1fr);
-        gap: .9rem;
+    .exhibitions-page {
+        --exhibition-date-track: 6.1rem;
+        --exhibition-column-gap: .9rem;
     }
 }
 
@@ -988,28 +1118,32 @@ body {
         grid-template-columns: 4.3rem minmax(0, 1fr);
     }
 
-    .exhibition-entry {
-        display: block;
-        padding: 1rem 0 1.1rem;
-    }
-
-    .exhibition-entry:first-child {
-        padding-top: 0;
+    .exhibition-entry__summary {
+        grid-template-columns: minmax(0, 1fr) max-content;
+        gap: .55rem .9rem;
+        padding: 1.25rem 0 1.4rem;
     }
 
     .exhibition-entry__schedule {
-        margin-bottom: .58rem;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: .8rem;
+        grid-column: 1 / -1;
     }
 
-    .exhibition-entry__opening {
-        justify-self: end;
-        text-align: right;
+    .exhibition-entry__heading {
+        grid-column: 1;
+    }
+
+    .exhibition-entry__toggle {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .exhibition-entry__body {
+        margin-left: 0;
+        padding-bottom: 1.75rem;
     }
 
     .exhibition-entry__fact {
-        grid-template-columns: 3.5rem minmax(0, 1fr);
+        grid-template-columns: 4rem minmax(0, 1fr);
     }
 
 }
