@@ -57,7 +57,7 @@ Browser-polish/reconciliation uses the `local-preview` target in the root [`Dock
 
 The editable public site is modeled as typed site nodes:
 
-- **Home** — singleton root presentation with Artwork, Under Construction, Skip Home or Custom presentation modes
+- **Home** — singleton root presentation with three content modes (Artwork, Under Construction, Custom); the independent **Skip Home** routing flag can bypass Home without becoming a fourth content template
 - **Gallery** — artwork collection, optionally nested
 - **Journal** — Blog or Exhibitions; switching the active Journal template does not destructively convert/delete the inactive template's entries
 - **Custom Page** — structured content/components, including CV and reusable Contact composition

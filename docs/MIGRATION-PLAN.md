@@ -1,6 +1,6 @@
 # Migration and cutover plan
 
-The application is no longer in an early build phase. The current v0.3 admin/browser product-composition gate is accepted; remaining release work is exact-candidate promotion to `main`, isolated Validation/release-candidate qualification, production-readiness gating, cutover and eventual legacy retirement.
+The original v0.3 product-composition gate is historical background, **not proof that the current integration candidate has been accepted**. The v0.4 editorial/admin/public browser acceptance and cleanup work is still progressing on `dev` (as of 2026-10-13). Once the user approves a specific candidate, its exact SHA can be promoted through the protected `main` release gates. The subsequent v0.5 cutover scope remains a **planned milestone**, contingent on validated data/media migration and operational readiness, not an automatically triggered deployment.
 
 Production/Validation placement, backups, deployment and rollback are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
@@ -117,17 +117,17 @@ Validation may use restricted read-only Matomo Reporting while tracking stays di
 
 ## 7. Application acceptance and candidate promotion
 
-The current v0.3 admin/browser composition has completed its product-acceptance pass. Historical issue comments describing older rejected browser candidates are evidence of those earlier states, not instructions to recreate defects that are no longer present in the accepted current candidate.
+The earlier v0.3 browser/product gate is a **historical acceptance checkpoint**. It does not transfer acceptance to the still-evolving v0.4 candidate. Current admin/public browser and domain changes must be reviewed against the exact current `dev` source and the user's explicit acceptance; old acceptance comments or stale issues cannot close an active v0.4 requirement.
 
 For the release-candidate line:
 
-1. keep the accepted candidate on the exact current `dev` integration line while durable documentation and issue bookkeeping are completed;
-2. promote that exact accepted `dev` head to protected `main`;
+1. complete v0.4 product/browser acceptance, documentation and cleanup; identify **the exact accepted `dev` SHA** rather than presuming that the current head is already accepted;
+2. promote **only that accepted SHA** to protected `main`;
 3. let the canonical `main` release workflow verify and publish the immutable image for the exact promoted SHA;
 4. deploy isolated Validation from that same `main` SHA/image digest through the platform contract;
 5. perform the remaining release-candidate/environment checks there.
 
-Further local/protected browser-reconciliation cycles remain valid when a concrete regression or later milestone changes presentation, but they are not a standing blocker once the accepted milestone composition is complete. A technically running candidate still does not establish future browser/product acceptance by itself.
+Continue browser/editorial reconciliation while v0.4 acceptance remains open. A technically running candidate, green automated check or accepted earlier milestone does **not** establish acceptance of this candidate; the user explicitly decides when the product pass is complete.
 
 Detailed admin UI expectations are in [`../ui-skills.md`](../ui-skills.md).
 

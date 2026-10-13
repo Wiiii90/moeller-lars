@@ -46,12 +46,13 @@ Contact is not a Site Node type. CV/Vita is composed through Custom Page content
 
 One canonical Home presentation record owns the active Home template and its configuration.
 
-Supported templates:
+Supported **content templates**:
 
 - Artwork;
 - Under Construction;
-- Skip Home;
 - Custom.
+
+`skip_home` and `skip_target_section_id` form a separate Home routing contract owned by `HomeRoutingSettingsService`. The legacy `HomeTemplate::SkipHome` enum case exists for migrating historical data; it is **not** a current selectable content template.
 
 Under Construction/Custom configuration stores ordered components following
 the shared Custom Page component contract, including List/Contact children,
@@ -157,7 +158,7 @@ The historical `exhibition_media` table is no longer a runtime domain model or r
 
 CV/Vita and Contact are not fixed runtime SiteSection types.
 
-`CvEntry` remains first-class editorial/migration data used by CV List composition. It may reference a direct image MediaAsset and canonical Rich Text body media.
+Current CV/Vita composition is built from **Custom Page structured components** (including List and Rich Text), not active `CvEntry` rows. The `CvEntry` PHP model survives as a historical import/compatibility artifact; forward migration `2026_09_16_235901_finalize_legacy_cv_retirement.php` removed `cv_entries` from both `public` and `committed`. Its historical `imageMediaAsset()` relation must not be misread as a current SQL foreign key or an active CV editor. See [structured components](architecture/structured-components.md) and [schema evolution](architecture/schema-evolution.md).
 
 Contact is a reusable structured component with bounded child kinds such as public email, social links and Contact form. Global identity/recipient values remain owned by General/runtime contracts rather than duplicated per child row.
 

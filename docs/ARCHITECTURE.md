@@ -154,8 +154,9 @@ See [MEDIA.md](MEDIA.md).
 
 - Artwork;
 - Under Construction;
-- Skip Home;
 - Custom.
+
+**Skip Home is not a fourth presentation mode:** it is an independent routing setting owned by `HomeRoutingSettingsService` and persisted as `HomePresentationSetting.skip_home` plus an optional `skip_target_section_id`. `HomeTemplate::SkipHome` remains for historical migration compatibility, not as an editor-selectable current content mode. The selected content mode and its configuration remain stored while Home is bypassed.
 
 Artwork mode resolves deterministic candidates from eligible public Gallery/Artwork data with explicit tie-break state when needed. Under Construction and Custom use ordered structured components. Heading and Rich Text share canonical storage type `text`; editor-only subtype state controls which editing UI is shown without creating another persisted component type.
 

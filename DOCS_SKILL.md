@@ -282,6 +282,13 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - Isolierter PHP-8.4-Fixture **tatsächlich geprüft**: Syntax, Write, Check, absichtlich veraltetes Diagramm wird abgelehnt. Die realen 20 Diagramme wurden aus denselben Audit-Daten generiert und Summen verifiziert; **kein** nativer Voll-Checkout-PHP-Lauf.
 - Importkanten sind keine Aufruf-/Instanz-Beweise; Runtime- und DB-Generatoren bleiben getrennt.
 
+## 6l. Fortsetzung 2026-10-13 — veraltete Hauptdokumente korrigiert
+
+- `README.md`, `docs/ARCHITECTURE.md`, `docs/DATA-MODEL.md`: nur **drei** aktuelle Home-Inhaltstemplates; Skip Home ist eine separate Routingentscheidung, kein vierter Home-Inhaltsmodus.
+- `docs/DATA-MODEL.md`: `CvEntry` ausdrücklich als Legacy-/Migrationsmodell klassifiziert, `cv_entries` ist aus Working/LIVE entfernt; CV heute in Custom-Page-Komponenten.
+- `docs/MIGRATION-PLAN.md`: historische v0.3-Akzeptanz wird nicht mehr als Abnahme der noch laufenden v0.4-Arbeit oder automatische Promotion nach `main` verstanden; v0.5-Cutover bleibt bedingt geplanter Schritt.
+- **Nächster Schritt:** Dokumentations-Skill als eigene knapp gehaltene Arbeitsanleitung etablieren; die großen `AGENTS.md` und `ui-skills.md` nur abschnittsweise und belegbar entflechten, ohne akzeptierte UI-Contracts zu verlieren.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:
