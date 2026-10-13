@@ -291,10 +291,7 @@
                                                     wire:click="restorePostDraft({{ $entry['id'] }})"
                                                 />
                                             @elseif ($entry['state'] === 'archived')
-                                                <x-admin.row-action
-                                                    :action="\App\Filament\Support\AdminRowAction::Restore"
-                                                    wire:click="restorePostDraft({{ $entry['id'] }})"
-                                                />
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Publish" disabled />
                                             @else
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::Publish"
@@ -311,7 +308,12 @@
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Schedule" disabled />
                                             @endif
 
-                                            @if (in_array($entry['state'], ['draft', 'unpublished', 'published'], true))
+                                            @if ($entry['state'] === 'archived')
+                                                <x-admin.row-action
+                                                    :action="\App\Filament\Support\AdminRowAction::Restore"
+                                                    wire:click="restorePostDraft({{ $entry['id'] }})"
+                                                />
+                                            @elseif (in_array($entry['state'], ['draft', 'unpublished', 'published'], true))
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::Archive"
                                                     wire:click="archivePost({{ $entry['id'] }})"

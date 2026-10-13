@@ -65,21 +65,21 @@ Dieser Mechanismus ist aus [`routes/web.php`](../../routes/web.php), [`layouts/a
 
 `initializePage()` speichert die letzte `#content`-Elementidentität. Ist sie unverändert, bricht der Bootstrap **ohne erneute Initialisierung oder zusätzliche PageView** ab. Beim aktuellen `dev`-Stand werden vorhandene Disposer **bereits bei `livewire:navigating` vor dem Body-Swap** aufgerufen und die `currentContent`-Identität gelöscht. Beim folgenden `livewire:navigated` entsorgt die Init-Routine verbleibende Disposer defensiv, setzt die neue Identity und baut die Instanzen auf. Das verhindert, dass Modal-/Map-/Tracking-Observer am abgelösten Body weiterlaufen. Ein erstmaliger Besuch erfolgt bei `DOMContentLoaded` bzw. sofort, wenn das Dokument bereits bereit ist; spätere Navigationswechsel nutzen `livewire:navigated`. Diese Regeln sind **Codeverhalten**, keine Zusage bereits bestandener Browser-Zustandsprüfung.
 
-## Neuer DOM-Knoten, übertragene Folio-Geometrie und WAAPI-Animation
+## Native CSS-Pseudoelemente, übertragene Folio-Geometrie und WAAPI
 
-Der Folio-Lebenszyklus in [`public-folio-motion.js`](../../resources/js/public-folio-motion.js) beim Quellstand `dev` **`06ca0c00c8148787150800480d7cf1da4e7ffb81`** verwendet keinen persistierten Knoten und keinen eigenen Router. Blade rendert die zwei verbundenen, nichtinteraktiven HTML-Konturen in `.public-folio-decoration` auf jedem `#content`. Variante 1 bleibt das ursprünglich akzeptierte statische Atelier-Folio für Initialloads, fehlendes JS und reduzierte Bewegung.
+Der Quellstand [`public-folio-motion.js`](../../resources/js/public-folio-motion.js) auf `dev` **`5acd359ed61977402e122d92238cbf780fb19e87`** animiert direkt die **ursprünglichen** CSS-Pseudoelemente `#content::before` und `#content::after`. Die zwei akzeptierten Konturen sind zugleich die statische Fallback-Darstellung. Es gibt **keine** zusätzlichen Deko-DOM-Knoten, Overlays, Konturkopien, `@persist` oder einen zweiten Router.
 
-Aus [`app.js`](../../resources/js/app.js) und dem Modul ergibt sich:
+Aus [`app.js`](../../resources/js/app.js), dem Folio-Modul und [`public-presentation.css`](../../resources/css/public-presentation.css) ergibt sich folgende Quellsequenz:
 
-1. Initial wird die Page normal aufgebaut, ohne Folio-Transition. Ein echter `livewire:navigate` markiert die nächste SPA-Seite.
-2. `livewire:navigating` ruft `capturePublicFolio()` auf und übernimmt bei aktiver alter Dekoration deren aktuelle berechnete `top`, `bottom` und `width`-Werte, auch bei unterbrochener WAAPI-Animation. Page-Disposer entfernen die alten Instanzen; Layout-Metadaten werden im Swap erneut angewandt.
-3. `livewire:navigated` initialisiert die neue Page und `advancePublicFolio()` wählt eine **andere** der zehn kuratierten Varianten. Die sechs Parameter beschreiben vier vertikale Eckpositionen und die Breiten der zwei horizontalen Returns.
-4. Zielgeometrie wird zuerst unmittelbar am neuen DOM-Knoten gesetzt; falls unterstützt, interpoliert die native Web Animations API die beiden Konturen **850ms** lang. Ohne WAAPI bleibt das gültige statische Ziel. Alle Returns sind **höchstens .55rem** tief und liegen vollständig außerhalb der weißen Content-Fläche.
-5. `prefers-reduced-motion: reduce` und fehlende Konturelemente verhindern die Animation. Menü-Konturen bleiben statisch. Es gibt keinen Content-Slide/Fade, keine Änderung an Content-/Artwork-Geometrie und kein eigenes History-/Fetch-/Polling-System.
+1. Auf initialem Laden bleibt die Originalkontur statisch. Ein echtes `livewire:navigate` markiert den nächsten SPA-Wechsel; nicht jeder Seiten-Boot erzeugt eine Animation.
+2. Beim `livewire:navigating` erfasst `capturePublicFolio()` über `getComputedStyle(content, '::before'/'::after')` **vier** aktuelle `top`-/`bottom`-Werte, gegebenenfalls aus einer laufenden Animation. Page-Disposer entfernen die alten Listener, Livewire ersetzt den Inhalt und überträgt die Layoutmetadaten.
+3. Bei `livewire:navigated` wählt `advancePublicFolio()` eine **andere** von zehn kuratierten Varianten. Vier CSS-Variablen (`--public-folio-left-top`, `--public-folio-left-bottom`, `--public-folio-right-top`, `--public-folio-right-bottom`) setzen unmittelbar die Zielpositionen der vorhandenen Pseudoelemente.
+4. Wenn vorhanden, animieren zwei native `KeyframeEffect`-Instanzen mit `pseudoElement: '::before'` und `pseudoElement: '::after'` die Randpositionen mittels `new Animation(effect, document.timeline).play()` **850ms** lang. Bei API-Fehlern oder fehlender Pseudoelement-Unterstützung bleibt das bestehende statische CSS gültig; es wird kein weiterer Renderer aufgebaut.
+5. `prefers-reduced-motion: reduce` und unsichtbare/fehlende Konturen unterbinden dynamische Bewegung. Die seitlichen Offsets, Farben, Schatten, Skew und beiden festen **.55rem**-Returns werden nicht verändert. Content-Größe, Artwork und das eigenständig statische Menü bleiben unberührt.
 
-**Aktuelle Rücknahme:** Die zwischenzeitlich eingeführten lokalen `?folio-motion=debug/off`-Parameter, `sessionStorage`-Debugflags, auffälligen Zusatzkonturen und Content-Settling-Effekte wurden auf `dev` entfernt. Sie sind **keine** gültigen Konfigurationen oder Test-/Designverträge mehr.
+**Abgelöster Pfad:** Der ältere `.public-folio-decoration`-HTML-Knoten sowie die Debug-Queryparameter, Debug-`sessionStorage` und Content-Settling-Bewegungen sind entfernt und keine gültigen Produktverträge mehr. Die öffentliche Navigation bleibt serverseitig mit Laravel/Blade und Livewire-4-Document-Navigation ohne eigenen Fetch-/History-Router und ohne Polling.
 
-**Verifikation:** Aktuelle Source-Dateien, Public-Vertrag und vorhandene Testdateien betrachtet; kein Test oder Browserlauf in diesem Dokumentationsdurchgang. Das reale Zusammenspiel bei schnellem SPA-Wechsel, Back/Forward, WAAPI-Fallback, Reduced Motion und die visuelle Produktabnahme bleiben offen.
+**Verifikationsgrenze:** JS, CSS, Layout und Tests auf `dev` quellengeprüft. Die Tests und das Browserverhalten des Pseudoelement-Effekts wurden in diesem Dokumentationslauf **nicht ausgeführt**; WAAPI-Unterstützung, schnelle Navigation, Back/Forward, Reduced Motion und visuelle Abnahme bleiben gesondert offen.
 
 ## Fachliche und technische Grenzen
 

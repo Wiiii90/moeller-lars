@@ -33,7 +33,11 @@ Dokumentierte Quellbelege beziehen sich auf den Ausgangsstand `82879135c0ab18dd8
 
 ## Wiederholbare PHP-Quellinventur
 
-Der erste lokale Generator liegt in [`scripts/generate-architecture-inventory.php`](../../scripts/generate-architecture-inventory.php). Er benötigt lediglich PHP und bootet weder Laravel noch Datenbank oder CI:
+Der erste lokale Generator liegt in [`scripts/generate-architecture-inventory.php`](../../scripts/generate-architecture-inventory.php). Er behandelt PHP-Imports ausschließlich auf Namespace-Scope; Closure-Variablen und Trait-Uses sind keine Dateiimports. 
+
+Die **isolierte** Tokenizer-Selbstprüfung läuft ohne vollständigen Checkout, Laravel oder Datenbank: `php scripts/generate-architecture-inventory.php --self-test`. Sie enthält Fixtures für Closure-`use`, geklammerte Namespaces, Trait-`use`, anonyme Klassen, Gruppierungsimporte und String-Interpolation. Dieser Fixture-Lauf ersetzt nicht `--write`/`--check` gegen die vollständigen realen App-Quellen.
+
+ Er benötigt lediglich PHP und bootet weder Laravel noch Datenbank oder CI:
 
 ```sh
 php scripts/generate-architecture-inventory.php --write

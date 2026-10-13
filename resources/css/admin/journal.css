@@ -24,11 +24,11 @@
 }
 
 .journal-table--blog col.journal-col--publication-date {
-    width: 9rem;
+    width: 7rem;
 }
 
 .journal-table--blog col.journal-col--status {
-    width: 7rem;
+    width: 6rem;
 }
 
 .journal-table col.journal-table__actions--blog {
