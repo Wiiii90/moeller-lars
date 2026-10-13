@@ -103,14 +103,14 @@ function graphResolve(string $symbol, string $ns, array $aliases): ?string
 }
 
 /** @param list<array{id:int|string,text:string,line:int}> $tokens */
-function graphLiteral(array $tokens, int $start, string $ns, array $aliases): ?string
+function graphLiteral(array $tokens, int $start, string $ns, array $aliases, string $selfType): ?string
 {
     $s = graphNext($tokens, $start);
     if ($s === null || ! in_array($tokens[$s]['id'], [T_STRING, T_NAME_QUALIFIED, T_NAME_FULLY_QUALIFIED], true)) return null;
     $colon = graphNext($tokens, $s + 1);
     $class = $colon === null ? null : graphNext($tokens, $colon + 1);
     if ($class === null || $tokens[$colon]['id'] !== T_DOUBLE_COLON || strtolower($tokens[$class]['text']) !== 'class') return null;
-    return graphResolve($tokens[$s]['text'], $ns, $aliases);
+    return strtolower($tokens[$s]['text']) === 'self' ? $selfType : graphResolve($tokens[$s]['text'], $ns, $aliases);
 }
 
 /** @return string */
@@ -136,7 +136,7 @@ foreach ($inventory['php_files'] as $record) {
     $type = $declared[0]['fqn'];
     $ns = str_contains($type, '\\') ? substr($type, 0, strrpos($type, '\\')) : '';
     $emit = static function (?string $target, string $kind, int $line, string $detail = '') use (&$edges, $types, $type, $path): void {
-        if ($target !== null && isset($types[$target]) && $target !== $type) {
+        if ($target !== null && isset($types[$target]) && ($target !== $type || $kind === 'eloquent_relation')) {
             $edges[] = ['from' => $type, 'to' => $target, 'kind' => $kind,
                 'source' => $path, 'line' => $line, 'detail' => $detail];
         }
@@ -207,7 +207,7 @@ foreach ($inventory['php_files'] as $record) {
             if ($arrow !== null && $tokens[$arrow]['id'] === T_OBJECT_OPERATOR && $method !== null && $open !== null
                 && $tokens[$open]['text'] === '('
                 && in_array($tokens[$method]['text'], ['belongsTo','belongsToMany','hasOne','hasMany','hasOneThrough','hasManyThrough','morphOne','morphMany','morphToMany','morphedByMany'], true)) {
-                $emit(graphLiteral($tokens, $open + 1, $ns, $aliases), 'eloquent_relation', $t['line'], $tokens[$method]['text']);
+                $emit(graphLiteral($tokens, $open + 1, $ns, $aliases, $type), 'eloquent_relation', $t['line'], $tokens[$method]['text']);
             }
         }
 
@@ -216,7 +216,7 @@ foreach ($inventory['php_files'] as $record) {
             $open = graphNext($tokens, $i + 1);
             $prev = $i ? $tokens[$i - 1]['id'] : null;
             if ($open !== null && $tokens[$open]['text'] === '(' && $prev !== T_FUNCTION) {
-                $emit(graphLiteral($tokens, $open + 1, $ns, $aliases), 'service_locator', $t['line'], $t['text']);
+                $emit(graphLiteral($tokens, $open + 1, $ns, $aliases, $type), 'service_locator', $t['line'], $t['text']);
             }
         }
 
