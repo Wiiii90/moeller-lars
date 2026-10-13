@@ -248,14 +248,7 @@
                                     </td>
                                 @else
                                     <td class="journal-date journal-col--date admin-table__yield--narrow">
-                                        @if ($entry['date_start'] !== null)
-                                            <span class="journal-date__range">
-                                                <span>{{ $entry['date_start'] }}</span>
-                                                @if ($entry['date_end'] !== null)<span>– {{ $entry['date_end'] }}</span>@endif
-                                            </span>
-                                        @else
-                                            <span aria-label="No structured date">—</span>
-                                        @endif
+                                        @if ($entry['date_range'] !== '')<span class="journal-date__range">{{ $entry['date_range'] }}</span>@else<span aria-label="No structured date">—</span>@endif
                                         @if ($entry['vernissage'])
                                             <span class="journal-date__vernissage">
                                                 <span class="journal-date__vernissage-label">Vernissage</span>

@@ -40,7 +40,7 @@
 }
 
 .journal-table--exhibitions col.journal-col--date {
-    width: 9.5rem;
+    width: 12.5rem;
 }
 
 .journal-table--exhibitions col.journal-col--timing {
@@ -57,7 +57,10 @@
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
-    .journal-table--exhibitions col.journal-col--date,
+    .journal-table--exhibitions col.journal-col--date {
+        width: 12.5rem;
+    }
+
     .journal-table--blog col.journal-col--publication-date {
         width: 11rem;
     }
@@ -122,11 +125,12 @@
     color: var(--admin-muted);
 }
 
-/* The range's two dates are intentional rows. Never let the browser choose
- * different wrap points according to the day/month digit widths. */
-.journal-date__range > span {
-    display: block;
+/* The complete structured range stays on one line while its Date column
+ * exists; the column yields to identity metadata at Narrow. */
+.journal-date__range {
     white-space: nowrap;
+    overflow-wrap: normal;
+    font-variant-numeric: tabular-nums;
 }
 
 .journal-date__vernissage,

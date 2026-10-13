@@ -760,13 +760,14 @@ final class JournalWorkspace extends Page
             $endsOn = $entry->getAttribute('ends_on');
             $dateStart = $startsOn instanceof CarbonInterface ? $startsOn->format('d.m.Y') : null;
             $dateEnd = $endsOn instanceof CarbonInterface ? $endsOn->format('d.m.Y') : null;
-            // Separate values make the table's line breaks deterministic.
-            // An end-only legacy record still displays its available date.
-            $rangeStart = $dateStart ?? $dateEnd;
-            $rangeEnd = $dateStart !== null && $dateEnd !== $dateStart ? $dateEnd : null;
-            $dateRange = $rangeStart !== null
-                ? $rangeStart.($rangeEnd !== null ? ' – '.$rangeEnd : '')
-                : '';
+            // Display structured dates as one consistent range, independent of
+            // the public-facing free-text date override.
+            $dateRange = match (true) {
+                $dateStart !== null && $dateEnd !== null && $dateStart !== $dateEnd => $dateStart.' – '.$dateEnd,
+                $dateStart !== null => $dateStart,
+                $dateEnd !== null => $dateEnd,
+                default => '',
+            };
             $vernissageAt = $entry->getAttribute('vernissage_at');
             $vernissage = $vernissageAt instanceof CarbonInterface
                 ? $vernissageAt->format('d.m.Y · H:i')
@@ -775,7 +776,7 @@ final class JournalWorkspace extends Page
             return [
                 'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
                 'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $vernissage,
-                'date_start' => $rangeStart, 'date_end' => $rangeEnd, 'date_range' => $dateRange,
+                'date_range' => $dateRange,
                 'thumbnail_url' => $this->coverThumbnailUrl($entry),
                 'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',
