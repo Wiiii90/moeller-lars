@@ -15,6 +15,23 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['1.17rem', '3.74rem', '4.02rem', '1.06rem'],
 ]);
 
+// Only the existing three paper shadows move, each by a few pixels.
+// The first (nearest) layer remains fixed; the other two breathe vertically.
+// Each entry is [middleY, rearY]. No extra shadow layers or new marks.
+export const FOLIO_SHADOW_DEPTHS = Object.freeze([
+    [7, 8], [9, 11], [6, 9], [8, 10], [5, 7],
+    [10, 12], [6, 8], [9, 10], [7, 11], [5, 9],
+]);
+
+function shadowFor(index) {
+    const [middleY, rearY] = FOLIO_SHADOW_DEPTHS[index];
+    return [
+        '-2px 3px 0 rgba(28, 35, 32, .09)',
+        `-5px ${middleY}px 0 var(--public-folio-soft)`,
+        `-6px ${rearY}px 0 var(--public-folio-depth)`,
+    ].join(', ');
+}
+
 let variant = 0;
 let snapshot = null;
 
@@ -39,26 +56,32 @@ function visibleCorners(content) {
 // Computed pseudo-element styles include the current WAAPI interpolation.
 export function capturePublicFolio(root = document) {
     snapshot = null;
-    const corners = visibleCorners(root.querySelector('#content'));
+    const content = root.querySelector('#content');
+    const corners = visibleCorners(content);
     if (!corners) return false;
     const values = [corners[0].top, corners[0].bottom, corners[1].top, corners[1].bottom];
     if (values.some((value) => !value || value === 'auto')) return false;
-    snapshot = values;
+    snapshot = { corners: values, shadow: getComputedStyle(content).boxShadow };
     return true;
 }
 
 export function advancePublicFolio(root = document) {
     const content = root.querySelector('#content');
     const corners = visibleCorners(content);
-    if (!corners || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (!corners) {
         snapshot = null;
         return false;
     }
 
-    const from = snapshot ?? FOLIO_VARIANTS[variant];
+    // The artist explicitly wants these restrained decorative movements even
+    // when the local browser reports reduced motion. No sliding, parallax,
+    // flashing or artwork movement: only a few pixels of existing paper edges.
+    const from = snapshot?.corners ?? FOLIO_VARIANTS[variant];
+    const fromShadow = snapshot?.shadow ?? getComputedStyle(content).boxShadow;
     snapshot = null;
     variant = chooseNextFolioVariant(variant);
     const to = FOLIO_VARIANTS[variant];
+    const toShadow = shadowFor(variant);
 
     // Keep target geometry in the existing CSS pseudos after the effect ends.
     // Width, left/right position, color and edge shadows never change.
@@ -66,6 +89,23 @@ export function advancePublicFolio(root = document) {
     content.style.setProperty('--public-folio-left-bottom', to[1]);
     content.style.setProperty('--public-folio-right-top', to[2]);
     content.style.setProperty('--public-folio-right-bottom', to[3]);
+    content.style.boxShadow = toShadow;
+
+    // The three existing paper layers already belong to #content. Animate
+    // their offsets directly; never add separate line or surface elements.
+    if (typeof content.animate === 'function') {
+        try {
+            content.animate([
+                { boxShadow: fromShadow },
+                { boxShadow: toShadow },
+            ], {
+                duration: 1150,
+                easing: 'cubic-bezier(.22, .62, .32, 1)',
+            });
+        } catch {
+            // The original layered folio remains complete without WAAPI.
+        }
+    }
 
     if (typeof KeyframeEffect !== 'function' || typeof Animation !== 'function') return true;
 
@@ -79,7 +119,7 @@ export function advancePublicFolio(root = document) {
                 { top: to[indices[0]], bottom: to[indices[1]] },
             ], {
                 pseudoElement,
-                duration: 850,
+                duration: 1150,
                 easing: 'cubic-bezier(.22, .62, .32, 1)',
             });
             new Animation(effect, document.timeline).play();

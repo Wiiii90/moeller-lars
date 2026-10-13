@@ -29,7 +29,7 @@
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
 | `docs` unmittelbar vor diesem Merge | `8b945406d9ed6df969860e519c031bc202ef631a` |
-| `dev`, für diesen Merge geprüfter Stand | `5acd359ed61977402e122d92238cbf780fb19e87` |
+| `dev`, für diesen Merge geprüfter Stand | `1cf6aa5cccf82c54820f26225b4e66f6723523ac` |
 | Synchronisierung | echter Zwei-Eltern-Merge; neue `docs`-SHA danach frisch abrufen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
@@ -126,7 +126,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branch-Checkpoint (14.10.2026):** Vier neue `dev`-Commits bis `5acd359ed61977402e122d92238cbf780fb19e87` nach Pfadprüfung als echten Zwei-Eltern-Merge nach `docs` übernommen. Vor jeder weiteren Übernahme neue HEADs lesen und eventuelle Überschneidungen prüfen. `dev` bleibt Application-Quelle; `testing`, `main`, CI, Deployment und persistente Daten bleiben unberührt.
+**Branch-Checkpoint (14.10.2026):** Fünf neue `dev`-Commits bis `1cf6aa5cccf82c54820f26225b4e66f6723523ac` nach Pfadprüfung als echten Zwei-Eltern-Merge nach `docs` übernommen. Vor jeder weiteren Übernahme neue HEADs lesen und eventuelle Überschneidungen prüfen. `dev` bleibt Application-Quelle; `testing`, `main`, CI, Deployment und persistente Daten bleiben unberührt.
 
 **PHP-Quellinventur:** `scripts/generate-architecture-inventory.php` erkennt Dateiimports nun ausschließlich auf Namespace-Ebene. Closure-`use ($vars)`, Trait-Uses sowie anonyme Klassen sind keine Dateiimports; geklammerte Namespaces und String-Interpolation werden korrekt abgegrenzt. Read-only `--self-test` mit vier Fixture-Fällen ergänzt, ohne Laravel/Composer/DB/echten Checkout nutzbar. Eine äquivalente isolierte PHP-8.4-Parserfunktion wurde mit vier erfolgreichen Fixture-Fällen und `php -l` geprüft. **Der vollständige native Lauf der gerade geänderten Remote-Generator-Datei ist noch nicht durchgeführt.** Ebenso bleiben `--write`/`--check` auf einem vollständigen Checkout und die Neugenerierung der 248-Dateien-Quelle offen. Ein Fixture-Lauf ist kein realer Inventarlauf.
 
@@ -134,7 +134,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 **Admin-Journal:** Die neue Quelle koppelt Blog-Status-Faltung und Action-Label-Komprimierung **gemeinsam bei 72rem tatsächlicher Tabellenbreite**; vorherige 74/72-Stufung ist obsolet. Separate Wide-Date-/Status-Spalten: 7rem und 6rem. Restore belegt als archived-post-Aktion ausschließlich den festen Archive-Slot **6**, nicht Publish-Slot **4**; inapplicable Publish/Schedule deaktiviert. Keine zusätzliche Actions-Spalte. Kanonischer Owner `docs/ADMIN-TABLE-CONTRACT.md`; Exhibition bleibt bei 64rem. Quellgeprüft, nicht browserabgenommen.
 
-**Public-SPA:** Der neueste `dev`-Stand entfernt die zusätzlichen HTML-Konturen. Die zehn Varianten animieren mittels nativer `KeyframeEffect`-/`Animation`-API ausschließlich die ursprünglichen `#content::before/::after`-Konturen mit **vier top/bottom-Werten** und **850ms**, feste seitliche Returns **.55rem**. Ohne Pseudo-WAAPI/bei Reduced Motion vollständiger statischer Fallback. `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md` und `docs/architecture/public-spa-lifecycle.md` korrigiert. JS/CSS/Tests **nur gelesen**, nicht ausgeführt; Browserabnahme offen.
+**Public-SPA:** Das jüngste `dev` erweitert die Bewegung der ursprünglichen `#content::before/::after`-Konturen um die **bestehenden drei** Papier-Schattenebenen, keine neuen DOM-Knoten. Vier `top/bottom`-Werte plus aktueller `boxShadow` werden vor Livewire-Swap erfasst. Bei Zielwahl bleiben die originale seitliche Position und `.55rem`-Returns unverändert, die zwei hinteren Schattenebenen bewegen sich nur vertikal wenige Pixel, die vorderste bleibt fest. Native Pseudo-/Shadow-Animationen dauern **1150ms**. **`prefers-reduced-motion: reduce` wird im neuen Quellcode für diese Dekoration ausdrücklich nicht mehr als Stop-Kriterium verwendet**; dokumentierte, noch nicht browserabgenommene Barrierefreiheitsabweichung. Der Public-Vertrag und `public-spa-lifecycle.md` bilden diesen Stand ab. JS-/Testquellen nur gelesen; keine Tests oder Browserläufe behaupten.
 
 **Nächster Schritt:** `generate-architecture-eloquent.php` auf explizite Relationserkennung sowie `generate-architecture-relations.php` auf verbleibende Alias-/Constructor-Scope-Randfälle prüfen, reproduzierbare Quell-Fixtures ausbauen. Danach die Architektur-Quellenlisten gegen echten sicheren Checkout validieren und restliche Vertragsduplikate gezielt reduzieren.
 
