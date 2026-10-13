@@ -139,6 +139,7 @@ export function initializeArtworkViewer(root = document) {
     let expectedSrc = '';
     const pointers = new Map();
     const zoomTracked = new Set();
+    const lifetime = new AbortController();
     let dragStart = null;
     let pinchStart = null;
     let resizeFrame = null;
@@ -351,7 +352,7 @@ export function initializeArtworkViewer(root = document) {
         if (!source) return;
         const sequence = source.closest('[data-artwork-viewer-sequence]');
         if (sequence && open(source, sequence)) event.preventDefault();
-    });
+    }, { signal: lifetime.signal });
 
     close.addEventListener('click', () => dialog.close());
     previous.addEventListener('click', () => navigate(-1, 'artwork_previous'));
@@ -489,7 +490,7 @@ export function initializeArtworkViewer(root = document) {
         if (!dialog.open) return;
         if (document.visibilityState === 'hidden') pauseAttention();
         else resumeAttention();
-    });
+    }, { signal: lifetime.signal });
 
     dialog.addEventListener('close', () => {
         flushAttention();
@@ -508,7 +509,7 @@ export function initializeArtworkViewer(root = document) {
 
     window.addEventListener('pagehide', () => {
         if (dialog.open) flushAttention();
-    });
+    }, { signal: lifetime.signal });
 
     const recalculate = () => {
         resizeFrame = null;
@@ -519,6 +520,13 @@ export function initializeArtworkViewer(root = document) {
     const scheduleResize = () => {
         if (resizeFrame === null) resizeFrame = requestAnimationFrame(recalculate);
     };
-    window.addEventListener('resize', scheduleResize);
-    window.addEventListener('orientationchange', scheduleResize);
+    window.addEventListener('resize', scheduleResize, { signal: lifetime.signal });
+    window.addEventListener('orientationchange', scheduleResize, { signal: lifetime.signal });
+
+    return () => {
+        lifetime.abort();
+        if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+        if (dialog.open) flushAttention();
+        video.pause();
+    };
 }

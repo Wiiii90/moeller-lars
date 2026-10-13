@@ -60,7 +60,7 @@ final class SecurityHeaders
 
     private function publicContentSecurityPolicy(string $styleNonce, bool $allowSameOriginFraming): string
     {
-        $scriptSources = ["'self'"];
+        $scriptSources = ["'self'", "'nonce-{$styleNonce}'"];
         $styleSources = ["'self'", "'nonce-{$styleNonce}'"];
         $connectSources = ["'self'"];
         $imageSources = ["'self'", 'data:'];

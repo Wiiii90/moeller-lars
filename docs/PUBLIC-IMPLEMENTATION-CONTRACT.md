@@ -36,6 +36,18 @@ A canonical media **reference** does not automatically mean the asset is publicl
 
 ## Site navigation
 
+Public visits use the already installed Livewire 4 `wire:navigate` document-swap
+runtime over the existing Blade routes. Only eligible same-origin public links
+are opted in; downloads, cross-origin links, anchors and admin/system paths
+retain native browser navigation. The canonical server routes remain the
+source of content/publication/preview authority. JavaScript page initializers
+must dispose global listeners/observers on each document swap; Matomo records
+one page view per visit and does not inject a second tracker script. The
+public CSP remains nonce-based and does not enable `unsafe-eval`. General
+layout CSS variables are reapplied from server-rendered metadata at the swap
+boundary, so new nonces cannot invalidate the artist's configured background
+or widths. This SPA transport is independent of future contour animation.
+
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.

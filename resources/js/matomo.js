@@ -2,8 +2,8 @@ function trackingConfiguration(root = document) {
     return root.querySelector?.('[data-matomo-tracking]') ?? null;
 }
 
-function trackingQueue(root = document) {
-    if (!trackingConfiguration(root)) return null;
+function trackingQueue() {
+    if (!trackingConfiguration(document)) return null;
     return window._paq = window._paq || [];
 }
 
@@ -23,7 +23,7 @@ export function trackMatomoEvent(category, action, name = null, value = null, ro
 }
 
 function initializeDeclarativeEvents(root = document) {
-    root.addEventListener?.('click', (event) => {
+    const onClick = (event) => {
         const target = event.target.closest?.('[data-matomo-event-action]');
         if (!target) return;
 
@@ -34,7 +34,8 @@ function initializeDeclarativeEvents(root = document) {
             null,
             root,
         );
-    });
+    };
+    root.addEventListener?.('click', onClick);
 
     root.querySelectorAll?.('[data-matomo-event-on-load]').forEach((target) => {
         trackMatomoEvent(
@@ -47,7 +48,9 @@ function initializeDeclarativeEvents(root = document) {
     });
 
     const viewTargets = Array.from(root.querySelectorAll?.('[data-matomo-event-view]') ?? []);
-    if (viewTargets.length === 0 || typeof IntersectionObserver !== 'function') return;
+    if (viewTargets.length === 0 || typeof IntersectionObserver !== 'function') {
+        return () => root.removeEventListener?.('click', onClick);
+    }
 
     const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
@@ -65,10 +68,19 @@ function initializeDeclarativeEvents(root = document) {
     }, { threshold: [0.25] });
 
     viewTargets.forEach((target) => observer.observe(target));
+    return () => {
+        root.removeEventListener?.('click', onClick);
+        observer.disconnect();
+    };
 }
 
+let trackingScriptUrl = null;
+let disposeEvents = null;
+
 export function initializeMatomoTracking(root = document) {
-    const configuration = trackingConfiguration(root);
+    disposeEvents?.();
+    disposeEvents = null;
+    const configuration = trackingConfiguration(document);
     if (!configuration) return;
 
     const baseUrl = configuration.dataset.matomoBaseUrl;
@@ -79,16 +91,23 @@ export function initializeMatomoTracking(root = document) {
 
     const normalizedBaseUrl = `${baseUrl.replace(/\/$/, '')}/`;
     const queue = window._paq = window._paq || [];
-    queue.push(['setTrackerUrl', `${normalizedBaseUrl}matomo.php`]);
-    queue.push(['setSiteId', siteId]);
-    queue.push(['enableHeartBeatTimer', 15]);
+    if (trackingScriptUrl === null) {
+        queue.push(['setTrackerUrl', `${normalizedBaseUrl}matomo.php`]);
+        queue.push(['setSiteId', siteId]);
+        queue.push(['enableHeartBeatTimer', 15]);
+        queue.push(['enableLinkTracking']);
+        trackingScriptUrl = `${normalizedBaseUrl}matomo.js`;
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = trackingScriptUrl;
+        document.head.appendChild(script);
+    }
+    queue.push(['setCustomUrl', window.location.href]);
+    queue.push(['setDocumentTitle', document.title]);
     queue.push(['trackPageView']);
-    queue.push(['enableLinkTracking']);
-
-    initializeDeclarativeEvents(root);
-
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `${normalizedBaseUrl}matomo.js`;
-    document.head.appendChild(script);
+    disposeEvents = initializeDeclarativeEvents(root);
+    return () => {
+        disposeEvents?.();
+        disposeEvents = null;
+    };
 }

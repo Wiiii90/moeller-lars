@@ -177,14 +177,16 @@ function initializeNavigationWindow(surface, restoredWindows) {
     previous.addEventListener('click', () => shift(-1));
     next.addEventListener('click', () => shift(1));
 
+    let resizeObserver = null;
     if ('ResizeObserver' in window) {
-        new ResizeObserver(() => {
+        resizeObserver = new ResizeObserver(() => {
             const width = rail.getBoundingClientRect().width;
             if (Math.abs(observedWidth - width) > 0.5) {
                 observedWidth = width;
                 refresh();
             }
-        }).observe(rail);
+        });
+        resizeObserver.observe(rail);
     } else {
         window.addEventListener('resize', refresh, { passive: true });
     }
@@ -203,6 +205,10 @@ function initializeNavigationWindow(surface, restoredWindows) {
                 ? saved : null;
         },
         key: surfaceKey,
+        destroy: () => {
+            resizeObserver?.disconnect();
+            if (!resizeObserver) window.removeEventListener('resize', refresh);
+        },
     };
 }
 
@@ -363,6 +369,7 @@ export function advanceNavigationWindow(widths, visible, availableWidth, directi
 }
 
 export function initializePublicNavigation() {
+    const disposers = [];
     document.querySelectorAll('[data-site-navigation]').forEach((container) => {
         const mainSurface = container.querySelector('[data-navigation-main]');
         if (!(mainSurface instanceof HTMLElement)) return;
@@ -374,13 +381,15 @@ export function initializePublicNavigation() {
         main.refresh();
         initializeNavigationLevels(container, mainSurface, main, restoredWindows, windows);
 
-        container.addEventListener('click', (event) => {
+        // Content-to-content links also preserve the current menu window.
+        const clickRoot = document.body;
+        const recordHandoff = (event) => {
             if (event.defaultPrevented || event.button !== 0
                 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey
                 || !(event.target instanceof Element)) return;
 
             const link = event.target.closest('a[href]');
-            if (!(link instanceof HTMLAnchorElement) || !container.contains(link)
+            if (!(link instanceof HTMLAnchorElement)
                 || (link.target && link.target !== '_self') || link.hasAttribute('download')) return;
 
             const target = new URL(link.href);
@@ -397,6 +406,12 @@ export function initializePublicNavigation() {
             } catch {
                 // Continue normal navigation when session storage is unavailable.
             }
+        };
+        clickRoot.addEventListener('click', recordHandoff);
+        disposers.push(() => {
+            clickRoot.removeEventListener('click', recordHandoff);
+            windows.forEach((windowState) => windowState.destroy());
         });
     });
+    return () => disposers.forEach((dispose) => dispose());
 }
