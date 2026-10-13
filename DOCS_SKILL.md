@@ -126,32 +126,35 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Letzte abgeschlossene Einheit und unmittelbare Fortsetzung
 
-**Branchstand:** `docs` vor dieser Änderung `c7a770ea347ed7ec5d6ca9e043393d0911f82e25`,
+**Branchstand (13.10.2026):** `docs` vor diesem Commit `85c1fa08e4949bb71e5f3a77a0af128f8e7cb082`;
 `dev` zuletzt `919eec2c088ccd7aca804ab5108a6a8378a1028e`.
-HEADs vor Weiterarbeit frisch vergleichen.
+`dev` war zu diesem Zeitpunkt vollständig gemerged; alle HEADs
+vor weiterer Arbeit erneut abrufen.
 
-**Abgeschlossen:** Die ausführliche, browserabgenommene Filament-5.7.6-
-Scroll-Lock-Semantik liegt jetzt **einmal** im
-[`ADMIN-DIALOG-CONTRACT.md`](docs/ADMIN-DIALOG-CONTRACT.md),
-inklusive der bisher nur im Root vorhandenen
-`tests/js/filament-scroll-lock-patch.test.mjs`- und
-`tests/browser/admin-dialog-regression.spec.mjs`-Belege,
-Build-Reihenfolge, Upgrade-Version-Guard, Kurz-/Langseiten- und
-Close-Leave-Verhalten. `AGENTS.md` hat nur noch die geschützte
-Kerninvariante und den direkten Link. Keine Tests/Browserchecks
-ausgeführt, keine Runtime-Veränderung.
+**Abgeschlossen:**
+- Die **61 Markdown-Dateien** auf `85c1fa08e4949bb71e5f3a77a0af128f8e7cb082` vollständig auf einfache
+  relative Datei-/Verzeichnislinks geprüft: **450** erkannte relative
+  Pfadziele und **0 fehlende Ziele**. Eingezäunte Codebeispiele,
+  reine Abschnittsanker, verschachtelte Spezial-Linksyntax und externe
+  URLs waren **nicht Teil** dieser Prüfung. GitHub-Quellenprüfung, kein
+  ausgeführter nativer Repository-Linter.
+- `AGENTS.md`-Doppelung für Autosave/Search/Audit/Media-Refresh reduziert
+  auf Verweise zu den kanonischen [Control](docs/ADMIN-CONTROL-CONTRACT.md),
+  [Media](docs/MEDIA.md), [Activity](docs/ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md)
+  und [Notification](docs/ADMIN-NOTIFICATION-CONTRACT.md) Verträgen.
+- **Widerspruch behoben:** `ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md`
+  behauptete einen Reset-Audit-Event auch ohne staged Änderungen.
+  `PublicationVersionService::resetStagedChanges()` erstellt ihn nur
+  bei positivem Working/LIVE-Diff; der Null-Diff-Fall räumt nur den
+  Working-Herkunftskontext ab. Die normative Darstellung folgt nun dem
+  tatsächlichen Code.
 
-**Weitere aktuelle Korrekturen:** Notification-Vertrag und `AGENTS.md`
-unterscheiden echte mehrere Activity-Nachrichten von einzelner
-Notifier-Benachrichtigung; Mailbox-`source_id` dedupliziert nicht
-zwangsläufig die Header-Darstellung. Das ist quellenbelegt,
-Runtime-/Retry-Prüfung offen.
+**Unmittelbar weiter:** Dokumentationslinks zusätzlich auf relevante
+Abschnittsanker prüfen und die aktuelle Public-SPA-/Admin-Policy nur
+bei belegtem Quellenwiderspruch korrigieren; danach verbleibende
+duplizierte Root-Anleitungen weiter kürzen, ohne accepted UX Regeln
+zu verlieren.
 
-**Unmittelbar als Nächstes:** weitere doppelte Root-Normen (z. B.
-Persistenz/Audit vs. Admin-Activity/Control-Vertrag) kontrolliert
-vergleichen. Parallel eintreffenden Public-`dev`-Code nachziehen.
-Nie eine akzeptierte Fachregel ohne belegten neuen Owner löschen.
-
-**Noch offen:** native PHP-Full-Checkout-Generatoren, isoliertes
-PostgreSQL-`pg_catalog`, echte Public-/Admin-Browsertests.
-`testing` und CI nicht bedienen.
+**Weiter offen:** nativer kompletter PHP-Generator-Checkout,
+Wegwerf-PostgreSQL/`pg_catalog`, Browser-/Livewire-E2E und
+Notifier-Retry/Mehrfachtransport. Keine CI-/`testing`-Änderungen.

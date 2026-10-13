@@ -416,15 +416,17 @@ Use native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) 
 
 ## Persistence and audit
 
-- normal edits persist independently of any future logical Commit utility;
-- text fields do not write per keystroke under the current admin contract;
-- persist changed text on the normal change/blur path only when normalized content changed;
-- toggles/selects/media choices may persist on discrete changes;
-- read-only workspace search/typeahead is live with the one canonical 300 ms debounce; it never submits a normal form, navigates, or writes editorial state;
-- local animation, clock and browser-render scheduling may use timing APIs when they remain presentation-only; do not confuse those with persistence/search transport rules;
-- Storage data/capacity refresh is event-driven by completed uploads or explicit refresh, never timer/poll driven;
-- Activity/Audit records successful writes but is not the persistence trigger;
-- publication, destructive operations and media references continue through canonical domain services.
+Editorial controls persist changed **Working** state on discrete semantic
+change/blur, independently of a later Publication Commit. Search uses the
+shared **read-only 300 ms** throttle; its timer never triggers writes.
+[ADMIN-CONTROL-CONTRACT.md](docs/ADMIN-CONTROL-CONTRACT.md) owns the precise
+autosave/search distinctions, [MEDIA.md](docs/MEDIA.md) owns event-driven
+Storage/capacity refresh, and
+[ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](docs/ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md)
+owns Audit/Undo and Working/LIVE. Activity records successful mutations but
+does not initiate persistence; feedback is an explicit,
+[separate notifier](docs/ADMIN-NOTIFICATION-CONTRACT.md). Presentation-only
+timing may not be repurposed into polling or persistence.
 
 ## Task and continuation handoffs
 

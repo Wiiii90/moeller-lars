@@ -171,7 +171,7 @@ The logical operation name remains **Reset staged changes** even where the compa
 committed.* -> public.*
 ```
 
-The replacement is transactional under the publication advisory lock and schema guard. It discards all current staged content state while preserving Activity and Commit history. The reset itself is a new Activity event.
+The replacement is transactional under the publication advisory lock and schema guard. It discards current staged content state while preserving Activity and Commit history. **Only when a Working/LIVE diff exists** does it replace Working, record a new `publication.stage_reset` Activity and drain abandoned-media cleanup. When the diff is zero, `resetStagedChanges()` merely clears the Working provenance context and returns `0`, **without** a new Activity event or cleanup. Reset never deletes earlier Activity/Commit evidence.
 
 Reset is not implemented by replaying individual Undo receipts.
 
@@ -245,7 +245,7 @@ Physical Media files may be deleted only when none of these still require the as
 
 ## Activity integration for publication controls
 
-Reset/Restore/Revert staging operations create normal immutable Activity events in the `Publication` area:
+Reset (**when there are staged changes**), Restore and Revert staging operations record normal immutable Activity events in the `Publication` area:
 
 - `publication.stage_reset`;
 - `publication.version_restored`;
