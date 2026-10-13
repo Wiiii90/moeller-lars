@@ -62,18 +62,36 @@ test('content and menu animate their EXISTING strokes continuously, with no extr
         rightHasBottom: true, rightInside: true,
     });
 
+    // A Livewire-like swap during the ongoing animation must start from
+    // the exact rendered intermediate state of BOTH original drawings.
     await page.waitForTimeout(250);
-    const measured = await page.evaluate(() => {
-        const menu = document.querySelector('.site-navigation');
-        const content = document.querySelector('#content');
+    const replaced = await page.evaluate((newMarkup) => {
+        const oldContent = document.querySelector('#content');
+        const oldMenu = document.querySelector('.site-navigation');
+        const priorContent = getComputedStyle(oldContent, '::before').top;
+        const priorMenu = getComputedStyle(oldMenu, '::after').top;
         window.publicFolioTest.capturePublicFolio();
-        const previous = getComputedStyle(content, '::before').top;
-        const previousNav = getComputedStyle(menu, '::after').top;
-        document.body.innerHTML = '<div class="public-site">' + '';
-        return { previous, previousNav };
-    });
-    expect(measured.previous).toBeTruthy();
-    expect(measured.previousNav).toBeTruthy();
+        document.body.innerHTML = newMarkup;
+        window.publicFolioTest.advancePublicFolio();
+        const content = document.querySelector('#content');
+        const menu = document.querySelector('.site-navigation');
+        const effects = document.getAnimations();
+        const nextContent = effects.find(a =>
+            a.effect.target === content && a.effect.pseudoElement === '::before');
+        const nextMenu = effects.find(a =>
+            a.effect.target === menu && a.effect.pseudoElement === '::after');
+        return {
+            priorContent, priorMenu,
+            nextContent: nextContent?.effect.getKeyframes()[0].top,
+            nextMenu: nextMenu?.effect.getKeyframes()[0].top,
+            contentChildren: content.children.length,
+            menuChildren: menu.children.length,
+        };
+    }, sheet('Prints'));
+    expect(replaced.nextContent).toBe(replaced.priorContent);
+    expect(replaced.nextMenu).toBe(replaced.priorMenu);
+    expect(replaced.contentChildren).toBe(1);
+    expect(replaced.menuChildren).toBe(1);
 });
 
 test('Livewire page navigation stays in one document and restarts ongoing native motion', async ({ page }) => {

@@ -91,7 +91,7 @@ test('initial document starts FOUR infinite pseudo-effects plus existing shadow 
         assert.equal(animations[0].options.iterations, Infinity);
         assert.equal(animations[0].options.duration, 18200);
         assert.equal(animations[0].frames[0].boxShadow, animations[0].frames.at(-1).boxShadow);
-        assert.equal(animations[0].frames[0].boxShadow.split('),').length, 3);
+        assert.equal(animations[0].frames[0].boxShadow.split(/,\s*(?=rgba\()/).length, 3);
     });
 });
 
