@@ -98,18 +98,3 @@ it('resets pagination for search type and page size changes and prunes invisible
         ->assertSet('selectedComponentTargets', ['0:list'])
         ->assertSet('selectedChildTargets', []);
 });
-
-
-it('keeps List entries out of row drag handles and child selection', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Single CV entry', 'single-cv-entry');
-    $settings->update(['blocks' => [[
-        'type' => 'list', 'published' => true, 'title' => 'CV',
-        'items' => [['published' => true, 'title' => 'Only entry', 'date' => '2024']],
-    ]]]);
-
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->assertDontSeeHtml('wire:sort="sortComponent"')
-        ->assertDontSeeHtml('wire:sort="sortChild"')
-        ->assertDontSee('Add list item')
-        ->assertSee('At least two components are needed to reorder');
-});

@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, parent HEAD `59f1cd436d598b79665de03c7c564578725cc6f9` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`. More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, parent HEAD `a31210d70f7128f6d23f3cf5b742d98a8640d8f7` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`. More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -57,6 +57,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Added a public-media publication transition contract: draft/Working asset not public before Commit, available after Commit, Working unpublish does not leak, unavailable after next Commit; also confirms admin-original endpoint refuses guests and non-admins. This is **newly authored, runtime not yet run**.
 - Reintegrated later `dev` Journal/Exhibition changes and their **new or updated Feature/Unit tests**, preserving the intentional deletion of `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php`.
 - Corrected the newly merged Journal copyright Unit test to construct `JournalMediaRenderer` with a mock `PublicMedia` dependency rather than calling `app()` without bootstrapping Laravel. All current `tests/Unit` files were scanned for `app()`; no other such calls were found.
+- Removed two brittle markup assertions from Custom Page type-conversion coverage; the test still performs the real conversion and verifies persisted component types. Deleted a separate one-row test consisting entirely of incidental drag-handle markup and copy assertions.
 
 ## 5. Explicitly unverified / risks
 

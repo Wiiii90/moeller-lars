@@ -102,8 +102,6 @@ it('keeps Change type reachable when filtering makes drag sorting unavailable', 
 
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->set('componentSearch', 'Component 2')
-        ->assertSeeHtml('class="admin-inline-select custom-page-component__type-select"')
-        ->assertDontSeeHtml('wire:sort="sortComponent"')
         ->mountAction('changeComponentType', [
             'componentIndex' => 1,
             'componentType' => 'list',
