@@ -69,6 +69,8 @@ Current test file inventory after this cleanup: **114 PHP `*Test.php` files** (7
 
 28. Synchronized production baseline: incorporated `dev` `7c332b32762029b7e9da83491f52b12860bef9ed` into `testing` as a genuine two-parent merge (10 non-overlapping paths; UI/docs/public templates only, no test file touched on dev). Kept all testing-only changes and deletions. **No CI, PHP tests, browser, deployment or server action.**
 
+29. Added `tests/js/public-spa.test.mjs`: Node-level contract tests for the newly merged Livewire-owned public SPA opt-in (same-origin/public-only links, native same-page anchors, external/private routes, downloads/new windows/explicit full-load exclusions), the actual DOM marking boundary, and CSP-safe destination layout CSSOM synchronization including missing/empty metadata. Production owners: `public-spa.js`, `app.js`, `layouts/app.blade.php`. **Not run**, and this is not an end-to-end assertion that Livewire performs document swaps; a real E2E visit/back/forward test remains required.
+
 ## Current blocking risks and evidence
 
 **All tests and test layers remain NOT RUN under this refactor. CI not triggered.** Gallery and Storage changes documented above have only been matched to source. No full PHP syntax/Pest discovery, Postgres Unit/Integration/Feature/Migration, Node, Vite build or Chromium test suite has run. Static reading and GitHub commits do not establish green status. A safe verified disposable environment is a prerequisite before any DB tests; preserve the current CI-only safety guard.
