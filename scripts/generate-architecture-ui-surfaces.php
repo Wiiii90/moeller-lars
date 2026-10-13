@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Static, read-only UI inventory: Filament Pages/Concerns, Admin Livewire,
- * literal Action::make names, declared methods and Page -> Concern trait use.
+ * literal Action::make names, declared methods and Page/Concern -> Concern trait use.
  * Never boots Laravel, accesses a database, contacts CI or infers routes.
  */
 $root = dirname(__DIR__);
@@ -47,7 +47,10 @@ foreach ($patterns as $kind => $pattern) {
         $name = $types[0]['name'];
         $slugMatches = uiMatches($source, '/^[ \t]*protected\s+static\s+\?string\s+\$slug\s*=\s*\'([^\']*)\'/m');
         $viewMatches = uiMatches($source, '/^[ \t]*protected\s+string\s+\$view\s*=\s*\'([^\']*)\'/m');
-        $bodyStart = strpos($source, '{', strpos($source, $name, strpos($source, 'class') !== false ? strpos($source, 'class') : 0));
+        if (! preg_match('/^[ \t]*(?:(?:final|abstract)\s+)?(?:class|trait)\s+'.preg_quote($name, '/').'\b[^\{]*\{/m', $source, $declaration, PREG_OFFSET_CAPTURE)) {
+            throw new RuntimeException("Cannot locate type body in {$relative}");
+        }
+        $bodyStart = $declaration[0][1] + strlen($declaration[0][0]) - 1;
         if ($bodyStart === false) throw new RuntimeException("Missing type body in {$relative}");
         $body = substr($source, $bodyStart + 1);
         $bodyTraits = uiMatches($body, '/^[ \t]*use\s+([A-Za-z_]\w*)\s*;/m');
@@ -71,7 +74,7 @@ $knownTraits = [];
 foreach ($records as $record) if ($record['kind'] === 'concern') $knownTraits[$record['name']] = $record;
 $edges = [];
 foreach ($records as $record) {
-    if ($record['kind'] !== 'page') continue;
+    if (! in_array($record['kind'], ['page', 'concern'], true)) continue;
     foreach ($record['traits'] as $use) {
         if (isset($knownTraits[$use['name']])) {
             $edges[] = ['from' => $record['name'], 'to' => $use['name'],
@@ -88,13 +91,13 @@ foreach ($records as $record) {
 $data = [
     'format' => 'filament-livewire-source-inventory-v1',
     'limitations' => 'Source-only declarations; no dynamically registered routes or actions, inherited methods, runtime listeners, view composition, JavaScript events or executing code.',
-    'counts' => $counts, 'units' => $records, 'page_to_concern_edges' => $edges,
+    'counts' => $counts, 'units' => $records, 'trait_composition_edges' => $edges,
 ];
 $nodes = [];
 foreach ($edges as $edge) { $nodes[$edge['from']] = true; $nodes[$edge['to']] = true; }
 ksort($nodes, SORT_STRING);
 $ids = [];
-$diagram = ['%% Direct Page -> Concern trait use; not HTTP or runtime call paths.', 'flowchart LR'];
+$diagram = ['%% Direct Page/Concern -> Concern trait use; not HTTP or runtime call paths.', 'flowchart LR'];
 foreach (array_keys($nodes) as $name) {
     $ids[$name] = 'U'.(count($ids) + 1);
     $diagram[] = '    '.$ids[$name].'["'.$name.'"]';
