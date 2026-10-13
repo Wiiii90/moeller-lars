@@ -11,7 +11,6 @@ use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\PublicMedia;
-use App\Filament\Support\AdminForm;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\JournalEntryEditorSchema;
@@ -378,7 +377,7 @@ final class JournalWorkspace extends Page
             })
             ->schema([
                 Grid::make()->columns(2)->schema([
-                    Select::make('template')->label('Template')->options(JournalTemplate::options())->required()->live(),
+                    Select::make('template')->label('Template')->options(JournalTemplate::options())->required(),
                     TextInput::make('title')->label('Journal title')->required()->maxLength(160),
                     TextInput::make('navigation_label')->label('Navigation label')->required()->maxLength(120),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
@@ -536,6 +535,16 @@ final class JournalWorkspace extends Page
                 try {
                     $updated = app(ExhibitionEditorialService::class)->update($entry, $data);
                 } catch (ValidationException $exception) {
+                    // A rejected map toggle must not remain visually enabled
+                    // merely because Alpine updated its local switch state.
+                    // Reconcile the committed map state, not unrelated fields.
+                    $saved = $entry->fresh();
+                    $schema->partialRawState([
+                        'map_enabled' => (bool) $saved->getAttribute('map_enabled'),
+                        'latitude' => $saved->getAttribute('latitude'),
+                        'longitude' => $saved->getAttribute('longitude'),
+                        'geocoded_at' => $saved->getAttribute('geocoded_at')?->toIso8601String(),
+                    ]);
                     $this->notifyValidationFailure('Exhibition unchanged', $exception);
                     $action->halt();
 

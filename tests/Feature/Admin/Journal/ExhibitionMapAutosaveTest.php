@@ -79,6 +79,34 @@ it('persists map switch on/off through normal Edit and hydrates coordinates with
         ->assertSet('mountedActions.0.data.map_enabled', false);
 });
 
+it('enables an exhibition map after adding missing Country within the same open dialog', function (): void {
+    [$section, $entry] = journalMapExhibition(['country' => null]);
+    Http::fake(fn () => Http::response([[
+        'lat' => '53.550341', 'lon' => '9.992477',
+        'display_name' => 'Hamburg, Deutschland',
+    ]], 200));
+    $initialNotifications = AdminNotification::query()->count();
+
+    $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->set('mountedActions.0.data.country', 'Deutschland')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.data.map_enabled', false);
+    expect($entry->fresh()->getAttribute('country'))->toBe('Deutschland')
+        ->and(AdminNotification::query()->count())->toBe($initialNotifications + 1);
+
+    $editor->set('mountedActions.0.data.map_enabled', true)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.data.map_enabled', true)
+        ->assertSet('mountedActions.0.data.latitude', 53.550341);
+
+    expect($entry->fresh()->getAttribute('map_enabled'))->toBeTrue()
+        ->and(AdminNotification::query()->count())->toBe($initialNotifications + 2);
+    Http::assertSentCount(1);
+});
+
 it('re-geocodes changed addresses once and updates the mounted map preview state', function (): void {
     [$section, $entry] = journalMapExhibition();
     Http::fakeSequence()
@@ -113,7 +141,7 @@ it('rejects an incomplete map address without persisting a fake enabled state', 
         ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
         ->set('mountedActions.0.data.map_enabled', true)
         ->call('callMountedAction')
-        ->assertSet('mountedActions.0.data.map_enabled', true);
+        ->assertSet('mountedActions.0.data.map_enabled', false);
 
     expect($entry->fresh()->getAttribute('map_enabled'))->toBeFalse()
         ->and(AuditEvent::query()->count())->toBe($auditCount);

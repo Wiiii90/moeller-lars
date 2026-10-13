@@ -1377,14 +1377,6 @@ body {
     margin-top: 1rem;
 }
 
-.exhibitions-page__copyright {
-    margin: 1.55rem 0 .25rem;
-    color: #77716a;
-    font-family: var(--public-index-typeface);
-    font-size: .76rem;
-    line-height: 1.5;
-}
-
 .exhibitions-page .journal-entry-gallery {
     margin: 1.6rem 0 0;
 }
@@ -1487,6 +1479,52 @@ body {
 
     .exhibition-entry__feature--text {
         margin-inline-start: 0;
+    }
+}
+
+/* Blog only: reviewed angled corner strokes, with no color wash or
+   Exhibition date/title ornament. Keep the accepted outer sheet intact. */
+/* Blog: the outline touches the composition, rather than tracing every
+   article. Image mounts retain their own independent hard-edged relief. */
+.blog-entry::before {
+    position: absolute;
+    top: -.45rem;
+    left: -1.1rem;
+    width: 2.9rem;
+    height: 3.9rem;
+    content: "";
+    border-top: 1px solid rgba(152, 126, 98, .55);
+    border-left: 1px solid rgba(152, 126, 98, .32);
+    box-shadow: -2px -1px 0 rgba(240, 232, 218, .3);
+    transform: rotate(-1.4deg);
+    transform-origin: top left;
+    pointer-events: none;
+}
+
+.blog-entry--reverse::before {
+    left: auto;
+    right: -1.1rem;
+    border-left: 0;
+    border-right: 1px solid rgba(152, 126, 98, .32);
+    transform: rotate(1.4deg);
+    transform-origin: top right;
+}
+
+.blog-entry--text-only::before {
+    width: 4.6rem;
+    height: 2rem;
+    opacity: .65;
+}
+
+@container (max-width: 23rem) {
+    .blog-entry::before {
+        left: -.35rem;
+        width: 1.6rem;
+        height: 2.1rem;
+    }
+    .blog-entry--reverse::before {
+        right: -.35rem;
+        left: auto;
     }
 }
 

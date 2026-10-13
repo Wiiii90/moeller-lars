@@ -2,7 +2,7 @@
 
 > **Status: active, continuously maintained.** This file is the operational memory for the long-lived **`testing`** branch of `Wiiii90/moeller-lars`. Read it **at the beginning of every new testing chat** and update it when work changes scope, architecture, validation status, or next steps. It is not a frozen status report.
 
-**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, parent HEAD `7af3131e2c47fcb5235a79f9296f578ff15d7347` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `4d2b97edb9b29297c7204be62f7582dca00a0e07`. More recent `dev` commits may exist.
+**Last reconciled:** 2026-10-13. **Branch at this update:** `testing`, parent HEAD `c5ed9c662e73484e07ce7338e50add585b3cb833` (refresh GitHub HEAD; do not treat this hash as permanently current). **Base:** initially `dev` at `82879135c0ab18dd88b07663c1e214a4ade0e45b`; subsequent `dev` changes were merged into `testing`, most recently in merge `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`. More recent `dev` commits may exist.
 
 ## 1. Mission and quality bar
 
@@ -55,6 +55,7 @@ Only introduce subdirectories as they earn their existence. Fixtures adjacent to
 - Updated `tests/README.md` with the component / E2E / profiling / full browser commands. These were **authored but not executed**.
 - Removed unnecessary preview-route registration from unrelated Publication commit/media tests; Media-retention tests no longer load unrelated Publication workflow helpers. Preview access tests keep their own isolated preview route.
 - Added a public-media publication transition contract: draft/Working asset not public before Commit, available after Commit, Working unpublish does not leak, unavailable after next Commit; also confirms admin-original endpoint refuses guests and non-admins. This is **newly authored, runtime not yet run**.
+- Reintegrated later `dev` Journal/Exhibition changes and their **new or updated Feature/Unit tests**, preserving the intentional deletion of `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php`.
 
 ## 5. Explicitly unverified / risks
 

@@ -334,13 +334,14 @@ Current Blog table role order:
 [Position] [Drag] [Image] [Post] [Status] [Publication] [Actions] [Selection]
 ```
 
-Current Exhibitions table role order:
+Current Journal table role order:
 
 ```text
-[Position] [Drag] [Image] [Exhibition] [Timing] [Schedule] [Actions] [Selection]
+Exhibitions: [Position] [Drag] [Image] [Exhibition] [Dates]  [Actions] [Selection]
+Blog:        [Position] [Drag] [Image] [Post]       [Status] [Actions] [Selection]
 ```
 
-Blog and Exhibitions use the same canonical Cover/feature-media preview when one is configured; an empty preview cell is the neutral fallback. Position and Drag share the leading ordering region; Selection remains the trailing utility. Under pressure, Blog Publication and Exhibition Schedule yield at Compact. The preview remains visible. Only at Minimal do Blog Status and Exhibition Timing yield, leaving Ordering + Preview + Identity + Actions + Selection as the stable smallest composition.
+Blog and Exhibitions use the same canonical Cover/feature-media preview when one is configured; an empty preview cell is the neutral fallback. Position and Drag share the leading ordering region; Selection remains the trailing utility. Blog Status contains its relevant publication/scheduled date beneath the state. Exhibition Dates contains the complete date range, optional vernissage and secondary derived timing (Past/Current/Upcoming). Long dates wrap rather than truncating. The semantic Status/Dates column remains visible through Compact and Narrow, and yields only at Minimal, when identity metadata keeps the essential date. Actions and Selection never yield.
 
 For Exhibition identity, keep the secondary line concise, e.g. `Venue · City`; do not dump full street/country metadata into the collection row.
 

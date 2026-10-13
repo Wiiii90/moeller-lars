@@ -205,16 +205,7 @@ final class JournalEntryEditorSchema
         return TextInput::make($name)
             ->label($label)
             ->maxLength($max)
-            ->nullable()
-            ->live(onBlur: true)
-            // The preview is derived from coordinates; hide the old ones as
-            // soon as an address edit is committed, then let the save action
-            // replace them with the coordinates returned by the domain.
-            ->afterStateUpdatedJs(<<<'JS'
-                $set('latitude', null)
-                $set('longitude', null)
-                $set('geocoded_at', null)
-            JS);
+            ->nullable();
     }
 
     private static function mapPreview(Get $get): HtmlString

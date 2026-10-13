@@ -37,9 +37,9 @@ final class JournalMediaRenderer
         $width = (int) ($variant->getAttribute('width') ?? 0);
         $height = (int) ($variant->getAttribute('height') ?? 0);
         $credit = trim((string) ($asset->getAttribute('credit') ?? ''));
-        // Page indexes may print one inherited General notice beneath the
-        // complete collection. Asset-specific overrides and credits remain
-        // attached to their own figures, independent of that presentation.
+        // Journal indexes suppress only inherited General notices. Explicit
+        // per-asset overrides and authored credits still accompany each image;
+        // full articles retain their existing copyright display.
         $inherit = $this->inheritsDefaultNotice($usage);
         $copyright = $inherit && ! $includeInheritedCopyright
             ? ''
