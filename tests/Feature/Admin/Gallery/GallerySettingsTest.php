@@ -95,3 +95,36 @@ it('rolls back Gallery name changes when the requested slug belongs to another G
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
 });
+
+
+it('surfaces a combined Gallery title and slug edit as one successful admin action', function (): void {
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
+    $originalSlug = (string) $gallery->slug;
+    $nextSlug = 'combined-gallery-'.$gallery->getKey();
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('gallerySettings')
+        ->fillForm([
+            'name' => 'Combined Gallery title',
+            'slug' => $nextSlug,
+            'description' => 'Edited together',
+            'show_on_home' => true,
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    $updated = $gallery->fresh();
+    expect($updated->name)->toBe('Combined Gallery title')
+        ->and($updated->slug)->toBe($nextSlug)
+        ->and($updated->description)->toBe('Edited together')
+        ->and((bool) $updated->show_on_home)->toBeTrue()
+        ->and($updated->siteSection()->firstOrFail()->title)->toBe('Combined Gallery title')
+        ->and(Redirect::query()->where('source_path', '/'.$originalSlug)->where('target_path', '/'.$nextSlug)->exists())->toBeTrue()
+        // Two append-only audit mutations still describe one submitted UI action.
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+});
