@@ -216,6 +216,13 @@ Morphing, externe Typen und SQL-FKs benötigen getrennte Inventare.
 - **Zusätzlich lokal geprüft:** vorhandener `generate-architecture-eloquent.php` mit PHP 8.4 in isoliertem Modellfixture: Syntax, `--write`, `--check` sowie erwarteter Fail bei Quelländerung. Realer Voll-Checkout-/DB-Check weiterhin offen.
 - **Nächster Schritt:** Vollständige PHP-Symbol-/Service-Generatorabdeckung und dynamische Fehlstellen nachprüfbar erfassen; anschließend Routen/Livewire-/Filament-Einstiegspunkte.
 
+## 6c. Fortsetzung 2026-10-13 — Runtime-Einstiegspunkte
+
+- [Runtime-Einstiegspunkte](docs/architecture/runtime-entrypoints.md) und [Routenindex](docs/architecture/runtime-entrypoints.json): 19 explizite Web-Routendeklarationen mit aufgelösten Preview-Pfaden und Quellzeilen, keine behauptete vollständige Runtime-Route-Liste.
+- `bootstrap/app.php` globale/Web-Middleware; Filament-Panel-/Auth-Discovery; unterschiedliche Admin-/Public-Media-Policies; scoped Admin-Mutationsbuffer und `X-Publication-Pending` dokumentiert.
+- Public JS Einstieg in `layouts/app.blade.php` und fünf tatsächlich importierte Module verifiziert.
+- **Nächster Schritt:** PHP-Symbol-/Beziehungs-Generatoren mit vollständigem Checkout ausführen und nicht erfasste Typen/Runtime-Einstiege offenlegen. Anschließend UI-/Livewire-Signalfluss detailliert erfassen.
+
 ## 7. Arbeits- und Updateprotokoll
 
 Bei **jedem** bedeutenden Commit/`dev`-Merge diese knappe Checkliste abarbeiten:

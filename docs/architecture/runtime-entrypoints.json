@@ -1,0 +1,178 @@
+{
+  "format": "http-entrypoints-v1",
+  "source_code_ref": "337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7",
+  "scope": "Exact declarations in routes/web.php; excludes dynamically registered Filament/framework routes.",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/",
+      "controller": "PublicHomeController",
+      "action": "show",
+      "group": "public-baseline",
+      "source": "routes/web.php",
+      "line": 15
+    },
+    {
+      "method": "POST",
+      "path": "/contact",
+      "controller": "PublicContactController",
+      "action": "submit",
+      "group": "public-baseline",
+      "source": "routes/web.php",
+      "line": 16
+    },
+    {
+      "method": "GET",
+      "path": "/sitemap.xml",
+      "controller": "PublicSeoController",
+      "action": "sitemap",
+      "group": "public-baseline",
+      "source": "routes/web.php",
+      "line": 19
+    },
+    {
+      "method": "GET",
+      "path": "/robots.txt",
+      "controller": "PublicSeoController",
+      "action": "robots",
+      "group": "public-baseline",
+      "source": "routes/web.php",
+      "line": 20
+    },
+    {
+      "method": "GET",
+      "path": "/preview/",
+      "controller": "PublicHomeController",
+      "action": "show",
+      "group": "artist-preview",
+      "source": "routes/web.php",
+      "line": 26
+    },
+    {
+      "method": "GET",
+      "path": "/preview/media/original/{mediaAsset}",
+      "controller": "AdminMediaController",
+      "action": "original",
+      "group": "artist-preview",
+      "source": "routes/web.php",
+      "line": 27
+    },
+    {
+      "method": "GET",
+      "path": "/preview/media/variant/{mediaVariant}",
+      "controller": "AdminMediaController",
+      "action": "variant",
+      "group": "artist-preview",
+      "source": "routes/web.php",
+      "line": 28
+    },
+    {
+      "method": "GET",
+      "path": "/preview/artworks/{slug}",
+      "controller": "PublicArtworkController",
+      "action": "show",
+      "group": "artist-preview",
+      "source": "routes/web.php",
+      "line": 31
+    },
+    {
+      "method": "GET",
+      "path": "/preview/{section}/{slug}",
+      "controller": "PublicSiteSectionController",
+      "action": "journalEntry",
+      "group": "artist-preview",
+      "source": "routes/web.php",
+      "line": 32
+    },
+    {
+      "method": "GET",
+      "path": "/preview/{section}",
+      "controller": "PublicSiteSectionController",
+      "action": "show",
+      "group": "artist-preview",
+      "source": "routes/web.php",
+      "line": 35
+    },
+    {
+      "method": "GET",
+      "path": "/admin/media-preview/original/{mediaAsset}",
+      "controller": "AdminMediaController",
+      "action": "original",
+      "group": "admin-media",
+      "source": "routes/web.php",
+      "line": 40
+    },
+    {
+      "method": "GET",
+      "path": "/admin/media-preview/variant/{mediaVariant}",
+      "controller": "AdminMediaController",
+      "action": "variant",
+      "group": "admin-media",
+      "source": "routes/web.php",
+      "line": 42
+    },
+    {
+      "method": "GET",
+      "path": "/admin/media-download/original/{mediaAsset}",
+      "controller": "AdminMediaController",
+      "action": "download",
+      "group": "admin-media",
+      "source": "routes/web.php",
+      "line": 45
+    },
+    {
+      "method": "GET",
+      "path": "/admin/media-download/selected",
+      "controller": "AdminMediaController",
+      "action": "downloadSelected",
+      "group": "admin-media",
+      "source": "routes/web.php",
+      "line": 47
+    },
+    {
+      "method": "GET",
+      "path": "/media/original/{mediaAsset}",
+      "controller": "PublicMediaController",
+      "action": "original",
+      "group": "public-media",
+      "source": "routes/web.php",
+      "line": 50
+    },
+    {
+      "method": "GET",
+      "path": "/media/variant/{mediaVariant}",
+      "controller": "PublicMediaController",
+      "action": "variant",
+      "group": "public-media",
+      "source": "routes/web.php",
+      "line": 51
+    },
+    {
+      "method": "GET",
+      "path": "/artworks/{slug}",
+      "controller": "PublicArtworkController",
+      "action": "show",
+      "group": "public-content",
+      "source": "routes/web.php",
+      "line": 56
+    },
+    {
+      "method": "GET",
+      "path": "/{section}/{slug}",
+      "controller": "PublicSiteSectionController",
+      "action": "journalEntry",
+      "group": "public-content",
+      "source": "routes/web.php",
+      "line": 57
+    },
+    {
+      "method": "GET",
+      "path": "/{section}",
+      "controller": "PublicSiteSectionController",
+      "action": "show",
+      "group": "public-content",
+      "source": "routes/web.php",
+      "line": 60
+    }
+  ]
+}
