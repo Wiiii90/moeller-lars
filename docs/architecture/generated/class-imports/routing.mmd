@@ -1,0 +1,7 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Domain/Content/SiteSectionType"]
+    T2["Models/SiteSection"]
+    T3["Routing/SiteNodeRoute"]
+    T3 -->|import| T1
+    T3 -->|import| T2

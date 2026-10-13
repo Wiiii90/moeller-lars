@@ -1,0 +1,7 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Database/PublicationPostgresGrammar"]
+    T2["Domain/Publication/PublicationReadContext"]
+    T3["Domain/Publication/PublicationSnapshot"]
+    T1 -->|import| T2
+    T1 -->|import| T3

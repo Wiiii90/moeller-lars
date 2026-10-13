@@ -1,0 +1,68 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Domain/Admin/AdminAuditService"]
+    T2["Domain/Artwork/ArtworkDimensions"]
+    T3["Domain/Artwork/ArtworkDraftService"]
+    T4["Domain/Artwork/ArtworkEditorialService"]
+    T5["Domain/Artwork/ArtworkGalleryAssignmentService"]
+    T6["Domain/Artwork/ArtworkMaterialPresetService"]
+    T7["Domain/Artwork/ArtworkPrimaryMediaService"]
+    T8["Domain/Artwork/ArtworkPublicationService"]
+    T9["Domain/Artwork/ArtworkSelectionOrder"]
+    T10["Domain/Artwork/GalleryEditorialService"]
+    T11["Domain/Artwork/PublicArtworkQuery"]
+    T12["Domain/Content/SitePreviewContext"]
+    T13["Domain/Content/SiteSectionPathPolicy"]
+    T14["Domain/Content/SiteSectionType"]
+    T15["Domain/Media/MediaIngestService"]
+    T16["Domain/Media/MediaReferenceQuery"]
+    T17["Domain/Media/MediaTypePolicy"]
+    T18["Models/Artwork"]
+    T19["Models/ArtworkCategory"]
+    T20["Models/ArtworkMaterialPreset"]
+    T21["Models/ArtworkMedia"]
+    T22["Models/MediaAsset"]
+    T23["Models/Redirect"]
+    T24["Models/SiteSection"]
+    T3 -->|import| T1
+    T3 -->|import| T18
+    T3 -->|import| T19
+    T4 -->|import| T1
+    T4 -->|import| T15
+    T4 -->|import| T16
+    T4 -->|import| T18
+    T4 -->|import| T21
+    T4 -->|import| T22
+    T4 -->|import| T24
+    T5 -->|import| T1
+    T5 -->|import| T14
+    T5 -->|import| T18
+    T5 -->|import| T19
+    T5 -->|import| T24
+    T6 -->|import| T1
+    T6 -->|import| T20
+    T7 -->|import| T1
+    T7 -->|import| T15
+    T7 -->|import| T17
+    T7 -->|import| T18
+    T7 -->|import| T21
+    T7 -->|import| T22
+    T8 -->|import| T1
+    T8 -->|import| T15
+    T8 -->|import| T17
+    T8 -->|import| T18
+    T8 -->|import| T19
+    T8 -->|import| T21
+    T8 -->|import| T22
+    T8 -->|import| T24
+    T10 -->|import| T1
+    T10 -->|import| T13
+    T10 -->|import| T14
+    T10 -->|import| T18
+    T10 -->|import| T19
+    T10 -->|import| T23
+    T10 -->|import| T24
+    T11 -->|import| T12
+    T11 -->|import| T15
+    T11 -->|import| T17
+    T11 -->|import| T18

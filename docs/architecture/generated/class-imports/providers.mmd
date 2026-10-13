@@ -1,0 +1,52 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Database/PublicationPostgresGrammar"]
+    T2["Domain/Admin/AdminMutationSnapshotBuffer"]
+    T3["Domain/Admin/AdminUndoContext"]
+    T4["Domain/Content/PublicSiteContext"]
+    T5["Domain/Publication/PublicationReadContext"]
+    T6["Domain/Publication/PublicationService"]
+    T7["Filament/Auth/AdminAppAuthentication"]
+    T8["Filament/Auth/Login"]
+    T9["Filament/Auth/RequestPasswordReset"]
+    T10["Filament/Auth/ResetPassword"]
+    T11["Filament/Pages/Activity"]
+    T12["Filament/Pages/Analytics"]
+    T13["Filament/Pages/Dashboard"]
+    T14["Filament/Pages/General"]
+    T15["Filament/Pages/SitePages"]
+    T16["Filament/Resources/MediaAssets/MediaAssetResource"]
+    T17["Filament/Support/AccountMenuAction"]
+    T18["Filament/Support/AdminIcon"]
+    T19["Filament/Support/Controls/AdminControl"]
+    T20["Filament/Support/SiteNavigation"]
+    T21["Http/Middleware/DeferMatomoReporting"]
+    T22["Models/User"]
+    T23["Providers/AppServiceProvider"]
+    T24["Providers/Filament/AdminPanelProvider"]
+    T25["Support/AdminPasswordPolicy"]
+    T26["Support/LocalPreviewDatabaseGuard"]
+    T23 -->|import| T1
+    T23 -->|import| T2
+    T23 -->|import| T3
+    T23 -->|import| T4
+    T23 -->|import| T5
+    T23 -->|import| T22
+    T23 -->|import| T25
+    T23 -->|import| T26
+    T24 -->|import| T6
+    T24 -->|import| T7
+    T24 -->|import| T8
+    T24 -->|import| T9
+    T24 -->|import| T10
+    T24 -->|import| T11
+    T24 -->|import| T12
+    T24 -->|import| T13
+    T24 -->|import| T14
+    T24 -->|import| T15
+    T24 -->|import| T16
+    T24 -->|import| T17
+    T24 -->|import| T18
+    T24 -->|import| T19
+    T24 -->|import| T20
+    T24 -->|import| T21

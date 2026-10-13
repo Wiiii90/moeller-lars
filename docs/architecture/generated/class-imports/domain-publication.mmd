@@ -1,0 +1,29 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Domain/Admin/AdminAuditService"]
+    T2["Domain/Content/HistoricalCustomPageBlockCanonicalizer"]
+    T3["Domain/Media/MediaCapacityService"]
+    T4["Domain/Media/MediaReferenceQuery"]
+    T5["Domain/Publication/CommittedRead"]
+    T6["Domain/Publication/PublicationMediaCleanupService"]
+    T7["Domain/Publication/PublicationReadContext"]
+    T8["Domain/Publication/PublicationSchemaGuard"]
+    T9["Domain/Publication/PublicationService"]
+    T10["Domain/Publication/PublicationSnapshot"]
+    T11["Domain/Publication/PublicationVersionService"]
+    T12["Models/AdminActionReceipt"]
+    T13["Models/AuditEvent"]
+    T14["Models/MediaAsset"]
+    T15["Models/PublicationCheckpoint"]
+    T16["Models/User"]
+    T6 -->|import| T3
+    T6 -->|import| T4
+    T6 -->|import| T14
+    T9 -->|import| T12
+    T9 -->|import| T13
+    T9 -->|import| T15
+    T9 -->|import| T16
+    T11 -->|import| T1
+    T11 -->|import| T2
+    T11 -->|import| T15
+    T11 -->|import| T16

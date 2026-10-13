@@ -1,0 +1,48 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Domain/Admin/DashboardNotificationRetention"]
+    T2["Domain/Content/ExhibitionMapPresentation"]
+    T3["Domain/Content/HomeTemplate"]
+    T4["Domain/Content/JournalTemplate"]
+    T5["Domain/Content/PublicAppearance"]
+    T6["Domain/Content/SafeLinkPolicy"]
+    T7["Domain/Content/SafeRichTextRenderer"]
+    T8["Domain/Content/SiteSectionType"]
+    T9["Domain/Content/SocialLinks"]
+    T10["Models/AdminActionReceipt"]
+    T11["Models/AdminActivityOrderingEvent"]
+    T12["Models/AdminActivityOrderingProjection"]
+    T13["Models/AdminNotification"]
+    T14["Models/Artwork"]
+    T15["Models/ArtworkCategory"]
+    T16["Models/ArtworkMaterialPreset"]
+    T17["Models/ArtworkMedia"]
+    T18["Models/AuditEvent"]
+    T19["Models/BlogPost"]
+    T20["Models/ContactMessage"]
+    T21["Models/CustomPageSetting"]
+    T22["Models/CvEntry"]
+    T23["Models/DailyMetric"]
+    T24["Models/Exhibition"]
+    T25["Models/HomePresentationSetting"]
+    T26["Models/JournalEntryMedia"]
+    T27["Models/JournalSetting"]
+    T28["Models/MediaAsset"]
+    T29["Models/MediaVariant"]
+    T30["Models/PublicContentSetting"]
+    T31["Models/PublicationCheckpoint"]
+    T32["Models/PublicationCheckpointEvent"]
+    T33["Models/Redirect"]
+    T34["Models/SiteSection"]
+    T35["Models/User"]
+    T13 -->|import| T1
+    T21 -->|import| T6
+    T21 -->|import| T7
+    T21 -->|import| T9
+    T24 -->|import| T2
+    T24 -->|import| T6
+    T25 -->|import| T3
+    T30 -->|import| T5
+    T30 -->|import| T9
+    T34 -->|import| T4
+    T34 -->|import| T8
