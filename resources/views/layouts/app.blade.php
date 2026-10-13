@@ -148,6 +148,6 @@
             @yield('content')
         </main>
         <x-artwork-viewer />
-        @livewireScripts(['nonce' => $publicStyleNonce])
+        @livewireScripts(['nonce' => $publicStyleNonce, 'url' => route('public.livewire.csp')])
     </body>
 </html>

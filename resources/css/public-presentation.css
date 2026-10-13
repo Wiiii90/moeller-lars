@@ -543,14 +543,44 @@ body {
         -5px 7px 0 var(--public-folio-soft),
         -6px 8px 0 var(--public-folio-depth);
 }
-/* Livewire persists this decorative node across page swaps. Animation
-   belongs to the same physical element across visits, not transient
-   #content pseudos that restart on every document replacement. */
+/* Keep the accepted original (first) Atelier contour even if JavaScript,
+   SPA navigation or registered CSS properties do not work. The animated
+   persisted counterpart replaces it ONLY after a real navigation event.
+   These strokes intentionally live OUTSIDE the configured Content width. */
+#content::before,
+#content::after,
+.public-folio-decoration::before,
+.public-folio-decoration::after {
+    position: absolute;
+    width: .55rem;
+    box-sizing: border-box;
+    content: "";
+    pointer-events: none;
+}
+#content::before,
+.public-folio-decoration::before {
+    top: 1.1rem;
+    bottom: 4rem;
+    left: -.7rem;
+    border-left: 1px solid var(--public-folio-light);
+    border-top: 1px solid var(--public-folio-soft);
+    border-bottom: 1px solid var(--public-folio-soft);
+    transform: skewY(-.6deg);
+}
+#content::after,
+.public-folio-decoration::after {
+    top: 3.8rem;
+    right: -.55rem;
+    bottom: 1.15rem;
+    border-right: 1px solid rgba(255, 255, 255, .41);
+    border-top: 1px solid var(--public-folio-soft);
+    border-bottom: 1px solid var(--public-folio-light);
+    transform: skewY(.7deg);
+}
 .public-folio-decoration {
     position: absolute;
     inset: 0;
-    /* Registered @property initial-values must be computationally
-       independent (0px), while the authored geometry remains rem-based. */
+    visibility: hidden;
     --public-folio-left-top: 1.1rem;
     --public-folio-left-bottom: 4rem;
     --public-folio-right-top: 3.8rem;
@@ -562,30 +592,21 @@ body {
         --public-folio-right-top 780ms cubic-bezier(.22, .62, .32, 1),
         --public-folio-right-bottom 780ms cubic-bezier(.22, .62, .32, 1);
 }
-.public-folio-decoration::before,
-.public-folio-decoration::after {
-    position: absolute;
-    width: .55rem;
-    box-sizing: border-box;
-    content: "";
+/* A persisted node carries the motion between real Livewire page visits. */
+.public-folio-decoration[data-folio-active] {
+    visibility: visible;
+}
+#content:has(> .public-folio-decoration[data-folio-active])::before,
+#content:has(> .public-folio-decoration[data-folio-active])::after {
+    visibility: hidden;
 }
 .public-folio-decoration::before {
     top: var(--public-folio-left-top);
     bottom: var(--public-folio-left-bottom);
-    left: -.7rem;
-    border: 0;
-    border-top: 1px solid var(--public-folio-light);
-    border-left: 1px solid var(--public-folio-light);
-    border-bottom: 1px solid var(--public-folio-light);
 }
 .public-folio-decoration::after {
     top: var(--public-folio-right-top);
-    right: -.55rem;
     bottom: var(--public-folio-right-bottom);
-    border: 0;
-    border-top: 1px solid var(--public-folio-light);
-    border-right: 1px solid var(--public-folio-light);
-    border-bottom: 1px solid var(--public-folio-light);
 }
 
 /* Only genuinely empty section pages without a configured heading fill the
@@ -673,30 +694,6 @@ body {
 
 .artwork-list .artwork-card {
     width: 100%;
-}
-
-/* Gallery rhythm comes from the genuine whitespace between artworks.
-   The small fold impressions live OUTSIDE the artwork rail, inside the
-   page's existing padding; never paint an ornament next to image pixels. */
-.artwork-list > .artwork-card {
-    position: relative;
-}
-.artwork-list > .artwork-card + .artwork-card::before {
-    position: absolute;
-    top: calc(-.52 * var(--public-section-gap));
-    left: calc(1.1rem - var(--public-content-inset));
-    width: 1.2rem;
-    height: .8rem;
-    content: "";
-    border-top: 1px solid rgba(142, 126, 109, .3);
-    border-left: 1px solid rgba(142, 126, 109, .2);
-    pointer-events: none;
-}
-.artwork-list > .artwork-card:nth-child(even)::before {
-    right: calc(1.1rem - var(--public-content-inset));
-    left: auto;
-    border-right: 1px solid rgba(142, 126, 109, .2);
-    border-left: 0;
 }
 
 .artwork-card,
@@ -1342,11 +1339,11 @@ body {
 /* The external paper edges never cause horizontal scrolling when the
    configured shell already nearly fills the viewport. */
 @media (max-width: 40rem) {
+    #content::before,
+    #content::after,
     .public-folio-decoration,
     .site-navigation::before,
-    .site-navigation::after,
-    .artwork-list > .artwork-card::before,
-    .exhibition-entry::before {
+    .site-navigation::after {
         display: none;
     }
 }
@@ -1376,23 +1373,18 @@ body {
     margin-bottom: 0;
 }
 
-/* Exhibition hierarchy is an open date catalogue: a single left-hand
-   margin trace supports the rhythm instead of alternating marks beside Open.
-   Its tiny corners are OUTSIDE the data/date columns. */
+/* Quiet editorial separation, not an artificial corner beside the dates
+   or an Open action: a short fading rule only BETWEEN entries, aligned with
+   the title column. The chronological rows themselves remain unboxed. */
 .exhibition-entry + .exhibition-entry::before {
     position: absolute;
-    top: .4rem;
-    left: calc(1.1rem - var(--public-content-inset));
-    width: .62rem;
-    height: 1.15rem;
+    top: -.82rem;
+    left: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
+    width: min(4.5rem, 30%);
+    height: 1px;
     content: "";
-    border-top: 1px solid rgba(142, 126, 109, .34);
-    border-left: 1px solid rgba(142, 126, 109, .28);
+    background: linear-gradient(90deg, rgba(133, 127, 117, .23), transparent);
     pointer-events: none;
-}
-.exhibition-entry:nth-child(even)::before {
-    height: .82rem;
-    opacity: .75;
 }
 
 .exhibition-entry__summary {
@@ -1714,6 +1706,9 @@ body {
     .exhibition-entry {
         margin-bottom: 1.6rem;
     }
+    .exhibition-entry + .exhibition-entry::before {
+        left: 0;
+    }
 
     .exhibition-entry__summary {
         grid-template-columns: minmax(0, 1fr);
@@ -1782,12 +1777,6 @@ body {
 
 /* Compact: preserve the desktop composition but simplify title geometry before
  * the content shell itself needs to recompose. */
-@media (max-width: 52rem) {
-    .artwork-list > .artwork-card::before,
-    .exhibition-entry::before {
-        display: none;
-    }
-}
 @media (max-width: 64rem) {
     .site-title {
         right: 0;

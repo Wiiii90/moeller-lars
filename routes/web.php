@@ -11,6 +11,7 @@ use App\Http\Middleware\EnforceHomePresentationGate;
 use App\Http\Middleware\EnsureMediaVariantFile;
 use App\Http\Middleware\ProtectArtistPreview;
 use Illuminate\Support\Facades\Route;
+use Livewire\Mechanisms\FrontendAssets\FrontendAssets;
 
 Route::get('/', [PublicHomeController::class, 'show'])->name('home');
 Route::post('/contact', [PublicContactController::class, 'submit'])
@@ -18,6 +19,15 @@ Route::post('/contact', [PublicContactController::class, 'submit'])
     ->name('contact.submit');
 Route::get('/sitemap.xml', [PublicSeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/robots.txt', [PublicSeoController::class, 'robots'])->name('seo.robots');
+
+// The public Blade shell has a strict no-unsafe-eval CSP. Livewire's
+// ordinary bundle remains unchanged for Filament; only this asset endpoint
+// serves Livewire 4's CSP-safe frontend for public wire:navigate.
+Route::get('/site-assets/livewire-csp.js', static function () {
+    config()->set('livewire.csp_safe', true);
+
+    return app(FrontendAssets::class)->returnJavaScriptAsFile();
+})->name('public.livewire.csp');
 
 Route::middleware(ProtectArtistPreview::class)
     ->prefix('preview')
