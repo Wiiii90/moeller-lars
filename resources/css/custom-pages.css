@@ -125,7 +125,7 @@
     gap: 1rem;
 }
 
-.custom-page__date {
+.custom-page__context {
     color: var(--public-muted);
     white-space: nowrap;
 }

@@ -18,12 +18,9 @@ final class ComponentListEditor
             ->label('List entries')
             ->schema([
                 TextInput::make('title')->label('Entry')->required()->maxLength(240),
-                TextInput::make('date')->label('Date / year')->maxLength(120),
-                TextInput::make('meta')->label('Organisation / context')->maxLength(240),
-                TextInput::make('location')->maxLength(240),
-                TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
+                TextInput::make('context')->label('Context')->maxLength(600),
                 Toggle::make('published')->label('Published')->default(true),
-                ...AdminRichText::schema('body', 'Details', 10000),
+                ...AdminRichText::schema('body', 'Details', 10000, allowEmbeddedMedia: false),
             ])
             ->columns(['md' => 2])
             ->defaultItems(0)

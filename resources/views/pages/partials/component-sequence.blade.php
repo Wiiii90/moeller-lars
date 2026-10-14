@@ -55,18 +55,13 @@
                                     @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
-                                            @if (filled($item['date'] ?? null))
-                                                <span class="custom-page__date">{{ $item['date'] }}</span>
+                                            @if (filled(\App\Models\CustomPageSetting::listItemContext($item)))
+                                                <span class="custom-page__context">{{ \App\Models\CustomPageSetting::listItemContext($item) }}</span>
                                             @endif
                                             <strong>{{ $item['title'] ?? '' }}</strong>
                                         </div>
-                                        @if (filled($item['meta'] ?? null))<div>{{ $item['meta'] }}</div>@endif
-                                        @if (filled($item['location'] ?? null))<div>{{ $item['location'] }}</div>@endif
-                                        @if (filled($item['body'] ?? null))
-                                            <div class="rich-text">{!! $richText->render((string) $item['body']) !!}</div>
-                                        @endif
-                                        @if (filled($item['url'] ?? null))
-                                            <p><a href="{{ $item['url'] }}" rel="noopener noreferrer">More information</a></p>
+                                        @if (filled(\App\Models\CustomPageSetting::listItemDetails($item)))
+                                            <div class="rich-text">{!! $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
                                         @endif
                                     </article>
                                 @endforeach
@@ -97,7 +92,7 @@
 
             @if ($type === 'contact')
                 <div class="custom-page__component custom-page__contact">
-                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" />
+                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" />
                 </div>
             @endif
 
