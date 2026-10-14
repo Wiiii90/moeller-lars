@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `b7bf99e4376a9f4fbf0a93e03d4d176a6e06b214` |
-| darin aufgenommener `dev`-Stand | `b6fa7a461331e73bb30ea4debaeb26bfeeffdbe9` |
-| Status | Image-Größe und Menü-Papieroberkante aus zwei weiteren `dev`-Commits übernommen; `dev` neu prüfen |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `d233f4137e9a7efb0c05e3bcae2934ae956271a3` |
+| darin aufgenommener `dev`-Stand | `f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0` |
+| Status | elf weitere Admin-/Public-Commits übernommen; Home-Menüsichtbarkeit, Public-Folio-Redesign, CSP-Image und Custom-Image-Edit; Browsertests nicht ausgeführt |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -98,27 +98,23 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 **Markdown-Verweisprüfung (14.10.2026):** Aktueller **unabhängiger GitHub-Tree-Quellscan** über 63 Markdown-Dateien und 643 einfache Inline-Linkvorkommen (615 relative lokale Ziele) auf `docs@1a6955f1`: **kein fehlender relativer Pfad**. 33 Ziel-Fragment-Verwendungen (21 verschiedene Paare) gegen vorhandene Überschriften geprüft: **alle vorhanden**. URI-Beispiel `media:123` ist ausdrücklich kein relativer Dateipfad. Neuer reiner PHP-Linkprüfer `scripts/check-documentation-links.php` mit `--check|--summary|--self-test` erstellt. Sein **identischer Git-Blob** wurde unter lokalem PHP 8.4 mit `php -l`, `--self-test` und einem synthetischen positiven sowie absichtlich negativen Checkout-Fixture tatsächlich ausgeführt; der neue Checker wurde **noch nicht** auf einem vollständigen realen Checkout ausgeführt. Komplexe/mehrzeilige Markdown-Destinations und HTML-/MDX-Links außerhalb des Scanner-Modells; dazu siehe [docs/README.md](docs/README.md#local-documentation-link-verification).
 
-## Offene Arbeit in Reihenfolge
+## Abschlussstrategie — verbindliche Reihenfolge (14.10.2026)
 
-1. **Dokumentations-Duplikate und Owner prüfen:** `ui-skills.md` gegen
-   `docs/ADMIN-TABLE-CONTRACT.md`, `ADMIN-CONTROL-CONTRACT.md`,
-   `ADMIN-DIALOG-CONTRACT.md` sowie den aktuellen Public-Vertrag;
-   identischen Inhalt am kanonischen Owner lassen, Unterschiede dokumentieren
-   und nur belegbar löschen. Skill-Router werden bei Änderungen mitgezogen.
-2. **Native PHP-Generatoren** auf realem Checkout ausführen, wenn möglich;
-   bis dahin PHP-Tokenizer-Randfälle/Fehler in isolierten Prüfungen validieren,
-   echte vollständige Remote-Quellenaufnahme gegen native Generatorsemantik
-   abgrenzen. Source-Report/Graphs aktualisieren, wenn `dev` fortschreitet.
-3. **Strukturierte Runtime-Instanzen:** Livewire-/Filament-Action-Dispatch,
-   JS-Menü/Slideshow/Public-Shell-Lebenszyklen und die noch fehlenden
-   Publikations-/Media-/Notification-Negativpfade nur mit Belegen erweitern.
-4. **Datenbank:** ausschließlich auf einer vollständig migrierten, expliziten
-   Wegwerf-PostgreSQL `pg_catalog`, FKs/Views/Trigger/Indizes erheben;
-   nie die persistenten Preview-/Prod-Datenbanken zurücksetzen.
-5. **Dokumentationsbereinigung:** `AGENTS.md`, `ui-skills.md`, Altverträge,
-   Browser-Checklisten und Migrationsevidenz erst nach Quell-/Linkprüfung
-   reduzieren, ohne Domain-Invarianten oder historische Restore-Kompatibilität
-   zu verlieren. Eine aktuelle Norm pro Fachinhalt.
+**Kostendisziplin/User-Entscheidung:** Zunächst die **gesamte fachliche Architekturarbeit, Quellprüfung und Dokumentationskonsolidierung ohne Codex** mit den bereits verfügbaren Mitteln fertigstellen. Keine kleinteiligen lokalen Codex-Aufträge, keine Generator-Experimentierwellen, keinerlei CI-Ersatz. Der Nutzer bietet lokalen Codex **erst nach Abschluss dieser inhaltlichen Arbeit** für eine bewusst geplante **gebündelte** Generierung/Prüfung und abschließende Artefaktordnung an. Das ist ein späterer optionaler Schritt, **nicht** die aktuelle Arbeitsweise und keine Begründung, inhaltliche Lücken zu vertagen. Neue `dev`-Änderungen regelmäßig konfliktgeprüft mergen, aber nicht als Grund verwenden, nie ein abgeschlossenes Dokumentationspaket zu erreichen.
+
+**Definition eines endlichen Abschlusses:** Nach benannten Architekturflächen muss jede Quelle einen Verantwortungs-/Datenfluss, relevante Guards, Fehl-/No-op-/Rollback-Pfade und Quellanker haben. Doppelte normative Verträge sind zu konsolidieren; Mermaid gehört nur dauerhaft hinein, wenn es die fachliche Struktur erklärt, nicht allein die Kantenmenge aufbläht. Statische Evidenz, tatsächliche Laufzeitbelege und unprüfbare Grenzen bleiben getrennt. Erst dann ein **einmaliges vorbereitetes** lokales Generator-/Verifikationspaket und geprüfte Entscheidung je Artefakt: dauerhafter Source-Output, nur lokal generierter Vollkatalog oder entbehrliches Zwischenprodukt. Abschluss bedeutet konkrete Kriterien und Grenzen, nicht endloses Nachziehen jeder neuen `dev`-Änderung.
+
+### Jetzt: fachliche Arbeitsreihenfolge ohne Codex
+
+1. **Lifecycle-/Transaktionsketten:** Admin-Actions bis persistiertem Domainzustand, Audit, Notification, Reopen; Page-/Component-Identity, Home-/Custom-Edit und parallel reordern. Jede kritische Kante explizit quellenverankern, negative Flows markieren.
+2. **Publication/History/Media:** Working/LIVE, Publish-Readiness, Undo/Restore/Revert/Reset, Advisory-Lock-Grenzen, Storage-Ref- und physische Cleanup-Grenzen; bestehende Belege vervollständigen, nicht kopieren.
+3. **Public/Navigation/CSP:** Routen, Navigationsfenster und Home-Sonderfall, Livewire-Swap/Disposer, deterministische Folio-Pose, Gallery-Puffer, öffentliche Media/SEO/Analytics und strikte CSP. Aktuelle Quelle über alte Animationsnummern stellen.
+4. **Persistenz-/Schema-/Legacy-Grenzen:** Models und JSON-Content, deklarative vs physische Beziehungen, migrationshistorische Beweiskraft, Cutover; PostgreSQL-Katalog erst auf ausdrücklich isolierter Wegwerf-DB.
+5. **Endredaktion:** einen normativen Owner je Verhalten behalten, tote/duplizierte Diagramme und Verträge gezielt entfernen/vereinfachen, Inhalts-/Linkkonsistenz und Qualitäts-/Coverage-Matrix. Status nachvollziehbar abschließen, nicht bloß inventarisieren.
+
+### Später, erst bei fachlicher Vollständigkeit
+
+Lokale Codex-/native PHP-Generatorläufe, isolierter PostgreSQL-Export und reproduzierbare `--write/--check`-Abnahme sind **zurückgestellt**. Bis dahin vorhandene eingefrorene JSON-/Mermaid-Artefakte als historischen Stand kennzeichnen. Es werden **keine** lokalen Commands an den Nutzer ausgelagert, solange die oben genannte fachliche Schreib-/Analysearbeit offen ist.
 
 ## Aktueller Prüfstand und Wiedereinstieg (14.10.2026)
 
@@ -161,6 +157,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
 
+- **Neue Home/Public- und Admin-Semantik (`dev@f69e0e7e`):** Home besitzt `show_in_navigation` als eigenen Bool-Guard neben Publication und `skip_home`, Default in der Public-UI aus; das ist **kein** globaler Sichtbarkeits-Schalter für andere Seitentypen. Custom-Page-Image Select besitzt nun `live()->afterStateUpdated()` in der Edit-Action und notifiziert nur auf geändertes Domain-Ergebnis; die Rolle ist vom bisherigen Native-Change für andere Felder getrennt. Quellenbewertung und Negativefälle unter `docs/architecture/` vervollständigen. Testquellen gelesen, nicht ausgeführt.
 - **Image-Größe (`dev@b6fa7a46`):** Custom Page bietet `image_scale_percent` 25–200 %, Default 100 % als implizites **nicht gespeichertes** Feld. Das Public-Layout multipliziert seine bestehenden Maximalbreiten, ohne Bildzoom oder neue Media-Auslieferung. Home kann den JSON-Wert lesen, sein Editor hat nicht automatisch dieselbe Kontrolle. Siehe [Content-Audit](docs/architecture/structured-components.md#image-size-optionales-persistenzfeld); Feature-Testdatei nur gelesen.
 - **Aktueller Tree-Delta (14.10.2026):** Insgesamt 245 `app/**/*.php` statt eingefrorenen 248; `app/Filament/Pages/Concerns/` enthält 23 Dateien statt 26. `CustomPageWorkspace` bindet sieben statt zehn eigene Traits ein. [UI-Audit](docs/architecture/ui-surfaces.md) und [PHP-Audit](docs/architecture/php-source-audit.md) begrenzen die Ableitung auf Source/Tree und erhalten den alten Generatorstand ausdrücklich.
 - **Komponentenstand bis `dev@3c1bc75f`:** Custom Page hat die alten Child-Ordering-/Projection-/Action-Traits entfernt. Contact-Heading sowie Toggles und bedingte Felder leben in einem Parent-Edit-Owner; verdeckte Social-/Formwerte bleiben beim Speichern erhalten. Der geteilte Home-/Custom-List-Editor nutzt `Entry / Context / Published / Details`; alte Date-/Meta-/Location-/URL-Felder werden über die Model-Compatibility-Projektion abgebildet. [Content-Audit](docs/architecture/structured-components.md) und [Dialogvertrag](docs/ADMIN-DIALOG-CONTRACT.md) dokumentieren diese Grenze; `structured-components.json` bleibt ausdrücklich ein älterer eingefrorener Generatorstand. Keine Tests dieses Workstreams ausgeführt.
@@ -261,34 +258,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
    Weitere Quelle: [Importgrenzen](docs/architecture/import-boundaries.md),
    [Publication-Operationen](docs/architecture/publication-working-operations.md),
    [Schemaevolution](docs/architecture/schema-evolution.md).
-5. **Public-Folio/SPA, Home Hero und Gallery-Puffer (`dev@3c1bc75f84e56a5fefc84a4342f2dce6a1a2e48e`):**
-   Gemeinsame `#content > .public-content-reveal`-Hülle;
-   **ein** äußerer heller CSS-Papierschatten pro Content/Menu-Fläche,
-   Content -5/7 px ohne Spread, Menü **-8,5/3,5 px mit 3,5 px Spread**;
-   die Menü-Papierlage selbst trifft die Oberkante bei weiterhin
-   mindestens 5px rechtem Inset;
-   alte dunkle/doppelte Lagen und `--public-folio-depth` entfernt.
-   Page/Hero-`pulsePaper()` nur Content (**1.240 ms**), Menü nie
-   navigationsgetrieben. Innere Höhenanimation **780 ms** erst
-   ab 7 px sichtbarer Differenz, mit Viewport + 48 px Kappung
-   und anschließender Rückkehr zu natürlicher Höhe.
-   Content-Ecken-Ambient **25,1/29,7 s**, Menü **34,2/38,8 s**,
-   Shadow Content/Menü **30,2/36,4 s**. Menü-Top bleibt verbunden,
-   links endet höher als rechts; auf kurzen Seiten bleibt
-   mindestens 40 px Content-Randkontur bestehen.
-   **Behobene Quell-Race:** `activePaperPulses`-WeakMap-Token
-   verhindert, dass abgeschlossene alte Hero-Promises während eines
-   neueren Builds Ambient neu starten. `activeHeightAnimations`
-   übernimmt Clip-/Height-Restoration auch bei übersprungenen
-   Folge-Höhenwechseln. **Separat offen:** wirkliche Browser-
-   Retention unendlicher WAAPI-Handles über abgelöste SPA-Knoten.
-   Gallery: erste zwei Bilder eager (nur erstes high-priority),
-   weitere native lazy; `public-gallery-loading.js` beobachtet
-   mit 960px Margin, maximal zwei gleichzeitig proaktiv
-   umgestellte Bilder, eigener SPA-Disposer/AbortController,
-   ohne URL-Klone/Paging. Quellen, Grenzen, Fallunterscheidungen:
-   [Public-SPA](docs/architecture/public-spa-lifecycle.md).
-   Unit-/Playwright-Tests wurden **nur gelesen**, nicht ausgeführt.
+5. **Public-Folio/SPA, Home Hero, Gallery-Puffer (Quellstand `dev@f69e0e7e`):** URL-stabile **sechs** Ecken/Endpunkte in `layouts/app.blade.php` aus dem Pfad-Hash; sechs Meta-Daten und nonce-autorisierte Root-Variablen, bei Livewire-Swaps mit `applyPublicLayoutFromMeta()` erneuert. Content/Menu-Papierbasis `[-3,4]`, Seitenimpuls **620 ms** und innere Höhe **480 ms**; Ambient-Ecken 98/113 s bzw. 117/133 s, Content-Shadow 129 s, Menu-Sheet 145 s. Home Hero weiterhin nur Content, nicht Menü; `activePaperPulses` und `activeHeightAnimations` trennen veraltete Completion-Handler. `public-spa-lifecycle.md` beschreibt den aktuellen Source-Flow und WAAPI-Retention-Prüfbedarf. **Abweichung:** Gallery-Blade lädt zwei Bilder eager (nur erstes high), neuester Public-Vertrag spricht von einem eager Bild; nicht als erledigt behandeln. **CSP-Image:** statt Inline-Style-Attribut nonce-autorisierter `@stack('public-component-styles')`. Weder Browser- noch Node-/Livewire-Test ausgeführt.
 6. **Weitere Quellgrenzen:** `AdminNotifier`/Mailbox-Pin-Limits,
    Restore-/Revert-/Reset-Working-vs-LIVE-/History-Guards,
    Medienvarianten mit Byte-/Hash-identischer Regenerierung,
