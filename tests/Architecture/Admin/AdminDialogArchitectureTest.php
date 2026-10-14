@@ -256,7 +256,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('final class ArtworkEditDialog')
         ->toContain('public function fill(Artwork $artwork): array')
         ->toContain('public function schema(bool $includeGalleryAssignment = false, bool $creating = false): array')
-        ->toContain('public function save(Artwork $artwork, array $data): bool');
+        ->toContain('public function save(Artwork $artwork, array $data, bool $allowGalleryAssignment = false): bool');
 
     expect($galleryArtworkDialogs)
         ->toContain('app(ArtworkEditDialog::class)')
