@@ -13,6 +13,7 @@ use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
@@ -449,6 +450,7 @@ final class JournalWorkspace extends Page
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
             ->modalHeading('Edit post')
+            ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'post'))
             ->action(function (Action $action, array $data, array $arguments): void {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
                 $before = $this->journalEntryMutationState($post);
@@ -533,6 +535,7 @@ final class JournalWorkspace extends Page
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
             ->modalHeading('Edit exhibition')
+            ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'exhibition'))
             ->action(function (Action $action, Schema $schema, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
                 $before = $this->journalEntryMutationState($entry);
@@ -574,6 +577,109 @@ final class JournalWorkspace extends Page
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * Edit headers reuse the same domain mutations, roles and modal tasks
+     * as their table rows. Only the native Edit dialog owns autosave.
+     *
+     * @param array<string,mixed> $arguments
+     * @return list<Action>
+     */
+    private function journalEditHeaderActions(array $arguments, string $kind): array
+    {
+        $isPost = $kind === 'post';
+        $id = (int) ($arguments[$kind] ?? 0);
+        $entry = $isPost ? $this->post($id) : $this->exhibition($id);
+        $state = (string) $entry->getAttribute('state');
+        $target = [$kind => $id];
+        $editAction = $isPost ? 'editPost' : 'editExhibition';
+        $orderedIds = ($isPost ? BlogPost::query() : Exhibition::query())
+            ->where('site_section_id', $this->sectionId)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (mixed $value): int => (int) $value)
+            ->all();
+        $index = array_search($id, $orderedIds, true);
+        $actions = [];
+
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $canMove = $index !== false && ($direction === 'up' ? $index > 0 : $index < count($orderedIds) - 1);
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($isPost, $id, $direction, $editAction, $target): void {
+                if ($isPost) {
+                    $this->movePost($id, $direction);
+                } else {
+                    $this->moveExhibition($id, $direction);
+                }
+                $this->replaceMountedAction($editAction, $target);
+            })->disabled(! $canMove);
+        }
+
+        if (! $isPost) {
+            $published = $state === 'published';
+            $actions[] = AdminDialog::headerAction(
+                'dialogExhibitionPublication',
+                $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+                function () use ($published, $id, $editAction, $target): void {
+                    if ($published) {
+                        $this->unpublishExhibition($id);
+                    } else {
+                        $this->publishExhibition($id);
+                    }
+                    $this->replaceMountedAction($editAction, $target);
+                },
+            );
+            $actions[] = AdminDialog::headerAction('dialogDeleteExhibition', AdminRowAction::Delete, function () use ($target): void {
+                $this->replaceMountedAction('deleteExhibition', $target);
+            })->disabled($published);
+
+            return $actions;
+        }
+
+        $publicationRole = match ($state) {
+            'published' => AdminRowAction::Unpublish,
+            'scheduled' => AdminRowAction::CancelSchedule,
+            default => AdminRowAction::Publish,
+        };
+        $actions[] = AdminDialog::headerAction(
+            'dialogPostPublication',
+            $publicationRole,
+            function () use ($state, $id, $editAction, $target): void {
+                if ($state === 'published') {
+                    $this->unpublishPost($id);
+                } elseif ($state === 'scheduled') {
+                    $this->restorePostDraft($id);
+                } else {
+                    $this->publishPost($id);
+                }
+                $this->replaceMountedAction($editAction, $target);
+            },
+        )->disabled($state === 'archived');
+
+        $actions[] = AdminDialog::headerAction('dialogSchedulePost', AdminRowAction::Schedule, function () use ($target): void {
+            $this->replaceMountedAction('schedulePost', $target);
+        })->disabled(! in_array($state, ['draft', 'unpublished'], true));
+
+        $archived = $state === 'archived';
+        $actions[] = AdminDialog::headerAction(
+            'dialogArchivePost',
+            $archived ? AdminRowAction::Restore : AdminRowAction::Archive,
+            function () use ($archived, $id, $editAction, $target): void {
+                if ($archived) {
+                    $this->restorePostDraft($id);
+                } else {
+                    $this->archivePost($id);
+                }
+                $this->replaceMountedAction($editAction, $target);
+            },
+        )->disabled($state === 'scheduled');
+
+        $actions[] = AdminDialog::headerAction('dialogDeletePost', AdminRowAction::Delete, function () use ($target): void {
+            $this->replaceMountedAction('deletePost', $target);
+        })->disabled(in_array($state, ['published', 'scheduled'], true));
+
+        return $actions;
     }
 
     public function deletePostAction(): Action
