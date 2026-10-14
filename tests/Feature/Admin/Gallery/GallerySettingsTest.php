@@ -155,12 +155,79 @@ it('commits the Materials repeater as one explicit Command, not as Edit autosave
     $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('materialPresets')
         ->assertMountedActionModalSee('Material presets')
-        ->fillForm(['presets' => ['Bronze', 'Ink']]);
+        ->fillForm(['presets' => [['name' => 'Bronze'], ['name' => 'Ink']]]);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
 
     // The draft Repeater has not committed while the dialog is open.
     expect(\App\Models\ArtworkMaterialPreset::query()->whereIn('name', ['Bronze', 'Ink'])->count())->toBe(0);
 
-    $editor->callMountedAction()->assertHasNoFormErrors();
+    $editor->callMountedAction()->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
 
-    expect(\App\Models\ArtworkMaterialPreset::query()->whereIn('name', ['Bronze', 'Ink'])->count())->toBe(2);
+    expect(\App\Models\ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all())->toBe(['Bronze', 'Ink'])
+        ->and(AuditEvent::query()->where('action', 'artwork_material_preset.created')->count())->toBe(2)
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+
+    $editor->mountAction('materialPresets')->callMountedAction()
+        ->assertHasNoFormErrors()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
+
+it('rolls back the complete Materials command on audit failure and permits a clean retry', function (): void {
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('materialPresets')
+        ->fillForm(['presets' => [['name' => 'Bronze'], ['name' => 'Ink']]]);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $calls = 0;
+    $audit = Mockery::mock($realAudit);
+    $audit->shouldReceive('record')->twice()->andReturnUsing(function (...$parameters) use ($realAudit, &$calls) {
+        if (++$calls === 2) {
+            throw new RuntimeException('Materials audit unavailable');
+        }
+        return $realAudit->record(...$parameters);
+    });
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    try {
+        expect(fn () => $editor->callMountedAction())->toThrow(RuntimeException::class, 'Materials audit unavailable');
+        expect(\App\Models\ArtworkMaterialPreset::query()->count())->toBe(0)
+            ->and(AuditEvent::query()->count())->toBe($auditsBefore)
+            ->and(AdminNotification::query()->count())->toBe($notificationsBefore)
+            ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(0);
+    } finally {
+        app()->instance(\App\Domain\Admin\AdminAuditService::class, $realAudit);
+    }
+    $editor->callMountedAction()->assertHasNoFormErrors();
+    expect(\App\Models\ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all())->toBe(['Bronze', 'Ink'])
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+});
+
+it('protects a mounted Gallery Materials dialog after administrative access is lost', function (bool $guest): void {
+    $actor = auth('web')->user();
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('materialPresets')
+        ->fillForm(['presets' => [['name' => 'Bronze']]]);
+    if ($guest) {
+        auth('web')->logout();
+    } else {
+        $actor->forceFill(['is_admin' => false])->save();
+    }
+    $auditsBefore = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
+    $editor->set('mountedActions.0.data.presets.0.name', 'Rejected material')->assertForbidden();
+    expect(\App\Models\ArtworkMaterialPreset::query()->count())->toBe(0)
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
+})->with(['guest' => true, 'revoked administrator' => false]);

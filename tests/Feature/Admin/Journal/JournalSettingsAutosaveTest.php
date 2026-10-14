@@ -232,6 +232,33 @@ it('notifies on a real Journal Settings edit but not on an unchanged native auto
     expect(AdminNotification::query()->count())->toBe($notifications + 1);
 });
 
+it('preserves an authored navigation label across consecutive Journal autosaves and reopening', function (): void {
+    $section = journalSettingsFixture();
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = AuditEvent::query()->count();
+    $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('journalSettings')
+        ->set('mountedActions.0.data.navigation_label', 'Curated menu')
+        ->call('callMountedAction')->assertHasNoFormErrors();
+    expect($section->fresh()->navigation_label)->toBe('Curated menu')
+        ->and(AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->set('mountedActions.0.data.title', 'Updated Journal heading')
+        ->call('callMountedAction')->assertHasNoFormErrors()
+        ->assertActionDataSet(['title' => 'Updated Journal heading', 'navigation_label' => 'Curated menu']);
+    expect($section->fresh()->title)->toBe('Updated Journal heading')
+        ->and($section->fresh()->navigation_label)->toBe('Curated menu')
+        ->and(AuditEvent::query()->count())->toBe($before + 2)
+        ->and(AdminNotification::query()->count())->toBe(2)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->call('callMountedAction')->assertHasNoFormErrors()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($before + 2)
+        ->and(AdminNotification::query()->count())->toBe(2);
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('journalSettings')
+        ->assertActionDataSet(['title' => 'Updated Journal heading', 'navigation_label' => 'Curated menu']);
+});
+
 it('mounts Blog Create and Edit with the centralized editorial schema and header Actions', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     Filament::setCurrentPanel('admin');

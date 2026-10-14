@@ -9,6 +9,8 @@ use App\Models\User;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -57,7 +59,10 @@ it('records Material preset mutations precisely and keeps no-op preset writes si
     $renamedActivity = app(AdminActivityFeed::class)->event((int) $renamed->getKey(), auth('web')->user());
 
     expect($renamed->getAttribute('metadata')['target_label'] ?? null)->toBe('TEMPERA')
-        ->and($renamedActivity['action'] ?? null)->toBe('Changed Name: Tempera → TEMPERA')
+        ->and($renamedActivity['action_key'])->toBe('artwork_material_preset.renamed')
+        ->and(collect($renamedActivity['change_summary']['items'])->firstWhere('field', 'name'))
+        ->toMatchArray(['before' => 'Tempera', 'after' => 'TEMPERA'])
+        ->and($renamedActivity['details'])->toContain('Tempera', 'TEMPERA')
         ->and($renamedActivity['target'] ?? null)->toBe('TEMPERA')
         ->and($createdGraphite->getAttribute('metadata')['target_label'] ?? null)->toBe('Graphite');
 
@@ -70,6 +75,7 @@ it('records Material preset mutations precisely and keeps no-op preset writes si
 
     expect($deleted->getAttribute('metadata')['target_label'] ?? null)->toBe('TEMPERA')
         ->and($deletedActivity['target'] ?? null)->toBe('TEMPERA')
-        ->and($deletedActivity['action'] ?? null)->toBe('Deleted material preset')
+        ->and($deletedActivity['action_key'])->toBe('artwork_material_preset.deleted')
+        ->and($deletedActivity['details'])->toContain('TEMPERA')
         ->and($deletedActivity['url'] ?? null)->toBeNull();
 });

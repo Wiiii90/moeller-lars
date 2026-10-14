@@ -15,6 +15,8 @@ use App\Filament\Pages\Concerns\GalleryWorkspaceReadinessSupport;
 use App\Filament\Pages\Concerns\GalleryWorkspaceSelectionSupport;
 use App\Filament\Pages\Concerns\GalleryWorkspaceUploadSettings;
 use App\Models\Artwork;
+use App\Models\User;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -22,6 +24,13 @@ use Livewire\WithFileUploads;
 
 final class GalleryWorkspace extends Page
 {
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
+
     use GalleryWorkspaceArtworkActions;
     use GalleryWorkspaceArtworkDialogs;
     use GalleryWorkspaceBatchActions;

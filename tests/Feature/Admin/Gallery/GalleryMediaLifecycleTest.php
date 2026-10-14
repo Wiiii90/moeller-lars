@@ -19,6 +19,8 @@ use Livewire\Livewire;
 beforeEach(function (): void {
     Storage::fake(config('media.disk'));
     $this->actingAs(User::factory()->admin()->create(), 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';

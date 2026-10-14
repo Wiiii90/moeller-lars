@@ -401,7 +401,7 @@ final class JournalWorkspace extends Page
                 ]),
             ])
             ->modalHeading('Journal settings')
-            ->action(function (Action $action, array $data): void {
+            ->action(function (Schema $schema, array $data): void {
                 $section = $this->section();
                 $before = $section->only(['template', 'title', 'navigation_label', 'slug']);
                 try {
@@ -410,7 +410,7 @@ final class JournalWorkspace extends Page
                     $this->throwMountedValidation($exception);
                 }
                 $this->journalSettingsOriginal = $updated->only(array_keys($this->journalSettingsOriginal));
-                $action->fillForm($this->journalSettingsOriginal);
+                $schema->partialRawState($this->journalSettingsOriginal);
                 $template = $updated->journalTemplate();
                 abort_unless($template instanceof JournalTemplate, 404);
                 $templateChanged = $before['template'] !== $template->value;
