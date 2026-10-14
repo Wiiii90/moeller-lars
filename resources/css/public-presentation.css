@@ -94,16 +94,15 @@ body {
     background: var(--public-surface);
 }
 
-/* Menu folio: the original two outer verticals have ONE joined return
-   each, at the bottom. Both open vertically above the menu, with no
-   upper return or crossbar; these are not additional strokes. */
+/* The existing flat paper layers meet the TOP edge of the menu, rather
+   than beginning 3–4px below it. No extra decorative surface is created. */
 .site-navigation {
     position: relative;
     order: 1;
     box-shadow:
         inset 0 -1px 0 var(--public-index-rule),
-        -2px 3px 0 var(--public-folio-depth),
-        -3px 4px 0 var(--public-folio-soft);
+        -2px 0 0 var(--public-folio-depth),
+        -3px 0 0 var(--public-folio-soft);
 }
 .site-navigation::before,
 .site-navigation::after {
@@ -112,21 +111,21 @@ body {
     content: "";
     pointer-events: none;
 }
-/* Left: the western outside edge rises freely above the menu; a single
-   short return connects it at the bottom, a few pixels into the sheet. */
+/* The white OUTER stroke remains within the menu's top boundary.
+   Only the short lower connection extends slightly beneath the sheet. */
 .site-navigation::before {
-    top: -.76rem;
-    bottom: -.38rem;
+    top: .03rem;
+    bottom: -.25rem;
     left: -.5rem;
     width: .76rem;
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
-/* Right: the taller eastern edge also continues upward without a corner.
-   Only its bottom return joins the white menu face by .24rem. */
+/* Right: likewise open at the top, without a top crossbar or overshoot;
+   the only return is still at the bottom of the paper edge. */
 .site-navigation::after {
-    top: -1.1rem;
-    bottom: -.44rem;
+    top: .02rem;
+    bottom: -.30rem;
     right: -.52rem;
     width: .76rem;
     border-right: 1px solid var(--public-folio-light);

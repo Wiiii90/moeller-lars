@@ -76,13 +76,15 @@ Livewire swap and supplies the next document's initial animation keyframe.
 Content width, artwork, image, typography, pigments, lateral offsets and
 the fixed `.55rem` corner widths never change.
 
-The existing two navigation pseudo outlines each have ONE short bottom
-return joining the white menu by about `.26rem` (left) / `.24rem` (right).
-Neither side has an upper horizontal return: both outside verticals rise
-freely above the white menu edge (left shorter than the taller right).
-The same original pseudo strokes animate only their top/bottom positions
-in slow asynchronous 17–21 second native cycles. No added lines or
-changes to menu dimensions.
+The two navigation pseudo outlines retain ONE short bottom return joining
+the white menu by about `.26rem` (left) / `.24rem` (right), and no top
+crossbars. Their former NEGATIVE top values caused white outside strokes to
+protrude above the menu and beyond the viewport. They now begin within the
+upper menu edge, with the full cycle bounded to nonnegative top positions.
+The two existing flat paper-shadow layers have zero vertical offset so that
+the inner planar layer reaches the upper-left corner instead of starting
+3–4px too low. Both original strokes continue to breathe over asynchronous
+17–21 second native cycles. No additional lines, surfaces, or width changes.
 Animation uses the native document timeline, not intervals, polling or
 timers. The previously acknowledged small folio motion is permitted even
 when the local browser requests `prefers-reduced-motion: reduce`; no media

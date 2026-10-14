@@ -13,12 +13,14 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['.89rem', '4.08rem', '3.88rem', '1.37rem'],
     ['1.17rem', '3.74rem', '4.02rem', '1.06rem'],
 ]);
+/* No animation keyframe may pull the light outside strokes ABOVE the menu
+   top. Existing lower joins stay short and visually attached to the sheet. */
 export const MENU_VARIANTS = Object.freeze([
-    ['-.76rem', '-.38rem', '-1.1rem', '-.44rem'],
-    ['-.88rem', '-.47rem', '-1.23rem', '-.51rem'],
-    ['-.66rem', '-.31rem', '-.98rem', '-.35rem'],
-    ['-.83rem', '-.43rem', '-1.17rem', '-.56rem'],
-    ['-.76rem', '-.38rem', '-1.1rem', '-.44rem'],
+    ['.03rem', '-.25rem', '.02rem', '-.30rem'],
+    ['.12rem', '-.30rem', '.10rem', '-.34rem'],
+    ['0rem', '-.21rem', '0rem', '-.25rem'],
+    ['.08rem', '-.27rem', '.06rem', '-.32rem'],
+    ['.03rem', '-.25rem', '.02rem', '-.30rem'],
 ]);
 export const FOLIO_SHADOW_DEPTHS = Object.freeze([
     [7, 8], [9, 11], [6, 9], [8, 10], [5, 7],

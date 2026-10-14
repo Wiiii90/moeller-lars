@@ -44,8 +44,9 @@ test('content and menu animate their EXISTING strokes continuously, with no extr
     expect(state.effects.every(x => x.frames[0].top === undefined
         || x.frames[0].top === x.frames.at(-1).top)).toBe(true);
 
-    // Both original outside strokes run upward OPEN; only their bottom
-    // return turns a few pixels into the white menu sheet.
+    // The two original white strokes remain open at the top without leaving
+    // the sheet boundary; the existing paper layers reach the upper edge.
+    // Only the short bottom returns wrap toward the white menu.
     const geometry = await page.evaluate(() => {
         const menu = document.querySelector('.site-navigation');
         const left = getComputedStyle(menu, '::before');
@@ -57,15 +58,18 @@ test('content and menu animate their EXISTING strokes continuously, with no extr
             rightHasBottom: right.borderBottomStyle === 'solid',
             leftInside: parseFloat(left.width) > Math.abs(parseFloat(left.left)),
             rightInside: parseFloat(right.width) > Math.abs(parseFloat(right.right)),
-            leftAboveMenu: parseFloat(left.top) < 0,
-            rightAboveMenu: parseFloat(right.top) < 0,
+            leftContainedAtTop: parseFloat(left.top) >= 0,
+            rightContainedAtTop: parseFloat(right.top) >= 0,
+            rearPlaneMeetsTop: getComputedStyle(menu).boxShadow.includes('-3px 0px'),
+            middlePlaneMeetsTop: getComputedStyle(menu).boxShadow.includes('-2px 0px'),
         };
     });
     expect(geometry).toEqual({
         leftNoTop: true, rightNoTop: true,
         leftHasBottom: true, rightHasBottom: true,
         leftInside: true, rightInside: true,
-        leftAboveMenu: true, rightAboveMenu: true,
+        leftContainedAtTop: true, rightContainedAtTop: true,
+        rearPlaneMeetsTop: true, middlePlaneMeetsTop: true,
     });
 
     // A Livewire-like swap during the ongoing animation must start from
