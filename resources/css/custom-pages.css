@@ -1,16 +1,24 @@
 .custom-page {
+    display: flow-root;
     width: min(100%, var(--public-art-max));
     margin: 0 auto;
+    color: #444;
+    line-height: 1.55;
 }
 
+/* Components remain editorial content, not independently framed cards.
+   A decorative image starts one floating image column; subsequent components
+   establish their own formatting contexts alongside it until it ends. */
 .custom-page__component {
-    padding: 1.4rem 0 1.6rem;
+    min-width: 0;
+    padding: 0 0 1.45rem;
 }
-
-.custom-page__component:first-of-type {
+.custom-page__component:not(.custom-page__image) {
+    display: flow-root;
+}
+.custom-page__component:first-child {
     padding-top: 0;
 }
-
 .custom-page__component:last-child {
     padding-bottom: 0;
 }
@@ -20,10 +28,12 @@
 }
 
 .custom-page__copy > h3 {
-    margin: 0 0 1rem;
-    color: #494541;
-    font-size: 1rem;
-    font-weight: 600;
+    margin: 0 0 .85rem;
+    color: #393a38;
+    font-family: var(--public-index-typeface);
+    font-size: 1.12rem;
+    font-weight: 400;
+    line-height: 1.2;
 }
 
 .custom-page__media {
@@ -32,6 +42,18 @@
 
 .custom-page__image {
     width: min(100%, var(--custom-page-image-width, 28rem));
+}
+.custom-page__image:not(.custom-page__image--decorative) {
+    clear: both;
+}
+@media (min-width: 42.001rem) {
+    .custom-page__image--decorative {
+        float: left;
+        clear: left;
+        width: min(35%, var(--custom-page-image-width, 28rem));
+        margin: 0 clamp(1.4rem, 3.8vw, 2.2rem) 1rem 0;
+        padding: 0;
+    }
 }
 
 .custom-page__media img {
@@ -111,23 +133,55 @@
 
 .custom-page__list {
     display: grid;
-    gap: .9rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    column-gap: clamp(.8rem, 2vw, 1.3rem);
+    row-gap: .68rem;
 }
 
 .custom-page__list-item {
     display: grid;
-    gap: .2rem;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    min-width: 0;
+    gap: .16rem 0;
 }
 
 .custom-page__list-line {
     display: grid;
-    grid-template-columns: minmax(5.5rem, auto) minmax(0, 1fr);
-    gap: 1rem;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    min-width: 0;
+    align-items: baseline;
+}
+
+.custom-page__list-line strong {
+    grid-column: 2;
+    min-width: 0;
+    font-size: .9rem;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.custom-page__list-item:not(.custom-page__list-item--with-context) .custom-page__list-line strong {
+    grid-column: 1 / -1;
+}
+
+.custom-page__list-item > .rich-text {
+    grid-column: 2;
+    color: #575956;
+    font-size: .88rem;
+}
+.custom-page__list-item:not(.custom-page__list-item--with-context) > .rich-text {
+    grid-column: 1 / -1;
 }
 
 .custom-page__context {
-    color: var(--public-muted);
-    white-space: nowrap;
+    grid-column: 1;
+    min-width: 0;
+    color: #797671;
+    font-size: .81rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
 }
 
 /* CV composition and CV-specific typography have one owner. */
@@ -220,12 +274,35 @@
 
 .custom-page__contact .category-heading {
     width: auto;
-    margin: 0 0 .95rem;
-    color: #504b47;
+    margin: 0 0 1rem;
+    color: #393a38;
+    font-family: var(--public-index-typeface);
+    font-size: 1.12rem;
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+.custom-page__contact .contact-details__row {
+    display: grid;
+    grid-template-columns: minmax(4.75rem, .55fr) minmax(0, 1.45fr);
+    gap: .65rem;
+    align-items: baseline;
+    line-height: 1.65;
+}
+.custom-page__contact .contact-details__label {
+    color: #817971;
+    font-size: .69rem;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+}
+.custom-page__contact .contact-details a {
+    overflow-wrap: anywhere;
+    text-decoration-color: #bdb6af;
+    text-underline-offset: .19em;
 }
 
 .custom-page__contact-child + .custom-page__contact-child {
-    margin-top: 1rem;
+    margin-top: .75rem;
 }
 
 .custom-page__contact .contact-status {
@@ -234,9 +311,15 @@
 
 .custom-page__contact .contact-form {
     display: grid;
-    width: min(100%, 31rem);
-    margin: 0;
-    gap: .9rem;
+    width: 100%;
+    margin: .65rem 0 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .78rem .8rem;
+}
+.custom-page__contact .contact-form__field--message,
+.custom-page__contact .contact-form__honeypot,
+.custom-page__contact .contact-form button {
+    grid-column: 1 / -1;
 }
 
 .custom-page__contact .contact-form__field {
@@ -272,7 +355,7 @@
 }
 
 .custom-page__contact .contact-form textarea {
-    min-height: 126px;
+    min-height: 115px;
     resize: vertical;
 }
 
@@ -284,6 +367,7 @@
 }
 
 .custom-page__contact .contact-form button {
+    justify-self: start;
     width: fit-content;
     min-width: 0;
     min-height: 0;
@@ -307,6 +391,29 @@
     color: #222;
 }
 
+/* Disclaimer reads as a restrained colophon, not another content heading.
+   It never wraps around a preceding decorative image. */
+.custom-page__legal {
+    clear: both;
+    max-width: 44rem;
+    margin-top: 1.2rem;
+    padding: 1.15rem 0 0;
+    border-top: 1px solid rgba(93, 83, 72, .17);
+    color: #81807c;
+    font-size: .76rem;
+    line-height: 1.55;
+}
+.custom-page__legal h2 {
+    margin: 0 0 .45rem;
+    color: #6c6964;
+    font-family: var(--public-index-typeface);
+    font-size: .91rem;
+    font-weight: 400;
+}
+.custom-page__legal p {
+    margin: 0;
+}
+
 .public-preview-state {
     display: inline-block;
     margin-top: .35rem;
@@ -317,12 +424,17 @@
  * own content stops fitting; this threshold is intentionally content-driven. */
 @media (max-width: 42rem) {
     .custom-page__image {
+        float: none;
+        clear: both;
         width: min(100%, var(--custom-page-image-width-narrow, 20rem));
+        margin: 0 0 1.45rem;
     }
 
-    .custom-page__list-line {
+    .custom-page__list {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    }
+    .custom-page__contact .contact-form {
         grid-template-columns: 1fr;
-        gap: .1rem;
     }
 
     .cv-entry.has-image {

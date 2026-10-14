@@ -71,3 +71,34 @@ it('accepts external HTTP image sources in Custom Page rich text without fetchin
     expect($rendered)->toContain('src="https://images.example.com/work.jpg"')
         ->and($rendered)->toContain('src="http://images.example.com/archive.jpg"');
 });
+
+
+it('keeps decorative layout semantic and undated CV entries without inventing dates', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('About artist', 'about-artist-components');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('decorative');
+
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true],
+        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1.6.1989'],
+            ['title' => 'Studies at Berlin University of the Arts', 'context' => '2010–2021'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+    ]]);
+
+    $blocks = $settings->fresh()->components();
+    expect($blocks[0]['image_decorative'])->toBeTrue()
+        ->and(CustomPageSetting::listItemContext($blocks[1]['items'][2]))->toBeNull()
+        ->and($blocks[1]['items'][2]['title'])->toBe('Lives and works in Hamburg');
+
+    $view = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
+    expect($view)->toContain('custom-page__image--decorative')
+        ->toContain('custom-page__list-item--with-context')
+        ->toContain('Rechtlicher Hinweis');
+
+    $styles = file_get_contents(resource_path('css/custom-pages.css'));
+    expect($styles)->toContain('float: left')
+        ->toContain('grid-template-columns: subgrid')
+        ->toContain('.custom-page__legal');
+});

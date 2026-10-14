@@ -30,7 +30,7 @@
                             </style>
                         @endpush
                     @endif
-                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image">
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image{{ $decorative ? ' custom-page__image--decorative' : '' }}">
                         <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
                 @endif
@@ -66,7 +66,7 @@
                             <div class="custom-page__list">
                                 @foreach (($block['items'] ?? []) as $item)
                                     @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
-                                    <article class="custom-page__list-item">
+                                    <article class="custom-page__list-item{{ filled(\App\Models\CustomPageSetting::listItemContext($item)) ? ' custom-page__list-item--with-context' : '' }}">
                                         <div class="custom-page__list-line">
                                             @if (filled(\App\Models\CustomPageSetting::listItemContext($item)))
                                                 <span class="custom-page__context">{{ \App\Models\CustomPageSetting::listItemContext($item) }}</span>
@@ -105,13 +105,13 @@
 
             @if ($type === 'contact')
                 <div class="custom-page__component custom-page__contact">
-                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" />
+                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" :heading-id="'contact-heading-'.$blockIndex" />
                 </div>
             @endif
 
             @if ($type === 'legal_disclaimer' && $generalSettings->legal_disclaimer !== null)
-                <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading-{{ $blockIndex }}">
-                    <h2 id="legal-disclaimer-heading-{{ $blockIndex }}">Haftungsablehnung</h2>
+                <section class="legal-disclaimer custom-page__legal" aria-labelledby="legal-disclaimer-heading-{{ $blockIndex }}">
+                    <h2 id="legal-disclaimer-heading-{{ $blockIndex }}">Rechtlicher Hinweis</h2>
                     <p>{{ $generalSettings->legal_disclaimer }}</p>
                 </section>
             @endif
