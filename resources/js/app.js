@@ -46,7 +46,7 @@ document.addEventListener('livewire:navigating', (event) => {
     event.detail.onSwap?.(applyPublicLayoutFromMeta);
 });
 document.addEventListener('livewire:navigated', initializePage);
-window.addEventListener('hashchange', revealLinkedLegalSection);
+window.addEventListener('hashchange', () => revealLinkedLegalSection());
 
 initializePublicSpaLinks();
 if (document.readyState === 'loading') {
