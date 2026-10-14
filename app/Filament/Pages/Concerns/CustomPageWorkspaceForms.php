@@ -76,7 +76,7 @@ trait CustomPageWorkspaceForms
                     ->suffix('%')
                     ->default(\App\Models\CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT)
                     ->required(),
-                Toggle::make('image_decorative')->label('Decorative image')->default(false),
+                Toggle::make('image_decorative')->label('Decorative image (beside following content)')->default(false),
             ],
             'text' => $isNew
                 ? AdminRichText::schema('body', 'Rich Text', 20000)
