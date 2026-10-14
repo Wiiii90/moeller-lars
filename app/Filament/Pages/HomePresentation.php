@@ -539,7 +539,12 @@ final class HomePresentation extends Page
                     'variant' => $component['variant'] ?? 'thin',
                     'list_title' => $component['title'] ?? null,
                     'list_media_asset_id' => $component['media_asset_id'] ?? null,
-                    'items' => $component['items'] ?? [],
+                    'items' => array_map(static fn (array $item): array => [
+                        'title' => $item['title'] ?? null,
+                        'context' => CustomPageSetting::listItemContext($item),
+                        'body' => CustomPageSetting::listItemDetails($item),
+                        'published' => CustomPageSetting::listItemPublished($item),
+                    ], array_values(array_filter($component['items'] ?? [], 'is_array'))),
                 ];
             })
             ->schema(fn (array $arguments): array => [
@@ -1223,8 +1228,8 @@ final class HomePresentation extends Page
                     $type === 'list' ? collect($component['items'] ?? [])
                         ->filter('is_array')
                         ->flatMap(static fn (array $item): array => array_filter([
-                            $item['date'] ?? null, $item['title'] ?? null, $item['meta'] ?? null,
-                            $item['location'] ?? null, $item['body'] ?? null, $item['url'] ?? null,
+                            $item['title'] ?? null, CustomPageSetting::listItemContext($item),
+                            CustomPageSetting::listItemDetails($item),
                         ], 'is_string'))
                         ->implode(' ') : '',
                 ])),

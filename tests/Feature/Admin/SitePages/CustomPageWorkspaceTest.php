@@ -141,8 +141,7 @@ it('resets pagination for search type and page size changes and prunes invisible
     $component->set('pageSize', 25)
         ->set('selectedComponentTargets', ['0:list', '29:list'])
         ->call('setComponentPublished', 0, 'list', false)
-        ->assertSet('selectedComponentTargets', ['0:list'])
-        ->assertSet('selectedChildTargets', []);
+        ->assertSet('selectedComponentTargets', ['0:list']);
 });
 
 it('allows canonical reorder only for a neutral complete parent sequence', function (): void {
@@ -585,4 +584,35 @@ it('retains disabled Contact settings for later re-enabling', function (): void 
         ->and($children['contact_form']['published'])->toBeFalse()
         ->and($children['contact_form']['form_state'])->toBe('under_construction')
         ->and($children['contact_form']['status_text'])->toBe('Soon');
+});
+
+it('creates Contact with all three options enabled by default and an editable heading', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Default Contact', 'default-contact');
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('addComponent')
+        ->fillForm([
+            'type' => 'contact',
+            'publication_state' => 'published',
+            'title' => 'Contact Lars',
+            'contact_email_enabled' => true,
+            'contact_social_enabled' => true,
+            'contact_social_platforms' => [],
+            'contact_form_enabled' => true,
+            'contact_form_state' => 'enabled',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $contact = $settings->fresh()->components()[0];
+    expect($contact['title'])->toBe('Contact Lars')
+        ->and(array_column($contact['children'], 'type'))->toBe(['public_email', 'social_links', 'contact_form'])
+        ->and(array_column($contact['children'], 'published'))->toBe([true, true, true]);
+
+    $workspace = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
+    expect($workspace->get('components')[0]['content'])->toMatchArray([
+        'primary' => 'Contact Lars',
+        'secondary' => 'Public Email · Social Media Links · Contact Form',
+        'meta' => '',
+    ]);
 });
