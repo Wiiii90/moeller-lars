@@ -4,6 +4,9 @@ import { test, expect } from '@playwright/test';
 const source = readFileSync(
     new URL('../../resources/js/public-folio-motion.js', import.meta.url), 'utf8',
 );
+const heroSource = readFileSync(
+    new URL('../../resources/js/home-hero.js', import.meta.url), 'utf8',
+);
 const sheet = (label, height, kind = 'artwork-detail') =>
     '<header class="site-header"><div class="site-navigation"><nav>' + label + '</nav></div></header>'
     + '<main id="content" class="site-content">'
@@ -56,6 +59,22 @@ test('only the existing menu strokes and rear paper planes show, without oversho
     expect(result.animations.filter(a => a.pseudo)).toHaveLength(4);
     expect(result.animations.filter(a => a.target !== 'other' && !a.pseudo)).toHaveLength(2);
     expect(result.animations.every(a => a.iterations === Infinity)).toBe(true);
+    const menu = await page.evaluate(() => {
+        const element = document.querySelector('.site-navigation');
+        return document.getAnimations()
+            .filter(a => a.effect.target === element && a.effect.pseudoElement)
+            .map(a => a.effect.getKeyframes().map(frame => ({
+                top: frame.top, bottom: frame.bottom,
+                left: frame.left, right: frame.right, width: frame.width,
+            })));
+    });
+    expect(menu).toHaveLength(2);
+    for (const frames of menu) {
+        expect(frames.every(frame => parseFloat(frame.top) === 0)).toBe(true);
+        expect(frames.every(frame => parseFloat(frame.bottom) >= 0)).toBe(true);
+        expect(new Set(frames.map(frame => frame.width)).size).toBe(1);
+        expect(new Set(frames.map(frame => frame.left ?? frame.right)).size).toBe(1);
+    }
 });
 
 for (const scenario of [
@@ -92,7 +111,8 @@ for (const scenario of [
         expect(result.childCount).toBe(1);
         expect(result.paperOverflow).toBe('visible');
         expect(result.pulseDurations).toEqual([1480, 1480, 1480]);
-        expect(result.menuPulseDurations).toEqual([980, 980, 980]);
+        // A SPA swap cannot force the menu into a new assembly impulse.
+        expect(result.menuPulseDurations).toEqual([34200, 38800, 36400]);
         if (scenario.from[1] !== scenario.to[1]) {
             expect(result.innerOverflow).toBe('clip');
             expect(result.heightDuration).toBe(980);
@@ -113,6 +133,67 @@ for (const scenario of [
         }
     });
 }
+
+test('Home Hero arrows animate the same paper/content, without touching the menu', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const heroHtml = '<header class="site-header"><div class="site-navigation"><nav>Home</nav></div></header>'
+        + '<main id="content" class="site-content"><div class="public-content-reveal">'
+        + '<div data-home-hero>'
+        + '<div data-home-hero-slide><article class="artwork-card" style="height:380px">'
+        + '<button type="button" data-home-hero-direction="next">Next</button></article></div>'
+        + '<div data-home-hero-slide hidden><article class="artwork-card" style="height:730px">'
+        + '<button type="button" data-home-hero-direction="next">Next</button></article></div>'
+        + '</div></div></main>';
+    await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">'
+        + '</head><body class="public-site">' + heroHtml + '</body></html>');
+    await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
+    await page.addScriptTag({
+        content: source.replace(/^export /gm, '')
+            + '\nwindow.paper = { advancePublicFolio, animatePublicHeroChange };',
+    });
+    await page.addScriptTag({
+        content: heroSource.replace(/^export /gm, '')
+            + '\ninitializeHomeHero(document, change => window.paper.animatePublicHeroChange(change));',
+    });
+    await page.evaluate(() => window.paper.advancePublicFolio());
+
+    const oldMenu = await page.evaluate(() => document.getAnimations()
+        .filter(a => a.effect.target === document.querySelector('.site-navigation'))
+        .map(a => ({ duration: a.effect.getTiming().duration,
+            iterations: a.effect.getTiming().iterations })));
+    await page.locator('[data-home-hero-slide]:not([hidden]) button[data-home-hero-direction="next"]').click();
+    const result = await page.evaluate(() => {
+        const main = document.querySelector('#content');
+        const menu = document.querySelector('.site-navigation');
+        const inner = document.querySelector('.public-content-reveal');
+        const effects = document.getAnimations();
+        const paper = effects.filter(a => a.effect.target === main);
+        const nav = effects.filter(a => a.effect.target === menu);
+        return {
+            visible: [...document.querySelectorAll('[data-home-hero-slide]')]
+                .map(slide => !slide.hidden),
+            paper: paper.map(a => a.effect.getTiming().duration),
+            menu: nav.map(a => ({ duration: a.effect.getTiming().duration,
+                iterations: a.effect.getTiming().iterations })),
+            height: effects.filter(a => a.effect.target === inner)
+                .map(a => a.effect.getTiming().duration),
+        };
+    });
+    expect(result.visible).toEqual([false, true]);
+    expect(result.paper).toEqual([1480, 1480, 1480]);
+    expect(result.height).toEqual([980]);
+    expect(result.menu).toEqual(oldMenu);
+
+    // Click again while the first reveal is still active: this must not
+    // leave competing paper/height animations or trigger a menu pulse.
+    await page.locator('[data-home-hero-slide]:not([hidden]) button[data-home-hero-direction="next"]').click();
+    await expect.poll(() => page.evaluate(() =>
+        document.getAnimations().filter(a => a.effect.target === document.querySelector('#content')
+            && a.effect.getTiming().iterations === 1).length)).toBe(3);
+    await expect.poll(() => page.evaluate(() =>
+        document.getAnimations().filter(a => a.effect.target === document.querySelector('.site-navigation')
+            && a.effect.getTiming().iterations === 1).length)).toBe(0);
+});
 
 test('a rapid second page switch continues the interrupted build from its actual position', async ({ page }) => {
     await initialize(page, 'Exhibitions', 340, 'exhibitions-page');
