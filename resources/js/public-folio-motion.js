@@ -21,10 +21,6 @@ const CONTENT_EDGES = [
     { side: 'left', offset: '-.7rem', width: '.55rem' },
     { side: 'right', offset: '-.55rem', width: '.55rem' },
 ];
-const MENU_EDGES = [
-    { side: 'left', offset: '-.35rem', width: '.35rem' },
-    { side: 'right', offset: '-.36rem', width: '.36rem' },
-];
 const CONTENT_DURATIONS = [25100, 29700];
 const MENU_DURATIONS = [34200, 38800];
 const BUILD_DURATION = 1480;
@@ -77,16 +73,13 @@ function pageBody(root) {
 // not restart from an unrelated page size.
 export function capturePublicFolio(root = document) {
     const content = root.querySelector('#content');
-    const menu = root.querySelector('.site-navigation');
     const body = pageBody(root);
     snapshot = {
         content: pairGeometry(content),
-        menu: pairGeometry(menu),
         contentShadow: content ? getComputedStyle(content).boxShadow : null,
-        menuShadow: menu ? getComputedStyle(menu).boxShadow : null,
         bodyHeight: body ? body.getBoundingClientRect().height : null,
     };
-    return Boolean(snapshot.content || snapshot.menu);
+    return Boolean(snapshot.content || body);
 }
 
 // Each successive frame changes ONLY one axis: top, bottom or a horizontal
@@ -226,17 +219,17 @@ export function buildShadowFrames(start, type) {
 // a short follow-through, then a controlled return. In each keyframe only
 // ONE axis changes; lateral movement adjusts width with the offset so the
 // original corner remains connected to the same white-sheet edge.
-export function buildCornerImpulse(start, edge, growing, type = 'content') {
+export function buildCornerImpulse(start, edge, growing) {
     const frames = [{ ...start }];
     const step = patch => frames.push({ ...frames[frames.length - 1], ...patch });
-    const amplitude = type === 'menu' ? 0 : 3.1;
-    const vertical = type === 'menu' ? 0 : 3.2;
+    const amplitude = 3.1;
+    const vertical = 3.2;
     const delta = growing ? 1 : -1;
     step({ [edge.side]: `calc(${start[edge.side]} - ${amplitude}px)`,
         width: `calc(${start.width} + ${amplitude}px)` });
     // Menu outside strokes must end inside their white bottom border.
     // A content corner may extend further down during the page build.
-    const bottomDelta = type === 'menu' ? 0 : -vertical * delta;
+    const bottomDelta = -vertical * delta;
     step({ bottom: `calc(${start.bottom} + ${bottomDelta}px)` });
     step({ top: `calc(${start.top} + ${vertical * .68}px)` });
     step({ [edge.side]: start[edge.side], width: start.width });
@@ -373,21 +366,20 @@ function startAmbient(element, states, type) {
     }
 }
 
-function pulsePaper(element, corners, oldShadow, type, growing, root) {
+function pulsePaper(element, corners, oldShadow, growing, root) {
     if (!element || !corners) return false;
-    const edges = type === 'content' ? CONTENT_EDGES : MENU_EDGES;
     const animations = [];
     for (let i = 0; i < 2; i += 1) {
         const animation = nativeCorner(element, i === 0 ? '::before' : '::after',
-            buildCornerImpulse(corners[i], edges[i], growing, type),
-            type === 'content' ? BUILD_DURATION : 980);
+            buildCornerImpulse(corners[i], CONTENT_EDGES[i], growing),
+            BUILD_DURATION);
         if (animation) animations.push(animation);
     }
     if (oldShadow && typeof element.animate === 'function') {
         try {
             const shadowAnimation = element.animate(
-                buildPageImpulse(oldShadow, getComputedStyle(element).boxShadow, type, growing),
-                { duration: type === 'content' ? BUILD_DURATION : 980 },
+                buildPageImpulse(oldShadow, getComputedStyle(element).boxShadow, 'content', growing),
+                { duration: BUILD_DURATION },
             );
             animations.push(shadowAnimation);
         } catch { /* Preserve the real CSS layers. */ }
@@ -396,9 +388,8 @@ function pulsePaper(element, corners, oldShadow, type, growing, root) {
     // Do not start the ambient effect on the same properties until this
     // one-shot build has finished; ignore detached nodes after fast visits.
     Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
-        const selector = type === 'content' ? '#content' : '.site-navigation';
-        if (root.querySelector(selector) === element) {
-            startAmbient(element, pairGeometry(element), type);
+        if (root.querySelector('#content') === element) {
+            startAmbient(element, pairGeometry(element), 'content');
         }
     });
     return true;
@@ -414,12 +405,10 @@ export function advancePublicFolio(root = document) {
     const previous = snapshot;
     snapshot = null;
     const corners = previous?.content ?? pairGeometry(content);
-    const menuCorners = previous?.menu ?? pairGeometry(menu);
     const contentShadow = previous?.contentShadow ?? (content && getComputedStyle(content).boxShadow);
-    const menuShadow = previous?.menuShadow ?? (menu && getComputedStyle(menu).boxShadow);
     if (!previous) {
         startAmbient(content, corners, 'content');
-        startAmbient(menu, menuCorners, 'menu');
+        startAmbient(menu, pairGeometry(menu), 'menu');
         return Boolean(content || menu);
     }
 
@@ -428,7 +417,7 @@ export function advancePublicFolio(root = document) {
     const growing = !Number.isFinite(nextHeight) || !Number.isFinite(previous.bodyHeight)
         || nextHeight >= previous.bodyHeight;
     animatePageHeight(previous.bodyHeight, root);
-    if (!pulsePaper(content, corners, contentShadow, 'content', growing, root)) {
+    if (!pulsePaper(content, corners, contentShadow, growing, root)) {
         startAmbient(content, corners, 'content');
     }
     // The menu has no new content to assemble. On SPA swaps it continues
@@ -463,7 +452,7 @@ export function animatePublicHeroChange(change, root = document) {
     const newHeight = body.getBoundingClientRect().height;
     const growing = newHeight >= oldHeight;
     animatePageHeight(oldHeight, root);
-    if (!pulsePaper(content, corners, shadow, 'content', growing, root)) {
+    if (!pulsePaper(content, corners, shadow, growing, root)) {
         startAmbient(content, pairGeometry(content), 'content');
     }
     return true;
