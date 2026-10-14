@@ -804,8 +804,10 @@ it('moves the existing CV List under a decorative Image from its Edit dialog', f
         ->and($blocks[0]['children'][0]['items'][1]['context'])->toBeNull()
         ->and($blocks[0]['children'][0]['items'][1]['title'])->toBe('Lives and works in Hamburg');
 
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
-        ->assertSet('mountedActions.0.data.image_children.0.type', 'list')
-        ->assertSet('mountedActions.0.data.image_children.0.items.1.title', 'Lives and works in Hamburg');
+    $reopened = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image']);
+    $children = array_values($reopened->get('mountedActions.0.data.image_children'));
+    expect($children)->toHaveCount(1)
+        ->and($children[0]['type'])->toBe('list')
+        ->and(array_values($children[0]['items'])[1]['title'])->toBe('Lives and works in Hamburg');
 });

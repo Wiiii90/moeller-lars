@@ -296,8 +296,8 @@
     color: #222;
 }
 
-/* Disclaimer reads as a restrained colophon, not another content heading.
-   It never wraps around a preceding decorative image. */
+/* Disclaimer shares editorial type and participates in normal text wrapping
+   when it is a child of a decorative image. */
 .custom-page__legal {
     display: block;
     min-width: 0;
@@ -317,8 +317,6 @@
     color: var(--public-muted);
 }
 
-/* Custom Page components recompose inside the public Narrow state when their
- * own content stops fitting; this threshold is intentionally content-driven. */
 /* The optional List's own second image never shares an Image child tree;
    this is a normal full-width List. */
 @media (max-width: 42rem) {

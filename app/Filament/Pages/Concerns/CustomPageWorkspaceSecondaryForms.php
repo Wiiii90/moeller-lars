@@ -96,9 +96,12 @@ trait CustomPageWorkspaceSecondaryForms
     private function imageChildrenPayload(array $data, ?array $existing): array
     {
         $children = $data['image_children'] ?? ($existing['children'] ?? []);
-        if (! is_array($children) || ! array_is_list($children)) {
+        if (! is_array($children)) {
             throw ValidationException::withMessages(['image_children' => 'Image children must be ordered components.']);
         }
+        // Filament Repeater item keys are UUIDs until dehydration. Persist
+        // the authored visual order as the canonical zero-based JSON list.
+        $children = array_values($children);
         if ($children !== [] && ! ($data['image_decorative'] ?? false)) {
             throw ValidationException::withMessages(['image_decorative' => 'Remove image children before disabling Decorative image.']);
         }
