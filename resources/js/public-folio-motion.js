@@ -4,13 +4,13 @@
 // anchored to its original white-sheet edge.
 export const FOLIO_VARIANTS = Object.freeze([
     ['1.10rem', '4rem', '3.8rem', '1.15rem'],
-    ['1.25rem', '4rem', '3.93rem', '1.15rem'],
-    ['1.25rem', '4.14rem', '3.93rem', '1.28rem'],
+    ['1.53rem', '4rem', '4.22rem', '1.15rem'],
+    ['1.53rem', '4.30rem', '4.22rem', '1.43rem'],
 ]);
 export const MENU_VARIANTS = Object.freeze([
     ['0rem', '0rem', '0rem', '0rem'],
-    ['.16rem', '0rem', '.13rem', '0rem'],
-    ['.16rem', '.10rem', '.13rem', '.10rem'],
+    ['.23rem', '0rem', '.21rem', '0rem'],
+    ['.23rem', '.14rem', '.21rem', '.14rem'],
 ]);
 
 // Original horizontal geometry belongs to the accepted shell CSS. These
@@ -171,25 +171,29 @@ function shadowMotionFrames(start, type, direction, end = start) {
     base.forEach((value, index) => move(index, value));
     rest(); rest();
     const outward = direction !== 'inward';
-    move(0, base[0] + (outward ? -.7 : .35));
-    move(2, base[2] + (outward ? -.9 : .45));
+    // The rear layer leads outward to preserve separation as the front
+    // catches up. This sequence never swallows an already visible sheet.
+    move(2, base[2] + (type === 'menu' ? -1.8 : -3.5));
+    move(0, base[0] + (type === 'menu' ? -1 : -2));
     rest();
-    move(1, base[1] + (outward ? .45 : -.25));
-    move(3, base[3] + (outward ? .8 : -.35));
+    move(3, base[3] + (type === 'menu' ? 1.4 : 3));
+    move(1, base[1] + (type === 'menu' ? .75 : 1.7));
     rest(); rest();
     // Retract each sheet coordinate independently before the next phase.
-    base.forEach((value, index) => move(index, value));
+    move(0, base[0]); move(1, base[1]);
+    move(2, base[2]); move(3, base[3]);
     rest();
     // For the constant ambient cycle both excursions are available, with
     // quiet intervals between them; no involuntary jitter or diagonal steps.
     if (direction === 'cycle') {
-        move(0, base[0] + .35);
-        move(2, base[2] + .20);
+        move(0, base[0] + (type === 'menu' ? .4 : 1.0));
+        move(2, base[2] + (type === 'menu' ? .1 : 1.2));
         rest();
-        move(1, base[1] - .25);
-        move(3, base[3] - .20);
+        move(1, base[1] - (type === 'menu' ? .2 : .6));
+        move(3, base[3] - (type === 'menu' ? .1 : .3));
         rest(); rest();
-        base.forEach((value, index) => move(index, value));
+        move(2, base[2]); move(3, base[3]);
+        move(0, base[0]); move(1, base[1]);
         rest();
         (renderedShadowCoords(start) ?? base).forEach((value, index) => move(index, value));
     }
