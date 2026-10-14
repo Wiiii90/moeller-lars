@@ -82,14 +82,13 @@ Ergebnis: `generated/ui-surfaces.json` mit Klassen, direktem Trait-Use, deklarie
 [SiteSectionIdentityService](../../app/Domain/Content/SiteSectionIdentityService.php),
 [JournalSettingsService](../../app/Domain/Content/JournalSettingsService.php),
 [GalleryEditorialService](../../app/Domain/Artwork/GalleryEditorialService.php).
-Quellstand nach Merge von `dev@b3439bbfeb48ddbaf1f1949c276155c737136e31`;
-**keine ausgeführte Livewire-Reproduktion**.
+Quellstand erneut mit `dev@470f2daa900f2d68db9c7e5fe2b227db20e44bc7` verglichen; neue gemeinsame `PageHeadingFields` ändern **nicht** die unten beschriebene Name-/Navigationslabel-Zielzuordnung. **Keine ausgeführte Livewire-Reproduktion**.
 
-1. `SitePages::sectionLabel()` (Zeile 808 ff.) priorisiert ein nichtleeres
+1. `SitePages::sectionLabel()` priorisiert ein nichtleeres
    `navigation_label` gegenüber `title`. Als Tabellen-/Parent-Label ist
-   diese Darstellung sinnvoll; in `editPageAction()->fillForm()` (Zeile 45)
+   diese Darstellung sinnvoll; in `editPageAction()->fillForm()`
    landet dieselbe Präsentationsangabe jedoch als editierbares `data.name`.
-2. `savePageFromDialog()` (Zeilen 142–192) lädt den neuesten Persistenzstand,
+2. `savePageFromDialog()` lädt den neuesten Persistenzstand,
    kann zuerst `convertType()` ausführen und gibt anschließend `data.name`
    immer an `updateDialogIdentity()` weiter – **auch ohne manuelle
    Namensänderung**. Für Journal, Custom Page und Navigation Node ruft diese
@@ -117,6 +116,10 @@ Quellstand nach Merge von `dev@b3439bbfeb48ddbaf1f1949c276155c737136e31`;
    Typwechsel haben eigene Domain-Guards und dürfen nicht als erfolgreicher
    Regressionsfall deklariert werden.
 
+**Neue, separat korrekt besessene Page-Heading-Achse:** [`PageHeadingFields`](../../app/Filament/Support/PageHeadingFields.php) ist nun gemeinsames Add-/Edit-/Home-Schema für die **optionale sichtbare Content-Überschrift**, nicht für SiteSection-`title` oder `navigation_label`. Im Pages **Edit** ruft jedes `afterStateUpdated` gezielt `SiteSectionEditorialService::updatePageHeading()` auf (Row-Lock, validierte Field-Änderung, No-op ohne Audit); **Add** speichert diese Daten erst nach Anlage des neuen Nodes und nicht beim bloßen Ausfüllen. [`SitePageHeadingAutosaveTest.php`](../../tests/Feature/Admin/SitePages/SitePageHeadingAutosaveTest.php) beschreibt mehrere Livewire-Feldänderungen, anschließenden Action-No-op, Reopen und Public-Render, sowie das Home Heading bei Root-Route `/`. Diese neue Quelle ist **nicht** der fehlende Test für getrennte Title/Navigationlabels.
+
+**Home Edit neu integriert:** [`ManagesSitePageEditDialog::editHomeAction()`](../../app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php) kombiniert `HomeSettingsDialog` mit editierbarem **Name** und den absichtlich read-only Feldern **Public slug = /**, **Parent = Top level**, **Position = 1**. Der Save ruft `SiteSectionIdentityService::update($home, $name, null)` und danach `HomeSettingsDialog::save()` innerhalb der äußeren DB-Transaktion. Da der Identity-Service den fehlenden vierten `navigationLabel`-Parameter als `$name` interpretiert, gilt hier zusätzlich: Ein **von `title` abweichendes** explizites Home-`navigation_label` könnte schon bei ansonsten unverändertem Edit auf den Seitennamen zurückgesetzt werden. Das ist ein weiterführender **statischer Negativfall**. Der neue Home-Test prüft die unveränderliche Root-Route und wiederholten Save bei Standardzustand, **nicht** diese getrennte Label-Konstellation.
+
 **Bestehende Testgrenze:** [SiteSectionHierarchyTest](../../tests/Feature/Admin/SitePages/SiteSectionHierarchyTest.php)
 (Zeilen 825–875) testet Successive Edit, No-op und Invalid Slug **nur für
 anfangs identische** Titel/Labels. [JournalSettingsAutosaveTest](../../tests/Feature/Admin/Journal/JournalSettingsAutosaveTest.php)
@@ -133,6 +136,7 @@ oder durch geänderte Erwartungen zu kaschieren:**
 | Gleiches Journal, Pages Name tatsächlich ändern | Editor-Semantik klar festlegen: Titel ändern, ohne ein eigenes Navigation Label implizit zu überschreiben |
 | Custom Page und Navigation Node mit verschiedenem Titel/Label | No-op sowie gewöhnliche Edit-Felder lassen beide Identitätswerte intakt |
 | Gallery mit verschiedenem Titel/Label | Pages Edit verändert ohne explizite Namensänderung weder Gallery-Name noch SiteSection-Titel |
+| Home mit `title=Atelier`, eigenem `navigation_label=Studio` | Home Edit ohne Namensänderung behält beide Werte getrennt, kein Audit/Notifier aufgrund impliziter Label-Rücksetzung |
 | Sicherer Typwechsel mit getrenntem Titel/Label | Keine stille Umdeutung durch nachfolgende Identity-Aktion; Domain-Conversion-Guards bleiben gültig |
 | Reopen und mehrfaches `callMountedAction` | Kein neuer Audit/Notifier bei echtem No-op; Anzeige- und Identitätsfelder weiterhin korrekt |
 
