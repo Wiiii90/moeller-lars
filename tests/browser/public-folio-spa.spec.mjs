@@ -8,7 +8,7 @@ const heroSource = readFileSync(
     new URL('../../resources/js/home-hero.js', import.meta.url), 'utf8',
 );
 const sheet = (label, height, kind = 'artwork-detail') =>
-    '<header class="site-header"><div class="site-navigation"><nav>' + label + '</nav></div></header>'
+    '<header class="site-header"><div class="site-navigation"><div class="site-navigation__rail"><nav>' + label + '</nav></div></div></header>'
     + '<main id="content" class="site-content">'
     + '<div class="public-content-reveal"><section class="' + kind + '"'
     + ' style="height:' + height + 'px"><h2>' + label + '</h2></section></div></main>';
@@ -25,92 +25,39 @@ async function initialize(page, label = 'Painting', height = 520, kind = 'artwor
     await page.evaluate(() => window.paper.advancePublicFolio());
 }
 
-test('only the existing menu strokes and rear paper planes show, without overshooting', async ({ page }) => {
+test('menu corners and single backing remain close to their surfaces', async ({ page }) => {
     await initialize(page);
-    const result = await page.evaluate(() => {
-        const menu = document.querySelector('.site-navigation');
-        const content = document.querySelector('#content');
-        const left = getComputedStyle(menu, '::before');
-        const right = getComputedStyle(menu, '::after');
-        const effects = document.getAnimations();
-        const menuShadow = getComputedStyle(menu).boxShadow;
+    const actual = await page.evaluate(() => {
+        const menu=document.querySelector('.site-navigation');
+        const rail=menu.querySelector('.site-navigation__rail');
+        const left=getComputedStyle(menu,'::before');
+        const right=getComputedStyle(menu,'::after');
+        const backing=getComputedStyle(rail,'::before');
+        const effects=document.getAnimations().filter(a=>a.effect.target===menu);
         return {
-            children: content.children.length,
-            topBorders: [left.borderTopStyle, right.borderTopStyle],
-            bottomBorders: [left.borderBottomStyle, right.borderBottomStyle],
-            top: [parseFloat(left.top), parseFloat(right.top)],
-            bottom: [parseFloat(left.bottom), parseFloat(right.bottom)],
-            outside: [parseFloat(left.left), parseFloat(right.right)],
-            menuShadow,
-            animations: effects.map(a => ({
-                target: a.effect.target === content ? 'content' :
-                    a.effect.target === menu ? 'menu' : 'other',
-                pseudo: a.effect.pseudoElement || null,
-                iterations: a.effect.getTiming().iterations,
-            })),
+            left:parseFloat(left.left),right:parseFloat(right.right),
+            top:parseFloat(backing.top),backLeft:parseFloat(backing.left),
+            backRight:parseFloat(backing.right),backBottom:parseFloat(backing.bottom),
+            menuShadow:getComputedStyle(menu).boxShadow,
+            cornerFrames:effects.filter(a=>a.effect.pseudoElement)
+                .map(a=>({duration:a.effect.getTiming().duration,frames:a.effect.getKeyframes()})),
+            backingDurations:effects.filter(a=>!a.effect.pseudoElement)
+                .map(a=>a.effect.getTiming().duration),
         };
     });
-    expect(result.children).toBe(1);
-    expect(result.topBorders).toEqual(['none', 'none']);
-    expect(result.bottomBorders).toEqual(['solid', 'solid']);
-    expect(result.top.every(n => n >= 0)).toBe(true);
-    expect(result.bottom.every(n => n >= 0)).toBe(true);
-    expect(result.outside.every(n => n < 0 && n > -10)).toBe(true);
-    expect(result.animations.filter(a => a.pseudo)).toHaveLength(4);
-    expect(result.animations.filter(a => a.target !== 'other' && !a.pseudo)).toHaveLength(2);
-    expect(result.animations.every(a => a.iterations === Infinity)).toBe(true);
-    const paperProjections = await page.evaluate(() => {
-        const parse = (node) => {
-            const layers=[];
-            const string=getComputedStyle(node).boxShadow;
-            let level=0,begin=0;
-            for(let i=0;i<string.length;i++){
-                if(string[i]==='(')level++;
-                else if(string[i]===')')level--;
-                else if(string[i]===','&&level===0){
-                    layers.push(string.slice(begin,i)); begin=i+1;
-                }
-            }
-            layers.push(string.slice(begin));
-            return layers.slice(-1).map(layer=>{
-                const values=[...layer.matchAll(/(-?\\d+(?:\\.\\d+)?)px/g)]
-                    .slice(0,4).map(match=>Number(match[1]));
-                const [x,y]=values;
-                const spread=values.length>=3?values.at(-1):0;
-                return { left:x-spread, bottom:y+spread, top:y-spread };
-            });
-        };
-        return {
-            menu:parse(document.querySelector('.site-navigation')),
-            content:parse(document.querySelector('#content')),
-        };
-    });
-    expect(paperProjections.menu).toHaveLength(1);
-    expect(paperProjections.content).toHaveLength(1);
-    const menuSheet=paperProjections.menu[0];
-    const contentSheet=paperProjections.content[0];
-    expect(menuSheet.top).toBeLessThanOrEqual(.05);
-    expect(menuSheet.left).toBeCloseTo(contentSheet.left,0);
-    expect(menuSheet.bottom).toBeCloseTo(contentSheet.bottom,0);
-    const menu = await page.evaluate(() => {
-        const element = document.querySelector('.site-navigation');
-        return document.getAnimations()
-            .filter(a => a.effect.target === element && a.effect.pseudoElement)
-            .map(a => a.effect.getKeyframes().map(frame => ({
-                top: frame.top, bottom: frame.bottom,
-                left: frame.left, right: frame.right, width: frame.width,
-            })));
-    });
-    expect(menu).toHaveLength(2);
-    for (const frames of menu) {
-        expect(frames.some(frame => frame.bottom.endsWith('%')
-            && parseFloat(frame.bottom) >= 25)).toBe(true);
-        expect(frames.every(frame => !frame.bottom.endsWith('%')
-            || parseFloat(frame.bottom) <= 73)).toBe(true);
-        expect(frames.every(frame => parseFloat(frame.top) === 0)).toBe(true);
-        expect(frames.every(frame => parseFloat(frame.bottom) > 0)).toBe(true);
-        expect(new Set(frames.map(frame => frame.width)).size).toBe(1);
-        expect(new Set(frames.map(frame => frame.left ?? frame.right)).size).toBe(1);
+    expect(actual.left).toBeCloseTo(-6,1);
+    expect(actual.right).toBeCloseTo(-5.5,1);
+    expect(actual.top).toBe(0);
+    expect(actual.backLeft).toBeCloseTo(-3,1);
+    expect(actual.backRight).toBeCloseTo(3,1);
+    expect(actual.backBottom).toBeCloseTo(-4,1);
+    expect(actual.menuShadow).toContain('inset');
+    expect(actual.cornerFrames.map(f=>f.duration)).toEqual([117000,133000]);
+    expect(actual.backingDurations).toEqual([145000]);
+    for(const {frames} of actual.cornerFrames){
+        expect(frames.every(f=>parseFloat(f.top)===0)).toBe(true);
+        expect(frames.every(f=>f.left===frames[0].left&&f.right===frames[0].right)).toBe(true);
+        expect(frames.at(-1).bottom).toBe(frames[0].bottom);
     }
 });
 
@@ -156,12 +103,12 @@ for (const scenario of [
         }, sheet(...scenario.to));
         expect(result.childCount).toBe(1);
         expect(result.paperOverflow).toBe('visible');
-        expect(result.pulseDurations).toEqual([1240, 1240, 1240]);
+        expect(result.pulseDurations).toEqual([620, 620, 620]);
         // A SPA swap cannot force the menu into a new assembly impulse.
-        expect(result.menuPulseDurations).toEqual([34200, 38800, 36400]);
+        expect(result.menuPulseDurations).toEqual([117000, 133000, 145000]);
         if (Math.abs(result.frameBudget.from - result.frameBudget.to) >= 7) {
             expect(result.innerOverflow).toBe('clip');
-            expect(result.heightDuration).toBe(780);
+            expect(result.heightDuration).toBe(480);
             expect(parseFloat(result.heightFrames[0].height))
                 .toBeCloseTo(result.frameBudget.from, 0);
             expect(parseFloat(result.heightFrames[1].height))
@@ -187,7 +134,7 @@ for (const scenario of [
 
 test('Home Hero arrows animate the same paper/content, without touching the menu', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    const heroHtml = '<header class="site-header"><div class="site-navigation"><nav>Home</nav></div></header>'
+    const heroHtml = '<header class="site-header"><div class="site-navigation"><div class="site-navigation__rail"><nav>Home</nav></div></div></header>'
         + '<main id="content" class="site-content"><div class="public-content-reveal">'
         + '<div data-home-hero>'
         + '<div data-home-hero-slide><article class="artwork-card" style="height:380px">'
@@ -231,8 +178,8 @@ test('Home Hero arrows animate the same paper/content, without touching the menu
         };
     });
     expect(result.visible).toEqual([false, true]);
-    expect(result.paper).toEqual([1240, 1240, 1240]);
-    expect(result.height).toEqual([780]);
+    expect(result.paper).toEqual([620, 620, 620]);
+    expect(result.height).toEqual([480]);
     expect(result.menu).toEqual(oldMenu);
 
     // The next click starts from an in-flight corner, but the END keyframe
@@ -262,10 +209,10 @@ test('Home Hero arrows animate the same paper/content, without touching the menu
     const right = afterFastClick.find(a => a.pseudo === '::after');
     expect(left.last.top).toBeTruthy();
     expect(right.last.bottom).toBeTruthy();
-    expect(left.last.left).toBe('-.58rem');
-    expect(right.last.right).toBe('-.48rem');
-    expect(left.out).toContain('calc(-.58rem - 3.1px)');
-    expect(right.out).toContain('calc(-.48rem - 3.1px)');
+    expect(left.last.left).toBe('-7px');
+    expect(right.last.right).toBe('-6px');
+    expect(left.out).toContain('calc(-7px - .7px)');
+    expect(right.out).toContain('calc(-6px - .7px)');
     expect(left.out.every(v => !v?.includes('calc(calc('))).toBe(true);
     expect(right.out.every(v => !v?.includes('calc(calc('))).toBe(true);
     expect(reference.before).toBeTruthy();
