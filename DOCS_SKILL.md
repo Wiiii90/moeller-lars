@@ -28,8 +28,8 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `54a8b80aa3d1c33d4fb11d7b587db49a1f10fe3a` |
-| darin aufgenommener `dev`-Stand | `44f3d01b0767ee4793c29cf505ccb36df4993127` |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `e85bc649a4496574993f19acbb3012f1f75b3b13` |
+| darin aufgenommener `dev`-Stand | `a6ee7b6ec4a5dc96fa7e13f9ae54211c09e0e1bf` |
 | Status | Weitere drei `dev`-Commits (vier Pfade) nach dem ersten Merge übernommen; neue Heads immer erneut prüfen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
@@ -122,7 +122,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Aktueller Prüfstand und Wiedereinstieg (14.10.2026)
 
-**Branch-Checkpoint:** Letzter kontrollierter Zwei-Eltern-Merge `54a8b80aa3d1c33d4fb11d7b587db49a1f10fe3a` mit `dev@44f3d01b0767ee4793c29cf505ccb36df4993127`. Die letzte nachfolgende Dokumentations-Commit-SHA ist stets aus dem aktuellen `docs`-Ref zu lesen, nicht aus diesem vor dem Commit geschriebenen Text zu erraten. Neue `dev`-Commits und eventuelle überschneidende `docs`-Änderungen vor jedem nächsten Merge separat prüfen. Keine Änderungen an `dev`, `testing`, `main`, CI oder persistenten Daten.
+**Branch-Checkpoint:** Letzter kontrollierter Zwei-Eltern-Merge `e85bc649a4496574993f19acbb3012f1f75b3b13` mit `dev@a6ee7b6ec4a5dc96fa7e13f9ae54211c09e0e1bf`. Die letzte nachfolgende Dokumentations-Commit-SHA ist stets aus dem aktuellen `docs`-Ref zu lesen, nicht aus diesem vor dem Commit geschriebenen Text zu erraten. Neue `dev`-Commits und eventuelle überschneidende `docs`-Änderungen vor jedem nächsten Merge separat prüfen. Keine Änderungen an `dev`, `testing`, `main`, CI oder persistenten Daten.
 
 **Quellinventar:** Der ursprüngliche vollständige Katalog [php-source-audit.md](docs/architecture/php-source-audit.md) hat **248 `app/**/*.php`-Dateien / 214 Klassen / 27 Traits / 7 Enums / 900 interne Imports / 717 Cross-Module-Kanten / 20 Importdiagramme**. Der vollständige Blobvergleich bis zum obigen `dev`-Stand ergibt nur zwei geänderte PHP-Blobs (`JournalWorkspace.php`, `SecurityHeaders.php`), beide ohne neue/entfernte projektinterne Imports oder Typen. Das JSON behält bewusst die ursprüngliche `source_ref`: Dateibytes/rohe Zeilendaten sind **nicht** als vollregeneriert auszugeben. Alle **26 Models / 48 Relation-Methoden** wurden mit der aktuellen Quelle erneut auf Typ/Ziel/Zeile abgeglichen; zwei BlogPost-Zeilennummern wurden nachgezogen. Eloquent- und Importkanten sind keine physischen FKs.
 
@@ -147,5 +147,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 **Pages-/Identity-Abweichung (Quellbefund, 14.10.):** `SitePages::sectionLabel()` wählt für den Pages-Edit-Formwert das Präsentationslabel; `ManagesSitePageEditDialog` persistiert dieses über `SiteSectionIdentityService` als Titel und Standard-Label, auch nach einem scheinbaren No-op. Journal, Custom Page und Navigation Node betroffen; Gallery über `GalleryEditorialService` ebenfalls als abweichender Titel-/Gallery-Name-Pfad. Die vorhandenen Tests decken nur ursprünglich identische Titel/Labels oder isolierte Journal-Settings ab, nicht Pages-Edit mit getrenntem Label. Umfang, Konversions-/No-op-Fälle und konkrete Regressionstests in [UI-Komposition](docs/architecture/ui-surfaces.md). **Kein Livewire-Lauf.**
 
 **Neuer `dev`-Merge und Folio-Testdelta (14.10.):** Der echte Zwei-Eltern-Merge `54a8b80aa3d1c33d4fb11d7b587db49a1f10fe3a` enthält `dev@44f3d01b`: Menü zeigt zwei äußere Paper-Schatten durch 2-px-Spread und angepasste Offsets; seine verbundenen Pseudokonturen bleiben innerhalb der unteren Menükante. Der unveränderte [Folio-Unit-Test](tests/js/public-folio-motion.test.mjs) erwartet noch `MENU_VARIANTS[0]` mit negativen Bottom-Werten und einen Shadow-Ausdruck ohne `2px`-Spread. Beides widerspricht unmittelbar den neuen JS-/CSS-Quellen und ist ein **statischer Testbruch**, kein in dieser Umgebung ausgeführter Testlauf. [Public-SPA-Beleg](docs/architecture/public-spa-lifecycle.md). Tests gehören zur getrennten `testing`-/`dev`-Arbeit, nicht als opportunistische Mutation auf `docs`.
+
+**Ambient-Folio-/Artwork-Synchronisierung (14.10., neuer `dev`-Stand):** `dev@a6ee7b6` ist über den echten Zwei-Eltern-Merge `e85bc649` enthalten. `buildCornerFrames()` und `shadowMotionFrames()` besitzen explizite wiederholte WAAPI-Frames als Ruhephasen, keine Timer. Content-/Menü-Schatten-Loop nun 34,8/36,4 Sekunden. Bei Artwork-Detail-zu-Detail-Höhenwechsel (700 ms) ruht die unendliche **Content**-Schattenanimation; `playArtworkBuild()` animiert die Papierlagen einmal achsengebunden und startet die Ambient-Animation am noch verbundenen `#content` nach `finished` wieder. Keine Browser-/Runtimebestätigung und weiterhin keine explizite Cancellation aller unendlichen WAAPI-Handles. Vorher identifizierte veraltete JS-Assertions zu Menü-Bottom und Shadow-Spread sind durch diesen Commit **nicht** korrigiert. [Source-Ablauf](docs/architecture/public-spa-lifecycle.md).
 
 **Nächste Arbeit:** Weiterhin kontradiktorische UI-Vertragsduplikate nur nach tatsächlichem Blade/CSS-/Domain-Quellenabgleich reduzieren; weitere konkrete Media-/Publication-Negativpfade aufzeichnen. Native Full-Checkout-Generatorläufe und `pg_catalog` erst bei sicherem vollständigem Checkout bzw. ausdrücklich wegwerfbarer vollständig migrierter PostgreSQL-Instanz. Keine Runtime-Fixes auf `docs`, kein CI und keine Testbehauptungen aus bloßen Quelltexten.

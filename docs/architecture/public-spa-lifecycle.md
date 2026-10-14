@@ -1,6 +1,6 @@
 # Öffentliche SPA-Dokumentnavigation und Instanzlebenszyklus
 
-**Code-Referenz:** `dev` bei `44f3d01b0767ee4793c29cf505ccb36df4993127` (achsengebundene Folio-Animation, Artwork-Detail-Höhenwechsel und korrigierte Mid-Flight-Shadow-Koordinaten). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
+**Code-Referenz:** `dev` bei `a6ee7b6ec4a5dc96fa7e13f9ae54211c09e0e1bf` (achsengebundene Folio-Animation, Artwork-Detail-Höhenwechsel und korrigierte Mid-Flight-Shadow-Koordinaten). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
 
 ## Architekturentscheidung
 
@@ -81,7 +81,7 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 ## Native Folio-Ränder, Schatten und Artwork-Höhenübergänge
 
-**Aktueller Referenzstand:** `dev@44f3d01b0767ee4793c29cf505ccb36df4993127`
+**Aktueller Referenzstand:** `dev@a6ee7b6ec4a5dc96fa7e13f9ae54211c09e0e1bf`
 (über einen Zwei-Eltern-Merge nach `docs` übernommen). Die Folio-Animation
 benutzt nur die bestehenden `#content::before/::after`- und
 `.site-navigation::before/::after`-Konturen sowie deren vorhandene
@@ -106,9 +106,9 @@ ist Eigentümer des angestrebten Designs, nicht dieses Quellinventar.
    31.800 ms** (Content) und **27.000 / 30.900 ms** (Menü).
    Die Menü-Konturen bleiben oben offen und unten verbunden; es gibt keine
    Rotation, diagonale Bewegung oder Menu-Height-Animation.
-4. Beide Flächen besitzen je eine zusätzliche
-   `Element.animate()`-`box-shadow`-Schleife (Content **31.200 ms**,
-   Menü **32.400 ms**). Die jeweils zwei hinteren bestehenden Papierlagen
+4. Bei normalen Seiten besitzen beide Flächen je eine zusätzliche
+   `Element.animate()`-`box-shadow`-Schleife (Content **34.800 ms**,
+   Menü **36.400 ms**). Die jeweils zwei hinteren bestehenden Papierlagen
    bewegen sich im beabsichtigten Ablauf achsenweise um 1–2 px.
    Der erste Schatten bleibt unverändert. Der nächste Zustand soll die
    zuvor gerenderte Zwischenposition sanft übernehmen.
@@ -121,6 +121,21 @@ ist Eigentümer des angestrebten Designs, nicht dieses Quellinventar.
    Abbruch des Promise wird der ursprüngliche Inline-Overflow wiederhergestellt.
    Gallery, Blog, Home und ein Erstbesuch besitzen keinen alten
    Artwork-Artikel als Auslöser.
+6. Der neuere `shadowMotionFrames()`-Aufbau unterscheidet `cycle`,
+   `outward` und `inward` mit **wiederholten WAAPI-Keyframes als Ruhephasen**
+   (kein Timer/Polling). Bei einem echten Artwork-Höhenwechsel wird die
+   unendliche Content-Shadow-Schleife während der 700-ms-
+   Artikelanimation **nicht parallel gestartet**. Stattdessen führt
+   `playArtworkBuild()` eine endliche Paper-Schatten-Sequenz aus,
+   deren Außen-/Innenrichtung von der Höhenänderung abhängt; ihr
+   `animation.finished` startet die kontinuierliche Content-Schatten-
+   Animation nur dann neu, wenn `root.querySelector('#content')`
+   weiterhin auf das animierte Element zeigt. Bei fehlender WAAPI oder
+   fehlgeschlagenem Start versucht der Pfad, das normale Ambient-
+   Breathing wiederherzustellen. Die Menü-Schleife läuft unabhängig.
+   Der frühere gleichzeitige Content-Shadow-Breathing/Reveal-Konflikt
+   wird so **auf Quellpfadebene** vermieden; DOM-Lifecycle und visuelle
+   Wirkung wurden hier nicht browsergetestet.
 
 ### Statisch belegte Negativpfade und Nachweise
 
@@ -140,7 +155,7 @@ behandelt einen schrumpfenden und einen wachsenden
 Artwork-Detail-zu-Detail-Swap mit absoluter Artikelhöhe.
 
 
-**Neue CSS-/Testvertragsabweichung nach `dev@44f3d01b`
+**CSS-/Testvertragsabweichung seit `dev@44f3d01b`, weiterhin am geprüften `dev@a6ee7b6`
 (quellenbelegt, Test nicht ausgeführt):** Die bisherige
 `MENU_VARIANTS[0]`-Assertion in
 [public-folio-motion.test.mjs](../../tests/js/public-folio-motion.test.mjs)
@@ -166,7 +181,7 @@ erklären. Produktverhalten und neue visuelle Abnahme bleiben getrennt.
 Die Produkt- und Testquellen wurden geprüft, die Node-/Browser-Suite
 hier nicht ausgeführt. Keine Testdatei auf `docs` verändert.
 
-**Noch offene Lebensdauer:** `animatePaper()` startet **vier unendliche
+**Weiterhin offene Lebensdauer:** `animatePaper()` startet **vier unendliche
 Pseudo-`Animation`-Objekte und zwei unendliche Shadow-Animationen** pro
 neuem Dokument; weder deren Handles noch ein entsprechender
 `cancel()`-Disposer werden vom `app.js::disposePage()` geführt.
