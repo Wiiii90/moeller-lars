@@ -1,6 +1,6 @@
 # Öffentliche SPA-Dokumentnavigation und Instanzlebenszyklus
 
-**Code-Referenz:** `dev` bei `44667847f1de7ab43e1341c09ee2a5e4c0a40982` (achsengebundene Folio-Animation, Artwork-Detail-Höhenwechsel und korrigierte Mid-Flight-Shadow-Koordinaten). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
+**Code-Referenz:** `dev` bei `e06c7391b4a52ab8102b31ca7fbc1e872dfeb529` (achsengebundene Folio-Animation, Artwork-Detail-Höhenwechsel und korrigierte Mid-Flight-Shadow-Koordinaten). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
 
 ## Architekturentscheidung
 
@@ -81,7 +81,7 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 ## Native Folio-Ränder, Schatten und Artwork-Höhenübergänge
 
-**Aktueller Referenzstand:** `dev@44667847f1de7ab43e1341c09ee2a5e4c0a40982`
+**Aktueller Referenzstand:** `dev@e06c7391b4a52ab8102b31ca7fbc1e872dfeb529`
 (über einen Zwei-Eltern-Merge nach `docs` übernommen). Die Folio-Animation
 benutzt nur die bestehenden `#content::before/::after`- und
 `.site-navigation::before/::after`-Konturen sowie deren vorhandene
@@ -172,6 +172,21 @@ Der alte konkrete Source-/Test-Widerspruch ist **behoben**;
 dies ist keine Behauptung eines hier ausgeführten vollständigen
 `node --test`- oder Playwright-Laufs. Auch reale Rendering-
 Abstände und die Browser-Lebensdauer sind nicht getestet.
+
+**Browser-Testquelle und Public-Vertrag nachgezogen:**
+Die neu übernommenen Commits `ebf291bd` und `e06c7391`
+ergänzen den [normativen Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md)
+um die kontinuierlich sichtbaren Shadow-Flächen, positive
+Menü-Endpunkte und die getrennte Artwork-Papier-Build-Animation.
+[public-folio-spa.spec.mjs](../../tests/browser/public-folio-spa.spec.mjs)
+prüft statisch sichtbar definierte Playwright-Assertions zu
+Menü-Endpunkten, aus `getComputedStyle()` gelesenen Shadow-Offsets,
+zu den beiden getrennten hinteren Ebenen sowie zur exakt
+**700-ms**-Animation des Content-`box-shadow` mit einer Iteration.
+Nach Abschluss prüft der Test die Rückkehr einer **unendlichen**
+Ambient-Animation. Die Browser-Datei wurde gelesen, aber **nicht**
+durch Playwright ausgeführt; diese Quellen-Assertions sind noch keine
+Browserabnahme. Der Code bleibt ohne native Animation-Handle-Disposal.
 
 **Weiterhin offene Lebensdauer:** `animatePaper()` startet **vier unendliche
 Pseudo-`Animation`-Objekte und zwei unendliche Shadow-Animationen** pro

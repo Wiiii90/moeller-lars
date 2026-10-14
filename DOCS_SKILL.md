@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `319804faec1538d78d7b755e8341fa372d1610d6` |
-| darin aufgenommener `dev`-Stand | `44667847f1de7ab43e1341c09ee2a5e4c0a40982` |
-| Status | Weitere drei `dev`-Commits (vier Pfade) nach dem ersten Merge übernommen; neue Heads immer erneut prüfen |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `9b6b2547fdd34c774ca5750b38642ae775e3e25d` |
+| darin aufgenommener `dev`-Stand | `e06c7391b4a52ab8102b31ca7fbc1e872dfeb529` |
+| Status | Bis `e06c7391b` in `docs` enthalten; neue Heads immer erneut prüfen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -231,9 +231,9 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
    Weitere Quelle: [Importgrenzen](docs/architecture/import-boundaries.md),
    [Publication-Operationen](docs/architecture/publication-working-operations.md),
    [Schemaevolution](docs/architecture/schema-evolution.md).
-5. **Public-Folio/SPA-Lifecycle:** Stand `dev@44667847f`,
+5. **Public-Folio/SPA-Lifecycle:** Stand `dev@e06c7391b`,
    synchronisiert mit `docs` über echten Zwei-Eltern-Merge
-   `319804faec1538d78d7b755e8341fa372d1610d6`.
+   `9b6b2547fdd34c774ca5750b38642ae775e3e25d`.
    Vier endlose native Pseudo-`Animation`-Objekte;
    Content-/Menü-Schatten-Ambient-Loops über **34,8/36,4 s**
    mit achsweiser Bewegung und ruhenden WAAPI-Keyframes.
@@ -247,7 +247,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
    ebenso ein früherer doppelt escapeter Shadow-RegExp-Parser
    durch `dev@e8ae2042`. Neue JS-Fixtures decken Ruhe, Sichtbarkeit
    beider Papierlagen, Zwischenpositionen und Artwork-Grow/Shrink ab;
-   ein vollständiger JS-/Browserlauf wurde **nicht** ausgeführt.
+   der zusätzlich übernommene **Browser-Test** prüft positive
+   Menü-Top-/Bottom-Abstände, real gerenderte hintere Shadow-Lagen
+   und die 700-ms-Shadow-Build-Animation samt anschließender
+   unendlicher Wiederaufnahme. Der zugehörige Public-Produktvertrag
+   ist entsprechend nachgezogen, **keine Browserabnahme**.
+   Vollständige JS-/Playwright-Läufe wurden hier **nicht** ausgeführt.
    Die unendlichen Animation-Handles werden weiterhin nicht mit
    einem expliziten `cancel()`-Disposer verfolgt. Das ist eine
    **Browser-Lifecycle-/Retention-Testlücke**, kein bewiesener Leak.
