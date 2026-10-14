@@ -161,6 +161,8 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
 
+- **Root-Rich-Text-Regel abgeglichen:** `AGENTS.md` erlaubt jetzt ausdrücklich die zentral validierte externe HTTP(S)-Image-Option neben kanonischem Storage-`media:<id>`. `AdminRichText`, `SafeRichTextRenderer` und `SafeLinkPolicy` zeigen diesen tatsächlich existierenden Pfad; unvalidierte/externe unsichere Schemes und zweite Editor-Pipelines bleiben ausgeschlossen.
+
 - [Tabellen](docs/ADMIN-TABLE-CONTRACT.md) besitzen Home-/Custom-Page-
   Component-Hierarchie, permanente Component-Selects und Parent-/Child-
   Achsen sowie Blog-/Exhibition-Splitfold, Toolbar- und Selection-

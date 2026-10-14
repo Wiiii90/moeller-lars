@@ -404,7 +404,7 @@ AdminRichText / Filament MarkdownEditor
   -> public HTML
 ```
 
-Canonical embedded Storage media images use `media:<id>`. Do not resurrect TipTap/RichEditor, legacy `[[journal-image:...]]` runtime syntax, arbitrary external-image embeds or a second parser/editor.
+Canonical embedded Storage media images use `media:<id>`. The **same** `AdminRichText` editor additionally supports explicitly validated external **HTTP(S)** image URLs via `SafeRichTextRenderer` / `SafeLinkPolicy`; this does **not** turn those URLs into Storage `MediaAsset` references. Reject unchecked/unsafe external-image schemes and credentials. Do not resurrect TipTap/RichEditor, legacy `[[journal-image:...]]` runtime syntax or a second parser/editor. The [canonical Rich Text and reusable media contract](docs/ADMIN-CONTROL-CONTRACT.md#rich-text-and-reusable-media-selection) owns this precise boundary.
 
 ### Media
 
