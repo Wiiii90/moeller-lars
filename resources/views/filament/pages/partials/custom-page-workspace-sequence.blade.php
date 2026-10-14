@@ -189,7 +189,7 @@
                                                 data-hierarchy-drag-handle="true"
                                                 data-image-index="{{ $pageComponent['index'] }}"
                                                 data-child-index="{{ $childIndex }}"
-                                                @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:handle @else disabled @endif
+                                                @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:handle @endif @disabled(! $reorderEnabled)
                                                 aria-label="Reorder image child {{ $child['title'] }}"
                                             >⋮⋮</button>
                                             <span class="custom-page-component__child-type">{{ $child['type'] }}</span>

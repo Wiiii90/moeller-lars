@@ -263,3 +263,22 @@ it('nests and releases a CV list without data loss or implicit sibling changes',
     expect(array_column($restored, 'type'))->toBe(['image','list','text','text'])
         ->and($restored[1]['items'][0]['title'])->toBe('Undated');
 });
+
+it('sorts Image children only within their owner while preserving publication states', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Image child sort', 'image-child-sort');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('image-child-sort');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true, 'children' => [
+            ['type' => 'text', 'published' => true, 'title' => 'First', 'body' => 'A'],
+            ['type' => 'text', 'published' => false, 'title' => 'Second', 'body' => 'B'],
+        ]],
+        ['type' => 'text', 'title' => 'Outside', 'body' => 'C'],
+    ]]);
+    $editor = app(\App\Domain\Content\CustomPageEditorialService::class);
+    expect($editor->sortImageChild($settings, 0, 1, 0))->toBeTrue();
+    $blocks = $settings->fresh()->components();
+    expect(array_column($blocks[0]['children'], 'title'))->toBe(['Second', 'First'])
+        ->and($blocks[0]['children'][0]['published'])->toBeFalse()
+        ->and($blocks[1]['title'])->toBe('Outside');
+});
