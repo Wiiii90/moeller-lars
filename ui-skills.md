@@ -231,6 +231,17 @@ Journal already uses visible Position and is the current reference for the conve
 
 ## 9. Drag and ordering
 
+
+For hierarchical editors (Pages and Custom Pages), sorting and parenting are
+different operations: each sibling level gets an isolated native `wire:sort:group`
+name with a stable `group-id`; only the small, labeled
+`.admin-hierarchy__nest-target` accepts a parent change. Never cover the
+identity/position cells with a full-row nest overlay. Custom Page Image children
+are sorted within their own Image group, moved into a decorative Image only
+via the explicit drop target or Edit selection, and moved back out via
+"Move out" or the page-level target. Keep the domain mutation transactional
+and preserve publication, list dates, and component content.
+
 Use native Livewire sorting only:
 
 ```text
