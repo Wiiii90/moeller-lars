@@ -72,7 +72,7 @@ test('only the existing menu strokes and rear paper planes show, without oversho
                 }
             }
             layers.push(string.slice(begin));
-            return layers.slice(1).map(layer=>{
+            return layers.slice(-1).map(layer=>{
                 const values=[...layer.matchAll(/(-?\\d+(?:\\.\\d+)?)px/g)]
                     .slice(0,4).map(match=>Number(match[1]));
                 const [x,y]=values;
@@ -85,13 +85,13 @@ test('only the existing menu strokes and rear paper planes show, without oversho
             content:parse(document.querySelector('#content')),
         };
     });
-    for(let i=0;i<2;i++){
-        const menu=paperProjections.menu[i];
-        const content=paperProjections.content[i];
-        expect(menu.top).toBeLessThanOrEqual(.05);
-        expect(menu.left).toBeCloseTo(content.left,0);
-        expect(menu.bottom).toBeCloseTo(content.bottom,0);
-    }
+    expect(paperProjections.menu).toHaveLength(1);
+    expect(paperProjections.content).toHaveLength(1);
+    const menuSheet=paperProjections.menu[0];
+    const contentSheet=paperProjections.content[0];
+    expect(menuSheet.top).toBeLessThanOrEqual(.05);
+    expect(menuSheet.left).toBeCloseTo(contentSheet.left,0);
+    expect(menuSheet.bottom).toBeCloseTo(contentSheet.bottom,0);
     const menu = await page.evaluate(() => {
         const element = document.querySelector('.site-navigation');
         return document.getAnimations()
@@ -104,11 +104,11 @@ test('only the existing menu strokes and rear paper planes show, without oversho
     expect(menu).toHaveLength(2);
     for (const frames of menu) {
         expect(frames.some(frame => frame.bottom.endsWith('%')
-            && parseFloat(frame.bottom) >= 60)).toBe(true);
+            && parseFloat(frame.bottom) >= 25)).toBe(true);
         expect(frames.every(frame => !frame.bottom.endsWith('%')
-            || parseFloat(frame.bottom) <= 75)).toBe(true);
+            || parseFloat(frame.bottom) <= 73)).toBe(true);
         expect(frames.every(frame => parseFloat(frame.top) === 0)).toBe(true);
-        expect(frames.every(frame => parseFloat(frame.bottom) >= 0)).toBe(true);
+        expect(frames.every(frame => parseFloat(frame.bottom) > 0)).toBe(true);
         expect(new Set(frames.map(frame => frame.width)).size).toBe(1);
         expect(new Set(frames.map(frame => frame.left ?? frame.right)).size).toBe(1);
     }

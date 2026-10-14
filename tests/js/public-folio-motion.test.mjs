@@ -7,8 +7,8 @@ import {
     advancePublicFolio, animatePublicHeroChange,
 } from '../../resources/js/public-folio-motion.js';
 
-const CONTENT_SHADOW = 'rgba(255,255,255,.14) -2px 3px 0px 0px, rgba(255,255,255,.31) -5px 7px 0px 0px, rgba(255,255,255,.20) -8px 10px 0px 0px';
-const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -1.5px 3.5px 0px 3.5px, rgba(255,255,255,.20) -3px 5px 0px 5px';
+const CONTENT_SHADOW = 'rgba(255,255,255,.31) -5px 7px 0px 0px';
+const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -1.5px 3.5px 0px 3.5px';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
     const effects = [], animations = [], computed = new Map();
@@ -36,7 +36,7 @@ function fixture({ height = 540, menu = true, content = true } = {}) {
         return el;
     };
     const paper = content ? create('content', CONTENT_SHADOW, '17.6px','64px','60.8px','18.4px') : null;
-    const nav = menu ? create('menu',MENU_SHADOW,'0px','0px','0px','0px') : null;
+    const nav = menu ? create('menu',MENU_SHADOW,'0px','32%','0px','1px') : null;
     const body = content ? create('body','none','0px','0px','0px','0px') : null;
     const root = { querySelector: selector => ({
         '#content': paper, '.site-navigation': nav,
@@ -62,44 +62,37 @@ function browser(run, options = {}) {
     finally { Object.entries(saved).forEach(([key,value]) => { globalThis[key]=value; }); }
 }
 
-function coords(value) {
+function shadowLayers(value) {
     const chunks=[];let depth=0,start=0;
-    for(let i=0;i<value.length;i++){
+    for (let i=0;i<value.length;i++){
         if(value[i]==='(')depth++;
         else if(value[i]===')')depth--;
         else if(value[i]===','&&depth===0){chunks.push(value.slice(start,i));start=i+1;}
     }
     chunks.push(value.slice(start));
-    assert.equal(chunks.length,3);
-    return chunks.slice(1).flatMap(v => [...v.matchAll(/(-?\d+(?:\.\d+)?)px/g)]
-        .slice(0,2).map(m=>Number(m[1])));
+    return chunks;
 }
-
-// Compare the actual projected sheet edges, including each shadow's spread.
-// Menu spread follows Y to remain flush with the top (unlike Content's 0px).
+function coords(value) {
+    const chunks=shadowLayers(value);
+    const outer=chunks.at(-1);
+    return [...outer.matchAll(/(-?\d+(?:\.\d+)?)px/g)]
+        .slice(0,2).map(m=>Number(m[1]));
+}
 function projected(value) {
-    const chunks=[];let depth=0,start=0;
-    for(let i=0;i<value.length;i++){
-        if(value[i]==='(')depth++;
-        else if(value[i]===')')depth--;
-        else if(value[i]===','&&depth===0){chunks.push(value.slice(start,i));start=i+1;}
-    }
-    chunks.push(value.slice(start));
-    return chunks.slice(1).map(layer=>{
+    return shadowLayers(value).slice(-1).map(layer=>{
         const values=[...layer.matchAll(/(-?\d+(?:\.\d+)?)px/g)]
-            .slice(0,4).map(match=>Number(match[1]));
-        const [x,y]=values;
-        const spread=values.length>=3?values.at(-1):0;
-        return { left:x-spread, bottom:y+spread, top:y-spread };
+            .slice(0,4).map(m=>Number(m[1]));
+        const [x,y]=values,spread=values.length>=3?values.at(-1):0;
+        return {left:x-spread,bottom:y+spread,top:y-spread};
     });
 }
 
 test('accepted original lines, bounded menu ends and visible paper baselines',()=>{
     assert.deepEqual(FOLIO_VARIANTS[0],['1.10rem','4rem','3.8rem','1.15rem']);
-    assert.deepEqual(MENU_VARIANTS[0],['0rem','0rem','0rem','0rem']);
+    assert.deepEqual(MENU_VARIANTS[0],['0rem','32%','0rem','1px']);
     assert.ok(MENU_VARIANTS.every(v=>v.every(p=>parseFloat(p)>=0)));
-    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-1.5,3.5,-3,5]);
-    assert.deepEqual(FOLIO_PLANE_BASE.content,[-5,7,-8,10]);
+    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-1.5,3.5]);
+    assert.deepEqual(FOLIO_PLANE_BASE.content,[-5,7]);
 });
 
 test('ambient and navigation-impulse corners only move one axis per frame',()=>{
@@ -170,75 +163,58 @@ test('short pages keep at least 40px of visible contour during a build',()=>{
     assert.ok(cutTop>0&&cutBottom>0);
 });
 
-test('menu corners remain attached to the TOP edge and move only their lower joint',()=>{
-    for (const [index,side,value,width] of [
-        [0,'left','-8.32px','8.32px'], [1,'right','-7.04px','7.04px'],
-    ]) {
-        const frames=buildMenuCornerFrames({
-            top:'0px',bottom:'0px',[side]:value,width,
-        },index);
-        assert.ok(frames.every(frame=>frame.top==='0px'));
-        assert.ok(frames.every(frame=>frame.width===width&&frame[side]===value));
-        assert.ok(frames.every(frame=>parseFloat(frame.bottom)>=0));
-        assert.ok(frames.some(frame=>parseFloat(frame.bottom)>0));
+test('menu lines never touch bottom, can reverse early, and left always ends higher',()=>{
+    const configurations=[
+        {side:'left',width:'8.32px',distance:'-8.32px',baseline:'32%',high:'73%',middle:'42%'},
+        {side:'right',width:'7.04px',distance:'-7.04px',baseline:'1px',high:'26%',middle:'6%'},
+    ];
+    const samples=configurations.map((conf,index)=>{
+        const start={top:'0px',bottom:conf.baseline,width:conf.width,[conf.side]:conf.distance};
+        const frames=buildMenuCornerFrames(start,index);
+        assert.equal(frames.length,10);
+        assert.deepEqual(frames.map(f=>f.offset),[0,.08,.29,.37,.54,.61,.80,.86,.97,1]);
+        assert.ok(frames.every(f=>f.top==='0px'), 'always anchored to upper edge');
+        assert.ok(frames.every(f=>f[conf.side]===conf.distance&&f.width===conf.width));
+        assert.ok(frames.every(f=>parseFloat(f.bottom)>0), 'never touches lower edge');
         assert.equal(frames[0].bottom,frames.at(-1).bottom);
-    }
-});
-
-test('menu lines grow short while remaining connected to their top edge',()=>{
-    for (let side=0;side<2;side++) {
-        const initial={top:'0px',bottom:'0px',width:'8px',
-            [side===0?'left':'right']:'-8px'};
-        const frames=buildMenuCornerFrames(initial,side);
-        assert.ok(frames.every(frame=>frame.top==='0px'));
-        assert.ok(frames.every(frame=>frame.width==='8px'));
-        assert.ok(frames.every(frame=>frame.left==='-8px'
-            ||frame.right==='-8px'));
-        assert.ok(frames.every(frame=>parseFloat(frame.bottom)>=0));
-        assert.ok(frames.some(frame=>frame.bottom.endsWith('%')
-            &&parseFloat(frame.bottom)>=60), 'line must become conspicuously shorter');
-        assert.equal(frames.filter(frame=>frame.bottom.endsWith('%')).length,2,
-            'no intermediate stops or direction corrections within the ascent');
-        assert.deepEqual(frames.map(frame=>frame.offset),[0,.13,.48,.62,.89,1]);
-        assert.equal(frames[0].bottom,frames.at(-1).bottom);
-        assert.equal(frames.at(-1).offset,1);
-    }
-});
-
-test('paper backing layers cannot turn black during ambient or page build',()=>{
-    for (const type of ['content','menu']) {
-        const initial=type==='menu'?MENU_SHADOW:CONTENT_SHADOW;
-        for (const frames of [
-            buildShadowFrames(initial,type),
-            buildPageImpulse(initial,initial,type,true),
-            buildPageImpulse(initial,initial,type,false),
-        ]) {
-            // The navigation's thin inset divider is allowed to stay grey.
-            const layers=frames.map(f=>f.boxShadow.split(/,(?![^()]*\))/));
-            for(const list of layers) {
-                const backing=list.slice(1).join(',');
-                assert.ok(!/rgba\(28,\s*35,\s*32/.test(backing),
-                    'no dark painted paper surface');
-                assert.ok(/rgba\(255,\s*255,\s*255/.test(backing)
-                    || /var\(--public-folio-(soft|depth)\)/.test(backing));
-            }
+        assert.deepEqual(frames.map(f=>f.bottom),[
+            conf.baseline,conf.baseline,
+            index===0?'60%':'17%', index===0?'60%':'17%',
+            conf.middle,conf.middle,conf.high,conf.high,conf.baseline,conf.baseline,
+        ]);
+        return frames;
+    });
+    const pixels=(value,height=60)=>value.endsWith('%')
+        ? parseFloat(value)*height/100 : parseFloat(value);
+    // Since cycles are asynchronous, compare EVERY possible phase pair.
+    for (const left of samples[0]){
+        for (const right of samples[1]){
+            assert.ok(pixels(left.bottom)>pixels(right.bottom),
+                'the left stroke must always be shorter than right');
         }
     }
 });
 
-test('ambient menu never reverses direction between its only two sweeps',()=>{
-    for(const side of [0,1]){
-        const element={ top:'0px',bottom:'0px',width:'8px',
-            [side===0?'left':'right']:'-8px'};
-        const frames=buildMenuCornerFrames(element,side);
-        assert.equal(frames.length,6);
-        assert.equal(frames[0].bottom,'0px');
-        assert.equal(frames[1].bottom,'0px');
-        assert.equal(frames[2].bottom,frames[3].bottom);
-        assert.equal(frames[4].bottom,'0px');
-        assert.equal(frames[5].bottom,'0px');
-        assert.ok(frames.every(f=>f.top==='0px'), 'top always attached');
-        assert.ok(frames.every((f,i)=>i===0||f.offset>frames[i-1].offset));
+test('exactly one pale outer paper is used even during animation',()=>{
+    for(const type of ['content','menu']){
+        const original=type==='menu'?MENU_SHADOW:CONTENT_SHADOW;
+        const cases=[buildShadowFrames(original,type),
+            buildPageImpulse(original,original,type,true),
+            buildPageImpulse(original,original,type,false)];
+        for(const frames of cases)for(const frame of frames){
+            const layers=shadowLayers(frame.boxShadow);
+            assert.equal(layers.length,type==='menu'?2:1,
+                'one outer sheet, with optional inset rule');
+            const exterior=layers.at(-1);
+            assert.ok(!/rgba\(28,\s*35,\s*32/.test(exterior));
+            assert.ok(/rgba\(255,\s*255,\s*255/.test(exterior)
+                ||exterior.includes('var(--public-folio-soft)'));
+            const [sheet]=projected(frame.boxShadow);
+            assert.ok(sheet.left<-.3,'one paper backing must show on left');
+            assert.ok(sheet.bottom>.3,'one paper backing must show below');
+            if(type==='menu') assert.ok(sheet.top<=.01,
+                'menu paper reaches top throughout the animation');
+        }
     }
 });
 
@@ -260,37 +236,29 @@ test('ambient Content lines take one vertical excursion per endpoint and return 
     }
 });
 
-test('ambient paper, growth and contraction preserve both exposed rear layers',()=>{
+test('ambient and page-build backing motion stays within a visible one-sheet corridor',()=>{
     for(const type of ['content','menu']){
-        const start=type==='content'?CONTENT_SHADOW:MENU_SHADOW;
-        const sequences=[
-            buildShadowFrames(start,type),
-            buildPageImpulse(start,start,type,true),
-            buildPageImpulse(start,start,type,false),
-        ];
-        for(const frames of sequences){
-            assert.equal(frames[0].boxShadow,start);
-            assert.equal(frames.at(-1).boxShadow,start);
-            for(const frame of frames){
-                const [middle,rear]=projected(frame.boxShadow);
-                assert.ok(rear.left<=middle.left-1.5,
-                    'rear paper must remain exposed to the left');
-                assert.ok(rear.bottom>=middle.bottom+1,
-                    'rear paper must remain exposed below');
-                assert.ok(middle.left<=-1.5,'near paper must show beyond white');
-                assert.ok(middle.bottom>=.5,'near paper must show below white');
-                if(type==='menu'){
-                    assert.ok(middle.top<=.01 && rear.top<=.01,
-                        'menu paper planes must always connect at their top');
-                }
+        const original=type==='menu'?MENU_SHADOW:CONTENT_SHADOW;
+        for(const frames of [
+            buildShadowFrames(original,type),
+            buildPageImpulse(original,original,type,true),
+            buildPageImpulse(original,original,type,false),
+        ]) {
+            assert.equal(frames[0].boxShadow,original);
+            assert.equal(frames.at(-1).boxShadow,original);
+            for(let i=1;i<frames.length;i++){
+                const previous=coords(frames[i-1].boxShadow);
+                const next=coords(frames[i].boxShadow);
+                assert.ok(next.filter((x,j)=>x!==previous[j]).length<=1,
+                    'no diagonal sheet movement');
             }
         }
     }
 });
 
-test('navigation impulses are visibly stronger than ambient excursions',()=>{
+test('single-sheet page-build impulse is stronger than calm ambient travel',()=>{
     const growing=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,'content',true);
-    assert.ok(Math.min(...growing.map(f=>coords(f.boxShadow)[2]))<-12);
+    assert.ok(Math.min(...growing.map(f=>coords(f.boxShadow)[0]))<-8);
     const shrinking=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,'content',false);
     assert.ok(Math.max(...shrinking.map(f=>coords(f.boxShadow)[0]))>-4);
 });
