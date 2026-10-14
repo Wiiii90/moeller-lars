@@ -231,6 +231,35 @@ trait CustomPageWorkspaceComponentActions
                         'targetType' => $target,
                     ]);
                 },
+                onImageChange: function (mixed $state) use ($arguments): void {
+                    [$index, $type] = $this->actionComponentTarget($arguments);
+                    if ($type !== 'image') {
+                        return;
+                    }
+
+                    $id = filter_var($state, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                    if ($id === false) {
+                        throw ValidationException::withMessages(['media_asset_id' => 'Choose an image from Storage.']);
+                    }
+
+                    $existing = $this->componentAt($index, 'image');
+                    $changed = app(CustomPageEditorialService::class)->updateBlock(
+                        $this->settings(),
+                        $index,
+                        'image',
+                        [...$existing, 'media_asset_id' => $id],
+                    );
+                    if (! $changed) {
+                        return;
+                    }
+
+                    $this->clearSelections();
+                    $this->loadComponentProjection();
+                    app(AdminNotifier::class)->notification(
+                        title: 'Component saved',
+                        status: 'success',
+                    );
+                },
             ))
             ->modalHeading('Edit component')
             ->extraModalFooterActions(fn (array $arguments): array => $this->componentEditHeaderActions($arguments, $actionName))
