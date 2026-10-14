@@ -111,12 +111,6 @@ trait CustomPageWorkspaceLifecycle
             ->filter(static fn (mixed $target): bool => is_string($target))
             ->values()
             ->all();
-        $this->selectedChildTargets = collect($this->components)
-            ->flatMap(static fn (array $component): array => is_array($component['children'] ?? null) ? $component['children'] : [])
-            ->pluck('target')
-            ->filter(static fn (mixed $target): bool => is_string($target))
-            ->values()
-            ->all();
     }
 
     public function pageSettingsAction(): Action
