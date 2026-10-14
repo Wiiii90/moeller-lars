@@ -90,23 +90,32 @@ export function capturePublicFolio(root = document) {
 export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     const frames = [{ ...start }];
     const step = patch => frames.push({ ...frames[frames.length - 1], ...patch });
+    // Pauses are ordinary repeated WAAPI frames, NOT timers: individual
+    // strokes may rest while others continue. One direction per segment.
+    const rest = () => step({});
     step({ top: base.top });
     step({ bottom: base.bottom });
+    rest(); rest();
     step({
         [edge.side]: `calc(${edge.offset} - 1.5px)`,
         width: `calc(${edge.width} + 1.5px)`,
     });
+    rest();
     step({ top: nextTop });
+    rest();
     step({ bottom: nextBottom });
+    rest();
     step({
         [edge.side]: `calc(${edge.offset} + 1px)`,
         width: `calc(${edge.width} - 1px)`,
     });
+    rest(); rest();
     step({ top: base.top });
     step({ bottom: base.bottom });
     step({ [edge.side]: start[edge.side], width: start.width });
     step({ top: start.top });
     step({ bottom: start.bottom });
+    rest(); rest();
     return frames.map((frame, index) => ({
         ...frame,
         offset: index / (frames.length - 1),
@@ -147,36 +156,103 @@ function renderedShadowCoords(value) {
     return positions.length === 4 && positions.every(Number.isFinite) ? positions : null;
 }
 
-// The two existing rear paper planes travel left/down or right/up by 1–2px.
-// EVERY transition segment changes one x or y coordinate, even if a SPA
-// navigation interrupted the preceding plane animation mid-movement.
-export function buildShadowFrames(start, type) {
+// These match the three CSS layers exactly. The second and third paper
+// planes must remain separate along LEFT and BOTTOM for every animation frame.
+export const FOLIO_PLANE_BASE = Object.freeze({
+    content: [-5, 7, -8, 10],
+    menu: [-2, 2, -5, 4],
+});
+
+function shadowMotionFrames(start, type, direction, end = start) {
     const shadow = SHADOW_START[type];
-    const initial = type === 'content' ? [-5, 7, -8, 10] : [-2, 2, -5, 4];
-    const rendered = renderedShadowCoords(start) ?? initial;
-    const coords = [...rendered];
+    const base = FOLIO_PLANE_BASE[type];
+    const positions = [...(renderedShadowCoords(start) ?? base)];
     const frames = [start];
-    const move = (index, value) => {
-        if (coords[index] === value) return;
-        coords[index] = value;
-        frames.push(shadow(...coords));
+    const current = () => shadow(...positions);
+    const move = (index, target) => {
+        if (positions[index] === target) return;
+        positions[index] = target;
+        frames.push(current());
     };
-    // Realign a captured intermediate state one axis at a time.
-    initial.forEach((value, index) => move(index, value));
-    if (frames.length === 1) frames.push(shadow(...coords));
-    move(0, initial[0] - 1); // middle layer outward, x
-    move(2, initial[2] - 1); // rear layer outward, x
-    move(1, initial[1] + 1); // middle layer down, y
-    move(3, initial[3] + 2); // rear layer down, y
-    move(0, initial[0]);     // middle layer inward, x
-    move(2, initial[2]);     // rear layer inward, x
-    move(1, initial[1]);     // middle layer up, y
-    move(3, initial[3]);     // rear layer up, y
-    rendered.forEach((value, index) => move(index, value));
-    frames.push(start);      // same computed starting state at loop boundary
+    const rest = () => frames.push(current());
+
+    // Resume interrupted geometry axis by axis; never snap both coordinates
+    // to a default position in one frame.
+    base.forEach((value, index) => move(index, value));
+    rest(); rest();
+    const outward = direction !== 'inward';
+    move(0, base[0] + (outward ? -.7 : .35));
+    move(2, base[2] + (outward ? -.9 : .45));
+    rest();
+    move(1, base[1] + (outward ? .45 : -.25));
+    move(3, base[3] + (outward ? .8 : -.35));
+    rest(); rest();
+    // Retract each sheet coordinate independently before the next phase.
+    base.forEach((value, index) => move(index, value));
+    rest();
+    // For the constant ambient cycle both excursions are available, with
+    // quiet intervals between them; no involuntary jitter or diagonal steps.
+    if (direction === 'cycle') {
+        move(0, base[0] + .35);
+        move(2, base[2] + .45);
+        rest();
+        move(1, base[1] - .25);
+        move(3, base[3] - .35);
+        rest(); rest();
+        base.forEach((value, index) => move(index, value));
+        rest();
+        (renderedShadowCoords(start) ?? base).forEach((value, index) => move(index, value));
+    }
+    frames.push(end);
     return frames.map((boxShadow, index) => ({
-        boxShadow, offset: index / (frames.length - 1), easing: 'ease-in-out',
+        boxShadow, offset: index / (frames.length - 1),
+        easing: 'cubic-bezier(.33, 0, .67, 1)',
     }));
+}
+
+// A shadow layer's color/shape never changes, only one x/y coordinate per
+// segment. Even the farthest inward positions keep a >=2px exposed margin.
+export function buildShadowFrames(start, type) {
+    return shadowMotionFrames(start, type, 'cycle');
+}
+
+// During a taller/shorter artwork swap the two rear paper planes briefly
+// open or close together with the 700ms article-height reveal, then settle
+// back on the authored background. No new surfaces or image transformations.
+export function buildArtworkRevealFrames(start, end, growing) {
+    return shadowMotionFrames(start, 'content', growing ? 'outward' : 'inward', end);
+}
+
+function playShadowBreathing(element, shadow, type) {
+    if (!element || !shadow || typeof element.animate !== 'function') return;
+    try {
+        element.animate(buildShadowFrames(shadow, type), {
+            duration: type === 'content' ? 34800 : 36400,
+            iterations: Infinity,
+        });
+    } catch {
+        // Unsupported animation keeps the preexisting CSS paper layers.
+    }
+}
+
+function playArtworkBuild(element, shadow, growing, root) {
+    if (!element || !shadow || typeof element.animate !== 'function') return false;
+    try {
+        const finalShadow = getComputedStyle(element).boxShadow;
+        const animation = element.animate(
+            buildArtworkRevealFrames(shadow, finalShadow, growing),
+            { duration: 700, easing: 'cubic-bezier(.22, .62, .32, 1)' },
+        );
+        animation.finished.then(() => {
+            // A later SPA visit may already have replaced this paper.
+            if (root.querySelector('#content') === element) {
+                playShadowBreathing(element, getComputedStyle(element).boxShadow, 'content');
+            }
+        }, () => {});
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 function animatePaper(element, states, edges, durations, shadow, type) {
@@ -189,16 +265,7 @@ function animatePaper(element, states, edges, durations, shadow, type) {
             states[index], baseFrame, base[1][columns[0]], base[2][columns[1]], edges[index],
         ), durations[index]);
     }
-    if (shadow && typeof element.animate === 'function') {
-        try {
-            element.animate(buildShadowFrames(shadow, type), {
-                duration: type === 'content' ? 31200 : 32400,
-                iterations: Infinity,
-            });
-        } catch {
-            // Static native paper layers remain visible.
-        }
-    }
+    playShadowBreathing(element, shadow, type);
 }
 
 // Height changes belong to the already rendered artwork article, not the
@@ -239,12 +306,27 @@ export function advancePublicFolio(root = document) {
     const menu = root.querySelector('.site-navigation');
     const previous = snapshot;
     snapshot = null;
+    const contentShadow = previous?.contentShadow ?? (content && getComputedStyle(content).boxShadow);
+    const article = artworkArticle(root);
+    const newHeight = article?.getBoundingClientRect().height;
+    const priorHeight = previous?.articleHeight;
+    const artworkChange = Number.isFinite(priorHeight) && Number.isFinite(newHeight)
+        && Math.abs(priorHeight - newHeight) >= 6;
+    // Keep one owner of each shadow animation. During the artwork-height
+    // build, the 700ms paper-plane reveal temporarily replaces ambient
+    // breathing, which resumes only after that short transition completes.
     animatePaper(content, previous?.content ?? pairGeometry(content),
-        CONTENT_EDGES, CONTENT_DURATIONS,
-        previous?.contentShadow ?? (content && getComputedStyle(content).boxShadow), 'content');
+        CONTENT_EDGES, CONTENT_DURATIONS, artworkChange ? null : contentShadow, 'content');
     animatePaper(menu, previous?.menu ?? pairGeometry(menu),
         MENU_EDGES, MENU_DURATIONS,
         previous?.menuShadow ?? (menu && getComputedStyle(menu).boxShadow), 'menu');
-    if (previous?.articleHeight != null) animateArtworkHeight(previous.articleHeight, root);
+
+    if (artworkChange && animateArtworkHeight(priorHeight, root)) {
+        if (!playArtworkBuild(content, contentShadow, newHeight > priorHeight, root)) {
+            playShadowBreathing(content, contentShadow, 'content');
+        }
+    } else if (artworkChange) {
+        playShadowBreathing(content, contentShadow, 'content');
+    }
     return Boolean(content || menu);
 }
