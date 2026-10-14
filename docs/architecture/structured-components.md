@@ -1,6 +1,6 @@
 # Strukturierte Content-Daten: Custom Pages, Home, Contact
 
-**Aktueller Quellvergleich:** `dev@3c1bc75f84e56a5fefc84a4342f2dce6a1a2e48e` für das Custom-Page-Modell, Home-List-Editor und die Contact-Persistenz. Der [maschinenlesbare Typkatalog](structured-components.json) ist weiterhin ein **eingefrorener älterer Quellstand `a71ec7d1b28d09cec1399998239b09bdaefdea11`**. Er enthält die neuen Felder `context` und `contact.title` noch nicht; ohne vollständigen Regenerierungslauf darf seine Quellreferenz nicht umetikettiert werden. Er ist kein ausführbarer JSON-Schema-Validator.
+**Aktueller Quellvergleich:** `dev@81c12c836fdce03a478866ec3d147ebc818b24a6` für Custom-Page-Image-Children, List/Contact, Repeater-Ordnung, Adoption und den Public-Float-Renderer. Der [maschinenlesbare Typkatalog](structured-components.json) ist weiterhin ein **eingefrorener älterer Quellstand `a71ec7d1b28d09cec1399998239b09bdaefdea11`**. Er enthält die neuen Felder `context` und `contact.title` noch nicht; ohne vollständigen Regenerierungslauf darf seine Quellreferenz nicht umetikettiert werden. Er ist kein ausführbarer JSON-Schema-Validator.
 
 Ein klassisches Eloquent- oder SQL-ERD bildet diese Zusammenhänge nicht ab: `CustomPageSetting.blocks` und `HomePresentationSetting.configuration` enthalten **geordnete, geschachtelte JSON-Daten**. Medienreferenzen sind IDs im Payload, nicht automatisch Datenbank-Fremdschlüssel. Die genauen SQL-Spaltentypen und Constraints bleiben Aufgabe des gesonderten PostgreSQL-Katalogexports.
 
@@ -14,7 +14,12 @@ flowchart TD
     Home --> Hero["artwork: Hero-Optionen"]
     Construction --> Block
     Custom --> Block
-    Block --> Image["image: media_asset_id"]
+    Block --> Image["image: media_asset_id, decorative, scale, children?"]
+    Image -->|"nur decorative"| ImageChildren["ordered image.children[]"]
+    ImageChildren --> ProseText["text: title/body"]
+    ImageChildren --> ProseList["list: items[] (ohne zweites image)"]
+    ImageChildren --> ProseContact["contact: email/social (ohne form)"]
+    ImageChildren --> ProseLegal["legal_disclaimer (max einmal pro Page)"]
     Block --> Text["text: title/body"]
     Block --> List["list: items[] + media_asset_id"]
     List --> Entry["List item: published, title, context, body"]
@@ -36,12 +41,12 @@ Die folgenden Werte entsprechen `CustomPageSetting::COMPONENT_TYPES`:
 
 | Typ | Normalisierte Felder | Wichtige Regeln |
 | --- | --- | --- |
-| `image` | `type, published, media_asset_id, image_decorative, image_scale_percent?` | Optionaler Bildgrößenwert 25–200 %, 100 % ist absichtlich **nicht gespeichert**; öffentlich verfügbarer MediaAsset und ALT-Text bei nichtdekorativen Bildern |
+| `image` | `type, published, media_asset_id, image_decorative, image_scale_percent?, children?` | Optionaler Bildgrößenwert 25–200 %, 100 % ist **nicht gespeichert**; `children` nur bei dekorativen Images und nur für eine textfähige Ebene; öffentlich verfügbarer MediaAsset und ALT-Text bei nichtdekorativen Bildern |
 | `text` | `type, published, title, body` | Titel höchstens 160 Zeichen, Body über kanonische Rich-Text-Validierung |
 | `list` | `type, published, title, media_asset_id, items` | Titel höchstens 160 Zeichen; Liste geordneter Untereinträge; optionale Bildreferenz |
 | `divider` | `type, published, variant` | `thin`, `subtle`, `strong` oder `dotted`, Default `thin` (siehe [DividerVariant](../../app/Domain/Content/DividerVariant.php)) |
 | `contact` | `type, published, title, children` | Optionale Überschrift bis 160 Zeichen; geordnete Untertypen, jeder höchstens einmal |
-| `legal_disclaimer` | `type, published` | Maximal einmal je Komponentenfolge |
+| `legal_disclaimer` | `type, published` | Maximal einmal pro Custom-Page-Komponentenfolge **inklusive zulässiger Image-Children** |
 
 `published` ist bei allen Komponenten und Untereinträgen separat. Fehlt das Flag, werten die jeweiligen PHP-Methoden es standardmäßig als `true`. Es handelt sich **nicht** um den Veröffentlichungszustand der Seite oder den globalen LIVE-Commit.
 
@@ -70,6 +75,25 @@ eine entsprechende Home-Edit-Kontrolle eingebaut wurde. Der
 [Featuretest](../../tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php)
 prüft laut Quelltext Default, explizite 150 %, Rückkehr zum impliziten
 100-%-Zustand und No-op; dieser Test wurde hier nicht ausgeführt.
+
+### Zusätzliche geordnete Ebene: `image.children[]` (seit `dev@81c12c83`)
+
+Die öffentliche **Top-Level-Komponentenliste bleibt geordnet und flach**. Ein **dekoratives** Image kann jedoch optional die zweite geordnete JSON-Ebene `children[]` besitzen. Das ist eine echte Ownership-Beziehung, nicht eine CSS-Nachbarschaftsheuristik oder ein generischer Baum beliebiger Tiefe. [`CustomPageSetting::normalizedImageChildren()`](../../app/Models/CustomPageSetting.php) übergibt deren Werte erneut an `normalizedBlocks()`; [`validateBlocks()`](../../app/Models/CustomPageSetting.php) verbietet Kinder unter nichtdekorativen Images, unsupported Child-Typen, ineinander verschachtelte Images/Divider, List mit eigenem `media_asset_id`, aktive Contact Forms sowie die Wiederholung von Legal Disclaimer über die **gesamte** Page. Children besitzen jeweils eigenes `published`-Flag und die gewöhnlichen `text`-/`list`-/`contact`-Normalisierer. Fehlende `children`-Keys werden nicht künstlich als leere Listen persistiert; vorhandene Reihenfolgen müssen echte JSON-Listen ergeben.
+
+| Kindtyp | Vererbte Datenstruktur | Abweichender Kontext |
+| --- | --- | --- |
+| `text` | `published, title?, body?` | Überschrift/Rich-Text, einschließlich bereits vorhandener kanonischer Storage-Media-Markdownreferenzen; **kein** zweites `image`-Element |
+| `list` | `published, title?, items[]` | Liste ohne eigene Bildreferenz; Entry/Context/Published/Details bleiben erhalten, eingebettete Alt-Media-Referenzen in Details sind separat zu berücksichtigen |
+| `contact` | `published, title?, children[]` | Erlaubt Public Email und Social Links als Details, **keine** publizierte Contact Form |
+| `legal_disclaimer` | `published` | Allgemeiner General-Legal-Text; maximal einmal über Top-Level und Image-Children |
+
+**Editor-Projektion:** [`DecorativeImageChildren::make()`](../../app/Filament/Support/DecorativeImageChildren.php) ist ein `image_children`-Repeater **im Image-Dialog**, kein zusätzlicher äußerer List/Table-Owner. [`CustomPageWorkspaceSecondaryForms::componentEditorData()`](../../app/Filament/Pages/Concerns/CustomPageWorkspaceSecondaryForms.php) rekonstruiert die sichtbaren Children aus der persistierten JSON-Liste; `imageChildrenPayload()` wandelt die beim Filament-Repeater intern verwendeten UUID-Keys mit `array_values()` in die autorisierte Null-basierte Reihenfolge um. Bei Contact wird `contact_form_enabled=false` forciert; für List `media_asset_id=null`. Der normalisierte Payload wird über den vorhandenen [`CustomPageEditorialService::updateBlock()`](../../app/Domain/Content/CustomPageEditorialService.php) unter Row-Lock mit No-op-/Audit-Erkennung gespeichert.
+
+**Bestehende Nachbareinträge in Image übernehmen:** Das Edit-Form bietet eine optionale `adopt_component_index`-Auswahl. [`CustomPageEditorialService::updateImageAndNest()`](../../app/Domain/Content/CustomPageEditorialService.php) sperrt die Settings-Row, prüft Image- und Source-Index, verlangt erlaubte Texttypen und verbietet List-Bild oder aktive Contact Form. Es hängt **den tatsächlichen vorhandenen Source-Block** an `image.children`, entfernt ihn **in derselben Transaktion** aus `blocks[]` und auditiert nur einen tatsächlichen neuen JSON-Zustand. Der Action-Owner berechnet wegen des entfallenen Source-Index einen neuen Image-Action-Target und montiert das aktuelle Edit-Form neu. Der Editor muss den Body/Context/Publicationstatus nicht nochmals abfragen. **Stale Target bleibt ungelöst:** Die Indizes plus Typ sind keine dauerhaften Component-IDs; bei gleichzeitigen Reorders gleichartiger Typen ist die Zuordnung quellenbasiert nicht identitätsstabil. [Mutationsanalyse](editorial-mutation-paths.md) behandelt den allgemeineren Stale-Index-Fall.
+
+**Öffentliche Darstellung:** [`component-sequence.blade.php`](../../resources/views/pages/partials/component-sequence.blade.php) ruft für `image.children` dieselbe View **einmal eingebettet** auf, mit Prefix für eindeutige Heading-IDs und ohne zusätzliches `aria-label`. Image und Children teilen die Containerklasse `custom-page__image-group`, das Figure wird gefloatet; Text fließt nativ erst neben und dann unter dem Bild. Ein nächster **Top-Level**-Contact-Block samt Form beginnt danach im normalen vollen Fluss. Ein reguläres Image ohne Children absorbiert keine Geschwister; es findet kein automatischer Typwechsel oder zweiter Gallery-Renderer statt. Die normative UI-/Responsive-Regel steht ausschließlich im [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md#custom-pages-cv-and-contact).
+
+**Neu entdeckte Referenzlücke:** Die öffentliche Teilvalidierung steigt für Rich Text in published Children hinab; [`RichTextMediaReference::idsFromCustomPageBlocks()`](../../app/Domain/Content/RichTextMediaReference.php), [`MediaReferenceQuery`](../../app/Domain/Media/MediaReferenceQuery.php) und [`PublicMedia::publishedCustomPageReferencesAsset()`](../../app/Domain/Media/PublicMedia.php) lesen dagegen bisher **keine rekursiven Children-Medienreferenzen**. Dadurch können ausschließlich dort verwendete `media:<id>`-Bilder zugleich für Storage als unreferenziert und für PublicMedia als nicht veröffentlicht gelten. [Sicherheits-/Mediennegativefälle](public-security-privacy-boundaries.md#5-neue-dekorative-image-children-referenzielle-asymmetrie) dokumentieren die Testmatrix; **kein ausgeführter Runtime-/DB-Test**. Der Fix gehört auf `dev`, nicht als redundanter Reader auf `docs`.
 
 ### Ebene 2: `list.items[]`
 
@@ -106,7 +130,7 @@ Die drei ähnlich benannten Prüfungen haben **unterschiedliche Eingangssemantik
 | --- | --- |
 | `CustomPageSetting::saving` (Eloquent-Modell) | Setzt `blocks = normalizedBlocks()` **vor** `validateBlocks(requirePublicMedia: false)`. Validiert damit im Modell-Hook den **normalisierten** Zustand, nicht jede einzelne Roh-Eingabeform |
 | `CustomPageSetting::assertEditableComponents()` | Prüft `validateBlocks(false)` unmittelbar gegen den gerade gesetzten `blocks`-Wert; [HomePresentationEditorialService::validateComponents()](../../app/Domain/Content/HomePresentationEditorialService.php) nutzt diesen Weg für beide Home-Component-Arrays **vor** dem Speichern |
-| `CustomPageSetting::assertReadyForPublic()` | Prüft `validateBlocks(true)`: Nur publizierte Top-Level-Components und darin publizierte Listeneinträge verlangen zusätzlich öffentlich bereite Medien/Embedded-Rich-Text; gespeichert-editierbar und aktuell öffentlich lieferbar sind getrennte Zustände |
+| `CustomPageSetting::assertReadyForPublic()` | Prüft `validateBlocks(true)`: Publizierte Top-Level-Components **einschließlich veröffentlichter dekorativer Image-Children** und veröffentlichter Listeneinträge verlangen zusätzlich öffentlich bereite Medien/Embedded-Rich-Text; gespeichert-editierbar und aktuell öffentlich lieferbar sind getrennte Zustände |
 
 **Quellbasierte Beispiele für Normalisierung im Eloquent-`saving`-Hook:**
 
@@ -120,4 +144,4 @@ Die drei ähnlich benannten Prüfungen haben **unterschiedliche Eingangssemantik
 
 ## Sicherheits- und Dokumentationsgrenzen
 
-Der Typkatalog ist aus [`normalizedBlocks()` und `validateBlocks()`](../../app/Models/CustomPageSetting.php), Home-Konfigurationsvalidierung und dem tatsächlich verwendeten Rendering-Pfad abgeleitet. Bei Änderungen die Quellen erneut vergleichen. Es ist **keine** Aussage über bereits gelaufene Datenbankmigrationen oder vorhandene SQL-Fremdschlüssel. JSON-Medienreferenzen, Medienlöschung und Rich-Text-Verweise müssen zusätzlich in der kanonischen Media-Referenzarchitektur behandelt werden. Speziell die Undo-/Activity-Semantik von List-/Contact-Child-Aktionen darf nicht allein aus dem JSON-Format abgeleitet werden.
+Der Typkatalog ist aus [`normalizedBlocks()` und `validateBlocks()`](../../app/Models/CustomPageSetting.php), Home-Konfigurationsvalidierung und dem tatsächlich verwendeten Rendering-Pfad abgeleitet. Bei Änderungen die Quellen erneut vergleichen. Es ist **keine** Aussage über bereits gelaufene Datenbankmigrationen oder vorhandene SQL-Fremdschlüssel. JSON-Medienreferenzen, Medienlöschung und Rich-Text-Verweise müssen zusätzlich in der kanonischen Media-Referenzarchitektur behandelt werden. Speziell die Undo-/Activity-Semantik von Home-Contact-Child-Aktionen, Custom-Image-Child-Edits und der Adoption einer bestehenden Parent-Komponente darf nicht allein aus dem JSON-Format abgeleitet werden. Die reale Publication- und Medienreferenz-Coverage muss **rekursiv** geprüft werden.
