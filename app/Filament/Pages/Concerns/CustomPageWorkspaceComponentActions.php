@@ -100,27 +100,18 @@ trait CustomPageWorkspaceComponentActions
         }
 
         $parents = $this->selectedComponentTargetData();
-        $children = $this->selectedChildTargetData();
-        if ($parents === [] && $children === []) {
+        if ($parents === []) {
             return;
         }
-
-        $changed = DB::transaction(function () use ($parents, $children, $direction): bool {
-            $childrenChanged = $this->moveSelectedChildTargets($children, $direction);
-            $parentsChanged = $parents !== []
-                && app(CustomPageEditorialService::class)->moveSelectedBlocks($this->settings(), $parents, $direction);
-
-            return $childrenChanged || $parentsChanged;
-        });
-
-        $count = count($parents) + count($children);
+        $changed = app(CustomPageEditorialService::class)->moveSelectedBlocks($this->settings(), $parents, $direction);
+        $count = count($parents);
         $this->clearSelections();
         $this->reloadWorkspace();
 
         if ($changed) {
             app(AdminNotifier::class)->notification(
                 title: 'Selection moved',
-                body: $count.' selected '.($count === 1 ? 'item' : 'items').' updated in '.($parents !== [] && $children !== [] ? 'their own scopes.' : 'order.'),
+                body: $count.' selected '.($count === 1 ? 'component' : 'components').' moved.',
                 status: 'success',
             );
         }
@@ -153,6 +144,37 @@ trait CustomPageWorkspaceComponentActions
     public function unpublishSelected(): void
     {
         $this->setSelectedPublished(false);
+    }
+
+    private function setSelectedPublished(bool $published): void
+    {
+        $targets = $this->selectedComponentTargetData();
+        if ($targets === []) {
+            return;
+        }
+        $changed = DB::transaction(function () use ($targets, $published): bool {
+            $changed = false;
+            foreach ($targets as $target) {
+                $block = $this->componentAt($target['index'], $target['type']);
+                if (\App\Models\CustomPageSetting::componentPublished($block) === $published) {
+                    continue;
+                }
+                $block['published'] = $published;
+                $changed = app(CustomPageEditorialService::class)->updateBlock(
+                    $this->settings(), $target['index'], $target['type'], $block,
+                ) || $changed;
+            }
+
+            return $changed;
+        });
+        $this->clearSelections();
+        $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(
+                title: $published ? 'Selection published' : 'Selection unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function addComponentAction(): Action
@@ -340,19 +362,11 @@ trait CustomPageWorkspaceComponentActions
             ->color('danger')
             ->action(function (): void {
                 $parents = $this->selectedComponentTargetData();
-                $children = $this->selectedChildTargetData();
-                if ($parents === [] && $children === []) {
+                if ($parents === []) {
                     return;
                 }
-
-                DB::transaction(function () use ($parents, $children): void {
-                    $this->deleteSelectedChildTargets($children, $parents);
-                    if ($parents !== []) {
-                        app(CustomPageEditorialService::class)->deleteBlocks($this->settings(), $parents);
-                    }
-                });
-
-                $count = count($parents) + count($children);
+                app(CustomPageEditorialService::class)->deleteBlocks($this->settings(), $parents);
+                $count = count($parents);
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 app(AdminNotifier::class)->notification(

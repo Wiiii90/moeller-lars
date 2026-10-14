@@ -71,6 +71,25 @@ Neither surface exposes standalone List child rows or Add List Item table
 buttons. Type conversion continues through the existing confirmed conversion
 Action; the List command must not mutate on close/cancel.
 
+The shared List entries expose **Entry, Context, Published and Details**, not separate
+Date/Organisation/Location/URL inputs or an embedded-image insert control.
+`CustomPageSetting::listItemContext()` and `listItemDetails()` preserve
+legacy authored data by folding old Context fields and optional HTTP(S)
+links into the new representation.
+
+**Custom Page Contact is a single parent editor.** Optional Heading
+(default display `Contact`), Public Email, Social Media Links and
+Contact Form are edited with the existing native-change Edit autosave;
+all three toggles default on for Create. Dependent social-platform,
+form-mode and status fields must preserve previously authored values
+when hidden by a disabled toggle. Contact and Legal Disclaimer each
+project a heading plus **one ellipsized content summary**; there are no
+standalone Contact child rows, separate child Actions or child Selection
+on Custom Page. Home's remaining child-row presentation is a distinct
+editorial surface; use [the Table owner](ADMIN-TABLE-CONTRACT.md#component-sequences)
+for the current distinction.
+
+
 ### Create
 
 Creates collect a complete new object before persistence.

@@ -77,27 +77,47 @@ trait CustomPageWorkspaceSecondaryForms
                 'published' => $published,
                 'variant' => in_array($data['variant'] ?? null, array_keys(self::DIVIDER_LABELS), true) ? $data['variant'] : 'thin',
             ],
-            'contact' => [
-                'type' => 'contact',
-                'published' => $published,
-                'title' => $data['title'] ?? null,
-                'children' => [
-                    ['type' => 'public_email', 'published' => (bool) ($data['contact_email_enabled'] ?? true)],
-                    [
-                        'type' => 'social_links',
-                        'published' => (bool) ($data['contact_social_enabled'] ?? true),
-                        'social_platforms' => $this->validatedSocialPlatforms($data['contact_social_platforms'] ?? array_keys($this->availableSocialPlatforms)),
-                    ],
-                    [
-                        'type' => 'contact_form',
-                        'published' => (bool) ($data['contact_form_enabled'] ?? true),
-                        'form_state' => ($data['contact_form_state'] ?? 'enabled') === 'under_construction' ? 'under_construction' : 'enabled',
-                        'status_text' => filled($data['contact_status_text'] ?? null) ? trim((string) $data['contact_status_text']) : null,
-                    ],
-                ],
-            ],
+            'contact' => $this->contactComponentPayload($data, $published, $existing),
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
     }
 
+    /** @param array<string,mixed> $data
+     * @param array<string,mixed>|null $existing
+     * @return array<string,mixed>
+     */
+    private function contactComponentPayload(array $data, bool $published, ?array $existing): array
+    {
+        // A disabled toggle may hide its dependent fields. Preserve authored
+        // options until they are explicitly edited, not when they are hidden.
+        $children = $existing !== null ? $this->settings()->contactChildren($existing) : [];
+        $social = collect($children)->firstWhere('type', 'social_links');
+        $form = collect($children)->firstWhere('type', 'contact_form');
+        $platforms = $data['contact_social_platforms']
+            ?? (is_array($social) ? ($social['social_platforms'] ?? []) : array_keys($this->availableSocialPlatforms));
+        $formState = $data['contact_form_state']
+            ?? (is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled');
+        $statusText = $data['contact_status_text']
+            ?? (is_array($form) ? ($form['status_text'] ?? null) : null);
+
+        return [
+            'type' => 'contact',
+            'published' => $published,
+            'title' => $data['title'] ?? null,
+            'children' => [
+                ['type' => 'public_email', 'published' => (bool) ($data['contact_email_enabled'] ?? true)],
+                [
+                    'type' => 'social_links',
+                    'published' => (bool) ($data['contact_social_enabled'] ?? true),
+                    'social_platforms' => $this->validatedSocialPlatforms($platforms),
+                ],
+                [
+                    'type' => 'contact_form',
+                    'published' => (bool) ($data['contact_form_enabled'] ?? true),
+                    'form_state' => $formState === 'under_construction' ? 'under_construction' : 'enabled',
+                    'status_text' => filled($statusText) ? trim((string) $statusText) : null,
+                ],
+            ],
+        ];
+    }
 }

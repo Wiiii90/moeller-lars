@@ -53,7 +53,7 @@
                                     </select>
                                 </div>
 
-                                <div class="custom-page-component__content admin-hierarchy__content">
+                                <div class="custom-page-component__content admin-hierarchy__content {{ in_array($pageComponent['type'], ['contact', 'legal_disclaimer'], true) ? 'custom-page-component__content--two-lines' : '' }}">
                                     <strong>{{ $pageComponent['content']['primary'] }}</strong>
                                     @if ($pageComponent['content']['secondary'] !== '')
                                         <span>{{ $pageComponent['content']['secondary'] }}</span>

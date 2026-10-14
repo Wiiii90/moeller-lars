@@ -29,13 +29,13 @@ const MENU_DURATIONS = [34200, 38800];
 const BUILD_DURATION = 1240;
 const HEIGHT_DURATION = 780;
 
-// Precisely one outer paper on each surface. The menu's internal rule is
-// an inset stroke, not another backing sheet.
+// Precisely one outer paper on each surface, without spread. The menu's
+// internal rule is an inset stroke, not another backing sheet.
 const SHADOW_START = {
     content: (x, y) => `${x}px ${y}px 0 var(--public-folio-soft)`,
     menu: (x, y) => [
         'inset 0 -1px 0 var(--public-index-rule)',
-        `${x}px ${y}px 0 ${y}px var(--public-folio-soft)`,
+        `${x}px ${y}px 0 var(--public-folio-soft)`,
     ].join(', '),
 };
 
@@ -160,7 +160,7 @@ function renderedShadowCoords(value, type) {
 // The single existing exterior sheet on each surface.
 export const FOLIO_PLANE_BASE = Object.freeze({
     content: [-5, 7],
-    menu: [-1.5, 3.5],
+    menu: [-5, 7],
 });
 
 // The backing sheet moves one x or y axis at a time, rests and returns.
@@ -187,7 +187,8 @@ export function buildShadowFrames(start, type) {
     rest(10);
     move(0, base[0]); move(1, base[1]);
     rest(10);
-    move(0, base[0] + (type === 'menu' ? .4 : .8));
+    // The menu never advances right of its 5px inset, even mid-animation.
+    if (type !== 'menu') move(0, base[0] + .8);
     move(1, base[1] - (type === 'menu' ? .2 : .5));
     rest(7);
     move(1, base[1]); move(0, base[0]);
