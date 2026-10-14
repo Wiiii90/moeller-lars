@@ -60,8 +60,19 @@ that commits ordinary Edit fields. List components therefore use the canonical
 the entire component and ordered entries atomically through the existing
 editorial service. Other components keep the normal autosaving Edit dialog.
 Neither surface exposes standalone List child rows or Add List Item table
-buttons. Type conversion continues through the existing confirmed conversion
+buttons. The shared List entry editor provides Entry, Context, Published, and
+Details only, with no embedded-image insertion control. Legacy date/organisation/
+location context and optional links are carried into the canonical Context/Details
+fields on normalization. Type conversion continues through the existing confirmed conversion
 Action; the List command must not mutate on close/cancel.
+
+**Custom Page Contact:** All three Contact options and the optional Contact heading
+are edited in the owning Contact component; there are no Contact child rows or
+independent child Actions in Custom Page. The three visibility toggles default
+on at creation. These simple fields use the existing native-change Edit autosave,
+not the List Repeater Command. The public Contact heading can be overridden.
+Contact and Legal Disclaimer admin Content each have exactly a heading and a
+single ellipsized summary line. The Home Contact editor remains separate.
 
 ### Create
 

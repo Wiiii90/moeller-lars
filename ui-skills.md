@@ -248,51 +248,25 @@ Rules:
 - use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
 - drag is disabled when Search/filters/pagination make canonical order ambiguous;
-- in Custom Page, a drag handle is enabled only when its own sibling scope has at least two items; parent component order and each List/Contact child order are independent, so a single parent does not expose an inert parent drag target or disable sorting multiple children;
+- in Custom Page, only top-level components have drag handles and row Actions; List entries and Contact options are edited inside their parent forms, not reordered as independent rows; a single parent does not expose an inert drag handle;
 - ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
 - filtered reorder must not pretend that a filtered projection is the complete canonical sequence.
 
-## 10. Parent/child hierarchical tables
+## 10. Custom Page component table and Home child hierarchy
 
-When child rows are part of the same editorial table, they align to the **same global columns**.
-
-Current Custom Page reference, with Position and Drag sharing the ordering heading:
-
-Parent:
+Custom Page is a **flat sequence of components**:
 
 ```text
 [Position + Drag] [Component dropdown] [Content] [Actions] [Selection]
 ```
 
-Child:
+The Component selector is essential and remains editable at all supported widths. Content is separate from Component, never a duplicate type label. Blog-style child rows are not part of Custom Page: List entries use the owning List `Apply changes` Repeater dialog; Contact is a single component with editable Heading, Public Email, Social Media Links and Contact Form switches, platform selection, form presentation, and status text. All three Contact switches default on when creating. No Add/Edit/Sort/Publish/Delete Contact child actions or child-selection axes are emitted by Custom Page.
 
-```text
-[Position + Drag] [Kind] [Content] [Actions] [Selection]
-```
+Custom Page Contact Content shows only two lines: the authored heading (default `Contact`) and one ellipsized summary of enabled options. Legal Disclaimer Content shows `General legal disclaimer` followed by one ellipsized line of the actual General legal text, without redundant third-line metadata. The same semantic layout applies at every responsive width.
 
-**Component is an essential editable control, never a responsive optional column.**
-The inline Component type select stays visible and changeable at every supported
-width, even while filters or pagination disable drag sorting. Keep Component
-and Content as distinct tracks across Wide, Compact, Narrow and Minimal; reduce
-supportive content and compact Actions through the shared responsive system,
-not by hiding the type selector. Never repeat the component type under Content
-as responsive metadata. Content describes the component's actual text/media/
-items; e.g. a Contact component shows its child count, not the word “Contact”
-a second time. Child Kind similarly keeps its own aligned column rather than
-becoming duplicate Content metadata. Change type uses the existing shared
-`AdminDialog::confirm()` plus canonical
-`CustomPageEditorialService::convertBlock()`; never tie conversion eligibility
-to `componentReorderEnabled()` or create a second mutation path.
+List entries have `Entry`, one `Context` field (date, year, organisation or other free context), `Published`, and `Details`. No separate Date, Organisation, Location, URL or Insert image controls in the List entry editor. Old Date/Organisation/Location values fold into Context and old links into Details through the model's normalizer without silent content loss. Existing Home List components use the same List editor. Parent selections and publication actions apply only to parent components.
 
-Rules:
-
-- no nested `Content | Status | Actions` child header;
-- do not indent the entire child table and thereby destroy global alignment;
-- hierarchy may be shown with a restrained connector line;
-- connector axis aligns with the parent drag column/handle axis;
-- parent and child action cells use the same action-column geometry;
-- Selection remains the shared trailing utility column;
-- child rows may be more compact, but their column starts do not float.
+Home's existing distinct Contact-child hierarchy is a separate workflow; keep its shared column geometry and selection semantics. Do not change Home when simplifying Custom Page.
 
 ## 11. Home component table
 
