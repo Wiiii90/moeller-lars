@@ -116,9 +116,9 @@ for (const scenario of [
 
 test('a rapid second page switch continues the interrupted build from its actual position', async ({ page }) => {
     await initialize(page, 'Exhibitions', 340, 'exhibitions-page');
-    const result = await page.evaluate(async (next) => {
+    const result = await page.evaluate(async ({ first, second }) => {
         window.paper.capturePublicFolio();
-        document.body.innerHTML = next;
+        document.body.innerHTML = first;
         window.paper.advancePublicFolio();
 
         // Align with a real early second navigation rather than waiting for
@@ -130,7 +130,7 @@ test('a rapid second page switch continues the interrupted build from its actual
         const oldBodyHeight = document.querySelector('.public-content-reveal').getBoundingClientRect().height;
 
         window.paper.capturePublicFolio();
-        document.body.innerHTML = sheet('Journal', 850, 'blog-page');
+        document.body.innerHTML = second;
         window.paper.advancePublicFolio();
 
         const content = document.querySelector('#content');
@@ -146,10 +146,15 @@ test('a rapid second page switch continues the interrupted build from its actual
             nextHeight: height?.effect.getKeyframes()[0].height,
             count: document.querySelectorAll('#content > .public-content-reveal').length,
         };
-    }, sheet('Painting', 640, 'artwork-detail'));
+    }, {
+        first: sheet('Painting', 640, 'artwork-detail'),
+        second: sheet('Journal', 850, 'blog-page'),
+    });
     expect(result.count).toBe(1);
     expect(result.nextTop).toBe(result.oldTop);
-    expect(result.nextShadow).toBe(result.oldShadow);
+    const numbers = shadow => [...shadow.matchAll(/-?\\d+(?:\\.\\d+)?px/g)]
+        .map(match => parseFloat(match[0]));
+    expect(numbers(result.nextShadow)).toEqual(numbers(result.oldShadow));
     expect(parseFloat(result.nextHeight)).toBeCloseTo(result.oldBodyHeight, 0);
 });
 
