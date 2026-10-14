@@ -1,12 +1,14 @@
 <?php
 
 use App\Domain\Content\JournalSettingsService;
+use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\JournalWorkspace;
 use App\Models\AdminNotification;
 use App\Models\BlogPost;
+use App\Models\Exhibition;
 use App\Models\JournalSetting;
 use App\Models\Redirect;
 use App\Models\User;
@@ -132,4 +134,53 @@ it('notifies on a real Journal Settings edit but not on an unchanged native auto
 
     $component->call('callMountedAction')->assertHasNoFormErrors();
     expect(AdminNotification::query()->count())->toBe($notifications + 1);
+});
+
+it('mounts Blog Create and Edit with the centralized editorial schema and header Actions', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Dialog Blog', 'dialog-blog', JournalTemplate::Blog->value,
+    );
+    $post = BlogPost::query()->create([
+        'site_section_id' => $section->getKey(),
+        'title' => 'Existing article',
+        'slug' => 'existing-article',
+        'body' => 'Existing rich text',
+        'state' => 'draft',
+        'position' => 0,
+    ]);
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('addPost')
+        ->assertMountedActionModalSee('Add post');
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editPost', ['post' => $post->getKey()])
+        ->assertMountedActionModalSee('Edit post');
+});
+
+it('mounts Exhibition Create and Edit with the centralized editorial schema and header Actions', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Dialog Exhibitions', 'dialog-exhibitions', JournalTemplate::Exhibitions->value,
+    );
+    $entry = app(ExhibitionEditorialService::class)->createDraft([
+        'site_section_id' => $section->getKey(),
+        'title' => 'Existing exhibition',
+        'slug' => 'existing-exhibition',
+    ]);
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('addExhibition')
+        ->assertMountedActionModalSee('Add exhibition');
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->assertMountedActionModalSee('Edit exhibition');
 });

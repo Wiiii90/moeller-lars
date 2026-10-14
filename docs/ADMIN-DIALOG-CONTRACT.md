@@ -142,6 +142,14 @@ For the Journal (Blog and Exhibitions), Custom Page and Gallery Settings dialogs
 - Custom Page navigation parent follows the global nested-navigation policy from Pages Settings, including domain validation; and
 - do not add explanatory helper text to settings fields when the label is self-explanatory (notably URL/redirect narration and Material presets).
 
+For Gallery and Journal editorial dialogs, the contract is explicitly shared:
+
+- Gallery Add Artwork and Edit Artwork consume the same `ArtworkEditDialog::schema()` field owner, with create-only slug uniqueness; sections are Basics, Dimensions, Content, Media, and Presentation. The Create Action commits once; Edit keeps native change-event autosave.
+- Gallery Edit header actions use Move up/down, Publish/Unpublish, and Remove (detach, not delete). The Remove and Unpublish actions must keep their existing confirmations. Publication and reordering reuse the same domain/action owners as the Gallery table.
+- Gallery Materials is a `Default`-width **Command** with `Apply changes` in the header, not an autosaving Edit: Repeater additions/removals form one draft collection saved atomically through `ArtworkMaterialPresetService::sync()`. Closing with X discards changes; a no-op has no notification.
+- Journal Add Post and Add Exhibition are `Large` Creates that commit once. Their Edit counterparts retain `Large` autosave and the shared `JournalEntryEditorSchema` sections. Two/six-column groups must collapse to one column on narrow screens.
+- Journal Edit Post header actions follow the same semantic order and state rules as row actions: Move up/down, Publish/Unpublish/Cancel schedule, Schedule, Archive/Restore, Delete. Exhibition Edit has Move up/down, Publish/Unpublish, Delete. Schedule and Delete open their existing Command/Confirm actions; the editors must not create another persistence route or weaken publication prerequisites.
+
 For media/detail viewers:
 
 - keep the primary visual first;

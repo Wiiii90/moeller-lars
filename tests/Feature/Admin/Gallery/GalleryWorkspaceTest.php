@@ -881,3 +881,33 @@ it('notifies only when a Gallery publication action actually changes the artwork
     expect(\App\Models\AdminNotification::query()->count())->toBe($notificationCount)
         ->and(AuditEvent::query()->count())->toBe($auditCount);
 });
+
+it('commits the Materials repeater as one explicit Command, not as Edit autosave', function (): void {
+    $gallery = polishGallery();
+    polishUnavailableGalleryAnalytics();
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('materialPresets')
+        ->assertMountedActionModalSee('Material presets')
+        ->fillForm(['presets' => ['Bronze', 'Ink']]);
+
+    // The draft Repeater has not committed while the dialog is open.
+    expect(ArtworkMaterialPreset::query()->whereIn('name', ['Bronze', 'Ink'])->count())->toBe(0);
+
+    $editor->callMountedAction()->assertHasNoFormErrors();
+
+    expect(ArtworkMaterialPreset::query()->whereIn('name', ['Bronze', 'Ink'])->count())->toBe(2);
+});
+
+it('opens the shared Add and Edit artwork forms with the canonical dialog lifecycle', function (): void {
+    $gallery = polishGallery();
+    polishUnavailableGalleryAnalytics();
+    $artwork = polishArtwork($gallery);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('addArtwork')
+        ->assertMountedActionModalSee('Add artwork');
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->assertMountedActionModalSee('Edit artwork');
+});
