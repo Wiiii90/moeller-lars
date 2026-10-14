@@ -666,3 +666,45 @@ it('rejects out-of-range and noninteger image sizes while keeping image aspect r
         ->toContain('var(--custom-page-image-width-narrow, 20rem)')
         ->toContain('height: auto');
 });
+
+it('renders a scaled image and derives move permissions after filtering and pagination', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image projection', 'image-projection');
+    $settings->update(['blocks' => [
+        [
+            'type' => 'image',
+            'published' => false,
+            'media_asset_id' => null,
+            'image_decorative' => false,
+            'image_scale_percent' => 150,
+        ],
+        ['type' => 'text', 'published' => false, 'title' => 'Second component', 'body' => 'Text'],
+        ['type' => 'divider', 'published' => false, 'variant' => 'thin'],
+    ]]);
+
+    // Exercise the real GET that previously threw before the editor could open.
+    $this->get('/admin/pages/custom/'.$section->getKey())->assertOk();
+
+    $page = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->assertSet('total', 3);
+
+    $rows = $page->get('components');
+    expect($rows)->toHaveCount(3)
+        ->and($rows[0]['can_move_up'])->toBeFalse()
+        ->and($rows[0]['can_move_down'])->toBeTrue()
+        ->and($rows[1]['can_move_up'])->toBeTrue()
+        ->and($rows[1]['can_move_down'])->toBeTrue()
+        ->and($rows[2]['can_move_up'])->toBeTrue()
+        ->and($rows[2]['can_move_down'])->toBeFalse();
+
+    $page->set('componentType', 'image')->assertSet('total', 1);
+    $filtered = $page->get('components');
+    expect($filtered[0]['can_move_up'])->toBeFalse()
+        ->and($filtered[0]['can_move_down'])->toBeFalse();
+
+    $page->set('componentType', 'any')
+        ->set('componentSearch', 'Second component')
+        ->assertSet('total', 1);
+    $searched = $page->get('components');
+    expect($searched[0]['can_move_up'])->toBeFalse()
+        ->and($searched[0]['can_move_down'])->toBeFalse();
+});

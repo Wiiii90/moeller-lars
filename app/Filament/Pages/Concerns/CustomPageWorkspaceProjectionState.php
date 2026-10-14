@@ -134,15 +134,21 @@ trait CustomPageWorkspaceProjectionState
                 'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
-                'can_move_up' => $reorderEnabled && $index > 0,
-                'can_move_down' => $reorderEnabled && $index < count($blocks) - 1,
                 'children' => [],
             ];
         }
 
         $this->setPagination(count($projected));
         $offset = ($this->page - 1) * $this->pageSize;
-        $this->components = array_slice($projected, $offset, $this->pageSize);
+        $reorderEnabled = $this->componentReorderEnabled();
+        $this->components = array_map(
+            static fn (array $component): array => [
+                ...$component,
+                'can_move_up' => $reorderEnabled && $component['index'] > 0,
+                'can_move_down' => $reorderEnabled && $component['index'] < count($blocks) - 1,
+            ],
+            array_slice($projected, $offset, $this->pageSize),
+        );
         $this->retainVisibleSelections();
 
         $this->metrics = [
