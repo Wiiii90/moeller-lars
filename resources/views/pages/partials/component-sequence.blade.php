@@ -14,10 +14,23 @@
                     $decorative = (bool) ($block['image_decorative'] ?? false);
                     $imageAlt = $asset !== null && ! $decorative ? $media->altTextForAsset($asset) : '';
                     $loading = $blockIndex === 0 ? 'eager' : 'lazy';
+                    $imageScale = \App\Models\CustomPageSetting::imageScalePercent($block) / 100;
                 @endphp
 
                 @if ($asset !== null && $variant !== null)
-                    <figure class="custom-page__component custom-page__media custom-page__image">
+                    {{-- Public CSP rejects style attributes; authorize the per-image
+                         CSS variables with the request's nonce instead. --}}
+                    @if ($imageScale !== 1.0)
+                        @push('public-component-styles')
+                            <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
+                                #custom-page-image-{{ $blockIndex }} {
+                                    --custom-page-image-width: {{ 28 * $imageScale }}rem;
+                                    --custom-page-image-width-narrow: {{ 20 * $imageScale }}rem;
+                                }
+                            </style>
+                        @endpush
+                    @endif
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image">
                         <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
                 @endif
@@ -55,18 +68,13 @@
                                     @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
-                                            @if (filled($item['date'] ?? null))
-                                                <span class="custom-page__date">{{ $item['date'] }}</span>
+                                            @if (filled(\App\Models\CustomPageSetting::listItemContext($item)))
+                                                <span class="custom-page__context">{{ \App\Models\CustomPageSetting::listItemContext($item) }}</span>
                                             @endif
                                             <strong>{{ $item['title'] ?? '' }}</strong>
                                         </div>
-                                        @if (filled($item['meta'] ?? null))<div>{{ $item['meta'] }}</div>@endif
-                                        @if (filled($item['location'] ?? null))<div>{{ $item['location'] }}</div>@endif
-                                        @if (filled($item['body'] ?? null))
-                                            <div class="rich-text">{!! $richText->render((string) $item['body']) !!}</div>
-                                        @endif
-                                        @if (filled($item['url'] ?? null))
-                                            <p><a href="{{ $item['url'] }}" rel="noopener noreferrer">More information</a></p>
+                                        @if (filled(\App\Models\CustomPageSetting::listItemDetails($item)))
+                                            <div class="rich-text">{!! $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
                                         @endif
                                     </article>
                                 @endforeach
@@ -97,7 +105,7 @@
 
             @if ($type === 'contact')
                 <div class="custom-page__component custom-page__contact">
-                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" />
+                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" />
                 </div>
             @endif
 

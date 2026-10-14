@@ -57,6 +57,12 @@ export function applyPublicLayoutFromMeta() {
         '--public-shell-max': config.dataset.publicLayoutShell,
         '--public-art-max': config.dataset.publicLayoutArt,
         '--public-content-padding': config.dataset.publicLayoutPadding,
+        '--public-folio-left-top': config.dataset.folioLeftTop,
+        '--public-folio-left-bottom': config.dataset.folioLeftBottom,
+        '--public-folio-right-top': config.dataset.folioRightTop,
+        '--public-folio-right-bottom': config.dataset.folioRightBottom,
+        '--public-menu-left-bottom': config.dataset.folioMenuLeftBottom,
+        '--public-menu-right-bottom': config.dataset.folioMenuRightBottom,
     };
     for (const [name, value] of Object.entries(declarations)) {
         if (value) document.documentElement.style.setProperty(name, value);

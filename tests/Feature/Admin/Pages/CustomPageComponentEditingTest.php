@@ -7,8 +7,11 @@ use App\Models\User;
 use App\Models\AuditEvent;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
+
+require_once __DIR__.'/CustomPageFixtures.php';
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -94,9 +97,9 @@ it('edits and reorders List entries only through the owning component dialog', f
     $settings->update(['blocks' => [[
         'type' => 'list', 'published' => true, 'title' => 'CV',
         'items' => [
-            ['published' => true, 'title' => 'First entry', 'date' => '2022'],
-            ['published' => true, 'title' => 'Second entry', 'date' => '2023'],
-            ['published' => true, 'title' => 'Third entry', 'date' => '2024'],
+            ['published' => true, 'title' => 'First entry', 'context' => '2022'],
+            ['published' => true, 'title' => 'Second entry', 'context' => '2023'],
+            ['published' => true, 'title' => 'Third entry', 'context' => '2024'],
         ],
     ]]]);
 
@@ -110,9 +113,9 @@ it('edits and reorders List entries only through the owning component dialog', f
             'publication_state' => 'published',
             'title' => 'CV',
             'items' => [
-                ['published' => true, 'title' => 'Third entry', 'date' => '2024'],
-                ['published' => true, 'title' => 'First entry', 'date' => '2022'],
-                ['published' => true, 'title' => 'Second entry', 'date' => '2023'],
+                ['published' => true, 'title' => 'Third entry', 'context' => '2024'],
+                ['published' => true, 'title' => 'First entry', 'context' => '2022'],
+                ['published' => true, 'title' => 'Second entry', 'context' => '2023'],
             ],
         ])
         ->callMountedAction()
@@ -123,13 +126,12 @@ it('edits and reorders List entries only through the owning component dialog', f
     ]);
 });
 
-
 it('persists List entry details and publication through the component Edit dialog', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('List editor test', 'list-editor-test');
     $settings->update(['blocks' => [[
         'type' => 'list', 'published' => true, 'title' => 'CV', 'media_asset_id' => null,
         'items' => [[
-            'published' => true, 'date' => '2024', 'title' => 'First entry',
+            'published' => true, 'context' => '2024', 'title' => 'First entry',
             'meta' => 'Old context', 'location' => 'Berlin', 'url' => null,
             'body' => 'First details',
         ]],
@@ -142,9 +144,8 @@ it('persists List entry details and publication through the component Edit dialo
             'publication_state' => 'published',
             'title' => 'CV',
             'items' => [[
-                'published' => false, 'date' => '2026', 'title' => 'First entry updated',
-                'meta' => 'Museum', 'location' => 'Hamburg',
-                'url' => 'https://example.com/entry', 'body' => 'Updated details',
+                'published' => false, 'context' => 'Museum · 2026', 'title' => 'First entry updated',
+                'body' => 'Updated details',
             ]],
         ])
         ->callMountedAction()
@@ -152,17 +153,14 @@ it('persists List entry details and publication through the component Edit dialo
 
     $item = $settings->fresh()->components()[0]['items'][0];
     expect($item['published'])->toBeFalse()
-        ->and($item['date'])->toBe('2026')
+        ->and($item['context'])->toBe('Museum · 2026')
         ->and($item['title'])->toBe('First entry updated')
-        ->and($item['meta'])->toBe('Museum')
-        ->and($item['location'])->toBe('Hamburg')
-        ->and($item['url'])->toBe('https://example.com/entry')
-        ->and($item['body'])->toBe('Updated details');
+        ->and($item['body'])->toBe('Updated details')
+        ->and($item)->not->toHaveKeys(['date', 'meta', 'location', 'url']);
 
     $workspace = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
     expect($workspace->get('components')[0]['children'])->toBe([]);
 });
-
 
 it('keeps Change type reachable when filtering makes drag sorting unavailable', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Filtered type conversion', 'filtered-type-conversion');
@@ -222,4 +220,263 @@ it('persists consecutive component edits without closing the autosaving dialog',
         ->assertSee('Edit component');
 
     expect($settings->fresh()->components()[0]['body'])->toBe('Later rich text');
+});
+
+
+it('opens and saves the third Rich Text component from its absolute row target', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Targeted editor', 'targeted-editor');
+    $settings->update(['blocks' => [
+        ['type' => 'text', 'published' => true, 'title' => null, 'body' => 'First text'],
+        ['type' => 'divider', 'published' => true, 'variant' => 'dotted'],
+        ['type' => 'text', 'published' => true, 'title' => null, 'body' => 'Third text'],
+    ]]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 2, 'componentType' => 'text'])
+        ->assertMountedActionModalSee('Edit component')
+        ->fillForm([
+            'type' => 'text',
+            'publication_state' => 'published',
+            'title' => 'Third heading',
+            'body' => 'Updated third text',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertMountedActionModalSee('Edit component');
+
+    $components = $settings->fresh()->components();
+    expect($components)->toHaveCount(3)
+        ->and($components[0]['body'])->toBe('First text')
+        ->and($components[1]['type'])->toBe('divider')
+        ->and($components[1]['variant'])->toBe('dotted')
+        ->and($components[2]['title'])->toBe('Third heading')
+        ->and($components[2]['body'])->toBe('Updated third text');
+});
+
+
+it('edits the Contact heading and all Contact settings in the owning component without child rows', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Contact editing', 'contact-editing');
+    $settings->update(['blocks' => [[
+        'type' => 'contact',
+        'published' => true,
+        'children' => [
+            ['type' => 'public_email', 'published' => true],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
+            ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled'],
+        ],
+    ]]]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->assertDontSee('Contact item')
+        ->assertDontSeeHtml('class="custom-page-child-row')
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
+        ->fillForm([
+            'type' => 'contact',
+            'publication_state' => 'published',
+            'title' => 'Get in touch',
+            'contact_email_enabled' => false,
+            'contact_social_enabled' => true,
+            'contact_social_platforms' => [],
+            'contact_form_enabled' => true,
+            'contact_form_state' => 'under_construction',
+            'contact_status_text' => 'Coming soon',
+        ])
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    $contact = $settings->fresh()->components()[0];
+    $children = collect($settings->fresh()->contactChildren($contact))->keyBy('type');
+    expect($contact['title'])->toBe('Get in touch')
+        ->and($children['public_email']['published'])->toBeFalse()
+        ->and($children['social_links']['published'])->toBeTrue()
+        ->and($children['contact_form']['published'])->toBeTrue()
+        ->and($children['contact_form']['form_state'])->toBe('under_construction')
+        ->and($children['contact_form']['status_text'])->toBe('Coming soon');
+
+    $preview = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()]);
+    expect($preview->get('components')[0]['content'])->toMatchArray([
+        'primary' => 'Get in touch',
+        'secondary' => 'Social Media Links · Contact Form',
+        'meta' => '',
+    ]);
+    $preview->assertDontSeeHtml('custom-page-child-row');
+});
+
+
+it('preserves legacy List metadata as Context and links in Details without duplicate conversions', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Historical list', 'historical-list');
+    $settings->update(['blocks' => [[
+        'type' => 'list', 'title' => 'CV',
+        'items' => [[
+            'title' => 'Exhibition', 'date' => '2024', 'meta' => 'Museum', 'location' => 'Hamburg',
+            'url' => 'https://example.com/details', 'body' => 'Original details',
+        ]],
+    ]]]);
+    $item = $settings->fresh()->components()[0]['items'][0];
+    expect($item['context'])->toBe('2024 · Museum · Hamburg')
+        ->and($item['body'])->toContain('Original details')
+        ->toContain('[More information](https://example.com/details)')
+        ->and($item)->not->toHaveKeys(['date', 'meta', 'location', 'url']);
+
+    $settings->update(['blocks' => $settings->fresh()->components()]);
+    $again = $settings->fresh()->components()[0]['items'][0];
+    expect(substr_count($again['body'], '[More information]'))->toBe(1);
+});
+
+
+it('retains disabled Contact settings for later re-enabling', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Hidden Contact settings', 'hidden-contact-settings');
+    $settings->update(['blocks' => [[
+        'type' => 'contact',
+        'title' => 'Reach us',
+        'children' => [
+            ['type' => 'public_email', 'published' => true],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => ['instagram']],
+            ['type' => 'contact_form', 'published' => true, 'form_state' => 'under_construction', 'status_text' => 'Soon'],
+        ],
+    ]]]);
+    // A hidden form field must not reset previously authored child settings.
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
+        ->fillForm([
+            'type' => 'contact',
+            'publication_state' => 'published',
+            'title' => 'Reach us',
+            'contact_email_enabled' => true,
+            'contact_social_enabled' => false,
+            'contact_form_enabled' => false,
+        ])
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    $children = collect($settings->fresh()->components()[0]['children'])->keyBy('type');
+    expect($children['social_links']['published'])->toBeFalse()
+        ->and($children['social_links']['social_platforms'])->toBe(['instagram'])
+        ->and($children['contact_form']['published'])->toBeFalse()
+        ->and($children['contact_form']['form_state'])->toBe('under_construction')
+        ->and($children['contact_form']['status_text'])->toBe('Soon');
+});
+
+
+it('creates Contact with all three options enabled by default and an editable heading', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Default Contact', 'default-contact');
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('addComponent')
+        ->fillForm([
+            'type' => 'contact',
+            'publication_state' => 'published',
+            'title' => 'Contact Lars',
+            'contact_email_enabled' => true,
+            'contact_social_enabled' => true,
+            'contact_social_platforms' => [],
+            'contact_form_enabled' => true,
+            'contact_form_state' => 'enabled',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $contact = $settings->fresh()->components()[0];
+    expect($contact['title'])->toBe('Contact Lars')
+        ->and(array_column($contact['children'], 'type'))->toBe(['public_email', 'social_links', 'contact_form'])
+        ->and(array_column($contact['children'], 'published'))->toBe([true, true, true]);
+
+    $workspace = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
+    expect($workspace->get('components')[0]['content'])->toMatchArray([
+        'primary' => 'Contact Lars',
+        'secondary' => 'Public Email · Social Media Links · Contact Form',
+        'meta' => '',
+    ]);
+});
+
+
+it('edits image size in the owning component and keeps legacy 100% implicit', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image sizing', 'image-sizing');
+    $image = [
+        'type' => 'image',
+        'published' => false,
+        'media_asset_id' => null,
+        'image_decorative' => false,
+    ];
+    $settings->update(['blocks' => [$image]]);
+    expect($settings->fresh()->components()[0])->not->toHaveKey('image_scale_percent');
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertMountedActionModalSee('Image size')
+        ->assertActionDataSet(['image_scale_percent' => CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT]);
+
+    $service = app(\App\Domain\Content\CustomPageEditorialService::class);
+    expect($service->updateBlock($settings, 0, 'image', $image))->toBeFalse();
+
+    $scaled = [...$image, 'image_scale_percent' => 150];
+    expect($service->updateBlock($settings, 0, 'image', $scaled))->toBeTrue();
+    expect($settings->fresh()->components()[0]['image_scale_percent'])->toBe(150);
+    expect(CustomPageSetting::imageScalePercent($settings->fresh()->components()[0]))->toBe(150);
+
+    expect($service->updateBlock($settings, 0, 'image', $scaled))->toBeFalse();
+    expect($service->updateBlock($settings, 0, 'image', $image))->toBeTrue();
+    expect($settings->fresh()->components()[0])->not->toHaveKey('image_scale_percent');
+    expect(CustomPageSetting::imageScalePercent($settings->fresh()->components()[0]))->toBe(100);
+});
+
+
+it('rejects out-of-range and noninteger image sizes without changing the saved component', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image sizing bounds', 'image-sizing-bounds');
+    $image = ['type' => 'image', 'published' => false, 'media_asset_id' => null, 'image_decorative' => false];
+    $settings->update(['blocks' => [$image]]);
+    $before = $settings->fresh()->components();
+
+    foreach ([24, 201, '80.5', 'invalid'] as $invalid) {
+        expect(fn () => $settings->update(['blocks' => [[...$image, 'image_scale_percent' => $invalid]]]))
+            ->toThrow(ValidationException::class);
+        expect($settings->fresh()->components())->toBe($before);
+    }
+
+    $settings->update(['blocks' => [[...$image, 'image_scale_percent' => '175']]]);
+    expect($settings->fresh()->components()[0]['image_scale_percent'])->toBe(175);
+
+});
+
+
+it('renders a scaled image and derives move permissions after filtering and pagination', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image projection', 'image-projection');
+    $settings->update(['blocks' => [
+        [
+            'type' => 'image',
+            'published' => false,
+            'media_asset_id' => null,
+            'image_decorative' => false,
+            'image_scale_percent' => 150,
+        ],
+        ['type' => 'text', 'published' => false, 'title' => 'Second component', 'body' => 'Text'],
+        ['type' => 'divider', 'published' => false, 'variant' => 'thin'],
+    ]]);
+
+    // Exercise the real GET that previously threw before the editor could open.
+    $this->get('/admin/pages/custom/'.$section->getKey())->assertOk();
+
+    $page = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->assertSet('total', 3);
+
+    $rows = $page->get('components');
+    expect($rows)->toHaveCount(3)
+        ->and($rows[0]['can_move_up'])->toBeFalse()
+        ->and($rows[0]['can_move_down'])->toBeTrue()
+        ->and($rows[1]['can_move_up'])->toBeTrue()
+        ->and($rows[1]['can_move_down'])->toBeTrue()
+        ->and($rows[2]['can_move_up'])->toBeTrue()
+        ->and($rows[2]['can_move_down'])->toBeFalse();
+
+    $page->set('componentType', 'image')->assertSet('total', 1);
+    $filtered = $page->get('components');
+    expect($filtered[0]['can_move_up'])->toBeFalse()
+        ->and($filtered[0]['can_move_down'])->toBeFalse();
+
+    $page->set('componentType', 'any')
+        ->set('componentSearch', 'Second component')
+        ->assertSet('total', 1);
+    $searched = $page->get('components');
+    expect($searched[0]['can_move_up'])->toBeFalse()
+        ->and($searched[0]['can_move_down'])->toBeFalse();
 });

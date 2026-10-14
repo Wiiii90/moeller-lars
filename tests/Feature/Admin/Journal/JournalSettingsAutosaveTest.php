@@ -1,10 +1,17 @@
 <?php
 
+use App\Domain\Content\JournalSettingsService;
+use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\JournalWorkspace;
-use App\Models\User;
 use App\Models\AdminNotification;
+use App\Models\BlogPost;
+use App\Models\Exhibition;
+use App\Models\JournalSetting;
+use App\Models\Redirect;
+use App\Models\User;
 use App\Models\AuditEvent;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
@@ -92,17 +99,24 @@ it('rejects stale Journal settings instead of replacing a concurrent identity ch
         ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
 });
 
-it('keeps populated Journal templates and their existing entries intact', function (string $template): void {
+it('switches populated Journal templates while retaining entries and notifying once', function (string $template): void {
     $section = journalSettingsFixture($template);
     $model = $template === 'blog' ? new \App\Models\BlogPost : new \App\Models\Exhibition;
     $entry = $model->newQuery()->create(['site_section_id' => $section->id, 'title' => 'Existing entry', 'slug' => 'existing-entry', 'position' => 1, 'state' => 'draft']);
     $before = AuditEvent::query()->count();
-    Livewire::test(JournalWorkspace::class, ['section' => $section->id])->mountAction('journalSettings')
-        ->fillForm(['template' => $template === 'blog' ? 'exhibitions' : 'blog', 'title' => 'Rejected template'])
-        ->callMountedAction()->assertHasFormErrors(['template'])->assertNotDispatched('admin-header-notification');
-    expect($section->fresh()->template)->toBe($template)->and($section->fresh()->title)->toBe('Journal before')
-        ->and($entry->fresh()->title)->toBe('Existing entry')->and(AuditEvent::query()->count())->toBe($before)
-        ->and(AdminNotification::query()->count())->toBe(0);
+    $entryBefore = $entry->fresh()->attributesToArray();
+    $target = $template === 'blog' ? 'exhibitions' : 'blog';
+    $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->id])->mountAction('journalSettings')
+        ->fillForm(['template' => $target])
+        ->callMountedAction()->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
+    expect($section->fresh()->template)->toBe($target)->and($section->fresh()->title)->toBe('Journal before')
+        ->and($entry->fresh()->attributesToArray())->toBe($entryBefore)
+        ->and(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->callMountedAction()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe(1);
 })->with(['blog', 'exhibitions']);
 it('rolls back combined Journal identity and template changes if the later audit fails', function (): void {
     $section = journalSettingsFixture();
@@ -149,4 +163,120 @@ it('keeps concurrent Blog content when a stale mounted editor attempts to save',
     expect($post->fresh()->title)->toBe('Concurrent Blog title')->and($post->fresh()->body)->toBe('Concurrent body')
         ->and(AuditEvent::query()->count())->toBe($before)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->where('params.notification.status', 'success')->count())->toBe(0);
+});
+
+it('uses canonical Journal URL redirects and synchronizes only uncustomized listing titles', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Initial Journal', 'journal-start', JournalTemplate::Blog->value,
+    );
+    $editor = app(JournalSettingsService::class);
+    $editor->update($section, [
+        'template' => JournalTemplate::Blog->value,
+        'title' => 'Renamed Journal',
+        'navigation_label' => '',
+        'slug' => 'journal-renamed',
+    ]);
+
+    expect($section->fresh()->getAttribute('navigation_label'))->toBe('Renamed Journal')
+        ->and(JournalSetting::forSection($section)->getAttribute('listing_title'))->toBe('Renamed Journal')
+        ->and(Redirect::query()->where('source_path', '/journal-start')
+            ->where('target_path', '/journal-renamed')
+            ->where('reason', SiteSectionPathPolicy::CUSTOM_PAGE_SLUG_REDIRECT_REASON)
+            ->where('status_code', 301)->where('enabled', true)->exists())->toBeTrue();
+
+    JournalSetting::forSection($section)->update(['listing_title' => 'Curated Journal heading']);
+    $editor->update($section->fresh(), [
+        'template' => JournalTemplate::Blog->value,
+        'title' => 'Final Journal',
+        'navigation_label' => 'Nav short',
+        'slug' => 'journal-final',
+    ]);
+
+    expect($section->fresh()->getAttribute('navigation_label'))->toBe('Nav short')
+        ->and(JournalSetting::forSection($section)->getAttribute('listing_title'))->toBe('Curated Journal heading')
+        ->and(Redirect::query()->where('source_path', '/journal-start')
+            ->where('target_path', '/journal-final')->exists())->toBeTrue()
+        ->and(Redirect::query()->where('source_path', '/journal-renamed')
+            ->where('target_path', '/journal-final')->exists())->toBeTrue();
+});
+
+it('notifies on a real Journal Settings edit but not on an unchanged native autosave', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Journal feedback', 'journal-feedback', JournalTemplate::Blog->value,
+    );
+    $component = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('journalSettings');
+    $notifications = AdminNotification::query()->count();
+
+    $component->call('callMountedAction')->assertHasNoFormErrors();
+    expect(AdminNotification::query()->count())->toBe($notifications);
+
+    $component->set('mountedActions.0.data.title', 'Updated feedback title')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertActionDataSet(['navigation_label' => 'Updated feedback title'])
+        ->assertSet('mountedActions.0.name', 'journalSettings')
+        ->assertDispatched('admin-header-notification');
+
+    expect($section->fresh()->getAttribute('title'))->toBe('Updated feedback title')
+        ->and($section->fresh()->getAttribute('navigation_label'))->toBe('Updated feedback title')
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+
+    $component->call('callMountedAction')->assertHasNoFormErrors();
+    expect(AdminNotification::query()->count())->toBe($notifications + 1);
+});
+
+it('mounts Blog Create and Edit with the centralized editorial schema and header Actions', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Dialog Blog', 'dialog-blog', JournalTemplate::Blog->value,
+    );
+    $post = BlogPost::query()->create([
+        'site_section_id' => $section->getKey(),
+        'title' => 'Existing article',
+        'slug' => 'existing-article',
+        'body' => 'Existing rich text',
+        'state' => 'draft',
+        'position' => 0,
+    ]);
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('addPost')
+        ->assertMountedActionModalSee('Add post');
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editPost', ['post' => $post->getKey()])
+        ->assertMountedActionModalSee('Edit post');
+});
+
+it('mounts Exhibition Create and Edit with the centralized editorial schema and header Actions', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Dialog Exhibitions', 'dialog-exhibitions', JournalTemplate::Exhibitions->value,
+    );
+    $entry = app(ExhibitionEditorialService::class)->createDraft([
+        'site_section_id' => $section->getKey(),
+        'title' => 'Existing exhibition',
+        'slug' => 'existing-exhibition',
+    ]);
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('addExhibition')
+        ->assertMountedActionModalSee('Add exhibition');
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->assertMountedActionModalSee('Edit exhibition');
 });

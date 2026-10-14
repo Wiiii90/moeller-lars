@@ -248,51 +248,25 @@ Rules:
 - use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
 - drag is disabled when Search/filters/pagination make canonical order ambiguous;
-- in Custom Page, a drag handle is enabled only when its own sibling scope has at least two items; parent component order and each List/Contact child order are independent, so a single parent does not expose an inert parent drag target or disable sorting multiple children;
+- in Custom Page, only top-level components have drag handles and row Actions; List entries and Contact options are edited inside their parent forms, not reordered as independent rows; a single parent does not expose an inert drag handle;
 - ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
 - filtered reorder must not pretend that a filtered projection is the complete canonical sequence.
 
-## 10. Parent/child hierarchical tables
+## 10. Custom Page component table and Home child hierarchy
 
-When child rows are part of the same editorial table, they align to the **same global columns**.
-
-Current Custom Page reference, with Position and Drag sharing the ordering heading:
-
-Parent:
+Custom Page is a **flat sequence of components**:
 
 ```text
 [Position + Drag] [Component dropdown] [Content] [Actions] [Selection]
 ```
 
-Child:
+The Component selector is essential and remains editable at all supported widths. Content is separate from Component, never a duplicate type label. Blog-style child rows are not part of Custom Page: List entries use the owning List `Apply changes` Repeater dialog; Contact is a single component with editable Heading, Public Email, Social Media Links and Contact Form switches, platform selection, form presentation, and status text. All three Contact switches default on when creating. No Add/Edit/Sort/Publish/Delete Contact child actions or child-selection axes are emitted by Custom Page.
 
-```text
-[Position + Drag] [Kind] [Content] [Actions] [Selection]
-```
+Custom Page Contact Content shows only two lines: the authored heading (default `Contact`) and one ellipsized summary of enabled options. Legal Disclaimer Content shows `General legal disclaimer` followed by one ellipsized line of the actual General legal text, without redundant third-line metadata. The same semantic layout applies at every responsive width.
 
-**Component is an essential editable control, never a responsive optional column.**
-The inline Component type select stays visible and changeable at every supported
-width, even while filters or pagination disable drag sorting. Keep Component
-and Content as distinct tracks across Wide, Compact, Narrow and Minimal; reduce
-supportive content and compact Actions through the shared responsive system,
-not by hiding the type selector. Never repeat the component type under Content
-as responsive metadata. Content describes the component's actual text/media/
-items; e.g. a Contact component shows its child count, not the word “Contact”
-a second time. Child Kind similarly keeps its own aligned column rather than
-becoming duplicate Content metadata. Change type uses the existing shared
-`AdminDialog::confirm()` plus canonical
-`CustomPageEditorialService::convertBlock()`; never tie conversion eligibility
-to `componentReorderEnabled()` or create a second mutation path.
+List entries have `Entry`, one `Context` field (date, year, organisation or other free context), `Published`, and `Details`. No separate Date, Organisation, Location, URL or Insert image controls in the List entry editor. Old Date/Organisation/Location values fold into Context and old links into Details through the model's normalizer without silent content loss. Existing Home List components use the same List editor. Parent selections and publication actions apply only to parent components.
 
-Rules:
-
-- no nested `Content | Status | Actions` child header;
-- do not indent the entire child table and thereby destroy global alignment;
-- hierarchy may be shown with a restrained connector line;
-- connector axis aligns with the parent drag column/handle axis;
-- parent and child action cells use the same action-column geometry;
-- Selection remains the shared trailing utility column;
-- child rows may be more compact, but their column starts do not float.
+Home's existing distinct Contact-child hierarchy is a separate workflow; keep its shared column geometry and selection semantics. Do not change Home when simplifying Custom Page.
 
 ## 11. Home component table
 
@@ -331,17 +305,19 @@ audit event.
 The Journal has separate data columns at full width, and folds them as the table becomes tighter:
 
 ```text
-Blog · Wide:            [Position] [Drag] [Image] [Post] [Status] [Publication] [Actions] [Selection]
-Blog · Folded:          [Position] [Drag] [Image] [Post] [Publication]          [Actions] [Selection]
-Exhibitions · Wide:     [Position] [Drag] [Image] [Exhibition] [Date] [Timing] [Actions] [Selection]
-Exhibitions · Folded:   [Position] [Drag] [Image] [Exhibition] [Dates]          [Actions] [Selection]
+Blog · Wide:            [Position] [Drag] [Image] [Post] [Date] [Status] [Actions] [Selection]
+Blog · Folded:          [Position] [Drag] [Image] [Post] [Date]          [Actions] [Selection]
+Exhibitions · Wide:     [Position] [Drag] [Image] [Exhibition] [Date] [Status] [Actions] [Selection]
+Exhibitions · Folded:   [Position] [Drag] [Image] [Exhibition] [Dates]       [Actions] [Selection]
 ```
 
-Blog's long seven-action rail switches to icons at 88rem, but Status and Publication remain separate down to 64rem of actual table width; they then merge into Publication. Exhibition Date and Timing also merge as Dates at 64rem. At larger table widths the Date and Timing columns remain separate (9.5rem and 8rem respectively), taking some space from the generously sized Exhibition identity; once merged, Dates uses 11rem. This split is based on actual table width, not viewport width. In Blog, Status is the editorial state and Publication is its scheduled/published date; the folded Publication cell contains both, just as the former full-width cell did. In Exhibitions, Date shows the exhibition date range with optional Vernissage directly beneath it. Timing shows only the derived state (Past/Current/Upcoming). The folded Dates cell retains the date, optional Vernissage and timing in that order. Long dates wrap rather than truncate.
+Blog's seven-action rail, Date, and Status all remain expanded at maximum workspace width. At 72rem actual table width, the shared table-pressure rule simultaneously folds Status into Date and switches all seven action labels to icons. There is no earlier fold that hides Status at full width. Blog Date reserves 7rem, Status 6rem, and Post identity absorbs the remaining width. The Blog Actions rail uses the exact canonical seven-slot grid, as Pages and General do for their action sets: every icon axis is identical across all rows, including Publish/Unpublish and Archive/Restore. The publication-state slot reuses the central `--admin-row-action-slot-state-width`; the long Cancel schedule action displays the short label `Cancel` while its tooltip and accessible name remain `Cancel schedule`. This removes the obsolete 9rem publication track without sacrificing icon alignment. The shared 72rem boundary continues to switch all seven slots to the compact icon grid. Exhibition Date and Status remain separate down to 64rem, then merge into Dates. Date appears before Status. In Blog, Date shows the scheduled/published date (or a dash if unavailable) and Status shows the editorial state. In Exhibitions, Date and Status also merge into Dates at 64rem; their separate wide widths are 12.5rem and 8rem, with 12.5rem for folded Dates. Exhibition Date uses only structured Starts/Ends values, with a single unbroken range `dd.mm.yyyy – dd.mm.yyyy`. A single available date occupies the same one line; end-only legacy records retain their available date. The supporting Date track is wide enough to prevent clipping before it yields at Narrow. The public-facing free-text display override is not shown in this admin table. Optional Vernissage appears on one unbroken line under the date range as `Vernissage: dd.mm.yyyy, HH:mm`; legacy opening text is used only when structured Vernissage is absent. The line ellipsizes when it cannot fit rather than wrapping. Exhibition Status shows the derived state (Past/Current/Upcoming), not the publication state. The Date cell keeps the full range on one line; Vernissage follows underneath without truncating its content. These are width-based table transitions, not viewport thresholds.
 
-Blog and Exhibitions use the same canonical Cover/feature-media preview when configured; an empty preview is the neutral fallback. Position and Drag share the leading ordering region; Selection remains trailing. At Narrow (54rem), the merged Publication/Dates column yields before the primary identity can be squeezed. Post identity displays the editorial state and date; Exhibition identity displays the date, derived timing and optional vernissage. These metadata lines are hidden while a dedicated column is still visible. Actions and Selection never yield. Split/fold visibility stays in the shared table-pressure contract; Journal-specific track sizing and responsive metadata live only in `journal.css`.
+Blog and Exhibitions use the same canonical Cover/feature-media preview when configured; an empty preview is the neutral fallback. Position and Drag share the leading ordering region; Selection remains trailing. At Narrow (54rem), the merged Date/Dates column yields before the primary identity can be squeezed. Post identity displays the editorial state and date; Exhibition identity displays the *structured* date range, derived status and optional vernissage. These metadata lines must remain hidden while a dedicated column is still visible: the shared `admin-responsive-meta` hiding selector must outrank the identity cell's `small { display: block; }` styling, and Journal only reveals the metadata under Narrow. Actions and Selection never yield. Split/fold visibility stays in the shared table-pressure contract; Journal-specific track sizing and responsive metadata live only in `journal.css`.
 
-For Exhibition identity, keep the secondary line concise, e.g. `Venue · City`; do not dump full street/country metadata into the collection row.
+Both Journal identity cells present a one-line title and one-line secondary summary with overflow ellipsis, using the canonical `admin-table__identity--ellipsis-meta` modifier. Exhibition uses `Venue · City` (never full street/country metadata). Blog uses the authored excerpt or a plain-text body preview when no excerpt exists; it normalizes whitespace and limits that preview to 140 characters in addition to CSS ellipsis. At Narrow, separate responsive state/date metadata may appear as additional individually unwrapped lines. Blog has seven fixed semantic action slots: slot 4 Publish/Unpublish/Cancel schedule (disabled Publish for archived entries), slot 5 Schedule, slot 6 Archive/Restore, and slot 7 Delete. Restore never moves to slot 4.
+
+**Editorial dialog reference:** Blog/Exhibitions Add and Edit share `JournalEntryEditorSchema`, with responsive Basics/Venue/Dates/Map groups. Their Edit headers use the same `AdminRowAction` roles and existing domain mutations as the table rows; Delete and Schedule remain canonical modal tasks. Gallery Add Artwork and Edit Artwork use one `ArtworkEditDialog` schema with a create-only uniqueness rule, and Gallery Edit shows Move, Publication, and Remove/Detach above the form. Materials is an atomic `Apply changes` Command because its Repeater does not have reliable per-item Edit autosave. All top-right actions use the central `AdminDialog` presentation, not page-local CSS.
 
 ## 13. Gallery and Storage are accepted style references
 

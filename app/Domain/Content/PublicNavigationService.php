@@ -26,8 +26,12 @@ final class PublicNavigationService
             $query->where('state', 'published');
         }
 
-        // Skip Home remains an explicit routing choice, not another per-page
-        // visibility flag.
+        // Home alone has an additional menu switch. Skip Home remains a
+        // separate routing choice that always excludes Home from the menu.
+        $query->where(static function (Builder $sections): void {
+            $sections->where('type', '<>', SiteSectionType::Home->value)
+                ->orWhere('show_in_navigation', true);
+        });
         if ($this->home->skipEnabled()) {
             $query->where('type', '<>', SiteSectionType::Home->value);
         }

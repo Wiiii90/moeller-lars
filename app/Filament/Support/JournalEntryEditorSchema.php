@@ -72,19 +72,19 @@ final class JournalEntryEditorSchema
             ->nullable()
             ->columnSpanFull();
 
-        return AdminForm::section('Basics')->schema($schema)->columns(2);
+        return AdminForm::section('Basics')->schema($schema)->columns(['md' => 2]);
     }
 
     private static function venueSection(): mixed
     {
         return AdminForm::section('Venue')->schema([
-            TextInput::make('venue')->label('Venue')->maxLength(240)->nullable()->columnSpan(3),
-            TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable()->columnSpan(3),
-            self::locationField('location_text', 'Street address', 500)->columnSpan(2),
-            self::locationField('postal_code', 'Postal code', 16)->columnSpan(1),
-            self::locationField('city', 'City', 160)->columnSpan(2),
-            self::locationField('country', 'Country', 160)->columnSpan(1),
-        ])->columns(6);
+            TextInput::make('venue')->label('Venue')->maxLength(240)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
+            TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
+            self::locationField('location_text', 'Street address', 500)->columnSpan(['default' => 1, 'md' => 2]),
+            self::locationField('postal_code', 'Postal code', 16),
+            self::locationField('city', 'City', 160)->columnSpan(['default' => 1, 'md' => 2]),
+            self::locationField('country', 'Country', 160),
+        ])->columns(['md' => 6]);
     }
 
     private static function datesSection(): mixed
@@ -94,7 +94,7 @@ final class JournalEntryEditorSchema
             DatePicker::make('ends_on')->label('Ends')->afterOrEqual('starts_on')->nullable(),
             TextInput::make('date_text')->label('Display date override')->maxLength(160)->nullable()->columnSpanFull(),
             DateTimePicker::make('vernissage_at')->label('Vernissage')->seconds(false)->nullable()->columnSpanFull(),
-        ])->columns(2);
+        ])->columns(['md' => 2]);
     }
 
     private static function gallerySection(JournalTemplate $template): mixed
@@ -135,8 +135,7 @@ final class JournalEntryEditorSchema
                 ])
                 ->default('grid')
                 ->required()
-                ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
-                ->helperText('Uses the same Gallery images and order.'),
+                ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled')),
             $images,
         ]);
     }
@@ -167,7 +166,7 @@ final class JournalEntryEditorSchema
                 ->content(fn (Get $get): HtmlString => self::mapPreview($get))
                 ->visible(fn (Get $get): bool => (bool) $get('map_enabled'))
                 ->columnSpanFull(),
-        ])->columns(2);
+        ])->columns(['md' => 2]);
     }
 
     private static function title(): TextInput

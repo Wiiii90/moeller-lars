@@ -87,3 +87,38 @@ it('serves the public CSP-safe Livewire script without changing the Admin runtim
     expect($response->headers->get('Content-Type'))->toContain('javascript')
         ->and(config('livewire.csp_safe', false))->toBe($before);
 });
+
+it('renders 50 percent Custom Page image size as CSP-authorized rules in Blade', function (): void {
+    $asset = new \App\Models\MediaAsset;
+    $asset->setRawAttributes(['id' => 140, 'state' => 'available'], true);
+    $variant = new \App\Models\MediaVariant;
+    $variant->setRawAttributes(['id' => 240], true);
+
+    $media = \Mockery::mock(\App\Domain\Media\PublicMedia::class);
+    $media->shouldReceive('thumbnailVariantForAsset')->once()->with($asset)->andReturn($variant);
+    $media->shouldReceive('variantUrl')->once()->with($variant)->andReturn('/media/variants/240');
+
+    $blocks = [[
+        'type' => 'image',
+        'published' => true,
+        'media_asset_id' => 140,
+        'image_decorative' => true,
+        'image_scale_percent' => 50,
+    ]];
+    $assets = collect([140 => $asset]);
+    $label = 'Image scaling test';
+    $isHome = false;
+    $isPreview = false;
+    request()->attributes->set(SecurityHeaders::STYLE_NONCE_ATTRIBUTE, 'image-size-test-nonce');
+
+    $rendered = \Illuminate\Support\Facades\Blade::render(
+        "@include('pages.partials.component-sequence') @stack('public-component-styles')",
+        compact('blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
+    );
+
+    expect($rendered)->toContain('id="custom-page-image-0"')
+        ->toContain('<style nonce="image-size-test-nonce">')
+        ->toContain('--custom-page-image-width: 14rem;')
+        ->toContain('--custom-page-image-width-narrow: 10rem;')
+        ->not->toContain('style="--custom-page-image-width');
+});

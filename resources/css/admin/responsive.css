@@ -59,7 +59,8 @@
 
 /* Presentation-only responsive metadata is exposed only after its dedicated
  * standalone columns have been removed. */
-.admin-responsive-meta{
+.admin-responsive-meta,
+.admin-table .admin-responsive-meta{
     display: none;
     margin-top: .15rem;
     overflow: hidden;

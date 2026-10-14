@@ -3,84 +3,10 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Models\CustomPageSetting;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceSecondaryForms
 {
-    /** @return list<mixed> */
-    private function contactChildEditorSchema(?string $childType, bool $includeTypeSelect, array $arguments): array
-    {
-        $fields = [];
-        if ($includeTypeSelect) {
-            $fields[] = Select::make('child_type')
-                ->label('Contact item')
-                ->options($this->availableContactChildOptions($arguments))
-                ->required()
-                ->live();
-        } else {
-            $fields[] = Hidden::make('child_type')->default($childType)->required();
-        }
-
-        $fields[] = $includeTypeSelect
-            ? Select::make('publication_state')
-                ->label('Status')
-                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                ->default('published')
-                ->required()
-            : Hidden::make('publication_state');
-
-        $fields[] = Grid::make()
-            ->columns(['md' => 2])
-            ->schema(function (Get $get) use ($childType): array {
-                $type = $childType ?? (string) $get('child_type');
-
-                return match ($type) {
-                    'public_email' => [
-                        Placeholder::make('public_email_note')
-                            ->label('Public Email')
-                            ->content('Uses the canonical public email configured in General.')
-                            ->columnSpanFull(),
-                    ],
-                    'social_links' => [
-                        Select::make('social_platforms')
-                            ->label('Social links from General')
-                            ->options($this->availableSocialPlatforms)
-                            ->multiple()
-                            ->placeholder('No social links')
-                            ->default(array_keys($this->availableSocialPlatforms))
-                            ->columnSpanFull(),
-                    ],
-                    'contact_form' => [
-                        Select::make('form_state')
-                            ->label('Form presentation')
-                            ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
-                            ->default('enabled')
-                            ->required()
-                            ->live(),
-                        TextInput::make('status_text')
-                            ->label('Status text')
-                            ->maxLength(500)
-                            ->required(fn (Get $get): bool => $get('form_state') === 'under_construction')
-                            ->visible(fn (Get $get): bool => $get('form_state') === 'under_construction'),
-                    ],
-                    default => [],
-                };
-            })
-            ->columnSpanFull();
-
-        return [
-            Grid::make()
-                ->columns(['md' => 2])
-                ->schema($fields),
-        ];
-    }
-
     /** @param array<string,mixed> $block */
     private function componentEditorData(array $block): array
     {
@@ -88,6 +14,29 @@ trait CustomPageWorkspaceSecondaryForms
             ...$block,
             'publication_state' => CustomPageSetting::componentPublished($block) ? 'published' : 'unpublished',
         ];
+        if (($block['type'] ?? null) === 'image') {
+            $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
+        }
+        if (($block['type'] ?? null) === 'list') {
+            $data['items'] = array_map(static fn (array $item): array => [
+                'title' => $item['title'] ?? null,
+                'context' => CustomPageSetting::listItemContext($item),
+                'body' => CustomPageSetting::listItemDetails($item),
+                'published' => CustomPageSetting::listItemPublished($item),
+            ], array_values(array_filter($block['items'] ?? [], 'is_array')));
+        }
+        if (($block['type'] ?? null) === 'contact') {
+            $children = collect($this->settings()->contactChildren($block))->keyBy('type');
+            $email = $children->get('public_email');
+            $social = $children->get('social_links');
+            $form = $children->get('contact_form');
+            $data['contact_email_enabled'] = is_array($email) && CustomPageSetting::contactChildPublished($email);
+            $data['contact_social_enabled'] = is_array($social) && CustomPageSetting::contactChildPublished($social);
+            $data['contact_form_enabled'] = is_array($form) && CustomPageSetting::contactChildPublished($form);
+            $data['contact_social_platforms'] = is_array($social) ? ($social['social_platforms'] ?? []) : [];
+            $data['contact_form_state'] = is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled';
+            $data['contact_status_text'] = is_array($form) ? ($form['status_text'] ?? null) : null;
+        }
         if (($block['type'] ?? null) === 'divider') {
             $data['variant'] = in_array($block['variant'] ?? null, array_keys(self::DIVIDER_LABELS), true)
                 ? $block['variant']
@@ -112,6 +61,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'published' => $published,
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                ...$this->imageScalePayload($data, $existing),
             ],
             'text' => [
                 'type' => 'text',
@@ -131,43 +81,70 @@ trait CustomPageWorkspaceSecondaryForms
                 'published' => $published,
                 'variant' => in_array($data['variant'] ?? null, array_keys(self::DIVIDER_LABELS), true) ? $data['variant'] : 'thin',
             ],
-            'contact' => [
-                'type' => 'contact',
-                'published' => $published,
-                'children' => $existing !== null
-                    ? $this->settings()->contactChildren($existing)
-                    : [
-                        ['type' => 'public_email', 'published' => true],
-                        ['type' => 'social_links', 'published' => true, 'social_platforms' => array_keys($this->availableSocialPlatforms)],
-                        ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
-                    ],
-            ],
+            'contact' => $this->contactComponentPayload($data, $published, $existing),
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
     }
 
-    /** @return array<string,mixed> */
-    private function contactChildPayload(array $data): array
+    /** @param array<string, mixed> $data
+     * @param array<string, mixed>|null $existing
+     * @return array<string, int>
+     */
+    private function imageScalePayload(array $data, ?array $existing): array
     {
-        $type = $data['child_type'] ?? null;
-        if (! is_string($type) || ! array_key_exists($type, self::CONTACT_CHILD_LABELS)) {
-            throw ValidationException::withMessages(['component' => 'Choose a supported Contact item.']);
+        $value = $data['image_scale_percent']
+            ?? ($existing['image_scale_percent'] ?? CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT);
+        $scale = filter_var($value, FILTER_VALIDATE_INT, [
+            'options' => [
+                'min_range' => CustomPageSetting::MIN_IMAGE_SCALE_PERCENT,
+                'max_range' => CustomPageSetting::MAX_IMAGE_SCALE_PERCENT,
+            ],
+        ]);
+        if ($scale === false) {
+            throw ValidationException::withMessages(['image_scale_percent' => 'Image size must be a whole percentage between 25 and 200.']);
         }
-        $published = ($data['publication_state'] ?? 'published') === 'published';
 
-        return match ($type) {
-            'public_email' => ['type' => 'public_email', 'published' => $published],
-            'social_links' => [
-                'type' => 'social_links',
-                'published' => $published,
-                'social_platforms' => $this->validatedSocialPlatforms($data['social_platforms'] ?? []),
+        return $scale === CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT
+            ? []
+            : ['image_scale_percent' => $scale];
+    }
+
+    /** @param array<string,mixed> $data
+     * @param array<string,mixed>|null $existing
+     * @return array<string,mixed>
+     */
+    private function contactComponentPayload(array $data, bool $published, ?array $existing): array
+    {
+        // A disabled toggle may hide its dependent fields. Preserve authored
+        // options until they are explicitly edited, not when they are hidden.
+        $children = $existing !== null ? $this->settings()->contactChildren($existing) : [];
+        $social = collect($children)->firstWhere('type', 'social_links');
+        $form = collect($children)->firstWhere('type', 'contact_form');
+        $platforms = $data['contact_social_platforms']
+            ?? (is_array($social) ? ($social['social_platforms'] ?? []) : array_keys($this->availableSocialPlatforms));
+        $formState = $data['contact_form_state']
+            ?? (is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled');
+        $statusText = $data['contact_status_text']
+            ?? (is_array($form) ? ($form['status_text'] ?? null) : null);
+
+        return [
+            'type' => 'contact',
+            'published' => $published,
+            'title' => $data['title'] ?? null,
+            'children' => [
+                ['type' => 'public_email', 'published' => (bool) ($data['contact_email_enabled'] ?? true)],
+                [
+                    'type' => 'social_links',
+                    'published' => (bool) ($data['contact_social_enabled'] ?? true),
+                    'social_platforms' => $this->validatedSocialPlatforms($platforms),
+                ],
+                [
+                    'type' => 'contact_form',
+                    'published' => (bool) ($data['contact_form_enabled'] ?? true),
+                    'form_state' => $formState === 'under_construction' ? 'under_construction' : 'enabled',
+                    'status_text' => filled($statusText) ? trim((string) $statusText) : null,
+                ],
             ],
-            'contact_form' => [
-                'type' => 'contact_form',
-                'published' => $published,
-                'form_state' => ($data['form_state'] ?? 'enabled') === 'under_construction' ? 'under_construction' : 'enabled',
-                'status_text' => filled($data['status_text'] ?? null) ? trim((string) $data['status_text']) : null,
-            ],
-        };
+        ];
     }
 }

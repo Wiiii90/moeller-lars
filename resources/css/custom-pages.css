@@ -31,7 +31,7 @@
 }
 
 .custom-page__image {
-    width: min(100%, 28rem);
+    width: min(100%, var(--custom-page-image-width, 28rem));
 }
 
 .custom-page__media img {
@@ -125,7 +125,7 @@
     gap: 1rem;
 }
 
-.custom-page__date {
+.custom-page__context {
     color: var(--public-muted);
     white-space: nowrap;
 }
@@ -317,7 +317,7 @@
  * own content stops fitting; this threshold is intentionally content-driven. */
 @media (max-width: 42rem) {
     .custom-page__image {
-        width: min(100%, 20rem);
+        width: min(100%, var(--custom-page-image-width-narrow, 20rem));
     }
 
     .custom-page__list-line {

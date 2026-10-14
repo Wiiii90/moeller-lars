@@ -3,12 +3,9 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Content\DividerVariant;
-use App\Filament\Pages\Concerns\CustomPageWorkspaceChildOrdering;
-use App\Filament\Pages\Concerns\CustomPageWorkspaceChildProjection;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceComponentActions;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceForms;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceLifecycle;
-use App\Filament\Pages\Concerns\CustomPageWorkspaceListContactActions;
 use App\Filament\Pages\Concerns\CustomPageWorkspacePresentationHelpers;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceProjectionState;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceSecondaryForms;
@@ -26,12 +23,9 @@ final class CustomPageWorkspace extends Page
         return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
     }
 
-    use CustomPageWorkspaceChildOrdering;
-    use CustomPageWorkspaceChildProjection;
     use CustomPageWorkspaceComponentActions;
     use CustomPageWorkspaceForms;
     use CustomPageWorkspaceLifecycle;
-    use CustomPageWorkspaceListContactActions;
     use CustomPageWorkspacePresentationHelpers;
     use CustomPageWorkspaceProjectionState;
     use CustomPageWorkspaceSecondaryForms;
@@ -105,9 +99,6 @@ final class CustomPageWorkspace extends Page
 
     /** @var list<string> */
     public array $selectedComponentTargets = [];
-
-    /** @var list<string> */
-    public array $selectedChildTargets = [];
 
     public int $page = 1;
 

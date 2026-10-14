@@ -328,6 +328,12 @@
     line-height: 1.4;
 }
 
+/* A compact identity has one title line and one ellipsized secondary line.
+ * Responsive metadata uses the same no-wrap rule when its own columns yield. */
+.admin-table__identity--ellipsis-meta > small {
+    white-space: nowrap;
+}
+
 /* The shared add-row primitive owns the one separator after a data table.
  * Never compress its height or marker for an individual workspace. */
 .media-workspace__table-wrap:has(+ .admin-add-row),

@@ -8,6 +8,7 @@ use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\Exhibition;
 use App\Models\JournalSetting;
+use App\Models\PublicContentSetting;
 use App\Models\Redirect;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
@@ -50,6 +51,33 @@ final class SiteSectionEditorialService
             }
 
             return $fresh;
+        });
+    }
+
+    /** Home-only public menu control; routing and publication stay independent. */
+    public function updateHomeNavigationVisibility(SiteSection $section, bool $visible): bool
+    {
+        return DB::transaction(function () use ($section, $visible): bool {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if ($fresh->nodeType() !== SiteSectionType::Home) {
+                throw ValidationException::withMessages(['show_in_navigation' => 'Only Home supports this navigation setting.']);
+            }
+
+            $fresh->setAttribute('show_in_navigation', $visible);
+            if (! $fresh->isDirty('show_in_navigation')) {
+                return false;
+            }
+
+            $fresh->save();
+            $this->audit->record(
+                $this->audit->requireActor(),
+                'site_section.updated',
+                'site_section',
+                (int) $fresh->getKey(),
+            );
+
+            return true;
         });
     }
 
@@ -343,15 +371,8 @@ final class SiteSectionEditorialService
                 return $fresh;
             }
 
-            if (
-                BlogPost::query()->where('site_section_id', $fresh->getKey())->exists()
-                || Exhibition::query()->where('site_section_id', $fresh->getKey())->exists()
-            ) {
-                throw ValidationException::withMessages([
-                    'template' => 'Move or remove existing Journal entries before changing the Journal template.',
-                ]);
-            }
-
+            // A Journal template is a view over retained entries. Switching
+            // it never deletes or rewrites posts/exhibitions.
             $this->ensureJournalSetting($fresh);
             $fresh->setAttribute('template', $target->value);
             $fresh->save();
@@ -434,6 +455,9 @@ final class SiteSectionEditorialService
     {
         if ($parentSectionId === null) {
             return null;
+        }
+        if (! PublicContentSetting::navigationNestingEnabled()) {
+            throw ValidationException::withMessages(['parent_id' => 'Enable nested pages in Pages settings before choosing a navigation parent.']);
         }
         if ($parentSectionId === (int) $section->getKey()) {
             throw ValidationException::withMessages(['parent_id' => 'A page cannot be its own parent.']);

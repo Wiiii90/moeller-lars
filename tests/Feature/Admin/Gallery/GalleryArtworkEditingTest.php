@@ -184,3 +184,18 @@ it('does not rename artwork belonging to another Gallery through the inline edit
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
 });
+
+
+it('opens the shared Add and Edit artwork forms with the canonical dialog lifecycle', function (): void {
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
+    $artwork = galleryFixtureArtwork($gallery);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('addArtwork')
+        ->assertMountedActionModalSee('Add artwork');
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->assertMountedActionModalSee('Edit artwork');
+});

@@ -13,6 +13,7 @@ use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
@@ -391,34 +392,40 @@ final class JournalWorkspace extends Page
                 ];
             })
             ->schema([
-                Grid::make()->columns(2)->schema([
+                Grid::make()->columns(['md' => 2])->schema([
                     Select::make('template')->label('Template')->options(JournalTemplate::options())->required(),
                     TextInput::make('title')->label('Journal title')->required()->maxLength(160),
-                    TextInput::make('navigation_label')->label('Navigation label')->required()->maxLength(120),
+                    TextInput::make('navigation_label')->label('Navigation label')->maxLength(160),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
-                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')->helperText('Changing this changes the public Journal URL.'),
+                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                 ]),
             ])
             ->modalHeading('Journal settings')
             ->action(function (Action $action, array $data): void {
+                $section = $this->section();
+                $before = $section->only(['template', 'title', 'navigation_label', 'slug']);
                 try {
-                    $updated = app(JournalSettingsService::class)->update($this->section(), $data, $this->journalSettingsOriginal);
+                    $updated = app(JournalSettingsService::class)->update($section, $data, $this->journalSettingsOriginal);
                 } catch (ValidationException $exception) {
                     $this->throwMountedValidation($exception);
                 }
                 $this->journalSettingsOriginal = $updated->only(array_keys($this->journalSettingsOriginal));
+                $action->fillForm($this->journalSettingsOriginal);
                 $template = $updated->journalTemplate();
                 abort_unless($template instanceof JournalTemplate, 404);
+                $templateChanged = $before['template'] !== $template->value;
                 $this->template = $template->value;
-                $this->search = '';
-                $this->statusFilter = 'any';
-                $this->timingFilter = 'any';
-                $this->selectedPostIds = [];
-                $this->selectedExhibitionIds = [];
-                $this->page = 1;
+                if ($templateChanged) {
+                    $this->search = '';
+                    $this->statusFilter = 'any';
+                    $this->timingFilter = 'any';
+                    $this->selectedPostIds = [];
+                    $this->selectedExhibitionIds = [];
+                    $this->page = 1;
+                }
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
-                if ($updated->wasChanged()) {
+                if ($before !== $updated->only(['template', 'title', 'navigation_label', 'slug'])) {
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Journal settings saved',
@@ -466,6 +473,7 @@ final class JournalWorkspace extends Page
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
             ->modalHeading('Edit post')
+            ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'post'))
             ->action(function (Action $action, array $data, array $arguments): void {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
                 $before = $this->journalEntryMutationState($post);
@@ -550,6 +558,7 @@ final class JournalWorkspace extends Page
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
             ->modalHeading('Edit exhibition')
+            ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'exhibition'))
             ->action(function (Action $action, Schema $schema, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
                 $before = $this->journalEntryMutationState($entry);
@@ -590,6 +599,109 @@ final class JournalWorkspace extends Page
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * Edit headers reuse the same domain mutations, roles and modal tasks
+     * as their table rows. Only the native Edit dialog owns autosave.
+     *
+     * @param array<string,mixed> $arguments
+     * @return list<Action>
+     */
+    private function journalEditHeaderActions(array $arguments, string $kind): array
+    {
+        $isPost = $kind === 'post';
+        $id = (int) ($arguments[$kind] ?? 0);
+        $entry = $isPost ? $this->post($id) : $this->exhibition($id);
+        $state = (string) $entry->getAttribute('state');
+        $target = [$kind => $id];
+        $editAction = $isPost ? 'editPost' : 'editExhibition';
+        $orderedIds = ($isPost ? BlogPost::query() : Exhibition::query())
+            ->where('site_section_id', $this->sectionId)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (mixed $value): int => (int) $value)
+            ->all();
+        $index = array_search($id, $orderedIds, true);
+        $actions = [];
+
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $canMove = $index !== false && ($direction === 'up' ? $index > 0 : $index < count($orderedIds) - 1);
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($isPost, $id, $direction, $editAction, $target): void {
+                if ($isPost) {
+                    $this->movePost($id, $direction);
+                } else {
+                    $this->moveExhibition($id, $direction);
+                }
+                $this->replaceMountedAction($editAction, $target);
+            })->disabled(! $canMove);
+        }
+
+        if (! $isPost) {
+            $published = $state === 'published';
+            $actions[] = AdminDialog::headerAction(
+                'dialogExhibitionPublication',
+                $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+                function () use ($published, $id, $editAction, $target): void {
+                    if ($published) {
+                        $this->unpublishExhibition($id);
+                    } else {
+                        $this->publishExhibition($id);
+                    }
+                    $this->replaceMountedAction($editAction, $target);
+                },
+            );
+            $actions[] = AdminDialog::headerAction('dialogDeleteExhibition', AdminRowAction::Delete, function () use ($target): void {
+                $this->replaceMountedAction('deleteExhibition', $target);
+            })->disabled($published);
+
+            return $actions;
+        }
+
+        $publicationRole = match ($state) {
+            'published' => AdminRowAction::Unpublish,
+            'scheduled' => AdminRowAction::CancelSchedule,
+            default => AdminRowAction::Publish,
+        };
+        $actions[] = AdminDialog::headerAction(
+            'dialogPostPublication',
+            $publicationRole,
+            function () use ($state, $id, $editAction, $target): void {
+                if ($state === 'published') {
+                    $this->unpublishPost($id);
+                } elseif ($state === 'scheduled') {
+                    $this->restorePostDraft($id);
+                } else {
+                    $this->publishPost($id);
+                }
+                $this->replaceMountedAction($editAction, $target);
+            },
+        )->disabled($state === 'archived');
+
+        $actions[] = AdminDialog::headerAction('dialogSchedulePost', AdminRowAction::Schedule, function () use ($target): void {
+            $this->replaceMountedAction('schedulePost', $target);
+        })->disabled(! in_array($state, ['draft', 'unpublished'], true));
+
+        $archived = $state === 'archived';
+        $actions[] = AdminDialog::headerAction(
+            'dialogArchivePost',
+            $archived ? AdminRowAction::Restore : AdminRowAction::Archive,
+            function () use ($archived, $id, $editAction, $target): void {
+                if ($archived) {
+                    $this->restorePostDraft($id);
+                } else {
+                    $this->archivePost($id);
+                }
+                $this->replaceMountedAction($editAction, $target);
+            },
+        )->disabled($state === 'scheduled');
+
+        $actions[] = AdminDialog::headerAction('dialogDeletePost', AdminRowAction::Delete, function () use ($target): void {
+            $this->replaceMountedAction('deletePost', $target);
+        })->disabled(in_array($state, ['published', 'scheduled'], true));
+
+        return $actions;
     }
 
     public function deletePostAction(): Action
@@ -728,7 +840,7 @@ final class JournalWorkspace extends Page
 
             return [
                 'id' => (int) $post->getKey(), 'rank' => $rank, 'title' => (string) $post->getAttribute('title'),
-                'excerpt' => filled($post->getAttribute('excerpt')) ? Str::limit(trim((string) $post->getAttribute('excerpt')), 140) : null,
+                'excerpt' => $this->postTableExcerpt($post),
                 'publication' => $publication, 'state' => $state, 'thumbnail_url' => $this->coverThumbnailUrl($post),
                 'public_url' => $this->journalPublicUrl !== null && $this->postIsPublic($post, $now) ? route('journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')]) : null,
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count,
@@ -736,6 +848,17 @@ final class JournalWorkspace extends Page
                 'delete_help' => in_array($state, ['published', 'scheduled'], true) ? 'Unpublish or cancel schedule before deleting' : null,
             ];
         })->all();
+    }
+
+    /** Display the existing summary, or a plain-text preview when no excerpt was authored. */
+    private function postTableExcerpt(BlogPost $post): ?string
+    {
+        $excerpt = trim((string) ($post->getAttribute('excerpt') ?? ''));
+        $body = trim((string) ($post->getAttribute('body') ?? ''));
+        $source = $excerpt !== '' ? $excerpt : strip_tags($body);
+        $source = trim(preg_replace('/\\s+/u', ' ', html_entity_decode($source, ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? $source);
+
+        return $source !== '' ? Str::limit($source, 140) : null;
     }
 
     private function loadExhibitions(bool $refreshMetrics = true): void
@@ -775,9 +898,29 @@ final class JournalWorkspace extends Page
             $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
             $location = collect([$entry->getAttribute('venue'), $entry->getAttribute('city')])->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')->map(fn (string $value): string => trim($value))->unique()->implode(' · ');
 
+            // The admin table displays structured dates, not the public-facing
+            // free-text display override (which may use different separators).
+            $startsOn = $entry->getAttribute('starts_on');
+            $endsOn = $entry->getAttribute('ends_on');
+            $dateStart = $startsOn instanceof CarbonInterface ? $startsOn->format('d.m.Y') : null;
+            $dateEnd = $endsOn instanceof CarbonInterface ? $endsOn->format('d.m.Y') : null;
+            // Display structured dates as one consistent range, independent of
+            // the public-facing free-text date override.
+            $dateRange = match (true) {
+                $dateStart !== null && $dateEnd !== null && $dateStart !== $dateEnd => $dateStart.' – '.$dateEnd,
+                $dateStart !== null => $dateStart,
+                $dateEnd !== null => $dateEnd,
+                default => '',
+            };
+            $vernissageAt = $entry->getAttribute('vernissage_at');
+            $vernissage = $vernissageAt instanceof CarbonInterface
+                ? $vernissageAt->format('d.m.Y, H:i')
+                : (filled($entry->getAttribute('opening_text')) ? trim((string) $entry->getAttribute('opening_text')) : null);
+
             return [
                 'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
-                'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $entry->vernissageDisplay(), 'date_text' => $entry->displayDate() ?? '',
+                'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $vernissage,
+                'date_range' => $dateRange,
                 'thumbnail_url' => $this->coverThumbnailUrl($entry),
                 'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',

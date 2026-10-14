@@ -169,3 +169,64 @@ it('saves combined Home template and routing settings with two audits and one no
     expect(\App\Models\AuditEvent::query()->count())->toBe($before + 2)
         ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
 });
+
+it('keeps Home reachable at the root but hidden from the public menu by default', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    $home = \App\Models\SiteSection::query()->where('type', 'home')->firstOrFail();
+    $label = (string) ($home->getAttribute('navigation_label') ?: $home->getAttribute('title'));
+    expect($home->getAttribute('show_in_navigation'))->toBeFalse()
+        ->and(app(HomeSettingsDialog::class)->fill()['show_in_navigation'])->toBeFalse()
+        ->and(app(\App\Routing\SiteNodeRoute::class)->path($home))->toBe('/')
+        ->and(app(\App\Domain\Content\PublicNavigationService::class)->items()->pluck('label')->all())
+            ->not->toContain($label);
+});
+
+it('preserves Home menu visibility independently of Skip Home with audited no-ops', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $editor = app(SiteSectionEditorialService::class);
+    $home = \App\Models\SiteSection::query()->where('type', 'home')->firstOrFail();
+    $label = (string) ($home->getAttribute('navigation_label') ?: $home->getAttribute('title'));
+    $settings = app(HomePresentationResolver::class)->settings();
+    $routing = app(HomeRoutingSettingsService::class);
+    $navigation = app(\App\Domain\Content\PublicNavigationService::class);
+    $before = \App\Models\AuditEvent::query()->where('action', 'site_section.updated')->count();
+
+    expect($editor->updateHomeNavigationVisibility($home, false))->toBeFalse()
+        ->and(\App\Models\AuditEvent::query()->where('action', 'site_section.updated')->count())->toBe($before);
+    expect($editor->updateHomeNavigationVisibility($home, true))->toBeTrue()
+        ->and($home->fresh()->getAttribute('show_in_navigation'))->toBeTrue()
+        ->and($navigation->items()->pluck('label')->all())->toContain($label)
+        ->and(\App\Models\AuditEvent::query()->where('action', 'site_section.updated')->count())->toBe($before + 1);
+    expect($editor->updateHomeNavigationVisibility($home, true))->toBeFalse()
+        ->and(\App\Models\AuditEvent::query()->where('action', 'site_section.updated')->count())->toBe($before + 1);
+
+    $target = $editor->createCustomPage('Navigation Skip Target', 'navigation-skip-target');
+    $editor->updatePlacement($target, 'published', null);
+    expect($routing->update($settings, true, null))->toBeTrue()
+        ->and($navigation->items()->pluck('label')->all())->not->toContain($label);
+    expect($routing->update($settings, false, null))->toBeTrue()
+        ->and($navigation->items()->pluck('label')->all())->toContain($label);
+
+    expect($editor->updateHomeNavigationVisibility($home, false))->toBeTrue()
+        ->and($navigation->items()->pluck('label')->all())->not->toContain($label);
+});
+
+it('saves Home menu visibility from the Pages Edit dialog with one notification', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+
+    $home = \App\Models\SiteSection::query()->where('type', 'home')->firstOrFail();
+    $before = \App\Models\AdminNotification::query()->count();
+
+    \Livewire\Livewire::test(\App\Filament\Pages\SitePages::class)
+        ->mountAction('editHome')
+        ->assertMountedActionModalSee('Show in public navigation')
+        ->fillForm(['show_in_navigation' => true])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect($home->fresh()->getAttribute('show_in_navigation'))->toBeTrue()
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($before + 1);
+});

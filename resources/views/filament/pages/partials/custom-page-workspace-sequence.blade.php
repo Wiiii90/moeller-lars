@@ -10,8 +10,8 @@
                         type="checkbox"
                         wire:change="selectAllVisible($event.target.checked)"
                         x-data
-                        x-bind:checked="$wire.selectedComponentTargets.length + $wire.selectedChildTargets.length === {{ $visibleSelectableCount }} && {{ $visibleSelectableCount }} > 0"
-                        x-effect="$el.indeterminate = ($wire.selectedComponentTargets.length + $wire.selectedChildTargets.length > 0) && ($wire.selectedComponentTargets.length + $wire.selectedChildTargets.length < {{ $visibleSelectableCount }})"
+                        x-bind:checked="$wire.selectedComponentTargets.length === {{ $visibleSelectableCount }} && {{ $visibleSelectableCount }} > 0"
+                        x-effect="$el.indeterminate = ($wire.selectedComponentTargets.length > 0) && ($wire.selectedComponentTargets.length < {{ $visibleSelectableCount }})"
                     >
                 </label>
             </div>
@@ -53,7 +53,7 @@
                                     </select>
                                 </div>
 
-                                <div class="custom-page-component__content admin-hierarchy__content">
+                                <div class="custom-page-component__content admin-hierarchy__content {{ in_array($pageComponent['type'], ['contact', 'legal_disclaimer'], true) ? 'custom-page-component__content--two-lines' : '' }}">
                                     <strong>{{ $pageComponent['content']['primary'] }}</strong>
                                     @if ($pageComponent['content']['secondary'] !== '')
                                         <span>{{ $pageComponent['content']['secondary'] }}</span>
@@ -96,76 +96,6 @@
                                 </label>
                             </div>
 
-                            @if ($pageComponent['children'] !== [])
-                                <div class="custom-page-component__children admin-hierarchy__children">
-                                    <div class="custom-page-component__children-rows admin-hierarchy__children-rows" @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort="sortChild" @endif>
-                                        @foreach ($pageComponent['children'] as $child)
-                                            <div
-                                                class="custom-page-child-row admin-hierarchy__row is-child {{ ($child['parent_published'] ?? true) ? '' : 'is-parent-unpublished' }}"
-                                                wire:key="child-{{ $pageComponent['target'] }}-{{ $child['key'] }}"
-                                                @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:item="{{ $child['target'] }}" @endif
-                                            >
-                                                <div class="admin-hierarchy__position-cell">
-                                                    <span class="admin-position" aria-label="Position {{ $child['position'] }}">
-                                                        {{ str_pad((string) $child['position'], 2, '0', STR_PAD_LEFT) }}
-                                                    </span>
-                                                </div>
-
-                                                <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}" title="{{ ! $reorderEnabled ? 'Clear filters and show all components to reorder' : (count($pageComponent['children']) < 2 ? 'At least two entries are needed to reorder' : 'Drag to reorder') }}">⋮⋮</button>
-
-                                                <span class="custom-page-child-row__kind">Contact item</span>
-
-                                                <div class="custom-page-child-row__content admin-hierarchy__content">
-                                                        <strong>{{ $child['entry'] }}</strong>
-                                                        @if ($child['detail'] !== '')
-                                                            <small>{{ $child['detail'] }}</small>
-                                                        @endif
-                                                </div>
-
-                                                <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete custom-page-row-actions custom-page-child-row__actions admin-toolbar">
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::MoveUp"
-                                                            wire:click="moveContactChild({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', 'up')"
-                                                            :disabled="! $child['can_move_up']"
-                                                            aria-label="Move Contact child up"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::MoveDown"
-                                                            wire:click="moveContactChild({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', 'down')"
-                                                            :disabled="! $child['can_move_down']"
-                                                            aria-label="Move Contact child down"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::Edit"
-                                                            wire:click="mountAction('editContactChild', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'contact', childType: '{{ $child['child_type'] }}' })"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="$child['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
-                                                            wire:click="setContactChildPublished({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', {{ $child['published'] ? 'false' : 'true' }})"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::Delete"
-                                                            wire:click="mountAction('deleteContactChild', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'contact', childType: '{{ $child['child_type'] }}' })"
-                                                        />
-                                                </div>
-
-                                                <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select {{ $child['entry'] }}">
-                                                    <input type="checkbox" value="{{ $child['target'] }}" wire:model.live="selectedChildTargets">
-                                                </label>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @elseif ($pageComponent['is_contact'])
-                                <div class="custom-page-component__children-empty">No contact items</div>
-                            @endif
-
-                            @if ($pageComponent['is_contact'] && $pageComponent['contact_child_count'] < 3)
-                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addContactChild', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'contact' })">
-                                    <span aria-hidden="true">+</span>
-                                    <strong>Add contact item</strong>
-                                </button>
-                            @endif
                         </article>
                     @endforeach
                 </div>

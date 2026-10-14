@@ -7,17 +7,6 @@ use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceTargetHelpers
 {
-    /** @return array<string,mixed> */
-    private function componentAt(int $index, string $type): array
-    {
-        $block = $this->settings()->components()[$index] ?? null;
-        if (! is_array($block) || ($block['type'] ?? null) !== $type) {
-            throw ValidationException::withMessages(['component' => 'This component changed. Reload the workspace and try again.']);
-        }
-
-        return $block;
-    }
-
     /** @return list<array{index:int,type:string}> */
     private function selectedComponentTargetData(): array
     {
@@ -36,20 +25,6 @@ trait CustomPageWorkspaceTargetHelpers
         return $targets;
     }
 
-    /** @return list<array<string,mixed>> */
-    private function selectedChildTargetData(): array
-    {
-        $targets = [];
-        foreach (array_values(array_unique($this->selectedChildTargets)) as $target) {
-            $parts = explode(':', $target);
-            if ($parts[0] === 'contact' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && array_key_exists($parts[2], self::CONTACT_CHILD_LABELS)) {
-                $targets[] = ['kind' => 'contact', 'component_index' => (int) $parts[1], 'child_type' => $parts[2]];
-            }
-        }
-
-        return $targets;
-    }
-
     /** @return array{0:int,1:string} */
     private function actionComponentTarget(array $arguments): array
     {
@@ -60,6 +35,25 @@ trait CustomPageWorkspaceTargetHelpers
         }
 
         return [(int) $index, $type];
+    }
+
+    /**
+     * Read the persisted component at its absolute sequence index. The type
+     * is part of the action target: reject a row that was reordered or
+     * converted since the action was rendered.
+     *
+     * @return array<string, mixed>
+     */
+    private function componentAt(int $index, string $expectedType): array
+    {
+        $block = $this->settings()->components()[$index] ?? null;
+        if (! is_array($block) || ($block['type'] ?? null) !== $expectedType) {
+            throw ValidationException::withMessages([
+                'component' => 'This component changed. Reload the workspace and try again.',
+            ]);
+        }
+
+        return $block;
     }
 
     private function actionTargetComponentType(array $arguments): string
@@ -88,47 +82,4 @@ trait CustomPageWorkspaceTargetHelpers
         return $this->componentAt($index, $type);
     }
 
-    /** @return array<string, mixed> */
-    private function actionListItem(array $arguments): array
-    {
-        $block = $this->actionComponent($arguments);
-        if (($block['type'] ?? null) !== 'list') {
-            throw ValidationException::withMessages(['component' => 'The selected component is not a List.']);
-        }
-        $itemIndex = $this->actionListItemIndex($arguments);
-        $items = is_array($block['items'] ?? null) ? array_values($block['items']) : [];
-        $item = $items[$itemIndex] ?? null;
-        if (! is_array($item)) {
-            throw ValidationException::withMessages(['component' => 'This list entry changed. Reload and try again.']);
-        }
-
-        return $item;
-    }
-
-    private function actionContactChildType(array $arguments): string
-    {
-        $childType = $arguments['childType'] ?? null;
-        if (! is_string($childType) || ! array_key_exists($childType, self::CONTACT_CHILD_LABELS)) {
-            throw ValidationException::withMessages(['component' => 'The selected Contact child is invalid.']);
-        }
-
-        return $childType;
-    }
-
-    /** @return array<string,mixed> */
-    private function actionContactChild(array $arguments): array
-    {
-        $block = $this->actionComponent($arguments);
-        if (($block['type'] ?? null) !== 'contact') {
-            throw ValidationException::withMessages(['component' => 'The selected component is not Contact.']);
-        }
-        $childType = $this->actionContactChildType($arguments);
-        foreach ($this->settings()->contactChildren($block) as $child) {
-            if (($child['type'] ?? null) === $childType) {
-                return $child;
-            }
-        }
-
-        throw ValidationException::withMessages(['component' => 'This Contact child changed. Reload and try again.']);
-    }
 }

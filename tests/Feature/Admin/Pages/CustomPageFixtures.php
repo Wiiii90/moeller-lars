@@ -27,14 +27,14 @@ function customPageWorkspaceBlocks(int $count): array
             for ($child = 0; $child < 4; $child++) {
                 $items[] = [
                     'published' => true,
-                    'date' => '202'.($child + 1),
+                    'context' => '202'.($child + 1),
                     'title' => 'Boundary child '.($child + 1),
                 ];
             }
         } elseif ($index === $count - 1) {
             $items[] = [
                 'published' => true,
-                'date' => '2030',
+                'context' => '2030',
                 'title' => 'Last child',
             ];
         }

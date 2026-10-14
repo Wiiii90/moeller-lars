@@ -37,11 +37,9 @@ it('paginates parent components in 25 50 and 100 unit pages without splitting ch
 
     $component
         ->set('selectedComponentTargets', ['0:list'])
-        ->set('selectedChildTargets', ['list:24:0'])
         ->call('nextPage')
         ->assertSet('page', 2)
         ->assertSet('selectedComponentTargets', [])
-        ->assertSet('selectedChildTargets', [])
         ->assertSee('26–30 of 30');
 
     $pageTwo = $component->get('components');
@@ -90,8 +88,6 @@ it('resets pagination for search type and page size changes and prunes invisible
 
     $component->set('pageSize', 25)
         ->set('selectedComponentTargets', ['0:list', '29:list'])
-        ->set('selectedChildTargets', ['list:24:0', 'list:29:0'])
         ->call('setComponentPublished', 0, 'list', false)
-        ->assertSet('selectedComponentTargets', ['0:list'])
-        ->assertSet('selectedChildTargets', []);
+        ->assertSet('selectedComponentTargets', ['0:list']);
 });

@@ -32,6 +32,12 @@ final class CustomPageSetting extends Model
 
     public const DIVIDER_VARIANTS = \App\Domain\Content\DividerVariant::VALUES;
 
+    public const DEFAULT_IMAGE_SCALE_PERCENT = 100;
+
+    public const MIN_IMAGE_SCALE_PERCENT = 25;
+
+    public const MAX_IMAGE_SCALE_PERCENT = 200;
+
     protected function casts(): array
     {
         return ['blocks' => 'array'];
@@ -70,6 +76,16 @@ final class CustomPageSetting extends Model
         return is_array($blocks) && array_is_list($blocks) ? $blocks : [];
     }
 
+    /** A missing or malformed historical value must never break public layout. */
+    public static function imageScalePercent(array $block): int
+    {
+        $value = $block['image_scale_percent'] ?? self::DEFAULT_IMAGE_SCALE_PERCENT;
+
+        return is_int($value) && $value >= self::MIN_IMAGE_SCALE_PERCENT && $value <= self::MAX_IMAGE_SCALE_PERCENT
+            ? $value
+            : self::DEFAULT_IMAGE_SCALE_PERCENT;
+    }
+
     public static function componentPublished(array $block): bool
     {
         return ($block['published'] ?? true) === true;
@@ -78,6 +94,38 @@ final class CustomPageSetting extends Model
     public static function listItemPublished(array $item): bool
     {
         return ($item['published'] ?? true) === true;
+    }
+
+    /** Read old Date / Organisation / Location fields as one Context. */
+    public static function listItemContext(array $item): ?string
+    {
+        $value = $item['context'] ?? null;
+        if (is_string($value) && trim($value) !== '') {
+            return trim($value);
+        }
+        $parts = [];
+        foreach (['date', 'meta', 'location'] as $key) {
+            $part = $item[$key] ?? null;
+            if (is_string($part) && trim($part) !== '') {
+                $parts[] = trim($part);
+            }
+        }
+
+        return $parts === [] ? null : implode(' · ', $parts);
+    }
+
+    /** Preserve existing optional links as part of Details when migrating. */
+    public static function listItemDetails(array $item): ?string
+    {
+        $body = is_string($item['body'] ?? null) ? trim($item['body']) : '';
+        $url = is_string($item['url'] ?? null) ? trim($item['url']) : '';
+        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)
+            && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            $link = '[More information]('.str_replace(['(', ')'], ['%28', '%29'], $url).')';
+            $body = $body !== '' ? $body."\n\n".$link : $link;
+        }
+
+        return $body === '' ? null : $body;
     }
 
     public static function contactChildPublished(array $child): bool
@@ -121,6 +169,7 @@ final class CustomPageSetting extends Model
                     'published' => $published,
                     'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
                     'image_decorative' => (bool) ($block['image_decorative'] ?? false),
+                    ...$this->normalizedImageScale($block),
                 ],
                 'text' => [
                     'type' => 'text',
@@ -143,6 +192,7 @@ final class CustomPageSetting extends Model
                 'contact' => [
                     'type' => 'contact',
                     'published' => $published,
+                    'title' => $this->nullableTrimmedString($block['title'] ?? null),
                     'children' => $this->normalizeContactChildren($block),
                 ],
                 'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
@@ -150,6 +200,32 @@ final class CustomPageSetting extends Model
         }
 
         return $normalized;
+    }
+
+    /**
+     * Keep the historical 100% size implicit so an unchanged legacy image
+     * remains a no-op when its component editor is opened and submitted.
+     *
+     * @param array<string, mixed> $block
+     * @return array<string, int>
+     */
+    private function normalizedImageScale(array $block): array
+    {
+        if (! array_key_exists('image_scale_percent', $block)) {
+            return [];
+        }
+
+        $scale = filter_var($block['image_scale_percent'], FILTER_VALIDATE_INT, [
+            'options' => [
+                'min_range' => self::MIN_IMAGE_SCALE_PERCENT,
+                'max_range' => self::MAX_IMAGE_SCALE_PERCENT,
+            ],
+        ]);
+        if ($scale === false) {
+            throw ValidationException::withMessages(['blocks' => 'Image size must be a whole percentage between 25 and 200.']);
+        }
+
+        return $scale === self::DEFAULT_IMAGE_SCALE_PERCENT ? [] : ['image_scale_percent' => $scale];
     }
 
     private function validateBlocks(bool $requirePublicMedia): void
@@ -195,6 +271,10 @@ final class CustomPageSetting extends Model
                 }
             }
             if ($type === 'contact') {
+                $title = $block['title'] ?? null;
+                if ($title !== null && (! is_string($title) || mb_strlen($title) > 160)) {
+                    throw ValidationException::withMessages(['blocks' => 'Contact headings must be short text.']);
+                }
                 $this->validateContactComponent($block);
             }
             if ($type === 'legal_disclaimer') {
@@ -209,6 +289,11 @@ final class CustomPageSetting extends Model
     /** @param array<string, mixed> $block */
     private function validateImageComponent(array $block, bool $requirePublicMedia): void
     {
+        $scale = $block['image_scale_percent'] ?? self::DEFAULT_IMAGE_SCALE_PERCENT;
+        if (! is_int($scale) || $scale < self::MIN_IMAGE_SCALE_PERCENT || $scale > self::MAX_IMAGE_SCALE_PERCENT) {
+            throw ValidationException::withMessages(['blocks' => 'Image size must be a whole percentage between 25 and 200.']);
+        }
+
         $mediaId = $block['media_asset_id'] ?? null;
         if ($mediaId === null) {
             if ($requirePublicMedia) {
@@ -290,7 +375,9 @@ final class CustomPageSetting extends Model
                 throw ValidationException::withMessages(['blocks' => 'Each list entry requires a short title.']);
             }
             $this->validateRichText($item['body'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.body', $requirePublicMedia && self::listItemPublished($item));
-            $this->validateUrl($item['url'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.url');
+            if (isset($item['context']) && (! is_string($item['context']) || mb_strlen($item['context']) > 600)) {
+                throw ValidationException::withMessages(['blocks' => 'List entry context may not exceed 600 characters.']);
+            }
         }
     }
 
@@ -352,12 +439,9 @@ final class CustomPageSetting extends Model
 
             return [
                 'published' => self::listItemPublished($item),
-                'date' => $this->nullableTrimmedString($item['date'] ?? null),
                 'title' => $this->nullableTrimmedString($item['title'] ?? null),
-                'meta' => $this->nullableTrimmedString($item['meta'] ?? null),
-                'location' => $this->nullableTrimmedString($item['location'] ?? null),
-                'url' => $this->nullableTrimmedString($item['url'] ?? null),
-                'body' => $item['body'] ?? null,
+                'context' => self::listItemContext($item),
+                'body' => self::listItemDetails($item),
             ];
         }, $items);
     }

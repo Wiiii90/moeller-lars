@@ -45,8 +45,7 @@ trait GalleryWorkspaceUploadSettings
                             ->label('Public URL slug')
                             ->required()
                             ->maxLength(80)
-                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                            ->helperText('Changing this keeps the previous Gallery URL as a redirect.'),
+                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                         Textarea::make('description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
                     ]),
@@ -117,8 +116,7 @@ trait GalleryWorkspaceUploadSettings
                             ->required()
                             ->maxLength(240),
                     )
-                    ->addActionLabel('Add material')
-                    ->helperText('Existing artwork text is unchanged.'),
+                    ->addActionLabel('Add material'),
             ])
             ->modalHeading('Material presets')
             ->action(function (array $data): void {
@@ -131,6 +129,8 @@ trait GalleryWorkspaceUploadSettings
                 }
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Default);
+        // Repeater add/delete/reorder operations are a draft collection.
+        // Commit once using the shared Command lifecycle, not Edit blur events.
+        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Default);
     }
 }

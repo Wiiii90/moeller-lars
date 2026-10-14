@@ -19,7 +19,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -53,11 +52,19 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false): array
     {
+        $slug = TextInput::make('slug')
+            ->label('Public URL slug')
+            ->required()
+            ->maxLength(180)
+            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
+        if ($creating) {
+            $slug->unique('artworks', 'slug');
+        }
+
         return [
-            Grid::make()
-                ->columns(['md' => 2])
+            AdminForm::section('Basics')
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -68,12 +75,7 @@ final class ArtworkEditDialog
                                 $set('slug', Str::slug($state));
                             }
                         }),
-                    TextInput::make('slug')
-                        ->label('Public URL slug')
-                        ->required()
-                        ->maxLength(180)
-                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                        ->helperText('The URL is locked after first publication.'),
+                    $slug,
                     ...($includeGalleryAssignment ? [
                         Select::make('artwork_category_id')
                             ->label('Gallery')
@@ -85,6 +87,8 @@ final class ArtworkEditDialog
                     ] : []),
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
+                ])->columns(['md' => 2]),
+            AdminForm::section('Dimensions')->schema([
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
                     TextInput::make('dimension_width')->label('Width (W)')->numeric()->minValue(0.01)->nullable(),
                     TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable(),
@@ -97,9 +101,12 @@ final class ArtworkEditDialog
                         ->label('Custom dimensions')
                         ->maxLength(240)
                         ->nullable()
-                        ->helperText('Fallback for diameter, variable dimensions or legacy/free-form notation. When set, this value is saved instead of H × W × D.')
                         ->columnSpanFull(),
+                ])->columns(['md' => 2]),
+            AdminForm::section('Content')->schema([
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
+                ]),
+            AdminForm::section('Media')->schema([
                     MediaAssetSelect::makeId(
                         'primary_media_asset_id',
                         'Existing Media File',
@@ -133,9 +140,11 @@ final class ArtworkEditDialog
                         ->nullable()
                         ->helperText('Description for screen readers. Leave blank to inherit the Storage Media File ALT text.')
                         ->columnSpanFull(),
-                    DatePicker::make('work_date')->label('Exact date')->helperText('If set, the year is derived from this date.')->nullable(),
+                ])->columns(['md' => 2]),
+            AdminForm::section('Presentation')->schema([
+                    DatePicker::make('work_date')->label('Exact date')->nullable(),
                     Toggle::make('featured_on_home')->label('Feature on home when newest year is shared')->default(false),
-                ]),
+                ])->columns(['md' => 2]),
         ];
     }
 

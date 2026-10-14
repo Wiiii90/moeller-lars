@@ -91,3 +91,13 @@
 }
 
 
+
+/* Contact and Legal Disclaimer are two-line identities: heading + one summary. */
+.custom-page-component__content--two-lines > :is(strong, span) {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}

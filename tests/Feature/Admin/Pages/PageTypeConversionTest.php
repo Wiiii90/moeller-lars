@@ -100,7 +100,7 @@ it('blocks destructive type conversion when custom page content exists', functio
 });
 
 
-it('allows safe Journal template changes and blocks changes or conversion when entries exist', function (): void {
+it('retains Journal entries across template switches and rejects destructive type conversion', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
 
@@ -109,7 +109,7 @@ it('allows safe Journal template changes and blocks changes or conversion when e
     expect($safe->refresh()->template)->toBe(JournalTemplate::Exhibitions->value);
 
     $journal = $service->createJournal('Journal With Entry', 'journal-with-entry-repair', JournalTemplate::Blog->value);
-    BlogPost::query()->create([
+    $post = BlogPost::query()->create([
         'site_section_id' => $journal->getKey(),
         'slug' => 'journal-entry-repair',
         'title' => 'Existing entry',
@@ -118,11 +118,15 @@ it('allows safe Journal template changes and blocks changes or conversion when e
         'position' => 10,
     ]);
 
-    expect(fn () => $service->updateJournalTemplate($journal, JournalTemplate::Exhibitions->value))
-        ->toThrow(ValidationException::class, 'existing Journal entries')
-        ->and(fn () => $service->convertType($journal, SiteSectionType::NavigationNode->value))
+    $postBefore = $post->fresh()->attributesToArray();
+    $service->updateJournalTemplate($journal, JournalTemplate::Exhibitions->value);
+    expect($journal->fresh()->template)->toBe(JournalTemplate::Exhibitions->value)
+        ->and($post->fresh()->attributesToArray())->toBe($postBefore);
+    $service->updateJournalTemplate($journal->fresh(), JournalTemplate::Blog->value);
+    expect(fn () => $service->convertType($journal->fresh(), SiteSectionType::NavigationNode->value))
         ->toThrow(ValidationException::class, 'contains entries');
 
     expect($journal->refresh()->template)->toBe(JournalTemplate::Blog->value)
-        ->and($journal->type)->toBe(SiteSectionType::Journal->value);
+        ->and($journal->type)->toBe(SiteSectionType::Journal->value)
+        ->and($post->fresh()->attributesToArray())->toBe($postBefore);
 });

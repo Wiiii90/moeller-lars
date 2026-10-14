@@ -226,7 +226,7 @@ final class General extends Page
                                     ->integer()
                                     ->minValue(PublicAppearance::MIN_PAGE_WIDTH)
                                     ->maxValue(PublicAppearance::MAX_PAGE_WIDTH)
-                                    ->step(10)
+                                    ->step(1)
                                     ->suffix('px')
                                     ->required()
                                     ->lazy()

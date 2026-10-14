@@ -60,8 +60,19 @@ that commits ordinary Edit fields. List components therefore use the canonical
 the entire component and ordered entries atomically through the existing
 editorial service. Other components keep the normal autosaving Edit dialog.
 Neither surface exposes standalone List child rows or Add List Item table
-buttons. Type conversion continues through the existing confirmed conversion
+buttons. The shared List entry editor provides Entry, Context, Published, and
+Details only, with no embedded-image insertion control. Legacy date/organisation/
+location context and optional links are carried into the canonical Context/Details
+fields on normalization. Type conversion continues through the existing confirmed conversion
 Action; the List command must not mutate on close/cancel.
+
+**Custom Page Contact:** All three Contact options and the optional Contact heading
+are edited in the owning Contact component; there are no Contact child rows or
+independent child Actions in Custom Page. The three visibility toggles default
+on at creation. These simple fields use the existing native-change Edit autosave,
+not the List Repeater Command. The public Contact heading can be overridden.
+Contact and Legal Disclaimer admin Content each have exactly a heading and a
+single ellipsized summary line. The Home Contact editor remains separate.
 
 ### Create
 
@@ -134,6 +145,21 @@ For multi-field `Large` create/edit dialogs:
 - long text, rich-text editors, repeaters, uploads/media pickers and content that genuinely needs width span both columns;
 - keep related fields adjacent where practical (for example title/slug, start/end, width/height);
 - do not remove, hide or truncate form fields merely to make a dialog shorter.
+
+For the Journal (Blog and Exhibitions), Custom Page and Gallery Settings dialogs:
+- use the same responsive `md` two-column form grammar as Pages; compact Settings stay at `Default` width without introducing special dialog geometry;
+- resolve Journal identity (title, optional navigation label, slug redirect and synchronized uncustomized listing title) through the existing `SiteSectionIdentityService`, and its non-destructive template switch through `SiteSectionEditorialService` just as Pages Edit does;
+- a blank navigation label resolves to the page title, as for Custom Pages; neither validation nor presentation should require a redundant copy of the title;
+- Custom Page navigation parent follows the global nested-navigation policy from Pages Settings, including domain validation; and
+- do not add explanatory helper text to settings fields when the label is self-explanatory (notably URL/redirect narration and Material presets).
+
+For Gallery and Journal editorial dialogs, the contract is explicitly shared:
+
+- Gallery Add Artwork and Edit Artwork consume the same `ArtworkEditDialog::schema()` field owner, with create-only slug uniqueness; sections are Basics, Dimensions, Content, Media, and Presentation. The Create Action commits once; Edit keeps native change-event autosave.
+- Gallery Edit header actions use Move up/down, Publish/Unpublish, and Remove (detach, not delete). The Remove and Unpublish actions must keep their existing confirmations. Publication and reordering reuse the same domain/action owners as the Gallery table.
+- Gallery Materials is a `Default`-width **Command** with `Apply changes` in the header, not an autosaving Edit: Repeater additions/removals form one draft collection saved atomically through `ArtworkMaterialPresetService::sync()`. Closing with X discards changes; a no-op has no notification.
+- Journal Add Post and Add Exhibition are `Large` Creates that commit once. Their Edit counterparts retain `Large` autosave and the shared `JournalEntryEditorSchema` sections. Two/six-column groups must collapse to one column on narrow screens.
+- Journal Edit Post header actions follow the same semantic order and state rules as row actions: Move up/down, Publish/Unpublish/Cancel schedule, Schedule, Archive/Restore, Delete. Exhibition Edit has Move up/down, Publish/Unpublish, Delete. Schedule and Delete open their existing Command/Confirm actions; the editors must not create another persistence route or weaken publication prerequisites.
 
 For media/detail viewers:
 

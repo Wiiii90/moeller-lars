@@ -9,12 +9,8 @@
     max-width: 100%;
 }
 
-/* The shared row-action rail determines Actions width at each state.
+/* The shared table contract owns Blog Action rail and track widths together.
  * Supporting data yields before it squeezes the identity track. */
-.journal-table--blog {
-    --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
-}
-
 .journal-table--exhibitions {
     --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
@@ -27,12 +23,12 @@
     width: auto;
 }
 
-.journal-table--blog col.journal-col--publication {
+.journal-table--blog col.journal-col--publication-date {
     width: 7rem;
 }
 
-.journal-table--blog col.journal-col--publication-date {
-    width: 9rem;
+.journal-table--blog col.journal-col--status {
+    width: 6rem;
 }
 
 .journal-table col.journal-table__actions--blog {
@@ -44,7 +40,7 @@
 }
 
 .journal-table--exhibitions col.journal-col--date {
-    width: 9.5rem;
+    width: 12.5rem;
 }
 
 .journal-table--exhibitions col.journal-col--timing {
@@ -55,28 +51,24 @@
     width: var(--admin-row-actions-width);
 }
 
-/* One Journal track owner. The matching action column and heading inherit
- * the rail width of the responsive row controls. */
-@container admin-table (max-width: 88rem) {
-    .journal-table--blog {
-        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
-    }
-}
-
+/* Exhibition Actions retain their accepted 64rem density transition. */
 @container admin-table (max-width: 64rem) {
     .journal-table--exhibitions {
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 
-    .journal-table--exhibitions col.journal-col--date,
-    .journal-table--blog col.journal-col--publication {
+    .journal-table--exhibitions col.journal-col--date {
+        width: 12.5rem;
+    }
+
+    .journal-table--blog col.journal-col--publication-date {
         width: 11rem;
     }
 }
 
 /* Display identity metadata only when its separate supporting column yields. */
 @container admin-table (max-width: 54rem) {
-    .journal-table .admin-responsive-meta {
+    .journal-table .admin-table__identity .admin-responsive-meta {
         display: block;
     }
 }
@@ -119,12 +111,12 @@
 }
 
 .journal-publication__date,
-.journal-date__vernissage,
-.journal-date__range {
+.journal-date__range,
+.journal-date__vernissage {
     display: block;
     white-space: normal;
     overflow-wrap: anywhere;
-    font-size: .72rem;
+    font-size: var(--admin-font-size-table-support);
     line-height: 1.4;
 }
 
@@ -133,18 +125,28 @@
     color: var(--admin-muted);
 }
 
-.journal-publication__date,
+/* The complete structured range stays on one line while its Date column
+ * exists; the column yields to identity metadata at Narrow. */
+.journal-date__range {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    font-variant-numeric: tabular-nums;
+}
+
+.journal-date__vernissage {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .journal-date__vernissage,
-.journal-date__timing {
+.journal-date__timing,
+.journal-publication__state {
     margin-top: .17rem;
 }
 
 .journal-publication-date .journal-publication__date {
     margin-top: 0;
-}
-
-.journal-date__vernissage {
-    font-weight: 400;
 }
 
 .journal-state,

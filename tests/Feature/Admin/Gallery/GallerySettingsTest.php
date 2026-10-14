@@ -147,3 +147,20 @@ it('surfaces a combined Gallery title and slug edit as one successful admin acti
         ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
+
+
+it('commits the Materials repeater as one explicit Command, not as Edit autosave', function (): void {
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('materialPresets')
+        ->assertMountedActionModalSee('Material presets')
+        ->fillForm(['presets' => ['Bronze', 'Ink']]);
+
+    // The draft Repeater has not committed while the dialog is open.
+    expect(\App\Models\ArtworkMaterialPreset::query()->whereIn('name', ['Bronze', 'Ink'])->count())->toBe(0);
+
+    $editor->callMountedAction()->assertHasNoFormErrors();
+
+    expect(\App\Models\ArtworkMaterialPreset::query()->whereIn('name', ['Bronze', 'Ink'])->count())->toBe(2);
+});

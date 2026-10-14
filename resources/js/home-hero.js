@@ -9,7 +9,7 @@ export function adjacentHeroIndex(index, direction, length) {
     return (index + direction + length) % length;
 }
 
-export function initializeHomeHero(root = document) {
+export function initializeHomeHero(root = document, transition = (change) => change()) {
     root.querySelectorAll('[data-home-hero]').forEach((group) => {
         const slides = Array.from(group.querySelectorAll(':scope > [data-home-hero-slide]'));
         if (slides.length < 2) return;
@@ -26,8 +26,10 @@ export function initializeHomeHero(root = document) {
             if (index < 0) return;
             const nextIndex = adjacentHeroIndex(index, direction, slides.length);
             slides[index].querySelectorAll('video').forEach((video) => video.pause());
-            slides[index].hidden = true;
-            slides[nextIndex].hidden = false;
+            transition(() => {
+                slides[index].hidden = true;
+                slides[nextIndex].hidden = false;
+            });
             slides[nextIndex].querySelector('[data-home-hero-direction="' +
                 button.dataset.homeHeroDirection + '"]')?.focus({ preventScroll: true });
         });

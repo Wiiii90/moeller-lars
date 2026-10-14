@@ -52,6 +52,14 @@ trait CustomPageWorkspaceProjectionState
         $this->loadComponentProjection();
     }
 
+    private function componentReorderEnabled(): bool
+    {
+        return trim($this->componentSearch) === ''
+            && $this->componentType === 'any'
+            && $this->page === 1
+            && $this->total <= $this->pageSize;
+    }
+
     private function loadComponentProjection(bool $refreshCvCount = false): void
     {
         $settings = $this->settings();
@@ -77,9 +85,6 @@ trait CustomPageWorkspaceProjectionState
         $listEntryCount = 0;
         $projected = [];
         $needle = mb_strtolower(trim($this->componentSearch));
-        $reorderEnabled = $needle === ''
-            && $this->componentType === 'any'
-            && count($blocks) <= $this->pageSize;
 
         foreach ($blocks as $index => $block) {
             $type = is_string($block['type'] ?? null) ? $block['type'] : '';
@@ -96,13 +101,6 @@ trait CustomPageWorkspaceProjectionState
             $published = CustomPageSetting::componentPublished($block);
             $mediaId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
             $imageName = $mediaId !== null ? ($imageNames[$mediaId] ?? null) : null;
-            $children = $this->componentChildren(
-                $settings,
-                $block,
-                $index,
-                $published,
-                $reorderEnabled,
-            );
             $parentSearch = mb_strtolower($this->componentParentSearchText($settings, $block, $imageName));
             if ($type === 'list') {
                 // List entries are edited within the parent, but remain
@@ -111,26 +109,18 @@ trait CustomPageWorkspaceProjectionState
                     if (! is_array($item)) {
                         continue;
                     }
-                    foreach (['date', 'title', 'meta', 'location', 'body', 'url'] as $field) {
-                        if (is_string($item[$field] ?? null)) {
-                            $parentSearch .= ' '.mb_strtolower($item[$field]);
-                        }
-                    }
+                    $parentSearch .= ' '.mb_strtolower(implode(' ', array_filter([
+                        $item['title'] ?? null,
+                        CustomPageSetting::listItemContext($item),
+                        CustomPageSetting::listItemDetails($item),
+                    ], 'is_string')));
                 }
             }
 
             if ($needle !== '') {
                 $parentMatches = str_contains($parentSearch, $needle);
-                $matchingChildren = array_values(array_filter(
-                    $children,
-                    static fn (array $child): bool => str_contains(mb_strtolower((string) ($child['search_text'] ?? '')), $needle),
-                ));
-
-                if (! $parentMatches && $matchingChildren === []) {
-                    continue;
-                }
                 if (! $parentMatches) {
-                    $children = $matchingChildren;
+                    continue;
                 }
             }
 
@@ -144,18 +134,21 @@ trait CustomPageWorkspaceProjectionState
                 'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
-                'can_move_up' => $reorderEnabled && $index > 0,
-                'can_move_down' => $reorderEnabled && $index < count($blocks) - 1,
-                'is_list' => $type === 'list',
-                'is_contact' => $type === 'contact',
-                'contact_child_count' => $type === 'contact' ? count($settings->contactChildren($block)) : 0,
-                'children' => $children,
+                'children' => [],
             ];
         }
 
         $this->setPagination(count($projected));
         $offset = ($this->page - 1) * $this->pageSize;
-        $this->components = array_slice($projected, $offset, $this->pageSize);
+        $reorderEnabled = $this->componentReorderEnabled();
+        $this->components = array_map(
+            static fn (array $component): array => [
+                ...$component,
+                'can_move_up' => $reorderEnabled && $component['index'] > 0,
+                'can_move_down' => $reorderEnabled && $component['index'] < count($blocks) - 1,
+            ],
+            array_slice($projected, $offset, $this->pageSize),
+        );
         $this->retainVisibleSelections();
 
         $this->metrics = [

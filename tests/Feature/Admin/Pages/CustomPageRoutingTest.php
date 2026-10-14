@@ -129,3 +129,25 @@ it('changes hierarchy placement without inventing a hierarchical Custom Page URL
         ->and((int) $section->parent_id)->toBe((int) $parent->id)
         ->and(Redirect::query()->count())->toBe($beforeRedirects);
 });
+
+
+it('hides Custom Page parent settings when global nesting is disabled and rejects a stale parent', function (): void {
+    $sections = app(SiteSectionEditorialService::class);
+    $parent = $sections->createNavigationGroup('Parent');
+    [$section] = customPageWorkspaceRecord('No nesting', 'no-nesting');
+
+    \App\Models\PublicContentSetting::general()->update(['navigation_nesting_enabled' => false]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('pageSettings')
+        ->assertDontSee('Navigation parent')
+        ->set('mountedActions.0.data.title', 'Renamed without nesting')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    expect($section->fresh()->getAttribute('title'))->toBe('Renamed without nesting')
+        ->and($section->fresh()->getAttribute('parent_id'))->toBeNull();
+
+    expect(fn () => $sections->updatePlacement($section->fresh(), 'hidden', (int) $parent->getKey()))
+        ->toThrow(ValidationException::class, 'Enable nested pages in Pages settings');
+});

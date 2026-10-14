@@ -10,6 +10,8 @@ use App\Domain\Media\MediaIngestService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\ArtworkEditDialog;
+use App\Filament\Support\AdminIcon;
+use App\Filament\Support\AdminRowAction;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\DB;
@@ -96,6 +98,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->modalHeading('Edit artwork')
             ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)))
             ->schema($dialog->schema())
+            ->extraModalFooterActions(fn (array $arguments): array => $this->artworkEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments) use ($dialog): void {
                 $changed = $dialog->save($this->actionArtwork($arguments), $data);
                 $this->refreshWorkspaceAfterMutation();
@@ -109,6 +112,60 @@ trait GalleryWorkspaceArtworkDialogs
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /** @param array<string, mixed> $arguments
+     * @return list<Action>
+     */
+    private function artworkEditHeaderActions(array $arguments): array
+    {
+        $artwork = $this->actionArtwork($arguments)->fresh();
+        $id = (int) $artwork->getKey();
+        $target = ['artwork' => $id];
+        $ids = $this->orderedArtworkIds();
+        $index = array_search($id, $ids, true);
+        $reorderable = $this->artworkReorderingAvailable() && $index !== false;
+        $actions = [];
+
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $enabled = $reorderable && ($direction === 'up' ? $index > 0 : $index < count($ids) - 1);
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($id, $direction, $target): void {
+                $this->moveArtwork($id, $direction);
+                $this->replaceMountedAction('editArtwork', $target);
+            })->disabled(! $enabled);
+        }
+
+        $published = (string) $artwork->getAttribute('state') === 'published';
+        $actions[] = AdminDialog::headerAction(
+            'dialogArtworkPublication',
+            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+            function () use ($published, $id, $target): void {
+                if ($published) {
+                    // Unpublication is confirmed by its existing domain action.
+                    $this->replaceMountedAction('unpublishArtwork', $target);
+
+                    return;
+                }
+                if ($this->publishArtworkInGallery($id)) {
+                    $this->replaceMountedAction('editArtwork', $target);
+                }
+            },
+        );
+
+        // The Gallery action detaches, rather than deletes, an artwork. Use
+        // its existing confirmation and semantic icon, never fake Delete.
+        $actions[] = Action::make('dialogRemoveArtwork')
+            ->label('Remove')
+            ->icon(AdminIcon::Detach->value)
+            ->iconButton()
+            ->color('gray')
+            ->disabled($published)
+            ->extraAttributes(['class' => 'admin-dialog__header-action'])
+            ->action(function () use ($target): void {
+                $this->replaceMountedAction('removeArtwork', $target);
+            });
+
+        return $actions;
     }
 
 }

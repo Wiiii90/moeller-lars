@@ -29,7 +29,6 @@
     --admin-row-action-slot-edit-width: 3.75rem;
     --admin-row-action-slot-delete-width: 4.75rem;
     --admin-row-action-slot-state-width: 6rem; /* Unpublish / Show Home */
-    --admin-row-action-slot-journal-state-width: 9rem; /* Cancel schedule */
     --admin-row-action-slot-schedule-width: 5.75rem;
     --admin-row-action-slot-archive-width: 5rem;
 
@@ -59,7 +58,7 @@
     --admin-row-actions-move-state-delete-compact-width: 8.55rem;
     --admin-row-actions-journal-blog-width: calc(
         var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
-        + var(--admin-row-action-slot-edit-width) + var(--admin-row-action-slot-journal-state-width)
+        + var(--admin-row-action-slot-edit-width) + var(--admin-row-action-slot-state-width)
         + var(--admin-row-action-slot-schedule-width) + var(--admin-row-action-slot-archive-width)
         + var(--admin-row-action-slot-delete-width) + 1.08rem
     );
@@ -270,13 +269,20 @@
     --admin-row-actions-columns: minmax(7rem, max-content) minmax(7.25rem, max-content);
 }
 
+/* Blog follows Pages/General: stable grid tracks preserve every icon axis
+ * across row states. The publication slot reuses the canonical state width:
+ * "Cancel schedule" keeps its full accessible name but shows "Cancel". */
+.journal-table--blog {
+    --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
+}
+
 .admin-row-actions--journal-blog {
     --admin-row-actions-width: var(--admin-row-actions-journal-blog-width);
     --admin-row-actions-columns:
         minmax(var(--admin-row-action-slot-move-up-width), max-content)
         minmax(var(--admin-row-action-slot-move-down-width), max-content)
         minmax(var(--admin-row-action-slot-edit-width), max-content)
-        minmax(var(--admin-row-action-slot-journal-state-width), max-content)
+        minmax(var(--admin-row-action-slot-state-width), max-content)
         minmax(var(--admin-row-action-slot-schedule-width), max-content)
         minmax(var(--admin-row-action-slot-archive-width), max-content)
         minmax(var(--admin-row-action-slot-delete-width), max-content);
@@ -304,9 +310,23 @@
 
 /* Stable action buttons share the base style; semantic slots set axes. */
 
-/* Seven-action Blog rows have a long "Cancel schedule" slot. Its label rail
- * yields before it competes with the separate Post data columns. */
-@container admin-table (max-width: 88rem) {
+/* Dense Blog tables fold Status and their labeled action rail together.
+ * Full width retains Date, Status and all action labels; compact removes the
+ * secondary data and label costs in a single container-driven transition. */
+@container admin-table (max-width: 72rem) {
+    .admin-table--fold-dense .admin-table__split-only,
+    .admin-table--fold-dense .admin-table__split-label {
+        display: none !important;
+    }
+
+    .admin-table--fold-dense .admin-table__folded-only {
+        display: block !important;
+    }
+
+    .journal-table--blog {
+        --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
+    }
+
     .admin-row-actions--journal-blog {
         --admin-row-actions-width: var(--admin-row-actions-journal-blog-compact-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);

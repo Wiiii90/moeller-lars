@@ -48,7 +48,12 @@ retain native browser navigation. The canonical server routes remain the
 source of content/publication/preview authority. JavaScript page initializers
 must dispose global listeners/observers on each document swap; Matomo records
 one page view per visit and does not inject a second tracker script. The
-public CSP remains nonce-based and does not enable `unsafe-eval`. General
+public CSP remains nonce-based and does not enable `unsafe-eval`. The entire
+Public CSS cascade is bundled through the single `resources/js/app.js` Vite
+entrypoint (foundation, content, presentation, custom pages and journal);
+the Public layout no longer requests individual CSS entrypoints or their
+preloads. The Admin Vite entrypoints and Filament bundle stay unchanged.
+General
 layout CSS variables are reapplied from server-rendered metadata at the swap
 boundary, so new nonces cannot invalidate the artist's configured background
 or widths. This SPA transport is independent of future contour animation.
@@ -57,33 +62,38 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The first accepted Content folio geometry is an immutable fallback:
-`#content::before` and `::after` render the ORIGINAL asymmetric complete
-paper-corner contours even with JavaScript off or non-SPA navigation.
-The ten experimental variants preserve this exact form as variant 1,
-change only bounded end positions, and never detach corner return strokes.
-The animated layer is a DIRECT `x-persist="public-folio-decoration"`
-child of `#content`. This is required because Livewire 4's Blade
-`@persist` creates an enclosing `div`, which previously prevented the
-base contour from being hidden after motion activation. Real
-`livewire:navigate` / `livewire:navigated` events gate motion: no animation
-runs on first load, the overlay becomes visible only AFTER the completed
-document swap, and each subsequent visit transitions from the existing
-rendered state to one of ten different targets. Left and right return-stroke
-widths as well as endpoints interpolate. CSS keeps the original version as
-variant 1 and the guaranteed no-JavaScript fallback. The menu contours remain
-the approved static geometry, and neither media nor content width is animated.
-`wire:transition.navigate` was removed because it does not implement SPA
-crossfades. Instead an explicitly gated short opacity/translateY animation
-settles the NEW content after a completed Livewire navigation, never on initial
-load or reduced-motion clients. The same-origin content-link delegation invokes
-`Livewire.navigate()` for eligible links not predeclared with `wire:navigate`
-(adding Alpine directives after initialization did not activate them).
-Neither a second router nor timers, polling or synthetic page transitions
-are introduced. Actual CSP activation and SPA behavior still require
-running-preview verification.
+The public paper animation has ONE canonical owner:
+`resources/js/public-folio-motion.js`. Existing Menu/Content contour
+pseudos and their single backings remain the only visual primitives;
+there are no timers, new DOM planes or secondary animation systems.
 
-The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`, `--public-folio-depth`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
+Menu and Content share the reduced baseline of 3px left and 4px down
+(and a matching 3px right gap). Menu's existing connected L-shaped
+backing remains flush with its upper edge. The white outlines sit
+closer to both white surfaces, and all pale lines and backings use
+lower opacity. General's configured widths remain authoritative.
+
+Each page gets six distinct, stable corner connection points. They
+are generated deterministically from the server-side route path in
+`layouts/app.blade.php`, rendered in the CSP-nonced initial style, and
+carried through the existing `data-public-layout` metadata across
+Livewire SPA swaps. Reopening the same URL recreates the same visual
+pose without client randomness, timers, history state or hydration flash.
+
+Page swaps share a viewport-bounded 480ms height transition and a
+620ms Content-only build. Its contour ends contract no more than 6px
+top and 8px bottom; the exterior backing moves less than 1px per
+axis. All excursions end at the new page's canonical static pose,
+even on rapid repeat navigation. Home Hero arrows reuse the same
+Content-only animation. Menu never performs a page-build impulse.
+
+Ambient corners move only 1–2px, and backing motion is under .5px
+on slow 98–145-second loops with extensive stationary periods.
+Menu's upper stroke attachments remain fixed to the top, and its
+left stroke stays shorter than the right. Distinct static page
+compositions—not conspicuous perpetual motion—are the main effect.
+Native heights, viewer and history remain under their existing owners.
+The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
 
 ## Home presentation
 
@@ -95,7 +105,7 @@ Home content uses one of three templates:
 
 **Skip Home is routing state, not a content template.** It can be enabled independently of the selected Home content template and may point at an explicit eligible published top-level page. When no explicit valid target is stored, the target is the next eligible published top-level public page after Home in canonical Site Node order. If no eligible target exists, `/` renders the selected Home template rather than redirecting into an invalid route or loop.
 
-Changing the Home content template does not implicitly enable, disable or retarget Skip Home. Existing legacy `skip_home` template rows are normalized to Hero Artwork plus enabled Skip Home routing.
+Changing the Home content template does not implicitly enable, disable or retarget Skip Home. Existing legacy `skip_home` template rows are normalized to Hero Artwork plus enabled Skip Home routing. **Show in public navigation** is a separate Home-only setting in Pages → Home Edit, using the retained `site_sections.show_in_navigation` field. It defaults to off: `/` remains accessible through the artist-title link without a Home menu item. Turning it on displays Home in the public menu only while Skip Home is disabled. Skip Home always suppresses the entry, independently of this stored switch. Other page types continue to use publication state alone for menu inclusion. This control never affects admin navigation, publication or the root URL.
 
 Artwork selection uses canonical Gallery eligibility, Artwork date and explicit tie-break semantics. Ambiguous invalid state is surfaced rather than resolved by incidental DB order.
 
