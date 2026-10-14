@@ -163,6 +163,7 @@ Lokale Codex-/native PHP-Generatorläufe, isolierter PostgreSQL-Export und repro
 
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
 
+- **Activity/Undo als eigenen Source-Flow dokumentiert:** [activity-undo-lifecycle.md](docs/architecture/activity-undo-lifecycle.md) unterscheidet Audit-/Receipt-/Ordering-Projektionen, individuelle transaktionale Snapshot-/Media-/Lifecycle-/Ordering-Inversen, Actor-/TTL-/Commit-Guards, fehlende neue Undo-Receipts bei Inversen und das **nicht atomare** Selection-Undo über einzelne Receipts. Kein Livewire/DB-Test ausgeführt.
 - **Abdeckungsmaßstab statt Quantität:** [Abschlussmatrix](docs/architecture/completion-criteria.md) koordiniert jetzt alle Quellketten und noch offenen fachlichen Zeilen; 20 eingefrorene Importdiagramme ausdrücklich nicht als 20 fachlich abgeschlossene Workflow-Diagramme zählen.
 
 - **Journal-Template-Lifecycle:** `lifecycles.md` beschreibt jetzt `JournalTemplate::Blog/Exhibitions` als **reine Präsentationswahl**, nicht als Datenmigration: `updateJournalTemplate` sperrt SiteSection, schützt No-op, auditiert echte Änderungen, behält beide Eintragsbestände; `JournalSettingsService` kapselt Identität/Redirect + Template in äußerer Transaktion. Öffentliche Blog-Detailroute existiert nur unter aktivem Blog-Template; inaktive Daten bleiben erhalten. Journal-Settings-Testdefinitionen gelesen; keine Ausführung. Offene parallele Livewire-Stale-Targets als Negativfall.
