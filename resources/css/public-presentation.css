@@ -513,10 +513,9 @@ body {
     background: var(--public-surface);
     box-shadow: -5px 7px 0 var(--public-folio-soft);
 }
-/* The original two connected paper-edge drawings are their OWN animation
-   surfaces. Neither is replaced, hidden or duplicated at navigation time.
-   CSS variables only adjust top/bottom; the accepted width, outside offset,
-   stroke, shadow and skew remain exactly as authored in the first design. */
+/* The original TWO attached edge contours remain separate pseudo-element
+   animation targets. Each white sheet uses only ONE external backing shadow;
+   no extra layers are generated during navigation. */
 #content::before,
 #content::after {
     position: absolute;

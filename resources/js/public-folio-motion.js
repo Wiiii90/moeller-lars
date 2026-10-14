@@ -320,9 +320,8 @@ export function animatePageHeight(previousHeight, root = document) {
     }
 }
 
-// Two genuine rear paper planes advance in measured separate directions;
-// exposed separation from the white front and from one another is preserved.
-// The first and final frames are actual sampled CSS values.
+// One exterior backing sheet follows the white page's construction;
+ // original captured and authored CSS poses remain the cycle endpoints.
 // On navigation, push the SAME single sheet outward or inward. Geometry
 // is based on canonical coordinates, preventing cumulative extension on
 // rapid Hero clicks. The page-height reveal keeps its own existing pace.
