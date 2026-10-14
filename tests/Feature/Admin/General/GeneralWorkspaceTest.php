@@ -255,7 +255,7 @@ it('delivers ticker feedback for General contact legal and social mutations', fu
             $message = $params['notification'] ?? [];
 
             return $event === 'admin-header-notification'
-                && ($message['body'] ?? null) === 'Legal disclaimer updated.'
+                && ($message['body'] ?? null) === 'External Links Notice updated.'
                 && ($message['status'] ?? null) === 'success';
         })
         ->call('updateSocialLink', 0, 'url', 'https://example.invalid/after')
@@ -453,10 +453,13 @@ it('keeps General Legal balanced and each field help-enabled without visual copy
         ->toContain("->label(self::imprintLabel())")
         ->toContain("->label(self::privacyLabel())")
         ->toContain("->label(self::usageRightsLabel())")
-        ->toContain("->label(self::legalDisclaimerLabel())")
+        ->toContain("->label(self::externalLinksNoticeLabel())")
         ->and($css)->toContain('.general-legal-settings > .fi-sc > :first-child')
         ->toContain('grid-column: 1 / -1 !important')
         ->toContain('.general-legal-settings textarea')
+        ->toContain('scrollbar-width: none;')
+        ->toContain('.general-legal-settings textarea::-webkit-scrollbar')
+        ->toContain('overflow-y: auto;')
         ->and($artwork)->not->toContain('artwork-copyright')
         ->not->toContain('effectiveCopyrightNotice')
         ->toContain('artwork-credit');

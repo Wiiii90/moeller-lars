@@ -298,7 +298,16 @@
     font: inherit;
     font-size: .78rem;
     line-height: 1.5;
+    overflow-y: auto;
+    scrollbar-width: none;
     resize: vertical;
+}
+
+/* Match scrollable admin stages: content remains scrollable without a rail. */
+.general-legal-settings textarea::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 .admin-general .general-legal-settings .fi-input-wrp:has(textarea) {

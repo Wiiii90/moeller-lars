@@ -354,7 +354,7 @@ final class General extends Page
                             ->lazy()
                             ->afterStateUpdated(self::persist('legal_usage_rights')),
                         Textarea::make('legal_disclaimer')
-                            ->label(self::legalDisclaimerLabel())
+                            ->label(self::externalLinksNoticeLabel())
                             ->rows(8)
                             ->maxLength(20000)
                             ->nullable()
@@ -800,12 +800,12 @@ final class General extends Page
         );
     }
 
-    private static function legalDisclaimerLabel(): HtmlString
+    private static function externalLinksNoticeLabel(): HtmlString
     {
         return self::helpLabel(
-            'Legal disclaimer',
-            'About the legal disclaimer',
-            'Optional additional text shown within the Legal Disclaimer component on a Custom Page. Existing content is preserved.'
+            'External Links Notice',
+            'About the external links notice',
+            'Optional notice about linked third-party websites. Displayed in the External Links Notice section of the Legal Disclaimer component.',
         );
     }
 
@@ -836,7 +836,7 @@ final class General extends Page
             'public_email' => 'Public email',
             'show_public_email' => 'Public email visibility',
             'social_links' => 'Social links',
-            'legal_disclaimer' => 'Legal disclaimer',
+            'legal_disclaimer' => 'External Links Notice',
             'legal_imprint' => 'Imprint',
             'legal_privacy' => 'Privacy Policy',
             'legal_usage_rights' => 'Copyright & AI Use',

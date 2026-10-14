@@ -14,7 +14,7 @@ final class PublicLegalContent
         'legal_imprint' => 'Imprint',
         'legal_privacy' => 'Privacy Policy',
         'legal_usage_rights' => 'Copyright & AI Use',
-        'legal_disclaimer' => 'External Links',
+        'legal_disclaimer' => 'External Links Notice',
     ];
 
     private const SLUGS = [
