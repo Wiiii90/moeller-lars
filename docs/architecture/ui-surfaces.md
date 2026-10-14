@@ -136,8 +136,9 @@ Leseweg. `actionComponentTarget()` prüft `componentIndex` und
 persistierten Komponentenblock **am absoluten Sequenzindex** aus
 `settings()->components()`. Stimmt die gespeicherte Komponente nicht
 mit dem beim Action-Mount übergebenen Typ überein oder fehlt sie, folgt
-eine `ValidationException` mit Reload-Hinweis. Das schützt vor
-stiller Bearbeitung eines falschen Blocks nach Reorder/Conversion.
+eine `ValidationException` mit Reload-Hinweis. Das erkennt fehlende Indizes und **Typkonvertierungen oder Reorder
+auf einen anderen Typ**, garantiert aber keine stabile Identität bei einem
+Index, dessen nachfolgender Block denselben Typ wie der ursprüngliche hat.
 
 Der neue [CustomPageWorkspaceTest](../../tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php)
 (ungefähr Zeilen 463–493) montiert `editComponent` ausdrücklich auf Index
@@ -146,5 +147,30 @@ dritten Rich-Text-Blocks**. Der frühere fehlende Methodenpfad ist
 **quellseitig wieder vorhanden**; der zugehörige Livewire-Test wurde
 hier lediglich gelesen, nicht ausgeführt. Die UI-Akzeptanz und
 fehlende/stale Zieltypen sind weitere gezielte Runtime-Negativfälle.
+
+**Zusätzliche quellenbelegte Konkurrenzlücke:** Der Edit-Action-Mount trägt
+nur `componentIndex` und `componentType`. Sowohl
+`CustomPageWorkspaceTargetHelpers::componentAt()` als auch
+`CustomPageEditorialService::assertTarget()` vergleichen lediglich
+`blocks[$index]['type']` mit diesem Typ. Gleichzeitig kann
+`CustomPageEditorialService::reorderBlocks()` eine vollständige
+Komponentenfolge auf Basis derselben absoluten Indexreferenzen umordnen.
+Wenn zwei verschiedene `text`-Blöcke A/B die Positionen wechseln, während
+ein anderes Fenster einen Edit von A unter dem alten Index offen hat,
+bleibt die Typprüfung erfolgreich, aber `updateBlock()` kann den
+**nunmehr dort liegenden Block B** mit dem Payload von A überschreiben.
+Die neue Text/Divider/Text-Assertion überprüft dieses Interleaving nicht.
+Dies ist ein **statischer Race-/Stale-Target-Negativpfad**, keine hier
+ausgeführte gleichzeitige Livewire-Reproduktion.
+
+**Gezielter Regressionstest:** Editor 1 mountet `editComponent` für
+`text A` am Index 0; Editor 2 ordnet `text B` (ebenfalls `text`)
+auf Index 0 um; Editor 1 speichert. Erwartet wird eine explizite
+Konfliktvalidierung **oder** ein gezieltes Update von A anhand einer
+kanonischen stabilen Identität. Keinesfalls darf B unbeabsichtigt
+überschrieben werden. Ebenso eine Variante für zwei gleichartige
+`list`-Komponenten mit verschachteltem Item-Edit prüfen. Die Lösung
+gehört in den bestehenden Domain-Target-/Revision-Guard, nicht in eine
+zweite Action-Pipeline.
 
 **Weitere Untersuchungen:** dynamisch angelegte Filament-Actions, Mount-/Autosave-Reihenfolgen, JavaScript-Event-Dispatch, Modal-State und Notification-Pipeline. Diese müssen an konkreten Quellstellen erhoben werden, nicht aus Dateinamen extrapoliert werden.
