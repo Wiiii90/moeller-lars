@@ -17,7 +17,7 @@ function fixture({ height = 540, menu = true, content = true } = {}) {
             name, style: { overflow: '' },
             getBoundingClientRect: () => ({ height }),
             animate(frames, options) {
-                const a = { name, frames, options, finished: Promise.resolve() };
+                const a = { name, frames, options, finished: new Promise(() => {}) };
                 animations.push(a);
                 return a;
             },

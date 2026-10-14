@@ -184,10 +184,10 @@ function shadowMotionFrames(start, type, direction, end = start) {
     // quiet intervals between them; no involuntary jitter or diagonal steps.
     if (direction === 'cycle') {
         move(0, base[0] + .35);
-        move(2, base[2] + .45);
+        move(2, base[2] + .20);
         rest();
         move(1, base[1] - .25);
-        move(3, base[3] - .35);
+        move(3, base[3] - .20);
         rest(); rest();
         base.forEach((value, index) => move(index, value));
         rest();
