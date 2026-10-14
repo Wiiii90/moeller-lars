@@ -22,7 +22,7 @@ final class CustomPageEditorialService
             $type = $block['type'] ?? null;
             $this->assertComponentType(is_string($type) ? $type : '');
             if ($type === 'legal_disclaimer' && $this->containsType($blocks, 'legal_disclaimer')) {
-                throw ValidationException::withMessages(['component' => 'This page already contains a Legal Disclaimer component.']);
+                throw ValidationException::withMessages(['component' => 'This page already contains a Rechtliches component.']);
             }
             $blocks[] = $block;
 
@@ -193,7 +193,7 @@ final class CustomPageEditorialService
                 return false;
             }
             if ($targetType === 'legal_disclaimer' && $this->containsType($blocks, 'legal_disclaimer', exceptIndex: $index)) {
-                throw ValidationException::withMessages(['component' => 'This page already contains a Legal Disclaimer component.']);
+                throw ValidationException::withMessages(['component' => 'This page already contains a Rechtliches component.']);
             }
             $blocks[$index] = $this->convertedBlock($blocks[$index], $targetType);
 
