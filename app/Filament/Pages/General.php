@@ -332,7 +332,7 @@ final class General extends Page
                             ->extraInputAttributes(self::commitOnEnterAttributes())
                             ->afterStateUpdated(self::persist('default_media_copyright_notice')),
                         Textarea::make('legal_imprint')
-                            ->label('Impressum')
+                            ->label('Imprint')
                             ->rows(5)
                             ->maxLength(20000)
                             ->nullable()
@@ -340,7 +340,7 @@ final class General extends Page
                             ->columnSpanFull()
                             ->afterStateUpdated(self::persist('legal_imprint')),
                         Textarea::make('legal_privacy')
-                            ->label('Datenschutz')
+                            ->label('Privacy Policy')
                             ->rows(7)
                             ->maxLength(20000)
                             ->nullable()
@@ -348,7 +348,7 @@ final class General extends Page
                             ->columnSpanFull()
                             ->afterStateUpdated(self::persist('legal_privacy')),
                         Textarea::make('legal_usage_rights')
-                            ->label('Urheberrecht & KI-Nutzung')
+                            ->label('Copyright & AI Use')
                             ->rows(5)
                             ->maxLength(20000)
                             ->nullable()
@@ -779,9 +779,9 @@ final class General extends Page
     private static function legalDisclaimerLabel(): HtmlString
     {
         return self::helpLabel(
-            'Hinweise zu externen Links',
-            'Optionale Hinweise zu externen Links',
-            'Der bisherige Rechtshinweis bleibt erhalten und erscheint optional im Rechtliches-Bereich einer Custom Page. Kein Ersatz für ein Impressum.',
+            'Legal disclaimer',
+            'About the legal disclaimer',
+            'Optional additional text shown within the Legal Disclaimer component on a Custom Page. Existing content is preserved.'
         );
     }
 
@@ -812,10 +812,10 @@ final class General extends Page
             'public_email' => 'Public email',
             'show_public_email' => 'Public email visibility',
             'social_links' => 'Social links',
-            'legal_disclaimer' => 'Hinweise zu externen Links',
-            'legal_imprint' => 'Impressum',
-            'legal_privacy' => 'Datenschutz',
-            'legal_usage_rights' => 'Urheberrecht & KI-Nutzung',
+            'legal_disclaimer' => 'Legal disclaimer',
+            'legal_imprint' => 'Imprint',
+            'legal_privacy' => 'Privacy Policy',
+            'legal_usage_rights' => 'Copyright & AI Use',
             'default_media_copyright_notice' => 'Default copyright notice',
             'background_mode' => 'Background',
             'background_color' => 'Background color',

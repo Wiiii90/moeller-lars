@@ -95,7 +95,7 @@ it('keeps decorative layout semantic and undated CV entries without inventing da
     $view = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
     expect($view)->toContain('custom-page__image--wrapped')
         ->toContain('pages.partials.component-sequence')
-        ->toContain('Rechtliches');
+        ->toContain('Legal Disclaimer');
 
     $styles = file_get_contents(resource_path('css/custom-pages.css'));
     expect($styles)->toContain('float: left')
@@ -185,12 +185,12 @@ it('preserves the existing disclaimer component while rendering separately autho
 
     $sections = \App\Domain\Content\PublicLegalContent::sections($general);
     expect(array_column($sections, 'slug'))->toBe([
-        'impressum', 'datenschutz', 'urheberrecht', 'externe-links',
+        'imprint', 'privacy', 'copyright-ai', 'external-links',
     ]);
 
     $general->update(['legal_privacy' => null]);
     expect(array_column(\App\Domain\Content\PublicLegalContent::sections($general), 'slug'))
-        ->toBe(['impressum', 'urheberrecht', 'externe-links']);
+        ->toBe(['imprint', 'copyright-ai', 'external-links']);
 });
 
 it('renders legal copy as escaped disclosures and omits unpublished or blank content', function (): void {
@@ -213,11 +213,11 @@ it('renders legal copy as escaped disclosures and omits unpublished or blank con
         compact('generalSettings', 'blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
     );
 
-    expect($html)->toContain('>Rechtliches</h2>')
-        ->toContain('id="rechtliches-impressum"')
-        ->toContain('id="rechtliches-datenschutz"')
-        ->toContain('id="rechtliches-externe-links"')
-        ->not->toContain('id="rechtliches-urheberrecht"')
+    expect($html)->toContain('>Legal Disclaimer</h2>')
+        ->toContain('id="legal-imprint"')
+        ->toContain('id="legal-privacy"')
+        ->toContain('id="legal-external-links"')
+        ->not->toContain('id="legal-copyright-ai"')
         ->toContain("Line A\nLine B")
         ->toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
         ->not->toContain('<script>alert(1)</script>')
@@ -228,7 +228,7 @@ it('renders legal copy as escaped disclosures and omits unpublished or blank con
         "@include('pages.partials.component-sequence')",
         compact('generalSettings', 'blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
     );
-    expect($hidden)->not->toContain('rechtliches-impressum');
+    expect($hidden)->not->toContain('legal-imprint');
 
     $blocks = [['type' => 'legal_disclaimer', 'published' => true]];
     foreach (['legal_imprint', 'legal_privacy', 'legal_usage_rights', 'legal_disclaimer'] as $field) {

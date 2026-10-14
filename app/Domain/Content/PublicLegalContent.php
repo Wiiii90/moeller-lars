@@ -11,17 +11,17 @@ use App\Models\PublicContentSetting;
 final class PublicLegalContent
 {
     public const EDITORIAL_FIELDS = [
-        'legal_imprint' => 'Impressum',
-        'legal_privacy' => 'Datenschutz',
-        'legal_usage_rights' => 'Urheberrecht & KI-Nutzung',
-        'legal_disclaimer' => 'Hinweise zu externen Links',
+        'legal_imprint' => 'Imprint',
+        'legal_privacy' => 'Privacy Policy',
+        'legal_usage_rights' => 'Copyright & AI Use',
+        'legal_disclaimer' => 'External Links',
     ];
 
     private const SLUGS = [
-        'legal_imprint' => 'impressum',
-        'legal_privacy' => 'datenschutz',
-        'legal_usage_rights' => 'urheberrecht',
-        'legal_disclaimer' => 'externe-links',
+        'legal_imprint' => 'imprint',
+        'legal_privacy' => 'privacy',
+        'legal_usage_rights' => 'copyright-ai',
+        'legal_disclaimer' => 'external-links',
     ];
 
     /** @return list<array{slug:string,label:string,text:string}> */
@@ -43,7 +43,7 @@ final class PublicLegalContent
         $sections = self::sections($settings);
 
         return $sections === []
-            ? 'Noch keine Rechtstexte in General hinterlegt.'
-            : implode(' · ', array_column($sections, 'label')).' aus General';
+            ? 'No legal content has been configured in General.'
+            : implode(' · ', array_column($sections, 'label')).' from General';
     }
 }

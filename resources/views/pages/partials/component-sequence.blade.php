@@ -132,10 +132,10 @@
                 @php($legalSections = \App\Domain\Content\PublicLegalContent::sections($generalSettings))
                 @if ($legalSections !== [])
                     <section class="legal-disclaimer custom-page__component custom-page__legal" aria-labelledby="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
-                        <h2 id="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Rechtliches</h2>
+                        <h2 id="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Legal Disclaimer</h2>
                         <div class="custom-page__legal-sections">
                             @foreach ($legalSections as $legalSection)
-                                <details id="rechtliches-{{ $legalSection['slug'] }}" class="custom-page__legal-section">
+                                <details id="legal-{{ $legalSection['slug'] }}" class="custom-page__legal-section">
                                     <summary>{{ $legalSection['label'] }}</summary>
                                     <div class="custom-page__legal-text">{{ $legalSection['text'] }}</div>
                                 </details>

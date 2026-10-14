@@ -495,7 +495,7 @@ it('autosaves legal copy only on real changes, including notification and audit'
         ->set('data.legal_imprint', "  Artist Name\nStudio address  ")
         ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             return $event === 'admin-header-notification'
-                && ($params['notification']['body'] ?? null) === 'Impressum updated.'
+                && ($params['notification']['body'] ?? null) === 'Imprint updated.'
                 && ($params['notification']['status'] ?? null) === 'success';
         });
 

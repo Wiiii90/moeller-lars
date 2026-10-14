@@ -284,7 +284,7 @@ final class CustomPageSetting extends Model
                 foreach ($children as $child) {
                     $childType = is_array($child) ? ($child['type'] ?? null) : null;
                     if (! in_array($childType, self::IMAGE_CHILD_TYPES, true)) {
-                        throw ValidationException::withMessages(['blocks' => 'Images may only contain Text, List, Contact details or Rechtliches.']);
+                        throw ValidationException::withMessages(['blocks' => 'Images may only contain Text, List, Contact details or Legal Disclaimer.']);
                     }
                     if ($childType === 'list' && ($child['media_asset_id'] ?? null) !== null) {
                         throw ValidationException::withMessages(['blocks' => 'Lists beside an image cannot contain another image.']);
@@ -331,12 +331,12 @@ final class CustomPageSetting extends Model
             if ($type === 'legal_disclaimer') {
                 $legalDisclaimerCount++;
                 if ($legalDisclaimerCount > 1) {
-                    throw ValidationException::withMessages(['blocks' => 'A page can contain at most one Rechtliches component.']);
+                    throw ValidationException::withMessages(['blocks' => 'A page can contain at most one Legal Disclaimer component.']);
                 }
             }
         }
         if ($legalDisclaimerCount > 1) {
-            throw ValidationException::withMessages(['blocks' => 'A page can contain at most one Rechtliches component.']);
+            throw ValidationException::withMessages(['blocks' => 'A page can contain at most one Legal Disclaimer component.']);
         }
     }
 

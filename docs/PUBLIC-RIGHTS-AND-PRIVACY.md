@@ -1,13 +1,15 @@
 # Public rights, artwork protection and privacy — implementation plan
 
-Status: architectural contract and implementation criteria. Block A General/Rechtliches has source changes authored, but migration application, local test execution and browser acceptance are still open. No provider identity or legal wording has been invented. Last reviewed: 2026-10-14.
+Status: architectural contract and implementation criteria. Block A General/Legal Disclaimer has source changes authored, but migration application, local test execution and browser acceptance are still open. No provider identity or legal wording has been invented. Last reviewed: 2026-10-14.
 
 ## Product boundaries and ownership
+
+- **Product language is English throughout the Admin and public site.** Preserve the existing component name `Legal Disclaimer`; new form labels, section headings, summaries and deep-link fragments are English. This overrides the earlier German UI labels in this plan. German terminology for legal concepts is permitted in internal discussion, not as a surprise UI-language change.
 
 - This is a high-quality, artwork-first public artist portfolio. Preserve full-resolution public Artwork Viewer, zoom, keyboard, native scroll, established public menu, white Content folio, public CSP and search discoverability. No watermark/low-resolution substitution, permanent footer, forced new main-menu page, obstructive overlay, right-click theatre or duplicate public shell.
 - The artist retains responsibility and editorial control of the authored information on the About Artist / Contact **Custom Page**, currently named `CV` in parts of the UI. He may change/unpublish it. Do not invent compulsory publishing guards or argue against artist control. A developer should nevertheless make required information clearly findable.
 - The site developer owns technical CSP, media delivery/abuse controls, crawl/TDM signals, Matomo consent enforcement and truthful data processing behavior. Artist-written words cannot replace that enforcement.
-- Default proposed location: rework the existing `legal_disclaimer` component after CV, social media and Contact into a compact **Rechtliches** component. Until the public browser UI has been inspected, this is a placement decision, **not** a final design. No new global footer. Impressum and Datenschutz must be recognizable, easily/reliably accessible on the site; inspect the actual navigation, SPA, Home Gate and direct linking rather than assuming the CV URL is always accessible. Preserve artist publication choice.
+- Default proposed location: rework the existing `legal_disclaimer` component after CV, social media and Contact into a compact **Legal Disclaimer** component. Until the public browser UI has been inspected, this is a placement decision, **not** a final design. No new global footer. Impressum and Datenschutz must be recognizable, easily/reliably accessible on the site; inspect the actual navigation, SPA, Home Gate and direct linking rather than assuming the CV URL is always accessible. Preserve artist publication choice.
 - Do not auto-publish or invent names, addresses, rights ownership, processing disclosures or legal advice. Professional legal review remains appropriate for final content.
 
 ## A. General → Content → public legal rendering
@@ -33,23 +35,23 @@ No per-crawler, per-method or per-media copyright text fields in General. Fixed 
 
 ### Public rendering / editor
 
-- Reuse the existing Custom Page component type and order/action/published behavior; rename/rebuild the semantic editor-facing `Legal Disclaimer` into `Rechtliches` with a migration/compatibility path for `legal_disclaimer`.
-- From that component render whichever of the authored legal sections have actual content; no invented defaults. Preferred compact concept: quietly identifiable Impressum / Datenschutz / Urheberrecht links/expandable subsections **inside the existing About/Contact content**, not a footer or new public page. Optional external-link note last. Ensure accessible keyboard/focus, logical headings, anchors/deep links, mobile widths, opening direct fragments across Livewire SPA and no hidden unreachable disclosures.
+- Reuse the existing Custom Page component type and order/action/published behavior; preserve the established English `Legal Disclaimer` component name while extending its content with a migration/compatibility path for `legal_disclaimer`.
+- From that component render whichever of the authored legal sections have actual content; no invented defaults. Preferred compact concept: quietly identifiable Imprint / Privacy Policy / Copyright & AI Use links/expandable subsections **inside the existing About/Contact content**, not a footer or new public page. Optional external-link note last. Ensure accessible keyboard/focus, logical headings, anchors/deep links, mobile widths, opening direct fragments across Livewire SPA and no hidden unreachable disclosures.
 - The short inherited copyright belongs on applicable artwork/other media credits according to existing editorial display rules. The long rights statement belongs in the Legal component. Do not stamp `© Lars Möller` onto every artwork or page.
 - Test site/artist preview and published/unpublished paths, including the Public Home Gate. Distinguish technical reachability from the artist's decision to publish.
 
 ### Implementation note (2026-10-14)
 
 The implementation keeps the persisted component type `legal_disclaimer` for migration
-compatibility, but calls it **Rechtliches** in the Admin and renders authored
-Impressum, Datenschutz, Urheberrecht & KI-Nutzung, then the unchanged legacy
+compatibility, but calls it **Legal Disclaimer** in the Admin and renders authored
+Imprint, Privacy Policy, Copyright & AI Use, then the unchanged legacy
 external-links note through one shared `PublicLegalContent` projection.
 General stores the three new nullable long texts without inserting any legal
 placeholders; the older default-media notice remains the fourth independent
 copyright authority and the legacy optional text is preserved. The public UI
 uses unobtrusive native details/summary and deterministic fragment identifiers
-(`#rechtliches-impressum`, `#rechtliches-datenschutz`, `#rechtliches-urheberrecht`,
-`#rechtliches-externe-links`), which a bundled Vite helper reveals on SPA/hash
+(`#legal-imprint`, `#legal-privacy`, `#legal-copyright-ai`,
+`#legal-external-links`), which a bundled Vite helper reveals on SPA/hash
 navigation. Only nonempty authored sections render and texts are HTML-escaped.
 The existing artwork-detail credit now reads the effective inherited notice.
 

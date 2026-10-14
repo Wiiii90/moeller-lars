@@ -155,7 +155,7 @@ final class HomePresentation extends Page
         'divider' => 'Divider',
         'list' => 'List',
         'contact' => 'Contact',
-        'legal_disclaimer' => 'Rechtliches',
+        'legal_disclaimer' => 'Legal Disclaimer',
     ];
 
     /** @var array<string,string> */
@@ -166,7 +166,7 @@ final class HomePresentation extends Page
         'divider' => 'Divider',
         'list' => 'List',
         'contact' => 'Contact',
-        'legal_disclaimer' => 'Rechtliches',
+        'legal_disclaimer' => 'Legal Disclaimer',
     ];
 
     public string $componentSearch = '';
@@ -1211,7 +1211,7 @@ final class HomePresentation extends Page
                 'divider' => [DividerVariant::LABELS[$component['variant'] ?? 'thin'] ?? 'Thin', ''],
                 'list' => [$title !== '' ? $title : 'List', count($component['items'] ?? []).' entries'],
                 'contact' => ['Contact', count($component['children'] ?? []).' items'],
-                'legal_disclaimer' => ['Rechtliches aus General', \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general())],
+                'legal_disclaimer' => ['Legal Disclaimer aus General', \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general())],
                 default => ['Unsupported component', ''],
             };
             $dataset[] = [
