@@ -153,93 +153,50 @@ export const FOLIO_PLANE_BASE = Object.freeze({
     menu: [-1, 1, -3, 2],
 });
 
-function shadowMotionFrames(start, type, direction, end = start) {
+// Existing paper layers alternate one-axis excursions, with rests.
+// Intermediate values are read on Livewire swaps; the rear layer always
+// leads outward and restores its visibility before the front shifts inward.
+export function buildShadowFrames(start, type) {
     const shadow = SHADOW_START[type];
     const base = FOLIO_PLANE_BASE[type];
-    const positions = [...(renderedShadowCoords(start) ?? base)];
+    const rendered = renderedShadowCoords(start) ?? base;
+    const positions = [...rendered];
     const frames = [start];
-    const current = () => shadow(...positions);
-    const move = (index, target) => {
-        if (positions[index] === target) return;
-        positions[index] = target;
-        frames.push(current());
+    const append = () => frames.push(shadow(...positions));
+    const move = (i, value) => {
+        if (positions[i] === value) return;
+        positions[i] = value;
+        append();
     };
-    const rest = () => frames.push(current());
-
-    // Resume interrupted geometry axis by axis; never snap both coordinates
-    // to a default position in one frame.
-    base.forEach((value, index) => move(index, value));
+    const rest = () => append();
+    base.forEach((value, i) => move(i, value));
     rest(); rest();
-    const outward = direction !== 'inward';
-    // The rear layer leads outward to preserve separation as the front
-    // catches up. This sequence never swallows an already visible sheet.
-    move(2, base[2] + (type === 'menu' ? -1.8 : -3.5));
-    move(0, base[0] + (type === 'menu' ? -1 : -2));
+    // Outward: the rear paper advances before the nearer paper.
+    move(2, base[2] - (type === 'menu' ? 1.8 : 3.5));
+    move(0, base[0] - (type === 'menu' ? 1 : 2));
     rest();
     move(3, base[3] + (type === 'menu' ? 1.4 : 3));
     move(1, base[1] + (type === 'menu' ? .75 : 1.7));
     rest(); rest();
-    // Retract each sheet coordinate independently before the next phase.
     move(0, base[0]); move(1, base[1]);
     move(2, base[2]); move(3, base[3]);
     rest();
-    // For the constant ambient cycle both excursions are available, with
-    // quiet intervals between them; no involuntary jitter or diagonal steps.
-    if (direction === 'cycle') {
-        move(0, base[0] + (type === 'menu' ? .4 : 1.0));
-        move(2, base[2] + (type === 'menu' ? .1 : 1.2));
-        rest();
-        move(1, base[1] - (type === 'menu' ? .2 : .6));
-        move(3, base[3] - (type === 'menu' ? .1 : .3));
-        rest(); rest();
-        move(2, base[2]); move(3, base[3]);
-        move(0, base[0]); move(1, base[1]);
-        rest();
-        (renderedShadowCoords(start) ?? base).forEach((value, index) => move(index, value));
-    }
-    frames.push(end);
-    return frames.map((boxShadow, index) => ({
-        boxShadow, offset: index / (frames.length - 1),
-        easing: 'cubic-bezier(.33, 0, .67, 1)',
+    // Inward: move the front right/up, then restore the rear first.
+    move(0, base[0] + (type === 'menu' ? .4 : 1));
+    move(2, base[2] + (type === 'menu' ? .1 : 1.2));
+    rest();
+    move(1, base[1] - (type === 'menu' ? .2 : .6));
+    move(3, base[3] - (type === 'menu' ? .1 : .3));
+    rest(); rest();
+    move(2, base[2]); move(3, base[3]);
+    move(0, base[0]); move(1, base[1]);
+    rest();
+    rendered.forEach((value, i) => move(i, value));
+    frames.push(start);
+    return frames.map((boxShadow, i) => ({
+        boxShadow, offset: i / (frames.length - 1),
+        easing: 'cubic-bezier(.38, .02, .26, 1)',
     }));
-}
-
-// A shadow layer's color/shape never changes, only one x/y coordinate per
-// segment. Even the farthest inward positions keep a >=2px exposed margin.
-export function buildShadowFrames(start, type) {
-    return shadowMotionFrames(start, type, 'cycle');
-}
-
-function playShadowBreathing(element, shadow, type) {
-    if (!element || !shadow || typeof element.animate !== 'function') return;
-    try {
-        element.animate(buildShadowFrames(shadow, type), {
-            duration: type === 'content' ? 34800 : 36400,
-            iterations: Infinity,
-        });
-    } catch {
-        // Unsupported animation keeps the preexisting CSS paper layers.
-    }
-}
-
-function playArtworkBuild(element, shadow, growing, root) {
-    if (!element || !shadow || typeof element.animate !== 'function') return false;
-    try {
-        const finalShadow = getComputedStyle(element).boxShadow;
-        const animation = element.animate(
-            buildArtworkRevealFrames(shadow, finalShadow, growing),
-            { duration: 700, easing: 'cubic-bezier(.22, .62, .32, 1)' },
-        );
-        animation.finished.then(() => {
-            // A later SPA visit may already have replaced this paper.
-            if (root.querySelector('#content') === element) {
-                playShadowBreathing(element, getComputedStyle(element).boxShadow, 'content');
-            }
-        }, () => {});
-        return true;
-    } catch {
-        return false;
-    }
 }
 
 // A directional sequence: steady approach, a visible paper-driven thrust,
