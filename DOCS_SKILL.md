@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `4cff989fd58d6e356d1f0d857606a49c2d674cb2` |
-| darin aufgenommener `dev`-Stand | `7a5bf344c08aa78a6654a0557f7c587a82f52ef5` |
-| Status | `dev` bis `7a5bf344` konfliktgeprüft und mit echtem Zwei-Eltern-Merge übernommen; neue Heads weiterhin abfragen |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `9de0a0044f0adafc6b3bdc2005363525ae2327d0` |
+| darin aufgenommener `dev`-Stand | `62a104a0beef093aaa71ecf5c882e066b0dadca9` |
+| Status | Home-Hero-/Menu-Anpassungen und Unit-Tests bis `62a104a0` übernommen; neue Heads erneut prüfen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -254,31 +254,29 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
    Weitere Quelle: [Importgrenzen](docs/architecture/import-boundaries.md),
    [Publication-Operationen](docs/architecture/publication-working-operations.md),
    [Schemaevolution](docs/architecture/schema-evolution.md).
-5. **Public-Folio/SPA-Lifecycle:** Im jüngsten `dev@298bf74bce837385b8a7261b145d2b9fd887ed7c`
-   besitzt **jeder** Public-Inhalt (Home, Gallery, Artwork, Blog,
-   Exhibitions, Custom, CV) dieselbe `#content > .public-content-reveal`-
-   Hülle. Der frühere Artwork-only-700-ms-Höhenübergang ist entfernt.
-   Beim Livewire-Swap misst `capturePublicFolio()` die vorherige
-   Innenhöhe; `animatePageHeight()` nutzt **980 ms** bei Differenz
-   mindestens 7 px und clippt ausschließlich die innere Hülle.
-   **Jeder** tatsächliche Swap erhält einen `pulsePaper()`-Impuls,
-   selbst bei gleicher Höhe: Content-Ecken/Schatten **1.480 ms**,
-   Menü-Ecken/Schatten **980 ms**. Erst wenn die endlichen
-   Animationen fertig sind und das DOM-Ziel noch dasselbe ist,
-   startet `startAmbient()` erneut: Content-Ecken
-   **19,8/23,6 s**, Menü-Ecken **21,9/25,8 s**,
-   Content-/Menü-Schatten **24,7/28,1 s**, ohne JS-Timer.
-   Echte Papierlagen, keine zusätzlichen DOM-Dekorationen;
-   einheitliche Source in [Public-SPA](docs/architecture/public-spa-lifecycle.md)
-   und [Public-Vertrag](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md).
-   Aktualisierter Browser-Test enthält außerdem einen zweiten
-   unterbrochenen SPA-Swap: tatsächliche Corner-/Shadow-Zwischen-
-   koordinaten und Content-Höhe werden als neue WAAPI-Startwerte
-   geprüft, ohne Timer. **Nur Testquelle gelesen**, nicht ausgeführt.
-   Aktuelle Unit-/Browser-Testdateien wurden nur **gelesen**;
-   kein Runtime-/Browser-Lauf. Unendliche WAAPI-Handles weiterhin
-   ohne explizite `cancel()`-Disposer: mögliche Retention **nur
-   als Browser-Testlücke**, nicht als bestätigter Leak.
+5. **Public-Folio/SPA und Home Hero (aktuell `dev@62a104a0`):**
+   Alle Public-Routen teilen `#content > .public-content-reveal`;
+   ein echter Livewire-Swap sowie der **in-place Home-Hero-Pfeil**
+   benutzen denselben Content-`pulsePaper()`-Besitzer (**1.480 ms**)
+   und die innere Height-Animation (**980 ms**, ab 7 px Differenz).
+   Home Hero toggelt die bereits geladenen Slides weiterhin synchron
+   und bewahrt den bisherigen Viewer-/Fokus-/Zyklus-Owner.
+   **Das Menü erhält keine Navigation-Impulse**; seine Konturen
+   bleiben an der Oberkante angebunden und ihre unteren Enden
+   bewegen sich nur als ruhiges Ambient. Aktuell Content-Ecken
+   **25,1/29,7 s**, Menü **34,2/38,8 s** und Shadow Content/Menü
+   **30,2/36,4 s**. `activeHeightAnimations` (`WeakMap`) schützt
+   die Inline-Overflow-Restoration beim Abbruch vorheriger
+   Height-Animationen. **Offener statischer Hero-Race:** Ein
+   gecancelter **älterer** Content-`pulsePaper()`-Callback prüft
+   nur Elementidentität, nicht Impuls-Generation; auf derselben
+   Hero-Seite könnte er Ambient neu starten, während der
+   neuere Impuls noch läuft. Gezielter Mehrfachklick-/Promise-
+   Rejection-Test in [Public-SPA](docs/architecture/public-spa-lifecycle.md).
+   Neue [Hero-Unit-Tests](tests/js/home-hero.test.mjs) wurden
+   nur quellengeprüft; keine Livewire-/Browser-Runtime in diesem
+   Dokumentations-Workstream. WAAPI-Handle-Retention bei echten
+   SPA-Swaps bleibt separat offener Browser-Negativpfad.
 6. **Weitere Quellgrenzen:** `AdminNotifier`/Mailbox-Pin-Limits,
    Restore-/Revert-/Reset-Working-vs-LIVE-/History-Guards,
    Medienvarianten mit Byte-/Hash-identischer Regenerierung,
