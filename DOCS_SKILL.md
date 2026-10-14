@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | pending merge of `dev@1a6cbe45` |
-| darin aufgenommener `dev`-Stand | `1a6cbe45cfa81df0ba2d224bbed2eb9ffc377528` |
-| Status | Gallery-/Journal-Livewire-Testquellen und Dokumentationsänderungen konfliktgeprüft; neue Heads erneut prüfen |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `4cff989fd58d6e356d1f0d857606a49c2d674cb2` |
+| darin aufgenommener `dev`-Stand | `7a5bf344c08aa78a6654a0557f7c587a82f52ef5` |
+| Status | `dev` bis `7a5bf344` konfliktgeprüft und mit echtem Zwei-Eltern-Merge übernommen; neue Heads weiterhin abfragen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -48,7 +48,7 @@ PHP-/DB-/Browser-Prüfungen ohne tatsächliche Ausführung.
 | Modul-/Klassendiagramme | [20 einzelne Importgraphen](docs/architecture/class-import-diagrams.md) sowie [aggregierter Modulgraph](docs/architecture/generated/app-module-imports.mmd); **nur deklarative Imports**, keine Laufzeitaufrufe |
 | Eloquent | [eloquent-relations.md](docs/architecture/eloquent-relations.md): alle **26** Models, **48** explizite Relation-Kanten, auch Self-Relations; **nicht** physisches SQL-ERD |
 | PHP-Generatoren | `scripts/generate-architecture-inventory.php`, `generate-architecture-relations.php`, `generate-architecture-eloquent.php`, `generate-architecture-import-diagrams.php` und weitere unter `scripts/`; **isolierte Fixture-Prüfungen**, kein vollständiger nativer Checkout-Lauf |
-| Admin UI | [ui-surfaces.md](docs/architecture/ui-surfaces.md): **9** Pages, **26** Concerns, **2** Livewire-Komponenten, **26** interne Trait-Uses, **72** statisch benannte Actions |
+| Admin UI | [ui-surfaces.md](docs/architecture/ui-surfaces.md): **eingefrorener Stand `337da15b`** mit 9 Pages, 26 Concerns, 2 Livewire-Komponenten, 26 Trait-Kanten und 72 literal Actions; **nach Gallery-/Journal-Header-Refactor nicht regeneriert** |
 | Services und HTTP | [admin-publication-calls.md](docs/architecture/admin-publication-calls.md): **21** quellenverankerte direkte Call-Sites; [runtime-entrypoints.md](docs/architecture/runtime-entrypoints.md): **20** explizite Webrouten plus Middleware/Filament/JS; dynamische Route-Registrierung offen |
 | Lifecycle / Activity | [lifecycles.md](docs/architecture/lifecycles.md): **5** Domänenautomaten, **35** geprüfte Quellanker; [Working-Operationen](docs/architecture/publication-working-operations.md): Restore/Revert/Reset und **36** geprüfte Anker |
 | Public Inhaltsdaten | [structured-components.md](docs/architecture/structured-components.md): **6** Komponenten, **3** Contact-Kinder, List-Nesting, drei Home-Content-Modi und separates Skip-Home-Routing; JSON-Referenzen ≠ SQL-FKs |
@@ -136,7 +136,10 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   Relationsmethoden abgeglichen; kein aus PostgreSQL abgeleitetes ERD.
   **HTTP:** 20 explizite Laravel-Routen; Filament-/Livewire-Registrierung
   bleibt dynamisch. **Admin-Quelle:** 9 Pages, 26 Concerns, 2 Livewire-
-  Komponenten; 26 interne Trait-Uses, 72 wörtlich benannte Actions.
+  Komponenten; 26 Trait-Kanten/72 literal `Action::make`-
+  Vorkommen **nur im eingefrorenen `337da15b`-Quellkatalog**.
+  Die jüngsten Journal-/Gallery-Header-Rollen sind nicht als
+  vollständig neu gezählter Live-Katalog zu deklarieren.
 - **Generatoren und Laufgrenzen:** Die vorhandenen
   `scripts/generate-architecture-*.php` und
   `scripts/check-documentation-links.php` besitzen tatsächlich lokal
@@ -176,7 +179,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   aus dem anschließenden `dev@f9afd7aa`-Stand. Neue `dev@1a6cbe45`-Featuretests prüfen Gallery-Materials-
   Commit erst nach explicit Action sowie Gallery-/Journal-Create-/Edit-
   Mounts. Tests wurden auf `docs` **nicht ausgeführt**; sie ersetzen
-  weder tatsächliche Header-Action-Mutationen noch Browser-Akzeptanz. Die `dev`-Änderungen wurden
+  weder tatsächliche Header-Action-Mutationen noch Browser-Akzeptanz.
+  Zusätzlich wurde der neue `dev@7a5bf344`-
+  [Architekturtest](tests/Architecture/Admin/AdminEditorialDialogArchitectureTest.php)
+  zu einem zentralen Gallery-/Journal-Dialogowner übernommen;
+  er ist ein **gelesener deklarativer Architekturtest**, kein
+  in diesem Workstream ausgeführter PHP-/Livewire-Test. Die `dev`-Änderungen wurden
   inhaltlich mit den zusätzlichen Pages-Regeln zusammengeführt.
 - [Benachrichtigungen](docs/ADMIN-NOTIFICATION-CONTRACT.md) definieren
   die Meldungskardinalität anhand tatsächlich konsumierter Activity-
