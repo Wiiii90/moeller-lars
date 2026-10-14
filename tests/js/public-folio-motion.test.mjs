@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     FOLIO_VARIANTS, MENU_VARIANTS, FOLIO_PLANE_BASE,
-    buildCornerFrames, buildMenuCornerFrames, buildShadowFrames, buildCornerImpulse,
+    buildCornerFrames, buildMenuCornerFrames, buildMenuBackingFrames, buildShadowFrames, buildCornerImpulse,
     buildPageImpulse, animatePageHeight, visibleHeightTransition, capturePublicFolio,
     advancePublicFolio, animatePublicHeroChange,
 } from '../../resources/js/public-folio-motion.js';
 
 const CONTENT_SHADOW = 'rgba(255,255,255,.31) -5px 7px 0px 0px';
-const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -5.5px 0.5px 0px 0.5px';
+const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
     const effects = [], animations = [], computed = new Map();
@@ -91,7 +91,7 @@ test('accepted original lines, bounded menu ends and visible paper baselines',()
     assert.deepEqual(FOLIO_VARIANTS[0],['1.10rem','4rem','3.8rem','1.15rem']);
     assert.deepEqual(MENU_VARIANTS[0],['0rem','32%','0rem','1px']);
     assert.ok(MENU_VARIANTS.every(v=>v.every(p=>parseFloat(p)>=0)));
-    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-5.5,.5]);
+    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-5,7]);
     assert.deepEqual(FOLIO_PLANE_BASE.content,[-5,7]);
 });
 
@@ -195,64 +195,40 @@ test('menu lines never touch bottom, can reverse early, and left always ends hig
     }
 });
 
-test('exactly one pale outer paper is used even during animation',()=>{
-    for(const type of ['content','menu']){
-        const original=type==='menu'?MENU_SHADOW:CONTENT_SHADOW;
-        const cases=[buildShadowFrames(original,type),
-            buildPageImpulse(original,original,type,true),
-            buildPageImpulse(original,original,type,false)];
-        for(const frames of cases)for(const frame of frames){
-            const layers=shadowLayers(frame.boxShadow);
-            assert.equal(layers.length,type==='menu'?2:1,
-                'one outer sheet, with optional inset rule');
-            const exterior=layers.at(-1);
-            assert.ok(!/rgba\(28,\s*35,\s*32/.test(exterior));
-            assert.ok(/rgba\(255,\s*255,\s*255/.test(exterior)
-                ||exterior.includes('var(--public-folio-soft)'));
-            const [sheet]=projected(frame.boxShadow);
-            assert.ok(sheet.left<-.3,'one paper backing must show on left');
-            assert.ok(sheet.bottom>.3,'one paper backing must show below');
-            if(type==='menu') {
-                assert.ok(Math.abs(sheet.top)<.001,
-                    'the menu backing remains flush with the top edge');
-                assert.ok(sheet.right<=-5+.001,
-                    'menu paper keeps at least 5px inset on the right');
-            }
+test('Content retains exactly one pale backing during ambient and page builds',()=>{
+    for(const frames of [
+        buildShadowFrames(CONTENT_SHADOW),
+        buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,true),
+        buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,false),
+    ])for(const frame of frames){
+        assert.equal(shadowLayers(frame.boxShadow).length,1);
+        const [sheet]=projected(frame.boxShadow);
+        assert.ok(sheet.left<-.3);
+        assert.ok(sheet.bottom>.3);
+    }
+});
+
+test('Menu and Content share one canonical backing projection with calm independent motion',()=>{
+    const frames=buildMenuBackingFrames();
+    assert.deepEqual(FOLIO_PLANE_BASE.menu,FOLIO_PLANE_BASE.content);
+    assert.equal(frames[0]['--public-menu-sheet-x'],'-5px');
+    assert.equal(frames[0]['--public-menu-sheet-y'],'7px');
+    assert.equal(frames.at(-1)['--public-menu-sheet-x'],'-5px');
+    assert.equal(frames.at(-1)['--public-menu-sheet-y'],'7px');
+    assert.ok(frames.some(f=>parseFloat(f['--public-menu-sheet-x'])<-5));
+    assert.ok(frames.some(f=>parseFloat(f['--public-menu-sheet-y'])>7));
+    for(let i=0;i<frames.length;i++){
+        const f=frames[i], x=parseFloat(f['--public-menu-sheet-x']),y=parseFloat(f['--public-menu-sheet-y']);
+        assert.ok(x>=-5.7&&x<=-5,'the white left outline stays clear');
+        assert.ok(-x>=5,'the right gap never shrinks below 5px');
+        assert.ok(y>=7&&y<=8,'the downward motion begins at 7px');
+        if(i>0){
+            const p=frames[i-1];
+            assert.ok(f.offset>p.offset);
+            assert.ok(f['--public-menu-sheet-x']===p['--public-menu-sheet-x']
+                ||f['--public-menu-sheet-y']===p['--public-menu-sheet-y'],
+                'only one axis changes per segment');
         }
-    }
-});
-
-test('menu backing remains narrow and separated from its original paper contour',()=>{
-    const frames=buildShadowFrames(MENU_SHADOW,'menu');
-    assert.ok(frames.some(frame=>coords(frame.boxShadow)[1]>.5),
-        'menu backing retains subtle vertical ambient motion');
-    assert.ok(frames.some(frame=>coords(frame.boxShadow)[0]<-5.5),
-        'menu backing retains subtle horizontal ambient motion');
-    for(const frame of frames){
-        const [sheet]=projected(frame.boxShadow);
-        assert.ok(Math.abs(sheet.top)<.001,'the backing stays flush with the menu top');
-        assert.ok(sheet.right<=-5+.001,'the right inset remains at least 5px');
-        assert.ok(sheet.left>=-6.6-.001,'the left backing never grows wider than 6.6px');
-        assert.ok(sheet.left>=-8+1,'the left paper contour remains visibly outside it');
-    }
-});
-
-test('restarting menu ambient motion mid-cycle retains the right and left boundaries',()=>{
-    const interrupted=buildShadowFrames(MENU_SHADOW,'menu')
-        .find(frame=>frame.boxShadow.includes('-5.8px 0.8px'));
-    assert.ok(interrupted,'a valid mid-cycle pose exists');
-    for(const frame of buildShadowFrames(interrupted.boxShadow,'menu')){
-        const [sheet]=projected(frame.boxShadow);
-        assert.ok(Math.abs(sheet.top)<.001);
-        assert.ok(sheet.right<=-5+.001);
-        assert.ok(sheet.left>=-6.6-.001);
-    }
-});
-
-test('menu never receives a separate page-build backing impulse',()=>{
-    for(const growing of [true,false]){
-        const frames=buildPageImpulse(MENU_SHADOW,MENU_SHADOW,'menu',growing);
-        assert.ok(frames.every(frame=>frame.boxShadow===MENU_SHADOW));
     }
 });
 
@@ -274,30 +250,26 @@ test('ambient Content lines take one vertical excursion per endpoint and return 
     }
 });
 
-test('ambient and page-build backing motion stays within a visible one-sheet corridor',()=>{
-    for(const type of ['content','menu']){
-        const original=type==='menu'?MENU_SHADOW:CONTENT_SHADOW;
-        for(const frames of [
-            buildShadowFrames(original,type),
-            buildPageImpulse(original,original,type,true),
-            buildPageImpulse(original,original,type,false),
-        ]) {
-            assert.equal(frames[0].boxShadow,original);
-            assert.equal(frames.at(-1).boxShadow,original);
-            for(let i=1;i<frames.length;i++){
-                const previous=coords(frames[i-1].boxShadow);
-                const next=coords(frames[i].boxShadow);
-                assert.ok(next.filter((x,j)=>x!==previous[j]).length<=1,
-                    'no diagonal sheet movement');
-            }
+test('Content backing moves only one axis per ambient/build frame',()=>{
+    for(const frames of [
+        buildShadowFrames(CONTENT_SHADOW),
+        buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,true),
+        buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,false),
+    ]) {
+        assert.equal(frames[0].boxShadow,CONTENT_SHADOW);
+        assert.equal(frames.at(-1).boxShadow,CONTENT_SHADOW);
+        for(let i=1;i<frames.length;i++){
+            const previous=coords(frames[i-1].boxShadow),next=coords(frames[i].boxShadow);
+            assert.ok(next.filter((value,j)=>value!==previous[j]).length<=1,
+                'no diagonal sheet movement');
         }
     }
 });
 
 test('single-sheet page-build impulse is stronger than calm ambient travel',()=>{
-    const growing=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,'content',true);
+    const growing=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,true);
     assert.ok(Math.min(...growing.map(f=>coords(f.boxShadow)[0]))<-8);
-    const shrinking=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,'content',false);
+    const shrinking=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,false);
     assert.ok(Math.max(...shrinking.map(f=>coords(f.boxShadow)[0]))>-4);
 });
 

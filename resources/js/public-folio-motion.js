@@ -29,15 +29,9 @@ const MENU_DURATIONS = [34200, 38800];
 const BUILD_DURATION = 1240;
 const HEIGHT_DURATION = 780;
 
-// Precisely one outer paper on each surface. The menu's own shadow uses
-// spread equal to its y-offset to join the top, never an extra backing.
-const SHADOW_START = {
-    content: (x, y) => `${x}px ${y}px 0 var(--public-folio-soft)`,
-    menu: (x, y) => [
-        'inset 0 -1px 0 var(--public-index-rule)',
-        `${x}px ${y}px 0 ${y}px var(--public-folio-soft)`,
-    ].join(', '),
-};
+// Content uses one rectangular shadow. The menu's one outside paper is
+// drawn by its active rail/submenu; neither creates a second backing.
+const contentShadow = (x, y) => `${x}px ${y}px 0 var(--public-folio-soft)`;
 
 let snapshot = null;
 const activeHeightAnimations = new WeakMap();
@@ -149,9 +143,9 @@ function shadowLayers(value) {
     return parts;
 }
 
-function renderedShadowCoords(value, type) {
+function renderedShadowCoords(value) {
     const layers = shadowLayers(value);
-    if (layers.length !== (type === 'menu' ? 2 : 1)) return null;
+    if (layers.length !== 1) return null;
     const xy = [...layers.at(-1).matchAll(/(-?\d+(?:\.\d+)?)px/g)]
         .slice(0, 2).map(m => Number(m[1]));
     return xy.length === 2 && xy.every(Number.isFinite) ? xy : null;
@@ -160,57 +154,35 @@ function renderedShadowCoords(value, type) {
 // The single existing exterior sheet on each surface.
 export const FOLIO_PLANE_BASE = Object.freeze({
     content: [-5, 7],
-    menu: [-5.5, .5],
+    menu: [-5, 7],
 });
 
-// The backing sheet moves one x or y axis at a time, rests and returns.
-// No hidden second sheet, independent shadow copy or interpolated dark fill.
-export function buildShadowFrames(start, type) {
-    const shadow = SHADOW_START[type];
-    const base = FOLIO_PLANE_BASE[type];
-    const rendered = renderedShadowCoords(start, type) ?? base;
+// Ambient Content shadow only: one axis at a time with rest periods.
+export function buildShadowFrames(start) {
+    const base = FOLIO_PLANE_BASE.content;
+    const rendered = renderedShadowCoords(start) ?? base;
     const xy = [...rendered];
     const frames = [{ boxShadow: start, weight: 0 }];
     const move = (i, value) => {
         if (xy[i] === value) return;
         const distance = Math.abs(xy[i] - value);
         xy[i] = value;
-        frames.push({ boxShadow: shadow(...xy),
-            weight: Math.max(4, 3 * distance) });
+        frames.push({ boxShadow: contentShadow(...xy), weight: Math.max(4, 3 * distance) });
     };
-    const rest = weight => frames.push({ boxShadow: shadow(...xy), weight });
-    // A menu restart may begin halfway through its earlier cycle. Restore
-    // spread before x so the right edge cannot cross its 5px safety inset.
-    if (type === 'menu') {
-        move(1, base[1]); move(0, base[0]);
-    } else {
-        base.forEach((value, i) => move(i, value));
-    }
+    const rest = weight => frames.push({ boxShadow: contentShadow(...xy), weight });
+    base.forEach((value, i) => move(i, value));
     rest(9);
-    if (type === 'menu') {
-        // x + spread <= -5px and x - spread >= -6.6px at every phase:
-        // a clearly separated, restrained backing behind the -8px stroke.
-        move(0, -5.8);
-        rest(4);
-        move(1, .8);
-        rest(10);
-        move(1, base[1]);
-        rest(7);
-        move(0, base[0]);
-        rest(9);
-    } else {
-        move(0, base[0] - 2);
-        rest(4);
-        move(1, base[1] + 2);
-        rest(10);
-        move(0, base[0]); move(1, base[1]);
-        rest(10);
-        move(0, base[0] + .8);
-        move(1, base[1] - .5);
-        rest(7);
-        move(1, base[1]); move(0, base[0]);
-        rest(9);
-    }
+    move(0, base[0] - 2);
+    rest(4);
+    move(1, base[1] + 2);
+    rest(10);
+    move(0, base[0]); move(1, base[1]);
+    rest(10);
+    move(0, base[0] + .8);
+    move(1, base[1] - .5);
+    rest(7);
+    move(1, base[1]); move(0, base[0]);
+    rest(9);
     rendered.forEach((value, i) => move(i, value));
     frames.push({ boxShadow: start, weight: 4 });
 
@@ -222,6 +194,23 @@ export function buildShadowFrames(start, type) {
             offset: index === frames.length - 1 ? 1 : elapsed / total,
             easing: 'cubic-bezier(.42, 0, .58, 1)' };
     });
+}
+
+// One Menu backing with the SAME resting offsets as Content. Small, quiet
+// axis-only motion keeps the top joined and the white left contour clear.
+export function buildMenuBackingFrames() {
+    const [x, y] = FOLIO_PLANE_BASE.menu;
+    return [
+        [0, x, y], [.16, x, y],
+        [.32, x - .7, y], [.43, x - .7, y],
+        [.58, x - .7, y + 1], [.68, x - .7, y + 1],
+        [.80, x, y + 1], [.92, x, y], [1, x, y],
+    ].map(([offset, left, down]) => ({
+        '--public-menu-sheet-x': `${left}px`,
+        '--public-menu-sheet-y': `${down}px`,
+        offset,
+        easing: 'cubic-bezier(.42, 0, .58, 1)',
+    }));
 }
 
 // Build transitions are always measured against the destination's STATIC
@@ -344,36 +333,24 @@ export function animatePageHeight(previousHeight, root = document) {
 // On navigation, push the SAME single sheet outward or inward. Geometry
 // is based on canonical coordinates, preventing cumulative extension on
 // rapid Hero clicks. The page-height reveal keeps its own existing pace.
-export function buildPageImpulse(start, end, type, growing) {
-    // Only Content has a build impulse; menu motion belongs exclusively
-    // to its ambient animation. An accidental call must not project an
-    // extra menu backing outside the fixed folio corridor.
-    if (type === 'menu') {
-        return [
-            { boxShadow: start, offset: 0, easing: 'cubic-bezier(.35, 0, .25, 1)' },
-            { boxShadow: start, offset: 1, easing: 'cubic-bezier(.35, 0, .25, 1)' },
-        ];
-    }
-    const base = FOLIO_PLANE_BASE[type];
-    const xy = [...(renderedShadowCoords(start, type) ?? base)];
-    const shadow = SHADOW_START[type];
+export function buildPageImpulse(start, end, growing) {
+    const base = FOLIO_PLANE_BASE.content;
+    const xy = [...(renderedShadowCoords(start) ?? base)];
     const frames = [start];
     const move = (index, value) => {
         if (xy[index] === value) return;
         xy[index] = value;
-        frames.push(shadow(...xy));
+        frames.push(contentShadow(...xy));
     };
-    const scale = type === 'menu' ? .5 : 1;
     if (growing !== false) {
-        move(0, base[0] - 3.2 * scale);
-        move(1, base[1] + 2.8 * scale);
+        move(0, base[0] - 3.2);
+        move(1, base[1] + 2.8);
     } else {
-        move(0, base[0] + 1.2 * scale);
-        move(1, base[1] - .8 * scale);
+        move(0, base[0] + 1.2);
+        move(1, base[1] - .8);
     }
-    const destination = renderedShadowCoords(end, type) ?? base;
-    move(0, destination[0]);
-    move(1, destination[1]);
+    const destination = renderedShadowCoords(end) ?? base;
+    move(0, destination[0]); move(1, destination[1]);
     frames.push(end);
     return frames.map((boxShadow, index) => ({
         boxShadow, offset: index / (frames.length - 1),
@@ -397,15 +374,16 @@ function startAmbient(element, states, type) {
         nativeCorner(element, index === 0 ? '::before' : '::after',
             frames, durations[index], true);
     }
-    const shadow = getComputedStyle(element).boxShadow;
-    if (shadow && typeof element.animate === 'function') {
-        try {
-            element.animate(buildShadowFrames(shadow, type), {
-                duration: type === 'content' ? 30200 : 36400,
-                iterations: Infinity,
+    if (typeof element.animate !== 'function') return;
+    try {
+        if (type === 'menu') {
+            element.animate(buildMenuBackingFrames(), { duration: 36400, iterations: Infinity });
+        } else {
+            element.animate(buildShadowFrames(getComputedStyle(element).boxShadow), {
+                duration: 30200, iterations: Infinity,
             });
-        } catch { /* The canonical CSS layers remain visible. */ }
-    }
+        }
+    } catch { /* The authored paper remains visible without WAAPI. */ }
 }
 
 function pulsePaper(element, corners, oldShadow, growing, root) {
@@ -427,7 +405,7 @@ function pulsePaper(element, corners, oldShadow, growing, root) {
     if (oldShadow && typeof element.animate === 'function') {
         try {
             const shadowAnimation = element.animate(
-                buildPageImpulse(oldShadow, getComputedStyle(element).boxShadow, 'content', growing),
+                buildPageImpulse(oldShadow, getComputedStyle(element).boxShadow, growing),
                 { duration: BUILD_DURATION },
             );
             animations.push(shadowAnimation);

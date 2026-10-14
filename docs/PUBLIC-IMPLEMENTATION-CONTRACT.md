@@ -113,23 +113,23 @@ before reaching a previous extreme as well as pausing. The nonoverlapping
 movement ranges guarantee that the left white line is always shorter
 than the right, even with asynchronous animation periods.
 
-There is exactly ONE visible exterior light paper backing per surface.
-Content uses one `-5px 7px 0 var(--public-folio-soft)` shadow; Menu
-retains its existing inner inset rule and only ONE exterior shadow,
-`-5.5px .5px 0 .5px var(--public-folio-soft)`. Its pale backing
-starts flush with the upper menu edge and remains at least 5px inside the
-right edge. The connected left white stroke uses an 8px return; the
-backing projects 6px left at rest and never exceeds 6.6px during ambient
-motion. This preserves a visible gap between the backing and contour at
-all animation phases. A single symmetric box-shadow cannot preserve
-the top connection and right inset while also extending 7px below; the
-menu's intentionally understated backing now projects 1px below at rest
-and up to 1.6px during motion. The Content sheet retains its independent
-7px lower projection. The prior extra dark/grey/white
-shadow layers and `--public-folio-depth` palette token remain deleted.
-The shared Public motion module owns only a single backing x/y
-coordinate pair per surface, and the Content page-build impulse travels
-on this ONE backing.
+There is exactly ONE visible pale exterior backing per surface.
+Content and Menu share the SAME canonical backing offsets:
+`--public-folio-sheet-x: -5px` and `--public-folio-sheet-y: 7px`.
+Both extend 5px left and 7px below their white surface, and end 5px
+short of its right edge. The Menu is ALSO flush with the top of its
+white paper. These four constraints cannot be expressed by one
+symmetric `box-shadow` rectangle. Thus the existing active Menu rail
+or submenu paints ONE connected L-shaped outside backing on its
+`::before` pseudo, clipped away from the white menu interior and never
+creating another DOM node. The original Menu `::before/::after`
+white corner strokes remain outside its left edge and unchanged.
+
+The central Public motion module alone animates the Menu backing's
+inherited CSS x/y geometry with subtle one-axis movements and quiet
+pauses. Resting dimensions equal Content. Content continues using its
+single outer shadow and page-build motion. The Menu has NO page-build
+pulse, stacked shadow or separate animation owner.
 Never reintroduce multiple stacked grey/white exterior planes without
 an explicit new request.
 
