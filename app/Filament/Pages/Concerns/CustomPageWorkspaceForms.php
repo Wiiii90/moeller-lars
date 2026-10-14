@@ -135,7 +135,7 @@ trait CustomPageWorkspaceForms
             ],
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')
-                    ->label('Legal Disclaimer aus General')
+                    ->label('Legal Disclaimer from General')
                     ->content(fn (): string => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()))
                     ->columnSpanFull(),
             ],

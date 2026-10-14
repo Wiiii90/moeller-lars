@@ -65,7 +65,7 @@ trait CustomPageWorkspacePresentationHelpers
         }
         if ($type === 'legal_disclaimer') {
             return [
-                'primary' => 'Legal Disclaimer aus General',
+                'primary' => 'Legal Disclaimer from General',
                 'secondary' => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()),
                 'meta' => '',
             ];
