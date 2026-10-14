@@ -240,6 +240,16 @@ class PublicContentSetting extends Model
             if (! is_string($value) || mb_strlen($value) > 20000) {
                 throw ValidationException::withMessages([$field => $label.' must contain no more than 20,000 characters.']);
             }
+            // Existing disclaimers may contain historical formatting. Editing
+            // another General setting must not silently rewrite that text.
+            if ($field === 'legal_disclaimer') {
+                if (trim($value) === '') {
+                    throw ValidationException::withMessages([$field => 'The existing legal note must contain text or be empty.']);
+                }
+
+                continue;
+            }
+
             $normalized = trim($value);
             $setting->setAttribute($field, $normalized === '' ? null : $normalized);
         }

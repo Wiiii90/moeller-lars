@@ -533,3 +533,15 @@ it('rejects overlong legal copy without overwriting persisted data', function ()
     expect($settings->fresh()->getAttribute('legal_privacy'))->toBe('Existing privacy text')
         ->and(generalSettingsAuditCount())->toBe($before);
 });
+
+it('does not rewrite archived disclaimer whitespace when another General field changes', function (): void {
+    $settings = PublicContentSetting::general();
+    $legacy = "  Archive note\n\n";
+    $settings->update(['legal_disclaimer' => $legacy]);
+
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'public_email' => 'legal-editor@example.invalid',
+    ]);
+
+    expect($settings->fresh()->getAttribute('legal_disclaimer'))->toBe($legacy);
+});
