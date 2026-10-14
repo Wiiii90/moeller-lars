@@ -85,9 +85,6 @@ trait CustomPageWorkspaceProjectionState
         $listEntryCount = 0;
         $projected = [];
         $needle = mb_strtolower(trim($this->componentSearch));
-        $reorderEnabled = $needle === ''
-            && $this->componentType === 'any'
-            && count($blocks) <= $this->pageSize;
 
         foreach ($blocks as $index => $block) {
             $type = is_string($block['type'] ?? null) ? $block['type'] : '';

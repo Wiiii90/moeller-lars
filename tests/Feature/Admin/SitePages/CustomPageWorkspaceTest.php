@@ -553,3 +553,36 @@ it('preserves legacy List metadata as Context and links in Details without dupli
     $again = $settings->fresh()->components()[0]['items'][0];
     expect(substr_count($again['body'], '[More information]'))->toBe(1);
 });
+ 
+it('retains disabled Contact settings for later re-enabling', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Hidden Contact settings', 'hidden-contact-settings');
+    $settings->update(['blocks' => [[
+        'type' => 'contact',
+        'title' => 'Reach us',
+        'children' => [
+            ['type' => 'public_email', 'published' => true],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => ['instagram']],
+            ['type' => 'contact_form', 'published' => true, 'form_state' => 'under_construction', 'status_text' => 'Soon'],
+        ],
+    ]]]);
+    // A hidden form field must not reset previously authored child settings.
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
+        ->fillForm([
+            'type' => 'contact',
+            'publication_state' => 'published',
+            'title' => 'Reach us',
+            'contact_email_enabled' => true,
+            'contact_social_enabled' => false,
+            'contact_form_enabled' => false,
+        ])
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    $children = collect($settings->fresh()->components()[0]['children'])->keyBy('type');
+    expect($children['social_links']['published'])->toBeFalse()
+        ->and($children['social_links']['social_platforms'])->toBe(['instagram'])
+        ->and($children['contact_form']['published'])->toBeFalse()
+        ->and($children['contact_form']['form_state'])->toBe('under_construction')
+        ->and($children['contact_form']['status_text'])->toBe('Soon');
+});

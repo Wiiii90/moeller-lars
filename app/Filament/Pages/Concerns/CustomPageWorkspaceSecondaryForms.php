@@ -52,6 +52,18 @@ trait CustomPageWorkspaceSecondaryForms
         }
         $published = ($data['publication_state'] ?? 'published') === 'published';
 
+        // Filament may omit fields hidden by a disabled Contact toggle. Keep
+        // the saved social selection and form presentation for re-enabling.
+        $children = $existing !== null ? $this->settings()->contactChildren($existing) : [];
+        $existingSocial = collect($children)->firstWhere('type', 'social_links');
+        $existingForm = collect($children)->firstWhere('type', 'contact_form');
+        $socialPlatforms = $data['contact_social_platforms']
+            ?? (is_array($existingSocial) ? ($existingSocial['social_platforms'] ?? []) : array_keys($this->availableSocialPlatforms));
+        $formState = $data['contact_form_state']
+            ?? (is_array($existingForm) ? ($existingForm['form_state'] ?? 'enabled') : 'enabled');
+        $statusText = $data['contact_status_text']
+            ?? (is_array($existingForm) ? ($existingForm['status_text'] ?? null) : null);
+
         return match ($type) {
             'image' => [
                 'type' => 'image',
@@ -86,13 +98,13 @@ trait CustomPageWorkspaceSecondaryForms
                     [
                         'type' => 'social_links',
                         'published' => (bool) ($data['contact_social_enabled'] ?? true),
-                        'social_platforms' => $this->validatedSocialPlatforms($data['contact_social_platforms'] ?? array_keys($this->availableSocialPlatforms)),
+                        'social_platforms' => $this->validatedSocialPlatforms($socialPlatforms),
                     ],
                     [
                         'type' => 'contact_form',
                         'published' => (bool) ($data['contact_form_enabled'] ?? true),
-                        'form_state' => ($data['contact_form_state'] ?? 'enabled') === 'under_construction' ? 'under_construction' : 'enabled',
-                        'status_text' => filled($data['contact_status_text'] ?? null) ? trim((string) $data['contact_status_text']) : null,
+                        'form_state' => $formState === 'under_construction' ? 'under_construction' : 'enabled',
+                        'status_text' => filled($statusText) ? trim((string) $statusText) : null,
                     ],
                 ],
             ],
