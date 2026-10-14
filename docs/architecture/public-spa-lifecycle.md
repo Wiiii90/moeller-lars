@@ -1,6 +1,6 @@
 # Öffentliche SPA-Dokumentnavigation und Instanzlebenszyklus
 
-**Code-Referenz:** `dev` bei `a6ee7b6ec4a5dc96fa7e13f9ae54211c09e0e1bf` (achsengebundene Folio-Animation, Artwork-Detail-Höhenwechsel und korrigierte Mid-Flight-Shadow-Koordinaten). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
+**Code-Referenz:** `dev` bei `44667847f1de7ab43e1341c09ee2a5e4c0a40982` (achsengebundene Folio-Animation, Artwork-Detail-Höhenwechsel und korrigierte Mid-Flight-Shadow-Koordinaten). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
 
 ## Architekturentscheidung
 
@@ -81,7 +81,7 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 ## Native Folio-Ränder, Schatten und Artwork-Höhenübergänge
 
-**Aktueller Referenzstand:** `dev@a6ee7b6ec4a5dc96fa7e13f9ae54211c09e0e1bf`
+**Aktueller Referenzstand:** `dev@44667847f1de7ab43e1341c09ee2a5e4c0a40982`
 (über einen Zwei-Eltern-Merge nach `docs` übernommen). Die Folio-Animation
 benutzt nur die bestehenden `#content::before/::after`- und
 `.site-navigation::before/::after`-Konturen sowie deren vorhandene
@@ -155,31 +155,23 @@ behandelt einen schrumpfenden und einen wachsenden
 Artwork-Detail-zu-Detail-Swap mit absoluter Artikelhöhe.
 
 
-**CSS-/Testvertragsabweichung seit `dev@44f3d01b`, weiterhin am geprüften `dev@a6ee7b6`
-(quellenbelegt, Test nicht ausgeführt):** Die bisherige
-`MENU_VARIANTS[0]`-Assertion in
-[public-folio-motion.test.mjs](../../tests/js/public-folio-motion.test.mjs)
-(Zeile 79) erwartet `['.03rem','-.25rem','.02rem','-.30rem']`.
-Das Produktionsmodul liefert jetzt
-`['.03rem','.05rem','.02rem','.05rem']`.
-Der exakte Vergleich kann damit beim unveränderten Unit-Test
-**nicht mehr bestehen**. Zusätzlich erhielten die beiden äußeren
-Menü-Schattenlagen `2px` Spread (`box-shadow: ... 0 2px ...`);
-das Test-Regex im achsweisen Shadow-Check (ungefähr Zeile 112)
-erwartet ausdrücklich `0 var(` ohne Spread und erfasst die neuen
-Menü-Frames deshalb nicht. Die Test-Fixture selbst spiegelt noch
-Menü-Shadow-Offsets `-2/0`, `-3/0` und den Content-Rear-Offset
-`-6/8`, während die CSS-Basis nun `-2/2`, `-5/4` und
-`-8/10` benutzt. Die tatsächliche
-Menükontur ist unten innerhalb der Fläche verbunden; die zwei
-hinteren Papierflächen werden durch Spread und horizontale/vertikale
-Offsets gleichzeitig sichtbar gehalten. **Regressionsfolge:** Den
-aktuellen Basiswert aus dem kanonischen CSS/JS ableiten und die
-Shadow-Testassertion auch mit `spread-radius` prüfen, statt die
-alte Geometrie durch Teständerungen zur wieder gültigen Norm zu
-erklären. Produktverhalten und neue visuelle Abnahme bleiben getrennt.
-Die Produkt- und Testquellen wurden geprüft, die Node-/Browser-Suite
-hier nicht ausgeführt. Keine Testdatei auf `docs` verändert.
+**Folio-Unit-Test nachgezogen (Quellstand `dev@44667847f`):**
+Der zwischenzeitliche Test-Widerspruch nach `dev@44f3d01b`
+(altes `MENU_VARIANTS[0]`, fehlende Shadow-Spread-Berücksichtigung)
+wurde durch `dev@44667847f1de7ab43e1341c09ee2a5e4c0a40982`
+in der bestehenden [JS-Testdatei](../../tests/js/public-folio-motion.test.mjs)
+quellseitig beseitigt. Sie benutzt nun die geänderten Menü-Endpunkte,
+`FOLIO_PLANE_BASE`, CSS-nahe Fixture-Offsets, einen
+Spread-toleranten Pixelkoordinaten-Parser und Assertions für
+sichtbare seitliche/untere Papierabstände. Hinzugekommen sind
+Ruhe-Keyframes, achsenweise Wiederaufnahme nach unterbrochenem
+Schattenzyklus, getrennte Ein-/Ausfahr-Richtungen beim Artwork-
+Höhenübergang und die Sequenz **eine 700-ms-Content-Shadow-
+Animation → Ambient-Breathing erst nach `finished`**.
+Der alte konkrete Source-/Test-Widerspruch ist **behoben**;
+dies ist keine Behauptung eines hier ausgeführten vollständigen
+`node --test`- oder Playwright-Laufs. Auch reale Rendering-
+Abstände und die Browser-Lebensdauer sind nicht getestet.
 
 **Weiterhin offene Lebensdauer:** `animatePaper()` startet **vier unendliche
 Pseudo-`Animation`-Objekte und zwei unendliche Shadow-Animationen** pro
