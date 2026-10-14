@@ -88,7 +88,8 @@ function projected(value) {
     return chunks.slice(1).map(layer=>{
         const values=[...layer.matchAll(/(-?\d+(?:\.\d+)?)px/g)]
             .slice(0,4).map(match=>Number(match[1]));
-        const [x,y,,spread=0]=values;
+        const [x,y]=values;
+        const spread=values.length>=3?values.at(-1):0;
         return { left:x-spread, bottom:y+spread, top:y-spread };
     });
 }

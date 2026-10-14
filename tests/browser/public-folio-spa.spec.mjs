@@ -73,8 +73,10 @@ test('only the existing menu strokes and rear paper planes show, without oversho
             }
             layers.push(string.slice(begin));
             return layers.slice(1).map(layer=>{
-                const [x,y,blur,spread=0]=[...layer.matchAll(/(-?\\d+(?:\\.\\d+)?)px/g)]
+                const values=[...layer.matchAll(/(-?\\d+(?:\\.\\d+)?)px/g)]
                     .slice(0,4).map(match=>Number(match[1]));
+                const [x,y]=values;
+                const spread=values.length>=3?values.at(-1):0;
                 return { left:x-spread, bottom:y+spread, top:y-spread };
             });
         };
