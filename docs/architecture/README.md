@@ -26,6 +26,8 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 
+**[Verbindliche Abdeckungs- und Abschlussmatrix](completion-criteria.md):** Die vorhandenen 19 Architekturtexte und 58 Mermaid-Dateien/-Blöcke sind Material, kein fachlicher Vollständigkeitsbeweis. Die Matrix benennt die für einen endlichen Dokumentationsabschluss nötigen Quellflüsse, offene Inhalte, später isoliert ausführbare Verifikation und die Artefaktklassen für dauerhaft versus nur lokal benötigte Graphen. **Codex erst nach Abschluss der fachlichen Dokumentation.**
+
 ## Quellen- und Abdeckungsregel
 
 - **Quellgeprüft**: konkrete Klasse, Methode, Konstante oder Route im bezeichneten Git-Commit gelesen; nur diese konkrete Aussage gilt als geprüft.
@@ -97,4 +99,4 @@ Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser
 
 ### Reihenfolge der weiteren Arbeit
 
-Zuerst maschinenlesbare vollständige Objektinventare und Quellpfad-IDs, danach deterministische Graphgenerierung; anschließend fachlich überprüfte Sequenz- und Zustandsmodelle. Erst danach werden die alten Großdokumente endgültig aufgeteilt und stark gekürzt. So werden falsche Altannahmen nicht bloß in kleinere Dateien verschoben. `testing` wird keine versteckte Voraussetzung für Dokumentations-Commits.
+Die bisher erstellten Objektinventare bleiben als quellengebundene **historische Ausgangsbasis** erhalten. **Jetzt** folgen die fachlichen Sequenz-/Zustandsmodelle, Owner-/Guard-/Fehlerpfad-Lücken und die Konsolidierung bestehender Dokumente; der vollständige lokale Generator-/Artefaktlauf folgt **erst danach** gemäß [Abschlussmatrix](completion-criteria.md). Keine CI-Interaktion, kein Codex-Verbrauch während offener Schreibarbeit; `testing` ist keine verdeckte Voraussetzung.

@@ -116,6 +116,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 Lokale Codex-/native PHP-Generatorläufe, isolierter PostgreSQL-Export und reproduzierbare `--write/--check`-Abnahme sind **zurückgestellt**. Bis dahin vorhandene eingefrorene JSON-/Mermaid-Artefakte als historischen Stand kennzeichnen. Es werden **keine** lokalen Commands an den Nutzer ausgelagert, solange die oben genannte fachliche Schreib-/Analysearbeit offen ist.
 
+## Explizite fachliche Abschlussmatrix (14.10.2026)
+
+[**`docs/architecture/completion-criteria.md`**](docs/architecture/completion-criteria.md) ist die verbindliche fachliche Abdeckungs- und Qualitätsmatrix dieses Workstreams: zehn Architekturflächen, jeweils bereits source-geprüfte Flüsse, noch fehlende inhaltliche Arbeit und **separat** später ausführbare technische Verifikation. Der geprüfte Bestand `docs@d88bd8f4` umfasst **19 Architektur-Markdown-Dateien**, **26 eingebettete Mermaid-Blöcke**, **32 eigenständige `.mmd`-Diagramme**, davon allein **20 Klassenimport-Graphen**. Die Mengen belegen keine fachliche End-to-end-Abdeckung. Jedes dauerhaft aufbewahrte Diagramm braucht eine erkennbar beantwortete Architekturfrage; rohe generierte Vollinventare können nach späterer Prüfung lokal bleiben.
+
+**Verbindliche Kostenregel:** Solange auch nur eine fachliche Zeile der Abschlussmatrix unvollständig ist: **keinerlei Codex-Aufträge, keine CI-Nutzung, keine Generatorwellen**, keine lokalen Experimente zulasten des Nutzers. Erst **nach** vollständiger Dokumentationsanalyse, source-geprüften Abläufen und normativer Konsolidierung wird **ein** vorher vorbereiteter lokaler Verifikations-/Generator- und Artefaktordnungsauftrag geplant. Bestehende Source-Defekte werden als reproduzierbare offene Anwendungsthemen festgehalten; ihr Fix auf `dev` ist keine Voraussetzung, die Dokumentation selbst endlich abzuschließen.
+
 ## Aktueller Prüfstand und Wiedereinstieg (14.10.2026)
 
 ### Quell- und Generatorstand
@@ -156,6 +162,8 @@ Lokale Codex-/native PHP-Generatorläufe, isolierter PostgreSQL-Export und repro
   Lauf. [Dokumentationsindex](docs/README.md#local-documentation-link-verification).
 
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
+
+- **Abdeckungsmaßstab statt Quantität:** [Abschlussmatrix](docs/architecture/completion-criteria.md) koordiniert jetzt alle Quellketten und noch offenen fachlichen Zeilen; 20 eingefrorene Importdiagramme ausdrücklich nicht als 20 fachlich abgeschlossene Workflow-Diagramme zählen.
 
 - **Journal-Template-Lifecycle:** `lifecycles.md` beschreibt jetzt `JournalTemplate::Blog/Exhibitions` als **reine Präsentationswahl**, nicht als Datenmigration: `updateJournalTemplate` sperrt SiteSection, schützt No-op, auditiert echte Änderungen, behält beide Eintragsbestände; `JournalSettingsService` kapselt Identität/Redirect + Template in äußerer Transaktion. Öffentliche Blog-Detailroute existiert nur unter aktivem Blog-Template; inaktive Daten bleiben erhalten. Journal-Settings-Testdefinitionen gelesen; keine Ausführung. Offene parallele Livewire-Stale-Targets als Negativfall.
 - **Medienlöschung fachlich vertieft:** [`media-reference-and-cleanup.md`](docs/architecture/media-reference-and-cleanup.md) beschreibt nun die echte `MediaAssetEditorialService::delete`-Kette als **DB-Commit → getrennte physische Bereinigung** samt Guard-Tabelle für LIVE, Versionrows, Working-State/-Refs; unterscheidet direkte `deleteNow`-Fehler (noch **keine automatische Queue-Nachbuchung**) vom wiederholbaren `drain`. Auch `delete() === true` bei bereits gelöschtem Working-Asset/fehlendem erneutem Audit sowie Home-List-Coverage als separater Sicherheitspfad ausdrücklich abgegrenzt. Statische Quelle, kein DB-/Storage-Test.
