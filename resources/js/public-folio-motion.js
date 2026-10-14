@@ -40,6 +40,7 @@ const SHADOW_START = {
 };
 let snapshot = null;
 const activeHeightAnimations = new WeakMap();
+const activePaperPulses = new WeakMap();
 
 function visiblePseudo(element, pseudo) {
     if (!element) return null;
@@ -368,6 +369,8 @@ function startAmbient(element, states, type) {
 
 function pulsePaper(element, corners, oldShadow, growing, root) {
     if (!element || !corners) return false;
+    const token = {};
+    activePaperPulses.set(element, token);
     const animations = [];
     for (let i = 0; i < 2; i += 1) {
         const animation = nativeCorner(element, i === 0 ? '::before' : '::after',
@@ -384,13 +387,17 @@ function pulsePaper(element, corners, oldShadow, growing, root) {
             animations.push(shadowAnimation);
         } catch { /* Preserve the real CSS layers. */ }
     }
-    if (animations.length === 0) return false;
-    // Do not start the ambient effect on the same properties until this
-    // one-shot build has finished; ignore detached nodes after fast visits.
+    if (animations.length === 0) {
+        activePaperPulses.delete(element);
+        return false;
+    }
+    // Both a detached Livewire page AND an in-place Home Hero can supersede
+    // a prior build. Only the latest token may resume ambient breathing.
     Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
-        if (root.querySelector('#content') === element) {
-            startAmbient(element, pairGeometry(element), 'content');
-        }
+        if (activePaperPulses.get(element) !== token
+            || root.querySelector('#content') !== element) return;
+        activePaperPulses.delete(element);
+        startAmbient(element, pairGeometry(element), 'content');
     });
     return true;
 }
