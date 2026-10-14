@@ -87,10 +87,10 @@
                                     @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
+                                            <strong>{{ $item['title'] ?? '' }}</strong>
                                             @if (filled(\App\Models\CustomPageSetting::listItemContext($item)))
                                                 <span class="custom-page__context">{{ \App\Models\CustomPageSetting::listItemContext($item) }}</span>
                                             @endif
-                                            <strong>{{ $item['title'] ?? '' }}</strong>
                                         </div>
                                         @if (filled(\App\Models\CustomPageSetting::listItemDetails($item)))
                                             <div class="rich-text">{!! $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>

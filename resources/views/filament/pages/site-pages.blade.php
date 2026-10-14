@@ -188,7 +188,7 @@
                             role="rowgroup"
                             @if ($reorderEnabled)
                                 wire:sort="sortSection"
-                                wire:sort:group="site-pages"
+                                
                                 wire:sort:group-id="root"
                             @endif
                         >
@@ -210,7 +210,7 @@
                                                 @if ($reorderEnabled && $nestedNavigationEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
-                                                    wire:sort:group="site-pages"
+                                                    
                                                     wire:sort:group-id="{{ $section['id'] }}"
                                                 @endif
                                             >
