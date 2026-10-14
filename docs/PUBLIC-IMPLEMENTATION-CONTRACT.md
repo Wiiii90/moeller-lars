@@ -62,33 +62,37 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The initial painting/gallery Content folio retains the exact first accepted
-corner and three existing box-shadow layers. The same original CSS pseudo
-elements are animated in place by Web Animations API — no added strokes,
-markup, CSS pseudo duplicates, custom routing or timers. Their top/bottom
-endpoints gently expand and retract in an infinite 16–20 second sequence.
-The first and last states coincide, eliminating jumps when the animation
-loops. The two rear shadow offsets alone breathe by a few pixels; the
-nearest layer remains fixed. This runs on initial document render as well
-as on subsequent Livewire visits and does NOT depend on navigating to be
-noticeable. Current computed pseudo geometry/shadow is captured before a
-Livewire swap and supplies the next document's initial animation keyframe.
-Content width, artwork, image, typography, pigments, lateral offsets and
-the fixed `.55rem` corner widths never change.
+The accepted public folio has one canonical owner: existing `#content`
+and `.site-navigation` `::before`/`::after` borders, and their existing
+paper `box-shadow` planes. The slow native WAAPI breathing no longer selects
+random jittered poses. It uses bounded, ordered keyframes, changing exactly
+ONE geometry axis per segment: upper endpoint, lower endpoint, OR horizontal
+outer offset with the corresponding return-stroke width in lockstep. The
+return stroke therefore remains connected, while its endpoint toward the
+white sheet stays anchored. Horizontal excursions are at most 1.5px outward
+or 1px inward; vertical endpoint offsets stay within a few pixels.
+The two visible rear shadow planes travel left/down or right/up through
+similarly axis-separated 1–2px stages. Each cycle finishes at its original
+computed starting configuration, without discontinuous repeat jumps.
+Content and menu use separate, slow 27–32-second native animation periods,
+with no JS timers/polls and no additional borders, elements or media motion.
+On a Livewire swap, actual intermediate styles are sampled and the cycles
+begin on the next genuine DOM nodes. The menu does NOT animate height or
+width; its west/east end connections preserve their accepted geometry.
 
-The existing two navigation pseudo outlines are now composed asymmetrically:
-the left western vertical ends in a short upper return at the outer WEST
-edge, without an underlying horizontal wrap; the right exterior vertical
-has short connected returns reaching `.24rem` into the white menu surface,
-echoing the accepted Content right outline. Both animate only their top
-and bottom endpoint positions over asynchronous 17–21 second native
-animation cycles, with no new lines or changing menu dimensions.
-Animation uses the native document timeline, not intervals, polling or
-timers. The previously acknowledged small folio motion is permitted even
-when the local browser requests `prefers-reduced-motion: reduce`; no media
-or content movement, flashing or parallax is introduced. Missing native
-pseudo-element animation support leaves the static approved geometry.
-Both menu and Content effects remain candidates pending visual review.
+Artwork DETAIL to artwork DETAIL navigation additionally animates the
+actual `.artwork-detail` height from the old rendered height to the new
+article's natural height in 700ms. Only that article is temporarily clipped:
+the new image is progressively uncovered at its intrinsic aspect ratio,
+and the enclosing white `#content` surface and attached outer folio edges
+naturally grow or shrink with it. The media is never scaled or transformed.
+The `#content` overflow remains visible, so outside corner strokes cannot
+be cut off. This effect is not enabled for Gallery/Blog/Home or ordinary
+layout/responsiveness changes. Repeated rapid artwork navigation snapshots
+the current interpolated height before replacing the document; on finish
+the article returns to its natural auto height. The native Laravel/Livewire
+routes, accessibility semantics, scroll ownership, and admin remain intact.
+Browser acceptance is still required for the final aesthetic.
 
 The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`, `--public-folio-depth`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
 

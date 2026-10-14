@@ -94,16 +94,15 @@ body {
     background: var(--public-surface);
 }
 
-/* Menu folio: two existing strokes, never additional decoration.
-   West edge turns INTO the sheet near its top (no bottom wrap).
-   East edge returns a few pixels INTO the white sheet at both ends. */
+/* The existing flat paper layers meet the TOP edge of the menu, rather
+   than beginning 3–4px below it. No extra decorative surface is created. */
 .site-navigation {
     position: relative;
     order: 1;
     box-shadow:
         inset 0 -1px 0 var(--public-index-rule),
-        -2px 3px 0 var(--public-folio-depth),
-        -3px 4px 0 var(--public-folio-soft);
+        -2px 0 0 var(--public-folio-depth),
+        -3px 0 0 var(--public-folio-soft);
 }
 .site-navigation::before,
 .site-navigation::after {
@@ -112,25 +111,23 @@ body {
     content: "";
     pointer-events: none;
 }
-/* Left: the outer vertical meets a short upper return on the western
-   sheet edge, not a long horizontal rule wrapping around underneath. */
+/* The white OUTER stroke remains within the menu's top boundary.
+   Only the short lower connection extends slightly beneath the sheet. */
 .site-navigation::before {
-    top: .35rem;
-    bottom: -.38rem;
+    top: .03rem;
+    bottom: -.25rem;
     left: -.5rem;
-    width: .52rem;
-    border-top: 1px solid var(--public-folio-soft);
+    width: .76rem;
     border-left: 1px solid var(--public-folio-light);
+    border-bottom: 1px solid var(--public-folio-soft);
 }
-/* Right: the same connected paper-edge language as #content::after.
-   The .76rem width with a .52rem outer offset makes both returns meet
-   the white menu face by .24rem; no stroke traverses the menu itself. */
+/* Right: likewise open at the top, without a top crossbar or overshoot;
+   the only return is still at the bottom of the paper edge. */
 .site-navigation::after {
-    top: .48rem;
-    bottom: -.44rem;
+    top: .02rem;
+    bottom: -.30rem;
     right: -.52rem;
     width: .76rem;
-    border-top: 1px solid var(--public-folio-soft);
     border-right: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
