@@ -7,10 +7,12 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['1.53rem', '4rem', '4.22rem', '1.15rem'],
     ['1.53rem', '4.30rem', '4.22rem', '1.43rem'],
 ]);
+// Menu strokes are connected to the TOP border for their entire life.
+// Only their lower joint rises/falls, never the upper endpoint.
 export const MENU_VARIANTS = Object.freeze([
     ['0rem', '0rem', '0rem', '0rem'],
-    ['.23rem', '0rem', '.21rem', '0rem'],
-    ['.23rem', '.14rem', '.21rem', '.14rem'],
+    ['0rem', '.15rem', '0rem', '.12rem'],
+    ['0rem', '.30rem', '0rem', '.25rem'],
 ]);
 
 // Original horizontal geometry belongs to the accepted shell CSS. These
@@ -20,11 +22,11 @@ const CONTENT_EDGES = [
     { side: 'right', offset: '-.55rem', width: '.55rem' },
 ];
 const MENU_EDGES = [
-    { side: 'left', offset: '-.31rem', width: '.55rem' },
-    { side: 'right', offset: '-.32rem', width: '.56rem' },
+    { side: 'left', offset: '-.35rem', width: '.35rem' },
+    { side: 'right', offset: '-.36rem', width: '.36rem' },
 ];
-const CONTENT_DURATIONS = [19800, 23600];
-const MENU_DURATIONS = [21900, 25800];
+const CONTENT_DURATIONS = [25100, 29700];
+const MENU_DURATIONS = [34200, 38800];
 const BUILD_DURATION = 1480;
 const HEIGHT_DURATION = 980;
 
@@ -99,8 +101,8 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     step({ bottom: base.bottom });
     rest(); rest();
     step({
-        [edge.side]: `calc(${edge.offset} - 3.5px)`,
-        width: `calc(${edge.width} + 3.5px)`,
+        [edge.side]: `calc(${edge.offset} - 2.2px)`,
+        width: `calc(${edge.width} + 2.2px)`,
     });
     rest();
     step({ top: nextTop });
@@ -108,8 +110,8 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     step({ bottom: nextBottom });
     rest();
     step({
-        [edge.side]: `calc(${edge.offset} + 1.8px)`,
-        width: `calc(${edge.width} - 1.8px)`,
+        [edge.side]: `calc(${edge.offset} + 1.2px)`,
+        width: `calc(${edge.width} - 1.2px)`,
     });
     rest(); rest();
     step({ top: base.top });
@@ -121,7 +123,27 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     return frames.map((frame, index) => ({
         ...frame,
         offset: index / (frames.length - 1),
-        easing: 'ease-in-out',
+        easing: 'cubic-bezier(.38, .05, .42, .95)',
+    }));
+}
+
+// The MENU always touches the top border. A bottom-only rise makes it
+// visibly travel upward without opening a gap at the upper connection.
+// No sideways movement means the white return cannot enter the white face.
+export function buildMenuCornerFrames(start, index) {
+    const base = MENU_VARIANTS;
+    const column = index === 0 ? 1 : 3;
+    const fixed = { ...start, top: '0px' };
+    const stops = [fixed, fixed,
+        { ...fixed, bottom: base[1][column] },
+        { ...fixed, bottom: base[2][column] },
+        { ...fixed, bottom: base[2][column] },
+        { ...fixed, bottom: '0rem' },
+        { ...fixed, bottom: '0rem' },
+        fixed];
+    return stops.map((frame, i) => ({
+        ...frame, offset: i / (stops.length - 1),
+        easing: 'cubic-bezier(.38, .05, .42, .95)',
     }));
 }
 
@@ -206,14 +228,14 @@ export function buildShadowFrames(start, type) {
 export function buildCornerImpulse(start, edge, growing, type = 'content') {
     const frames = [{ ...start }];
     const step = patch => frames.push({ ...frames[frames.length - 1], ...patch });
-    const amplitude = type === 'menu' ? 1.7 : 5;
-    const vertical = type === 'menu' ? 2.0 : 6.5;
+    const amplitude = type === 'menu' ? 0 : 3.1;
+    const vertical = type === 'menu' ? 0 : 3.2;
     const delta = growing ? 1 : -1;
     step({ [edge.side]: `calc(${start[edge.side]} - ${amplitude}px)`,
         width: `calc(${start.width} + ${amplitude}px)` });
     // Menu outside strokes must end inside their white bottom border.
     // A content corner may extend further down during the page build.
-    const bottomDelta = type === 'menu' ? vertical : -vertical * delta;
+    const bottomDelta = type === 'menu' ? 0 : -vertical * delta;
     step({ bottom: `calc(${start.bottom} + ${bottomDelta}px)` });
     step({ top: `calc(${start.top} + ${vertical * .68}px)` });
     step({ [edge.side]: start[edge.side], width: start.width });
@@ -313,22 +335,27 @@ export function buildPageImpulse(start, end, type, growing) {
 
 function startAmbient(element, states, type) {
     if (!element || !states) return;
-    const base = type === 'content' ? FOLIO_VARIANTS : MENU_VARIANTS;
-    const edges = type === 'content' ? CONTENT_EDGES : MENU_EDGES;
     const durations = type === 'content' ? CONTENT_DURATIONS : MENU_DURATIONS;
     for (let index = 0; index < 2; index += 1) {
-        const columns = index === 0 ? [0, 1] : [2, 3];
-        const first = { top: base[0][columns[0]], bottom: base[0][columns[1]] };
+        let frames;
+        if (type === 'menu') {
+            frames = buildMenuCornerFrames(states[index], index);
+        } else {
+            const columns = index === 0 ? [0, 1] : [2, 3];
+            const first = { top: FOLIO_VARIANTS[0][columns[0]],
+                bottom: FOLIO_VARIANTS[0][columns[1]] };
+            frames = buildCornerFrames(states[index], first,
+                FOLIO_VARIANTS[1][columns[0]],
+                FOLIO_VARIANTS[2][columns[1]], CONTENT_EDGES[index]);
+        }
         nativeCorner(element, index === 0 ? '::before' : '::after',
-            buildCornerFrames(states[index], first,
-                base[1][columns[0]], base[2][columns[1]], edges[index]),
-            durations[index], true);
+            frames, durations[index], true);
     }
     const shadow = getComputedStyle(element).boxShadow;
     if (shadow && typeof element.animate === 'function') {
         try {
             element.animate(buildShadowFrames(shadow, type), {
-                duration: type === 'content' ? 24700 : 28100,
+                duration: type === 'content' ? 30200 : 36400,
                 iterations: Infinity,
             });
         } catch { /* The canonical CSS layers remain visible. */ }
@@ -393,8 +420,40 @@ export function advancePublicFolio(root = document) {
     if (!pulsePaper(content, corners, contentShadow, 'content', growing, root)) {
         startAmbient(content, corners, 'content');
     }
-    if (!pulsePaper(menu, menuCorners, menuShadow, 'menu', growing, root)) {
-        startAmbient(menu, menuCorners, 'menu');
-    }
+    // The menu has no new content to assemble. On SPA swaps it continues
+    // only its calm ambient breathing, without a navigation-triggered pulse.
+    startAmbient(menu, pairGeometry(menu), 'menu');
     return Boolean(content || menu);
+}
+
+
+// Home Hero's arrows change hidden slides IN PLACE, not via Livewire.
+// Reuse the SAME content-only page machinery around the actual slide toggle.
+// Never pulse the menu and never synthesize a route/History transition.
+export function animatePublicHeroChange(change, root = document) {
+    const content = root.querySelector('#content');
+    const body = pageBody(root);
+    if (!content || !body) {
+        change();
+        return false;
+    }
+    const oldHeight = body.getBoundingClientRect().height;
+    const corners = pairGeometry(content);
+    const shadow = getComputedStyle(content).boxShadow;
+
+    // Stop competing infinite effects on the current content surface.
+    // Sample FIRST so the next impulse begins exactly at its visible pose.
+    document.getAnimations().filter(animation =>
+        animation.effect?.target === content
+    ).forEach(animation => animation.cancel());
+    body.getAnimations().forEach(animation => animation.cancel());
+
+    change(); // Existing Hero ownership: update only hidden states.
+    const newHeight = body.getBoundingClientRect().height;
+    const growing = newHeight >= oldHeight;
+    animatePageHeight(oldHeight, root);
+    if (!pulsePaper(content, corners, shadow, 'content', growing, root)) {
+        startAmbient(content, pairGeometry(content), 'content');
+    }
+    return true;
 }

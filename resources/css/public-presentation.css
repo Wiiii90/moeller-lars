@@ -117,8 +117,8 @@ body {
 .site-navigation::before {
     top: 0;
     bottom: 0;
-    left: -.31rem;
-    width: .55rem;
+    left: -.35rem;
+    width: .35rem;
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -127,8 +127,8 @@ body {
 .site-navigation::after {
     top: 0;
     bottom: 0;
-    right: -.32rem;
-    width: .56rem;
+    right: -.36rem;
+    width: .36rem;
     border-right: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
