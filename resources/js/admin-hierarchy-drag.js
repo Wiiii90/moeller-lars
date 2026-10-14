@@ -107,7 +107,7 @@ function highlight(x, y) {
         .forEach(el => el.classList.remove('is-hierarchy-parent-hovered'));
     hovered?.classList.add('is-hovered');
     if (hovered?.dataset.hierarchyDrop === 'nest') {
-        hovered.closest('[data-component-index], [data-section-id]')
+        hovered.closest?.('[data-component-index], [data-section-id]')
             ?.querySelector('.admin-hierarchy__content')
             ?.classList.add('is-hierarchy-parent-hovered');
     }
