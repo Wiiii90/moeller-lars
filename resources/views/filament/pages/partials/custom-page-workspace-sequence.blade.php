@@ -208,13 +208,6 @@
                                     @endforeach
                                 </div>
                             @endif
-                                            @unless ($child['published'])
-                                                <small>Unpublished</small>
-                                            @endunless
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
                         </article>
                     @endforeach
                 </div>
