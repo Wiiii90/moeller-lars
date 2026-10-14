@@ -161,7 +161,11 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 - [Tabellen](docs/ADMIN-TABLE-CONTRACT.md) besitzen Home-/Custom-Page-
   Component-Hierarchie, permanente Component-Selects und Parent-/Child-
   Achsen sowie Blog-/Exhibition-Splitfold, Toolbar- und Selection-
-  Geometrie. `ui-skills.md` leitet auf diese Normen weiter.
+  Geometrie. Die **Dashboard-Feed-Ausnahme** (Selected-Trigger ohne
+  internen Counter, separates Count-`span` innerhalb des terminalen
+  Selection-Bereichs) ist jetzt am selben kanonischen Selection-Owner
+  mit dem Dashboard-Blade abgeglichen. `ui-skills.md` leitet auf
+  diese Normen weiter, statt eigene Achsen-/Counter-Regeln zu führen.
 - [Dialoge](docs/ADMIN-DIALOG-CONTRACT.md) besitzen Edit-/Create-
   Persistenz, Page-Heading-Autosave, Pages Settings und Journal-/
   Gallery-/Custom-Settings-Konsistenz. Die `dev`-Änderungen wurden

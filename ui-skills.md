@@ -167,11 +167,8 @@ A single selected-items button may expose a capability matrix.
 
 Rules:
 
-- selected count is visible; Dashboard feed keeps it as a separate badge outside the bulk-action trigger so the trigger itself remains icon + label/icon-only while the badge stays on the table checkbox axis;
-- when Selection controls an ordinary table or table-like hierarchy, it remains the terminal toolbar group and its circular selected-count badge is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it; Dashboard feed keeps that count visibly separate from the bulk-action trigger while preserving the same terminal checkbox axis;
-- the shared table contract reserves the terminal `--admin-table-selection-width` rail inside the Selection trigger for that badge; do not add page-local margins, padding nudges or duplicate trigger grids that move the badge off the checkbox axis;
-- the badge/checkbox axis is a desktop/table invariant until an intentional responsive breakpoint changes the composition; once controls or rows deliberately stack/reflow, exact cross-row pixel alignment may relax;
-- visual card/contact-sheet surfaces without one trailing table Selection column, such as Gallery, do not invent a fake column or axis merely to satisfy the table rule;
+- selected count is visible, and the trailing count/select-all/row-checkbox alignment is governed **only** by the [canonical Selection contract](docs/ADMIN-TABLE-CONTRACT.md#selection). It also owns the accepted **Dashboard feed exception** (count as a separate sibling outside the action trigger) and intentional responsive relaxations. Do not duplicate these geometry rules or add page-local count offsets;
+- visual card/contact-sheet surfaces without one trailing table Selection column, such as Gallery, do not invent a fake column or axis merely to satisfy a tabular rule;
 - invalid actions remain visible but disabled when that makes capability/state clearer;
 - do not duplicate separate “selected parents” and “selected children” menus in the same toolbar;
 - mixed selections must not cause ambiguous mutations;

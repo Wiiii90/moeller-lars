@@ -142,8 +142,9 @@ When bulk selection exists:
 - the row checkbox is the far-right column;
 - the select-all checkbox is directly above it;
 - the control-bar multi-action trigger remains the corresponding bulk-action affordance;
-- the circular selected-count badge in that trigger is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it;
-- `x-admin.controls` keeps Selection as its terminal toolbar slot, and the shared table contract reserves `--admin-table-selection-width` at the end of the Selection trigger for the count badge; page/feature CSS must not recenter or offset that badge with local margin, padding or duplicate grid rules;
+- the circular selected-count badge is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it; its usual placement is in the Selection trigger;
+- **Accepted Dashboard feed exception:** [dashboard-feed.blade.php](../resources/views/filament/pages/partials/dashboard-feed.blade.php) renders the `Selected` trigger with icon/label **without an internal count badge** and a separate sibling `span.admin-selection__count` immediately after the trigger's anchor, inside the one terminal Selection group. This distinct composition keeps the **same badge/checkbox axis**; moving the count into the button is not a required normalization;
+- `x-admin.controls` keeps Selection as its terminal toolbar slot, and the shared table contract reserves `--admin-table-selection-width` in the ordinary Selection trigger or, for Dashboard feed, in its terminal Selection-group count slot. Page/feature CSS must not recenter or offset that axis with local margin, padding or duplicate grid rules;
 - this is a hard cross-surface axis: while the surface remains a table, redistribution of Search, filters, data columns or Actions may never move the Selection centerline; the toolbar count circle, select-all checkbox and every row checkbox stay exactly aligned;
 - when sibling toolbar groups use visible role labels such as `TYPE`, `STATUS`, `FILTER` and `PAGES`, the bulk group uses the same `SELECTION` label so the toolbar hierarchy stays consistent;
 - the checkbox column itself does not receive redundant visible `Selection` text; an accessible label on the select-all checkbox is sufficient;
