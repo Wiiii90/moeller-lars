@@ -116,13 +116,16 @@ than the right, even with asynchronous animation periods.
 There is exactly ONE visible exterior light paper backing per surface.
 Content uses one `-5px 7px 0 var(--public-folio-soft)` shadow; Menu
 retains its existing inner inset rule and only ONE exterior shadow,
-`-1.5px 3.5px 0 3.5px var(--public-folio-soft)`. The prior extra
-dark/grey/white shadow layers and `--public-folio-depth` palette token
-are DELETED, not merely recolored. The only menu backing's upward
-spread meets the menu's top edge; that invariance continues through
-its axis-only ambient movement. The shared Public motion module now
-owns only a single backing x/y coordinate pair per surface, and the
-Content page-build impulse travels on this ONE backing.
+`-5px 7px 0 var(--public-folio-soft)`. Both exterior sheets are inset
+5px from the right edge of their white surface. The former menu spread
+was removed because it made the backing protrude rightward; the menu
+shadow now begins below the upper edge, while the original menu corner
+strokes remain attached at the top. The prior extra dark/grey/white
+shadow layers and `--public-folio-depth` palette token remain deleted.
+The shared Public motion module owns only a single backing x/y
+coordinate pair per surface, and the Content page-build impulse travels
+on this ONE backing. The menu's ambient shadow never crosses its 5px
+right inset.
 Never reintroduce multiple stacked grey/white exterior planes without
 an explicit new request.
 

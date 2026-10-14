@@ -8,7 +8,7 @@ import {
 } from '../../resources/js/public-folio-motion.js';
 
 const CONTENT_SHADOW = 'rgba(255,255,255,.31) -5px 7px 0px 0px';
-const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -1.5px 3.5px 0px 3.5px';
+const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -5px 7px 0px 0px';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
     const effects = [], animations = [], computed = new Map();
@@ -83,7 +83,7 @@ function projected(value) {
         const values=[...layer.matchAll(/(-?\d+(?:\.\d+)?)px/g)]
             .slice(0,4).map(m=>Number(m[1]));
         const [x,y]=values,spread=values.length>=3?values.at(-1):0;
-        return {left:x-spread,bottom:y+spread,top:y-spread};
+        return {left:x-spread,right:x+spread,bottom:y+spread,top:y-spread};
     });
 }
 
@@ -91,7 +91,7 @@ test('accepted original lines, bounded menu ends and visible paper baselines',()
     assert.deepEqual(FOLIO_VARIANTS[0],['1.10rem','4rem','3.8rem','1.15rem']);
     assert.deepEqual(MENU_VARIANTS[0],['0rem','32%','0rem','1px']);
     assert.ok(MENU_VARIANTS.every(v=>v.every(p=>parseFloat(p)>=0)));
-    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-1.5,3.5]);
+    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-5,7]);
     assert.deepEqual(FOLIO_PLANE_BASE.content,[-5,7]);
 });
 
@@ -212,9 +212,16 @@ test('exactly one pale outer paper is used even during animation',()=>{
             const [sheet]=projected(frame.boxShadow);
             assert.ok(sheet.left<-.3,'one paper backing must show on left');
             assert.ok(sheet.bottom>.3,'one paper backing must show below');
-            if(type==='menu') assert.ok(sheet.top<=.01,
-                'menu paper reaches top throughout the animation');
+            if(type==='menu') assert.ok(sheet.right<0,
+                'menu paper never protrudes beyond the right edge');
         }
+    }
+});
+
+test('menu ambient backing remains at least 5px inside its right edge',()=>{
+    for(const frame of buildShadowFrames(MENU_SHADOW,'menu')){
+        const [sheet]=projected(frame.boxShadow);
+        assert.ok(sheet.right<=-5,'the menu backing must keep the same right inset as Content');
     }
 });
 
