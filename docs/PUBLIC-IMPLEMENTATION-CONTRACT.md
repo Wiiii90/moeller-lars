@@ -190,10 +190,11 @@ Embedded Storage media images use canonical `media:<id>` references resolved by 
 
 ## Custom Pages, CV and Contact
 
-Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type.
+Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type. The component sequence remains flat and independently publishable/reorderable in Admin.
 
-Contact is a reusable structured component on Custom Page and Home,
-not a standalone runtime page type.
+On wide public layouts an Image marked `image_decorative` retains its accessible empty ALT and becomes an editorial left float. The following Text, List and Contact components flow into the adjacent column while space permits; content resumes full width beneath the image, and the Legal Disclaimer clears that float. A regular Image stays full-width in the sequence. Narrow layouts stack all components vertically. No CV-only layout component, per-page CSS or additional schema is introduced.
+
+The CV List uses a shared Context / Title grid across its items. An undated entry has no synthetic Context and its Title fills both columns. List Details, publication filters and optional image remain owned by the existing generic List component. Contact is a reusable structured component on Custom Page and Home, not a standalone runtime page type. Its public presentation uses understated editorial type and a compact two-column Name/Email form when width permits; form validation, honeypot, delivery and reporting semantics remain unchanged. The Legal Disclaimer remains General-owned text, presented as a restrained colophon with a neutral title; the editorial component does not invent new legal copy.
 
 Public Contact workflow validates server-side, enforces honeypot/rate-limit controls, delivers to configured private recipient, uses visitor email as Reply-To rather than forged From, exposes safe outcome and fails in controlled fashion when delivery unavailable.
 
