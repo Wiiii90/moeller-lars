@@ -168,42 +168,55 @@ export function buildShadowFrames(start, type) {
     const base = FOLIO_PLANE_BASE[type];
     const rendered = renderedShadowCoords(start) ?? base;
     const positions = [...rendered];
-    const frames = [start];
-    const append = () => frames.push(shadow(...positions));
-    const move = (i, value) => {
-        if (positions[i] === value) return;
-        positions[i] = value;
-        append();
+    const frames = [{ boxShadow: start, weight: 0 }];
+    // Give longer sweeps to farther travel and generous quiet holds.
+    // Uniform tiny keyframe steps previously made the paper look nervous.
+    const move = (index, value) => {
+        if (positions[index] === value) return;
+        const distance = Math.abs(positions[index] - value);
+        positions[index] = value;
+        frames.push({
+            boxShadow: shadow(...positions),
+            weight: Math.max(2.5, 2.3 * distance),
+        });
     };
-    const rest = () => append();
-    base.forEach((value, i) => move(i, value));
-    rest(); rest();
-    // Outward: the rear paper advances before the nearer paper.
+    const rest = (weight = 6) =>
+        frames.push({ boxShadow: shadow(...positions), weight });
+
+    base.forEach((value, index) => move(index, value));
+    rest(7);
+    // Rear paper leads outward; near paper retreats first on closing.
     move(2, base[2] - (type === 'menu' ? 1.8 : 3.5));
     move(0, base[0] - (type === 'menu' ? 1 : 2));
-    rest();
+    rest(5);
     move(3, base[3] + (type === 'menu' ? 1.4 : 3));
     move(1, base[1] + (type === 'menu' ? .75 : 1.7));
-    rest(); rest();
+    rest(8);
     move(0, base[0]); move(1, base[1]);
     move(2, base[2]); move(3, base[3]);
-    rest();
-    // Inward: move the front right/up, then restore the rear first.
+    rest(9);
     move(0, base[0] + (type === 'menu' ? .4 : 1));
     move(2, base[2] + (type === 'menu' ? .1 : 1.2));
-    rest();
+    rest(5);
     move(1, base[1] - (type === 'menu' ? .2 : .6));
     move(3, base[3] - (type === 'menu' ? .1 : .3));
-    rest(); rest();
+    rest(8);
     move(2, base[2]); move(3, base[3]);
     move(0, base[0]); move(1, base[1]);
-    rest();
-    rendered.forEach((value, i) => move(i, value));
-    frames.push(start);
-    return frames.map((boxShadow, i) => ({
-        boxShadow, offset: i / (frames.length - 1),
-        easing: 'cubic-bezier(.32, .16, .68, .84)',
-    }));
+    rest(8);
+    rendered.forEach((value, index) => move(index, value));
+    frames.push({ boxShadow: start, weight: 4 });
+
+    const total = frames.reduce((sum, frame) => sum + frame.weight, 0);
+    let elapsed = 0;
+    return frames.map((frame, index) => {
+        elapsed += frame.weight;
+        return {
+            boxShadow: frame.boxShadow,
+            offset: index === frames.length - 1 ? 1 : elapsed / total,
+            easing: 'cubic-bezier(.36, .08, .64, .92)',
+        };
+    });
 }
 
 // Build transitions are always measured against the destination's STATIC
