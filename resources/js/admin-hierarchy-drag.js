@@ -68,16 +68,33 @@ function setDragging() {
     for (const el of active.root.querySelectorAll('[data-hierarchy-drop]')) {
         const intent = hierarchyMove(active.source, targetFromElement(el, active.source.kind));
         el.classList.toggle('is-eligible', intent !== null);
+        const content = el.dataset.hierarchyDrop === 'nest'
+            ? el.closest('[data-component-index], [data-section-id]')?.querySelector('.admin-hierarchy__content')
+            : null;
+        content?.classList.toggle('is-hierarchy-parent-eligible', intent !== null);
     }
+}
+
+function pointInside(rect, x, y) {
+    return !!rect && x >= rect.left && x <= rect.right &&
+        y >= rect.top && y <= rect.bottom;
 }
 
 function hitTarget(x, y) {
     if (!active?.dragging) return null;
-    // ElementFromPoint may return a Sortable ghost; test the real target rects.
+    // Read real rects rather than elementFromPoint: Sortable can put a
+    // dragged ghost over the drop target.
     const eligible = active.root.querySelectorAll('[data-hierarchy-drop].is-eligible');
     for (const el of eligible) {
-        const rect = el.getBoundingClientRect();
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return el;
+        if (pointInside(el.getBoundingClientRect(), x, y)) return el;
+        // The parent's CONTENT is a much larger intuitive nest target,
+        // shared by Pages and Custom Pages. Sorting still owns the handle,
+        // position, type, actions and selection cells.
+        if (el.dataset.hierarchyDrop === 'nest') {
+            const parentRow = el.closest('[data-component-index], [data-section-id]');
+            const content = parentRow?.querySelector('.admin-hierarchy__content');
+            if (pointInside(content?.getBoundingClientRect(), x, y)) return el;
+        }
     }
     return null;
 }
@@ -86,7 +103,14 @@ function highlight(x, y) {
     const hovered = hitTarget(x, y);
     active?.root.querySelectorAll('[data-hierarchy-drop].is-hovered')
         .forEach(el => el.classList.remove('is-hovered'));
+    active?.root.querySelectorAll('.is-hierarchy-parent-hovered')
+        .forEach(el => el.classList.remove('is-hierarchy-parent-hovered'));
     hovered?.classList.add('is-hovered');
+    if (hovered?.dataset.hierarchyDrop === 'nest') {
+        hovered.closest('[data-component-index], [data-section-id]')
+            ?.querySelector('.admin-hierarchy__content')
+            ?.classList.add('is-hierarchy-parent-hovered');
+    }
     return hovered;
 }
 
@@ -95,6 +119,8 @@ function reset() {
     active.root.classList.remove('is-hierarchy-dragging');
     active.root.querySelectorAll('[data-hierarchy-drop]')
         .forEach(el => el.classList.remove('is-eligible', 'is-hovered'));
+    active.root.querySelectorAll('.is-hierarchy-parent-eligible, .is-hierarchy-parent-hovered')
+        .forEach(el => el.classList.remove('is-hierarchy-parent-eligible', 'is-hierarchy-parent-hovered'));
     active = null;
 }
 
@@ -127,21 +153,42 @@ export function installAdminHierarchyDrag(doc = document) {
         const handle = e.target.closest?.('[data-hierarchy-drag-handle]:not(:disabled)');
         const source = handle && sourceFromHandle(handle);
         reset();
-        if (source) active = { source, root: source.root, x: e.clientX, y: e.clientY, dragging: false };
+        if (source) active = {
+            source, root: source.root,
+            x: e.clientX, y: e.clientY, lastX: e.clientX, lastY: e.clientY,
+            dragging: false,
+        };
     }, true);
     doc.addEventListener('pointermove', e => {
         if (!active) return;
         if (!active.dragging && Math.hypot(e.clientX - active.x, e.clientY - active.y) >= 4) setDragging();
-        if (active.dragging) highlight(e.clientX, e.clientY);
+        if (active.dragging) {
+            active.lastX = e.clientX;
+            active.lastY = e.clientY;
+            highlight(e.clientX, e.clientY);
+        }
     }, true);
     doc.addEventListener('dragstart', () => { if (active) setDragging(); }, true);
     doc.addEventListener('dragover', e => {
-        if (active?.dragging && highlight(e.clientX, e.clientY)) e.preventDefault();
+        if (!active?.dragging) return;
+        active.lastX = e.clientX;
+        active.lastY = e.clientY;
+        if (highlight(e.clientX, e.clientY)) e.preventDefault();
     }, true);
     doc.addEventListener('pointerup', e => { applyDrop(e); reset(); }, true);
     doc.addEventListener('drop', e => { applyDrop(e); reset(); }, true);
     doc.addEventListener('pointercancel', reset, true);
-    doc.addEventListener('dragend', reset, true);
+    // In a native Sortable session dragend can arrive BEFORE a pointerup
+    // or drop visible to our delegated listener. Use the last drag location
+    // instead of discarding an otherwise valid parent change.
+    doc.addEventListener('dragend', e => {
+        if (active?.dragging) applyDrop({
+            clientX: active.lastX, clientY: active.lastY,
+            preventDefault: () => e.preventDefault?.(),
+            stopImmediatePropagation: () => e.stopImmediatePropagation?.(),
+        });
+        reset();
+    }, true);
     doc.addEventListener('livewire:navigated', reset);
 }
 if (typeof document !== 'undefined') installAdminHierarchyDrag(document);

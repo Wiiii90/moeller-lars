@@ -731,6 +731,14 @@
 
 /* The central pointer/drag controller alone reveals eligible parent targets.
    Ordinary sortable rows remain unobstructed for same-level reordering. */
+.admin-hierarchy__content.is-hierarchy-parent-eligible {
+    outline: 1px dashed color-mix(in srgb, var(--admin-accent) 32%, transparent);
+    outline-offset: -2px;
+}
+.admin-hierarchy__content.is-hierarchy-parent-hovered {
+    outline-color: var(--admin-accent);
+    background: color-mix(in srgb, var(--admin-accent) 6%, transparent);
+}
 .admin-hierarchy__nest-target {
     display: none;
 }

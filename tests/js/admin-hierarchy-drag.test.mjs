@@ -101,3 +101,70 @@ test('the shared pointer controller reaches the Livewire parent action exactly o
         globalThis.window = priorWindow;
     }
 });
+
+
+test('parent content is a drop surface, while sorting cells remain outside it', () => {
+    const listeners = new Map();
+    const makeClassList = () => {
+        const items = new Set();
+        return {
+            add(name) { items.add(name); },
+            remove(...names) { for (const name of names) items.delete(name); },
+            toggle(name, on) { if (on) items.add(name); else items.delete(name); },
+            contains(name) { return items.has(name); },
+        };
+    };
+    const content = {
+        classList: makeClassList(),
+        getBoundingClientRect: () => ({ left: 100, right: 280, top: 30, bottom: 65 }),
+    };
+    const row = { dataset: { componentIndex: '0' }, querySelector: () => content };
+    const target = {
+        dataset: { hierarchyDrop: 'nest', hierarchyParent: '0' },
+        classList: makeClassList(),
+        getBoundingClientRect: () => ({ left: 250, right: 280, top: 10, bottom: 25 }),
+        closest: () => row,
+    };
+    const root = {
+        dataset: { adminHierarchy: 'custom' }, classList: makeClassList(),
+        querySelectorAll(selector) {
+            if (selector.includes('.is-eligible')) return target.classList.contains('is-eligible') ? [target] : [];
+            if (selector.includes('.is-hovered')) return target.classList.contains('is-hovered') ? [target] : [];
+            if (selector.includes('is-hierarchy-parent-')) return [content];
+            return [target];
+        },
+        closest: () => ({ getAttribute: () => 'the-editor' }),
+    };
+    const gripRow = { dataset: { componentIndex: '1', componentType: 'list', canNest: 'true' } };
+    const grip = {
+        disabled: false, closest(selector) {
+            return selector === '[data-admin-hierarchy]' ? root
+                : selector === '[data-component-index]' ? gripRow : null;
+        },
+        hasAttribute: () => false,
+    };
+    const doc = { addEventListener(type, fn) {
+        listeners.set(type, [...(listeners.get(type) ?? []), fn]);
+    } };
+    const previous = globalThis.window;
+    const calls = [];
+    globalThis.window = { Livewire: { find: () => ({ $wire: { $call: (...args) => calls.push(args) } }) } };
+    const fire = (type, values) => {
+        for (const fn of listeners.get(type) ?? []) fn(values);
+    };
+    try {
+        installAdminHierarchyDrag(doc);
+        fire('pointerdown', { button: 0, target: { closest: () => grip }, clientX: 20, clientY: 40 });
+        fire('pointermove', { clientX: 150, clientY: 46 });
+        assert.equal(content.classList.contains('is-hierarchy-parent-hovered'), true);
+        fire('dragend', { preventDefault() {}, stopImmediatePropagation() {} });
+        assert.deepEqual(calls, [['nestComponent', 1, 'list', 0]]);
+        // Outside the content surface, the same drag must stay a normal sort.
+        fire('pointerdown', { button: 0, target: { closest: () => grip }, clientX: 20, clientY: 40 });
+        fire('pointermove', { clientX: 88, clientY: 46 });
+        fire('dragend', { preventDefault() {}, stopImmediatePropagation() {} });
+        assert.equal(calls.length, 1);
+    } finally {
+        globalThis.window = previous;
+    }
+});
