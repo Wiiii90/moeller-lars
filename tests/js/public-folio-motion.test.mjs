@@ -8,7 +8,7 @@ import {
 } from '../../resources/js/public-folio-motion.js';
 
 const CONTENT_SHADOW = 'rgba(255,255,255,.31) -5px 7px 0px 0px';
-const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -7px 2px 0px 2px';
+const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -5.5px 0.5px 0px 0.5px';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
     const effects = [], animations = [], computed = new Map();
@@ -91,7 +91,7 @@ test('accepted original lines, bounded menu ends and visible paper baselines',()
     assert.deepEqual(FOLIO_VARIANTS[0],['1.10rem','4rem','3.8rem','1.15rem']);
     assert.deepEqual(MENU_VARIANTS[0],['0rem','32%','0rem','1px']);
     assert.ok(MENU_VARIANTS.every(v=>v.every(p=>parseFloat(p)>=0)));
-    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-7,2]);
+    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-5.5,.5]);
     assert.deepEqual(FOLIO_PLANE_BASE.content,[-5,7]);
 });
 
@@ -222,17 +222,30 @@ test('exactly one pale outer paper is used even during animation',()=>{
     }
 });
 
-test('menu backing stays between the white left contour and its 5px right inset',()=>{
+test('menu backing remains narrow and separated from its original paper contour',()=>{
     const frames=buildShadowFrames(MENU_SHADOW,'menu');
-    assert.ok(frames.some(frame=>coords(frame.boxShadow)[1]<2),
-        'menu backing retains its vertical ambient movement');
-    assert.ok(frames.some(frame=>coords(frame.boxShadow)[0]!==-7),
-        'menu backing retains its gentle horizontal ambient movement');
+    assert.ok(frames.some(frame=>coords(frame.boxShadow)[1]>.5),
+        'menu backing retains subtle vertical ambient motion');
+    assert.ok(frames.some(frame=>coords(frame.boxShadow)[0]<-5.5),
+        'menu backing retains subtle horizontal ambient motion');
     for(const frame of frames){
         const [sheet]=projected(frame.boxShadow);
-        assert.ok(Math.abs(sheet.top)<.001,'the menu backing stays flush with the top');
-        assert.ok(sheet.right<=-5+.001,'the right inset must remain at least 5px');
-        assert.ok(sheet.left>=-9-.001,'the backing must not cover the white left stroke');
+        assert.ok(Math.abs(sheet.top)<.001,'the backing stays flush with the menu top');
+        assert.ok(sheet.right<=-5+.001,'the right inset remains at least 5px');
+        assert.ok(sheet.left>=-6.6-.001,'the left backing never grows wider than 6.6px');
+        assert.ok(sheet.left>=-8+1,'the left paper contour remains visibly outside it');
+    }
+});
+
+test('restarting menu ambient motion mid-cycle retains the right and left boundaries',()=>{
+    const interrupted=buildShadowFrames(MENU_SHADOW,'menu')
+        .find(frame=>frame.boxShadow.includes('-5.8px 0.8px'));
+    assert.ok(interrupted,'a valid mid-cycle pose exists');
+    for(const frame of buildShadowFrames(interrupted.boxShadow,'menu')){
+        const [sheet]=projected(frame.boxShadow);
+        assert.ok(Math.abs(sheet.top)<.001);
+        assert.ok(sheet.right<=-5+.001);
+        assert.ok(sheet.left>=-6.6-.001);
     }
 });
 

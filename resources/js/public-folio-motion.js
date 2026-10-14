@@ -160,7 +160,7 @@ function renderedShadowCoords(value, type) {
 // The single existing exterior sheet on each surface.
 export const FOLIO_PLANE_BASE = Object.freeze({
     content: [-5, 7],
-    menu: [-7, 2],
+    menu: [-5.5, .5],
 });
 
 // The backing sheet moves one x or y axis at a time, rests and returns.
@@ -179,20 +179,24 @@ export function buildShadowFrames(start, type) {
             weight: Math.max(4, 3 * distance) });
     };
     const rest = weight => frames.push({ boxShadow: shadow(...xy), weight });
-    base.forEach((value, i) => move(i, value));
+    // A menu restart may begin halfway through its earlier cycle. Restore
+    // spread before x so the right edge cannot cross its 5px safety inset.
+    if (type === 'menu') {
+        move(1, base[1]); move(0, base[0]);
+    } else {
+        base.forEach((value, i) => move(i, value));
+    }
     rest(9);
     if (type === 'menu') {
-        // One top-anchored sheet must remain between the LEFT contour (-10px)
-        // and the 5px right inset. A 2px baseline spread leaves room to
-        // contract and shift gently without crossing either boundary.
-        move(1, 1.4);
+        // x + spread <= -5px and x - spread >= -6.6px at every phase:
+        // a clearly separated, restrained backing behind the -8px stroke.
+        move(0, -5.8);
         rest(4);
-        move(0, -7.6);
+        move(1, .8);
         rest(10);
-        move(0, -6.6);
+        move(1, base[1]);
         rest(7);
         move(0, base[0]);
-        move(1, base[1]);
         rest(9);
     } else {
         move(0, base[0] - 2);

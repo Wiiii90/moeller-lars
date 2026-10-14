@@ -116,15 +116,16 @@ than the right, even with asynchronous animation periods.
 There is exactly ONE visible exterior light paper backing per surface.
 Content uses one `-5px 7px 0 var(--public-folio-soft)` shadow; Menu
 retains its existing inner inset rule and only ONE exterior shadow,
-`-7px 2px 0 2px var(--public-folio-soft)`. Its pale backing remains
-flush with the upper menu edge and ends 5px inside the right edge. The
-left stroke uses a connected 10px return and stays outside the backing:
-its exterior begins at -9px while the white stroke ends there. A
-symmetric spread cannot preserve those two horizontal bounds and also
-extend 7px below, so the menu backing extends 4px below instead. Ambient
-motion contracts and shifts this same sheet only within the two horizontal
-bounds, keeping the top connection intact. The Content sheet retains
-its independent 7px lower projection. The prior extra dark/grey/white
+`-5.5px .5px 0 .5px var(--public-folio-soft)`. Its pale backing
+starts flush with the upper menu edge and remains at least 5px inside the
+right edge. The connected left white stroke uses an 8px return; the
+backing projects 6px left at rest and never exceeds 6.6px during ambient
+motion. This preserves a visible gap between the backing and contour at
+all animation phases. A single symmetric box-shadow cannot preserve
+the top connection and right inset while also extending 7px below; the
+menu's intentionally understated backing now projects 1px below at rest
+and up to 1.6px during motion. The Content sheet retains its independent
+7px lower projection. The prior extra dark/grey/white
 shadow layers and `--public-folio-depth` palette token remain deleted.
 The shared Public motion module owns only a single backing x/y
 coordinate pair per surface, and the Content page-build impulse travels
