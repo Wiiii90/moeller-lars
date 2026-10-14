@@ -93,14 +93,14 @@ it('keeps decorative layout semantic and undated CV entries without inventing da
         ->and($blocks[1]['items'][2]['title'])->toBe('Lives and works in Hamburg');
 
     $view = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
-    expect($view)->toContain('custom-page__image--decorative')
-        ->toContain('custom-page__list-item--with-context')
+    expect($view)->toContain('custom-page__image--wrapped')
+        ->toContain('pages.partials.component-sequence')
         ->toContain('Rechtlicher Hinweis');
 
     $styles = file_get_contents(resource_path('css/custom-pages.css'));
     expect($styles)->toContain('float: left')
-        ->toContain('grid-template-columns: subgrid')
-        ->toContain('.custom-page__legal');
+        ->toContain('.custom-page__image-group')
+        ->not->toContain('grid-template-columns: subgrid');
 });
 
 it('stores ordered decorative Image children and rejects incompatible nested components', function (): void {
