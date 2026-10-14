@@ -87,7 +87,7 @@ export function capturePublicFolio(root = document) {
 // micro-corrections and rapid turns near the loop seam looked like shaking.
 // Start from the actual displayed state; close on that EXACT state so a
 // repeated WAAPI cycle never jumps. Each leg changes only one axis.
-export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
+export function buildCornerFrames(start, nextTop, nextBottom, edge) {
     const states = [{ ...start, offset: 0 }];
     const step = (changes, offset) => states.push({
         ...states[states.length - 1], ...changes, offset,
@@ -382,9 +382,7 @@ function startAmbient(element, states, type) {
             frames = buildMenuCornerFrames(states[index], index);
         } else {
             const columns = index === 0 ? [0, 1] : [2, 3];
-            const first = { top: FOLIO_VARIANTS[0][columns[0]],
-                bottom: FOLIO_VARIANTS[0][columns[1]] };
-            frames = buildCornerFrames(states[index], first,
+            frames = buildCornerFrames(states[index],
                 FOLIO_VARIANTS[1][columns[0]],
                 FOLIO_VARIANTS[2][columns[1]], CONTENT_EDGES[index]);
         }

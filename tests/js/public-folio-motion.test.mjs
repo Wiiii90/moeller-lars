@@ -106,7 +106,7 @@ test('ambient and navigation-impulse corners only move one axis per frame',()=>{
     const start={top:'18px',bottom:'64px',left:'-11.2px',width:'8.8px'};
     const edge={side:'left',offset:'-.58rem',width:'.58rem'};
     const sequences=[
-        buildCornerFrames(start,{top:'1.1rem',bottom:'4rem'},'1.25rem','4.14rem',edge),
+        buildCornerFrames(start,'1.25rem','4.14rem',edge),
         buildCornerImpulse(start,start,edge,true),
         buildCornerImpulse(start,start,edge,false),
     ];
@@ -197,8 +197,9 @@ test('menu lines grow short while remaining connected to their top edge',()=>{
         assert.ok(frames.every(frame=>parseFloat(frame.bottom)>=0));
         assert.ok(frames.some(frame=>frame.bottom.endsWith('%')
             &&parseFloat(frame.bottom)>=60), 'line must become conspicuously shorter');
-        assert.ok(frames.some(frame=>frame.bottom.endsWith('%')
-            &&parseFloat(frame.bottom)<40), 'line must also cover mid-length positions');
+        assert.equal(frames.filter(frame=>frame.bottom.endsWith('%')).length,2,
+            'no intermediate stops or direction corrections within the ascent');
+        assert.deepEqual(frames.map(frame=>frame.offset),[0,.13,.48,.62,.89,1]);
         assert.equal(frames[0].bottom,frames.at(-1).bottom);
         assert.equal(frames.at(-1).offset,1);
     }
@@ -222,6 +223,40 @@ test('paper backing layers cannot turn black during ambient or page build',()=>{
                     || /var\(--public-folio-(soft|depth)\)/.test(backing));
             }
         }
+    }
+});
+
+test('ambient menu never reverses direction between its only two sweeps',()=>{
+    for(const side of [0,1]){
+        const element={ top:'0px',bottom:'0px',width:'8px',
+            [side===0?'left':'right']:'-8px'};
+        const frames=buildMenuCornerFrames(element,side);
+        assert.equal(frames.length,6);
+        assert.equal(frames[0].bottom,'0px');
+        assert.equal(frames[1].bottom,'0px');
+        assert.equal(frames[2].bottom,frames[3].bottom);
+        assert.equal(frames[4].bottom,'0px');
+        assert.equal(frames[5].bottom,'0px');
+        assert.ok(frames.every(f=>f.top==='0px'), 'top always attached');
+        assert.ok(frames.every((f,i)=>i===0||f.offset>frames[i-1].offset));
+    }
+});
+
+test('ambient Content lines take one vertical excursion per endpoint and return smoothly',()=>{
+    for(const side of ['left','right']){
+        const start={top:'18px',bottom:'64px',width:'9px',[side]:'-9px'};
+        const edge={side,offset:'-.58rem',width:'.58rem'};
+        const frames=buildCornerFrames(start,'1.53rem','4.30rem',edge);
+        assert.equal(frames.length,11);
+        assert.deepEqual(frames.map(f=>f.offset),
+            [0,.12,.26,.36,.49,.62,.70,.81,.91,.98,1]);
+        assert.equal(frames[0].top,frames.at(-1).top);
+        assert.equal(frames[0].bottom,frames.at(-1).bottom);
+        const vertical=frames.slice(1).filter((f,i)=>
+            f.top!==frames[i].top||f.bottom!==frames[i].bottom);
+        assert.equal(vertical.length,4,
+            'one top and bottom extension, followed by one return each');
+        assert.ok(frames.every((f,i)=>i===0||f.offset>frames[i-1].offset));
     }
 });
 
