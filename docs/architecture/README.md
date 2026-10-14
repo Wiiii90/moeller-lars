@@ -16,11 +16,11 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 10. [Strukturierte Komponenten](structured-components.md) — die sechs persistierten JSON-Typen, Contact-/List-Kinder, Medienreferenzen und Home-Konfiguration.
 11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 20 explizite HTTP-Routen mit [PHP-Quellprüfer](../../scripts/check-architecture-routes.php), Middleware, Filament-Discovery und Public-JS.
 12. [Public-SPA-Dokumentlebenszyklus](public-spa-lifecycle.md) — Livewire 4 Navigation, CSP-Metadaten, JS-Disposer und Matomo pro Besuch.
-13. [Filament-/Livewire-Komposition](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits und 72 literal Actions in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
+13. [Filament-/Livewire-Komposition und Pages-Identity-Negativpfad](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits, 72 literal Actions und quellbelegte Trennung von Titel und Navigation Label in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
 14. [Admin Notification transport](admin-notification-transport.md) — quellenverankerte Audit-/Inbox-/Header-Sequenz, Session-/Livewire-Dispatch, Retention und nicht runtimegeprüfte Negativpfade.
 15. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
-16. [Exhibition Map und Edit-Autosave](exhibition-map.md)
-17. [Media-Referenzen, Cleanup und Reclaim](media-reference-and-cleanup.md) — Source-Sequenzen für Working/LIVE/History-Guard, Variant-Rebuild, Fehler-/Retry-Pfade und die konkrete Home-List-Coverage-Lücke. — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
+16. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
+17. [Media-Referenzen, Cleanup und Reclaim](media-reference-and-cleanup.md) — Working/LIVE/History-Guards, Variant-Rebuild, Fehler-/Retry-Pfade und Home-List-Coverage-Lücke.
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 

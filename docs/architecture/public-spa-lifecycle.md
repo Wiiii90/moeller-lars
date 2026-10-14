@@ -1,6 +1,6 @@
 # Öffentliche SPA-Dokumentnavigation und Instanzlebenszyklus
 
-**Code-Referenz:** `dev` bei `eef99104540d40f154533fa0743eec75bdfa6d9b` (neue kontinuierliche Content-/Menü-Folio-Animation einschließlich nachgezogener JS-/Browser-Tests), zur kontrollierten Übernahme nach `docs`. Der Ablauf ist aus JavaScript/CSS/Blade/Middleware-Quellen abgeleitet; weder Browser noch Laravel-End-to-End sind hier ausgeführt worden. Dieser Ablauf wurde **aus den aktuellen JS-/Blade-/Middleware-Quellen abgeleitet**, aber nicht im Browser oder mit Laravel-End-to-End ausgeführt.
+**Code-Referenz:** `dev` bei `b3439bbfeb48ddbaf1f1949c276155c737136e31` (achsengebundene Content-/Menü-Folio-Animation, Artwork-Detail-Höhenwechsel und zuletzt Mid-Flight-Shadow-Parser). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
 
 ## Architekturentscheidung
 
@@ -79,24 +79,92 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 **Grenze der Behauptung:** Diese Tabelle beschreibt Codepfade; kein reales SPA-Reentry, Scroll-/Focus-Restoration, Leaflet-Laden, Karten-Tile-Ausfall oder Reviewer-Akzeptanz wurde hier ausgeführt. Die asynchrone Map-Race-Abwehr ist belegbar, eine vollständige Browsergarantie daraus nicht.
 
-## Native Folio-Ränder: kontinuierliche Content- und Menüanimation
+## Native Folio-Ränder, Schatten und Artwork-Höhenübergänge
 
-Der aktuelle [`public-folio-motion.js`](../../resources/js/public-folio-motion.js) auf dem geprüften `dev`-Stand animiert die **bereits vorhandenen** Pseudoelemente `#content::before/::after` und `.site-navigation::before/::after`, ohne zusätzliche Linien, HTML-Knoten, Layer, Intervalle oder einen separaten SPA-Router. Der [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md) beschreibt das angestrebte Erscheinungsbild; dessen visuelle Abnahme ist ausdrücklich noch offen. Die native Daueranimation unterscheidet sich vom **abgelösten, nur bei Navigation ausgelösten 1150-ms-Zustandswechsel**.
+**Aktueller Referenzstand:** `dev@b3439bbfeb48ddbaf1f1949c276155c737136e31`
+(über einen Zwei-Eltern-Merge nach `docs` übernommen). Die Folio-Animation
+benutzt nur die bestehenden `#content::before/::after`- und
+`.site-navigation::before/::after`-Konturen sowie deren vorhandene
+`box-shadow`-Lagen. Kein extra DOM, keine Timer/Intervalle, keine
+eigenständige SPA-Route. Der [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md)
+ist Eigentümer des angestrebten Designs, nicht dieses Quellinventar.
 
-**Konkret nachverfolgter Lifecycle:**
+1. `app.js::initializePage()` initialisiert nur bei einer neuen
+   `#content`-DOM-Identität und ruft `advancePublicFolio()` auch beim
+   Initialbesuch auf. `livewire:navigating` ruft zuerst
+   `capturePublicFolio()` und danach die Seiten-Disposer auf.
+2. Der Capture enthält `top`, `bottom`, horizontale Kantenpositionen
+   und Breiten der vier Pseudoelemente, die berechneten Menü- und
+   Content-`box-shadow`-Werte sowie die aktuelle Höhe eines unmittelbar
+   unter `#content` befindlichen `.artwork-detail`-Artikels.
+   Ein späterer `livewire:navigated`-Bootstrap übernimmt diesen Snapshot
+   an den nächsten echten DOM-Knoten.
+3. `buildCornerFrames()` bewegt pro Keyframe nur eine vertikale Koordinate
+   oder **ein gekoppeltes horizontales Offset-/Breitenpaar**, sodass der
+   Papier-Rücklauf am Rand verbunden bleibt. Die vier
+   `KeyframeEffect`/`Animation`-Dauerschleifen laufen mit **28.600 /
+   31.800 ms** (Content) und **27.000 / 30.900 ms** (Menü).
+   Die Menü-Konturen bleiben oben offen und unten verbunden; es gibt keine
+   Rotation, diagonale Bewegung oder Menu-Height-Animation.
+4. Beide Flächen besitzen je eine zusätzliche
+   `Element.animate()`-`box-shadow`-Schleife (Content **31.200 ms**,
+   Menü **32.400 ms**). Die jeweils zwei hinteren bestehenden Papierlagen
+   bewegen sich im beabsichtigten Ablauf achsenweise um 1–2 px.
+   Der erste Schatten bleibt unverändert. Der nächste Zustand soll die
+   zuvor gerenderte Zwischenposition sanft übernehmen.
+5. **Nur Artwork-Detail → Artwork-Detail:** `animateArtworkHeight()`
+   liest die zuvor gerenderte Höhe und die neue natürliche Artikelhöhe.
+   Bei Differenz von mindestens 6 px animiert es die vorhandene
+   `.artwork-detail`-Höhe **700 ms** per WAAPI. Währenddessen liegt
+   `overflow: clip` am Artikel, **nicht an `#content`**; die
+   äußere Kontur wird nicht beschnitten. Bei Fertigstellung oder
+   Abbruch des Promise wird der ursprüngliche Inline-Overflow wiederhergestellt.
+   Gallery, Blog, Home und ein Erstbesuch besitzen keinen alten
+   Artwork-Artikel als Auslöser.
 
-1. `app.js::initializePage()` prüft die Identität des aktuellen `#content` und baut nur bei neuem Element Viewer, Hero, Journal, Analytics und Navigation auf. **Direkt danach ruft es `advancePublicFolio()` auf**, auch bei der initialen `DOMContentLoaded`-Initialisierung; der bisherige `pendingVisit`-Guard wurde entfernt. Jede weitere Livewire-Document-Navigation ruft die gleiche Initialisierung nach dem Swap auf.
-2. `livewire:navigating` liest mit `capturePublicFolio()` die **tatsächlich berechneten** `top`-/`bottom`-Positionen beider Content- und beider Menü-Pseudoelemente sowie die drei vorhandenen Content-Schatten. Die Page-Disposer laufen vor dem Body-Swap; beim `livewire:navigated` wird das neue DOM initialisiert, wobei die aufgefangene Geometrie den Anfang seiner nächsten Animation bildet. Fehlt ein DOM-Teil oder sind Pseudoelemente unsichtbar, wird dafür keine Konturanimation erzeugt.
-3. Content und Menü erhalten zusammen **vier native `KeyframeEffect`-Instanzen** mit `pseudoElement: ::before/::after`, `iterations: Infinity`, `ease-in-out` und `new Animation(effect, document.timeline).play()`. Die Content-Dauern sind **16.000/19.400 ms**, die Menü-Dauern **17.400/20.800 ms**. Die erste und letzte Frame-Geometrie stimmen überein, um Schleifensprünge zu vermeiden.
-4. Die drei ursprünglichen Content-`box-shadow`-Layer bleiben dieselben. Nur die beiden hinteren vertikalen Offsets variieren in einer **18.200-ms-Endlosschleife** über `content.animate()`; die vorderste Schattenlage bleibt fest. Artwork, Contentbreite, Typografie, Menübreite und die seitlichen Positionen werden nicht animiert.
-5. Das Menü erhält nun eine **asymmetrische** bestehende CSS-Kontur: Westseite mit kurzem oberen Rücklauf statt unterer Querlinie; Ostseite mit verbundenen oberen/unteren Rückläufen, die ungefähr **.24rem** in die weiße Menüfläche reichen. Die beiden Menü-Pseudoelemente bleiben Teil ihrer normalen `.site-navigation`-Box und verändern die gemessene Navigationsbreite nicht.
-6. Ohne Unterstützung für `KeyframeEffect`/`Animation` oder bei Fehlern bleibt die ursprüngliche statische CSS-Kontur sichtbar. Es gibt **keinen JS-Timer und kein Polling**; die Endlosschleife läuft ausschließlich über die native Browser-Animations-Zeitleiste. Der Code unterdrückt die kleine Dekoration bei `prefers-reduced-motion: reduce` derzeit **nicht**; die dafür erforderliche Accessibility-/visuelle Entscheidung ist weiterhin offen.
+### Statisch belegte Negativpfade und Nachweise
 
-**Quellgeprüfte Tests, nicht ausgeführt:** [`tests/js/public-folio-motion.test.mjs`](../../tests/js/public-folio-motion.test.mjs) erfasst inzwischen `MENU_VARIANTS`, vier unendliche Pseudo-Effekte, initialen Start, übertragene Geometrie, statische Fallbacks und Schatten. [`tests/browser/public-folio-spa.spec.mjs`](../../tests/browser/public-folio-spa.spec.mjs) wurde im zweiten `dev`-Commit ebenfalls nachgezogen. Ein zwischen den beiden Commits kurzfristig vorhandener alter Import von `chooseNextFolioVariant` ist deshalb **kein offener Defekt des final geprüften `dev`-Standes**. Die neuen Tests sind hier nicht ausgeführt; insbesondere tatsächliche native Pseudo-WAAPI-Unterstützung, DOM-/Animation-Cleanup, schnelle Back/Forward-Navigation und Browserwirkung bleiben ohne Laufzeitnachweis.
+**Neue Shadow-Regression im letzten `dev`-Commit:** Die Funktion
+`renderedShadowCoords()` verwendet im **JavaScript-RegExp-Literal**
+`/(-?\\d+(?:\\.\\d+)?)px/g` (je zwei Quell-Backslashes je Escape).
+In einem RegExp-Literal steht das für einen wörtlichen Backslash samt
+`d` bzw. Punkt, **nicht** für Ziffern. Tatsächlich berechnete CSS-Werte
+wie `-6.5px 8px` liefern daher keine Matches und lösen den Fallback
+auf feste Startkoordinaten aus. Der neu hinzugefügte Testfall
+`captured mid-flight paper shadows return to base one axis at a time`
+in [public-folio-motion.test.mjs](../../tests/js/public-folio-motion.test.mjs)
+verwendet dieselbe doppelte Escapierung und kann den erwarteten
+vierkoordinatigen Vergleich nicht herstellen. Ein **isoliertes Node-22-RegExp-Fixture**
+ergab **0** Matches mit dem Quellmuster und korrekte Matches mit einfach
+escaptem Muster; die vollständige Testdatei wurde hier **nicht** ausgeführt.
+Damit ist der Mid-Flight-Schattenpfad nicht als korrekt nachgewiesen.
+Korrektur und Regressionstest gehören auf `dev`/`testing`, nicht in
+Anwendungscode auf `docs`.
 
-**Offener Lebensdauer-Negativpfad:** `advancePublicFolio()` erzeugt pro neuem `#content` über `playPseudo()` vier **unendliche** `Animation`-Objekte; auch der `content.animate()`-Shadow-Handle wird nicht gespeichert. `disposePage()` kennt aktuell keinen eigenen Folio-Disposer oder `cancel()`-Pfad. Nach dem normalen Livewire-Swap sind die vorherigen `#content`-/`.site-navigation`-Ziele laut [Layout](../../resources/views/layouts/app.blade.php) nicht ausdrücklich per `@persist` stabilisiert. Ob der Browser die abgelösten unendlichen Animationen automatisch beendet und freigibt, wird aus der bloßen DOM-Entfernung **nicht** als garantiert angenommen. Die vorhandenen [JS-Fixtures](../../tests/js/public-folio-motion.test.mjs) prüfen Start/Keyframes/Fallback, aber keinen wiederholten Document-Swap mit beobachteter Anzahl aktiver Animations-Handles. Späterer Browser-Test: **Initialisierung → mehrere interne Wechsel → Back/Forward → abgelöste Animationsziele/CPU/Handles prüfen**, ohne neue Timerschleifen einzuführen. Dies ist eine **Testlücke**, kein behaupteter Memory-Leak.
+**Noch offene Lebensdauer:** `animatePaper()` startet **vier unendliche
+Pseudo-`Animation`-Objekte und zwei unendliche Shadow-Animationen** pro
+neuem Dokument; weder deren Handles noch ein entsprechender
+`cancel()`-Disposer werden vom `app.js::disposePage()` geführt.
+Beim Artwork-Höhenübergang existiert zusätzlich ein zeitlich begrenzter
+Animation-Handle, dessen Finish/Reject zwar Inline-Overflow bereinigt,
+der aber nicht explizit an den SPA-Seiten-Disposer gebunden ist.
+Nach Entfernung der alten DOM-Knoten ist eine tatsächliche
+Retention/CPU-Belastung **nicht** nachgewiesen. Benötigt wird ein echter
+Browserlauf mit mehreren Navigationen, Back/Forward, aktivem
+`document.getAnimations()`-Bestand und abgelösten Zielen sowie dem
+Artwork-Overflow bei unterbrochenen 700-ms-Übergängen.
 
-**Abgelöste Architektur:** Die frühere `.public-folio-decoration`-DOM-Schicht, Debug-Queryparameter und Debug-Storage sowie die nur beim Navigieren angestoßenen 1150-ms-Folio-Transitions sind keine aktuellen Verträge. Laravel/Blade und Livewire 4 bleiben die einzigen öffentlichen Routing-/Document-Swap-Eigentümer.
+**Testabgrenzung:** Die aktualisierten JS-/Playwright-Dateien
+[Unit](../../tests/js/public-folio-motion.test.mjs) und
+[Browser](../../tests/browser/public-folio-spa.spec.mjs) wurden statisch
+gelesen; weder `node --test` für die komplette Datei noch Playwright
+oder eine reale Livewire-/Laravel-Navigation wurden hier ausgeführt.
+`prefers-reduced-motion` unterdrückt die laufenden Schleifen im
+aktuellen Source nicht automatisch; Browser-/Accessibility-Abnahme offen.
+
+**Historisch abgelöst:** Die frühere
+`.public-folio-decoration`-Struktur, Debuginstrumentierung und die
+1150-ms-Einmalübergänge sind kein aktueller Architekturvertrag.
 
 ## Fachliche und technische Grenzen
 
