@@ -114,6 +114,45 @@ for (const scenario of [
     });
 }
 
+test('a rapid second page switch continues the interrupted build from its actual position', async ({ page }) => {
+    await initialize(page, 'Exhibitions', 340, 'exhibitions-page');
+    const result = await page.evaluate(async (next) => {
+        window.paper.capturePublicFolio();
+        document.body.innerHTML = next;
+        window.paper.advancePublicFolio();
+
+        // Align with a real early second navigation rather than waiting for
+        // the paper to settle; two animation frames pass without any timer.
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const current = document.querySelector('#content');
+        const oldTop = getComputedStyle(current, '::before').top;
+        const oldShadow = getComputedStyle(current).boxShadow;
+        const oldBodyHeight = document.querySelector('.public-content-reveal').getBoundingClientRect().height;
+
+        window.paper.capturePublicFolio();
+        document.body.innerHTML = sheet('Journal', 850, 'blog-page');
+        window.paper.advancePublicFolio();
+
+        const content = document.querySelector('#content');
+        const wrapper = content.querySelector('.public-content-reveal');
+        const effects = document.getAnimations();
+        const left = effects.find(a => a.effect.target === content && a.effect.pseudoElement === '::before');
+        const paper = effects.find(a => a.effect.target === content && !a.effect.pseudoElement);
+        const height = effects.find(a => a.effect.target === wrapper);
+        return {
+            oldTop, oldShadow, oldBodyHeight,
+            nextTop: left?.effect.getKeyframes()[0].top,
+            nextShadow: paper?.effect.getKeyframes()[0].boxShadow,
+            nextHeight: height?.effect.getKeyframes()[0].height,
+            count: document.querySelectorAll('#content > .public-content-reveal').length,
+        };
+    }, sheet('Painting', 640, 'artwork-detail'));
+    expect(result.count).toBe(1);
+    expect(result.nextTop).toBe(result.oldTop);
+    expect(result.nextShadow).toBe(result.oldShadow);
+    expect(parseFloat(result.nextHeight)).toBeCloseTo(result.oldBodyHeight, 0);
+});
+
 test('real Laravel/Livewire public navigation stays in the same document', async ({ page }) => {
     test.skip(!process.env.PUBLIC_SPA_SMOKE_URL, 'Requires a running local Laravel preview.');
     await page.goto(new URL('/paintings', process.env.PUBLIC_SPA_SMOKE_URL).href);
