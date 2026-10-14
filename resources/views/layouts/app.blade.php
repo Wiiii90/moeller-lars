@@ -1,5 +1,17 @@
 <!doctype html>
 @php($publicStyleNonce = request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE))
+@php
+    // Stable URL-keyed corners are present in server HTML before first paint.
+    $folioSeed = hexdec(substr(hash('sha256', '/'.ltrim(request()->path(), '/')), 0, 8));
+    $folioPlacement = [
+        'leftTop' => (16 + (($folioSeed >> 1) % 11)).'px',
+        'leftBottom' => (46 + (($folioSeed >> 5) % 19)).'px',
+        'rightTop' => (45 + (($folioSeed >> 9) % 22)).'px',
+        'rightBottom' => (13 + (($folioSeed >> 13) % 12)).'px',
+        'menuLeftBottom' => (37 + (($folioSeed >> 17) % 10)).'%',
+        'menuRightBottom' => (6 + (($folioSeed >> 21) % 8)).'%',
+    ];
+@endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
@@ -31,9 +43,15 @@
             data-public-layout-background="{{ $publicBackgroundCss ?? '' }}"
             data-public-layout-shell="{{ $publicLayoutCss['shell'] }}"
             data-public-layout-art="{{ $publicLayoutCss['art'] }}"
-            data-public-layout-padding="{{ $publicLayoutCss['padding'] }}">
+            data-public-layout-padding="{{ $publicLayoutCss['padding'] }}"
+            data-folio-left-top="{{ $folioPlacement['leftTop'] }}"
+            data-folio-left-bottom="{{ $folioPlacement['leftBottom'] }}"
+            data-folio-right-top="{{ $folioPlacement['rightTop'] }}"
+            data-folio-right-bottom="{{ $folioPlacement['rightBottom'] }}"
+            data-folio-menu-left-bottom="{{ $folioPlacement['menuLeftBottom'] }}"
+            data-folio-menu-right-bottom="{{ $folioPlacement['menuRightBottom'] }}">
         @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
-            <style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; }</style>
+            <style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
         @endif
     </head>
     <body class="public-site">

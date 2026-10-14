@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    FOLIO_VARIANTS, MENU_VARIANTS, FOLIO_PLANE_BASE,
+    FOLIO_PLANE_BASE,
     buildCornerFrames, buildMenuCornerFrames, buildMenuBackingFrames, buildShadowFrames, buildCornerImpulse,
     buildPageImpulse, animatePageHeight, visibleHeightTransition, capturePublicFolio,
     advancePublicFolio, animatePublicHeroChange,
 } from '../../resources/js/public-folio-motion.js';
 
-const CONTENT_SHADOW = 'rgba(255,255,255,.31) -5px 7px 0px 0px';
+const CONTENT_SHADOW = 'rgba(255,255,255,.20) -3px 4px 0px 0px';
 const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
@@ -27,16 +27,16 @@ function fixture({ height = 540, menu = true, content = true } = {}) {
         computed.set(el, {
             '': { boxShadow: shadow },
             '::before': { content: '""', display: 'block',
-                top: topLeft, bottom: bottomLeft, left: name === 'menu' ? '-8.32px' : '-9.28px',
-                width: name === 'menu' ? '8.32px' : '9.28px' },
+                top: topLeft, bottom: bottomLeft, left: name === 'menu' ? '-6px' : '-7px',
+                width: name === 'menu' ? '6px' : '7px' },
             '::after': { content: '""', display: 'block',
-                top: topRight, bottom: bottomRight, right: name === 'menu' ? '-7.04px' : '-7.68px',
-                width: name === 'menu' ? '7.04px' : '7.68px' },
+                top: topRight, bottom: bottomRight, right: name === 'menu' ? '-5.5px' : '-6px',
+                width: name === 'menu' ? '5.5px' : '6px' },
         });
         return el;
     };
-    const paper = content ? create('content', CONTENT_SHADOW, '17.6px','64px','60.8px','18.4px') : null;
-    const nav = menu ? create('menu',MENU_SHADOW,'0px','32%','0px','1px') : null;
+    const paper = content ? create('content', CONTENT_SHADOW, '20px','55px','55px','18px') : null;
+    const nav = menu ? create('menu',MENU_SHADOW,'0px','40px','0px','8px') : null;
     const body = content ? create('body','none','0px','0px','0px','0px') : null;
     const root = { querySelector: selector => ({
         '#content': paper, '.site-navigation': nav,
@@ -87,190 +87,106 @@ function projected(value) {
     });
 }
 
-test('accepted original lines, bounded menu ends and visible paper baselines',()=>{
-    assert.deepEqual(FOLIO_VARIANTS[0],['1.10rem','4rem','3.8rem','1.15rem']);
-    assert.deepEqual(MENU_VARIANTS[0],['0rem','32%','0rem','1px']);
-    assert.ok(MENU_VARIANTS.every(v=>v.every(p=>parseFloat(p)>=0)));
-    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-5,7]);
-    assert.deepEqual(FOLIO_PLANE_BASE.content,[-5,7]);
-});
+const numeric = value => {
+    const numbers = [...String(value).matchAll(/(-?\d+(?:\.\d+)?)px/g)].map(m=>Number(m[1]));
+    return numbers.length===2 ? numbers[0]+numbers[1] : numbers[0];
+};
 
-test('ambient and navigation-impulse corners only move one axis per frame',()=>{
-    const start={top:'18px',bottom:'64px',left:'-11.2px',width:'8.8px'};
-    const edge={side:'left',offset:'-.58rem',width:'.58rem'};
-    const sequences=[
-        buildCornerFrames(start,'1.25rem','4.14rem',edge),
-        buildCornerImpulse(start,start,edge,true),
-        buildCornerImpulse(start,start,edge,false),
-    ];
-    for(const [index,frames] of sequences.entries()){
-        assert.equal(frames[0].top,frames.at(-1).top);
-        assert.equal(frames[0].bottom,frames.at(-1).bottom);
-        if(index===0){
-            assert.equal(frames[0].left,frames.at(-1).left);
-            assert.equal(frames[0].width,frames.at(-1).width);
-        } else {
-            // A one-shot must finish on canonical CSS, not the old in-flight
-            // offset. Comparing starting strings would hide the real snap.
-            assert.equal(frames.at(-1).left,edge.offset);
-            assert.equal(frames.at(-1).width,edge.width);
-        }
-        assert.equal(frames[0].offset,0);
-        assert.equal(frames.at(-1).offset,1);
-        for(let i=1;i<frames.length;i++){
-            const a=frames[i-1],b=frames[i];
-            const vertical=a.top!==b.top||a.bottom!==b.bottom;
-            const horizontal=a.left!==b.left||a.width!==b.width;
-            assert.ok(!(vertical&&horizontal),'not diagonal');
-            assert.ok(b.offset>a.offset, 'all frame offsets must strictly increase');
-        }
-    }
-});
-
-test('rapid successive builds never accumulate corner offset or jump at completion',()=>{
-    const base={top:'17.6px',bottom:'64px',left:'-11.2px',width:'8.8px'};
-    const edge={side:'left',offset:'-.58rem',width:'.58rem'};
-    // Equivalent to a click in the middle of a prior build, with its corner
-    // already pushed out and shortened.
-    const active={top:'24px',bottom:'70px',left:'-15px',width:'12.6px'};
-    for (const growing of [true,false]) {
-        const frames=buildCornerImpulse(active,base,edge,growing);
-        assert.equal(frames[0].left,active.left);
-        assert.deepEqual([frames.at(-1).top,frames.at(-1).bottom,
-            frames.at(-1).left,frames.at(-1).width],
-            [base.top,base.bottom,edge.offset,edge.width]);
-        const out=frames.find(f=>f.left.includes(' - 3.1px)'));
-        assert.equal(out.left,'calc(-.58rem - 3.1px)');
-        assert.equal(out.width,'calc(.58rem + 3.1px)');
-        assert.ok(frames.every(f=>!f.left.includes('-15px - 3.1px')),
-            'a second click cannot add distance to an already displaced line');
-        assert.ok(frames.some(f=>f.top==='calc(17.6px + 40.00px)'
-            || f.top==='calc(17.6px + 32.00px)'),
-            'the vertical contour visibly contracts at the top');
-        assert.ok(frames.some(f=>f.bottom==='calc(64px + 46.00px)'
-            || f.bottom==='calc(64px + 38.00px)'),
-            'the lower endpoint visibly contracts');
-    }
-});
-
-test('short pages keep at least 40px of visible contour during a build',()=>{
-    const base={top:'17px',bottom:'60px',left:'-9.28px',width:'9.28px'};
-    const edge={side:'left',offset:'-.58rem',width:'.58rem'};
-    const frames=buildCornerImpulse(base,base,edge,true,160);
-    const cutTop=parseFloat(frames[2].top.split('+')[1]);
-    const cutBottom=parseFloat(frames[3].bottom.split('+')[1]);
-    assert.ok(cutTop+cutBottom<=160-17-60-40+.01);
-    assert.ok(cutTop>0&&cutBottom>0);
-});
-
-test('menu lines never touch bottom, can reverse early, and left always ends higher',()=>{
-    const configurations=[
-        {side:'left',width:'8.32px',distance:'-8.32px',baseline:'32%',high:'73%',middle:'42%'},
-        {side:'right',width:'7.04px',distance:'-7.04px',baseline:'1px',high:'26%',middle:'6%'},
-    ];
-    const samples=configurations.map((conf,index)=>{
-        const start={top:'0px',bottom:conf.baseline,width:conf.width,[conf.side]:conf.distance};
-        const frames=buildMenuCornerFrames(start,index);
-        assert.equal(frames.length,10);
-        assert.deepEqual(frames.map(f=>f.offset),[0,.08,.29,.37,.54,.61,.80,.86,.97,1]);
-        assert.ok(frames.every(f=>f.top==='0px'), 'always anchored to upper edge');
-        assert.ok(frames.every(f=>f[conf.side]===conf.distance&&f.width===conf.width));
-        assert.ok(frames.every(f=>parseFloat(f.bottom)>0), 'never touches lower edge');
-        assert.equal(frames[0].bottom,frames.at(-1).bottom);
-        assert.deepEqual(frames.map(f=>f.bottom),[
-            conf.baseline,conf.baseline,
-            index===0?'60%':'17%', index===0?'60%':'17%',
-            conf.middle,conf.middle,conf.high,conf.high,conf.baseline,conf.baseline,
-        ]);
-        return frames;
-    });
-    const pixels=(value,height=60)=>value.endsWith('%')
-        ? parseFloat(value)*height/100 : parseFloat(value);
-    // Since cycles are asynchronous, compare EVERY possible phase pair.
-    for (const left of samples[0]){
-        for (const right of samples[1]){
-            assert.ok(pixels(left.bottom)>pixels(right.bottom),
-                'the left stroke must always be shorter than right');
-        }
-    }
-});
-
-test('Content retains exactly one pale backing during ambient and page builds',()=>{
-    for(const frames of [
-        buildShadowFrames(CONTENT_SHADOW),
-        buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,true),
-        buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,false),
-    ])for(const frame of frames){
-        assert.equal(shadowLayers(frame.boxShadow).length,1);
-        const [sheet]=projected(frame.boxShadow);
-        assert.ok(sheet.left<-.3);
-        assert.ok(sheet.bottom>.3);
-    }
-});
-
-test('Menu and Content share one canonical backing projection with calm independent motion',()=>{
-    const frames=buildMenuBackingFrames();
+test('Content and Menu share softer, closer paper baselines',()=>{
+    assert.deepEqual(FOLIO_PLANE_BASE.content,[-3,4]);
     assert.deepEqual(FOLIO_PLANE_BASE.menu,FOLIO_PLANE_BASE.content);
-    assert.equal(frames[0]['--public-menu-sheet-x'],'-5px');
-    assert.equal(frames[0]['--public-menu-sheet-y'],'7px');
-    assert.equal(frames.at(-1)['--public-menu-sheet-x'],'-5px');
-    assert.equal(frames.at(-1)['--public-menu-sheet-y'],'7px');
-    assert.ok(frames.some(f=>parseFloat(f['--public-menu-sheet-x'])<-5));
-    assert.ok(frames.some(f=>parseFloat(f['--public-menu-sheet-y'])>7));
-    for(let i=0;i<frames.length;i++){
-        const f=frames[i], x=parseFloat(f['--public-menu-sheet-x']),y=parseFloat(f['--public-menu-sheet-y']);
-        assert.ok(x>=-5.7&&x<=-5,'the white left outline stays clear');
-        assert.ok(-x>=5,'the right gap never shrinks below 5px');
-        assert.ok(y>=7&&y<=8,'the downward motion begins at 7px');
-        if(i>0){
-            const p=frames[i-1];
-            assert.ok(f.offset>p.offset);
-            assert.ok(f['--public-menu-sheet-x']===p['--public-menu-sheet-x']
-                ||f['--public-menu-sheet-y']===p['--public-menu-sheet-y'],
-                'only one axis changes per segment');
+});
+
+test('ambient Content lines move only a couple of pixels with long rests',()=>{
+    for(const base of [
+        {top:'18px',bottom:'55px',left:'-7px',width:'7px'},
+        {top:'47px',bottom:'16px',right:'-6px',width:'6px'},
+    ]){
+        const f=buildCornerFrames(base);
+        assert.deepEqual(f.map(s=>s.offset),[0,.25,.31,.37,.60,.66,.72,.95,1]);
+        assert.equal(f[0].top,base.top);
+        assert.equal(f.at(-1).top,base.top);
+        assert.equal(f.at(-1).bottom,base.bottom);
+        assert.ok(f.every(s=>s.left===base.left&&s.right===base.right&&s.width===base.width));
+        assert.ok(f.every(s=>Math.abs(numeric(s.top)-numeric(base.top))<=1.5));
+        assert.ok(f.every(s=>Math.abs(numeric(s.bottom)-numeric(base.bottom))<=2));
+        assert.ok(f[7].top===base.top&&f[7].bottom===base.bottom);
+    }
+});
+
+test('Content page builds are short, subtle and cannot accumulate horizontal offset',()=>{
+    const edge={side:'left',offset:'-7px',width:'7px'};
+    const base={top:'20px',bottom:'55px',left:'-7px',width:'7px'};
+    const active={top:'26px',bottom:'65px',left:'-13px',width:'13px'};
+    for(const growing of [true,false]){
+        const f=buildCornerImpulse(active,base,edge,growing);
+        assert.equal(f[0].left,active.left);
+        assert.deepEqual([f.at(-1).top,f.at(-1).bottom,f.at(-1).left,f.at(-1).width],
+            [base.top,base.bottom,edge.offset,edge.width]);
+        assert.equal(f[1].left,'calc(-7px - .7px)');
+        assert.equal(f[1].width,'calc(7px + .7px)');
+        assert.ok(f.every(s=>!s.left.includes('-13px - ')));
+        assert.ok(parseFloat(f[2].top.split('+')[1])<=6);
+        assert.ok(parseFloat(f[3].bottom.split('+')[1])<=8);
+    }
+});
+
+test('short-page contour contraction retains at least 40px of visible line',()=>{
+    const base={top:'17px',bottom:'60px',left:'-7px',width:'7px'};
+    const f=buildCornerImpulse(base,base,{side:'left',offset:'-7px',width:'7px'},true,120);
+    const a=parseFloat(f[2].top.split('+')[1]),b=parseFloat(f[3].bottom.split('+')[1]);
+    assert.ok(a+b<=120-17-60-40+.01);
+});
+
+test('Menu corner outlines are top-connected, calm and always left-shorter',()=>{
+    const pair=[
+        buildMenuCornerFrames({top:'0px',bottom:'40px',left:'-6px',width:'6px'},0),
+        buildMenuCornerFrames({top:'0px',bottom:'7px',right:'-5.5px',width:'5.5px'},1),
+    ];
+    for(const f of pair){
+        assert.ok(f.every(s=>s.top==='0px'));
+        assert.ok(f.every(s=>numeric(s.bottom)>0));
+        assert.equal(f[0].bottom,f.at(-1).bottom);
+        assert.ok(f.every(s=>s.offset>=0&&s.offset<=1));
+    }
+    for(const l of pair[0])for(const r of pair[1])
+        assert.ok(numeric(l.bottom)>numeric(r.bottom)+20);
+});
+
+test('ambient Content shadow uses just two subpixel motions and long holds',()=>{
+    const f=buildShadowFrames(CONTENT_SHADOW);
+    assert.ok(f.every(s=>shadowLayers(s.boxShadow).length===1));
+    assert.equal(f.at(-1).boxShadow,CONTENT_SHADOW);
+    for(const s of f){
+        const [x,y]=coords(s.boxShadow);
+        assert.ok(x>=-3.4&&x<=-3);
+        assert.ok(y>=4&&y<=4.5);
+    }
+});
+
+test('Menu backing keeps the same base and only a fractional-pixel excursion',()=>{
+    const f=buildMenuBackingFrames();
+    assert.equal(f[0]['--public-menu-sheet-x'],'-3px');
+    assert.equal(f[0]['--public-menu-sheet-y'],'4px');
+    assert.equal(f.at(-1)['--public-menu-sheet-x'],'-3px');
+    assert.equal(f.at(-1)['--public-menu-sheet-y'],'4px');
+    assert.ok(f.every(s=>{
+        const x=parseFloat(s['--public-menu-sheet-x']),y=parseFloat(s['--public-menu-sheet-y']);
+        return x>=-3.35&&x<=-3&&y>=4&&y<=4.45;
+    }));
+});
+
+test('Page-build shadow pulses are much smaller than the old folding motion',()=>{
+    for(const growing of [true,false]){
+        const f=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,growing);
+        assert.equal(f[0].boxShadow,CONTENT_SHADOW);
+        assert.equal(f.at(-1).boxShadow,CONTENT_SHADOW);
+        for(const s of f){
+            const [x,y]=coords(s.boxShadow);
+            assert.ok(x>=-3.65&&x<=-2.65);
+            assert.ok(y>=3.65&&y<=4.8);
         }
     }
-});
-
-test('ambient Content lines take one vertical excursion per endpoint and return smoothly',()=>{
-    for(const side of ['left','right']){
-        const start={top:'18px',bottom:'64px',width:'9px',[side]:'-9px'};
-        const edge={side,offset:'-.58rem',width:'.58rem'};
-        const frames=buildCornerFrames(start,'1.53rem','4.30rem',edge);
-        assert.equal(frames.length,11);
-        assert.deepEqual(frames.map(f=>f.offset),
-            [0,.12,.26,.36,.49,.62,.70,.81,.91,.98,1]);
-        assert.equal(frames[0].top,frames.at(-1).top);
-        assert.equal(frames[0].bottom,frames.at(-1).bottom);
-        const vertical=frames.slice(1).filter((f,i)=>
-            f.top!==frames[i].top||f.bottom!==frames[i].bottom);
-        assert.equal(vertical.length,4,
-            'one top and bottom extension, followed by one return each');
-        assert.ok(frames.every((f,i)=>i===0||f.offset>frames[i-1].offset));
-    }
-});
-
-test('Content backing moves only one axis per ambient/build frame',()=>{
-    for(const frames of [
-        buildShadowFrames(CONTENT_SHADOW),
-        buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,true),
-        buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,false),
-    ]) {
-        assert.equal(frames[0].boxShadow,CONTENT_SHADOW);
-        assert.equal(frames.at(-1).boxShadow,CONTENT_SHADOW);
-        for(let i=1;i<frames.length;i++){
-            const previous=coords(frames[i-1].boxShadow),next=coords(frames[i].boxShadow);
-            assert.ok(next.filter((value,j)=>value!==previous[j]).length<=1,
-                'no diagonal sheet movement');
-        }
-    }
-});
-
-test('single-sheet page-build impulse is stronger than calm ambient travel',()=>{
-    const growing=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,true);
-    assert.ok(Math.min(...growing.map(f=>coords(f.boxShadow)[0]))<-8);
-    const shrinking=buildPageImpulse(CONTENT_SHADOW,CONTENT_SHADOW,false);
-    assert.ok(Math.max(...shrinking.map(f=>coords(f.boxShadow)[0]))>-4);
 });
 
 test('long pages skip invisible heights while short pages animate their visible extent',()=>{
@@ -310,7 +226,7 @@ test('height animation itself uses the viewport cap, not the old gallery height'
             const animation=animatePageHeight(9000,root);
             assert.ok(animation);
             assert.deepEqual(animation.frames,[{height:'848px'},{height:'280px'}]);
-            assert.equal(animation.options.duration,780);
+            assert.equal(animation.options.duration,480);
             assert.equal(body.style.overflow,'clip');
             assert.equal(animations.filter(a=>a.name==='body').length,1);
         },{height:280});
@@ -323,7 +239,7 @@ test('every public page uses the same height transition and clips ONLY the inner
         assert.ok(transition);
         assert.equal(body.style.overflow,'clip');
         assert.deepEqual(transition.frames,[{height:'940px'},{height:'440px'}]);
-        assert.equal(transition.options.duration,780);
+        assert.equal(transition.options.duration,480);
         assert.equal(animations.filter(x=>x.name==='body').length,1);
         assert.equal(animatePageHeight(444,root),null);
     },{height:440});
@@ -334,7 +250,7 @@ test('initial document keeps slow breathing on content and menu',()=>{
         assert.equal(advancePublicFolio(root),true);
         assert.equal(effects.length,4);
         assert.ok(effects.every(e=>e.options.iterations===Infinity));
-        assert.deepEqual(effects.map(e=>e.options.duration),[25100,29700,34200,38800]);
+        assert.deepEqual(effects.map(e=>e.options.duration),[98000,113000,117000,133000]);
         assert.equal(animations.filter(a=>a.options.iterations===Infinity).length,2);
     });
 });
@@ -352,7 +268,7 @@ test('SPA swaps for any page type trigger a coordinated pulse and height build',
         assert.ok(reveal);
         assert.deepEqual(reveal.frames,[{height:'780px'},{height:'420px'}]);
         assert.equal(body.style.overflow,'clip');
-        assert.equal(animations.find(a=>a.name==='content').options.duration,1240);
+        assert.equal(animations.find(a=>a.name==='content').options.duration,620);
     },{height:420});
 });
 
@@ -363,7 +279,7 @@ test('same-height public page swaps still start the machine impulse',()=>{
         assert.equal(animations.some(a=>a.name==='body'),false);
         assert.equal(effects.length,4);
         assert.deepEqual(effects.map(e=>e.options.iterations),[1,1,Infinity,Infinity]);
-        assert.ok(animations.some(a=>a.name==='content'&&a.options.duration===1240));
+        assert.ok(animations.some(a=>a.name==='content'&&a.options.duration===620));
     },{height:500});
 });
 
