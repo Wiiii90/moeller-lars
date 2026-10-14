@@ -14,10 +14,11 @@
                     $decorative = (bool) ($block['image_decorative'] ?? false);
                     $imageAlt = $asset !== null && ! $decorative ? $media->altTextForAsset($asset) : '';
                     $loading = $blockIndex === 0 ? 'eager' : 'lazy';
+                    $imageScale = \App\Models\CustomPageSetting::imageScalePercent($block) / 100;
                 @endphp
 
                 @if ($asset !== null && $variant !== null)
-                    <figure class="custom-page__component custom-page__media custom-page__image">
+                    <figure class="custom-page__component custom-page__media custom-page__image" style="--custom-page-image-width: {{ 28 * $imageScale }}rem; --custom-page-image-width-narrow: {{ 20 * $imageScale }}rem;">
                         <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
                 @endif

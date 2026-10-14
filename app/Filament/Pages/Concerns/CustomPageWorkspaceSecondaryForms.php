@@ -14,6 +14,9 @@ trait CustomPageWorkspaceSecondaryForms
             ...$block,
             'publication_state' => CustomPageSetting::componentPublished($block) ? 'published' : 'unpublished',
         ];
+        if (($block['type'] ?? null) === 'image') {
+            $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
+        }
         if (($block['type'] ?? null) === 'list') {
             $data['items'] = array_map(static fn (array $item): array => [
                 'title' => $item['title'] ?? null,
@@ -58,6 +61,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'published' => $published,
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                ...$this->imageScalePayload($data, $existing),
             ],
             'text' => [
                 'type' => 'text',
@@ -80,6 +84,29 @@ trait CustomPageWorkspaceSecondaryForms
             'contact' => $this->contactComponentPayload($data, $published, $existing),
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
+    }
+
+    /** @param array<string, mixed> $data
+     * @param array<string, mixed>|null $existing
+     * @return array<string, int>
+     */
+    private function imageScalePayload(array $data, ?array $existing): array
+    {
+        $value = $data['image_scale_percent']
+            ?? ($existing['image_scale_percent'] ?? CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT);
+        $scale = filter_var($value, FILTER_VALIDATE_INT, [
+            'options' => [
+                'min_range' => CustomPageSetting::MIN_IMAGE_SCALE_PERCENT,
+                'max_range' => CustomPageSetting::MAX_IMAGE_SCALE_PERCENT,
+            ],
+        ]);
+        if ($scale === false) {
+            throw ValidationException::withMessages(['image_scale_percent' => 'Image size must be a whole percentage between 25 and 200.']);
+        }
+
+        return $scale === CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT
+            ? []
+            : ['image_scale_percent' => $scale];
     }
 
     /** @param array<string,mixed> $data

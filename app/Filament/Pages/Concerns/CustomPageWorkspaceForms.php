@@ -66,6 +66,16 @@ trait CustomPageWorkspaceForms
         return match ($type) {
             'image' => [
                 MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', imagesOnly: true)->required(),
+                TextInput::make('image_scale_percent')
+                    ->label('Image size')
+                    ->numeric()
+                    ->rules(['integer'])
+                    ->minValue(\App\Models\CustomPageSetting::MIN_IMAGE_SCALE_PERCENT)
+                    ->maxValue(\App\Models\CustomPageSetting::MAX_IMAGE_SCALE_PERCENT)
+                    ->step(1)
+                    ->suffix('%')
+                    ->default(\App\Models\CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT)
+                    ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false),
             ],
             'text' => $isNew
