@@ -44,11 +44,11 @@ PHP-/DB-/Browser-Prüfungen ohne tatsächliche Ausführung.
 
 | Thema | Beleg und aktueller Umfang |
 | --- | --- |
-| Vollständiger App-PHP-Quellkatalog | [php-source-audit.md](docs/architecture/php-source-audit.md): **248** `app/**/*.php`, **214 Klassen, 27 Traits, 7 Enums**, **900** `App\\...`-Importdeklarationen, davon **717** modulübergreifend; Quellenvergleich mit komplettem Git-Tree |
+| PHP-Quellkatalog | [php-source-audit.md](docs/architecture/php-source-audit.md): **eingefroren** 248 Typdateien / 214 Klassen / 27 Traits / 7 Enums / 900 Imports (717 cross-module); **aktueller Tree 245 PHP-Dateien** nach drei entfernten Custom-Page-Traits, aktuelle Importgesamtsumme **unbekannt**, Generator/Graph nicht regeneriert |
 | Modul-/Klassendiagramme | [20 einzelne Importgraphen](docs/architecture/class-import-diagrams.md) sowie [aggregierter Modulgraph](docs/architecture/generated/app-module-imports.mmd); **nur deklarative Imports**, keine Laufzeitaufrufe |
 | Eloquent | [eloquent-relations.md](docs/architecture/eloquent-relations.md): alle **26** Models, **48** explizite Relation-Kanten, auch Self-Relations; **nicht** physisches SQL-ERD |
 | PHP-Generatoren | `scripts/generate-architecture-inventory.php`, `generate-architecture-relations.php`, `generate-architecture-eloquent.php`, `generate-architecture-import-diagrams.php` und weitere unter `scripts/`; **isolierte Fixture-Prüfungen**, kein vollständiger nativer Checkout-Lauf |
-| Admin UI | [ui-surfaces.md](docs/architecture/ui-surfaces.md): **eingefrorener Stand `337da15b`** mit 9 Pages, 26 Concerns, 2 Livewire-Komponenten, 26 Trait-Kanten und 72 literal Actions; **nach Gallery-/Journal-Header-Refactor nicht regeneriert** |
+| Admin UI | [ui-surfaces.md](docs/architecture/ui-surfaces.md): **eingefroren** 9 Pages / 26 Concerns / 2 Livewire / 26 Trait-Kanten / 72 literal Actions; aktueller Tree hat **23 Concerns**, Custom Page **sieben** direkte Traits; der UI-Generator ist **nicht** neu gelaufen |
 | Services und HTTP | [admin-publication-calls.md](docs/architecture/admin-publication-calls.md): **21** quellenverankerte direkte Call-Sites; [runtime-entrypoints.md](docs/architecture/runtime-entrypoints.md): **20** explizite Webrouten plus Middleware/Filament/JS; dynamische Route-Registrierung offen |
 | Lifecycle / Activity | [lifecycles.md](docs/architecture/lifecycles.md): **5** Domänenautomaten, **35** geprüfte Quellanker; [Working-Operationen](docs/architecture/publication-working-operations.md): Restore/Revert/Reset und **36** geprüfte Anker |
 | Public Inhaltsdaten | [structured-components.md](docs/architecture/structured-components.md): sechs Persistenztypen; Contact-Heading und drei JSON-Kinder, List-`context` mit Legacy-Projektion; **älterer JSON-Typkatalog eingefroren**, Home/UI separat |
@@ -124,18 +124,18 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ### Quell- und Generatorstand
 
-- **Zuletzt vollständig aufgenommener Originalbestand:** 248 App-PHP-Dateien,
+- **Zuletzt vollständig aufgenommener *historischer* Originalbestand:** 248 App-PHP-Dateien,
   214 Klassen, 27 Traits, 7 Enums, 900 deklarierte interne Imports,
   davon 717 modulübergreifend, und 20 einzelne Importdiagramme.
   Der Journal-/Settings-Refactor ergab in einer **statischen Delta-Prüfung**
-  **901 interne / 718 modulübergreifende Imports**. Die eingefrorenen
+  **901 interne / 718 modulübergreifende Imports** *nur zum damaligen Zwischenstand*. Der aktuelle Tree enthält nach drei gelöschten Traits **245 PHP-Dateien**; die Importgesamtsumme wurde noch nicht vollständig neu gezählt. Die eingefrorenen
   JSON-/Mermaid-Graphen wurden **noch nicht vollständig regeneriert**;
   ihre ursprüngliche `source_ref` nicht fälschlich auf den neuen Commit
   heben. [Import-Audit](docs/architecture/php-source-audit.md).
 - **Models/Relationen:** 26 Eloquent-Modelldateien und 48 explizite
   Relationsmethoden abgeglichen; kein aus PostgreSQL abgeleitetes ERD.
   **HTTP:** 20 explizite Laravel-Routen; Filament-/Livewire-Registrierung
-  bleibt dynamisch. **Admin-Quelle:** 9 Pages, 26 Concerns, 2 Livewire-
+  bleibt dynamisch. **Eingefrorene Admin-Quelle:** 9 Pages, 26 Concerns, 2 Livewire-
   Komponenten; 26 Trait-Kanten/72 literal `Action::make`-
   Vorkommen **nur im eingefrorenen `337da15b`-Quellkatalog**.
   Die jüngsten Journal-/Gallery-Header-Rollen sind nicht als
@@ -162,6 +162,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
 
 - **Image-Größe (`dev@b6fa7a46`):** Custom Page bietet `image_scale_percent` 25–200 %, Default 100 % als implizites **nicht gespeichertes** Feld. Das Public-Layout multipliziert seine bestehenden Maximalbreiten, ohne Bildzoom oder neue Media-Auslieferung. Home kann den JSON-Wert lesen, sein Editor hat nicht automatisch dieselbe Kontrolle. Siehe [Content-Audit](docs/architecture/structured-components.md#image-size-optionales-persistenzfeld); Feature-Testdatei nur gelesen.
+- **Aktueller Tree-Delta (14.10.2026):** Insgesamt 245 `app/**/*.php` statt eingefrorenen 248; `app/Filament/Pages/Concerns/` enthält 23 Dateien statt 26. `CustomPageWorkspace` bindet sieben statt zehn eigene Traits ein. [UI-Audit](docs/architecture/ui-surfaces.md) und [PHP-Audit](docs/architecture/php-source-audit.md) begrenzen die Ableitung auf Source/Tree und erhalten den alten Generatorstand ausdrücklich.
 - **Komponentenstand bis `dev@3c1bc75f`:** Custom Page hat die alten Child-Ordering-/Projection-/Action-Traits entfernt. Contact-Heading sowie Toggles und bedingte Felder leben in einem Parent-Edit-Owner; verdeckte Social-/Formwerte bleiben beim Speichern erhalten. Der geteilte Home-/Custom-List-Editor nutzt `Entry / Context / Published / Details`; alte Date-/Meta-/Location-/URL-Felder werden über die Model-Compatibility-Projektion abgebildet. [Content-Audit](docs/architecture/structured-components.md) und [Dialogvertrag](docs/ADMIN-DIALOG-CONTRACT.md) dokumentieren diese Grenze; `structured-components.json` bleibt ausdrücklich ein älterer eingefrorener Generatorstand. Keine Tests dieses Workstreams ausgeführt.
 
 - **Root-Rich-Text-Regel abgeglichen:** `AGENTS.md` erlaubt jetzt ausdrücklich die zentral validierte externe HTTP(S)-Image-Option neben kanonischem Storage-`media:<id>`. `AdminRichText`, `SafeRichTextRenderer` und `SafeLinkPolicy` zeigen diesen tatsächlich existierenden Pfad; unvalidierte/externe unsichere Schemes und zweite Editor-Pipelines bleiben ausgeschlossen.

@@ -1,6 +1,6 @@
 # Filament- und Livewire-Komposition
 
-**Untersuchter Code:** `app/Filament/Pages/*.php`, `app/Filament/Pages/Concerns/*.php` und `app/Livewire/Admin/*.php` auf `dev` (Stand `337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`). 9 direkt deklarierte Filament-Page-Klassen, 26 Concern-Dateien und 2 eigenständige Livewire-Komponenten. Dies ist **Quellstruktur**, keine Aussage darüber, welche dynamisch registrierten Routen gerade erreichbar sind.
+**Eingefrorener Generator-Quellstand:** `dev@337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`, damals 9 Filament Pages, 26 Concern-Dateien und 2 Livewire-Komponenten. **Separater aktueller Git-Tree-Abgleich:** `docs@597559f93bc0f5031273291d6a0f12bf644a75e4` hat weiterhin 9 Pages und 2 Komponenten, aber nur noch **23 Concern-Dateien**, nachdem drei veraltete Custom-Page-Child-Owner entfernt wurden. Diese aktuellen Zahlen sind ein gezielter Pfad-/Trait-Use-Delta, **keine neu generierte vollständige Action-Inventur** und kein Nachweis dynamisch registrierter Routen.
 
 ## Pages und tatsächliche Slug-Deklarationen
 
@@ -11,7 +11,7 @@
 | [SitePages](../../app/Filament/Pages/SitePages.php) | `pages` | besitzt Trait `ManagesSitePageDialogs` |
 | [HomePresentation](../../app/Filament/Pages/HomePresentation.php) | `pages/home` | nutzt `HomePresentationChildren`, zusätzlich `WithFileUploads` von Livewire |
 | [GalleryWorkspace](../../app/Filament/Pages/GalleryWorkspace.php) | `pages/gallery/{gallery}` | nutzt zehn interne `GalleryWorkspace*`-Concerns |
-| [CustomPageWorkspace](../../app/Filament/Pages/CustomPageWorkspace.php) | `pages/custom/{section}` | nutzt zehn interne `CustomPageWorkspace*`-Concerns |
+| [CustomPageWorkspace](../../app/Filament/Pages/CustomPageWorkspace.php) | `pages/custom/{section}` | nutzt aktuell **sieben** interne `CustomPageWorkspace*`-Concerns (eingefrorener Katalog: zehn) |
 | [JournalWorkspace](../../app/Filament/Pages/JournalWorkspace.php) | `pages/journal/{section}` | `getView()` wählt View dynamisch anhand des Journal-Templates |
 | [Activity](../../app/Filament/Pages/Activity.php) | kein explizites `$slug` | Undo, Restore und Revert im Workspace |
 | [Analytics](../../app/Filament/Pages/Analytics.php) | kein explizites `$slug` | eigene Reporting- und Filterlogik |
@@ -27,7 +27,7 @@ flowchart TD
     Pages --> Site["SitePages"]
     Pages --> Home["HomePresentation"]
     Gallery --> G["10 GalleryWorkspace Concerns"]
-    Custom --> C["10 CustomPageWorkspace Concerns"]
+    Custom --> C["7 aktuelle CustomPageWorkspace Concerns"]
     Site --> S["ManagesSitePageDialogs"]
     Home --> H["HomePresentationChildren"]
     Site -. "weiter delegierte Traits im Concern" .-> Other["ManagesSitePage*"]
@@ -35,7 +35,24 @@ flowchart TD
     Livewire --> Storage["SiteStorageReclaimControl"]
 ```
 
-Der erzeugte Graph weist **22 direkte Page-zu-Concern-Kanten** und **vier Concern-zu-Concern-Kanten** aus. Letztere kommen von `ManagesSitePageDialogs`, das die vier weiteren `ManagesSitePage*`-Traits nutzt. Trait-Use ist eine belegte PHP-Strukturbeziehung, noch kein Runtime-Aufruf. Fachliche Methode ≠ Filament-Action ≠ HTML-/Livewire-Event.
+Der **eingefrorene generierte** Graph weist 22 direkte Page-zu-Concern-Kanten und vier Concern-zu-Concern-Kanten aus. Der **aktuelle** Custom-Page-Quelltext nutzt drei Traits weniger (sieben statt zehn); damit ergeben sich gegenüber dem alten Graph **19 direkte Page-zu-Concern-Kanten**, sofern die übrigen damals erfassten 12 nicht veränderten Page-Trait-Uses gleich bleiben. Dies ist ein quellengeprüfter begrenzter Delta, **kein vollständiger nativer Regenerierungslauf**. Letztere kommen von `ManagesSitePageDialogs`, das die vier weiteren `ManagesSitePage*`-Traits nutzt. Trait-Use ist eine belegte PHP-Strukturbeziehung, noch kein Runtime-Aufruf. Fachliche Methode ≠ Filament-Action ≠ HTML-/Livewire-Event.
+
+### Entfallene Custom-Page-Child-Owner
+
+`CustomPageWorkspaceChildOrdering.php`,
+`CustomPageWorkspaceChildProjection.php` und
+`CustomPageWorkspaceListContactActions.php` wurden im aktuellen
+`dev`-Quellpfad **gelöscht**, ebenso ihre Trait-Nutzung und die
+separaten Child-Selection-/Action-Routen. Die **Custom-Page-Tabelle**
+stellt nur noch Elternkomponenten dar; die List-Einträge und Contact-
+Kindoptionen werden über deren bestehende Parent-Edit-Actions
+konfiguriert. Home zeigt weiterhin eine eigene Contact-Child-
+Präsentation. Der archivierte
+[JSON-UI-Katalog](generated/ui-surfaces.json) und sein
+[Mermaid-Graph](generated/ui-composition.mmd) enthalten
+**absichtlich noch den historischen Stand** und sind als Generator-
+Outputs bei der nächsten vollständigen `--write/--check`-Ausführung
+mit dem aktuellen Tree neu zu erstellen, nicht von Hand zu patchen.
 
 ## Eigenständige Livewire-Komponenten
 

@@ -48,6 +48,18 @@ Die vier übrigen geänderten PHP-Dateien behalten ihre projektinternen Imports 
 
 **Wichtige Generationgrenze:** [`generated/app-source-audit.json`](generated/app-source-audit.json), [Modulimportgraph](generated/app-module-imports.mmd) und [20 Klassendiagramme](class-import-diagrams.md) haben weiterhin **900/717** aus ihrer ursprünglichen `source_ref` und sind auf diesem neuen Stand **für Importkanten nicht mehr vollständig aktuell**. Sie wurden bewusst nicht manuell auf eine angeblich nativ regenerierte Version umetikettiert. Der Delta ist ein überprüfbarer Ergänzungsbeleg; ein echter vollständiger Generator-/Diagrammlauf bleibt offen.
 
+## Neuerer Git-Tree-Abgleich: Custom-Page-Child-Cleanup
+
+**Quelle:** Rekursiver Git-Tree `docs@597559f93bc0f5031273291d6a0f12bf644a75e4` nach Integration von `dev@b6fa7a461331e73bb30ea4debaeb26bfeeffdbe9`. Der aktuelle Tree enthält **245** Dateien unter `app/**/*.php`, nicht mehr 248. Die drei tatsächlich entfernten Traits sind:
+
+- `app/Filament/Pages/Concerns/CustomPageWorkspaceChildOrdering.php`
+- `app/Filament/Pages/Concerns/CustomPageWorkspaceChildProjection.php`
+- `app/Filament/Pages/Concerns/CustomPageWorkspaceListContactActions.php`
+
+`CustomPageWorkspace` bindet aktuell **sieben** interne eigene Traits direkt ein, nicht mehr zehn. `app/Filament/Pages/Concerns/` enthält insgesamt **23** PHP-Dateien statt 26. Das ist ein reproduzierbarer **Pfadzähl-/Source-Delta** gegen den eingecheckten Git-Tree; die drei gelöschten Dateien waren Traits im vorherigen Inventar. Bei sonst gleichbleibenden benannten Typen ergibt sich damit rechnerisch ein Typbestand von **214 Klassen / 24 Traits / 7 Enums** — ausdrücklich **keine erneute unabhängige Vollinventarisierung aller 245 Deklarationen**.
+
+Die früheren **900/717** Importzahlen des generierten Originalkatalogs und der oben ausgewiesene Zwischenstand **901/718** gelten nur für ihre jeweils geprüften historischen Source-Refs. Durch die spätere umfangreiche Filament-/Custom-Page-Refaktorierung wurden ganze Trait-Dateien und Importdeklarationen entfernt sowie weitere PHP-Dateien verändert. Die **aktuelle Gesamtsumme der Imports ist hier nicht neu gezählt**. Insbesondere darf weder der 900er Graph noch die frühere Rechnung 901/718 als aktuelle Quelle ausgegeben werden. Nötig bleibt der vollständige native `--write`-/`--check`-Generatorlauf auf einem aktuellen vollständigen Checkout; bis dahin dienen die ursprünglichen JSON-/Mermaid-Dateien ausschließlich als **eingefrorener Vergleichsstand**.
+
 ## Modulübergreifende Imports
 
 | Quellmodul → importiertes Modul | Explizite Deklarationen |
