@@ -54,6 +54,9 @@
         @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
             <style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
         @endif
+        {{-- Dynamic component dimensions live in nonce-authorized CSS, never
+             forbidden inline style attributes. --}}
+        @stack('public-component-styles')
     </head>
     <body class="public-site">
         @if ($isPreview)
