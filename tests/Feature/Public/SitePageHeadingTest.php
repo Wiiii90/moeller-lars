@@ -105,3 +105,17 @@ it('validates heading controls and uses one schema for Pages and Home', function
     expect(file_get_contents(resource_path('views/pages/artworks/index.blade.php')))
         ->toContain('<x-public.page-heading :section="$section" />');
 });
+
+it('exposes one heading editor for Custom Page creation and a stable Pages edit schema', function (): void {
+    $create = file_get_contents(app_path('Filament/Pages/Concerns/ManagesSitePageCreateDialog.php'));
+    $edit = file_get_contents(app_path('Filament/Pages/Concerns/ManagesSitePageEditDialog.php'));
+    $shared = file_get_contents(app_path('Filament/Support/PageHeadingFields.php'));
+
+    expect($create)->toContain('PageHeadingFields::schema()')
+        ->toContain('updatePageHeading($fresh, SitePageHeading::validated(')
+        ->and($edit)->toContain('->dialogSection($arguments)->hasPublicPage()')
+        ->toContain("'public_path' => '/'")
+        ->toContain("SiteSectionIdentityService::class")
+        ->and($shared)->toContain("Toggle::make('content_heading_enabled')")
+        ->toContain("Show page heading");
+});

@@ -270,15 +270,31 @@ trait CustomPageWorkspaceComponentActions
                     return; // A type change is handled by changeComponentType.
                 }
 
-                $changed = app(CustomPageEditorialService::class)->updateBlock(
-                    $this->settings(),
-                    $index,
-                    $type,
-                    $this->componentPayload($data, $existing),
-                );
+                $adoptValue = $type === 'image' ? ($data['adopt_component_index'] ?? null) : null;
+                $adoptIndex = $adoptValue === null || $adoptValue === ''
+                    ? null
+                    : filter_var($adoptValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+                if ($adoptIndex === false) {
+                    throw ValidationException::withMessages(['adopt_component_index' => 'Choose an existing component.']);
+                }
+                $payload = $this->componentPayload($data, $existing);
+                $changed = $adoptIndex === null
+                    ? app(CustomPageEditorialService::class)->updateBlock(
+                        $this->settings(), $index, $type, $payload,
+                    )
+                    : app(CustomPageEditorialService::class)->updateImageAndNest(
+                        $this->settings(), $index, $payload, $adoptIndex,
+                    );
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
+                if ($changed && $adoptIndex !== null) {
+                    $this->replaceMountedAction(
+                        'editComponent',
+                        ['componentIndex' => $adoptIndex < $index ? $index - 1 : $index,
+                            'componentType' => 'image'],
+                    );
+                }
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Component saved',

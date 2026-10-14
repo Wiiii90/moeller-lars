@@ -96,7 +96,7 @@ trait ManagesSitePageEditDialog
 
                     return $updated->wasChanged($field);
                 }, 'Page updated')
-                    ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
+                    ->visible(fn (): bool => $this->dialogSection($arguments)->hasPublicPage()),
             ])
             ->action(function (array $data, array $arguments): void {
                 $changed = DB::transaction(function () use ($data, $arguments): bool {
@@ -121,15 +121,44 @@ trait ManagesSitePageEditDialog
         $dialog = app(HomeSettingsDialog::class);
         $action = Action::make('editHome')
             ->label('Edit')
-            ->modalHeading('Home settings')
-            ->fillForm(fn (): array => $dialog->fill())
-            ->schema($dialog->schema())
+            ->modalHeading('Edit page')
+            ->fillForm(function () use ($dialog): array {
+                $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
+
+                return [
+                    ...$dialog->fill(),
+                    'name' => (string) $home->getAttribute('title'),
+                    'public_path' => '/',
+                    'parent_page' => 'Top level',
+                    'position' => 1,
+                ];
+            })
+            ->schema([
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema([
+                        TextInput::make('name')->label('Name')->required()->maxLength(160),
+                        TextInput::make('public_path')->label('Public slug')->disabled()->dehydrated(false),
+                        TextInput::make('parent_page')->label('Parent page')->disabled()->dehydrated(false),
+                        TextInput::make('position')->label('Position')->disabled()->dehydrated(false),
+                    ]),
+                ...$dialog->schema(),
+            ])
             ->action(function (array $data) use ($dialog): void {
-                $changed = $dialog->save($data);
+                $changed = DB::transaction(function () use ($dialog, $data): bool {
+                    $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
+                    $updated = app(SiteSectionIdentityService::class)->update(
+                        $home,
+                        trim((string) ($data['name'] ?? $home->getAttribute('title'))),
+                        null,
+                    );
+
+                    return $dialog->save($data) || $updated->wasChanged();
+                });
                 $this->loadSections(navigationChanged: $changed);
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
-                        title: 'Home settings saved',
+                        title: 'Page updated',
                         status: 'success',
                     );
                 }

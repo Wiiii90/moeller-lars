@@ -24,6 +24,21 @@ focus/close lifecycle, browser/test references and version-upgrade guards.
 Filament remains the single lock owner: do not replace its patched lifecycle
 with a second JS lock, global wheel interceptor or permanent scrollbar gutter.
 
+## Public CSP and rights protection
+
+Public scripts, styles, image features and animations MUST use the existing
+strict nonce-based CSP in `app/Http/Middleware/SecurityHeaders.php`. Never
+copy the permissive Admin/Pulse policy into Public, or add `unsafe-inline`,
+`unsafe-eval` or wildcard hosts as a workaround. Use Vite-bundled resources
+and the established nonce path; verify Livewire navigation too.
+
+Preserve the public HTML/media TDM rights reservation and its
+`/.well-known/tdmrep.json` discovery route, and the SEO-compatible robot
+opt-outs. Neither TDM nor robots.txt protects against downloads. Full-quality
+public Artwork Viewer originals are a deliberate product requirement.
+Matomo tracking must not operate without legally sufficient prior consent.
+Read `docs/PUBLIC-RIGHTS-AND-PRIVACY.md` before new public privacy work.
+
 ## No workarounds — mandatory stop rule
 
 This project builds coherent, canonical systems. **Workarounds, symptom-level patches, compensating hacks and parallel implementations are prohibited by default.** The moment an agent starts considering a workaround rather than a root-cause correction, it **MUST STOP IMMEDIATELY**: do not implement it, do not commit it, and do not continue by layering additional conditions, listeners, timers, retries, CSS overrides, state flags, fallback lifecycles or alternate persistence paths.

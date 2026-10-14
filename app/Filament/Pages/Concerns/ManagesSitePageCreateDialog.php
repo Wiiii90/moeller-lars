@@ -5,6 +5,8 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SitePageHeading;
+use App\Filament\Support\PageHeadingFields;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
@@ -78,6 +80,9 @@ trait ManagesSitePageCreateDialog
                             ->nullable()
                             ->placeholder('Last'),
                     ]),
+                PageHeadingFields::schema()
+                    ->visible(fn (Get $get): bool =>
+                        SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
             ])
             ->action(function (array $data): void {
                 $section = DB::transaction(fn (): SiteSection => $this->createPageFromDialog($data));
@@ -134,6 +139,17 @@ trait ManagesSitePageCreateDialog
 
         /** @var SiteSection $fresh */
         $fresh = SiteSection::query()->findOrFail($section->getKey());
+
+        // Add Page writes heading settings through the same editorial owner
+        // as Edit and Home, but only once the newly created page exists.
+        if ($fresh->hasPublicPage()) {
+            $fresh = $editorial->updatePageHeading($fresh, SitePageHeading::validated([
+                'content_heading_enabled' => (bool) ($data['content_heading_enabled'] ?? false),
+                'content_heading_override' => $data['content_heading_override'] ?? null,
+                'content_heading_alignment' => $data['content_heading_alignment'] ?? 'left',
+                'content_heading_divider' => $data['content_heading_divider'] ?? 'none',
+            ]));
+        }
 
         return $this->publishNewPageIfConfigured($fresh);
     }

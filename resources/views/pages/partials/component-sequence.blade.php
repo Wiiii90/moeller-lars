@@ -1,4 +1,8 @@
-    <div class="custom-page{{ $isHome ? ' home-components' : '' }}" aria-label="{{ $label }}">
+    @php
+        $isEmbedded = (bool) ($isEmbedded ?? false);
+        $imageBlockPrefix = $imageBlockPrefix ?? 'page';
+    @endphp
+    <div class="custom-page{{ $isHome ? ' home-components' : '' }}{{ $isEmbedded ? ' custom-page--embedded' : '' }}" @unless($isEmbedded)aria-label="{{ $label }}"@endunless>
         @foreach ($blocks as $blockIndex => $block)
             @php
                 $type = is_array($block) ? ($block['type'] ?? null) : null;
@@ -18,6 +22,13 @@
                 @endphp
 
                 @if ($asset !== null && $variant !== null)
+                    @php
+                        $imageChildren = $decorative && is_array($block['children'] ?? null) && $block['children'] !== []
+                            ? $block['children'] : [];
+                    @endphp
+                    @if ($imageChildren !== [])
+                        <div class="custom-page__image-group">
+                    @endif
                     {{-- Public CSP rejects style attributes; authorize the per-image
                          CSS variables with the request's nonce instead. --}}
                     @if ($imageScale !== 1.0)
@@ -30,9 +41,18 @@
                             </style>
                         @endpush
                     @endif
-                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image">
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
                         <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
+                    @if ($imageChildren !== [])
+                        @include('pages.partials.component-sequence', [
+                            'blocks' => $imageChildren,
+                            'label' => $label,
+                            'isEmbedded' => true,
+                            'imageBlockPrefix' => $imageBlockPrefix.'-'.$blockIndex,
+                        ])
+                        </div>
+                    @endif
                 @endif
             @endif
 
@@ -105,13 +125,13 @@
 
             @if ($type === 'contact')
                 <div class="custom-page__component custom-page__contact">
-                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" />
+                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" :heading-id="'contact-heading-'.$imageBlockPrefix.'-'.$blockIndex" />
                 </div>
             @endif
 
             @if ($type === 'legal_disclaimer' && $generalSettings->legal_disclaimer !== null)
-                <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading-{{ $blockIndex }}">
-                    <h2 id="legal-disclaimer-heading-{{ $blockIndex }}">Haftungsablehnung</h2>
+                <section class="legal-disclaimer custom-page__legal" aria-labelledby="legal-disclaimer-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
+                    <h2 id="legal-disclaimer-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Rechtlicher Hinweis</h2>
                     <p>{{ $generalSettings->legal_disclaimer }}</p>
                 </section>
             @endif

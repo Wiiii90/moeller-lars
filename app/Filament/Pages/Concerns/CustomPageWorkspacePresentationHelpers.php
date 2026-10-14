@@ -18,7 +18,13 @@ trait CustomPageWorkspacePresentationHelpers
     {
         $type = $block['type'] ?? null;
         if ($type === 'image') {
-            return ['primary' => $imageName ?: 'Image unavailable', 'secondary' => '', 'meta' => ''];
+            $count = count(is_array($block['children'] ?? null) ? $block['children'] : []);
+
+            return [
+                'primary' => $imageName ?: 'Image unavailable',
+                'secondary' => ($block['image_decorative'] ?? false) ? 'Decorative · wraps text' : '',
+                'meta' => $count ? $count.' '.($count === 1 ? 'child' : 'children') : '',
+            ];
         }
         if ($type === 'text') {
             $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
@@ -87,7 +93,21 @@ trait CustomPageWorkspacePresentationHelpers
         if (in_array($type, ['image', 'list'], true)) {
             $parts[] = $imageName;
         }
-        if ($type === 'text') {
+        if ($type === 'image') {
+            foreach ($block['children'] ?? [] as $child) {
+                if (! is_array($child)) {
+                    continue;
+                }
+                $parts[] = $this->componentParentSearchText($settings, $child, null);
+                if (($child['type'] ?? null) === 'list') {
+                    foreach ($child['items'] ?? [] as $item) {
+                        if (is_array($item)) {
+                            $parts[] = ($item['title'] ?? '').' '.(CustomPageSetting::listItemContext($item) ?? '');
+                        }
+                    }
+                }
+            }
+        } elseif ($type === 'text') {
             $parts[] = $block['title'] ?? null;
             $parts[] = $block['body'] ?? null;
         } elseif ($type === 'list') {

@@ -2,6 +2,7 @@
     'generalSettings',
     'children' => [],
     'title' => 'Contact',
+    'headingId' => 'contact-heading',
 ])
 
 @php
@@ -9,8 +10,8 @@
     $children = is_array($children) ? $children : [];
 @endphp
 
-<section class="contact-section" aria-labelledby="contact-heading">
-    <h2 id="contact-heading" class="category-heading">{{ filled($title) ? $title : 'Contact' }}</h2>
+<section class="contact-section" aria-labelledby="{{ $headingId }}">
+    <h2 id="{{ $headingId }}" class="category-heading">{{ filled($title) ? $title : 'Contact' }}</h2>
 
     @foreach ($children as $childIndex => $child)
         @continue(! is_array($child))
@@ -86,19 +87,19 @@
                     <form class="contact-form" method="post" action="{{ route('contact.submit') }}">
                         @csrf
 
-                        <div class="contact-form__field">
+                        <div class="contact-form__field contact-form__field--name">
                             <label for="contact-name">Name</label>
                             <input id="contact-name" name="name" type="text" maxlength="160" required value="{{ old('name') }}">
                             @error('name')<p class="contact-form__error">{{ $message }}</p>@enderror
                         </div>
 
-                        <div class="contact-form__field">
+                        <div class="contact-form__field contact-form__field--email">
                             <label for="contact-email">E-Mail</label>
                             <input id="contact-email" name="email" type="email" maxlength="320" required value="{{ old('email') }}">
                             @error('email')<p class="contact-form__error">{{ $message }}</p>@enderror
                         </div>
 
-                        <div class="contact-form__field">
+                        <div class="contact-form__field contact-form__field--message">
                             <label for="contact-message">Nachricht</label>
                             <textarea id="contact-message" name="message" maxlength="5000" rows="6" required>{{ old('message') }}</textarea>
                             @error('message')<p class="contact-form__error">{{ $message }}</p>@enderror

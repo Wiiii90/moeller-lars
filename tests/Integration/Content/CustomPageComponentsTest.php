@@ -71,3 +71,98 @@ it('accepts external HTTP image sources in Custom Page rich text without fetchin
     expect($rendered)->toContain('src="https://images.example.com/work.jpg"')
         ->and($rendered)->toContain('src="http://images.example.com/archive.jpg"');
 });
+
+
+it('keeps decorative layout semantic and undated CV entries without inventing dates', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('About artist', 'about-artist-components');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('decorative');
+
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true],
+        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1.6.1989'],
+            ['title' => 'Studies at Berlin University of the Arts', 'context' => '2010–2021'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+    ]]);
+
+    $blocks = $settings->fresh()->components();
+    expect($blocks[0]['image_decorative'])->toBeTrue()
+        ->and(CustomPageSetting::listItemContext($blocks[1]['items'][2]))->toBeNull()
+        ->and($blocks[1]['items'][2]['title'])->toBe('Lives and works in Hamburg');
+
+    $view = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
+    expect($view)->toContain('custom-page__image--wrapped')
+        ->toContain('pages.partials.component-sequence')
+        ->toContain('Rechtlicher Hinweis');
+
+    $styles = file_get_contents(resource_path('css/custom-pages.css'));
+    expect($styles)->toContain('float: left')
+        ->toContain('.custom-page__image-group')
+        ->not->toContain('grid-template-columns: subgrid');
+});
+
+it('stores ordered decorative Image children and rejects incompatible nested components', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Image composition', 'image-composition');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('nested');
+    $children = [
+        ['type' => 'list', 'title' => 'CV', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1989'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+        ['type' => 'text', 'title' => 'Practice', 'body' => 'My work'],
+        ['type' => 'contact', 'title' => 'Contact', 'children' => [
+            ['type' => 'public_email', 'published' => true],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
+        ]],
+    ];
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'image_decorative' => true,
+        'media_asset_id' => $asset->getKey(), 'children' => $children,
+    ]]]);
+    $saved = $settings->fresh()->components()[0];
+    expect(array_column($saved['children'], 'type'))->toBe(['list', 'text', 'contact'])
+        ->and(CustomPageSetting::listItemContext($saved['children'][0]['items'][1]))->toBeNull();
+    $settings->fresh()->assertReadyForPublic();
+
+    foreach ([
+        [['type' => 'image', 'media_asset_id' => $asset->getKey()]],
+        [['type' => 'divider', 'variant' => 'thin']],
+        [['type' => 'list', 'media_asset_id' => $asset->getKey(), 'items' => []]],
+        [['type' => 'contact', 'children' => [['type' => 'contact_form', 'published' => true]]]],
+    ] as $invalid) {
+        expect(fn () => $settings->update(['blocks' => [[
+            'type' => 'image', 'media_asset_id' => $asset->getKey(),
+            'image_decorative' => true, 'children' => $invalid,
+        ]]]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    }
+    expect(fn () => $settings->update(['blocks' => [[
+        'type' => 'image', 'media_asset_id' => $asset->getKey(),
+        'image_decorative' => false, 'children' => $children,
+    ]]]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+it('moves an existing CV list into an Image atomically without losing its entries', function (): void {
+    $settings = CustomPageSetting::query()->where(
+        'site_section_id',
+        app(SiteSectionEditorialService::class)->createCustomPage('Move CV', 'move-existing-cv')->getKey(),
+    )->firstOrFail();
+    $asset = customPageComponentAsset('cv-move');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'image_decorative' => true, 'media_asset_id' => $asset->getKey()],
+        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1989'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+    ]]);
+    $original = $settings->fresh()->components();
+    $changed = app(\App\Domain\Content\CustomPageEditorialService::class)->updateImageAndNest(
+        $settings, 0, $original[0], 1,
+    );
+    expect($changed)->toBeTrue();
+    $after = $settings->fresh()->components();
+    expect($after)->toHaveCount(1)
+        ->and($after[0]['children'][0])->toBe($original[1]);
+});

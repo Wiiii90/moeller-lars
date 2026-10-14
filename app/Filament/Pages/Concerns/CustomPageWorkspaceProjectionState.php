@@ -94,6 +94,13 @@ trait CustomPageWorkspaceProjectionState
             if ($type === 'list' && is_array($block['items'] ?? null)) {
                 $listEntryCount += count($block['items']);
             }
+            if ($type === 'image') {
+                foreach ($block['children'] ?? [] as $child) {
+                    if (is_array($child) && ($child['type'] ?? null) === 'list') {
+                        $listEntryCount += count($child['items'] ?? []);
+                    }
+                }
+            }
             if ($this->componentType !== 'any' && $type !== $this->componentType) {
                 continue;
             }

@@ -34,6 +34,18 @@ Only publicly eligible content appears in public rendering/navigation/sitemap/vi
 
 A canonical media **reference** does not automatically mean the asset is publicly deliverable.
 
+## Rights and privacy
+
+Public HTML/media responses declare a TDM rights reservation with the
+`tdm-reservation: 1` header and `/.well-known/tdmrep.json`. The public
+`robots.txt` excludes documented model-training/data collectors while
+preserving search indexing and the sitemap. These signals do not block
+human access to high-quality Artwork Viewer originals. No additional
+footer, menu entry, visual copyright overlay or quality downgrade is part
+of this contract. Artist-authored texts may live on the About/Contact
+Custom Page; Matomo consent is owned by the website, not the artist's
+editable content. See [the implementation plan](PUBLIC-RIGHTS-AND-PRIVACY.md).
+
 ## Site navigation
 
 Public visits use the already installed Livewire 4 `wire:navigate` document-swap
@@ -174,14 +186,15 @@ The image viewer supports close/Escape, visible zoom, wheel/trackpad zoom, touch
 
 Canonical Rich Text public rendering uses Markdown through `SafeRichTextRenderer`.
 
-Embedded Storage media images use canonical `media:<id>` references resolved by central media rendering. Arbitrary external-image URLs and legacy Journal inline-token runtime syntax are not equivalent public formats.
+Embedded Storage media images use canonical `media:<id>` references resolved by central media rendering. Explicitly validated HTTP(S) external-image URLs are supported through `SafeLinkPolicy` and `SafeRichTextRenderer`; they are not equivalent to canonical Storage `media:<id>` references and must also satisfy the delivered public CSP. Legacy Journal inline-token runtime syntax is not a canonical public format.
 
 ## Custom Pages, CV and Contact
 
-Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type.
+Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type. The parent component sequence stays flat and independently publishable/reorderable in Admin.
 
-Contact is a reusable structured component on Custom Page and Home,
-not a standalone runtime page type.
+A decorative Image (`image_decorative`) may contain one ordered level of prose children: Text; List without a second image; Contact details (public email and social links, without Contact Form); and the page's unique Legal Disclaimer. They are edited within the Image's dialog as `image.children` and have own publication states and order. Nested images/dividers/forms/image-bearing Lists/second-level child groups are not supported. The public composition renders image and child prose within **one native float context**: lines wrap beside the image and then naturally below it; neither a rigid two-column grid nor breakpoint-dependent reflow is the owner. An Image without children never auto-absorbs later sibling blocks.
+
+A subsequent top-level Contact component, including Contact Form, begins after the image group and spans the available content width. Form fields stay single-column/full-width. List Title and Context remain regular inline prose in semantic list records; missing Context has no artificial empty column. The Legal Disclaimer retains its General-owned content and restrained typography, rather than synthesizing legal copy. Contact is a reusable structured component on Custom Page and Home, not a standalone runtime page type. Home's distinct Contact child editing remains independently owned.
 
 Public Contact workflow validates server-side, enforces honeypot/rate-limit controls, delivers to configured private recipient, uses visitor email as Reply-To rather than forged From, exposes safe outcome and fails in controlled fashion when delivery unavailable.
 
