@@ -60,10 +60,8 @@ final class DecorativeImageChildren
                         ],
                         'legal_disclaimer' => [
                             Placeholder::make('legal_disclaimer_note')
-                                ->label('Legal disclaimer from General')
-                                ->content(fn (): string =>
-                                    trim((string) PublicContentSetting::general()->getAttribute('legal_disclaimer'))
-                                    ?: 'No legal disclaimer is configured in General.')
+                                ->label('Legal Disclaimer from General')
+                                ->content(fn (): string => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()))
                                 ->columnSpanFull(),
                         ],
                         default => [],

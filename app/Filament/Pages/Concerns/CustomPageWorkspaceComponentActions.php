@@ -204,6 +204,53 @@ trait CustomPageWorkspaceComponentActions
         return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
     }
 
+    /** Explicit nesting is the only hierarchy-changing drag/drop operation.
+     * Standard wire:sort never changes parentage. */
+    public function nestComponent(int $sourceIndex, string $type, int $imageIndex): void
+    {
+        if (! $this->componentReorderEnabled()) {
+            return;
+        }
+        try {
+            $changed = app(CustomPageEditorialService::class)->nestBlock(
+                $this->settings(), $sourceIndex, $type, $imageIndex,
+            );
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Component moved into image', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            app(AdminNotifier::class)->notification(title: 'Cannot nest component', status: 'warning');
+        }
+        $this->clearSelections();
+        $this->reloadWorkspace();
+    }
+
+    public function unnestImageChild(int $imageIndex, int $childIndex): void
+    {
+        $changed = app(CustomPageEditorialService::class)->unnestImageChild(
+            $this->settings(), $imageIndex, $childIndex,
+        );
+        $this->clearSelections();
+        $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Component moved to page level', status: 'success');
+        }
+    }
+
+    public function sortImageChild(int|string $childIndex, int $position, int|string|null $groupId = null): void
+    {
+        if (! $this->componentReorderEnabled() || ! is_numeric($groupId) || ! is_numeric($childIndex)) {
+            return;
+        }
+        $changed = app(CustomPageEditorialService::class)->sortImageChild(
+            $this->settings(), (int) $groupId, (int) $childIndex, $position,
+        );
+        $this->loadComponentProjection();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Image content order updated', status: 'success');
+        }
+    }
+
     public function editComponentAction(): Action
     {
         return $this->componentEditingAction('editComponent', committed: false);
@@ -276,6 +323,22 @@ trait CustomPageWorkspaceComponentActions
                     : filter_var($adoptValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
                 if ($adoptIndex === false) {
                     throw ValidationException::withMessages(['adopt_component_index' => 'Choose an existing component.']);
+                }
+                $moveIntoImage = $type !== 'image' ? ($data['move_into_image'] ?? null) : null;
+                if ($moveIntoImage !== null && $moveIntoImage !== '') {
+                    $imageIndex = filter_var($moveIntoImage, FILTER_VALIDATE_INT, [
+                        'options' => ['min_range' => 0],
+                    ]);
+                    if ($imageIndex === false) {
+                        throw ValidationException::withMessages(['move_into_image' => 'Select a decorative image.']);
+                    }
+                    $changed = app(CustomPageEditorialService::class)->nestBlock(
+                        $this->settings(), $index, $type, $imageIndex,
+                    );
+                    $this->clearSelections();
+                    $this->reloadWorkspace();
+
+                    return;
                 }
                 $payload = $this->componentPayload($data, $existing);
                 $changed = $adoptIndex === null

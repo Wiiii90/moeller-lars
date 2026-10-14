@@ -137,3 +137,22 @@
     color: var(--admin-faint);
     font-size: inherit;
 }
+
+/* Image nesting uses the shared small drop affordance; the sortable
+   row surface remains unobstructed. Child controls do not change parents. */
+.custom-page-component { position: relative; }
+.custom-page-component-sequence__header { position: relative; }
+.custom-page-component__unnest-target { top: .3rem; }
+.custom-page-component__nest-target { top: .65rem; }
+.custom-page-component__child-drag {
+    flex: 0 0 1.55rem;
+    width: 1.55rem;
+    height: 1.55rem;
+    min-width: 1.55rem;
+    cursor: grab;
+}
+.custom-page-component__child-out {
+    margin-left: auto;
+    min-height: 1.65rem;
+    font-size: .71rem;
+}

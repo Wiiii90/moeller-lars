@@ -93,6 +93,93 @@ final class CustomPageEditorialService
         });
     }
 
+    /** Move an existing top-level prose block into a decorative Image.
+     * No copy/delete intermediate state; sibling order is rewritten once. */
+    public function nestBlock(CustomPageSetting $settings, int $sourceIndex, string $type, int $imageIndex): bool
+    {
+        return DB::transaction(function () use ($settings, $sourceIndex, $type, $imageIndex): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $sourceIndex, $type);
+            $this->assertTarget($blocks, $imageIndex, 'image');
+
+            return $this->nestExisting($fresh, $blocks, $sourceIndex, $imageIndex);
+        });
+    }
+
+    /** @param list<array<string,mixed>> $blocks */
+    private function nestExisting(CustomPageSetting $settings, array $blocks, int $sourceIndex, int $imageIndex): bool
+    {
+        $source = $blocks[$sourceIndex];
+        $image = $blocks[$imageIndex];
+        if (! ($image['image_decorative'] ?? false)
+            || $sourceIndex === $imageIndex
+            || ! in_array($source['type'] ?? null, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'Only a text-capable component can be moved into a decorative image.']);
+        }
+        if (($source['type'] ?? null) === 'list' && ($source['media_asset_id'] ?? null) !== null) {
+            throw ValidationException::withMessages(['component' => 'A list containing an image cannot wrap another image.']);
+        }
+        if (($source['type'] ?? null) === 'contact') {
+            foreach ($source['children'] ?? [] as $child) {
+                if (is_array($child) && ($child['type'] ?? null) === 'contact_form'
+                    && CustomPageSetting::contactChildPublished($child)) {
+                    throw ValidationException::withMessages(['component' => 'Contact Form must remain a full-width component.']);
+                }
+            }
+        }
+        $children = $image['children'] ?? [];
+        $image['children'] = [...$children, $source];
+        $blocks[$imageIndex] = $image;
+        array_splice($blocks, $sourceIndex, 1);
+
+        return $this->persist($settings, $blocks);
+    }
+
+    /** Move an Image child back to the main page immediately after its Image. */
+    public function unnestImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex): bool
+    {
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (! is_array($children) || ! array_key_exists($childIndex, $children)) {
+                throw ValidationException::withMessages(['component' => 'Image child changed; reload the page.']);
+            }
+            $child = $children[$childIndex];
+            array_splice($children, $childIndex, 1);
+            if ($children === []) {
+                unset($blocks[$imageIndex]['children']);
+            } else {
+                $blocks[$imageIndex]['children'] = $children;
+            }
+            array_splice($blocks, $imageIndex + 1, 0, [$child]);
+
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    /** Reorder children within one Image; never change their parent by sorting. */
+    public function sortImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, int $position): bool
+    {
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $position): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (! array_key_exists($childIndex, $children)) {
+                throw ValidationException::withMessages(['component' => 'Image child changed; reload the page.']);
+            }
+            $item = $children[$childIndex];
+            array_splice($children, $childIndex, 1);
+            array_splice($children, max(0, min($position, count($children))), 0, [$item]);
+            $blocks[$imageIndex]['children'] = $children;
+
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
     /** @param array<string, mixed> $item */
     public function addListItem(CustomPageSetting $settings, int $index, string $expectedType, array $item): bool
     {

@@ -185,6 +185,8 @@ The canonical ordinary editorial-table geometry, semantics, action order, respon
 
 ## 9. Drag and ordering
 
+The [canonical Table contract](docs/ADMIN-TABLE-CONTRACT.md#component-sequences) also owns the **current explicit hierarchical drag-intent rule**: isolated sibling sort groups; a small, named nest drop target; a separate Move out/page-level path; no implicit reparenting while sorting. The `dev@c33d7e9c` implementation uses one centrally shared affordance for Pages and Custom Page.
+
 The [canonical Table contract](docs/ADMIN-TABLE-CONTRACT.md#position-and-add-row) owns Position's display semantics, Add Row alignment and shared ordering axes. Its [Component sequence section](docs/ADMIN-TABLE-CONTRACT.md#component-sequences) owns native `wire:sort`/`wire:sort:item`/`wire:sort:handle`, sibling-scope eligibility, the existing Move up/down fallback, filtering/pagination restrictions and the shared `admin-drag-handle` geometry. Use the existing domain ordering owner. Do **not** build a separate HTML5 drag/drop state machine or duplicate those task rules here.
 
 ## 10. Custom Page parent rows and Home child hierarchy

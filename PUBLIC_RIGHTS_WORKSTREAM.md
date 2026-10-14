@@ -20,6 +20,8 @@
 
 ## 1. Nicht verhandelbare Produktentscheidungen
 
+- **Verbindliche UI-Sprache: ausschließlich Englisch in Admin UND Public.** Der historische Komponentenname bleibt **Legal Disclaimer**. Neue Abschnitte heißen **Imprint**, **Privacy Policy**, **Copyright & AI Use** und **External Links**. Auch Platzhalter, Notifications, Validierungsfehler und öffentliche Anker sind Englisch. Deutsch ist nur in der internen Arbeitsdokumentation zulässig.
+
 - Künstlerportfolio mit **maximal hochwertiger Bildpräsentation**: voller Originaldetailgrad im Viewer, Zoom, Seitenwechsel, Tastaturbedienung, Gallery/Home/Journal erhalten. **Keine** Reduzierung der Viewer-Qualität, sichtbaren Wasserzeichen, Rechtsklick-Fakes, JS-Hacks, störenden Layer oder künstlich erschwerten normalen Betrachtung.
 - **SEO maximieren ohne KI-Verwertungsfreigabe**: normale öffentliche Such-/Bilderindexierung bleibt möglich. TDM-Vorbehalt, standardisierte Bildrechte-Metadaten, strukturierte SEO-Angaben und missbrauchsarme Bot-Kontrolle greifen zusammen. Robots/TDMRep sind keine technische Zugangssperre.
 - **Downloads soweit technisch ehrlich möglich erschweren:** insbesondere Massen-/Script-Abrufe, Bandbreitenmissbrauch, Weiterverlinkung/Hotlinking und unerlaubtes Rehosting eindämmen. **Keine falsche Zusage**, dass ein öffentlich ausgeliefertes hochauflösendes Bild nicht gespeichert werden kann; Netzwerkteilnehmer erhalten dessen Bytes. Nativen Smartphone-Screenshot-Schutz kann eine gewöhnliche Website nicht erzwingen.
@@ -63,7 +65,7 @@ Ein Arbeitsblock zählt erst als „FERTIG“, wenn nicht nur der Code, sondern 
 
 ## 4. Arbeitsblock A — General, Rechtliches, Copyright-Anzeige
 
-**Status:** ◻ NICHT BEGONNEN. **Priorität:** zuerst. **Domänen:** General, Custom Page, Public-Blade, Validation, Audit, Notifications.
+**Status:** ◐ Implementierung als zusammenhängender `dev`-Änderungssatz vorbereitet; Migration, lokale Tests und Browserabnahme stehen aus. **Priorität:** zuerst. **Domänen:** General, Custom Page, Public-Blade, Validation, Audit, Notifications.
 
 **Bestehende General Legal Felder (nicht duplizieren):**
 
@@ -78,7 +80,7 @@ Ein Arbeitsblock zählt erst als „FERTIG“, wenn nicht nur der Code, sondern 
 
 **Gesamt: fünf redaktionelle Felder.** Technische Bot- oder Cookie-Flags sind **keine** zusätzlichen Legal-Textfelder. Geeignete mehrzeilige Editoren für Langtexte statt willkürlicher kleiner TextInputs; kontrolliertes Rendering ohne HTML-/XSS-Öffnung. Inhaltlich getrennte Bereiche, visuell General-Referenz beibehalten.
 
-**Public:** Bestehende Komponente `legal_disclaimer` in eine redaktionell verständliche, stabile `Rechtliches`-Komponente umgestalten. Die drei neuen Sektionen, optionaler externer Hinweis und sinnvoller kurzer Medien-Copyright dürfen **nicht** in fünf gestalterisch unabhängige Custom Components zerfallen. Die Komponente bleibt als normaler Custom-Page-Block sortier-, publish- und editierbar, auch in verschachtelter Bildkomposition, soweit ihr Domain-Vertrag dies vorsieht. Vorläufig **unter Contact**, kein Footer. Semantische HTML-Abschnitte, echte benannte Deep Links zu Impressum/Datenschutz/Urheberrecht, mobile/Keyboard/Screenreader, keine störende Überlagerung.
+**Public:** Bestehende Komponente `legal_disclaimer` in eine redaktionell verständliche, stabile `Legal Disclaimer`-Komponente umgestalten. Die drei neuen Sektionen, optionaler externer Hinweis und sinnvoller kurzer Medien-Copyright dürfen **nicht** in fünf gestalterisch unabhängige Custom Components zerfallen. Die Komponente bleibt als normaler Custom-Page-Block sortier-, publish- und editierbar, auch in verschachtelter Bildkomposition, soweit ihr Domain-Vertrag dies vorsieht. Vorläufig **unter Contact**, kein Footer. Semantische HTML-Abschnitte, echte benannte Deep Links zu Impressum/Datenschutz/Urheberrecht, mobile/Keyboard/Screenreader, keine störende Überlagerung.
 
 **Media Notice:** Gemeinsame Source-of-Truth für `effectiveCopyrightNotice()`; den bestätigten Vererbungsfehler in `artworks/show.blade.php` ohne Sonderlogik beheben. Journal/Custom/Gallery/Home weiter nach autorisierter konkreter Darstellung und Bildnutzungsrechten; kein ungefragtes sichtbares © auf jedem Bild.
 
@@ -148,17 +150,24 @@ Ein Arbeitsblock zählt erst als „FERTIG“, wenn nicht nur der Code, sondern 
 
 | Slice | Quellcode | Tests | Browser/Runtime | Nutzerabnahme | nächster Schritt |
 | --- | --- | --- | --- | --- | --- |
-| A General/Rechtliches | Offen | Offen | Offen | Designort vorläufig angenommen | Kanonische Felder + Custom Page End-to-End implementieren |
+| A General/Rechtliches | Drei neue General-Felder, bestehende Legal-Komponente, Public-Details/Fragments und Artwork-Vererbung als Änderungssatz; Commit nachprüfen | Regressionstests geschrieben, noch nicht ausgeführt | Offen | UI nicht abgenommen | Isolierte Migration/Pest/Node-JS/Browserprüfung ausführen, Nutzerabnahme für Rechtliches |
 | B Metadaten/SEO | Offen | Offen | Offen | fachliches Ziel angenommen | Nach A Public-Artefakt-Pipeline planen/umsetzen |
 | C KI/Bot/Download | TDM/Robots **teilweise** vorhanden | Frühe Tests ergänzt; nicht hier ausgeführt | Offen | fachliches Ziel angenommen | Server-Missbrauchskontrolle + echte Header/SEO-Abnahme |
 | D Consent/Datenschutz | Offen | Offen | Offen | fachliches Ziel angenommen | Consent-Lifecycle + Datenschutzdaten integrieren |
 
-**Aktiver Slice:** A. **Arbeitseigentümer:** dieser Rechte-Workstream; andere laufende Chats können sich gleichzeitig um unabhängig benannte Dateien kümmern. Bevor gemeinsame Owner wie `General.php`, `PublicContentSetting.php`, `MediaAsset.php`, `component-sequence.blade.php` oder `AGENTS.md` verändert werden, aktuelle HEAD-Diffs prüfen und laufende Paralleländerungen versöhnen.
+**Aktiver Slice:** A (Quellcode implementiert, Benennungen zurück auf Englisch korrigiert; Migration, lokale Tests und Browserabnahme weiter offen). **Arbeitseigentümer:** dieser Rechte-Workstream; andere laufende Chats können sich gleichzeitig um unabhängig benannte Dateien kümmern. Bevor gemeinsame Owner wie `General.php`, `PublicContentSetting.php`, `MediaAsset.php`, `component-sequence.blade.php` oder `AGENTS.md` verändert werden, aktuelle HEAD-Diffs prüfen und laufende Paralleländerungen versöhnen.
 
 **Fortschrittslog – nur wesentliche Zustandswechsel eintragen:**
+- 2026-10-14: Nachkontrolle der vier Editor-/Home-Projektionen: auch die kombinierte Platzhalterformulierung `Legal Disclaimer from General` vollständig englisch; ohne Schema- oder Funktionsänderung.
+- 2026-10-14: **Explizite Nutzerkorrektur:** Die englische Produktoberfläche darf nicht in deutschen UI-Text übergehen. Den ursprünglichen Komponenten-Namen `Legal Disclaimer` im Admin, Home, Custom Pages und Public wiederhergestellt; neue General-Feldlabels, Errors, Platzhalter, Notifications, Abschnittstitel und Link-Fragmente auf Englisch vereinheitlicht. Gespeicherte Daten/Kennung `legal_disclaimer` sowie Legal-/Privacy-Funktionalität bleiben unverändert; Tests/Browser weiterhin nicht ausgeführt.
 - 2026-10-14: Früher technischer Schritt (`eedc0cbb4274e1ab7dd8408796720baf02eb7539`) führte TDM/Header/Robots ein, aber **keinen** Rate-Limiter, Copyright-Metadaten oder Matomo-Consent.
 - 2026-10-14: Fachliche Gesamtarchitektur in `docs/PUBLIC-RIGHTS-AND-PRIVACY.md` (`f03bd7e9aa3634aca9dd43cf736efa5eb956d1a9`) zusammengeführt.
-- 2026-10-14: Diese Root-Arbeitsakte eingerichtet; Umsetzungsstatus noch offen. Genaue Erstanlage-Commit-SHA steht in Git-Historie; HEAD kann durch parallele Chats fortschreiten.
+- 2026-10-14: Diese Root-Arbeitsakte eingerichtet (`658b8f5464cdf00ad8ca2e986d74b24b1e34d523`), noch keine Implementierung.
+- 2026-10-14: Historische `legal_disclaimer`-Formatierung wird auf Änderungen *anderer* General-Felder nicht mehr beiläufig normalisiert; eigener Regressionstest. Explizites Editor-Speichern normalisiert wie gewohnt. Noch kein lokaler Test-/Browser-Nachweis.
+- 2026-10-14: Kritischer Publication-Schema-Check: neue General-Felder müssen in **public und committed** identisch ergänzt werden. Migration korrigiert, Integrationstest für `PublicationSchemaGuard` und Publication-Commit ergänzt. Ohne diese Korrektur wäre der Cutover der neuen Felder blockiert. **Testausführung noch offen.**
+- 2026-10-14: Auch Home-Labels und Custom-Page-Validierungsfehler auf **Rechtliches** abgestimmt; keine Änderung der gespeicherten `legal_disclaimer`-Kennung oder der Veröffentlichungspolitik.
+- 2026-10-14: Block A Quelle in `4f2b0ed1f312911a5ec7a2fe106d849e45c4e232` committed; separat anschließend Hashchange-Event-Callback auf parameterlose Invocation korrigiert, damit das Browser-Event nicht als Document-Root missverstanden wird. Noch keine Laufzeitabnahme.
+- 2026-10-14: **Block A Implementierung**: `legal_imprint`, `legal_privacy`, `legal_usage_rights` als neue nullable General-Felder mit 20k-Validierung und Event-Autosave/Audit/Notification; unveränderte historische Kennung `legal_disclaimer`, jetzt als „Rechtliches“ mit Abschnittsprojektion und ankergesteuerten, nativen Details gerendert. Bestehenden Alttext unverändert als optionale externe Hinweise bewahrt; Artwork-Detail zeigt effektiven Copyright-Hinweis. Quell-/PHP-/JS-Regressionstests ergänzt. **Noch keine Testausführung, Migration oder Browserabnahme behaupten**; Commit-SHA über git log/aktiven Head ermitteln. Alte Komponentendaten behalten ihre interne Kennung.
 
 **Nach JEDEM Slice aktualisieren:** Implementierungs-SHA, veränderte Systeme, genaue Tests mit Befehlen/Ergebnissen, gezielt noch unverified/browser-pending, neu entdeckte Risiken, offene Entscheidungen, aktuell freigegebener nächster Slice. Kein „fertig“ bei nur statischer Sicht. Gesondert bestätigen, ob die Originalbilder unangetastet geblieben sind.
 

@@ -87,10 +87,10 @@
                                     @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
+                                            <strong>{{ $item['title'] ?? '' }}</strong>
                                             @if (filled(\App\Models\CustomPageSetting::listItemContext($item)))
                                                 <span class="custom-page__context">{{ \App\Models\CustomPageSetting::listItemContext($item) }}</span>
                                             @endif
-                                            <strong>{{ $item['title'] ?? '' }}</strong>
                                         </div>
                                         @if (filled(\App\Models\CustomPageSetting::listItemDetails($item)))
                                             <div class="rich-text">{!! $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
@@ -128,11 +128,21 @@
                 </div>
             @endif
 
-            @if ($type === 'legal_disclaimer' && $generalSettings->legal_disclaimer !== null)
-                <section class="legal-disclaimer custom-page__legal" aria-labelledby="legal-disclaimer-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
-                    <h2 id="legal-disclaimer-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Rechtlicher Hinweis</h2>
-                    <p>{{ $generalSettings->legal_disclaimer }}</p>
-                </section>
+            @if ($type === 'legal_disclaimer')
+                @php($legalSections = \App\Domain\Content\PublicLegalContent::sections($generalSettings))
+                @if ($legalSections !== [])
+                    <section class="legal-disclaimer custom-page__component custom-page__legal" aria-labelledby="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
+                        <h2 id="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Legal Disclaimer</h2>
+                        <div class="custom-page__legal-sections">
+                            @foreach ($legalSections as $legalSection)
+                                <details id="legal-{{ $legalSection['slug'] }}" class="custom-page__legal-section">
+                                    <summary>{{ $legalSection['label'] }}</summary>
+                                    <div class="custom-page__legal-text">{{ $legalSection['text'] }}</div>
+                                </details>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
             @endif
         @endforeach
     </div>

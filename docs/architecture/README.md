@@ -30,6 +30,8 @@ Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative
 
 **[Gallery-/Artwork-Publication-Fluss](artwork-gallery-publication.md):** Einzel-Publish/No-op, **atomare Gallery-Batch-Transaktion**, öffentliche/Preview-Eligibility, gemeinsame Viewer-Reihenfolge und abweichende Undo-Inverse mit ALT-/Video-/Thumbnail-Grenzen. Die Norm-/Testmatrix bleibt beim bestehenden [Importgrenzen-Owner](import-boundaries.md).
 
+**Aktueller Public-Legal-Code (`dev@c33d7e9c`):** [Public-Security-Quellenfluss](public-security-privacy-boundaries.md#neue-general--public-legal-quelle-stand-devc33d7e9c) trennt bereits geschriebenen General-/Legal-Disclaimer-Code samt englischem UI von noch offenen Migrationen, Realtests, Consent und Media-Rights. [Admin-Tabellenvertrag](../ADMIN-TABLE-CONTRACT.md#component-sequences) besitzt nun auch das zentrale hierarchische Sort/Nest-Grenzmodell.
+
 **[Public-Sicherheits-, Rechte- und Privacy-Grenzen](public-security-privacy-boundaries.md):** technisch getrennter LIVE/Preview/Contact/Media-Request-Kontext, strikte nonce-CSP, TDM- und robots-Reservation, PublicMedia-Eligibility, Matomo-Consent-Lücke und neue verschachtelte Image-Child-Referenzlücken. Produkt-/Umsetzungsplan bleibt [PUBLIC-RIGHTS-AND-PRIVACY](../PUBLIC-RIGHTS-AND-PRIVACY.md); Quellbelege sind keine Runtime-Verifikation.
 
 **[Activity/Undo-Lifecycle](activity-undo-lifecycle.md):** AuditEvent und individualisierbares, befristetes Undo-Receipt sind keine Publication-Version; Ordering-Nettozyklen, Snapshot-After-Guards, Media-Inverse, Lifecycle-Inverse, persönliche Receipt-Guards und das **nicht atomare** Activity-Selection-Batch sind als echte State-/Transaktionspfade beschrieben.

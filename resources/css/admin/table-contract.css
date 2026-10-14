@@ -644,49 +644,40 @@
     padding-left: 0;
 }
 
-/* Nesting is an overlay on the target row, never an inserted/expanded row.
- * This keeps every table coordinate fixed from drag start through drop. The
- * center overlay makes the gesture explicit: drop on a page to nest; drop in
- * the ordinary sortable gaps to reorder on the current level. */
-.admin-pages__nest-target {
+/* Shared Pages / Custom Pages hierarchy contract. Dragging a row primarily
+   reorders it; nesting only happens inside this small explicit target. */
+.admin-hierarchy__nest-target {
     position: absolute;
     z-index: 8;
-    top: .32rem;
-    right: 33.333333%;
-    bottom: .32rem;
-    left: 10%;
+    top: .55rem;
+    right: calc(var(--admin-table-selection-width, 2.5rem) + .45rem);
+    bottom: auto;
+    left: auto;
+    width: 7.5rem;
+    min-height: 1.75rem;
     display: flex;
     min-width: 0;
-    padding-inline: .55rem;
     align-items: center;
     justify-content: center;
-    border: 1px dashed color-mix(in srgb, var(--admin-accent) 52%, var(--admin-line-strong));
-    background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-surface) 84%, transparent);
-    color: var(--admin-accent-strong);
+    padding: .2rem .4rem;
+    border: 1px dashed var(--admin-line-strong);
+    background: var(--admin-surface);
+    color: var(--admin-text);
     font-size: var(--admin-font-size-table-meta);
-    font-weight: 650;
-    letter-spacing: .015em;
-    line-height: 1;
-    opacity: .84;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+    cursor: copy;
     pointer-events: auto;
-    transition: opacity .1s ease, background-color .1s ease, border-color .1s ease, box-shadow .1s ease;
 }
-
-.admin-pages__nest-target span {
+.admin-hierarchy__nest-target span {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     pointer-events: none;
 }
-
-.admin-pages__nest-target.is-hovered {
+.admin-hierarchy__nest-target.is-hovered {
     border-style: solid;
     border-color: var(--admin-accent);
-    background: color-mix(in srgb, var(--admin-accent) 15%, var(--admin-surface));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--admin-accent) 22%, transparent);
-    opacity: 1;
+    background: var(--admin-subtle);
 }
 
 .admin-selection--unlabeled {
@@ -733,3 +724,7 @@
 }
 
 
+
+/* Root and child Sortable groups have distinct names: moving between groups
+   requires the explicit Nest drop surface, never an accidental sort. */
+.admin-hierarchy--pages .admin-hierarchy__group { position: relative; }

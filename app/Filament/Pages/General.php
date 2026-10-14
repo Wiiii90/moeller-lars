@@ -20,6 +20,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\View;
@@ -49,6 +50,9 @@ final class General extends Page
         'social_links',
         'default_media_copyright_notice',
         'legal_disclaimer',
+        'legal_imprint',
+        'legal_privacy',
+        'legal_usage_rights',
     ];
 
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::General;
@@ -327,11 +331,37 @@ final class General extends Page
                             ->lazy()
                             ->extraInputAttributes(self::commitOnEnterAttributes())
                             ->afterStateUpdated(self::persist('default_media_copyright_notice')),
-                        TextInput::make('legal_disclaimer')
-                            ->label(self::legalDisclaimerLabel())
+                        Textarea::make('legal_imprint')
+                            ->label('Imprint')
+                            ->rows(5)
+                            ->maxLength(20000)
                             ->nullable()
                             ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                            ->columnSpanFull()
+                            ->afterStateUpdated(self::persist('legal_imprint')),
+                        Textarea::make('legal_privacy')
+                            ->label('Privacy Policy')
+                            ->rows(7)
+                            ->maxLength(20000)
+                            ->nullable()
+                            ->lazy()
+                            ->columnSpanFull()
+                            ->afterStateUpdated(self::persist('legal_privacy')),
+                        Textarea::make('legal_usage_rights')
+                            ->label('Copyright & AI Use')
+                            ->rows(5)
+                            ->maxLength(20000)
+                            ->nullable()
+                            ->lazy()
+                            ->columnSpanFull()
+                            ->afterStateUpdated(self::persist('legal_usage_rights')),
+                        Textarea::make('legal_disclaimer')
+                            ->label(self::legalDisclaimerLabel())
+                            ->rows(3)
+                            ->maxLength(20000)
+                            ->nullable()
+                            ->lazy()
+                            ->columnSpanFull()
                             ->afterStateUpdated(self::persist('legal_disclaimer')),
                     ])
                         ->columns(2)
@@ -751,7 +781,7 @@ final class General extends Page
         return self::helpLabel(
             'Legal disclaimer',
             'About the legal disclaimer',
-            'Reusable legal text rendered wherever a Custom Page includes the Legal disclaimer component.',
+            'Optional additional text shown within the Legal Disclaimer component on a Custom Page. Existing content is preserved.'
         );
     }
 
@@ -783,6 +813,9 @@ final class General extends Page
             'show_public_email' => 'Public email visibility',
             'social_links' => 'Social links',
             'legal_disclaimer' => 'Legal disclaimer',
+            'legal_imprint' => 'Imprint',
+            'legal_privacy' => 'Privacy Policy',
+            'legal_usage_rights' => 'Copyright & AI Use',
             'default_media_copyright_notice' => 'Default copyright notice',
             'background_mode' => 'Background',
             'background_color' => 'Background color',
@@ -807,7 +840,7 @@ final class General extends Page
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
             'default_media_copyright_notice' => is_string($value) ? (($trimmed = trim($value)) === '' ? null : $trimmed) : $value,
-            'legal_disclaimer' => is_string($value) && trim($value) === '' ? null : $value,
+            'legal_disclaimer', 'legal_imprint', 'legal_privacy', 'legal_usage_rights' => is_string($value) ? (($trimmed = trim($value)) === '' ? null : $trimmed) : $value,
             default => $value,
         };
     }

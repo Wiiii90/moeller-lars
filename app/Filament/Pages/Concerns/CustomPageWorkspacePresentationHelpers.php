@@ -64,9 +64,11 @@ trait CustomPageWorkspacePresentationHelpers
             ];
         }
         if ($type === 'legal_disclaimer') {
-            $text = PublicContentSetting::general()->getAttribute('legal_disclaimer');
-
-            return ['primary' => 'General legal disclaimer', 'secondary' => $this->contentExcerpt($text, 240), 'meta' => ''];
+            return [
+                'primary' => 'Legal Disclaimer from General',
+                'secondary' => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()),
+                'meta' => '',
+            ];
         }
 
         return ['primary' => '', 'secondary' => '', 'meta' => ''];
@@ -145,7 +147,7 @@ trait CustomPageWorkspacePresentationHelpers
                 $settings->contactChildren($block),
             ));
         } elseif ($type === 'legal_disclaimer') {
-            $parts[] = PublicContentSetting::general()->getAttribute('legal_disclaimer');
+            $parts[] = \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general());
         }
 
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));

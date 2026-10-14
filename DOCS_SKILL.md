@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `a8a4d7ea9b66f3e2ec6e9ab1e9e46e50ccea6a76` |
-| darin aufgenommener `dev`-Stand | `54a6810cefc610630b7305f9db49a32c2d9b4630` |
-| Status | plus Dev-Vite/Docker-Cleanup gemergt; Journal-Entry-Domain/Public-Read-Lifecycle zusätzlich source-geprüft. Keine CI-, DB-, Browser- oder PHP-Generatorläufe |
+| `docs`-Basis vor dem hier vorbereiteten Merge | `2fa42c386f2154dcf9c192f7827ebd4f1b0cac6c` |
+| neu aufgenommener `dev`-Stand | `c33d7e9c374a6e8ca5cb3d2b566d97e5cf880918` |
+| Status | 17 neue `dev`-Commits konfliktgeprüft als echten Zwei-Eltern-Merge aufgenommen; Legal General/Disclaimer-Block A Code, explizites Image Nest/Unnest und zentrale Sort-/Nest-Grenzen dokumentiert. Keine CI-, DB-, Browser- oder PHP-Generatorläufe |
 
 **Statischer Architektur-Linkaudit (read-only, Quellstand vor Journal-Neudokument):** 22 `docs/architecture/*.md` remote aus Tree gelesen, **485 lokale Inline-Zielvorkommen** in drei Batches auf Repository-Existenz geprüft, **0 bestätigte fehlende Dateiziele**. Ein Regex-False-Positive war Code `![alt](media:ID)`, nicht Dateilink. **Kein** vollständiger Markdown-Parser-/Fragment-/`scripts/check-documentation-links.php --check`-Lauf. Nach Finalisierung neue Diagramme/Links nochmals kontrollieren.
 
@@ -164,6 +164,10 @@ Lokale Codex-/native PHP-Generatorläufe, isolierter PostgreSQL-Export und repro
   Lauf. [Dokumentationsindex](docs/README.md#local-documentation-link-verification).
 
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
+
+- **Dev-Merge bis `c33d7e9c` (17 Commits):** Der temporäre [Public Rights Workstream](PUBLIC_RIGHTS_WORKSTREAM.md) und der [Public-Rights-Vertrag](docs/PUBLIC-RIGHTS-AND-PRIVACY.md) melden neue General- und Public-`legal_disclaimer`-Implementierung als **Code, nicht reale Abnahme**. UI-Sprache **Englisch**; bestehender sichtbarer Name bleibt **Legal Disclaimer**. Drei neue General-Texte Imprint, Privacy Policy, Copyright & AI Use plus erhaltene External Links und inherited media copyright. [Public-Sicherheitsarchitektur](docs/architecture/public-security-privacy-boundaries.md#neue-general--public-legal-quelle-stand-devc33d7e9c) korrigiert den bisherigen „noch nicht implementiert“-Teil; echte Migration, Tests, Browser, Betreiberdaten, Consent/IPTC/Ratelimit sind weiterhin offen. **Hier auf `docs` keine Umsetzung auf `dev` als fertig werten.**
+- **Hierarchische Admin-Sortiergrenze nachgezogen:** [ADMIN-TABLE-CONTRACT](docs/ADMIN-TABLE-CONTRACT.md#component-sequences) besitzt getrennte `wire:sort:group` pro Sibling-Level und **explizite kleine Nest-Drop-Ziele**, nicht Sort=Parentwechsel. [Structured Components](docs/architecture/structured-components.md) beschreibt `nestBlock`/`unnestImageChild`/`sortImageChild` als getrennte transaktionale Domainoperationen samt Erhaltung der Children. Der generelle Index+Typ-Concurrency-Befund bleibt ungelöst.
+
 
 - **Pages Heading vs Site Identity (aktueller `dev@470f2daa`):** Die neue `PageHeadingFields`-Komponente ist über Pages Add, Edit und Home integriert. Autosave für Content-Heading ist quellengeprüft (Domain-Owner mit Row-Lock und No-op); neue Featuretests beschreiben die Fälle, wurden hier nicht ausgeführt. **Alte Titel-/Navigationslabel-Fehlzuordnung bleibt bestehen**: `editPageAction` nimmt `sectionLabel()` als `name`, `SiteSectionIdentityService::update` synchronisiert bei fehlendem vierten Labelparameter beide Werte. Neu betroffen als statischer Fall auch **Home** bei eigenem Label; [UI-Surfaces](docs/architecture/ui-surfaces.md#pages--edit-titel-navigation-label-und-no-op-statischer-negativpfad) enthält Regressionen.
 - **Zwei bewusst getrennte lebende Zustandsdateien:** Root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md) steuert die **parallele Produktimplementierung auf `dev`** und wird ausschließlich dort im gleichen Commit wie Codeänderungen fortgeschrieben; unser [`DOCS_SKILL.md`](DOCS_SKILL.md) steuert die **Architekturdokumentation auf `docs`**. Bei Dev-Änderungen die Rechteakte als Source importieren, aber `docs`-Audits nicht als erfüllte Produkt-Slices kennzeichnen. Temporäre Produktdatei erst beim tatsächlichen G0–G10-Endabschluss entfernen; Codex erst nach fachlicher Vollständigkeit dieses Docs-Workstreams.
