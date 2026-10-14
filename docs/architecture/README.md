@@ -22,7 +22,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 14. [Admin Notification transport](admin-notification-transport.md) — quellenverankerte Audit-/Inbox-/Header-Sequenz, Session-/Livewire-Dispatch, Retention und nicht runtimegeprüfte Negativpfade.
 15. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
 16. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
-17. [Media-Referenzen, Cleanup und Reclaim](media-reference-and-cleanup.md) — vollständige direkte-vs-queued Delete-Boundary, Working/LIVE/History-Guard-Wahrheitstabelle, DB-Commit-vor-Dateilöschung, asymmetrischer Retry-Pfad, Varianten-Rebuild und Home-List-Coverage-Lücke.
+17. [Media-Referenzen, Cleanup und Reclaim](media-reference-and-cleanup.md) — DB-Commit-vor-Dateilöschung, direkte-vs-queued Retry-Grenzen, Working/LIVE/History-/Nested-/Home-List-Refs und **bitgenau abgesicherter, unter Cache-Lock durchgeführter Variant-Reclaim/Rebuild** inklusive vorhandener korrupter Datei als offenem Negativfall.
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 

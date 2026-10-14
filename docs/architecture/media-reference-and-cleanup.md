@@ -125,6 +125,33 @@ Das ist eine **Source-konkrete Coverage-Lücke**, keine Erweiterung des Produktv
 - `MediaAssetEditorialService::delete()` gibt auch beim bereits zuvor auf `deleted` stehenden Asset `true` zurück, ohne neues Delete-Audit. Der normale Storage-UI-Handler zeigt nach erfolgreichem Service-Rücklauf `File deleted`. Ob ein bereits gelöschtes Asset durch einen **stalen** Livewire-Action-Request erneut erreichbar ist, ist noch zu prüfen; nicht als normale Benutzerreproduktion ausgeben.
 - Die Transaction-Grenze des Reclaim endet **vor** `drain()`, Variantenlöschung und Capacity-Refresh. Ein späterer Fehler darf nicht als Rollback bereits freigegebener Undo-/Snapshot-Wurzeln missverstanden werden.
 
+## Rekonstruierbare MediaVariants: ein File-Lifecycle ohne neue Identität
+
+**Quellen:** [`MediaIngestService`](../../app/Domain/Media/MediaIngestService.php), [`MediaVariantRegenerationService`](../../app/Domain/Media/MediaVariantRegenerationService.php), [`EnsureMediaVariantFile`](../../app/Http/Middleware/EnsureMediaVariantFile.php), [`PublicMediaController`](../../app/Http/Controllers/PublicMediaController.php) und [`SiteStorageReclaimService`](../../app/Domain/Storage/SiteStorageReclaimService.php). Geprüft gegen `dev@470f2daa900f2d68db9c7e5fe2b227db20e44bc7`, keine Laufzeitausführung.
+
+1. **Ingest:** Für unterstützte Bilder kopiert `MediaIngestService` das vom User gelieferte Original als `originals/<uuid>.<extension>`, schreibt ggf. ein durch GD erzeugtes WebP-`thumbnail` unter `variants/` und speichert für beide **bytes, SHA-256**, Dimensions- und Profildaten. Dateischreibvorgänge liegen **vor** der anschließenden DB-Transaktion; im Fehlerhandler werden zuvor geschriebene Keys bestmöglich entfernt. Ein DB-Rollback ist also allein **keine** Garantie, dass bei einem Storage-Fehler keine verwaiste Datei bleibt.
+2. **Reclaim:** `SiteStorageReclaimService::reclaim()` ruft erst **nach** eigener DB-Transaktion `MediaVariantRegenerationService::reclaimRebuildableFiles()` auf. Der Service betrachtet nur `state=available`, `variant_kind=thumbnail`, gültiges `transform_profile` `public-v1`, `mime_type=image/webp`, verfügbares Image-Original und aktuell **lesbare** Variant-Datei. Für jeden Kandidaten wird ein **per-Variant Cache-Lock (60 s)** erworben. Unter Lock wird das Original neu dekodiert und exakt das gespeicherte Thumbnail nachgebildet; **Länge, SHA-256, Breite und Höhe** müssen mit dem Datensatz übereinstimmen. Fehlt die Quelle, weicht der Codec ab, schlägt der Lock zu oder verweigert der Disk-Delete: **nicht** als reclaimed zählen und die Variant-Row/URL unverändert lassen. Erfolgreicher Reclaim löscht **nur das physische generierte Derivat**, nicht Asset/Variant-DB-Row und nicht das archivierte Original.
+3. **On-demand Request:** `GET /media/variant/{mediaVariant}` passiert [`EnsureMediaVariantFile`](../../app/Http/Middleware/EnsureMediaVariantFile.php). Nur bei *fehlender* Variant-Datei prüft es zunächst `PublicMedia::isPublicVariant()` gegen Live-Eligibility; Preview/Admin-Varianten verwenden stattdessen den **Web-Admin-Guard**. Erst dann ruft der Middleware-Owner `ensureFile()` auf. Ein vorhandener lesbarer Pfad oder erfolgreiches bitgenaues Regenerieren erlaubt den nachfolgenden [Controller](../../app/Http/Controllers/PublicMediaController.php), sonst bleibt dessen `exists/is_readable`-Check bei **404**. Der normale Public-Request liest weiterhin den LIVE-Kontext.
+4. **`ensureFile()`:** Bei vorhandener lesbarer Datei sofort `true`; bei fehlender Datei Cache-Lock versuchen, **nach Lock-Erwerb erneut** prüfen, die gespeicherten Transformparameter aus dem Original rekonstruieren und Bytes nur nach vollständig übereinstimmender `renderExpectedBytes()`-Prüfung schreiben. Anschließend Lesbarkeit prüfen, bei Fehlschlag gerade geschriebene Datei wieder löschen, Capacity-Cache aktualisieren. Bei Exception: Reporting und `false`, Lock wird im `finally` freigegeben. Ein parallel laufender Regenerator mit belegtem Lock führt ohne bereits lesbare Datei zunächst zu `false` und damit ggf. einer vorübergehenden 404, **nicht** zur Anlage einer fremden Image-URL.
+5. **Integritätsgrenze:** `usableFile()` prüft **nur Disk-Existenz, reguläre Datei, Readability**. Für eine **bereits vorhandene** Variante wird nicht bei jedem Request deren Inhalt gegen `sha256` / `byte_size` erneut gehasht. Die strenge Hash-/Dimensionen-Validierung betrifft den **neu generierten Kandidaten**, und der Public-Controller sendet den **gespeicherten** ETag, ohne bei jedem GET die Bytes neu zu prüfen. Daraus folgt ein konkret formulierbarer Negativtest »physisch korrupte, aber lesbare Variant-Datei«, nicht die Behauptung einer schon festgestellten Korrumpierung.
+6. **Rights-Pipeline-Folgen:** Der noch geplante IPTC/XMP-/öffentliche-Media-Artefaktpfad darf die **immutable** Variant-ID/URL nicht mit inhaltlich geänderten Bytes hinter derselben gespeicherten Hash-Identität wiederverwenden. Entweder handelt es sich um bitgenaue Reproduktion oder bewusst **neu versionierte** öffentliche Artefakte. Die Zukunftsentscheidung gehört in [`PUBLIC-RIGHTS-AND-PRIVACY.md`](../PUBLIC-RIGHTS-AND-PRIVACY.md), nicht in einen zweiten Variant-Rebuild-Owner.
+
+```mermaid
+stateDiagram-v2
+    state "Variant DB row available + Datei vorhanden" as F
+    state "Variant DB row available + Datei reclaimed/fehlend" as R
+    state "Original vorhanden, exakt reproduzierbar" as B
+    state "Fehler/Guard/Codec/Lock verweigert" as X
+    [*] --> F: Ingest
+    F --> R: reclaim nach exaktem Hash-/Size-/Dimensionen-Nachweis
+    R --> B: zulässiger Public/Admin/Preview Request
+    R --> X: fehlender/ungültiger Source oder Lock
+    B --> F: ensureFile schreibt identische Bytes
+    X --> R: DB-Row/URL bleiben unverändert
+```
+
+**Grenzen der Zustandsdarstellung:** `F/R/B/X` sind **temporäre fachliche Datei-/Requestzustände**, keine zusätzlichen gespeicherten MediaVariant-Enums; `X` ist ein fehlgeschlagener Versuch und nicht unbedingt persistierter Fehlerstatus. Ein vorhandener aber korrupter lesbarer Pfad kann die `usableFile()`-Heuristik erfüllen, ohne die dokumentierte bitgenaue Regenerationsgarantie auszulösen. Nachweise gehören in einen isolierten Storage-/HTTP-Test mit intaktem Original, Variante, fehlendem/schlecht lesbarem/wrong-hash-Payload, parallelen Cache-Locks und kontrolliertem File-Delete.
+
 ## Gezielte isolierte Regressionen
 
 | Testfall | Erwarteter fachlicher Invariant |
