@@ -79,52 +79,114 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 **Grenze der Behauptung:** Diese Tabelle beschreibt Codepfade; kein reales SPA-Reentry, Scroll-/Focus-Restoration, Leaflet-Laden, Karten-Tile-Ausfall oder Reviewer-Akzeptanz wurde hier ausgeführt. Die asynchrone Map-Race-Abwehr ist belegbar, eine vollständige Browsergarantie daraus nicht.
 
-## Native Folio-Papiermaschine und Seitenhöhenwechsel
+## Native Public-Folio-Papiermaschine, Home Hero und Gallery-Puffer
 
-**Geprüfter Quellenstand:** `dev@62a104a0beef093aaa71ecf5c882e066b0dadca9`, als echter Zwei-Eltern-Merge in `docs` enthalten. [Normativer Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md), [JS-Owner](../../resources/js/public-folio-motion.js), [CSS-Owner](../../resources/css/public-presentation.css), [Blade-Shell](../../resources/views/layouts/app.blade.php), [App-Bootstrap](../../resources/js/app.js). **Nur statische Quellprüfung:** weder Laravel-/Livewire-Browserlauf noch vollständige Node-/Playwright-Suite hier ausgeführt.
+**Quellstand:** `dev@bb824317cb0832b7358857a8a2f4ffa0f9c05bdd` als echter Zwei-Eltern-Merge auf `docs`.
+Die normativen Public-Anforderungen liegen im
+[Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md); die folgenden
+Angaben beschreiben die aktuelle Implementierung in
+[public-folio-motion.js](../../resources/js/public-folio-motion.js),
+[public-presentation.css](../../resources/css/public-presentation.css),
+[app.js](../../resources/js/app.js) und
+[home-hero.js](../../resources/js/home-hero.js).
+**Quellprüfung und Testdateilektüre, kein ausgeführter Node-/Playwright-/Laravel-Browserlauf.**
 
-### DOM, Datenaufnahme und Eigentümer
+### Ein Dokument-Shell, ein sichtbares Papier pro Fläche
 
-Die öffentliche Seite wird weiterhin von Laravel/Blade und Livewire Document Navigation ausgeliefert. Die bestehende weiße Fläche `#content` mit ihren `::before`-/`::after`-Konturen und den bestehenden `box-shadow`-Papierlagen bleibt sichtbar und **ungeclippt**. Das Layout legt für **alle** Public-Inhalte ein einziges `#content > .public-content-reveal`-Element um den tatsächlichen Seiteninhalt. Nur dieses innere Element erhält beim Höhenwechsel kurzfristig ein `overflow: clip`, **nicht** `#content` und nicht das Bild selbst. Seine natürliche neue Höhe bleibt der Zielwert; das CSS-`min-height` der äußeren Fläche kann unabhängig davon weiter gelten. `public-presentation.css` hat die leere-Seite-Selektoren entsprechend auf die innere Ebene umgestellt. Das ist eine gemeinsame Public-Struktur, keine zweite Dokumentrouting- oder Animationsschicht.
+Die öffentliche Livewire-Dokumentnavigation verwendet auf **allen** Public-Seiten
+eine `#content > .public-content-reveal`-Hülle. Der äußere
+`#content`-Bogen und `.site-navigation` bleiben ungeclippt;
+ausschließlich die innere Reveal-Hülle bekommt während einer tatsächlich
+benötigten Höhenanimation vorübergehend `overflow: clip`. Galerie, Artwork,
+Blog, Exhibitions, Home und Custom/CV nutzen denselben Content-Owner.
+`capturePublicFolio()` nimmt vor dem Swap die gerenderten Pseudo-Ecken,
+**einen Content-Schatten** und die sichtbare vorherige Hüllenhöhe auf.
+Die frühere Menü-Snapshot-/Menü-Pulse-Logik ist **entfernt**.
 
-`app.js` führt `initializePage()` nur bei einer neuen `#content`-DOM-Identität aus. Vor dem Swap speichert `capturePublicFolio()` die vier tatsächlich berechneten Pseudoelement-Geometrien (Top/Bottom/Offset/Breite), beide berechneten Shadow-Werte und die aktuelle Höhe von `.public-content-reveal`. Der `livewire:navigating`-Handler entsorgt anschließend die übrigen seitenlokalen Viewer-/Map-/Navigation-/Tracking-Besitzer. `livewire:navigated` baut die neue Seite und ruft `advancePublicFolio()` auf. Die Page-Height-Animation ist **nicht mehr Artwork-Detail-exklusiv**: Home, Gallery, Artwork, Blog, Exhibitions, Custom und CV benutzen denselben Pfad.
+Content besitzt genau **eine** äußere helle Papierlage (`-5px 7px 0
+var(--public-folio-soft)`); Menü besitzt genau **eine** äußere
+helle Papierlage (`-1.5px 3.5px 0 3.5px
+var(--public-folio-soft)`) plus seine eigenständige innere
+Trennlinie. `--public-folio-depth` und die zweiten äußeren
+dunklen/hellen Schatten sind gelöscht. `FOLIO_PLANE_BASE` hält nur
+`content: [-5,7]` und `menu: [-1.5,3.5]`, nicht zwei Koordinatenpaare
+pro Fläche. Eingesetzte SHA und CSS sind die Quelle für diese Werte;
+kein realer Pixelvergleich im Browser wurde durchgeführt.
 
-### Start, Livewire-Swap und lokaler Home-Hero-Wechsel
+### Normale Bewegungen und Seitenwechsel
 
-| Phase | Quell-Owner | Tatsächliche Dauer / Grenze |
+| Phase | Owner und Bedingung | Werte aus aktuellem JS |
 | --- | --- | --- |
-| Erster Besuch ohne Capture-Snapshot | `startAmbient()`: vier Pseudo-Ecken-Animationen (zwei Content, zwei Menü) und die bestehenden Shadow-Papierlagen je als native Endlosschleife | Content-Ecken **25.100/29.700 ms**, Menü-Ecken **34.200/38.800 ms**; Shadow Content **30.200 ms**, Menü **36.400 ms**, `iterations: Infinity` |
-| Jeder echte Livewire-Document-Swap | `advancePublicFolio()` ruft `pulsePaper()` **nur für Content** auf: zwei endliche Pseudoelement-Impulse plus ein endlicher Shadow-Impuls. Der Menü-Teil erhält keine Navigation-Impulse; sein neuer Knoten beginnt unmittelbar wieder mit `startAmbient()` | Content-Papier **1.480 ms**. Gleich große Zielhöhen schließen den Papierimpuls nicht aus |
-| Unterschiedliche Höhen des inneren Seiteninhalts | `animatePageHeight()` animiert die einzige `#content > .public-content-reveal`-Hülle von gemessener zu natürlicher Höhe. Nur sie hat währenddessen `overflow: clip` | **980 ms** bei mindestens **7 px** Höhenunterschied, positivem vorherigen Wert und endlichen Messungen |
-| Home-Hero-Pfeil innerhalb derselben Seite | `initializeHomeHero(root, transition)` ruft `animatePublicHeroChange(change, root)`. Der Owner misst den aktuellen Inhalt, beendet konkurrierende Content-Effekte, führt die **bestehende Slide-Sichtbarkeitsänderung genau einmal** aus, animiert nötigenfalls die neue Inhaltshöhe und nutzt **denselben Content-`pulsePaper`-Pfad** | **Kein Livewire-Navigate/History-Wechsel, kein Menüimpuls.** Media-/Viewer-/Focus-/Zykluslogik bleibt bei `home-hero.js` |
-| Ende eines endlichen Content-Impulses | `Promise.allSettled(animation.finished)` startet Ambient erneut nur bei unveränderter `#content`-Elementidentität | Keine Timer/Polls; bei fehlendem WAAPI bleibt die authored CSS-Papierform |
+| Initialbesuch/Ambient | `startAmbient()` erzeugt je zwei native Pseudo-Ecken-Schleifen an Content und Menü sowie jeweils eine Shadow-Schleife. Menü-Top und horizontale Kanten bleiben stabil; der linke untere Endpunkt bleibt stets **höher** als der rechte, beide berühren den Menüboden nicht. Shadow-Frames sind achsweise und über Bewegungsdistanz/Ruhezeiten gewichtet. | Content-Ecken **25.100 / 29.700 ms**, Menü-Ecken **34.200 / 38.800 ms**, Content-Shadow **30.200 ms**, Menü-Shadow **36.400 ms**; jeweils unendlich |
+| Livewire-Document-Swap | `advancePublicFolio()` löst `pulsePaper()` **nur am Content** aus, auch bei unveränderter Inhaltshöhe. Zwei Pseudo-Ecken und genau **ein** Außen-Shadow folgen endlichen, zielgeometriebasierten Schritten. Die Rückkehr zur CSS-Geometrie verhindert kumulatives Aufweiten bei wiederholten Wechseln. Das neue Menü beginnt nur wieder mit Ambient, nicht mit einem künstlichen Navigationsimpuls. | Papier-Impuls **1.240 ms**, genau eine Iteration |
+| Sichtbarer Seitenhöhenwechsel | `visibleHeightTransition(previous, next, viewport, bodyTop)` beschränkt Start/Ziel auf die aktuell sichtbare Höhe **plus 48 px**; `animatePageHeight()` überspringt den Verlauf, wenn die sichtbare Differenz kleiner als **7 px** ist. Die tatsächlich lange Seite behält nach Ende ihre natürliche Auto-Höhe. | Innere Höhe **780 ms** bei erforderlicher sichtbarer Differenz |
+| Home-Hero-Pfeil ohne Seitenwechsel | `initializeHomeHero()` reicht den einen bestehenden Slide-Toggle an `animatePublicHeroChange()` weiter: aktuelle Pose/Höhe messen, konkurrierende Content-/Height-Effekte abbrechen, Slide sichtbar schalten, dieselbe Content-Papiermaschine ausführen; Viewer, Focus und zyklischer Index bleiben beim Hero-Owner. | Papier **1.240 ms**, Höhe ggf. **780 ms**, **kein** Menu-Pulse, keine synthetische History |
+| Abschluss | `pulsePaper()` nutzt ein `activePaperPulses`-`WeakMap`-Token **pro Element und aktuellem Durchlauf**. `Promise.allSettled(animation.finished)` darf Ambient nur starten, wenn **Token und aktives DOM-Element** noch übereinstimmen. | Alte abgebrochene Hero-Promises können damit nicht mehr die neue Phase überschreiben |
 
-Die Auswärts-/Einwärtsrichtung wird im aktuellen Code aus der alten und neuen inneren Höhe abgeleitet; ohne endliche Messwerte gilt der Impuls als wachsend. `buildCornerImpulse()` koppelt beim horizontalen Schritt den äußeren Offset mit der Rücklaufbreite und bewegt vertikale Endpunkte separat. `buildPageImpulse()` setzt die beiden hinteren vorhandenen Shadow-Lagen je Achse um und endet beim berechneten Zielstil. In `buildCornerFrames()` und `buildShadowFrames()` sind wiederholte WAAPI-Keyframes **Ruhephasen, keine Intervalle**. Der vorgesehene Normalpfad startet Content-Ambient erst nach endlichen `finished`-Promises. Der **in-place Home-Hero-Abbruch** benötigt zusätzlich eine Run-Identität (siehe Negativpfad): Ein unverändertes DOM-Element allein unterscheidet zwei zeitlich aufeinanderfolgende Impulse nicht.
+Die beidseitigen Content-Randlinien kürzen beim Impuls ihre oberen/unteren
+Enden um maximal **40/46 px** beim Wachsen bzw. **32/38 px** beim Schrumpfen.
+Auf kurzen Flächen bleiben mindestens **40 px** Kontur sichtbar.
+`buildCornerImpulse()` startet bei der aktuellen gerenderten Position,
+misst aber alle Auslenkungen relativ zur **statischen Zielkontur**, nicht
+relativ zur vorher schon verschobenen Kontur. Die authored Start-/Zielposition
+wird am letzten Keyframe exakt wieder erreicht. Menü-Ambient nutzt
+linke Bottom-Stationen `32% → 60% → 42% → 73% → 32%`,
+rechts `1px → 17% → 6% → 26% → 1px` bei fester oberer Verbindung;
+dies sind **zwei asynchrone** Perioden, keine synchrone Menü-Pulse-Kette.
 
-Die statische Menügrundform beginnt und endet innerhalb ihrer Menüfläche. `buildMenuCornerFrames()` hält `top = 0` und Horizontalposition/Breite konstant; nur der untere Rücklauf bewegt sich, bleibt dabei innen und kann wieder auf die Grundlinie zurückkehren. Auf einem echten SPA-Wechsel erhält das Menü lediglich den Ambient-Neustart am nächsten DOM-Knoten. Auch ein in-place Home-Hero-Wechsel verändert das Menü nicht. Der aktuelle CSS-Basisschatten des Menüs liegt bei `(-1,1)` und `(-3,2)` px mit jeweils 1 px Spread, Content bei `(-5,7)` und `(-8,10)` px. `FOLIO_PLANE_BASE` und die Testfixtures spiegeln diese konkreten Werte; sie sind **keine** Zusage eines bereits im Browser abgenommenen Aussehens.
+### Gallery-Bildladepuffer: getrennt vom Folio
 
-### Negativpfade und Verifikation
+[public-gallery-loading.js](../../resources/js/public-gallery-loading.js)
+wird über `app.js::initializePage()` gestartet und als eigener Seiten-
+Disposer eingetragen. Die vollständige publizierte Artwork-Liste und
+Artwork-Viewer-Reihenfolge bleiben im DOM. In
+[artworks/index.blade.php](../../resources/views/pages/artworks/index.blade.php)
+werden **die ersten zwei** Bilder eager geladen; nur das **erste**
+bekommt `fetchpriority=high`. Weitere Bilder bleiben zunächst native
+`loading=lazy`. Der `IntersectionObserver` mit `rootMargin:
+'960px 0px'` beobachtet ausschließlich den Gallery-Bereich
+`[data-gallery-image-buffer]`. Höchstens **zwei** nahe, noch nicht
+fertige Bilder werden gleichzeitig durch Umstellung desselben vorhandenen
+`img.loading` auf `eager` vorgeladen; `src` bleibt unverändert,
+zusätzliche High-Priority-Requests oder Bild-Klone gibt es nicht.
+`load`/`error` geben den Puffer frei. Bei SPA-Disposal beendet
+`AbortController` die Eventlistener, der Observer wird getrennt und
+die Warteschlangen werden geleert. Ohne IntersectionObserver bleibt das
+normale native Lazy Loading bestehen.
 
-- **WAAPI-/DOM-Abbruch:** `nativeCorner()` fängt fehlende native Unterstützung/Exceptions ab und gibt `null` zurück; fehlgeschlagene Shadow-Animationen lassen die CSS-Papierlagen stehen. Der Animation-Finish-Callback prüft die Identität des aktuellen DOM-Ziels, bevor er auf diesem eine neue Endlosschleife startet. Das verhindert einen falschen Neustart auf einem abgelösten Ziel, garantiert aber **nicht** seine Garbage Collection.
-- **Konkurrenz bei schnellen Home-Hero-Klicks (statische Race-Hypothese):** `animatePublicHeroChange()` cancelt die bisher am **gleichen** `#content` laufenden Animationen und startet für den neuen Hero erneut `pulsePaper()`. Der **ältere** `pulsePaper()` besitzt aber einen `Promise.allSettled(...).then()`-Abschluss, der nur `root.querySelector('#content') === element` prüft. Diese Bedingung bleibt beim In-place-Hero-Wechsel **für den alten und den neuen Durchlauf wahr**. Nachdem die alten `finished`-Promises durch `cancel()` rejected wurden, kann ihr verspäteter Callback schon wieder `startAmbient()` auf dem unveränderten Element starten, **während der neuere 1.480-ms-Papierimpuls noch läuft**. Das widerspräche der angestrebten Eigentümerschaft einer CSS-Eigenschaft. Kein hier ausgeführter Race-Repro; erforderlich ist ein Fixture/Browser-Test mit zwei sehr schnellen Hero-Wechseln, gezielt rejected alten `finished`-Promises und der Assertion **keine Ambient-Animation vor dem Abschluss des neuesten Impulses**. Eine Korrektur müsste zum bereits vorhandenen Paper-Owner gehören, nicht zu einem zweiten Hero-/Timer-System.
-- **Height-Overflow bei schnellem Hero:** `activeHeightAnimations` ist ein `WeakMap`-Owner für die inneren Height-Handles. `animatePageHeight()` canceled die vorige Animation und der Abschluss stellt Inline-Overflow nur wieder her, wenn gerade **dieser** Handle noch der aktive Owner ist. Diese Quellprüfung zeigt den Abbruch-Guard; echtes Verhalten unter mehrfacher Navigation bleibt browseroffen.
-- **Handle-Lebensdauer:** Der bestehende `app.js::disposePage()` besitzt **keine** explizite Folio-`cancel()`-Liste für die unendlichen Pseudo-/Shadow-Handles. Das gilt auch nach dem neuen einheitlichen `pulsePaper`-Pfad. Es bleibt eine Laufzeit-/Retention-Testlücke bei schnellem Back/Forward und mehreren SPA-Swaps, **kein nachgewiesener Speicherleck**. Hinzu kommt die Overflow-Restoration eines eventuell bereits abgelösten inneren DOM-Knotens.
-- **Schnell aufeinanderfolgende Navigationen:** Die aktualisierte
-[Browser-Testquelle](../../tests/browser/public-folio-spa.spec.mjs) simuliert
-zwei DOM-Swaps innerhalb derselben Animation, mit zwei nativen
-`requestAnimationFrame`-Schritten zwischen den Besuchen (kein JS-Timer).
-Sie liest dabei den **aktuell gerenderten** ersten Corner-Top-Wert,
-den CSS-Shadow und die laufende Höhe des inneren Content-Reveals.
-Nach dem zweiten Swap sollen die ersten neuen Corner-/Shadow-
-Keyframes sowie der Height-Start genau diese Zwischenwerte übernehmen,
-während weiterhin nur eine `.public-content-reveal`-Hülle existiert.
-Das ist ein **Testcode-Beleg**, keine hier tatsächlich gelaufene
-Playwright- oder echte Livewire-Reentry-Prüfung. Mehrfaches
-Back/Forward mit abgelösten unendlichen Animations-Handles bleibt
-der separate Lifecycle-Negativpfad.
+**Testquelle:** [Gallery-Unit](../../tests/js/public-gallery-loading.test.mjs)
+prüft Distanz-/Prioritätsauswahl, Zwei-Bilder-Grenze, Nachrücken nach
+`load`/`error` und Verzicht auf weitere Promotion nach Disposal.
+Ein Browsernetzwerktrace, echte Bildladezeiten und eine Server-
+MediaVariant-Regeneration wurden hier **nicht** geprüft. Der Puffercode
+ersetzt kein Backend-Paging und keine Media-Publication-Guards.
 
-**Testquellen:** [Home-Hero-Unit-Test](../../tests/js/home-hero.test.mjs) prüft inzwischen die Übergabe der bestehenden Slide-Umschaltung genau einmal je Pfeilklick an den zentralen Callback. [Folio-Unit-Test](../../tests/js/public-folio-motion.test.mjs) prüft oben angebundene Menüecken ohne seitliche Bewegung sowie den zentralen Hero-Content-Callback, aber **nicht** den beschriebenen älteren `Promise.allSettled`-Abschluss bei in-place mehrfachen Klicks. [Unit-Test](../../tests/js/public-folio-motion.test.mjs) enthält den neuen gemeinsamen Seiten-Impuls, die Menü- und Shadow-Koordinaten sowie Height-Fixtures. [Browser-Test](../../tests/browser/public-folio-spa.spec.mjs) erzeugt die einheitliche Content-Reveal-Hülle und testet Varianten für Gallery, Blog, Home, CV und Exhibitions, nicht nur Artwork. Es handelt sich um **gelesene Testfälle**, nicht in diesem Dokumentations-Workstream ausgeführte Tests. Der reale Public-Livewire-Swap, Scroll-/Focus-Verhalten, unterschiedliche Inhaltsformen sowie Accessibility/Reduced Motion brauchen weiterhin Browser-Review.
-- **Historisch ersetzt:** `animateArtworkHeight()`, `playArtworkBuild()`, `buildArtworkRevealFrames()` und die alte auf Artwork beschränkte 700-ms-Reveal-Semantik sind nicht mehr aktueller Produktcode. Auch die älteren 34,8/36,4-s-Shadow-Werte und negative Menü-Bottom-Offsets sind abgelöst. Die frühere zusätzliche `.public-folio-decoration`-Schicht und der separate Einmal-Swap-Effekt dürfen nicht reaktiviert werden.
+### Offene Prüfgrenzen
+
+- Der **früher dokumentierte Home-Hero-Promise-Race** (nur DOM-Identität
+  beim alten Papier-Finish) ist durch `activePaperPulses`-Token
+  **quellseitig korrigiert**. `activeHeightAnimations` als eigene
+  `WeakMap` schützt die Overflow-Restoration und cancelt auch bei einem
+  Folgebesuch **ohne** sichtbare Höhendifferenz die alte Clip-Animation.
+  Der dazugehörige Browser-/Microtask-Negativtest bleibt eine sinnvolle
+  Ergänzung; ein Lauf wurde hier nicht behauptet.
+- Der SPA-`app.js::disposePage()` verwaltet noch **keine** eigene Liste
+  der auf abgelösten DOM-Knoten gestarteten unendlichen nativen Pseudo-/Shadow-
+  Animation-Handles. `document.getAnimations()` und Back/Forward-Retention
+  brauchen eine **echte** Browserprüfung, bevor von einem Leak gesprochen
+  werden darf; mit dem Hero-spezifischen In-place-Cancel nicht verwechseln.
+- [Folio-Unit](../../tests/js/public-folio-motion.test.mjs),
+  [Browser-Fixture](../../tests/browser/public-folio-spa.spec.mjs)
+  und [Hero-Unit](../../tests/js/home-hero.test.mjs) umfassen
+  absolute Contour-Geometrie, nur eine Papierlage, verkürzte
+  Viewport-Höhen, wechselnde Seitenarten, Top-anknüpfendes Menü und
+  Home-Hero-Content. Reale Laravel-/Livewire-Wechsel, Netzwerk-
+  Wasserfall, Accessibility/Reduced Motion und visuelle Nutzerabnahme
+  wurden in diesem `docs`-Workstream **nicht** ausgeführt.
+- Die alte `animateArtworkHeight()`-700-ms-Semantik,
+  Content-Menü-Pulse-Kopplung, mehrfachen Außen-Papierlagen,
+  `--public-folio-depth` und früheren 1.480-/980-ms-Laufzeiten
+  sind **historisch**, nicht erneut als aktueller Vertrag zu verwenden.
 
 ## Fachliche und technische Grenzen
 

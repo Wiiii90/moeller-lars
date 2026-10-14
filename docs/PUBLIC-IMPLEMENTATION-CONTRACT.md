@@ -72,7 +72,7 @@ All Public pages (Home, Gallery, Artwork details, Blog, Exhibitions,
 Custom pages, CV and their published variants) use the SAME inner
 `#content > .public-content-reveal` flow container. On an actual Livewire
 page swap, its previously rendered height is captured, and the incoming
-container animates to its natural height over 980ms when heights differ.
+container uses a viewport-capped 780ms height reveal when the visible height difference is at least 7px.
 ONLY this inner flow temporarily uses `overflow: clip`, preventing
 images or text from leaking beyond the building page. Parent `#content`
 remains unclipped, allowing its white paper, existing connected corner
@@ -82,7 +82,7 @@ page heights are the same, the paper impulse still executes, without
 artificially assigning a height or clipping the content.
 
 Each real Public SPA transition triggers a stronger directed Content
-paper-machine build, retaining the accepted ~1480ms transition duration:
+paper-machine build, now lasting 1240ms:
 the current Content pseudo corners and rear layers assemble in ordered
 right-angled stages and return to natural CSS geometry. The Content corner's outside excursion is bounded against the
 destination's STATIC geometry: even rapid repeated clicks can start from
@@ -182,15 +182,24 @@ MediaAsset reference/publication contracts.
 
 ## Gallery delivery and loading
 
-Gallery index markup keeps its complete canonical Artwork sequence (including
-viewer order), but only its first image has `loading=eager` and
-`fetchpriority=high`. Every following image uses the browser's native
-viewport-buffered lazy loading, rather than competing at high priority for
-the initial network connection. This is a targeted initial-display improvement,
-not server cursor pagination or incremental HTML rendering. A future
-unbounded-inventory design must consider cursor batches, prefetch buffers,
-SEO/indexability, Artwork Viewer ordering and SPA back/forward restoration
-together; it must not silently truncate the canonical viewer's sequence.
+Gallery index markup keeps the **complete canonical Artwork sequence**
+(including viewer order). The first **two** Artwork images are marked
+`loading=eager`, but only the **first** receives `fetchpriority=high`;
+the second remains auto priority. All later images retain native
+`loading=lazy` unless the shared
+[`public-gallery-loading.js`](../resources/js/public-gallery-loading.js)
+controller upgrades them in a bounded near-viewport buffer. Its
+`IntersectionObserver` has a **960px vertical margin**, promotes no
+more than **two simultaneously pending** candidates by changing only their
+existing `img.loading` to `eager`, keeps the canonical image URL and
+never clones, assigns a higher priority or requests the entire Gallery at
+once. Load/error settlement releases a slot; on SPA disposal the registered
+AbortController/listeners/observer/queues are stopped. Without
+IntersectionObserver, native lazy loading continues. These are client-side
+prefetch bounds, **not** server cursor pagination or incremental HTML
+rendering. A future unbounded-inventory design must consider cursor
+batches, buffer, SEO/indexability, Artwork Viewer ordering and SPA
+back/forward restoration together; it must not truncate the viewer's sequence.
 
 Public thumbnail URLs are generated MediaVariant resources served through
 `EnsureMediaVariantFile` and `PublicMediaController`; deleted-but-rebuildable

@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `9de0a0044f0adafc6b3bdc2005363525ae2327d0` |
-| darin aufgenommener `dev`-Stand | `62a104a0beef093aaa71ecf5c882e066b0dadca9` |
-| Status | Home-Hero-/Menu-Anpassungen und Unit-Tests bis `62a104a0` übernommen; neue Heads erneut prüfen |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `8e9a57ad352b53ecd61a11ce08815400a09d4e4e` |
+| darin aufgenommener `dev`-Stand | `bb824317cb0832b7358857a8a2f4ffa0f9c05bdd` |
+| Status | 22 neue Public-Commits übernommen; aktualisierte Motion-/Gallery-Owner quellengeprüft |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -254,29 +254,31 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
    Weitere Quelle: [Importgrenzen](docs/architecture/import-boundaries.md),
    [Publication-Operationen](docs/architecture/publication-working-operations.md),
    [Schemaevolution](docs/architecture/schema-evolution.md).
-5. **Public-Folio/SPA und Home Hero (aktuell `dev@62a104a0`):**
-   Alle Public-Routen teilen `#content > .public-content-reveal`;
-   ein echter Livewire-Swap sowie der **in-place Home-Hero-Pfeil**
-   benutzen denselben Content-`pulsePaper()`-Besitzer (**1.480 ms**)
-   und die innere Height-Animation (**980 ms**, ab 7 px Differenz).
-   Home Hero toggelt die bereits geladenen Slides weiterhin synchron
-   und bewahrt den bisherigen Viewer-/Fokus-/Zyklus-Owner.
-   **Das Menü erhält keine Navigation-Impulse**; seine Konturen
-   bleiben an der Oberkante angebunden und ihre unteren Enden
-   bewegen sich nur als ruhiges Ambient. Aktuell Content-Ecken
-   **25,1/29,7 s**, Menü **34,2/38,8 s** und Shadow Content/Menü
-   **30,2/36,4 s**. `activeHeightAnimations` (`WeakMap`) schützt
-   die Inline-Overflow-Restoration beim Abbruch vorheriger
-   Height-Animationen. **Offener statischer Hero-Race:** Ein
-   gecancelter **älterer** Content-`pulsePaper()`-Callback prüft
-   nur Elementidentität, nicht Impuls-Generation; auf derselben
-   Hero-Seite könnte er Ambient neu starten, während der
-   neuere Impuls noch läuft. Gezielter Mehrfachklick-/Promise-
-   Rejection-Test in [Public-SPA](docs/architecture/public-spa-lifecycle.md).
-   Neue [Hero-Unit-Tests](tests/js/home-hero.test.mjs) wurden
-   nur quellengeprüft; keine Livewire-/Browser-Runtime in diesem
-   Dokumentations-Workstream. WAAPI-Handle-Retention bei echten
-   SPA-Swaps bleibt separat offener Browser-Negativpfad.
+5. **Public-Folio/SPA, Home Hero und Gallery-Puffer (`dev@bb824317cb0832b7358857a8a2f4ffa0f9c05bdd`):**
+   Gemeinsame `#content > .public-content-reveal`-Hülle;
+   **ein** äußerer heller CSS-Papierschatten pro Content/Menu-Fläche;
+   alte dunkle/doppelte Lagen und `--public-folio-depth` entfernt.
+   Page/Hero-`pulsePaper()` nur Content (**1.240 ms**), Menü nie
+   navigationsgetrieben. Innere Höhenanimation **780 ms** erst
+   ab 7 px sichtbarer Differenz, mit Viewport + 48 px Kappung
+   und anschließender Rückkehr zu natürlicher Höhe.
+   Content-Ecken-Ambient **25,1/29,7 s**, Menü **34,2/38,8 s**,
+   Shadow Content/Menü **30,2/36,4 s**. Menü-Top bleibt verbunden,
+   links endet höher als rechts; auf kurzen Seiten bleibt
+   mindestens 40 px Content-Randkontur bestehen.
+   **Behobene Quell-Race:** `activePaperPulses`-WeakMap-Token
+   verhindert, dass abgeschlossene alte Hero-Promises während eines
+   neueren Builds Ambient neu starten. `activeHeightAnimations`
+   übernimmt Clip-/Height-Restoration auch bei übersprungenen
+   Folge-Höhenwechseln. **Separat offen:** wirkliche Browser-
+   Retention unendlicher WAAPI-Handles über abgelöste SPA-Knoten.
+   Gallery: erste zwei Bilder eager (nur erstes high-priority),
+   weitere native lazy; `public-gallery-loading.js` beobachtet
+   mit 960px Margin, maximal zwei gleichzeitig proaktiv
+   umgestellte Bilder, eigener SPA-Disposer/AbortController,
+   ohne URL-Klone/Paging. Quellen, Grenzen, Fallunterscheidungen:
+   [Public-SPA](docs/architecture/public-spa-lifecycle.md).
+   Unit-/Playwright-Tests wurden **nur gelesen**, nicht ausgeführt.
 6. **Weitere Quellgrenzen:** `AdminNotifier`/Mailbox-Pin-Limits,
    Restore-/Revert-/Reset-Working-vs-LIVE-/History-Guards,
    Medienvarianten mit Byte-/Hash-identischer Regenerierung,
