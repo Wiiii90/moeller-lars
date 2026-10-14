@@ -106,7 +106,21 @@ Die statische Menügrundform beginnt und endet innerhalb ihrer Menüfläche. Der
 
 - **WAAPI-/DOM-Abbruch:** `nativeCorner()` fängt fehlende native Unterstützung/Exceptions ab und gibt `null` zurück; fehlgeschlagene Shadow-Animationen lassen die CSS-Papierlagen stehen. Der Animation-Finish-Callback prüft die Identität des aktuellen DOM-Ziels, bevor er auf diesem eine neue Endlosschleife startet. Das verhindert einen falschen Neustart auf einem abgelösten Ziel, garantiert aber **nicht** seine Garbage Collection.
 - **Handle-Lebensdauer:** Der bestehende `app.js::disposePage()` besitzt **keine** explizite Folio-`cancel()`-Liste für die unendlichen Pseudo-/Shadow-Handles. Das gilt auch nach dem neuen einheitlichen `pulsePaper`-Pfad. Es bleibt eine Laufzeit-/Retention-Testlücke bei schnellem Back/Forward und mehreren SPA-Swaps, **kein nachgewiesener Speicherleck**. Hinzu kommt die Overflow-Restoration eines eventuell bereits abgelösten inneren DOM-Knotens.
-- **Testquellen:** [Unit-Test](../../tests/js/public-folio-motion.test.mjs) enthält den neuen gemeinsamen Seiten-Impuls, die Menü- und Shadow-Koordinaten sowie Height-Fixtures. [Browser-Test](../../tests/browser/public-folio-spa.spec.mjs) erzeugt die einheitliche Content-Reveal-Hülle und testet Varianten für Gallery, Blog, Home, CV und Exhibitions, nicht nur Artwork. Es handelt sich um **gelesene Testfälle**, nicht in diesem Dokumentations-Workstream ausgeführte Tests. Der reale Public-Livewire-Swap, Scroll-/Focus-Verhalten, unterschiedliche Inhaltsformen sowie Accessibility/Reduced Motion brauchen weiterhin Browser-Review.
+- **Schnell aufeinanderfolgende Navigationen:** Die aktualisierte
+[Browser-Testquelle](../../tests/browser/public-folio-spa.spec.mjs) simuliert
+zwei DOM-Swaps innerhalb derselben Animation, mit zwei nativen
+`requestAnimationFrame`-Schritten zwischen den Besuchen (kein JS-Timer).
+Sie liest dabei den **aktuell gerenderten** ersten Corner-Top-Wert,
+den CSS-Shadow und die laufende Höhe des inneren Content-Reveals.
+Nach dem zweiten Swap sollen die ersten neuen Corner-/Shadow-
+Keyframes sowie der Height-Start genau diese Zwischenwerte übernehmen,
+während weiterhin nur eine `.public-content-reveal`-Hülle existiert.
+Das ist ein **Testcode-Beleg**, keine hier tatsächlich gelaufene
+Playwright- oder echte Livewire-Reentry-Prüfung. Mehrfaches
+Back/Forward mit abgelösten unendlichen Animations-Handles bleibt
+der separate Lifecycle-Negativpfad.
+
+**Testquellen:** [Unit-Test](../../tests/js/public-folio-motion.test.mjs) enthält den neuen gemeinsamen Seiten-Impuls, die Menü- und Shadow-Koordinaten sowie Height-Fixtures. [Browser-Test](../../tests/browser/public-folio-spa.spec.mjs) erzeugt die einheitliche Content-Reveal-Hülle und testet Varianten für Gallery, Blog, Home, CV und Exhibitions, nicht nur Artwork. Es handelt sich um **gelesene Testfälle**, nicht in diesem Dokumentations-Workstream ausgeführte Tests. Der reale Public-Livewire-Swap, Scroll-/Focus-Verhalten, unterschiedliche Inhaltsformen sowie Accessibility/Reduced Motion brauchen weiterhin Browser-Review.
 - **Historisch ersetzt:** `animateArtworkHeight()`, `playArtworkBuild()`, `buildArtworkRevealFrames()` und die alte auf Artwork beschränkte 700-ms-Reveal-Semantik sind nicht mehr aktueller Produktcode. Auch die älteren 34,8/36,4-s-Shadow-Werte und negative Menü-Bottom-Offsets sind abgelöst. Die frühere zusätzliche `.public-folio-decoration`-Schicht und der separate Einmal-Swap-Effekt dürfen nicht reaktiviert werden.
 
 ## Fachliche und technische Grenzen

@@ -221,6 +221,15 @@ These examples apply the existing shared Create/Edit Action lifecycle; they do n
 
 **Source:** [General actions](../app/Filament/Pages/General.php), [Social Blade stable keys](../resources/views/filament/schemas/components/general-social-links.blade.php), [Pages Create](../app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php) and [Pages Edit](../app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php). Actual browser interaction was not re-executed for this documentation change.
 
+## Journal Blog/Exhibitions Edit-Aktionen
+
+[`JournalWorkspace::editPostAction()`](../app/Filament/Pages/JournalWorkspace.php) und `editExhibitionAction()` verwenden nun dieselbe `journalEditHeaderActions()`-Projektion, die für jede Aktion eine **persistierte Entry-ID** trägt und bestehende Row-/Domain-Mutationen wiederverwendet. Nach Move up/down wird der aktuelle Edit-Dialog auf diese ID remountet, statt einen veralteten Tabellenindex beizubehalten. Die Reihenfolge folgt den fachlich verfügbaren Row-Rollen:
+
+- **Blog:** Move up/down, zustandsabhängig Publish/Unpublish/Cancel Schedule, Schedule, Archive/Restore und Delete. Veröffentlicht oder geplant blockiert Delete; archiviert blockiert Publication; geplant blockiert Archive. Zeitplanung verwendet die bestehende Schedule-Action statt eines zweiten Dialogs.
+- **Exhibitions:** Move up/down, Publish/Unpublish und Delete; veröffentlicht blockiert Delete. Domain-Commands bleiben in `JournalWorkspace`, Edit-Autosave ausschließlich im nativen Edit-Action-Owner.
+
+Die [`JournalEntryEditorSchema`](../app/Filament/Support/JournalEntryEditorSchema.php) gruppiert Basics, Venue, Dates und Map per responsiver `md`-Spaltenkonfiguration (einspaltig unterhalb), ohne separaten mobil-definierten Edit-Schema-Pfad. Eine redundante Gallery-Layout-Helper-Beschreibung ist entfernt. Diese Angaben beruhen auf dem Quellvergleich des gemergten `dev@f9afd7aa3b31f9a5c012c2032554ecb1336cc89d`, **nicht** auf einem hier ausgeführten Dialog-Browserlauf.
+
 ## Gallery Artwork edit/create und Material-Presets
 
 Die Gallery verwendet [`ArtworkEditDialog::schema()`](../app/Filament/Support/ArtworkEditDialog.php) für **beide** Artwork-Formulare. [`GalleryWorkspaceFormSupport::artworkCreateFormSchema()`](../app/Filament/Pages/Concerns/GalleryWorkspaceFormSupport.php) ruft denselben Schema-Owner mit `creating: true` auf; die Create-Variante prüft Slug-Eindeutigkeit vor dem Anlegen. Edit nutzt dieselbe fachlich gruppierte Basics-/Dimensions-/Content-/Media-/Presentation-Formstruktur. Die Create-/Edit-Actions bleiben unterschiedliche Lebenszyklen (Create mit explizitem Commit, Edit mit native Discrete-Change-Autosave); die gemeinsame Felddefinition ist kein zweiter Persistenz-Owner.

@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `9b6b2547fdd34c774ca5750b38642ae775e3e25d` |
-| darin aufgenommener `dev`-Stand | `298bf74bce837385b8a7261b145d2b9fd887ed7c` |
-| Status | Zehn weitere `dev`-Commits mit zwölf geprüften Quellpfaden übernommen; neue Heads erneut prüfen |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `40e62a12f1928feec45ed54d440fdad1abe22660` |
+| darin aufgenommener `dev`-Stand | `f9afd7aa3b31f9a5c012c2032554ecb1336cc89d` |
+| Status | Drei weitere `dev`-Commits nach `298bf74b` übernommen; neue Heads erneut prüfen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -171,7 +171,9 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   Gallery-/Custom-Settings-Konsistenz. Gallery Artwork Create/Edit teilen
   nun den fachlichen `ArtworkEditDialog::schema()`-Owner; Gallery-Edit-
   Header-Moves/Publication/Detach und Materials-Repeater-Commit sind
-  nach Quellvergleich im Dialogvertrag nachgeführt. Die `dev`-Änderungen wurden
+  nach Quellvergleich im Dialogvertrag nachgeführt. Gleiches gilt
+  für Blog-/Exhibition-Edit-Header-Rollen und responsive `md`-Formen
+  aus dem anschließenden `dev@f9afd7aa`-Stand. Die `dev`-Änderungen wurden
   inhaltlich mit den zusätzlichen Pages-Regeln zusammengeführt.
 - [Benachrichtigungen](docs/ADMIN-NOTIFICATION-CONTRACT.md) definieren
   die Meldungskardinalität anhand tatsächlich konsumierter Activity-
@@ -255,6 +257,10 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
    Echte Papierlagen, keine zusätzlichen DOM-Dekorationen;
    einheitliche Source in [Public-SPA](docs/architecture/public-spa-lifecycle.md)
    und [Public-Vertrag](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md).
+   Aktualisierter Browser-Test enthält außerdem einen zweiten
+   unterbrochenen SPA-Swap: tatsächliche Corner-/Shadow-Zwischen-
+   koordinaten und Content-Höhe werden als neue WAAPI-Startwerte
+   geprüft, ohne Timer. **Nur Testquelle gelesen**, nicht ausgeführt.
    Aktuelle Unit-/Browser-Testdateien wurden nur **gelesen**;
    kein Runtime-/Browser-Lauf. Unendliche WAAPI-Handles weiterhin
    ohne explizite `cancel()`-Disposer: mögliche Retention **nur
