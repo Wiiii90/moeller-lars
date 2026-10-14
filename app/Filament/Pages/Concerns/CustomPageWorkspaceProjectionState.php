@@ -141,7 +141,7 @@ trait CustomPageWorkspaceProjectionState
                 'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
-                'children' => [],
+                'children' => $type === 'image' ? $this->imageChildSummaries($settings, $block) : [],
             ];
         }
 
