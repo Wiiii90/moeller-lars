@@ -43,6 +43,7 @@ const SHADOW_START = {
     ].join(', '),
 };
 let snapshot = null;
+const activeHeightAnimations = new WeakMap();
 
 function visiblePseudo(element, pseudo) {
     if (!element) return null;
@@ -272,7 +273,11 @@ export function animatePageHeight(previousHeight, root = document) {
     if (!body || typeof body.animate !== 'function') return null;
     const natural = body.getBoundingClientRect().height;
     if (!Number.isFinite(natural) || Math.abs(natural - previousHeight) < 7) return null;
-    const original = body.style.overflow;
+    const prior = activeHeightAnimations.get(body);
+    const original = prior?.originalOverflow ?? body.style.overflow;
+    // A second Hero click may interrupt the first height reveal. Only the
+    // CURRENT animation is allowed to restore overflow after completion.
+    prior?.animation.cancel();
     body.style.overflow = 'clip';
     try {
         const animation = body.animate([
@@ -282,10 +287,16 @@ export function animatePageHeight(previousHeight, root = document) {
             duration: HEIGHT_DURATION,
             easing: 'cubic-bezier(.18, .74, .32, 1)',
         });
-        animation.finished.then(() => { body.style.overflow = original; },
-            () => { body.style.overflow = original; });
+        activeHeightAnimations.set(body, { animation, originalOverflow: original });
+        const restore = () => {
+            if (activeHeightAnimations.get(body)?.animation !== animation) return;
+            activeHeightAnimations.delete(body);
+            body.style.overflow = original;
+        };
+        animation.finished.then(restore, restore);
         return animation;
     } catch {
+        activeHeightAnimations.delete(body);
         body.style.overflow = original;
         return null;
     }
