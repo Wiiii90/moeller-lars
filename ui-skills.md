@@ -234,13 +234,21 @@ Journal already uses visible Position and is the current reference for the conve
 
 For hierarchical editors (Pages and Custom Pages), sorting and parenting are
 different operations: each sibling level gets an isolated native `wire:sort:group`
-name with a stable `group-id`; only the small, labeled
-`.admin-hierarchy__nest-target` accepts a parent change. Never cover the
-identity/position cells with a full-row nest overlay. Custom Page Image children
-are sorted within their own Image group, moved into a decorative Image only
-via the explicit drop target or Edit selection, and moved back out via
-"Move out" or the page-level target. Keep the domain mutation transactional
-and preserve publication, list dates, and component content.
+name with a stable `group-id`. The SINGLE drag-intent owner is
+`resources/js/admin-hierarchy-drag.js`; the tables provide only
+`data-admin-hierarchy`, drag handles and explicitly labeled
+`data-hierarchy-drop` targets. Do not recreate local Alpine drag state, use
+row-sized nest overlays or allow native sibling Sortable to change parents.
+A top-level drop target restores a Page or Image child to the root sequence;
+parent drops invoke the existing domain placement methods. Never add a
+second HTML5 draggable/sort engine: the shared controller merely disambiguates
+targeted parent changes from native Livewire sibling sorting.
+
+The shared `HierarchyParentField` provides a top-level placeholder in
+page and component Edit dialogs. On Custom Page Edit, a visible Parent
+selector appears ABOVE long Text/List content; changing Parent persists both
+content edits and hierarchy transactionally. Image children can also be
+released with `Move out`. Preserve publication, list contexts and text.
 
 Use native Livewire sorting only:
 

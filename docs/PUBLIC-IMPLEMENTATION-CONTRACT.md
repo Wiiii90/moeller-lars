@@ -487,3 +487,14 @@ The target does not preserve insecure HTTP behavior, blanket legacy query dispat
 
 Public acceptance requires durable publication/routing/data verification, media integrity, viewer interaction checks, isolated Validation, representative browser comparison and explicit editorial/artist review before Production cutover.
 
+
+
+The admin hierarchy uses one shared `admin-hierarchy-drag.js` controller.
+Native Livewire sorting only changes positions inside a sibling sequence;
+the small, explicit Nest and Page level targets alone change parentage.
+Pages and Custom Pages share drag gesture classification and the same
+`HierarchyParentField` semantics. Custom Page Text/List Edit exposes the
+Parent select above long component content, with a single domain transaction
+for edited content and nesting. Nested Image children can return to page
+level through the shared target or Move out. This is a single interaction
+contract, not independent per-page drag behavior.

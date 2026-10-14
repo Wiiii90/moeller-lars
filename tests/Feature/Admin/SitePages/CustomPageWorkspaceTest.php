@@ -180,8 +180,9 @@ it('allows canonical reorder only for a neutral complete parent sequence', funct
         ->and($sequenceSource)->toContain('wire:sort:item=')
         ->and($sequenceSource)->toContain('wire:sort:handle')
         ->and($sequenceSource)->not->toContain('draggable=')
-        ->and($sequenceSource)->toContain('x-on:dragstart.capture')
-        ->and($sequenceSource)->toContain('data-hierarchy-drag-handle');
+        ->and($sequenceSource)->toContain('data-admin-hierarchy="custom"')
+        ->and($sequenceSource)->toContain('data-hierarchy-drag-handle')
+        ->and($sequenceSource)->toContain('data-hierarchy-drop="nest"');
 });
 
 it('persists native parent drag sorting through the canonical component order service', function (): void {
