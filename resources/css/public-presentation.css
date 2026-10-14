@@ -32,7 +32,6 @@
     /* One neutral contour palette; individual surfaces vary the pressure. */
     --public-folio-light: rgba(255, 255, 255, .49);
     --public-folio-soft: rgba(255, 255, 255, .31);
-    --public-folio-depth: rgba(28, 35, 32, .12);
     --public-ink: #555;
     --public-muted: #777;
     --public-active: #746a60;
@@ -94,16 +93,13 @@ body {
     background: var(--public-surface);
 }
 
-/* Existing rear paper layers stay exposed at BOTH left and bottom.
-   Spread reaches the top of the menu while the second layer remains
-   another 3px left and 2px below the first, including during motion. */
+/* One light backing sheet. Spread meets the menu's upper edge. */
 .site-navigation {
     position: relative;
     order: 1;
     box-shadow:
         inset 0 -1px 0 var(--public-index-rule),
-        -1px 1px 0 1px var(--public-folio-depth),
-        -3px 2px 0 1px var(--public-folio-soft);
+        -1.5px 3.5px 0 3.5px var(--public-folio-soft);
 }
 .site-navigation::before,
 .site-navigation::after {
@@ -116,9 +112,9 @@ body {
    sheet. The white stroke never extends past the lower menu border. */
 .site-navigation::before {
     top: 0;
-    bottom: 0;
-    left: -.35rem;
-    width: .35rem;
+    bottom: 32%;
+    left: -.52rem;
+    width: .52rem;
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -126,9 +122,9 @@ body {
    an overshoot into the rear paper planes. */
 .site-navigation::after {
     top: 0;
-    bottom: 0;
-    right: -.36rem;
-    width: .36rem;
+    bottom: 1px;
+    right: -.44rem;
+    width: .44rem;
     border-right: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -515,27 +511,23 @@ body {
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
     background: var(--public-surface);
-    box-shadow:
-        -2px 3px 0 rgba(28, 35, 32, .09),
-        -5px 7px 0 var(--public-folio-soft),
-        -8px 10px 0 var(--public-folio-depth);
+    box-shadow: -5px 7px 0 var(--public-folio-soft);
 }
-/* The original two connected paper-edge drawings are their OWN animation
-   surfaces. Neither is replaced, hidden or duplicated at navigation time.
-   CSS variables only adjust top/bottom; the accepted width, outside offset,
-   stroke, shadow and skew remain exactly as authored in the first design. */
+/* The original TWO attached edge contours remain separate pseudo-element
+   animation targets. Each white sheet uses only ONE external backing shadow;
+   no extra layers are generated during navigation. */
 #content::before,
 #content::after {
     position: absolute;
     box-sizing: border-box;
-    width: .55rem;
     content: "";
     pointer-events: none;
 }
 #content::before {
     top: var(--public-folio-left-top, 1.1rem);
     bottom: var(--public-folio-left-bottom, 4rem);
-    left: -.7rem;
+    left: -.58rem;
+    width: .58rem;
     border-left: 1px solid var(--public-folio-light);
     border-top: 1px solid var(--public-folio-soft);
     border-bottom: 1px solid var(--public-folio-soft);
@@ -543,7 +535,8 @@ body {
 }
 #content::after {
     top: var(--public-folio-right-top, 3.8rem);
-    right: -.55rem;
+    right: -.48rem;
+    width: .48rem;
     bottom: var(--public-folio-right-bottom, 1.15rem);
     border-right: 1px solid rgba(255, 255, 255, .41);
     border-top: 1px solid var(--public-folio-soft);

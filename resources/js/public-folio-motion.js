@@ -9,41 +9,39 @@ export const FOLIO_VARIANTS = Object.freeze([
 ]);
 // Menu strokes are connected to the TOP border for their entire life.
 // Only their lower joint rises/falls, never the upper endpoint.
+// Nonoverlapping cycles: LEFT always ends above RIGHT, regardless of
+// each side's phase. Neither lower joint touches the menu bottom.
 export const MENU_VARIANTS = Object.freeze([
-    ['0rem', '0rem', '0rem', '0rem'],
-    ['0rem', '.15rem', '0rem', '.12rem'],
-    ['0rem', '.30rem', '0rem', '.25rem'],
+    ['0rem', '32%', '0rem', '1px'],
+    ['0rem', '60%', '0rem', '17%'],
+    ['0rem', '42%', '0rem', '6%'],
+    ['0rem', '73%', '0rem', '26%'],
 ]);
 
 // Original horizontal geometry belongs to the accepted shell CSS. These
 // values mirror its fixed edges and make the outside/inside motion bounded.
 const CONTENT_EDGES = [
-    { side: 'left', offset: '-.7rem', width: '.55rem' },
-    { side: 'right', offset: '-.55rem', width: '.55rem' },
-];
-const MENU_EDGES = [
-    { side: 'left', offset: '-.35rem', width: '.35rem' },
-    { side: 'right', offset: '-.36rem', width: '.36rem' },
+    { side: 'left', offset: '-.58rem', width: '.58rem' },
+    { side: 'right', offset: '-.48rem', width: '.48rem' },
 ];
 const CONTENT_DURATIONS = [25100, 29700];
 const MENU_DURATIONS = [34200, 38800];
-const BUILD_DURATION = 1480;
-const HEIGHT_DURATION = 980;
+const BUILD_DURATION = 1240;
+const HEIGHT_DURATION = 780;
 
+// Precisely one outer paper on each surface. The menu's internal rule is
+// an inset stroke, not another backing sheet.
 const SHADOW_START = {
-    content: (middleX, middleY, rearX, rearY) => [
-        '-2px 3px 0 rgba(28, 35, 32, .09)',
-        `${middleX}px ${middleY}px 0 var(--public-folio-soft)`,
-        `${rearX}px ${rearY}px 0 var(--public-folio-depth)`,
-    ].join(', '),
-    menu: (middleX, middleY, rearX, rearY) => [
+    content: (x, y) => `${x}px ${y}px 0 var(--public-folio-soft)`,
+    menu: (x, y) => [
         'inset 0 -1px 0 var(--public-index-rule)',
-        `${middleX}px ${middleY}px 0 1px var(--public-folio-depth)`,
-        `${rearX}px ${rearY}px 0 1px var(--public-folio-soft)`,
+        `${x}px ${y}px 0 ${y}px var(--public-folio-soft)`,
     ].join(', '),
 };
+
 let snapshot = null;
 const activeHeightAnimations = new WeakMap();
+const activePaperPulses = new WeakMap();
 
 function visiblePseudo(element, pseudo) {
     if (!element) return null;
@@ -77,176 +75,166 @@ function pageBody(root) {
 // not restart from an unrelated page size.
 export function capturePublicFolio(root = document) {
     const content = root.querySelector('#content');
-    const menu = root.querySelector('.site-navigation');
     const body = pageBody(root);
     snapshot = {
         content: pairGeometry(content),
-        menu: pairGeometry(menu),
         contentShadow: content ? getComputedStyle(content).boxShadow : null,
-        menuShadow: menu ? getComputedStyle(menu).boxShadow : null,
         bodyHeight: body ? body.getBoundingClientRect().height : null,
     };
-    return Boolean(snapshot.content || snapshot.menu);
+    return Boolean(snapshot.content || body);
 }
 
-// Each successive frame changes ONLY one axis: top, bottom or a horizontal
-// (offset+width) pair. Connected return strokes cannot detach or become
-// diagonal. The final frame is exactly the captured initial configuration.
-export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
-    const frames = [{ ...start }];
-    const step = patch => frames.push({ ...frames[frames.length - 1], ...patch });
-    // Pauses are ordinary repeated WAAPI frames, NOT timers: individual
-    // strokes may rest while others continue. One direction per segment.
-    const rest = () => step({});
-    step({ top: base.top });
-    step({ bottom: base.bottom });
-    rest(); rest();
-    step({
-        [edge.side]: `calc(${edge.offset} - 2.2px)`,
-        width: `calc(${edge.width} + 2.2px)`,
+// One calm outward/shortening sweep and ONE return per cycle. Repeated
+// micro-corrections and rapid turns near the loop seam looked like shaking.
+// Start from the actual displayed state; close on that EXACT state so a
+// repeated WAAPI cycle never jumps. Each leg changes only one axis.
+export function buildCornerFrames(start, nextTop, nextBottom, edge) {
+    const states = [{ ...start, offset: 0 }];
+    const step = (changes, offset) => states.push({
+        ...states[states.length - 1], ...changes, offset,
     });
-    rest();
-    step({ top: nextTop });
-    rest();
-    step({ bottom: nextBottom });
-    rest();
-    step({
-        [edge.side]: `calc(${edge.offset} + 1.2px)`,
-        width: `calc(${edge.width} - 1.2px)`,
-    });
-    rest(); rest();
-    step({ top: base.top });
-    step({ bottom: base.bottom });
-    step({ [edge.side]: start[edge.side], width: start.width });
-    step({ top: start.top });
-    step({ bottom: start.bottom });
-    rest(); rest();
-    return frames.map((frame, index) => ({
-        ...frame,
-        offset: index / (frames.length - 1),
-        easing: 'cubic-bezier(.38, .05, .42, .95)',
+    step({}, .12); // stationary
+    step({ [edge.side]: `calc(${edge.offset} - 2px)`,
+        width: `calc(${edge.width} + 2px)` }, .26);
+    step({}, .36);
+    step({ top: nextTop }, .49);
+    step({ bottom: nextBottom }, .62);
+    step({}, .70);
+    step({ top: start.top }, .81);
+    step({ bottom: start.bottom }, .91);
+    step({ [edge.side]: start[edge.side], width: start.width }, .98);
+    step({}, 1);
+    return states.map(frame => ({
+        ...frame, easing: 'cubic-bezier(.42, 0, .58, 1)',
     }));
 }
 
-// The MENU always touches the top border. A bottom-only rise makes it
-// visibly travel upward without opening a gap at the upper connection.
-// No sideways movement means the white return cannot enter the white face.
+// One anchored stroke per side. There are deliberate early reversals:
+ // extend -> partially retract -> extend again -> rest. The left lower
+// endpoint is ALWAYS >=32% high, the right never >26% and never <1px.
+// Separate cycle periods cannot invert the visual left/right hierarchy.
 export function buildMenuCornerFrames(start, index) {
-    const base = MENU_VARIANTS;
     const column = index === 0 ? 1 : 3;
     const fixed = { ...start, top: '0px' };
-    const stops = [fixed, fixed,
-        { ...fixed, bottom: base[1][column] },
-        { ...fixed, bottom: base[2][column] },
-        { ...fixed, bottom: base[2][column] },
-        { ...fixed, bottom: '0rem' },
-        { ...fixed, bottom: '0rem' },
-        fixed];
-    return stops.map((frame, i) => ({
-        ...frame, offset: i / (stops.length - 1),
-        easing: 'cubic-bezier(.38, .05, .42, .95)',
+    const steps = [
+        { bottom: start.bottom, offset: 0 },
+        { bottom: start.bottom, offset: .08 },
+        { bottom: MENU_VARIANTS[1][column], offset: .29 },
+        { bottom: MENU_VARIANTS[1][column], offset: .37 },
+        { bottom: MENU_VARIANTS[2][column], offset: .54 },
+        { bottom: MENU_VARIANTS[2][column], offset: .61 },
+        { bottom: MENU_VARIANTS[3][column], offset: .80 },
+        { bottom: MENU_VARIANTS[3][column], offset: .86 },
+        { bottom: start.bottom, offset: .97 },
+        { bottom: start.bottom, offset: 1 },
+    ];
+    return steps.map(({ bottom, offset }) => ({
+        ...fixed, bottom, offset, easing: 'cubic-bezier(.42, 0, .58, 1)',
     }));
 }
 
-// Parse only the two existing rear planes, respecting commas inside rgb()
-// functions. SPA swaps may interrupt a plane halfway across an axis;
-// restoring each coordinate separately prevents a diagonal reset.
-function renderedShadowCoords(value) {
-    const layers = [];
+// Parse comma-separated shadow layers without splitting inside rgba().
+function shadowLayers(value) {
+    const parts = [];
     let depth = 0, begin = 0;
     for (let i = 0; i < value.length; i += 1) {
         if (value[i] === '(') depth += 1;
         else if (value[i] === ')') depth -= 1;
         else if (value[i] === ',' && depth === 0) {
-            layers.push(value.slice(begin, i));
+            parts.push(value.slice(begin, i).trim());
             begin = i + 1;
         }
     }
-    layers.push(value.slice(begin));
-    if (layers.length !== 3) return null;
-    const positions = layers.slice(1).flatMap(layer =>
-        [...layer.matchAll(/(-?\d+(?:\.\d+)?)px/g)].slice(0, 2).map(m => Number(m[1])));
-    return positions.length === 4 && positions.every(Number.isFinite) ? positions : null;
+    parts.push(value.slice(begin).trim());
+    return parts;
 }
 
-// These match the three CSS layers exactly. The second and third paper
-// planes must remain separate along LEFT and BOTTOM for every animation frame.
+function renderedShadowCoords(value, type) {
+    const layers = shadowLayers(value);
+    if (layers.length !== (type === 'menu' ? 2 : 1)) return null;
+    const xy = [...layers.at(-1).matchAll(/(-?\d+(?:\.\d+)?)px/g)]
+        .slice(0, 2).map(m => Number(m[1]));
+    return xy.length === 2 && xy.every(Number.isFinite) ? xy : null;
+}
+
+// The single existing exterior sheet on each surface.
 export const FOLIO_PLANE_BASE = Object.freeze({
-    content: [-5, 7, -8, 10],
-    menu: [-1, 1, -3, 2],
+    content: [-5, 7],
+    menu: [-1.5, 3.5],
 });
 
-// Existing paper layers alternate one-axis excursions, with rests.
-// Intermediate values are read on Livewire swaps; the rear layer always
-// leads outward and restores its visibility before the front shifts inward.
+// The backing sheet moves one x or y axis at a time, rests and returns.
+// No hidden second sheet, independent shadow copy or interpolated dark fill.
 export function buildShadowFrames(start, type) {
     const shadow = SHADOW_START[type];
     const base = FOLIO_PLANE_BASE[type];
-    const rendered = renderedShadowCoords(start) ?? base;
-    const positions = [...rendered];
-    const frames = [start];
-    const append = () => frames.push(shadow(...positions));
+    const rendered = renderedShadowCoords(start, type) ?? base;
+    const xy = [...rendered];
+    const frames = [{ boxShadow: start, weight: 0 }];
     const move = (i, value) => {
-        if (positions[i] === value) return;
-        positions[i] = value;
-        append();
+        if (xy[i] === value) return;
+        const distance = Math.abs(xy[i] - value);
+        xy[i] = value;
+        frames.push({ boxShadow: shadow(...xy),
+            weight: Math.max(4, 3 * distance) });
     };
-    const rest = () => append();
+    const rest = weight => frames.push({ boxShadow: shadow(...xy), weight });
     base.forEach((value, i) => move(i, value));
-    rest(); rest();
-    // Outward: the rear paper advances before the nearer paper.
-    move(2, base[2] - (type === 'menu' ? 1.8 : 3.5));
+    rest(9);
     move(0, base[0] - (type === 'menu' ? 1 : 2));
-    rest();
-    move(3, base[3] + (type === 'menu' ? 1.4 : 3));
-    move(1, base[1] + (type === 'menu' ? .75 : 1.7));
-    rest(); rest();
+    rest(4);
+    move(1, base[1] + (type === 'menu' ? 1.3 : 2));
+    rest(10);
     move(0, base[0]); move(1, base[1]);
-    move(2, base[2]); move(3, base[3]);
-    rest();
-    // Inward: move the front right/up, then restore the rear first.
-    move(0, base[0] + (type === 'menu' ? .4 : 1));
-    move(2, base[2] + (type === 'menu' ? .1 : 1.2));
-    rest();
-    move(1, base[1] - (type === 'menu' ? .2 : .6));
-    move(3, base[3] - (type === 'menu' ? .1 : .3));
-    rest(); rest();
-    move(2, base[2]); move(3, base[3]);
-    move(0, base[0]); move(1, base[1]);
-    rest();
+    rest(10);
+    move(0, base[0] + (type === 'menu' ? .4 : .8));
+    move(1, base[1] - (type === 'menu' ? .2 : .5));
+    rest(7);
+    move(1, base[1]); move(0, base[0]);
+    rest(9);
     rendered.forEach((value, i) => move(i, value));
-    frames.push(start);
-    return frames.map((boxShadow, i) => ({
-        boxShadow, offset: i / (frames.length - 1),
-        easing: 'cubic-bezier(.38, .02, .26, 1)',
-    }));
+    frames.push({ boxShadow: start, weight: 4 });
+
+    const total = frames.reduce((sum, frame) => sum + frame.weight, 0);
+    let elapsed = 0;
+    return frames.map((frame, index) => {
+        elapsed += frame.weight;
+        return { boxShadow: frame.boxShadow,
+            offset: index === frames.length - 1 ? 1 : elapsed / total,
+            easing: 'cubic-bezier(.42, 0, .58, 1)' };
+    });
 }
 
-// A directional sequence: steady approach, a visible paper-driven thrust,
-// a short follow-through, then a controlled return. In each keyframe only
-// ONE axis changes; lateral movement adjusts width with the offset so the
-// original corner remains connected to the same white-sheet edge.
-export function buildCornerImpulse(start, edge, growing, type = 'content') {
-    const frames = [{ ...start }];
-    const step = patch => frames.push({ ...frames[frames.length - 1], ...patch });
-    const amplitude = type === 'menu' ? 0 : 3.1;
-    const vertical = type === 'menu' ? 0 : 3.2;
-    const delta = growing ? 1 : -1;
-    step({ [edge.side]: `calc(${start[edge.side]} - ${amplitude}px)`,
-        width: `calc(${start.width} + ${amplitude}px)` });
-    // Menu outside strokes must end inside their white bottom border.
-    // A content corner may extend further down during the page build.
-    const bottomDelta = type === 'menu' ? 0 : -vertical * delta;
-    step({ bottom: `calc(${start.bottom} + ${bottomDelta}px)` });
-    step({ top: `calc(${start.top} + ${vertical * .68}px)` });
-    step({ [edge.side]: start[edge.side], width: start.width });
-    step({ bottom: start.bottom });
-    step({ top: start.top });
-    return frames.map((frame, index) => ({
-        ...frame,
-        offset: index / (frames.length - 1),
-        easing: 'cubic-bezier(.35, 0, .25, 1)',
-    }));
+// Build transitions are always measured against the destination's STATIC
+// paper geometry, not the last active animation. A rapid second click can
+// begin at the current in-flight pose, but must never extend it cumulatively.
+// The contour first shortens vertically, then opens as the white sheet
+// grows, finally settling into the authored CSS at the exact final frame.
+// Horizontal movement updates its return width in lockstep (no loose line).
+export function buildCornerImpulse(start, base, edge, growing, height = 720) {
+    const frames = [{ ...start, offset: 0, easing: 'cubic-bezier(.36, .08, .64, .92)' }];
+    const step = (changes, offset) => frames.push({
+        ...frames[frames.length - 1], ...changes, offset,
+        easing: 'cubic-bezier(.36, .08, .64, .92)',
+    });
+    // The old 5px reduction was imperceptible on a full-height painting.
+    // This contracts BOTH ends by up to 86px on taller pages, but retains
+    // at least 40px of vertical stroke on even the shortest content.
+    const available = Math.max(0, height - parseFloat(base.top) - parseFloat(base.bottom));
+    const room = Math.max(0, available - 40);
+    const topCut = Math.min(growing ? 40 : 32, room * .46);
+    const bottomCut = Math.min(growing ? 46 : 38, room * .54);
+    const amplitude = 3.1;
+    step({ [edge.side]: `calc(${edge.offset} - ${amplitude}px)`,
+        width: `calc(${edge.width} + ${amplitude}px)` }, .13);
+    step({ top: `calc(${base.top} + ${topCut.toFixed(2)}px)` }, .29);
+    step({ bottom: `calc(${base.bottom} + ${bottomCut.toFixed(2)}px)` }, .46);
+    step({ top: `calc(${base.top} - 4px)` }, .68);
+    step({ bottom: `calc(${base.bottom} - 4px)` }, .79);
+    step({ [edge.side]: edge.offset, width: edge.width }, .90);
+    step({ top: base.top }, .96);
+    step({ bottom: base.bottom }, 1);
+    return frames;
 }
 
 function nativeCorner(element, pseudo, frames, duration, loop = false) {
@@ -264,6 +252,23 @@ function nativeCorner(element, pseudo, frames, duration, loop = false) {
     }
 }
 
+// The part of a long page below the viewport isn't visible and must NOT
+// be dragged through thousands of pixels during a shorter-page navigation.
+// Bound both ends of the reveal to what can currently be seen (+48px).
+// After the animation, auto height reveals all content without a jump in
+// the viewport. No scroll manipulation, DOM cloning, or JS timers.
+export function visibleHeightTransition(previousHeight, nextHeight, viewportHeight, bodyTop = 0) {
+    if (!Number.isFinite(previousHeight) || previousHeight <= 0
+        || !Number.isFinite(nextHeight) || nextHeight <= 0) return null;
+    if (!Number.isFinite(viewportHeight) || viewportHeight <= 0) {
+        return { from: previousHeight, to: nextHeight };
+    }
+    const top = Number.isFinite(bodyTop) ? Math.max(0, bodyTop) : 0;
+    const cap = Math.min(viewportHeight + 48,
+        Math.max(96, viewportHeight - top + 48));
+    return { from: Math.min(previousHeight, cap), to: Math.min(nextHeight, cap) };
+}
+
 // All pages share the same inner content wrapper. Its animated height
 // controls the parent paper's natural height, but ONLY the wrapper clips:
 // the original external folio lines/shadows never get cut off.
@@ -271,9 +276,22 @@ export function animatePageHeight(previousHeight, root = document) {
     if (!Number.isFinite(previousHeight) || previousHeight <= 0) return null;
     const body = pageBody(root);
     if (!body || typeof body.animate !== 'function') return null;
-    const natural = body.getBoundingClientRect().height;
-    if (!Number.isFinite(natural) || Math.abs(natural - previousHeight) < 7) return null;
+    const bounds = body.getBoundingClientRect();
+    const natural = bounds.height;
+    const viewportHeight = typeof window === 'undefined' ? null : window.innerHeight;
+    const visible = visibleHeightTransition(previousHeight, natural,
+        viewportHeight, bounds.top);
     const prior = activeHeightAnimations.get(body);
+    if (!visible || Math.abs(visible.from - visible.to) < 7) {
+        // A second Hero click may need no visible resize at all. It must
+        // still dispose a canceled predecessor's clipping/height owner.
+        if (prior) {
+            activeHeightAnimations.delete(body);
+            prior.animation.cancel();
+            body.style.overflow = prior.originalOverflow;
+        }
+        return null;
+    }
     const original = prior?.originalOverflow ?? body.style.overflow;
     // A second Hero click may interrupt the first height reveal. Only the
     // CURRENT animation is allowed to restore overflow after completion.
@@ -281,8 +299,8 @@ export function animatePageHeight(previousHeight, root = document) {
     body.style.overflow = 'clip';
     try {
         const animation = body.animate([
-            { height: `${previousHeight}px` },
-            { height: `${natural}px` },
+            { height: `${visible.from}px` },
+            { height: `${visible.to}px` },
         ], {
             duration: HEIGHT_DURATION,
             easing: 'cubic-bezier(.18, .74, .32, 1)',
@@ -302,44 +320,35 @@ export function animatePageHeight(previousHeight, root = document) {
     }
 }
 
-// Two genuine rear paper planes advance in measured separate directions;
-// exposed separation from the white front and from one another is preserved.
-// The first and final frames are actual sampled CSS values.
+// One exterior backing sheet follows the white page's construction;
+ // original captured and authored CSS poses remain the cycle endpoints.
+// On navigation, push the SAME single sheet outward or inward. Geometry
+// is based on canonical coordinates, preventing cumulative extension on
+// rapid Hero clicks. The page-height reveal keeps its own existing pace.
 export function buildPageImpulse(start, end, type, growing) {
     const base = FOLIO_PLANE_BASE[type];
-    const coords = [...(renderedShadowCoords(start) ?? base)];
+    const xy = [...(renderedShadowCoords(start, type) ?? base)];
     const shadow = SHADOW_START[type];
-    const values = [start];
-    const set = (i, v) => {
-        if (coords[i] === v) return;
-        coords[i] = v;
-        values.push(shadow(...coords));
+    const frames = [start];
+    const move = (index, value) => {
+        if (xy[index] === value) return;
+        xy[index] = value;
+        frames.push(shadow(...xy));
     };
-    // In a growing page the rear plane leads outward. When shrinking the
-    // middle plane retracts first so the rear one never gets swallowed.
-    const scale = type === 'menu' ? .48 : 1;
-    const outward = growing !== false;
-    const middleX = base[0] + (outward ? -2.4 : 1.4) * scale;
-    const rearX = base[2] + (outward ? -4.8 : 1.0) * scale;
-    const middleY = base[1] + (outward ? 1.8 : -.9) * scale;
-    const rearY = base[3] + (outward ? 4 : -.7) * scale;
-    if (outward) {
-        set(2, rearX); set(3, rearY); set(0, middleX); set(1, middleY);
+    const scale = type === 'menu' ? .5 : 1;
+    if (growing !== false) {
+        move(0, base[0] - 3.2 * scale);
+        move(1, base[1] + 2.8 * scale);
     } else {
-        set(0, middleX); set(1, middleY); set(2, rearX); set(3, rearY);
+        move(0, base[0] + 1.2 * scale);
+        move(1, base[1] - .8 * scale);
     }
-    // Each plane retracts in one-axis movements before returning to the
-    // destination's authored styling; never snap two axes simultaneously.
-    const target = renderedShadowCoords(end) ?? base;
-    if (outward) {
-        set(0, target[0]); set(1, target[1]); set(2, target[2]); set(3, target[3]);
-    } else {
-        set(2, target[2]); set(3, target[3]); set(0, target[0]); set(1, target[1]);
-    }
-    values.push(end);
-    return values.map((boxShadow, index) => ({
-        boxShadow,
-        offset: index / (values.length - 1),
+    const destination = renderedShadowCoords(end, type) ?? base;
+    move(0, destination[0]);
+    move(1, destination[1]);
+    frames.push(end);
+    return frames.map((boxShadow, index) => ({
+        boxShadow, offset: index / (frames.length - 1),
         easing: 'cubic-bezier(.35, 0, .25, 1)',
     }));
 }
@@ -353,9 +362,7 @@ function startAmbient(element, states, type) {
             frames = buildMenuCornerFrames(states[index], index);
         } else {
             const columns = index === 0 ? [0, 1] : [2, 3];
-            const first = { top: FOLIO_VARIANTS[0][columns[0]],
-                bottom: FOLIO_VARIANTS[0][columns[1]] };
-            frames = buildCornerFrames(states[index], first,
+            frames = buildCornerFrames(states[index],
                 FOLIO_VARIANTS[1][columns[0]],
                 FOLIO_VARIANTS[2][columns[1]], CONTENT_EDGES[index]);
         }
@@ -373,33 +380,42 @@ function startAmbient(element, states, type) {
     }
 }
 
-function pulsePaper(element, corners, oldShadow, type, growing, root) {
+function pulsePaper(element, corners, oldShadow, growing, root) {
     if (!element || !corners) return false;
-    const edges = type === 'content' ? CONTENT_EDGES : MENU_EDGES;
+    const token = {};
+    activePaperPulses.set(element, token);
     const animations = [];
+    // Fresh DOM on Livewire swaps and canceled DOM on Home Hero both expose
+    // the true destination base here. Never derive the new excursion from
+    // corners sampled mid-flight on a previous pulse.
+    const canonical = pairGeometry(element);
     for (let i = 0; i < 2; i += 1) {
         const animation = nativeCorner(element, i === 0 ? '::before' : '::after',
-            buildCornerImpulse(corners[i], edges[i], growing, type),
-            type === 'content' ? BUILD_DURATION : 980);
+            buildCornerImpulse(corners[i], canonical?.[i] ?? corners[i],
+                CONTENT_EDGES[i], growing,
+                element.getBoundingClientRect().height), BUILD_DURATION);
         if (animation) animations.push(animation);
     }
     if (oldShadow && typeof element.animate === 'function') {
         try {
             const shadowAnimation = element.animate(
-                buildPageImpulse(oldShadow, getComputedStyle(element).boxShadow, type, growing),
-                { duration: type === 'content' ? BUILD_DURATION : 980 },
+                buildPageImpulse(oldShadow, getComputedStyle(element).boxShadow, 'content', growing),
+                { duration: BUILD_DURATION },
             );
             animations.push(shadowAnimation);
         } catch { /* Preserve the real CSS layers. */ }
     }
-    if (animations.length === 0) return false;
-    // Do not start the ambient effect on the same properties until this
-    // one-shot build has finished; ignore detached nodes after fast visits.
+    if (animations.length === 0) {
+        activePaperPulses.delete(element);
+        return false;
+    }
+    // Both a detached Livewire page AND an in-place Home Hero can supersede
+    // a prior build. Only the latest token may resume ambient breathing.
     Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
-        const selector = type === 'content' ? '#content' : '.site-navigation';
-        if (root.querySelector(selector) === element) {
-            startAmbient(element, pairGeometry(element), type);
-        }
+        if (activePaperPulses.get(element) !== token
+            || root.querySelector('#content') !== element) return;
+        activePaperPulses.delete(element);
+        startAmbient(element, pairGeometry(element), 'content');
     });
     return true;
 }
@@ -414,12 +430,10 @@ export function advancePublicFolio(root = document) {
     const previous = snapshot;
     snapshot = null;
     const corners = previous?.content ?? pairGeometry(content);
-    const menuCorners = previous?.menu ?? pairGeometry(menu);
     const contentShadow = previous?.contentShadow ?? (content && getComputedStyle(content).boxShadow);
-    const menuShadow = previous?.menuShadow ?? (menu && getComputedStyle(menu).boxShadow);
     if (!previous) {
         startAmbient(content, corners, 'content');
-        startAmbient(menu, menuCorners, 'menu');
+        startAmbient(menu, pairGeometry(menu), 'menu');
         return Boolean(content || menu);
     }
 
@@ -428,7 +442,7 @@ export function advancePublicFolio(root = document) {
     const growing = !Number.isFinite(nextHeight) || !Number.isFinite(previous.bodyHeight)
         || nextHeight >= previous.bodyHeight;
     animatePageHeight(previous.bodyHeight, root);
-    if (!pulsePaper(content, corners, contentShadow, 'content', growing, root)) {
+    if (!pulsePaper(content, corners, contentShadow, growing, root)) {
         startAmbient(content, corners, 'content');
     }
     // The menu has no new content to assemble. On SPA swaps it continues
@@ -463,7 +477,7 @@ export function animatePublicHeroChange(change, root = document) {
     const newHeight = body.getBoundingClientRect().height;
     const growing = newHeight >= oldHeight;
     animatePageHeight(oldHeight, root);
-    if (!pulsePaper(content, corners, shadow, 'content', growing, root)) {
+    if (!pulsePaper(content, corners, shadow, growing, root)) {
         startAmbient(content, pairGeometry(content), 'content');
     }
     return true;

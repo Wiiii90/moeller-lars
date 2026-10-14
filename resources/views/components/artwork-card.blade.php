@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'priority' => null])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -61,7 +61,7 @@
                 @endif
                 loading="{{ $eager ? 'eager' : 'lazy' }}"
                 decoding="async"
-                fetchpriority="{{ $eager ? 'high' : 'auto' }}"
+                fetchpriority="{{ ($priority ?? $eager) ? 'high' : 'auto' }}"
             >
         @endif
     @if ($enableViewer)

@@ -5,6 +5,7 @@ import '../css/custom-pages.css';
 import '../css/journal-presentation.css';
 
 import { initializeArtworkViewer } from './artwork-viewer.js';
+import { initializeGalleryImageLoading } from './public-gallery-loading.js';
 import { initializeHomeHero } from './home-hero.js';
 import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
@@ -29,6 +30,7 @@ function initializePage() {
     currentContent = content;
     const root = document.body;
     disposers.push(initializeArtworkViewer(root));
+    disposers.push(initializeGalleryImageLoading(root));
     initializeHomeHero(root, (change) => animatePublicHeroChange(change, root));
     disposers.push(initializeJournalPresentation());
     disposers.push(initializeMatomoTracking(root));
