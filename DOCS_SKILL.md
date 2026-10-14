@@ -96,7 +96,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   Browserregeln verlieren und keine neuen UI-Regeln aus unakzeptierten
   Designentwürfen erfinden.
 
-**Markdown-Verweisprüfung (14.10.2026):** Aktueller **unabhängiger GitHub-Tree-Quellscan** über 63 Markdown-Dateien und 609 einfache Inline-Linkvorkommen (581 relative lokale Ziele) auf `docs@f7bdc77d6`: **kein fehlender relativer Pfad**. 25 Ziel-Fragment-Verwendungen (17 verschiedene Paare) gegen vorhandene Überschriften geprüft: **alle vorhanden**. URI-Beispiel `media:123` ist ausdrücklich kein relativer Dateipfad. Neuer reiner PHP-Linkprüfer `scripts/check-documentation-links.php` mit `--check|--summary|--self-test` erstellt. Sein **identischer Git-Blob** wurde unter lokalem PHP 8.4 mit `php -l`, `--self-test` und einem synthetischen positiven sowie absichtlich negativen Checkout-Fixture tatsächlich ausgeführt; der neue Checker wurde **noch nicht** auf einem vollständigen realen Checkout ausgeführt. Komplexe/mehrzeilige Markdown-Destinations und HTML-/MDX-Links außerhalb des Scanner-Modells; dazu siehe [docs/README.md](docs/README.md#local-documentation-link-verification).
+**Markdown-Verweisprüfung (14.10.2026):** Aktueller **unabhängiger GitHub-Tree-Quellscan** über 63 Markdown-Dateien und 629 einfache Inline-Linkvorkommen (601 relative lokale Ziele) auf `docs@6f3845c13`: **kein fehlender relativer Pfad**. 31 Ziel-Fragment-Verwendungen (20 verschiedene Paare) gegen vorhandene Überschriften geprüft: **alle vorhanden**. URI-Beispiel `media:123` ist ausdrücklich kein relativer Dateipfad. Neuer reiner PHP-Linkprüfer `scripts/check-documentation-links.php` mit `--check|--summary|--self-test` erstellt. Sein **identischer Git-Blob** wurde unter lokalem PHP 8.4 mit `php -l`, `--self-test` und einem synthetischen positiven sowie absichtlich negativen Checkout-Fixture tatsächlich ausgeführt; der neue Checker wurde **noch nicht** auf einem vollständigen realen Checkout ausgeführt. Komplexe/mehrzeilige Markdown-Destinations und HTML-/MDX-Links außerhalb des Scanner-Modells; dazu siehe [docs/README.md](docs/README.md#local-documentation-link-verification).
 
 ## Offene Arbeit in Reihenfolge
 
@@ -152,9 +152,9 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   wurde hier **nicht ausgeführt**. Vollständiges `pg_catalog` nur mit
   ausdrücklich disposable, vollständig migrierter Testdatenbank.
 - **Markdown-Verweise:** Authentifizierter unabhängiger GitHub-Tree-
-  Quellscan auf `docs@f7bdc77d6`: **63** Markdown-Dateien,
-  **609** einfache Inline-Linkvorkommen, davon **581** relative lokale
-  Ziele; **25** Abschnittsanker-Verwendungen, **17** eindeutige
+  Quellscan auf `docs@6f3845c13`: **63** Markdown-Dateien,
+  **629** einfache Inline-Linkvorkommen, davon **601** relative lokale
+  Ziele; **31** Abschnittsanker-Verwendungen, **20** eindeutige
   Ziel/Fragment-Paare; **0** fehlende relative Ziele oder geprüfte
   Anker. Kein vollständiger CommonMark-Parser-/nativer PHP-Checkout-
   Lauf. [Dokumentationsindex](docs/README.md#local-documentation-link-verification).
