@@ -39,6 +39,19 @@ The admin dialog behavior accepted in browser review on 2026-10-11 is a
 
 See `docs/ADMIN-DIALOG-CONTRACT.md` and `ui-skills.md` for shared UI geometry.
 
+## Active public-rights implementation workstream (temporary)
+
+The agreed cross-cutting public-rights/privacy/media/SEO implementation is
+tracked in root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md).
+**Before any relevant code change or continuation prompt, read and update that
+living workstream**, then consult the durable
+[`docs/PUBLIC-RIGHTS-AND-PRIVACY.md`](docs/PUBLIC-RIGHTS-AND-PRIVACY.md).
+It records the accepted scope, current slice, completion evidence and
+cross-chat handoff. Update it in the **same commit** as implementation changes;
+reconcile concurrent `dev` commits before editing. It is temporary: when the
+full workstream is genuinely complete, transfer durable rules to docs,
+remove this link, and delete the temporary root file.
+
 ## Public CSP and rights protection
 
 Public scripts, styles, image features and animations MUST use the existing

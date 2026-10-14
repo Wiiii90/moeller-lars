@@ -4,6 +4,19 @@ Use this file when a long orchestration/review chat is becoming too large and th
 
 The goal is a lossless operational handoff, not a summary for casual reading.
 
+## Temporary PUBLIC RIGHTS handoff invariant (while active)
+
+For any continuation within public rights/privacy/media protection/SEO, read
+root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md) first.
+It is the authoritative **living execution state** alongside the durable
+[`docs/PUBLIC-RIGHTS-AND-PRIVACY.md`](docs/PUBLIC-RIGHTS-AND-PRIVACY.md)
+product architecture. Update current slice, actual commit SHA, tests and
+runtime/browser acceptance, next action and any unresolved blockers **before**
+generating a follow-up prompt. Never describe a documented but unimplemented
+idea as completed. Avoid duplicated secondary to-do lists in follow-up chats.
+After the workstream is fully completed, remove this temporary instruction
+along with the root workstream file; retain only permanent contracts.
+
 ## Current direct-`dev` continuation mode (2026-10-12)
 
 The former public-facing parallel chat has ended. Create **one complete
