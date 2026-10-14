@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `d233f4137e9a7efb0c05e3bcae2934ae956271a3` |
-| darin aufgenommener `dev`-Stand | `f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0` |
-| Status | elf weitere Admin-/Public-Commits übernommen; Home-Menüsichtbarkeit, Public-Folio-Redesign, CSP-Image und Custom-Image-Edit; Browsertests nicht ausgeführt |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `7981afd1ae2ca6987c72f41b133399d23d2ab21b` |
+| darin aufgenommener `dev`-Stand | `81c12c836fdce03a478866ec3d147ebc818b24a6` |
+| Status | weitere 14 Commits konfliktgeprüft gemergt; dekorative Image-Prose-Children, gemeinsame Pages-Headings und TDM-/SEO-/Privacy-Plan. Source-Audit fortgesetzt; keine Browser-/DB-/CI-Läufe |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -163,6 +163,7 @@ Lokale Codex-/native PHP-Generatorläufe, isolierter PostgreSQL-Export und repro
 
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
 
+- **Public Security/Rights/Privacy neu als End-to-end-Sourcepfad:** [public-security-privacy-boundaries.md](docs/architecture/public-security-privacy-boundaries.md) trennt LIVE-GET-/HEAD, Admin-Preview, Public/Private-Medien, Contact-POST, Nonce/CSP, TDM/robots, Matomo und Datenschutzerfassung. Zwei neue Quellenlücken: **HTTP(S)-Rich-Text-Bilder werden validiert, aber Public-CSP blockiert unbekannte Bild-Hosts**; **dekorative Image-Children mit kanonischem eingebettetem Media werden vom nichtrekursiven Working-/PublicMedia-Reader übersehen**, außerdem top-level List-Bilder im PublicMedia-Guard. Source-belegt, keine ausgeführten Negativtests. [Public-Rechte-/Privacy-Plan](docs/PUBLIC-RIGHTS-AND-PRIVACY.md) ist **teilimplementierter Produktplan**, kein vollzogener Schutz/Consent; keine falschen Download- oder Matomo-Compliance-Versprechen.
 - **Activity/Undo als eigenen Source-Flow dokumentiert:** [activity-undo-lifecycle.md](docs/architecture/activity-undo-lifecycle.md) unterscheidet Audit-/Receipt-/Ordering-Projektionen, individuelle transaktionale Snapshot-/Media-/Lifecycle-/Ordering-Inversen, Actor-/TTL-/Commit-Guards, fehlende neue Undo-Receipts bei Inversen und das **nicht atomare** Selection-Undo über einzelne Receipts. Kein Livewire/DB-Test ausgeführt.
 - **Abdeckungsmaßstab statt Quantität:** [Abschlussmatrix](docs/architecture/completion-criteria.md) koordiniert jetzt alle Quellketten und noch offenen fachlichen Zeilen; 20 eingefrorene Importdiagramme ausdrücklich nicht als 20 fachlich abgeschlossene Workflow-Diagramme zählen.
 
