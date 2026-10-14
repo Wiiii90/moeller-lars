@@ -162,9 +162,45 @@ stateDiagram-v2
 
 **Graph-Geltungsgrenze:** Die Zustände sind **fachliche Working-Relationen und Kontextmarker**, nicht gespeicherte diskrete Enum-Zustände. Auch nach einem Stage mit null ermittelten Änderungszeilen kann ein `restore/revert`-Kontext bestehen; nach `commit` mit null Diff wird er entfernt. `commit` ist der einzige hier dargestellte Übergang, der LIVE neu erzeugt; Reset/Restore/Revert tun das **nicht**. Für die tatsächliche historische Version und Transaktionsrace siehe die bereits detaillierte [Restore-/Revert-/Reset-Untersuchung](publication-working-operations.md). Kein synchroner Snapshot- oder Dateisystemerfolg wird über diese Grenzen hinaus behauptet.
 
+## 8. Journal-Templatewechsel: Präsentation statt Inhaltsmigration
+
+[SiteSectionEditorialService::updateJournalTemplate()](../../app/Domain/Content/SiteSectionEditorialService.php) akzeptiert ausschließlich `JournalTemplate::Blog` oder `JournalTemplate::Exhibitions`. Unter `DB::transaction` und `SiteSection::lockForUpdate()` validiert er zuerst `nodeType=Journal`. Derselbe Wert führt zu einem **No-op** ohne Template-Audit. Bei wirklichem Wechsel stellt `ensureJournalSetting()` die bestehende Settings-Relation bereit, setzt nur `site_sections.template`, speichert und zeichnet `site_section.journal_template_updated` auf. **Weder `blog_posts` noch `exhibitions` werden gelöscht, verschoben oder konvertiert.**
+
+[`JournalSettingsService::update()`](../../app/Domain/Content/JournalSettingsService.php) kombiniert diesen bestehenden Template-Owner mit der [`SiteSectionIdentityService`](../../app/Domain/Content/SiteSectionIdentityService.php) für `title`, `navigation_label` und `slug`. Die äußere Transaktion umfasst beide Suboperationen und damit die Identitäts-/Redirect-Arbeit. War das Navigationslabel unmodifiziert mit dem früheren Titel identisch, darf es den neuen Titel übernehmen; bewusst getrennte Labels werden erhalten. Dies ist von der bereits dokumentierten möglichen [Pages-Edit-Titel/Label-Abweichung](ui-surfaces.md#pages--edit-titel-navigation-label-und-no-op-statischer-negativpfad) zu unterscheiden. Journal-Settings und allgemeines Pages-Edit können unterschiedliche Eingangsprojektionen haben; die Existenz einer korrekten Domain-Methode beweist nicht alle UI-Eingangspfade.
+
+**Zwei getrennte Leser des aktuellen Templates:**
+
+1. Der [Admin-`JournalWorkspace`](../../app/Filament/Pages/JournalWorkspace.php) lädt bei `mount()` den aktuellen SiteSection-`template`-Enum und wählt in `getView()` entweder die Blog- oder Exhibitions-Arbeitsfläche. Nicht aktive Datensätze bleiben im jeweiligen Domain-Modell erhalten. Ein bereits offenes anderes Browserfenster muss bei Templatewechsel gesondert auf Stale-State geprüft werden; die statische `mount()`-Abfrage allein synchronisiert keine Livewire-Instanz automatisch.
+2. Der [öffentliche Controller](../../app/Http/Controllers/PublicSiteSectionController.php) verzweigt in `journal()` ebenfalls nach dem **aktuellen** Template. `blogJournal()` filtert Posts über `BlogEditorialService::publicQuery()` bzw. in der Preview alle nicht archivierten BlogPosts; `exhibitionsJournal()` verwendet veröffentlichte bzw. Preview-nichtarchivierte Exhibitions. Die Blog-Detailroute `journalEntry()` verlangt **ausdrücklich** `template=blog`. Bei aktivem Exhibition-Template hat ein früheres Blog-Detail unter derselben Journal-Slug daher keinen passenden Controller-Eintrag und liefert 404, auch wenn der BlogPost-Datensatz fortbesteht.
+
+```mermaid
+stateDiagram-v2
+    state "Journal template = Blog" as B
+    state "Journal template = Exhibitions" as E
+    B --> E: updateJournalTemplate, audit (entries retained)
+    E --> B: updateJournalTemplate, audit (entries retained)
+    B --> B: same template (no-op)
+    E --> E: same template (no-op)
+```
+
+Die Zustandsmaschine betrifft **nur das gespeicherte Template des Site Nodes**, nicht die Publication-/Archived-/Scheduled-States der Einträge und nicht das Working/LIVE-Commit. Die zugehörige physische Medienreferenz `JournalEntryMedia` gehört entweder einem BlogPost **oder** einer Exhibition (kein zweiter Storage-Katalog beim Templatewechsel). Der [Schema-Beleg](schema-evolution.md) beschreibt den genau-ein-Owner-CHECK.
+
+**Fehler-/Regressionstest-Matrix (nur Testquellen, nicht ausgeführt):**
+
+| Fall | Erwartete Domain-/Öffentlichkeitsfolge |
+| --- | --- |
+| Blog → Exhibitions → Blog | Original-BlogPosts einschließlich Body/IDs erhalten; erneutes Blog-Mount verwendet die vorhandenen Posts |
+| Inaktives Blog-Detail bei Exhibition-Template | Kein öffentliches Blog-Detail unter dieser Journal-Route, nicht ein stilles Delete |
+| Unverändertes Template | Kein `site_section.journal_template_updated`-Audit aus diesem Domain-Owner |
+| Templatewechsel mit aktualisiertem Titel/Slug | Identität/Redirect und Template im selben äußeren Transaktionsrahmen; explizites Listing-Heading darf separat bleiben |
+| Templatewechsel in offenem parallelem Journal-Dialog | Stale UI-/Action-Target als **offener** Browser-/Livewire-Negativtest |
+| Veröffentlichung/Preview | Aktiver Journal-Typ, Eintragszustand und Working/LIVE-Publication separat prüfen |
+
+[`JournalSettingsAutosaveTest.php`](../../tests/Feature/Admin/Journal/JournalSettingsAutosaveTest.php) definiert explizit den Erhalt von BlogPosts, einen Switch über Journal Settings und Pages, Redirect-/Label-/Listing-Heading-Fälle sowie Notification- und Dialog-Mount-Tests. Für diesen Dokumentationsbranch wurden die Tests **nicht ausgeführt**.
+
 ## Quellen- und Vollständigkeitsregel
 
-Der historische generierte Ursprungskatalog umfasste **fünf** Modelle und **35** kuratierte Kanten. Zusätzlich sind jetzt **Home-Achsen** und **Publication-Working-Kontext** anhand aktueller Quellen manuell modelliert; sie sind **nicht** in den eingefrorenen Generatorzahlen enthalten. Weiter offen bleiben insbesondere Undo/Activity, Journal-Templatewechsel, MediaVariant-Recovery und UI-interne Zustände. Weder das Mermaid-Modell noch die Generatorausgabe beweisen sämtliche physischen Datenbank-/Laufzeittransitionen. Für jeden weiteren Workflow müssen auch No-op-, Fehler-, Rollback- und indirekte Fremdservicepfade erfasst werden.
+Der historische generierte Ursprungskatalog umfasste **fünf** Modelle und **35** kuratierte Kanten. Zusätzlich sind jetzt **Home-Achsen** und **Publication-Working-Kontext** anhand aktueller Quellen manuell modelliert; sie sind **nicht** in den eingefrorenen Generatorzahlen enthalten. Weiter offen bleiben insbesondere Undo/Activity, MediaVariant-Recovery und UI-interne Zustände; Journal-Templatewechsel ist nun ein zusätzlicher manuell quellengeprüfter Zustand. Weder das Mermaid-Modell noch die Generatorausgabe beweisen sämtliche physischen Datenbank-/Laufzeittransitionen. Für jeden weiteren Workflow müssen auch No-op-, Fehler-, Rollback- und indirekte Fremdservicepfade erfasst werden.
 
 ```sh
 php scripts/generate-architecture-lifecycles.php --write

@@ -9,7 +9,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 3. [Klassen-Importdiagramme](class-import-diagrams.md) — 20 Modulansichten des eingefrorenen 900er-Importstands; nach dem Cleanup nicht vollständig regeneriert.
 4. [Importgrenzen und Artwork-Publish-Abweichung](import-boundaries.md) — Modulzyklus und konkret unterschiedliche Gallery-/Undo-Guards.
 5. [Eloquent-Relationen](eloquent-relations.md) — 26 Modeldateien und 48 Relationen, jetzt zusätzlich als [generierter JSON-Graph](generated/eloquent-relationships.json) und [Mermaid-Gesamtgraph](generated/eloquent-relationships.mmd).
-6. [Fachliche Lebenszyklen](lifecycles.md) — fünf eingefrorene Source-State-Machines (historisch 35 Kanten) **plus** aktuelle, fachlich getrennte Home-Template/Routing/Menu-Achsen und Publication-Working/LIVE/Version-Kontexte mit Guards, No-op, Audit und Lock-Grenzen.
+6. [Fachliche Lebenszyklen](lifecycles.md) — fünf eingefrorene Source-State-Machines (historisch 35 Kanten) **plus** quellengeprüfte Home-Achsen, Publication-Working/LIVE/Version-Kontexte und Journal-Blog/Exhibitions-Templatewechsel ohne Inhaltsmigration; Guards, No-op, Audits und Lock-Grenzen jeweils getrennt.
 7. [Admin-/Publication-Aufrufstellen](admin-publication-calls.md) — 21 belegte direkte Methodenaufrufe über 14 Klassen, mit separatem JSON/Diagramm und Source-Anchor-Check.
 8. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
 9. [Restore, Revert und Reset](publication-working-operations.md) — Activity UI bis zum Working-Snapshot, mit drei getrennten Ablaufdiagrammen, Guards und No-ops.
