@@ -69,7 +69,7 @@ function setDragging() {
         const intent = hierarchyMove(active.source, targetFromElement(el, active.source.kind));
         el.classList.toggle('is-eligible', intent !== null);
         const content = el.dataset.hierarchyDrop === 'nest'
-            ? el.closest('[data-component-index], [data-section-id]')?.querySelector('.admin-hierarchy__content')
+            ? el.closest?.('[data-component-index], [data-section-id]')?.querySelector('.admin-hierarchy__content')
             : null;
         content?.classList.toggle('is-hierarchy-parent-eligible', intent !== null);
     }
@@ -91,7 +91,7 @@ function hitTarget(x, y) {
         // shared by Pages and Custom Pages. Sorting still owns the handle,
         // position, type, actions and selection cells.
         if (el.dataset.hierarchyDrop === 'nest') {
-            const parentRow = el.closest('[data-component-index], [data-section-id]');
+            const parentRow = el.closest?.('[data-component-index], [data-section-id]');
             const content = parentRow?.querySelector('.admin-hierarchy__content');
             if (pointInside(content?.getBoundingClientRect(), x, y)) return el;
         }
