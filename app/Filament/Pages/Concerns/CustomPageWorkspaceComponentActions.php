@@ -240,7 +240,11 @@ trait CustomPageWorkspaceComponentActions
                 app(AdminNotifier::class)->notification(title: 'Image child moved', status: 'success');
             }
         } catch (ValidationException $exception) {
-            $this->validationNotification('Image child unchanged', $exception);
+            app(AdminNotifier::class)->notification(
+                title: 'Image child unchanged',
+                body: collect($exception->errors())->flatten()->first() ?? 'The selected parent is not allowed.',
+                status: 'warning',
+            );
             $this->reloadWorkspace();
         }
     }
