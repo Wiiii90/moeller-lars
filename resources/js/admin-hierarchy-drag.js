@@ -106,10 +106,15 @@ function applyDrop(event) {
     if (!intent) return false;
     const wireRoot = active.root.closest('[wire\\:id]');
     const component = wireRoot && window.Livewire?.find(wireRoot.getAttribute('wire:id'));
-    if (!component || typeof component[intent.method] !== 'function') return false;
+    const wire = component?.$wire ?? component;
+    if (!wire || (typeof wire.$call !== 'function' && typeof wire[intent.method] !== 'function')) return false;
     event.preventDefault();
     event.stopImmediatePropagation();
-    component[intent.method](...intent.args);
+    if (typeof wire.$call === 'function') {
+        wire.$call(intent.method, ...intent.args);
+    } else {
+        wire[intent.method](...intent.args);
+    }
     reset();
     return true;
 }
