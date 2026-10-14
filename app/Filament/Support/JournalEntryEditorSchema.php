@@ -81,9 +81,9 @@ final class JournalEntryEditorSchema
             TextInput::make('venue')->label('Venue')->maxLength(240)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
             TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
             self::locationField('location_text', 'Street address', 500)->columnSpan(['default' => 1, 'md' => 2]),
-            self::locationField('postal_code', 'Postal code', 16)->columnSpan(['default' => 1, 'md' => 1]),
+            self::locationField('postal_code', 'Postal code', 16),
             self::locationField('city', 'City', 160)->columnSpan(['default' => 1, 'md' => 2]),
-            self::locationField('country', 'Country', 160)->columnSpan(['default' => 1, 'md' => 1]),
+            self::locationField('country', 'Country', 160),
         ])->columns(['md' => 6]);
     }
 
