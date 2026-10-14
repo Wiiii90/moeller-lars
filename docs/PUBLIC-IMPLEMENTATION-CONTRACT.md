@@ -91,6 +91,11 @@ vertical stroke briefly contracts from both ends (about 5–7px), opens
 again as the content builds, and finishes on the exact authored CSS
 top/bottom/side positions. This prevents a late snap when a temporary
 animation ends; the lower white line cannot keep wandering outward.
+The ambient Content outline now uses slower unevenly spaced keyframes
+with genuine quiet intervals; the rear-layer shadows weight frame timing
+by actual distance and give rest periods more room, rather than evenly
+timed 1px micro-steps. Native animation completion retains its ownership
+token and cannot restart an old canceled Hero animation.
 A Home Hero Artwork GROUP arrow swaps its already-rendered hidden slide
 in place. It calls the SAME central content-only height/paper transition
 around that visibility change, WITHOUT making a synthetic Livewire

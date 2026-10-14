@@ -184,9 +184,41 @@ test('Home Hero arrows animate the same paper/content, without touching the menu
     expect(result.height).toEqual([980]);
     expect(result.menu).toEqual(oldMenu);
 
-    // Click again while the first reveal is still active: this must not
-    // leave competing paper/height animations or trigger a menu pulse.
+    // The next click starts from an in-flight corner, but the END keyframe
+    // must be the destination's original CSS geometry. This specifically
+    // catches the old accumulated excursion/snap-on-finish regression.
+    const reference = await page.evaluate(() => {
+        const sheet = document.querySelector('#content');
+        return {
+            before: getComputedStyle(sheet, '::before').top,
+            after: getComputedStyle(sheet, '::after').bottom,
+        };
+    });
     await page.locator('[data-home-hero-slide]:not([hidden]) button[data-home-hero-direction="next"]').click();
+    const afterFastClick = await page.evaluate(() => {
+        const sheet = document.querySelector('#content');
+        return document.getAnimations()
+            .filter(a => a.effect.target === sheet && a.effect.pseudoElement)
+            .map(a => ({
+                pseudo: a.effect.pseudoElement,
+                first: a.effect.getKeyframes()[0],
+                last: a.effect.getKeyframes().at(-1),
+                out: a.effect.getKeyframes().map(f => f.left ?? f.right),
+            }));
+    });
+    expect(afterFastClick).toHaveLength(2);
+    const left = afterFastClick.find(a => a.pseudo === '::before');
+    const right = afterFastClick.find(a => a.pseudo === '::after');
+    expect(left.last.top).toBeTruthy();
+    expect(right.last.bottom).toBeTruthy();
+    expect(left.last.left).toBe('-.7rem');
+    expect(right.last.right).toBe('-.55rem');
+    expect(left.out).toContain('calc(-.7rem - 3.1px)');
+    expect(right.out).toContain('calc(-.55rem - 3.1px)');
+    expect(left.out.every(v => !v?.includes('calc(calc('))).toBe(true);
+    expect(right.out.every(v => !v?.includes('calc(calc('))).toBe(true);
+    expect(reference.before).toBeTruthy();
+    expect(reference.after).toBeTruthy();
     await expect.poll(() => page.evaluate(() =>
         document.getAnimations().filter(a => a.effect.target === document.querySelector('#content')
             && a.effect.getTiming().iterations === 1).length)).toBe(3);
