@@ -48,6 +48,51 @@ final class CustomPageEditorialService
         });
     }
 
+    /**
+     * Move an existing prose component under a decorative Image without
+     * copying, dropping, or reauthoring its content. The source disappears
+     * from the top-level sequence in the same audited transaction.
+     *
+     * @param array<string,mixed> $image
+     */
+    public function updateImageAndNest(
+        CustomPageSetting $settings, int $imageIndex, array $image, int $sourceIndex,
+    ): bool {
+        return DB::transaction(function () use ($settings, $imageIndex, $image, $sourceIndex): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            if (($image['type'] ?? null) !== 'image' || ! ($image['image_decorative'] ?? false)) {
+                throw ValidationException::withMessages(['image_children' => 'Only a decorative image can own text.']);
+            }
+            $source = $blocks[$sourceIndex] ?? null;
+            $type = is_array($source) ? ($source['type'] ?? null) : null;
+            if ($sourceIndex === $imageIndex || ! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+                throw ValidationException::withMessages(['image_children' => 'Choose a text-capable page component.']);
+            }
+            if ($type === 'list' && ($source['media_asset_id'] ?? null) !== null) {
+                throw ValidationException::withMessages(['image_children' => 'A List with media cannot move under an Image.']);
+            }
+            if ($type === 'contact') {
+                foreach ($source['children'] ?? [] as $child) {
+                    if (is_array($child) && ($child['type'] ?? null) === 'contact_form'
+                        && CustomPageSetting::contactChildPublished($child)) {
+                        throw ValidationException::withMessages(['image_children' => 'Move the contact form to a separate component first.']);
+                    }
+                }
+            }
+            $children = $image['children'] ?? [];
+            if (! is_array($children) || ! array_is_list($children)) {
+                throw ValidationException::withMessages(['image_children' => 'Image children must be ordered.']);
+            }
+            $image['children'] = [...$children, $source];
+            $blocks[$imageIndex] = $image;
+            array_splice($blocks, $sourceIndex, 1);
+
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
     /** @param array<string, mixed> $item */
     public function addListItem(CustomPageSetting $settings, int $index, string $expectedType, array $item): bool
     {

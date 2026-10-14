@@ -79,6 +79,16 @@ trait CustomPageWorkspaceForms
                     ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
                 DecorativeImageChildren::make($this->availableSocialPlatforms),
+                ...(! $isNew ? [
+                    Select::make('adopt_component_index')
+                        ->label('Move existing component under image')
+                        ->options(fn (): array => $this->adoptableImageComponents())
+                        ->placeholder('No move')
+                        ->native()
+                        ->nullable()
+                        ->visible(fn (Get $get): bool => (bool) $get('image_decorative'))
+                        ->columnSpanFull(),
+                ] : []),
             ],
             'text' => $isNew
                 ? AdminRichText::schema('body', 'Rich Text', 20000)
@@ -134,6 +144,34 @@ trait CustomPageWorkspaceForms
             ],
             default => [],
         };
+    }
+
+    /** Only eligible standalone prose can become an Image child. */
+    private function adoptableImageComponents(): array
+    {
+        $options = [];
+        foreach ($this->settings()->components() as $index => $block) {
+            $type = $block['type'] ?? null;
+            if (! in_array($type, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+                continue;
+            }
+            if ($type === 'list' && ($block['media_asset_id'] ?? null) !== null) {
+                continue;
+            }
+            if ($type === 'contact') {
+                $hasForm = collect($this->settings()->contactChildren($block))
+                    ->contains(fn (array $item): bool => ($item['type'] ?? null) === 'contact_form'
+                        && \App\Models\CustomPageSetting::contactChildPublished($item));
+                if ($hasForm) {
+                    continue;
+                }
+            }
+            $title = trim((string) ($block['title'] ?? ''));
+            $options[$index] = ($index + 1).' · '.(self::COMPONENT_LABELS[$type] ?? $type)
+                .($title === '' ? '' : ' — '.$title);
+        }
+
+        return $options;
     }
 
     private function imageSelectField(?Closure $onImageChange): Select

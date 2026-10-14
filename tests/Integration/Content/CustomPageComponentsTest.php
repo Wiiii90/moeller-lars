@@ -143,3 +143,26 @@ it('stores ordered decorative Image children and rejects incompatible nested com
         'image_decorative' => false, 'children' => $children,
     ]]]))->toThrow(\Illuminate\Validation\ValidationException::class);
 });
+
+it('moves an existing CV list into an Image atomically without losing its entries', function (): void {
+    $settings = CustomPageSetting::query()->where(
+        'site_section_id',
+        app(SiteSectionEditorialService::class)->createCustomPage('Move CV', 'move-existing-cv')->getKey(),
+    )->firstOrFail();
+    $asset = customPageComponentAsset('cv-move');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'image_decorative' => true, 'media_asset_id' => $asset->getKey()],
+        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1989'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+    ]]);
+    $original = $settings->fresh()->components();
+    $changed = app(\App\Domain\Content\CustomPageEditorialService::class)->updateImageAndNest(
+        $settings, 0, $original[0], 1,
+    );
+    expect($changed)->toBeTrue();
+    $after = $settings->fresh()->components();
+    expect($after)->toHaveCount(1)
+        ->and($after[0]['children'][0])->toBe($original[1]);
+});
