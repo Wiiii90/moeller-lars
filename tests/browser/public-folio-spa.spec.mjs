@@ -1,121 +1,102 @@
 import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
-const motionSource = readFileSync(new URL('../../resources/js/public-folio-motion.js', import.meta.url), 'utf8');
-const sheet = (name) => '<header class="site-header"><div class="site-navigation">'
-    + '<nav>' + name + '</nav></div></header>'
-    + '<main id="content" class="site-content"><h2>' + name + '</h2></main>';
+const source = readFileSync(
+    new URL('../../resources/js/public-folio-motion.js', import.meta.url), 'utf8',
+);
+const sheet = (label, height = 520) =>
+    '<header class="site-header"><div class="site-navigation"><nav>' + label + '</nav></div></header>'
+    + '<main id="content" class="site-content">'
+    + '<article class="artwork-detail"><div style="height:' + height + 'px">' + label + '</div></article>'
+    + '</main>';
 
-test('content and menu animate their EXISTING strokes continuously, with no extra elements', async ({ page }) => {
+test('original paper corners animate in one axis at a time, with connected horizontal returns', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.setContent('<!doctype html><html><head><meta name="viewport" '
-        + 'content="width=device-width, initial-scale=1"></head><body class="public-site">'
-        + sheet('Paintings') + '</body></html>');
+    await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body class="public-site">'
+        + sheet('Painting') + '</body></html>');
     await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
     await page.addScriptTag({
-        content: motionSource.replace(/^export /gm, '')
+        content: source.replace(/^export /gm, '')
             + '\nwindow.publicFolioTest = { capturePublicFolio, advancePublicFolio };',
     });
     await page.evaluate(() => window.publicFolioTest.advancePublicFolio());
     const state = await page.evaluate(() => {
-        const content = document.querySelector('#content');
-        const menu = document.querySelector('.site-navigation');
+        const main = document.querySelector('#content');
+        const nav = document.querySelector('.site-navigation');
         const effects = document.getAnimations().map(a => ({
-            target: a.effect.target === content ? 'content' :
-                a.effect.target === menu ? 'menu' : 'other',
+            target: a.effect.target === main ? 'content' :
+                a.effect.target === nav ? 'menu' : 'other',
             pseudo: a.effect.pseudoElement || null,
-            duration: a.effect.getTiming().duration,
             iterations: a.effect.getTiming().iterations,
             frames: a.effect.getKeyframes(),
         }));
+        const bounds = [getComputedStyle(nav, '::before'), getComputedStyle(nav, '::after')];
         return {
-            contentChildren: content.children.length,
-            menuChildren: menu.children.length,
-            contentLeftWidth: getComputedStyle(content, '::before').width,
-            menuRightWidth: getComputedStyle(menu, '::after').width,
-            effects,
+            children: main.children.length,
+            effects, menuTop: bounds.map(b => b.borderTopStyle),
+            menuBottom: bounds.map(b => b.borderBottomStyle),
         };
     });
-    expect(state.contentChildren).toBe(1);
-    expect(state.menuChildren).toBe(1);
-    expect(state.effects.filter(x => x.pseudo)).toHaveLength(4);
-    expect(state.effects.filter(x => x.target === 'content' && !x.pseudo)).toHaveLength(1);
-    expect(state.effects.every(x => x.iterations === Infinity)).toBe(true);
-    expect(state.effects.every(x => x.frames[0].top === undefined
-        || x.frames[0].top === x.frames.at(-1).top)).toBe(true);
-
-    // The two original white strokes remain open at the top without leaving
-    // the sheet boundary; the existing paper layers reach the upper edge.
-    // Only the short bottom returns wrap toward the white menu.
-    const geometry = await page.evaluate(() => {
-        const menu = document.querySelector('.site-navigation');
-        const left = getComputedStyle(menu, '::before');
-        const right = getComputedStyle(menu, '::after');
-        return {
-            leftNoTop: left.borderTopStyle === 'none',
-            rightNoTop: right.borderTopStyle === 'none',
-            leftHasBottom: left.borderBottomStyle === 'solid',
-            rightHasBottom: right.borderBottomStyle === 'solid',
-            leftInside: parseFloat(left.width) > Math.abs(parseFloat(left.left)),
-            rightInside: parseFloat(right.width) > Math.abs(parseFloat(right.right)),
-            leftContainedAtTop: parseFloat(left.top) >= 0,
-            rightContainedAtTop: parseFloat(right.top) >= 0,
-            rearPlaneMeetsTop: getComputedStyle(menu).boxShadow.includes('-3px 0px'),
-            middlePlaneMeetsTop: getComputedStyle(menu).boxShadow.includes('-2px 0px'),
-        };
-    });
-    expect(geometry).toEqual({
-        leftNoTop: true, rightNoTop: true,
-        leftHasBottom: true, rightHasBottom: true,
-        leftInside: true, rightInside: true,
-        leftContainedAtTop: true, rightContainedAtTop: true,
-        rearPlaneMeetsTop: true, middlePlaneMeetsTop: true,
-    });
-
-    // A Livewire-like swap during the ongoing animation must start from
-    // the exact rendered intermediate state of BOTH original drawings.
-    await page.waitForTimeout(250);
-    const replaced = await page.evaluate((newMarkup) => {
-        const oldContent = document.querySelector('#content');
-        const oldMenu = document.querySelector('.site-navigation');
-        const priorContent = getComputedStyle(oldContent, '::before').top;
-        const priorMenu = getComputedStyle(oldMenu, '::after').top;
-        window.publicFolioTest.capturePublicFolio();
-        document.body.innerHTML = newMarkup;
-        window.publicFolioTest.advancePublicFolio();
-        const content = document.querySelector('#content');
-        const menu = document.querySelector('.site-navigation');
-        const effects = document.getAnimations();
-        const nextContent = effects.find(a =>
-            a.effect.target === content && a.effect.pseudoElement === '::before');
-        const nextMenu = effects.find(a =>
-            a.effect.target === menu && a.effect.pseudoElement === '::after');
-        return {
-            priorContent, priorMenu,
-            nextContent: nextContent?.effect.getKeyframes()[0].top,
-            nextMenu: nextMenu?.effect.getKeyframes()[0].top,
-            contentChildren: content.children.length,
-            menuChildren: menu.children.length,
-        };
-    }, sheet('Prints'));
-    expect(replaced.nextContent).toBe(replaced.priorContent);
-    expect(replaced.nextMenu).toBe(replaced.priorMenu);
-    expect(replaced.contentChildren).toBe(1);
-    expect(replaced.menuChildren).toBe(1);
+    expect(state.children).toBe(1);
+    expect(state.effects.filter(e => e.pseudo)).toHaveLength(4);
+    expect(state.effects.filter(e => e.target !== 'other' && !e.pseudo)).toHaveLength(2);
+    expect(state.effects.every(e => e.iterations === Infinity)).toBe(true);
+    expect(state.menuTop).toEqual(['none', 'none']);
+    expect(state.menuBottom).toEqual(['solid', 'solid']);
+    for (const effect of state.effects.filter(e => e.pseudo)) {
+        for (let i = 1; i < effect.frames.length; i += 1) {
+            const a = effect.frames[i - 1], b = effect.frames[i];
+            const vertical = a.top !== b.top || a.bottom !== b.bottom;
+            const horizontal = a.width !== b.width;
+            expect(vertical && horizontal).toBe(false);
+        }
+    }
 });
 
-test('Livewire page navigation stays in one document and restarts ongoing native motion', async ({ page }) => {
-    test.skip(!process.env.PUBLIC_SPA_SMOKE_URL,
-        'Set PUBLIC_SPA_SMOKE_URL to the local Laravel preview.');
+test('different artwork heights build or shrink the WHITE paper without scaling media', async ({ page }) => {
+    await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body class="public-site">'
+        + sheet('Tall artwork', 820) + '</body></html>');
+    await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
+    await page.addScriptTag({
+        content: source.replace(/^export /gm, '')
+            + '\nwindow.publicFolioTest = { capturePublicFolio, advancePublicFolio };',
+    });
+    await page.evaluate(() => window.publicFolioTest.advancePublicFolio());
+    const replacement = await page.evaluate((markup) => {
+        const original = document.querySelector('.artwork-detail').getBoundingClientRect().height;
+        window.publicFolioTest.capturePublicFolio();
+        document.body.innerHTML = markup;
+        window.publicFolioTest.advancePublicFolio();
+        const article = document.querySelector('.artwork-detail');
+        const motion = article.getAnimations()[0];
+        return {
+            original, newNatural: 390,
+            activeOverflow: getComputedStyle(article).overflow,
+            paperOverflow: getComputedStyle(document.querySelector('#content')).overflow,
+            keys: motion?.effect.getKeyframes(),
+            duration: motion?.effect.getTiming().duration,
+        };
+    }, sheet('Short artwork', 390));
+    expect(replacement.original).toBeGreaterThan(750);
+    expect(replacement.activeOverflow).toBe('clip');
+    expect(replacement.paperOverflow).toBe('visible');
+    expect(replacement.keys?.[0]?.height).toContain('px');
+    expect(replacement.keys?.[1]?.height).toContain('px');
+    expect(replacement.duration).toBe(700);
+    await page.waitForTimeout(780);
+    await expect(page.locator('.artwork-detail')).toHaveCSS('overflow', 'visible');
+});
+
+test('actual Livewire detail navigation can retain the same document', async ({ page }) => {
+    test.skip(!process.env.PUBLIC_SPA_SMOKE_URL, 'Set PUBLIC_SPA_SMOKE_URL for the Laravel preview.');
     await page.goto(new URL('/paintings', process.env.PUBLIC_SPA_SMOKE_URL).href);
-    await page.evaluate(() => { window.__navigationMarker = 'preserved'; });
-    const candidate = await page.evaluate(() => [...document.querySelectorAll('.site-navigation a[wire\\:navigate]')]
-        .find(link => new URL(link.href).pathname !== location.pathname)?.href);
-    expect(candidate).toBeTruthy();
-    await page.locator('.site-navigation a[wire\\:navigate]').evaluateAll((links, url) =>
-        links.find(link => link.href === url)?.click(), candidate);
-    await expect(page).toHaveURL(candidate);
-    await expect.poll(() => page.evaluate(() => window.__navigationMarker)).toBe('preserved');
-    await expect.poll(() => page.evaluate(() => document.getAnimations()
-        .filter(a => a.effect.pseudoElement).length)).toBeGreaterThanOrEqual(2);
+    const artwork = page.locator('.artwork-card__link').first();
+    await expect(artwork).toBeVisible();
+    await artwork.click();
+    await expect(page.locator('.artwork-detail')).toBeVisible();
+    await page.evaluate(() => { window.__sameDocument = true; });
+    const next = page.locator('.artwork-folio__step[href]').last();
+    await next.click();
+    await expect(page.locator('.artwork-detail')).toBeVisible();
+    expect(await page.evaluate(() => window.__sameDocument)).toBe(true);
 });
