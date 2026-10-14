@@ -26,6 +26,8 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 
+**[Gallery-/Artwork-Publication-Fluss](artwork-gallery-publication.md):** Einzel-Publish/No-op, **atomare Gallery-Batch-Transaktion**, öffentliche/Preview-Eligibility, gemeinsame Viewer-Reihenfolge und abweichende Undo-Inverse mit ALT-/Video-/Thumbnail-Grenzen. Die Norm-/Testmatrix bleibt beim bestehenden [Importgrenzen-Owner](import-boundaries.md).
+
 **[Public-Sicherheits-, Rechte- und Privacy-Grenzen](public-security-privacy-boundaries.md):** technisch getrennter LIVE/Preview/Contact/Media-Request-Kontext, strikte nonce-CSP, TDM- und robots-Reservation, PublicMedia-Eligibility, Matomo-Consent-Lücke und neue verschachtelte Image-Child-Referenzlücken. Produkt-/Umsetzungsplan bleibt [PUBLIC-RIGHTS-AND-PRIVACY](../PUBLIC-RIGHTS-AND-PRIVACY.md); Quellbelege sind keine Runtime-Verifikation.
 
 **[Activity/Undo-Lifecycle](activity-undo-lifecycle.md):** AuditEvent und individualisierbares, befristetes Undo-Receipt sind keine Publication-Version; Ordering-Nettozyklen, Snapshot-After-Guards, Media-Inverse, Lifecycle-Inverse, persönliche Receipt-Guards und das **nicht atomare** Activity-Selection-Batch sind als echte State-/Transaktionspfade beschrieben.
