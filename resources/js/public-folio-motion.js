@@ -23,8 +23,10 @@ const MENU_EDGES = [
     { side: 'left', offset: '-.31rem', width: '.55rem' },
     { side: 'right', offset: '-.32rem', width: '.56rem' },
 ];
-const CONTENT_DURATIONS = [28600, 31800];
-const MENU_DURATIONS = [27000, 30900];
+const CONTENT_DURATIONS = [19800, 23600];
+const MENU_DURATIONS = [21900, 25800];
+const BUILD_DURATION = 1480;
+const HEIGHT_DURATION = 980;
 
 const SHADOW_START = {
     content: (middleX, middleY, rearX, rearY) => [
@@ -63,8 +65,8 @@ function pairGeometry(element) {
     return left && right ? [left, right] : null;
 }
 
-function artworkArticle(root) {
-    return root.querySelector('#content > .artwork-detail');
+function pageBody(root) {
+    return root.querySelector('#content > .public-content-reveal');
 }
 
 // Snapshots are captured before Livewire swaps the body. The old article
@@ -73,13 +75,13 @@ function artworkArticle(root) {
 export function capturePublicFolio(root = document) {
     const content = root.querySelector('#content');
     const menu = root.querySelector('.site-navigation');
-    const article = artworkArticle(root);
+    const body = pageBody(root);
     snapshot = {
         content: pairGeometry(content),
         menu: pairGeometry(menu),
         contentShadow: content ? getComputedStyle(content).boxShadow : null,
         menuShadow: menu ? getComputedStyle(menu).boxShadow : null,
-        articleHeight: article ? article.getBoundingClientRect().height : null,
+        bodyHeight: body ? body.getBoundingClientRect().height : null,
     };
     return Boolean(snapshot.content || snapshot.menu);
 }
@@ -97,8 +99,8 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     step({ bottom: base.bottom });
     rest(); rest();
     step({
-        [edge.side]: `calc(${edge.offset} - 1.5px)`,
-        width: `calc(${edge.width} + 1.5px)`,
+        [edge.side]: `calc(${edge.offset} - 3.5px)`,
+        width: `calc(${edge.width} + 3.5px)`,
     });
     rest();
     step({ top: nextTop });
@@ -106,8 +108,8 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     step({ bottom: nextBottom });
     rest();
     step({
-        [edge.side]: `calc(${edge.offset} + 1px)`,
-        width: `calc(${edge.width} - 1px)`,
+        [edge.side]: `calc(${edge.offset} + 1.8px)`,
+        width: `calc(${edge.width} - 1.8px)`,
     });
     rest(); rest();
     step({ top: base.top });
@@ -255,78 +257,199 @@ function playArtworkBuild(element, shadow, growing, root) {
     }
 }
 
-function animatePaper(element, states, edges, durations, shadow, type) {
+// A directional sequence: steady approach, a visible paper-driven thrust,
+// a short follow-through, then a controlled return. In each keyframe only
+// ONE axis changes; lateral movement adjusts width with the offset so the
+// original corner remains connected to the same white-sheet edge.
+export function buildCornerImpulse(start, edge, growing, type = 'content') {
+    const frames = [{ ...start }];
+    const step = patch => frames.push({ ...frames[frames.length - 1], ...patch });
+    const amplitude = type === 'menu' ? 1.7 : 5;
+    const vertical = type === 'menu' ? 2.0 : 6.5;
+    const delta = growing ? 1 : -1;
+    step({ [edge.side]: `calc(${start[edge.side]} - ${amplitude}px)`,
+        width: `calc(${start.width} + ${amplitude}px)` });
+    step({ bottom: `calc(${start.bottom} - ${vertical * delta}px)` });
+    step({ top: `calc(${start.top} + ${vertical * .68}px)` });
+    step({ [edge.side]: start[edge.side], width: start.width });
+    step({ bottom: start.bottom });
+    step({ top: start.top });
+    return frames.map((frame, index) => ({
+        ...frame,
+        offset: index / (frames.length - 1),
+        easing: 'cubic-bezier(.35, 0, .25, 1)',
+    }));
+}
+
+function nativeCorner(element, pseudo, frames, duration, loop = false) {
+    if (typeof KeyframeEffect !== 'function' || typeof Animation !== 'function') return null;
+    try {
+        const effect = new KeyframeEffect(element, frames, {
+            pseudoElement: pseudo, duration,
+            iterations: loop ? Infinity : 1,
+        });
+        const animation = new Animation(effect, document.timeline);
+        animation.play();
+        return animation;
+    } catch {
+        return null;
+    }
+}
+
+// All pages share the same inner content wrapper. Its animated height
+// controls the parent paper's natural height, but ONLY the wrapper clips:
+// the original external folio lines/shadows never get cut off.
+export function animatePageHeight(previousHeight, root = document) {
+    if (!Number.isFinite(previousHeight) || previousHeight <= 0) return null;
+    const body = pageBody(root);
+    if (!body || typeof body.animate !== 'function') return null;
+    const natural = body.getBoundingClientRect().height;
+    if (!Number.isFinite(natural) || Math.abs(natural - previousHeight) < 7) return null;
+    const original = body.style.overflow;
+    body.style.overflow = 'clip';
+    try {
+        const animation = body.animate([
+            { height: `${previousHeight}px` },
+            { height: `${natural}px` },
+        ], {
+            duration: HEIGHT_DURATION,
+            easing: 'cubic-bezier(.18, .74, .32, 1)',
+        });
+        animation.finished.then(() => { body.style.overflow = original; },
+            () => { body.style.overflow = original; });
+        return animation;
+    } catch {
+        body.style.overflow = original;
+        return null;
+    }
+}
+
+// Two genuine rear paper planes advance in measured separate directions;
+// exposed separation from the white front and from one another is preserved.
+// The first and final frames are actual sampled CSS values.
+export function buildPageImpulse(start, end, type, growing) {
+    const base = FOLIO_PLANE_BASE[type];
+    const coords = [...(renderedShadowCoords(start) ?? base)];
+    const shadow = SHADOW_START[type];
+    const values = [start];
+    const set = (i, v) => {
+        if (coords[i] === v) return;
+        coords[i] = v;
+        values.push(shadow(...coords));
+    };
+    // In a growing page the rear plane leads outward. When shrinking the
+    // middle plane retracts first so the rear one never gets swallowed.
+    const scale = type === 'menu' ? .48 : 1;
+    const outward = growing !== false;
+    const middleX = base[0] + (outward ? -2.4 : 1.4) * scale;
+    const rearX = base[2] + (outward ? -4.8 : 1.0) * scale;
+    const middleY = base[1] + (outward ? 1.8 : -.9) * scale;
+    const rearY = base[3] + (outward ? 4 : -.7) * scale;
+    if (outward) {
+        set(2, rearX); set(3, rearY); set(0, middleX); set(1, middleY);
+    } else {
+        set(0, middleX); set(1, middleY); set(2, rearX); set(3, rearY);
+    }
+    // Each plane retracts in one-axis movements before returning to the
+    // destination's authored styling; never snap two axes simultaneously.
+    const target = renderedShadowCoords(end) ?? base;
+    if (outward) {
+        set(0, target[0]); set(1, target[1]); set(2, target[2]); set(3, target[3]);
+    } else {
+        set(2, target[2]); set(3, target[3]); set(0, target[0]); set(1, target[1]);
+    }
+    values.push(end);
+    return values.map((boxShadow, index) => ({
+        boxShadow,
+        offset: index / (values.length - 1),
+        easing: 'cubic-bezier(.35, 0, .25, 1)',
+    }));
+}
+
+function startAmbient(element, states, type) {
     if (!element || !states) return;
     const base = type === 'content' ? FOLIO_VARIANTS : MENU_VARIANTS;
+    const edges = type === 'content' ? CONTENT_EDGES : MENU_EDGES;
+    const durations = type === 'content' ? CONTENT_DURATIONS : MENU_DURATIONS;
     for (let index = 0; index < 2; index += 1) {
         const columns = index === 0 ? [0, 1] : [2, 3];
-        const baseFrame = { top: base[0][columns[0]], bottom: base[0][columns[1]] };
-        playCorner(element, index === 0 ? '::before' : '::after', buildCornerFrames(
-            states[index], baseFrame, base[1][columns[0]], base[2][columns[1]], edges[index],
-        ), durations[index]);
+        const first = { top: base[0][columns[0]], bottom: base[0][columns[1]] };
+        nativeCorner(element, index === 0 ? '::before' : '::after',
+            buildCornerFrames(states[index], first,
+                base[1][columns[0]], base[2][columns[1]], edges[index]),
+            durations[index], true);
     }
-    playShadowBreathing(element, shadow, type);
-}
-
-// Height changes belong to the already rendered artwork article, not the
-// page's outer pseudo-element frame. Clipping the ARTICLE (not #content)
-// reveals the new image at its natural dimensions while the outer paper
-// grows/shrinks with its height. No image transform or extra wrapper.
-export function animateArtworkHeight(previousHeight, root = document) {
-    if (!Number.isFinite(previousHeight) || previousHeight <= 0) return false;
-    const article = artworkArticle(root);
-    if (!article || typeof article.animate !== 'function') return false;
-    const nextHeight = article.getBoundingClientRect().height;
-    if (!Number.isFinite(nextHeight) || Math.abs(nextHeight - previousHeight) < 6) return false;
-
-    const originalOverflow = article.style.overflow;
-    article.style.overflow = 'clip';
-    try {
-        const animation = article.animate([
-            { height: `${previousHeight}px` },
-            { height: `${nextHeight}px` },
-        ], {
-            duration: 700,
-            easing: 'cubic-bezier(.22, .62, .32, 1)',
-        });
-        const restore = () => { article.style.overflow = originalOverflow; };
-        animation.finished.then(restore, restore);
-        return true;
-    } catch {
-        article.style.overflow = originalOverflow;
-        return false;
+    const shadow = getComputedStyle(element).boxShadow;
+    if (shadow && typeof element.animate === 'function') {
+        try {
+            element.animate(buildShadowFrames(shadow, type), {
+                duration: type === 'content' ? 24700 : 28100,
+                iterations: Infinity,
+            });
+        } catch { /* The canonical CSS layers remain visible. */ }
     }
 }
 
-// Initial load: native breathing runs without navigating. SPA visits restart
-// from the exact rendered coordinates, with artwork height interpolated only
-// if BOTH outgoing and incoming pages are individual artwork details.
+function pulsePaper(element, corners, oldShadow, type, growing, root) {
+    if (!element || !corners) return false;
+    const edges = type === 'content' ? CONTENT_EDGES : MENU_EDGES;
+    const animations = [];
+    for (let i = 0; i < 2; i += 1) {
+        const animation = nativeCorner(element, i === 0 ? '::before' : '::after',
+            buildCornerImpulse(corners[i], edges[i], growing, type),
+            type === 'content' ? BUILD_DURATION : 980);
+        if (animation) animations.push(animation);
+    }
+    if (oldShadow && typeof element.animate === 'function') {
+        try {
+            const shadowAnimation = element.animate(
+                buildPageImpulse(oldShadow, getComputedStyle(element).boxShadow, type, growing),
+                { duration: type === 'content' ? BUILD_DURATION : 980 },
+            );
+            animations.push(shadowAnimation);
+        } catch { /* Preserve the real CSS layers. */ }
+    }
+    if (animations.length === 0) return false;
+    // Do not start the ambient effect on the same properties until this
+    // one-shot build has finished; ignore detached nodes after fast visits.
+    Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+        const selector = type === 'content' ? '#content' : '.site-navigation';
+        if (root.querySelector(selector) === element) {
+            startAmbient(element, pairGeometry(element), type);
+        }
+    });
+    return true;
+}
+
+// Every real Public SPA swap triggers a coordinated paper-build gesture,
+// independently of whether the destination is an Artwork, Journal, Home,
+// Exhibitions or Custom page. An unchanged page height still receives a
+// small horizontal/vertical paper impulse. On initial load, breathe calmly.
 export function advancePublicFolio(root = document) {
     const content = root.querySelector('#content');
     const menu = root.querySelector('.site-navigation');
     const previous = snapshot;
     snapshot = null;
+    const corners = previous?.content ?? pairGeometry(content);
+    const menuCorners = previous?.menu ?? pairGeometry(menu);
     const contentShadow = previous?.contentShadow ?? (content && getComputedStyle(content).boxShadow);
-    const article = artworkArticle(root);
-    const newHeight = article?.getBoundingClientRect().height;
-    const priorHeight = previous?.articleHeight;
-    const artworkChange = Number.isFinite(priorHeight) && Number.isFinite(newHeight)
-        && Math.abs(priorHeight - newHeight) >= 6;
-    // Keep one owner of each shadow animation. During the artwork-height
-    // build, the 700ms paper-plane reveal temporarily replaces ambient
-    // breathing, which resumes only after that short transition completes.
-    animatePaper(content, previous?.content ?? pairGeometry(content),
-        CONTENT_EDGES, CONTENT_DURATIONS, artworkChange ? null : contentShadow, 'content');
-    animatePaper(menu, previous?.menu ?? pairGeometry(menu),
-        MENU_EDGES, MENU_DURATIONS,
-        previous?.menuShadow ?? (menu && getComputedStyle(menu).boxShadow), 'menu');
+    const menuShadow = previous?.menuShadow ?? (menu && getComputedStyle(menu).boxShadow);
+    if (!previous) {
+        startAmbient(content, corners, 'content');
+        startAmbient(menu, menuCorners, 'menu');
+        return Boolean(content || menu);
+    }
 
-    if (artworkChange && animateArtworkHeight(priorHeight, root)) {
-        if (!playArtworkBuild(content, contentShadow, newHeight > priorHeight, root)) {
-            playShadowBreathing(content, contentShadow, 'content');
-        }
-    } else if (artworkChange) {
-        playShadowBreathing(content, contentShadow, 'content');
+    const body = pageBody(root);
+    const nextHeight = body?.getBoundingClientRect().height;
+    const growing = !Number.isFinite(nextHeight) || !Number.isFinite(previous.bodyHeight)
+        || nextHeight >= previous.bodyHeight;
+    animatePageHeight(previous.bodyHeight, root);
+    if (!pulsePaper(content, corners, contentShadow, 'content', growing, root)) {
+        startAmbient(content, corners, 'content');
+    }
+    if (!pulsePaper(menu, menuCorners, menuShadow, 'menu', growing, root)) {
+        startAmbient(menu, menuCorners, 'menu');
     }
     return Boolean(content || menu);
 }
