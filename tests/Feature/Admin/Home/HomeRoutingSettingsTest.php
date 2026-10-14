@@ -170,10 +170,12 @@ it('saves combined Home template and routing settings with two audits and one no
         ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
 });
 
-it('keeps Home reachable at the root but hidden from the public menu by default', function (): void {
+it('keeps Home reachable at the root when its public menu visibility is disabled', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
     $home = \App\Models\SiteSection::query()->where('type', 'home')->firstOrFail();
+    app(SiteSectionEditorialService::class)->updateHomeNavigationVisibility($home, false);
+    $home->refresh();
     $label = (string) ($home->getAttribute('navigation_label') ?: $home->getAttribute('title'));
     expect($home->getAttribute('show_in_navigation'))->toBeFalse()
         ->and(app(HomeSettingsDialog::class)->fill()['show_in_navigation'])->toBeFalse()
@@ -186,6 +188,8 @@ it('preserves Home menu visibility independently of Skip Home with audited no-op
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $editor = app(SiteSectionEditorialService::class);
     $home = \App\Models\SiteSection::query()->where('type', 'home')->firstOrFail();
+    $editor->updateHomeNavigationVisibility($home, false);
+    $home->refresh();
     $label = (string) ($home->getAttribute('navigation_label') ?: $home->getAttribute('title'));
     $settings = app(HomePresentationResolver::class)->settings();
     $routing = app(HomeRoutingSettingsService::class);
@@ -218,6 +222,8 @@ it('saves Home menu visibility from the Pages Edit dialog with one notification'
     \Filament\Facades\Filament::bootCurrentPanel();
 
     $home = \App\Models\SiteSection::query()->where('type', 'home')->firstOrFail();
+    app(SiteSectionEditorialService::class)->updateHomeNavigationVisibility($home, false);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
     $before = \App\Models\AdminNotification::query()->count();
 
     \Livewire\Livewire::test(\App\Filament\Pages\SitePages::class)

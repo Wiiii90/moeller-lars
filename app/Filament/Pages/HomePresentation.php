@@ -324,7 +324,7 @@ final class HomePresentation extends Page
         $action = Action::make('settings')
             ->label('Settings')
             ->modalHeading('Home settings')
-            ->fillForm(fn (): array => $this->homeSettingsFormState())
+            ->fillForm(fn (): array => $dialog->fill())
             ->schema(fn (): array => $dialog->schema(
                 fn (string $field, bool $value) => $this->persistHeroDisplayToggle($field, $value),
             ))
@@ -1060,30 +1060,6 @@ final class HomePresentation extends Page
             HomeTemplate::SkipHome => $this->loadSkipWorkspace(),
         };
         $this->refreshMetrics();
-    }
-
-    /** @return array<string, mixed> */
-    private function homeSettingsFormState(): array
-    {
-        return [
-            'template' => $this->template,
-            'show_details' => $this->artworkShowDetails,
-            'show_gallery_link' => $this->artworkShowGalleryLink,
-            'show_navigation' => $this->artworkShowNavigation,
-            'enable_viewer' => $this->artworkEnableViewer,
-            'group_source' => $this->heroGroupSource,
-            'display_strategy' => $this->heroDisplayStrategy,
-            'newest_by' => $this->heroNewestBy,
-            'group_size' => $this->heroGroupSize,
-            'pool_rule' => $this->heroPoolRule,
-            'pool_year' => $this->heroPoolYear,
-            'manual_include_ids' => $this->manualHeroCandidateIds,
-            'rotation_interval_count' => $this->rotationIntervalCount,
-            'rotation_interval_unit' => $this->rotationIntervalUnit,
-            'public_site_gate' => $this->publicSiteGate,
-            'skip_home' => $this->skipHome,
-            'skip_target_section_id' => $this->skipTargetSectionId,
-        ];
     }
 
     private function loadArtworkWorkspace(HomePresentationSetting $settings): void

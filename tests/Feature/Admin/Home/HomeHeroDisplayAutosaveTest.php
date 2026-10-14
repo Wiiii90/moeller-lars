@@ -59,9 +59,13 @@ it('persists every Hero display toggle from the real live Edit dialog and restor
     }
 });
 
-it('does not produce duplicate notifications or audit records when the autosaving dialog commits again', function (): void {
+it('preserves the stored Home menu choice without duplicate feedback when a Hero autosave commits again', function (bool $visible): void {
     $settings = app(HomePresentationResolver::class)->settings();
+    $section = $settings->siteSection()->firstOrFail();
+    app(\App\Domain\Content\SiteSectionEditorialService::class)->updateHomeNavigationVisibility($section, $visible);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
     $component = Livewire::test(HomePresentation::class)->mountAction('settings')
+        ->assertActionDataSet(['show_in_navigation' => $visible])
         ->set('mountedActions.0.data.show_gallery_link', true)
         ->assertDispatched('admin-header-notification');
 
@@ -72,16 +76,18 @@ it('does not produce duplicate notifications or audit records when the autosavin
         ->where('entity_id', (int) $settings->getAttribute('site_section_id'))
         ->count();
 
-    $component->call('callMountedAction');
+    $component->call('callMountedAction')->assertHasNoFormErrors()
+        ->assertNotDispatched('admin-header-notification');
 
     expect(app(HomeHeroConfigurationService::class)->configuration($settings->fresh())['show_gallery_link'])->toBeTrue()
+        ->and($section->fresh()->show_in_navigation)->toBe($visible)
         ->and(AdminNotification::query()->count())->toBe($beforeNotifications)
         ->and(AuditEvent::query()
             ->where('action', 'site_section.updated')
             ->where('entity_type', 'site_section')
             ->where('entity_id', (int) $settings->getAttribute('site_section_id'))
             ->count())->toBe($beforeAudits);
-});
+})->with(['visible in menu' => true, 'hidden from menu' => false]);
 
 it('defaults Gallery link off while retaining previously saved on values', function (): void {
     $service = app(HomeHeroConfigurationService::class);

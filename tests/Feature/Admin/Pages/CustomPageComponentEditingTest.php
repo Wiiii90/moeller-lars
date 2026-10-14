@@ -242,7 +242,8 @@ it('opens and saves the third Rich Text component from its absolute row target',
         ])
         ->callMountedAction()
         ->assertHasNoFormErrors()
-        ->assertMountedActionModalSee('Edit component');
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSee('Edit component');
 
     $components = $settings->fresh()->components();
     expect($components)->toHaveCount(3)
@@ -325,6 +326,9 @@ it('preserves legacy List metadata as Context and links in Details without dupli
 
 
 it('retains disabled Contact settings for later re-enabling', function (): void {
+    \App\Models\PublicContentSetting::general()->update(['social_links' => [
+        ['platform' => 'instagram', 'url' => 'https://example.test/artist'],
+    ]]);
     [$section, $settings] = customPageWorkspaceRecord('Hidden Contact settings', 'hidden-contact-settings');
     $settings->update(['blocks' => [[
         'type' => 'contact',
