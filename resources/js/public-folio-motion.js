@@ -160,7 +160,7 @@ function renderedShadowCoords(value, type) {
 // The single existing exterior sheet on each surface.
 export const FOLIO_PLANE_BASE = Object.freeze({
     content: [-5, 7],
-    menu: [-8.5, 3.5],
+    menu: [-7, 2],
 });
 
 // The backing sheet moves one x or y axis at a time, rests and returns.
@@ -181,24 +181,32 @@ export function buildShadowFrames(start, type) {
     const rest = weight => frames.push({ boxShadow: shadow(...xy), weight });
     base.forEach((value, i) => move(i, value));
     rest(9);
-    move(0, base[0] - (type === 'menu' ? 1.5 : 2));
-    rest(4);
-    move(1, base[1] + (type === 'menu' ? 1.3 : 2));
-    rest(10);
-    // Menu spread equals y: undo the vertical excursion before returning
-    // x, otherwise its right edge would temporarily cross the 5px inset.
     if (type === 'menu') {
-        move(1, base[1]); move(0, base[0]);
+        // One top-anchored sheet must remain between the LEFT contour (-10px)
+        // and the 5px right inset. A 2px baseline spread leaves room to
+        // contract and shift gently without crossing either boundary.
+        move(1, 1.4);
+        rest(4);
+        move(0, -7.6);
+        rest(10);
+        move(0, -6.6);
+        rest(7);
+        move(0, base[0]);
+        move(1, base[1]);
+        rest(9);
     } else {
+        move(0, base[0] - 2);
+        rest(4);
+        move(1, base[1] + 2);
+        rest(10);
         move(0, base[0]); move(1, base[1]);
+        rest(10);
+        move(0, base[0] + .8);
+        move(1, base[1] - .5);
+        rest(7);
+        move(1, base[1]); move(0, base[0]);
+        rest(9);
     }
-    rest(10);
-    // The menu never advances right of its 5px inset, even mid-animation.
-    if (type !== 'menu') move(0, base[0] + .8);
-    move(1, base[1] - (type === 'menu' ? .2 : .5));
-    rest(7);
-    move(1, base[1]); move(0, base[0]);
-    rest(9);
     rendered.forEach((value, i) => move(i, value));
     frames.push({ boxShadow: start, weight: 4 });
 
