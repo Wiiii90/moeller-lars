@@ -1,6 +1,6 @@
 # Öffentliche SPA-Dokumentnavigation und Instanzlebenszyklus
 
-**Code-Referenz:** `dev` bei `b3439bbfeb48ddbaf1f1949c276155c737136e31` (achsengebundene Content-/Menü-Folio-Animation, Artwork-Detail-Höhenwechsel und zuletzt Mid-Flight-Shadow-Parser). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
+**Code-Referenz:** `dev` bei `21e907f4557b0114389f9b17438ca300ca701df3` (achsengebundene Folio-Animation, Artwork-Detail-Höhenwechsel und korrigierte Mid-Flight-Shadow-Koordinaten). Die in `docs` übernommenen Quellen wurden statisch geprüft; es wurde hier kein Browser-/Laravel-End-to-End-Test ausgeführt.
 
 ## Architekturentscheidung
 
@@ -81,7 +81,7 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 ## Native Folio-Ränder, Schatten und Artwork-Höhenübergänge
 
-**Aktueller Referenzstand:** `dev@b3439bbfeb48ddbaf1f1949c276155c737136e31`
+**Aktueller Referenzstand:** `dev@21e907f4557b0114389f9b17438ca300ca701df3`
 (über einen Zwei-Eltern-Merge nach `docs` übernommen). Die Folio-Animation
 benutzt nur die bestehenden `#content::before/::after`- und
 `.site-navigation::before/::after`-Konturen sowie deren vorhandene
@@ -124,22 +124,21 @@ ist Eigentümer des angestrebten Designs, nicht dieses Quellinventar.
 
 ### Statisch belegte Negativpfade und Nachweise
 
-**Neue Shadow-Regression im letzten `dev`-Commit:** Die Funktion
-`renderedShadowCoords()` verwendet im **JavaScript-RegExp-Literal**
-`/(-?\\d+(?:\\.\\d+)?)px/g` (je zwei Quell-Backslashes je Escape).
-In einem RegExp-Literal steht das für einen wörtlichen Backslash samt
-`d` bzw. Punkt, **nicht** für Ziffern. Tatsächlich berechnete CSS-Werte
-wie `-6.5px 8px` liefern daher keine Matches und lösen den Fallback
-auf feste Startkoordinaten aus. Der neu hinzugefügte Testfall
-`captured mid-flight paper shadows return to base one axis at a time`
-in [public-folio-motion.test.mjs](../../tests/js/public-folio-motion.test.mjs)
-verwendet dieselbe doppelte Escapierung und kann den erwarteten
-vierkoordinatigen Vergleich nicht herstellen. Ein **isoliertes Node-22-RegExp-Fixture**
-ergab **0** Matches mit dem Quellmuster und korrekte Matches mit einfach
-escaptem Muster; die vollständige Testdatei wurde hier **nicht** ausgeführt.
-Damit ist der Mid-Flight-Schattenpfad nicht als korrekt nachgewiesen.
-Korrektur und Regressionstest gehören auf `dev`/`testing`, nicht in
-Anwendungscode auf `docs`.
+**Nachgezogener Source-Fix des Shadow-Parsers:** Die zunächst in
+`dev@b3439bb` belegte doppelte Escapierung des RegExp-Literals in
+`renderedShadowCoords()` lieferte für CSS-Pixelwerte keine Matches;
+ein isolierter Node-22-Regex-Prüffall bestätigte das. Der
+anschließende Commit `e8ae20429d378ce74c26a4c96c469597b1717bf8`
+korrigiert das JS-RegExp-Literal auf einfache Backslashes **und**
+den entsprechenden [Mid-Flight-Test](../../tests/js/public-folio-motion.test.mjs).
+Die beiden Quelldateien auf `dev@21e907f4557b0114389f9b17438ca300ca701df3`
+wurden erneut gelesen. Der frühere Regex-Fehler ist damit
+**quellseitig behoben** und nicht länger als offener produktiver
+Bug zu führen. Die echte Ausführung des korrigierten JS-Tests und
+Browser-Akzeptanz bleiben unabhängig offen. Der ebenfalls neue Unit-Test
+behandelt einen schrumpfenden und einen wachsenden
+Artwork-Detail-zu-Detail-Swap mit absoluter Artikelhöhe.
+
 
 **Noch offene Lebensdauer:** `animatePaper()` startet **vier unendliche
 Pseudo-`Animation`-Objekte und zwei unendliche Shadow-Animationen** pro

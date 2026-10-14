@@ -126,4 +126,25 @@ Pages-Dialog-/Identity-Datenfluss; keine parallele Identity-Pipeline einführen.
 Das ist ein **quellbelegter produktiver Fehlerpfad**, kein hier ausgeführter
 Browser- oder Datenbanknachweis.
 
+## Custom Page: komponentenbezogene Edit-Zielauflösung
+
+**Source-Fix auf `dev@21e907f` (drei neue Commits nach dem
+Folio-Detailstand):** [CustomPageWorkspaceTargetHelpers](../../app/Filament/Pages/Concerns/CustomPageWorkspaceTargetHelpers.php)
+hat wieder einen einzigen `componentAt(int $index, string $expectedType)`-
+Leseweg. `actionComponentTarget()` prüft `componentIndex` und
+`componentType`; `actionComponent()` liest über `componentAt()` den
+persistierten Komponentenblock **am absoluten Sequenzindex** aus
+`settings()->components()`. Stimmt die gespeicherte Komponente nicht
+mit dem beim Action-Mount übergebenen Typ überein oder fehlt sie, folgt
+eine `ValidationException` mit Reload-Hinweis. Das schützt vor
+stiller Bearbeitung eines falschen Blocks nach Reorder/Conversion.
+
+Der neue [CustomPageWorkspaceTest](../../tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php)
+(ungefähr Zeilen 463–493) montiert `editComponent` ausdrücklich auf Index
+2 einer `text/divider/text`-Sequenz und erwartet eine Änderung **nur des
+dritten Rich-Text-Blocks**. Der frühere fehlende Methodenpfad ist
+**quellseitig wieder vorhanden**; der zugehörige Livewire-Test wurde
+hier lediglich gelesen, nicht ausgeführt. Die UI-Akzeptanz und
+fehlende/stale Zieltypen sind weitere gezielte Runtime-Negativfälle.
+
 **Weitere Untersuchungen:** dynamisch angelegte Filament-Actions, Mount-/Autosave-Reihenfolgen, JavaScript-Event-Dispatch, Modal-State und Notification-Pipeline. Diese müssen an konkreten Quellstellen erhoben werden, nicht aus Dateinamen extrapoliert werden.
