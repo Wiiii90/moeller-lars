@@ -16,6 +16,8 @@ require_once __DIR__.'/PagesFixtures.php';
 
 it('does not report success for no-op page type or Journal template commands', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $service = app(SiteSectionEditorialService::class);
     $page = $service->createCustomPage('No-op Type Page', 'noop-type-page');
     $journal = $service->createJournal('No-op Template Journal', 'noop-template-journal', JournalTemplate::Blog->value);
@@ -61,6 +63,21 @@ it('initializes target configuration for safe type conversions transactionally',
     expect($custom->type)->toBe(SiteSectionType::CustomPage->value)
         ->and($custom->slug)->not->toBeNull()
         ->and($custom->customPageSetting()->exists())->toBeTrue();
+});
+
+it('rolls back type and configuration changes when conversion auditing fails', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Atomic conversion', 'atomic-conversion');
+    $before = AuditEvent::query()->count();
+    $audit = Mockery::mock(app(\App\Domain\Admin\AdminAuditService::class));
+    $audit->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit unavailable'));
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->forgetInstance(SiteSectionEditorialService::class);
+    expect(fn () => app(SiteSectionEditorialService::class)->convertType($section, SiteSectionType::Journal->value))
+        ->toThrow(RuntimeException::class, 'Audit unavailable');
+    expect($section->fresh()->type)->toBe(SiteSectionType::CustomPage->value)
+        ->and($section->customPageSetting()->exists())->toBeTrue()->and($section->journalSetting()->exists())->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
 });
 
 

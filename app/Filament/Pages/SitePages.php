@@ -17,6 +17,8 @@ use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
+use App\Models\User;
+use Filament\Facades\Filament;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -105,6 +107,13 @@ final class SitePages extends Page
     public int $rangeEnd = 0;
 
     private ?SiteSectionOrderService $orderService = null;
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
 
     public function mount(): void
     {

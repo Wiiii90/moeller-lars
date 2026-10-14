@@ -124,7 +124,8 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
 
     // The shared two-column Grid keeps all four toggles in row-major
     // order; Skip Home owns its optional destination in one stable cell.
-    $schema = app(PagesSettingsDialog::class)->schema();
+    $mounted = Livewire::test(SitePages::class)->mountAction('pagesSettings')->instance();
+    $schema = $mounted->{$mounted->getMountedActionSchemaName()}->getComponents();
     expect($schema)->toHaveCount(1)
         ->and($schema[0])->toBeInstanceOf(\Filament\Schemas\Components\Grid::class);
 
@@ -135,7 +136,7 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
     $fieldNames = [];
     foreach ($cells as $cell) {
         if ($cell instanceof \Filament\Schemas\Components\Group) {
-            foreach ($cell->getChildComponents() as $field) {
+            foreach ($cell->getChildSchema()->getComponents(withHidden: true) as $field) {
                 $fieldNames[] = $field->getName();
             }
         } else {
@@ -242,4 +243,38 @@ it('closing an unchanged Pages Settings dialog does not create Activity or Notif
     expect(PublicContentSetting::navigationNestingEnabled())->toBeTrue()
         ->and(AuditEvent::query()->count())->toBe($auditCount)
         ->and(AdminNotification::query()->count())->toBe($notificationCount);
+});
+
+it('shows invalid Skip Home settings in the mounted form without changing preferences', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    $before = AuditEvent::query()->count();
+    Livewire::test(SitePages::class)->mountAction('pagesSettings')->set('mountedActions.0.data.skip_home', true)
+        ->assertHasFormErrors(['skip_target_section_id'])->assertNotDispatched('admin-header-notification');
+    expect(app(HomeRoutingSettingsService::class)->enabled(app(HomePresentationResolver::class)->settings()))->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
+});
+
+it('rolls back combined routing and workflow changes when a later audit fails', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    $service = app(SiteSectionEditorialService::class);
+    $target = $service->createCustomPage('Rollback Target', 'rollback-settings-target');
+    $service->updatePlacement($target, 'published', null);
+    $before = AuditEvent::query()->count();
+    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $audit = Mockery::mock($realAudit); $calls = 0;
+    $audit->shouldReceive('record')->twice()->andReturnUsing(function (...$arguments) use (&$calls, $realAudit) {
+        if (++$calls === 2) { throw new RuntimeException('Audit unavailable'); }
+        return $realAudit->record(...$arguments);
+    });
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->forgetInstance(\App\Domain\Admin\AdminSettingsService::class);
+    app()->forgetInstance(HomeRoutingSettingsService::class);
+    expect(fn () => app(PagesSettingsDialog::class)->save([
+        'skip_home' => true, 'skip_target_section_id' => $target->id,
+        'navigation_nesting_enabled' => true, 'pages_auto_publish' => true,
+    ]))->toThrow(RuntimeException::class, 'Audit unavailable');
+    expect(app(HomeRoutingSettingsService::class)->enabled(app(HomePresentationResolver::class)->settings()->fresh()))->toBeFalse()
+        ->and((bool) PublicContentSetting::query()->findOrFail(1)->pages_auto_publish)->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
 });

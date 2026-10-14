@@ -94,7 +94,7 @@ final class CustomPageSetting extends Model
     }
 
     /** @return list<array<string, mixed>> */
-    private function normalizedBlocks(): array
+    public function normalizedBlocks(): array
     {
         $blocks = $this->getAttribute('blocks');
         if (! is_array($blocks) || ! array_is_list($blocks)) {

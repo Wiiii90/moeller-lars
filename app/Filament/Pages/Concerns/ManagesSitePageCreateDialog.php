@@ -80,7 +80,11 @@ trait ManagesSitePageCreateDialog
                     ]),
             ])
             ->action(function (array $data): void {
-                $section = DB::transaction(fn (): SiteSection => $this->createPageFromDialog($data));
+                try {
+                    $section = DB::transaction(fn (): SiteSection => $this->createPageFromDialog($data));
+                } catch (ValidationException $exception) {
+                    $this->throwPageDialogValidation($exception);
+                }
                 $this->pageNumber = 1;
                 $this->loadSections(navigationChanged: true);
 

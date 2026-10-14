@@ -3,6 +3,8 @@
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Publication\PublicationService;
+use Illuminate\Support\Facades\Auth;
 use App\Filament\Pages\SitePages;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
@@ -64,10 +66,18 @@ it('autosaves every content heading control without submitting the Pages Edit ac
         ->assertSet('mountedActions.0.data.content_heading_divider', 'dotted')
         ->assertSet('mountedActions.0.data.content_heading_override', 'Current programme');
 
+    $actor = Auth::user();
+    Auth::guard('web')->logout();
     $this->get('/autosave-exhibitions')
         ->assertStatus(404); // Not published; public data must still remain protected.
 
+    $this->actingAs($actor, 'web');
     $editorial->updatePlacement($section->fresh(), 'published', null);
+    Auth::guard('web')->logout();
+    $this->get('/autosave-exhibitions')->assertNotFound();
+    $this->actingAs($actor, 'web');
+    app(PublicationService::class)->commit($actor);
+    Auth::guard('web')->logout();
     $this->get('/autosave-exhibitions')
         ->assertOk()
         ->assertSee('Current programme');
@@ -104,6 +114,12 @@ it('autosaves Home heading controls and preserves existing settings and public d
         ->assertSet('mountedActions.0.data.content_heading_divider', 'thin')
         ->assertSet('mountedActions.0.data.content_heading_override', 'Studio');
 
+    $actor = Auth::user();
+    Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertDontSee('Studio');
+    $this->actingAs($actor, 'web');
+    app(PublicationService::class)->commit($actor);
+    Auth::guard('web')->logout();
     $this->get('/')
         ->assertOk()
         ->assertSee('Studio');
@@ -133,4 +149,17 @@ it('can hide and restore a Page heading without discarding the optional style or
 
     expect($section->fresh()->content_heading_enabled)->toBeTrue()
         ->and($section->fresh()->content_heading_override)->toBe('Override');
+});
+
+it('keeps invalid heading values on the correct mounted field without persistence or success', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Invalid Heading', 'invalid-heading');
+    $component = Livewire::test(SitePages::class)->mountAction('editPage', ['section' => $section->id])
+        ->set('mountedActions.0.data.content_heading_enabled', true);
+    $before = AuditEvent::query()->count(); $notifications = AdminNotification::query()->count();
+    $component->set('mountedActions.0.data.content_heading_alignment', 'unsupported')
+        ->assertHasFormErrors(['content_heading_alignment'])->assertNotDispatched('admin-header-notification');
+    expect($section->fresh()->content_heading_alignment)->toBe('left')->and(AuditEvent::query()->count())->toBe($before)
+        ->and(AdminNotification::query()->count())->toBe($notifications);
+    $component->set('mountedActions.0.data.content_heading_alignment', 'right')->assertHasNoFormErrors();
+    expect($section->fresh()->content_heading_alignment)->toBe('right');
 });

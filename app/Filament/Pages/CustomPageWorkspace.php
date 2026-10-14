@@ -14,9 +14,18 @@ use App\Filament\Pages\Concerns\CustomPageWorkspaceProjectionState;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceSecondaryForms;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceTargetHelpers;
 use Filament\Pages\Page;
+use Filament\Facades\Filament;
+use App\Models\User;
 
 final class CustomPageWorkspace extends Page
 {
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
+
     use CustomPageWorkspaceChildOrdering;
     use CustomPageWorkspaceChildProjection;
     use CustomPageWorkspaceComponentActions;

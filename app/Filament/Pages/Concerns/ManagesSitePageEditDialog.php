@@ -26,6 +26,9 @@ use Illuminate\Validation\ValidationException;
 
 trait ManagesSitePageEditDialog
 {
+    /** @var array<int,array<string,mixed>> Server-owned originals for mounted optimistic edits. */
+    #[\Livewire\Attributes\Locked]
+    public array $pageDialogOriginals = [];
 
     /** @var array<int, SiteSection> */
     private array $dialogSectionCache = [];
@@ -38,6 +41,7 @@ trait ManagesSitePageEditDialog
             ->fillForm(function (array $arguments): array {
                 $section = $this->dialogSection($arguments);
                 $template = $section->journalTemplate();
+                $this->pageDialogOriginals[(int) $section->getKey()] = $this->pageDialogPersistedState($section);
 
                 return [
                     'type' => $section->nodeType()->value,
@@ -93,18 +97,27 @@ trait ManagesSitePageEditDialog
                     $section = $this->dialogSection($arguments);
                     $updated = app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
                     $this->dialogSectionCache = [];
+                    $this->pageDialogOriginals[(int) $section->getKey()][$field] = $updated->getAttribute($field);
+                    $this->loadSections();
 
                     return $updated->wasChanged($field);
                 }, 'Page updated')
                     ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
             ])
             ->action(function (array $data, array $arguments): void {
-                $changed = DB::transaction(function () use ($data, $arguments): bool {
-                    return $this->savePageFromDialog($this->dialogSection($arguments), $data);
-                });
+                try {
+                    $changed = DB::transaction(function () use ($data, $arguments): bool {
+                        return $this->savePageFromDialog($this->dialogSection($arguments), $data);
+                    });
+                } catch (ValidationException $exception) {
+                    $this->throwPageDialogValidation($exception);
+                }
 
                 $this->loadSections(navigationChanged: $changed);
                 if ($changed) {
+                    // The editor stays mounted, so Filament otherwise renders only
+                    // its modal. The changed page projection must render as well.
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Page updated',
                         status: 'success',
@@ -144,8 +157,11 @@ trait ManagesSitePageEditDialog
         // A mounted Edit Action persists successive changes without remounting.
         // Always compare against the latest database row, not its cached initial
         // fill state, or later no-ops look like successful edits.
-        $section = SiteSection::query()->findOrFail($section->getKey());
+        $section = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
         $before = $this->pageDialogPersistedState($section);
+        if (($this->pageDialogOriginals[(int) $section->getKey()] ?? null) !== $before) {
+            throw ValidationException::withMessages(['name' => 'This page changed since the editor was opened. Reopen the editor.']);
+        }
 
         $targetType = SiteSectionType::tryFrom((string) ($data['type'] ?? ''));
         if ($targetType === null || $targetType === SiteSectionType::Home) {
@@ -188,6 +204,7 @@ trait ManagesSitePageEditDialog
         /** @var SiteSection $fresh */
         $fresh = SiteSection::query()->findOrFail($section->getKey());
         $this->dialogSectionCache[(int) $fresh->getKey()] = $fresh;
+        $this->pageDialogOriginals[(int) $fresh->getKey()] = $this->pageDialogPersistedState($fresh);
 
         return $before !== $this->pageDialogPersistedState($fresh);
     }

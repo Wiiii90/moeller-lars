@@ -4,6 +4,9 @@ use App\Filament\Pages\CustomPageWorkspace;
 use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
 use App\Models\User;
+use App\Models\AuditEvent;
+use App\Models\AdminNotification;
+use Illuminate\Support\Facades\Auth;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -14,7 +17,75 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-/** @return array{0:SiteSection,1:CustomPageSetting} */
+it('keeps a changed component safe from a stale mounted editor', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Concurrent component', 'concurrent-component');
+    $settings->update(['blocks' => [['type' => 'text', 'published' => true, 'title' => 'Original', 'body' => 'Original body']]]);
+    $component = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text']);
+    app(\App\Domain\Content\CustomPageEditorialService::class)->updateBlock($settings, 0, 'text',
+        ['type' => 'text', 'published' => true, 'title' => 'Concurrent', 'body' => 'Concurrent body']);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = AuditEvent::query()->count();
+    $component->fillForm(['title' => 'Stale title', 'body' => 'Stale body'])->callMountedAction()
+        ->assertHasFormErrors(['type'])->assertNotDispatched('admin-header-notification');
+    expect($settings->fresh()->components()[0]['body'])->toBe('Concurrent body')
+        ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
+});
+
+it('saves a component once refreshes its projection and repeats without audit or feedback', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Feedback component', 'feedback-component');
+    $settings->update(['blocks' => [['type' => 'text', 'published' => true, 'title' => 'Original', 'body' => 'Body']]]);
+    $before = AuditEvent::query()->count();
+    $component = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->fillForm(['title' => 'Persisted title', 'body' => 'Persisted body'])->callMountedAction()
+        ->assertHasNoFormErrors()->assertSee('Persisted title');
+    expect($settings->fresh()->components()[0]['title'])->toBe('Persisted title')
+        ->and(AuditEvent::query()->count())->toBe($before + 1)->and(AdminNotification::query()->count())->toBe(1)
+        ->and(collect($component->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $component->callMountedAction()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($before + 1)->and(AdminNotification::query()->count())->toBe(1);
+});
+
+it('rejects Custom Page component requests after administrative access is lost', function (bool $guest): void {
+    $actor = Auth::user();
+    [$section, $settings] = customPageWorkspaceRecord('Protected component', 'protected-component');
+    $component = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
+    if ($guest) { Auth::guard('web')->logout(); } else { $actor->forceFill(['is_admin' => false])->save(); }
+    $component->mountAction('addComponent')->assertForbidden();
+    expect($settings->fresh()->components())->toBe([]);
+})->with(['guest' => true, 'revoked admin' => false]);
+
+it('rolls back component edits when auditing fails and allows a clean retry', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Atomic component', 'atomic-component');
+    $settings->update(['blocks' => [['type' => 'text', 'published' => true, 'title' => 'Original', 'body' => 'Original body']]]);
+    $before = AuditEvent::query()->count();
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->fillForm(['title' => 'Changed', 'body' => 'Changed body']);
+    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $audit = Mockery::mock($realAudit);
+    $audit->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit unavailable'));
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->forgetInstance(\App\Domain\Content\CustomPageEditorialService::class);
+    try {
+        expect(fn () => $editor->callMountedAction())->toThrow(RuntimeException::class, 'Audit unavailable');
+        expect($settings->fresh()->components()[0]['title'])->toBe('Original')
+            ->and($settings->fresh()->components()[0]['body'])->toBe('Original body')
+            ->and(AuditEvent::query()->count())->toBe($before)
+            ->and(AdminNotification::query()->count())->toBe(0);
+    } finally {
+        app()->instance(\App\Domain\Admin\AdminAuditService::class, $realAudit);
+        app()->forgetInstance(\App\Domain\Content\CustomPageEditorialService::class);
+    }
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->fillForm(['title' => 'Changed', 'body' => 'Changed body'])->callMountedAction()
+        ->assertHasNoFormErrors()->assertSee('Changed')->assertDispatched('admin-header-notification');
+    expect($settings->fresh()->components()[0]['body'])->toBe('Changed body')
+        ->and(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe(1);
+});
 
 require_once __DIR__.'/CustomPageFixtures.php';
 
@@ -132,7 +203,8 @@ it('persists consecutive component edits without closing the autosaving dialog',
         ])
         ->callMountedAction()
         ->assertHasNoFormErrors()
-        ->assertMountedActionModalSee('Edit component');
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSee('Edit component');
 
     $first = $settings->fresh()->components()[0];
     expect($first['published'])->toBeFalse()
@@ -146,7 +218,8 @@ it('persists consecutive component edits without closing the autosaving dialog',
     ])
         ->callMountedAction()
         ->assertHasNoFormErrors()
-        ->assertMountedActionModalSee('Edit component');
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSee('Edit component');
 
     expect($settings->fresh()->components()[0]['body'])->toBe('Later rich text');
 });

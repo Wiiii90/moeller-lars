@@ -7,6 +7,17 @@ use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceTargetHelpers
 {
+    /** @return array<string,mixed> */
+    private function componentAt(int $index, string $type): array
+    {
+        $block = $this->settings()->components()[$index] ?? null;
+        if (! is_array($block) || ($block['type'] ?? null) !== $type) {
+            throw ValidationException::withMessages(['component' => 'This component changed. Reload the workspace and try again.']);
+        }
+
+        return $block;
+    }
+
     /** @return list<array{index:int,type:string}> */
     private function selectedComponentTargetData(): array
     {

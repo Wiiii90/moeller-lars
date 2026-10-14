@@ -4,6 +4,10 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
 use App\Models\SiteSection;
+use App\Models\AuditEvent;
+use App\Models\AdminNotification;
+use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Admin\AdminActivityNotificationContext;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -43,6 +47,23 @@ it('keeps generated page slugs within the allowed length and syntax', function (
     expect($slug)->toBeString()
         ->and(strlen($slug))->toBeLessThanOrEqual(80)
         ->and($slug)->toMatch('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
+});
+
+it('rejects a duplicate creation slug without creating partial page configuration and allows correction', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    app(SiteSectionEditorialService::class)->createCustomPage('Existing', 'duplicate-creation');
+    app(AdminActivityNotificationContext::class)->discard();
+    $before = AuditEvent::query()->count(); $count = SiteSection::query()->count();
+    $component = Livewire::test(SitePages::class)->mountAction('addPage')
+        ->set('mountedActions.0.data.name', 'New Page')->set('mountedActions.0.data.slug', 'duplicate-creation')
+        ->callMountedAction()->assertHasFormErrors(['slug'])->assertNotDispatched('admin-header-notification');
+    expect(SiteSection::query()->count())->toBe($count)->and(AuditEvent::query()->count())->toBe($before)
+        ->and(AdminNotification::query()->count())->toBe(0);
+    $component->set('mountedActions.0.data.slug', 'corrected-creation')->callMountedAction()->assertHasNoFormErrors()->assertSee('New Page');
+    expect(SiteSection::query()->where('slug', 'corrected-creation')->exists())->toBeTrue()
+        ->and(AdminNotification::query()->count())->toBe(1)
+        ->and(collect($component->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
 });
 
 

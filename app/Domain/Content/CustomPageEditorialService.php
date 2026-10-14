@@ -31,12 +31,15 @@ final class CustomPageEditorialService
     }
 
     /** @param array<string, mixed> $block */
-    public function updateBlock(CustomPageSetting $settings, int $index, string $expectedType, array $block): bool
+    public function updateBlock(CustomPageSetting $settings, int $index, string $expectedType, array $block, ?array $expectedBlock = null): bool
     {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $block): bool {
+        return DB::transaction(function () use ($settings, $index, $expectedType, $block, $expectedBlock): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertTarget($blocks, $index, $expectedType);
+            if ($expectedBlock !== null && AdminOrderingState::fingerprints([$blocks[$index]]) !== AdminOrderingState::fingerprints([$expectedBlock])) {
+                throw ValidationException::withMessages(['type' => 'This component changed since the editor was opened. Reopen the editor.']);
+            }
 
             if (($block['type'] ?? null) !== $expectedType) {
                 throw ValidationException::withMessages(['component' => 'The component type changed while it was being edited.']);
@@ -638,8 +641,11 @@ final class CustomPageEditorialService
      */
     private function persist(CustomPageSetting $settings, array $blocks, ?array $orderingState = null): bool
     {
+        $before = AdminOrderingState::fingerprints($settings->components());
         $settings->fill(['blocks' => $blocks]);
-        if (! $settings->isDirty()) {
+        $settings->setAttribute('blocks', $settings->normalizedBlocks());
+        $settings->assertEditableComponents();
+        if ($before === AdminOrderingState::fingerprints($settings->components())) {
             return false;
         }
 

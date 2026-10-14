@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceComponentActions
 {
+    #[\Livewire\Attributes\Locked]
+    public ?array $editingComponentOriginal = null;
 
     public function moveComponent(int $index, string $type, string $direction): void
     {
@@ -196,7 +198,12 @@ trait CustomPageWorkspaceComponentActions
     {
         $action = Action::make($actionName)
             ->label('Edit')
-            ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
+            ->fillForm(function (array $arguments): array {
+                $block = $this->actionComponent($arguments);
+                $this->editingComponentOriginal = $block;
+
+                return $this->componentEditorData($block);
+            })
             ->schema(fn (array $arguments): array => $this->componentEditorSchema(
                 onTypeChange: function (mixed $state) use ($arguments): void {
                     $target = is_string($state) ? $state : '';
@@ -219,16 +226,28 @@ trait CustomPageWorkspaceComponentActions
                     return; // A type change is handled by changeComponentType.
                 }
 
-                $changed = app(CustomPageEditorialService::class)->updateBlock(
-                    $this->settings(),
-                    $index,
-                    $type,
-                    $this->componentPayload($data, $existing),
-                );
+                try {
+                    $changed = app(CustomPageEditorialService::class)->updateBlock(
+                        $this->settings(),
+                        $index,
+                        $type,
+                        $this->componentPayload($data, $existing),
+                        $this->editingComponentOriginal,
+                    );
+                } catch (ValidationException $exception) {
+                    $path = $this->getMountedActionSchema()->getStatePath();
+                    $errors = [];
+                    foreach ($exception->errors() as $field => $messages) {
+                        $errors[$path.'.'.($field === 'component' ? 'type' : $field)] = $messages;
+                    }
+                    throw ValidationException::withMessages($errors);
+                }
+                $this->editingComponentOriginal = $this->settings()->components()[$index];
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Component saved',
                         status: 'success',
