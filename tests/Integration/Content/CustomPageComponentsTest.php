@@ -240,3 +240,26 @@ it('renders legal copy as escaped disclosures and omits unpublished or blank con
     );
     expect($empty)->not->toContain('custom-page__legal-sections');
 });
+
+it('nests and releases a CV list without data loss or implicit sibling changes', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Drag content', 'drag-content');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('drag-test');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true],
+        ['type' => 'text', 'title' => 'Before', 'body' => 'Before'],
+        ['type' => 'list', 'title' => 'CV', 'items' => [['title' => 'Undated', 'context' => null]]],
+        ['type' => 'text', 'title' => 'After', 'body' => 'After'],
+    ]]);
+    $service = app(\App\Domain\Content\CustomPageEditorialService::class);
+    expect($service->nestBlock($settings, 2, 'list', 0))->toBeTrue();
+    $nested = $settings->fresh()->components();
+    expect(array_column($nested, 'type'))->toBe(['image','text','text'])
+        ->and($nested[0]['children'][0]['items'][0]['context'])->toBeNull()
+        ->and($nested[1]['title'])->toBe('Before');
+
+    expect($service->unnestImageChild($settings, 0, 0))->toBeTrue();
+    $restored = $settings->fresh()->components();
+    expect(array_column($restored, 'type'))->toBe(['image','list','text','text'])
+        ->and($restored[1]['items'][0]['title'])->toBe('Undated');
+});
