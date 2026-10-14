@@ -171,6 +171,37 @@ final class CustomPageEditorialService
         });
     }
 
+    /** Explicitly reparent an existing Image child. Native sorting never
+     * performs this operation, and both parents are persisted atomically. */
+    public function moveImageChild(CustomPageSetting $settings, int $fromImage, int $childIndex, int $toImage): bool
+    {
+        if ($fromImage === $toImage) {
+            return false;
+        }
+        return DB::transaction(function () use ($settings, $fromImage, $childIndex, $toImage): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $fromImage, 'image');
+            $this->assertTarget($blocks, $toImage, 'image');
+            if (! ($blocks[$toImage]['image_decorative'] ?? false)) {
+                throw ValidationException::withMessages(['component' => 'Choose a decorative image parent.']);
+            }
+            $children = $blocks[$fromImage]['children'] ?? [];
+            if (! is_array($children) || ! array_key_exists($childIndex, $children)) {
+                throw ValidationException::withMessages(['component' => 'The Image child no longer exists.']);
+            }
+            $child = $children[$childIndex];
+            array_splice($children, $childIndex, 1);
+            if ($children === []) {
+                unset($blocks[$fromImage]['children']);
+            } else {
+                $blocks[$fromImage]['children'] = $children;
+            }
+            $blocks[$toImage]['children'] = [...($blocks[$toImage]['children'] ?? []), $child];
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
     /** Reorder children within one Image; never change their parent by sorting. */
     public function sortImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, int $position): bool
     {

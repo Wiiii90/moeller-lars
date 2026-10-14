@@ -151,9 +151,11 @@ trait CustomPageWorkspaceForms
             fn (): array => $this->decorativeImageParentOptions(),
             'Parent', 'Page level',
         )
-            ->visible(fn (Get $get): bool => in_array(
-                (string) $get('type'), \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true,
-            ))
+            ->visible(fn (Get $get): bool =>
+                in_array((string) $get('type'), \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                && ($get('type') !== 'list' || blank($get('media_asset_id')))
+                && ($get('type') !== 'contact' || ! $get('contact_form_enabled'))
+            )
             ->columnSpanFull();
     }
 

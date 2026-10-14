@@ -225,6 +225,26 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
     }
 
+    public function moveImageChild(int $fromImage, int $childIndex, int $toImage): void
+    {
+        if (! $this->componentReorderEnabled()) {
+            return;
+        }
+        try {
+            $changed = app(CustomPageEditorialService::class)->moveImageChild(
+                $this->settings(), $fromImage, $childIndex, $toImage,
+            );
+            $this->clearSelections();
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Image child moved', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Image child unchanged', $exception);
+            $this->reloadWorkspace();
+        }
+    }
+
     public function unnestImageChild(int $imageIndex, int $childIndex): void
     {
         $changed = app(CustomPageEditorialService::class)->unnestImageChild(

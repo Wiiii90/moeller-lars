@@ -301,3 +301,22 @@ it('moves the edited CV content into its chosen Parent as a single operation', f
         ->and($blocks[0]['children'][0]['items'][0]['title'])->toBe('Born in Hamburg, Germany')
         ->and($blocks[0]['children'][0]['items'][0]['context'])->toBe('1989');
 });
+
+it('moves Image children between decorative parents without changing sibling order', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Image parents', 'image-parents');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('image-parents');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true,
+            'children' => [['type' => 'text', 'title' => 'Biography', 'body' => 'Text']]],
+        ['type' => 'text', 'title' => 'Unchanged', 'body' => 'Middle'],
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true],
+    ]]);
+    $editor = app(\App\Domain\Content\CustomPageEditorialService::class);
+    expect($editor->moveImageChild($settings, 0, 0, 2))->toBeTrue();
+    $blocks = $settings->fresh()->components();
+    expect(array_column($blocks, 'type'))->toBe(['image', 'text', 'image'])
+        ->and($blocks[1]['title'])->toBe('Unchanged')
+        ->and($blocks[2]['children'][0]['title'])->toBe('Biography')
+        ->and($blocks[0]['children'] ?? [])->toBe([]);
+});

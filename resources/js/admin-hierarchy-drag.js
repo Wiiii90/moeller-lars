@@ -19,8 +19,12 @@ export function hierarchyMove(source, target) {
             return source.child === null ? null
                 : { method: 'unnestImageChild', args: [source.image, source.child] };
         }
-        if (target.action !== 'nest' || !source.canNest ||
-            source.child !== null || source.index === target.parent) return null;
+        if (target.action !== 'nest' || !source.canNest) return null;
+        if (source.child !== null) {
+            return source.image === target.parent ? null
+                : { method: 'moveImageChild', args: [source.image, source.child, target.parent] };
+        }
+        if (source.index === target.parent) return null;
         return { method: 'nestComponent', args: [source.index, source.type, target.parent] };
     }
     return null;
@@ -42,10 +46,12 @@ function sourceFromHandle(handle) {
     if (kind === 'custom') {
         const row = handle.closest('[data-component-index]');
         if (!row) return null;
+        const child = handle.hasAttribute('data-child-index') ? Number(handle.dataset.childIndex) : null;
         return { root, kind, index: Number(row.dataset.componentIndex),
-            type: row.dataset.componentType, canNest: row.dataset.canNest === 'true',
+            type: child === null ? row.dataset.componentType : handle.dataset.childType,
+            canNest: child === null ? row.dataset.canNest === 'true' : true,
             image: handle.hasAttribute('data-image-index') ? Number(handle.dataset.imageIndex) : null,
-            child: handle.hasAttribute('data-child-index') ? Number(handle.dataset.childIndex) : null };
+            child };
     }
     return null;
 }

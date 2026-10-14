@@ -23,4 +23,9 @@ test('Custom Image nesting and unnesting stay explicit', () => {
     assert.deepEqual(hierarchyMove({ ...source, image: 0, child: 1 },
         { kind: 'custom', action: 'root', parent: null }),
         { method: 'unnestImageChild', args: [0, 1] });
+    assert.deepEqual(hierarchyMove({ ...source, image: 0, child: 1 },
+        { kind: 'custom', action: 'nest', parent: 3 }),
+        { method: 'moveImageChild', args: [0, 1, 3] });
+    assert.equal(hierarchyMove({ ...source, image: 0, child: 1 },
+        { kind: 'custom', action: 'nest', parent: 0 }), null);
 });
