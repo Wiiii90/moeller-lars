@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `d6fd9a832ea1cfd9258e93f06d857a0fa3ff2d68` |
-| darin aufgenommener `dev`-Stand | `3c1bc75f84e56a5fefc84a4342f2dce6a1a2e48e` |
-| Status | neun weitere Custom-Page/Home/Public-Commits konfliktgeprüft in echtem Zwei-Eltern-Merge; `dev` neu prüfen |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `b7bf99e4376a9f4fbf0a93e03d4d176a6e06b214` |
+| darin aufgenommener `dev`-Stand | `b6fa7a461331e73bb30ea4debaeb26bfeeffdbe9` |
+| Status | Image-Größe und Menü-Papieroberkante aus zwei weiteren `dev`-Commits übernommen; `dev` neu prüfen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -161,6 +161,7 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
 
+- **Image-Größe (`dev@b6fa7a46`):** Custom Page bietet `image_scale_percent` 25–200 %, Default 100 % als implizites **nicht gespeichertes** Feld. Das Public-Layout multipliziert seine bestehenden Maximalbreiten, ohne Bildzoom oder neue Media-Auslieferung. Home kann den JSON-Wert lesen, sein Editor hat nicht automatisch dieselbe Kontrolle. Siehe [Content-Audit](docs/architecture/structured-components.md#image-size-optionales-persistenzfeld); Feature-Testdatei nur gelesen.
 - **Komponentenstand bis `dev@3c1bc75f`:** Custom Page hat die alten Child-Ordering-/Projection-/Action-Traits entfernt. Contact-Heading sowie Toggles und bedingte Felder leben in einem Parent-Edit-Owner; verdeckte Social-/Formwerte bleiben beim Speichern erhalten. Der geteilte Home-/Custom-List-Editor nutzt `Entry / Context / Published / Details`; alte Date-/Meta-/Location-/URL-Felder werden über die Model-Compatibility-Projektion abgebildet. [Content-Audit](docs/architecture/structured-components.md) und [Dialogvertrag](docs/ADMIN-DIALOG-CONTRACT.md) dokumentieren diese Grenze; `structured-components.json` bleibt ausdrücklich ein älterer eingefrorener Generatorstand. Keine Tests dieses Workstreams ausgeführt.
 
 - **Root-Rich-Text-Regel abgeglichen:** `AGENTS.md` erlaubt jetzt ausdrücklich die zentral validierte externe HTTP(S)-Image-Option neben kanonischem Storage-`media:<id>`. `AdminRichText`, `SafeRichTextRenderer` und `SafeLinkPolicy` zeigen diesen tatsächlich existierenden Pfad; unvalidierte/externe unsichere Schemes und zweite Editor-Pipelines bleiben ausgeschlossen.
@@ -258,8 +259,9 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 5. **Public-Folio/SPA, Home Hero und Gallery-Puffer (`dev@3c1bc75f84e56a5fefc84a4342f2dce6a1a2e48e`):**
    Gemeinsame `#content > .public-content-reveal`-Hülle;
    **ein** äußerer heller CSS-Papierschatten pro Content/Menu-Fläche,
-   inzwischen **beide -5px/7px ohne Spread** und mit 5px
-   rechtem Inset; Menü-Top-Verbindung gehört allein den Konturen;
+   Content -5/7 px ohne Spread, Menü **-8,5/3,5 px mit 3,5 px Spread**;
+   die Menü-Papierlage selbst trifft die Oberkante bei weiterhin
+   mindestens 5px rechtem Inset;
    alte dunkle/doppelte Lagen und `--public-folio-depth` entfernt.
    Page/Hero-`pulsePaper()` nur Content (**1.240 ms**), Menü nie
    navigationsgetrieben. Innere Höhenanimation **780 ms** erst

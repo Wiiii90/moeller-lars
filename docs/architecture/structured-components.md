@@ -36,7 +36,7 @@ Die folgenden Werte entsprechen `CustomPageSetting::COMPONENT_TYPES`:
 
 | Typ | Normalisierte Felder | Wichtige Regeln |
 | --- | --- | --- |
-| `image` | `type, published, media_asset_id, image_decorative` | Image-Medium im Editor optional; öffentlich nur verfügbarer MediaAsset, ALT-Text wenn nicht dekorativ |
+| `image` | `type, published, media_asset_id, image_decorative, image_scale_percent?` | Optionaler Bildgrößenwert 25–200 %, 100 % ist absichtlich **nicht gespeichert**; öffentlich verfügbarer MediaAsset und ALT-Text bei nichtdekorativen Bildern |
 | `text` | `type, published, title, body` | Titel höchstens 160 Zeichen, Body über kanonische Rich-Text-Validierung |
 | `list` | `type, published, title, media_asset_id, items` | Titel höchstens 160 Zeichen; Liste geordneter Untereinträge; optionale Bildreferenz |
 | `divider` | `type, published, variant` | `thin`, `subtle`, `strong` oder `dotted`, Default `thin` (siehe [DividerVariant](../../app/Domain/Content/DividerVariant.php)) |
@@ -44,6 +44,32 @@ Die folgenden Werte entsprechen `CustomPageSetting::COMPONENT_TYPES`:
 | `legal_disclaimer` | `type, published` | Maximal einmal je Komponentenfolge |
 
 `published` ist bei allen Komponenten und Untereinträgen separat. Fehlt das Flag, werten die jeweiligen PHP-Methoden es standardmäßig als `true`. Es handelt sich **nicht** um den Veröffentlichungszustand der Seite oder den globalen LIVE-Commit.
+
+### Image size: optionales Persistenzfeld
+
+`CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT = 100`, `MIN = 25`,
+`MAX = 200`. Der **Custom-Page-Image-Editor** bietet den ganzzahligen
+Prozentwert mit 1-%-Schritten. `normalizedImageScale()` speichert
+`image_scale_percent` nur, wenn der gültige Wert **nicht 100** ist:
+Ein historisches Image ohne Feld bleibt bei unveränderter Editor-Eingabe
+ein **No-op**, statt unnötig JSON- und Audit-Diffs zu erzeugen.
+`imageScalePercent()` liefert für fehlende oder historisch ungültige
+Werte einen sicheren Layout-Fallback von 100 %. Ausdrücklich gesetzte
+ungültige neue Werte werden beim Speichern abgelehnt, nicht still
+korrigiert. In
+[`component-sequence.blade.php`](../../resources/views/pages/partials/component-sequence.blade.php)
+skaliert der Prozentsatz die etablierten Breiten von 28 rem bzw.
+20 rem im Narrow-Layout, jeweils durch `min(100%, ...)` auf den
+Elterncontainer begrenzt. Der Bildinhalt selbst erhält kein Zoom,
+kein zweites Media-Asset und keine neue Upload-Pipeline.
+
+Diese Feldoption ist am geprüften Stand explizit **im Custom-Page-Dialog**
+vorhanden. Der gemeinsame Public-Komponentenrenderer kann den
+Wert auch bei Home lesen; daraus folgt aber **nicht**, dass bereits
+eine entsprechende Home-Edit-Kontrolle eingebaut wurde. Der
+[Featuretest](../../tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php)
+prüft laut Quelltext Default, explizite 150 %, Rückkehr zum impliziten
+100-%-Zustand und No-op; dieser Test wurde hier nicht ausgeführt.
 
 ### Ebene 2: `list.items[]`
 

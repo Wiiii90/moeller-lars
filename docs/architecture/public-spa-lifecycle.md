@@ -81,7 +81,7 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 ## Native Public-Folio-Papiermaschine, Home Hero und Gallery-Puffer
 
-**Quellstand:** `dev@3c1bc75f84e56a5fefc84a4342f2dce6a1a2e48e` als echter Zwei-Eltern-Merge auf `docs`.
+**Quellstand:** `dev@b6fa7a461331e73bb30ea4debaeb26bfeeffdbe9` als echter Zwei-Eltern-Merge auf `docs`.
 Die normativen Public-Anforderungen liegen im
 [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md); die folgenden
 Angaben beschreiben die aktuelle Implementierung in
@@ -103,7 +103,7 @@ Blog, Exhibitions, Home und Custom/CV nutzen denselben Content-Owner.
 **einen Content-Schatten** und die sichtbare vorherige Hüllenhöhe auf.
 Die frühere Menü-Snapshot-/Menü-Pulse-Logik ist **entfernt**.
 
-Content und Menü besitzen jeweils genau **eine** äußere helle Papierlage (`-5px 7px 0 var(--public-folio-soft)`). Das Menü behält seine eigenständige innere Trennlinie. Die frühere Menu-Lage mit positivem Spread ragte rechts zu weit hinaus und ist entfernt; beide Papierlagen bleiben mit **5 px rechtem Inset** innerhalb der weißen Fläche. Die **separaten Menü-Pseudoelement-Konturen** reichen weiterhin bis an die Oberkante, der Shadow selbst beginnt darunter. `--public-folio-depth` und weitere dunkle/helle Außenlagen sind gelöscht. `FOLIO_PLANE_BASE` hält nur `content: [-5,7]` und `menu: [-5,7]`, nicht zwei Koordinatenpaare pro Fläche. Die Menü-Ambient-Schattenbewegung respektiert ebenfalls das rechte Inset. Eingesetzte SHA und CSS sind die Quelle für diese Werte;
+Content besitzt eine äußere helle Papierlage (`-5px 7px 0 var(--public-folio-soft)`). Das Menü hat seine innere Trennlinie und **eine** äußere helle Lage (`-8.5px 3.5px 0 3.5px var(--public-folio-soft)`). Der Menü-Spread entspricht dem vertikalen Offset, weshalb **die Hintergrundfläche selbst wieder bis zur Menüoberkante reicht**. Zugleich garantiert der stärkere negative x-Offset rechts mindestens **5 px Inset**. Bei der Menü-Ambient-Bewegung weicht die x-Achse zuerst nach links; die y-Achse kehrt **vor** x zurück, damit weder die obere Verbindung verloren geht noch die Fläche rechts übersteht. Die separaten Pseudoelement-Konturen bleiben ebenso oben angebunden. `--public-folio-depth` sowie die früheren mehrfachen dunklen/hellen Außenlagen sind entfernt. `FOLIO_PLANE_BASE` enthält nur `content: [-5,7]` und `menu: [-8.5,3.5]`. Eingesetzte SHA und CSS sind die Quelle für diese Werte;
 kein realer Pixelvergleich im Browser wurde durchgeführt.
 
 ### Normale Bewegungen und Seitenwechsel
