@@ -134,3 +134,38 @@ it('reports a fully unchanged Home settings dialog save as a no-op', function ()
 
     expect($dialog->save($data))->toBeFalse();
 });
+
+it('rolls back earlier Home template changes when routing validation fails', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $settings = app(HomePresentationResolver::class)->settings();
+    $original = $settings->only(['template', 'configuration', 'skip_home', 'skip_target_section_id']);
+    $before = \App\Models\AuditEvent::query()->count();
+    $dialog = app(HomeSettingsDialog::class);
+    $data = [...$dialog->fill(), 'template' => 'custom', 'skip_home' => true];
+    expect(fn () => $dialog->save($data))->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($settings->fresh()->only(['template', 'configuration', 'skip_home', 'skip_target_section_id']))->toBe($original)
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($before)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+});
+
+it('saves combined Home template and routing settings with two audits and one notification', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+    $target = app(SiteSectionEditorialService::class)->createCustomPage('Combined skip target', 'combined-skip-target');
+    app(SiteSectionEditorialService::class)->updatePlacement($target, 'published', null);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = \App\Models\AuditEvent::query()->count();
+    $editor = \Livewire\Livewire::test(\App\Filament\Pages\HomePresentation::class)->mountAction('settings')
+        ->fillForm(['template' => 'custom', 'skip_home' => true, 'skip_target_section_id' => $target->id])
+        ->callMountedAction()->assertHasNoFormErrors();
+    $settings = app(HomePresentationResolver::class)->settings();
+    expect($settings->template())->toBe(HomeTemplate::Custom)
+        ->and(app(HomeRoutingSettingsService::class)->configuredTargetId($settings))->toBe($target->id)
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($before + 2)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->callMountedAction()->assertNotDispatched('admin-header-notification');
+    expect(\App\Models\AuditEvent::query()->count())->toBe($before + 2)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
+});

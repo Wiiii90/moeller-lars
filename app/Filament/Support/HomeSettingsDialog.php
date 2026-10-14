@@ -21,6 +21,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 final class HomeSettingsDialog
 {
@@ -145,6 +146,12 @@ final class HomeSettingsDialog
 
     /** @param array<string, mixed> $data */
     public function save(array $data): bool
+    {
+        return DB::transaction(fn (): bool => $this->saveSettings($data));
+    }
+
+    /** @param array<string, mixed> $data */
+    private function saveSettings(array $data): bool
     {
         $settings = $this->resolver->settings();
         $changed = false;

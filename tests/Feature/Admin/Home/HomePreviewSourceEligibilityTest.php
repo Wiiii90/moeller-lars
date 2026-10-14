@@ -113,6 +113,11 @@ function homeSourceArtwork(ArtworkCategory $category, string $state = 'published
         'date_precision' => 'year',
     ]);
     $artwork->save();
+    $artwork->artworkMedia()->create([
+        'media_asset_id' => homePreviewImage()->getKey(),
+        'role' => 'primary',
+        'position' => 0,
+    ]);
 
     return $artwork;
 }
@@ -142,6 +147,8 @@ it('renders the Custom preview through the same shared component renderer', func
 });
 
 it('renders Home List while hiding unpublished parents and children', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
     homePreviewSetting('custom', [
         ['type' => 'text', 'title' => 'Public Home component', 'body' => null, 'published' => true],
         ['type' => 'text', 'title' => 'Hidden Home component', 'body' => null, 'published' => false],
@@ -152,6 +159,11 @@ it('renders Home List while hiding unpublished parents and children', function (
         ['type' => 'divider', 'variant' => 'dotted', 'published' => true],
     ]);
 
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertDontSee('Public Home component');
+    $this->actingAs($actor, 'web');
+    app(\App\Domain\Publication\PublicationService::class)->commit($actor);
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
     $this->get('/')
         ->assertOk()
         ->assertSee('Public Home component')

@@ -31,12 +31,11 @@ it('converts Home headings to Rich Text without discarding their text', function
         ->and($service->convertComponent($settings, $template, 0, 'text', 'heading', 'rich_text'))->toBeTrue();
 
     $component = $service->configuration($settings->fresh())[$template->value]['components'][0];
-    expect($component)->toBe([
-        'published' => true,
-        'type' => 'text',
-        'title' => null,
-        'body' => 'A heading to keep',
-    ]);
+    expect($component)->toHaveCount(4)
+        ->and($component['published'])->toBeTrue()
+        ->and($component['type'])->toBe('text')
+        ->and($component['title'])->toBeNull()
+        ->and($component['body'])->toBe('A heading to keep');
 })->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);
 
 it('confirms content loss for Rich Text conversions and rejects stale component targets', function (): void {
@@ -51,15 +50,19 @@ it('confirms content loss for Rich Text conversions and rejects stale component 
         ->and($service->conversionLosesContent($original, 'divider'))->toBeTrue()
         ->and($service->convertComponent($settings, HomeTemplate::Custom, 0, 'text', 'rich_text', 'heading'))->toBeTrue();
 
-    expect($service->configuration($settings->fresh())['custom']['components'][0])->toBe([
-        'published' => true,
-        'type' => 'text',
-        'title' => null,
-        'body' => null,
-    ]);
+    $converted = $service->configuration($settings->fresh())['custom']['components'][0];
+    expect($converted)->toHaveCount(4)
+        ->and($converted['published'])->toBeTrue()
+        ->and($converted['type'])->toBe('text')
+        ->and($converted['title'])->toBeNull()
+        ->and($converted['body'])->toBeNull();
 
-    expect(fn () => $service->convertComponent($settings, HomeTemplate::Custom, 0, 'text', 'rich_text', 'divider'))
+    // Empty text has no persisted Heading/Rich Text discriminator. Change the
+    // actual persisted type before submitting a genuinely stale target.
+    $service->convertComponent($settings, HomeTemplate::Custom, 0, 'text', 'rich_text', 'divider');
+    expect(fn () => $service->convertComponent($settings, HomeTemplate::Custom, 0, 'text', 'rich_text', 'heading'))
         ->toThrow(ValidationException::class);
+    expect($service->configuration($settings->fresh())['custom']['components'][0]['type'])->toBe('divider');
 });
 
 it('saves a supported Home Divider choice and rejects invalid styles', function (): void {
@@ -160,3 +163,23 @@ it('updates mixed Home parent and child selection atomically', function (): void
         ->and($remaining[0]['items'])->toHaveCount(1)
         ->and($remaining[0]['items'][0]['title'])->toBe('First');
 });
+
+it('creates and converts a Home heading through the real editor without losing its content', function (HomeTemplate $template): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+    $settings = homeComponentTypeSettings($template, []);
+    $editor = \Livewire\Livewire::test(\App\Filament\Pages\HomePresentation::class)
+        ->mountAction('addComponent')->fillForm(['kind' => 'heading', 'title' => 'Heading to preserve'])
+        ->callMountedAction()->assertHasNoFormErrors();
+    expect(app(HomePresentationEditorialService::class)->configuration($settings->fresh())[$template->value]['components'][0]['title'])->toBe('Heading to preserve');
+    $before = \App\Models\AuditEvent::query()->count();
+    $notifications = \App\Models\AdminNotification::query()->count();
+    $editor->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
+        ->set('mountedActions.0.data.editor_kind', 'rich_text')->assertHasNoErrors();
+    $converted = app(HomePresentationEditorialService::class)->configuration($settings->fresh())[$template->value]['components'][0];
+    expect($converted['body'])->toBe('Heading to preserve')->and($converted['title'])->toBeNull()
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($before + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+})->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);

@@ -46,6 +46,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\WithFileUploads;
 
@@ -74,6 +75,9 @@ final class HomePresentation extends Page
     public int $settingsId = 0;
 
     public int $homeSectionId = 0;
+
+    #[\Livewire\Attributes\Locked]
+    public ?array $editingHomeComponentOriginal = null;
 
 
     public bool $artworkShowDetails = true;
@@ -528,6 +532,7 @@ final class HomePresentation extends Page
         $action = Action::make($actionName)->label('Edit')
             ->fillForm(function (array $arguments): array {
                 $component = $this->componentFromArguments($arguments);
+                $this->editingHomeComponentOriginal = $component;
 
                 return [
                     'type' => $component['type'],
@@ -611,11 +616,23 @@ final class HomePresentation extends Page
                     'legal_disclaimer' => ['type' => 'legal_disclaimer'],
                     default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
                 };
-                $changed = app(HomePresentationEditorialService::class)->updateComponent(
-                    $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, [...$current, ...$component],
-                );
+                try {
+                    $changed = app(HomePresentationEditorialService::class)->updateComponent(
+                        $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, [...$current, ...$component],
+                        $this->editingHomeComponentOriginal,
+                    );
+                } catch (ValidationException $exception) {
+                    $path = $this->getMountedActionSchema()->getStatePath();
+                    $errors = [];
+                    foreach ($exception->errors() as $field => $messages) {
+                        $errors[$path.'.'.($field === 'component' ? 'editor_kind' : $field)] = $messages;
+                    }
+                    throw ValidationException::withMessages($errors);
+                }
                 $this->reloadWorkspace();
+                $this->editingHomeComponentOriginal = $this->componentFromArguments($arguments);
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Home component saved',
                         status: 'success',
@@ -892,21 +909,23 @@ final class HomePresentation extends Page
         if ($ids === []) {
             return;
         }
-        /** @var EloquentCollection<int,ArtworkCategory> $galleries */
-        $galleries = ArtworkCategory::query()->whereIn('id', $ids)->get();
-        foreach ($galleries as $gallery) {
-            if ((bool) $gallery->getAttribute('show_on_home') === $enabled) {
-                continue;
+        $changed = DB::transaction(function () use ($ids, $enabled): int {
+            $galleries = ArtworkCategory::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+            $changed = 0;
+            foreach ($galleries as $gallery) {
+                if ((bool) $gallery->getAttribute('show_on_home') === $enabled) {
+                    continue;
+                }
+                $updated = app(GalleryEditorialService::class)->update($gallery, [
+                    'name' => (string) $gallery->getAttribute('name'),
+                    'description' => $gallery->getAttribute('description'),
+                    'show_on_home' => $enabled,
+                ]);
+                $changed += (int) $updated->wasChanged('show_on_home');
             }
-            app(GalleryEditorialService::class)->update($gallery, [
-                'name' => (string) $gallery->getAttribute('name'),
-                'description' => $gallery->getAttribute('description'),
-                'show_on_home' => $enabled,
-            ]);
-        }
-        $changed = $galleries
-            ->filter(static fn (ArtworkCategory $gallery): bool => (bool) $gallery->getAttribute('show_on_home') !== $enabled)
-            ->count();
+
+            return $changed;
+        });
 
         $this->clearSourceSelection();
         $this->reloadWorkspace();
@@ -1221,7 +1240,7 @@ final class HomePresentation extends Page
                 'children' => $this->homeChildProjection($component, $index),
                 'search_text' => Str::lower(implode(' ', [$typeLabel, $primary, $secondary, $title, $body,
                     $type === 'list' ? collect($component['items'] ?? [])
-                        ->filter('is_array')
+                        ->filter(static fn (mixed $item): bool => is_array($item))
                         ->flatMap(static fn (array $item): array => array_filter([
                             $item['date'] ?? null, $item['title'] ?? null, $item['meta'] ?? null,
                             $item['location'] ?? null, $item['body'] ?? null, $item['url'] ?? null,

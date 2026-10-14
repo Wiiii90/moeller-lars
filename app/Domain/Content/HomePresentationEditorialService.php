@@ -149,9 +149,13 @@ final class HomePresentationEditorialService
         int $index,
         string $expectedType,
         array $component,
+        ?array $expectedComponent = null,
     ): bool {
-        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $component): array {
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $component, $expectedComponent): array {
             $this->assertTarget($components, $index, $expectedType);
+            if ($expectedComponent !== null && AdminOrderingState::fingerprints([$components[$index]]) !== AdminOrderingState::fingerprints([$expectedComponent])) {
+                throw ValidationException::withMessages(['component' => 'This Home component changed. Reopen the editor.']);
+            }
             if (($component['type'] ?? null) !== $expectedType) {
                 throw ValidationException::withMessages([
                     'component' => 'The component type changed while it was being edited.',
@@ -761,7 +765,8 @@ final class HomePresentationEditorialService
     /** @param array{scope:string,before:list<string>,after:list<string>}|null $orderingState */
     private function save(HomePresentationSetting $settings, ?array $orderingState = null): bool
     {
-        if (! $settings->isDirty(['template', 'configuration'])) {
+        if ($settings->getAttribute('template') === $settings->getOriginal('template')
+            && AdminOrderingState::fingerprints([$settings->getAttribute('configuration')]) === AdminOrderingState::fingerprints([$settings->getOriginal('configuration')])) {
             return false;
         }
 
