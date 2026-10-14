@@ -295,8 +295,17 @@ export function animatePageHeight(previousHeight, root = document) {
     const viewportHeight = typeof window === 'undefined' ? null : window.innerHeight;
     const visible = visibleHeightTransition(previousHeight, natural,
         viewportHeight, bounds.top);
-    if (!visible || Math.abs(visible.from - visible.to) < 7) return null;
     const prior = activeHeightAnimations.get(body);
+    if (!visible || Math.abs(visible.from - visible.to) < 7) {
+        // A second Hero click may need no visible resize at all. It must
+        // still dispose a canceled predecessor's clipping/height owner.
+        if (prior) {
+            activeHeightAnimations.delete(body);
+            prior.animation.cancel();
+            body.style.overflow = prior.originalOverflow;
+        }
+        return null;
+    }
     const original = prior?.originalOverflow ?? body.style.overflow;
     // A second Hero click may interrupt the first height reveal. Only the
     // CURRENT animation is allowed to restore overflow after completion.

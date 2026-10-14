@@ -231,6 +231,24 @@ test('long pages skip invisible heights while short pages animate their visible 
     assert.deepEqual(visibleHeightTransition(900,300,null), {from:900,to:300});
 });
 
+test('rapid Hero click with no remaining visible height change releases old clipping',()=>{
+    const previous=globalThis.window;
+    globalThis.window={innerHeight:800};
+    try {
+        browser(({root,animations,body})=>{
+            const first=animatePageHeight(320,root);
+            assert.ok(first);
+            assert.equal(body.style.overflow,'clip');
+            body.height=910;
+            const skipped=animatePageHeight(900,root);
+            assert.equal(skipped,null);
+            assert.equal(first.cancelled,true);
+            assert.equal(body.style.overflow,'');
+            assert.equal(animations.filter(a=>a.name==='body').length,1);
+        },{height:900});
+    } finally {globalThis.window=previous;}
+});
+
 test('height animation itself uses the viewport cap, not the old gallery height',()=>{
     const previous=globalThis.window;
     globalThis.window={innerHeight:800};
