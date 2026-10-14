@@ -1,6 +1,6 @@
 # Media-Referenzen und physische Bereinigung: Quellenpfade und Negativfälle
 
-**Quellstand:** Anwendungs-PHP aus `dev` `1ca4014cae997b0b4a40422944b90a0328524f53`, in `docs` enthalten. **Statischer Source-Audit**, kein ausgeführter Datenbank-/Storage-/Browser-Test. Die [Media-Produktregeln](../MEDIA.md#deletion-and-cleanup) sind normativ; dieses Dokument macht ihre tatsächlichen Call-Pfade, Guards und Abweichungen sichtbar.
+**Quellvergleich:** Medienlösch-/Cleanup-/Reclaim-Pfade erneut auf `dev@f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0` geprüft; historische Beleglinien bleiben gesondert erhalten. **Statischer Source-Audit**, kein ausgeführter Datenbank-/Storage-/Browser-Test. Die [Media-Produktregeln](../MEDIA.md#deletion-and-cleanup) sind normativ; dieses Dokument macht ihre tatsächlichen Call-Pfade, Guards und Abweichungen sichtbar.
 
 ## Drei unabhängige Grenzen
 
@@ -42,6 +42,54 @@ sequenceDiagram
         Cleanup->>Disk: Delete original + variant keys
     end
 ```
+
+## Vollständiger Delete-Boundary: DB-Commit ist nicht Dateisystem-Commit
+
+**Gelesene Source-Owner:** [`MediaAssetEditorialService::delete()`](../../app/Domain/Media/MediaAssetEditorialService.php), [`PublicationMediaCleanupService`](../../app/Domain/Publication/PublicationMediaCleanupService.php) und [`SiteStorageReclaimService`](../../app/Domain/Storage/SiteStorageReclaimService.php).
+
+Die Delete-Action besitzt einen **zweiphasigen** Effekt:
+
+1. Innerhalb von `DB::transaction` wird der gemeinsame Publication-Advisory-Lock geholt. `committed.media_assets` entscheidet **zuerst**, ob LIVE dieses Asset noch nicht-deleted benötigt (`deferCleanup`). Die Working-Asset-Row samt Varianten wird per `lockForUpdate` geladen. Ihre Storage-Keys werden erfasst, bevor über `state=deleted` entschieden wird.
+2. Bei noch nicht gelöschtem Working-Asset prüft `MediaReferenceQuery::isReferenced()` bekannte Working-Referenzen und ruft gegebenenfalls die kanonischen Detach-Owner auf; danach werden Varianten und Asset logisch als `deleted` gespeichert und **ein** `media.deleted`-Audit geschrieben. Der Lösch-Service erzeugt absichtlich keine zusätzlichen Undo-Receipts (`withoutReceipts`). Bei `deferCleanup=true` werden die Keys noch in derselben Transaktion in `publication_media_cleanups` eingefügt.
+3. **Nach** Ende der Transaktion: Nur wenn `deferCleanup=false`, wird `deleteNow(keys)` direkt gestartet. Eine RuntimeException der physischen Löschung kann dann die **bereits gespeicherte logische Löschung nicht zurückrollen**. Bei defer bleiben Original/Varianten bis zu einem späteren `drain()` geschützt.
+4. War das Working-Asset **vorher schon** `deleted`, kehrt die Transaktions-Closure früh zurück (kein neues Audit), aber der äußere Service durchläuft abhängig vom vorher ermittelten `deferCleanup` weiterhin den Cleanup-Pfad und liefert bei erfolgreichem Rücklauf `true`. Das ist keine zweite fachliche Löschung.
+
+### Physische Schutzentscheidung als Wahrheitstabelle
+
+[`PublicationMediaCleanupService::canDeletePhysicalMedia()`](../../app/Domain/Publication/PublicationMediaCleanupService.php) prüft nacheinander folgende **unabhängige** Quellen:
+
+| Schutzquelle | Physische Löschung zulässig? | Tatsächliches Prüfverhalten |
+| --- | --- | --- |
+| `committed.media_assets` besitzt dieses Asset mit `state != deleted` | **Nein** | Schutz auch ohne aktuelle Working-Referenz |
+| `publication_version_rows` enthält für das Asset einen nicht-deleted historischen Payload | **Nein** | Schützt vorhandene Snapshot-Bytes; der Guard fragt **keine** `snapshot_available`-Spalte ab, sondern die tatsächlich vorhandenen Version-Zeilen |
+| Working-Asset nicht mehr vorhanden | **Ja**, sofern die obigen beiden Prüfungen frei sind | Darauf folgen gegebenenfalls konkrete Disk-Operations |
+| Working-Asset vorhanden und noch nicht `deleted` | **Nein** | Verhindert Löschen aktiver Working-Medien |
+| Working-Asset `deleted`, aber `MediaReferenceQuery::isReferenced` meldet Referenz | **Nein** | Fachlicher Referenzschutz; derzeit abhängig von der bekannten **Home-List-Coverage-Lücke** |
+| Working-Asset `deleted`, keine Referenz und kein LIVE-/History-Guard | **Ja** | Physischer Cleanup kann beginnen; erfolgreiche Dateilöschung bleibt separat zu prüfen |
+
+Der Queue-`drain()`-Pfad iteriert `publication_media_cleanups` und prüft bei jedem Durchlauf diesen Schutz erneut. Bei geschützter Datei bleibt der Eintrag bestehen. Nach fehlgeschlagenem `deleteKey()` bleibt die Queue-Row ebenfalls bestehen; nach tatsächlich erfolgreicher Löschung wird sie entfernt. **Demgegenüber** sammelt `deleteNow()` misslungene Keys, wirft nach Verarbeitung eine `RuntimeException`, **queue-t diese Fehlversuche aber nicht nachträglich automatisch**, sofern der Schutzguard die direkte Löschung ursprünglich erlaubt hatte. Das ist die asymmetrische Retry-Grenze.
+
+```mermaid
+flowchart TD
+    A["Delete bestätigt"] --> B["DB: Publication-Lock, Working-Row-Lock"]
+    B --> C["Working-Refs entfernen; Asset/Varianten deleted; Audit"]
+    C --> D{"LIVE benötigt Asset?"}
+    D -->|Ja| E["Queue innerhalb DB-Transaktion"]
+    D -->|Nein| F["DB COMMIT"]
+    E --> F
+    F --> G{"Direktpfad?"}
+    G -->|Nein| H["Später drain: Schutz erneut prüfen"]
+    G -->|Ja| I["deleteNow: LIVE/History/Working Guards"]
+    H --> J{"Fachlich geschützt?"}
+    I --> J
+    J -->|Ja| K["Queue beibehalten bzw. einfügen"]
+    J -->|Nein| L["Disk Delete"]
+    L --> M{"Datei weg?"}
+    M -->|Ja| N["Queue Row entfernen, falls vorhanden"]
+    M -->|Nein| O["Queue: Row behalten; direkt: Exception nach COMMIT"]
+```
+
+**Sequenzgrenze:** Das Diagramm zeigt den typischen Fall eines noch nicht gelöschten Working-Assets; bei erneutem Delete entfällt Schritt `C` mit Audit. `isReferenced()` kann aufgrund der [Home-List-Lücke](#bestätigte-quellabweichung-home-list-fehlt-im-media-index) falsch `false` melden. Es darf daher weder aus einem leeren Storage-Referenzfeld noch aus `delete() === true` die sichere physische Entfernung abgeleitet werden. Bei einer direkt fehlgeschlagenen Dateilöschung müssen UI-/Retry-Pfad und Kapazitätssnapshot separat bewertet werden.
 
 ## Bestätigte Quellabweichung: Home List fehlt im Media-Index
 
