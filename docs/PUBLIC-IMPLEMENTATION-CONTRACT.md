@@ -105,21 +105,32 @@ only the latest height animation can release the clipping state.
 All Home hero media/viewer navigation/focus continues to be owned by the
 existing Home Hero and Artwork Viewer code.
 
-The menu NEVER performs a page-build impulse. It has the same slow,
-asynchronous ambient animation before and after navigating; when its
-Livewire node is replaced, the new menu starts only ambient effects.
-Both white menu pseudo-contours remain connected to the upper menu
-border at `top: 0` throughout ALL keyframes. Only their bottom
-endpoints rise and fall gently, making the attached lower returns
-move up/down while the upper connection NEVER opens. Their equal left/right horizontal offsets (`-.35rem`) and widths
-(`.35rem`) meet the white menu face exactly,
-so no left/right stroke can spill into the white content area. Menu
-ambient animation periods are longer (~34–39 seconds). Content ambient periods are calmer/slower (~25–30 seconds), using longer
-single-axis sweeps with unequal timing and real quiet intervals rather
-than equally spaced micro-steps; the visible paper-machine pulse
-retains its existing speed and remains much stronger than ambient
-motion. Only Content is animated on Home group changes. No extra
-DOM lines, interval polling or duplicate animation service is added.
+The menu NEVER performs a page-build impulse. It retains only its
+slow ambient movement. Its top-connected left and right strokes now have
+matching outside offsets and return widths, so the horizontal ends meet
+the white face precisely. Menu left is -0.52rem/0.52rem and right is
+-0.44rem/0.44rem; Content left is -0.58rem/0.58rem and right is
+-0.48rem/0.48rem. This brings the two levels within roughly a pixel
+on the same side and draws BOTH right contours farther inward.
+
+The menu's two original rear paper planes project to roughly the same
+left/bottom silhouette as the Content planes (-5px/+7px and
+-8px/+10px). Their base shadows are (-1.5px,+3.5px, spread3.5px)
+and (-3px,+5px, spread5px). On every intermediate menu shadow frame,
+spread tracks vertical offset, keeping the top edge flush against the
+menu rather than introducing an exposed gap. The near-soft and rear-depth
+palette order matches the Content paper. Both planes remain distinct
+outside the front white face.
+
+On each normal Content build, both ends of the vertical pseudo strokes
+now contract up to 40px at top and 46px at bottom, with staged
+right-angled changes. A short page limits their combined contraction
+to leave at least 40px of visible line. The stroke grows again a few
+pixels beyond resting length, then finishes on the static geometry.
+The accepted 1480ms paper impulse and 980ms content-height reveal
+retain their original durations. Rapid clicks cannot cumulatively
+increase the excursion because target geometry remains absolute.
+The menu retains its slower independent 34–39s ambient only.
 
 Missing native animation support leaves the authored static form intact.
 The user's explicitly requested paper-only motion continues despite

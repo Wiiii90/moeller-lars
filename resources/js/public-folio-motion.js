@@ -18,8 +18,8 @@ export const MENU_VARIANTS = Object.freeze([
 // Original horizontal geometry belongs to the accepted shell CSS. These
 // values mirror its fixed edges and make the outside/inside motion bounded.
 const CONTENT_EDGES = [
-    { side: 'left', offset: '-.7rem', width: '.55rem' },
-    { side: 'right', offset: '-.55rem', width: '.55rem' },
+    { side: 'left', offset: '-.58rem', width: '.58rem' },
+    { side: 'right', offset: '-.48rem', width: '.48rem' },
 ];
 const CONTENT_DURATIONS = [25100, 29700];
 const MENU_DURATIONS = [34200, 38800];
@@ -34,8 +34,8 @@ const SHADOW_START = {
     ].join(', '),
     menu: (middleX, middleY, rearX, rearY) => [
         'inset 0 -1px 0 var(--public-index-rule)',
-        `${middleX}px ${middleY}px 0 1px var(--public-folio-depth)`,
-        `${rearX}px ${rearY}px 0 1px var(--public-folio-soft)`,
+        `${middleX}px ${middleY}px 0 ${middleY}px var(--public-folio-soft)`,
+        `${rearX}px ${rearY}px 0 ${rearY}px var(--public-folio-depth)`,
     ].join(', '),
 };
 let snapshot = null;
@@ -157,7 +157,7 @@ function renderedShadowCoords(value) {
 // planes must remain separate along LEFT and BOTTOM for every animation frame.
 export const FOLIO_PLANE_BASE = Object.freeze({
     content: [-5, 7, -8, 10],
-    menu: [-1, 1, -3, 2],
+    menu: [-1.5, 3.5, -3, 5],
 });
 
 // Existing paper layers alternate one-axis excursions, with rests.
@@ -225,31 +225,30 @@ export function buildShadowFrames(start, type) {
 // The contour first shortens vertically, then opens as the white sheet
 // grows, finally settling into the authored CSS at the exact final frame.
 // Horizontal movement updates its return width in lockstep (no loose line).
-export function buildCornerImpulse(start, base, edge, growing) {
-    const frames = [{ ...start }];
+export function buildCornerImpulse(start, base, edge, growing, height = 720) {
+    const frames = [{ ...start, offset: 0, easing: 'cubic-bezier(.36, .08, .64, .92)' }];
     const step = (changes, offset) => frames.push({
         ...frames[frames.length - 1], ...changes, offset,
         easing: 'cubic-bezier(.36, .08, .64, .92)',
     });
+    // The old 5px reduction was imperceptible on a full-height painting.
+    // This contracts BOTH ends by up to 86px on taller pages, but retains
+    // at least 40px of vertical stroke on even the shortest content.
+    const available = Math.max(0, height - parseFloat(base.top) - parseFloat(base.bottom));
+    const room = Math.max(0, available - 40);
+    const topCut = Math.min(growing ? 40 : 32, room * .46);
+    const bottomCut = Math.min(growing ? 46 : 38, room * .54);
     const amplitude = 3.1;
-    const shrinkTop = growing ? 7 : 5;
-    const shrinkBottom = growing ? 6 : 5;
-    // The CSS corner returns remain outside the sheet, even during
-    // a shrinking page. These targets are ABSOLUTE, not start-relative.
     step({ [edge.side]: `calc(${edge.offset} - ${amplitude}px)`,
-        width: `calc(${edge.width} + ${amplitude}px)` }, .15);
-    step({ top: `calc(${base.top} + ${shrinkTop}px)` }, .32);
-    step({ bottom: `calc(${base.bottom} + ${shrinkBottom}px)` }, .45);
-    step({ top: `calc(${base.top} - 2px)` }, .63);
-    step({ bottom: `calc(${base.bottom} - 2px)` }, .76);
-    step({ [edge.side]: edge.offset, width: edge.width }, .89);
-    step({ top: base.top }, .95);
+        width: `calc(${edge.width} + ${amplitude}px)` }, .13);
+    step({ top: `calc(${base.top} + ${topCut.toFixed(2)}px)` }, .29);
+    step({ bottom: `calc(${base.bottom} + ${bottomCut.toFixed(2)}px)` }, .46);
+    step({ top: `calc(${base.top} - 4px)` }, .68);
+    step({ bottom: `calc(${base.bottom} - 4px)` }, .79);
+    step({ [edge.side]: edge.offset, width: edge.width }, .90);
+    step({ top: base.top }, .96);
     step({ bottom: base.bottom }, 1);
-    return [
-        { ...frames[0], offset: 0,
-            easing: 'cubic-bezier(.36, .08, .64, .92)' },
-        ...frames.slice(1),
-    ];
+    return frames;
 }
 
 function nativeCorner(element, pseudo, frames, duration, loop = false) {
@@ -388,7 +387,8 @@ function pulsePaper(element, corners, oldShadow, growing, root) {
     for (let i = 0; i < 2; i += 1) {
         const animation = nativeCorner(element, i === 0 ? '::before' : '::after',
             buildCornerImpulse(corners[i], canonical?.[i] ?? corners[i],
-                CONTENT_EDGES[i], growing), BUILD_DURATION);
+                CONTENT_EDGES[i], growing,
+                element.getBoundingClientRect().height), BUILD_DURATION);
         if (animation) animations.push(animation);
     }
     if (oldShadow && typeof element.animate === 'function') {

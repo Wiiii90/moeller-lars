@@ -79,13 +79,13 @@ test('accepted original lines, bounded menu ends and visible paper baselines',()
     assert.deepEqual(FOLIO_VARIANTS[0],['1.10rem','4rem','3.8rem','1.15rem']);
     assert.deepEqual(MENU_VARIANTS[0],['0rem','0rem','0rem','0rem']);
     assert.ok(MENU_VARIANTS.every(v=>v.every(p=>parseFloat(p)>=0)));
-    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-1,1,-3,2]);
+    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-1.5,3.5,-3,5]);
     assert.deepEqual(FOLIO_PLANE_BASE.content,[-5,7,-8,10]);
 });
 
 test('ambient and navigation-impulse corners only move one axis per frame',()=>{
     const start={top:'18px',bottom:'64px',left:'-11.2px',width:'8.8px'};
-    const edge={side:'left',offset:'-.7rem',width:'.55rem'};
+    const edge={side:'left',offset:'-.58rem',width:'.58rem'};
     const sequences=[
         buildCornerFrames(start,{top:'1.1rem',bottom:'4rem'},'1.25rem','4.14rem',edge),
         buildCornerImpulse(start,start,edge,true),
@@ -117,7 +117,7 @@ test('ambient and navigation-impulse corners only move one axis per frame',()=>{
 
 test('rapid successive builds never accumulate corner offset or jump at completion',()=>{
     const base={top:'17.6px',bottom:'64px',left:'-11.2px',width:'8.8px'};
-    const edge={side:'left',offset:'-.7rem',width:'.55rem'};
+    const edge={side:'left',offset:'-.58rem',width:'.58rem'};
     // Equivalent to a click in the middle of a prior build, with its corner
     // already pushed out and shortened.
     const active={top:'24px',bottom:'70px',left:'-15px',width:'12.6px'};
@@ -128,17 +128,27 @@ test('rapid successive builds never accumulate corner offset or jump at completi
             frames.at(-1).left,frames.at(-1).width],
             [base.top,base.bottom,edge.offset,edge.width]);
         const out=frames.find(f=>f.left.includes(' - 3.1px)'));
-        assert.equal(out.left,'calc(-.7rem - 3.1px)');
-        assert.equal(out.width,'calc(.55rem + 3.1px)');
+        assert.equal(out.left,'calc(-.58rem - 3.1px)');
+        assert.equal(out.width,'calc(.58rem + 3.1px)');
         assert.ok(frames.every(f=>!f.left.includes('-15px - 3.1px')),
             'a second click cannot add distance to an already displaced line');
-        assert.ok(frames.some(f=>f.top==='calc(17.6px + 7px)'
-            || f.top==='calc(17.6px + 5px)'),
-            'the vertical contour briefly contracts from its canonical top');
-        assert.ok(frames.some(f=>f.bottom==='calc(64px + 6px)'
-            || f.bottom==='calc(64px + 5px)'),
-            'the lower endpoint also contracts briefly');
+        assert.ok(frames.some(f=>f.top==='calc(17.6px + 40.00px)'
+            || f.top==='calc(17.6px + 32.00px)'),
+            'the vertical contour visibly contracts at the top');
+        assert.ok(frames.some(f=>f.bottom==='calc(64px + 46.00px)'
+            || f.bottom==='calc(64px + 38.00px)'),
+            'the lower endpoint visibly contracts');
     }
+});
+
+test('short pages keep at least 40px of visible contour during a build',()=>{
+    const base={top:'17px',bottom:'60px',left:'-9.28px',width:'9.28px'};
+    const edge={side:'left',offset:'-.58rem',width:'.58rem'};
+    const frames=buildCornerImpulse(base,base,edge,true,160);
+    const cutTop=parseFloat(frames[2].top.split('+')[1]);
+    const cutBottom=parseFloat(frames[3].bottom.split('+')[1]);
+    assert.ok(cutTop+cutBottom<=160-17-60-40+.01);
+    assert.ok(cutTop>0&&cutBottom>0);
 });
 
 test('menu corners remain attached to the TOP edge and move only their lower joint',()=>{
