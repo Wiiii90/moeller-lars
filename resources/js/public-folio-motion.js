@@ -8,9 +8,9 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['1.25rem', '4.14rem', '3.93rem', '1.28rem'],
 ]);
 export const MENU_VARIANTS = Object.freeze([
-    ['.03rem', '-.25rem', '.02rem', '-.30rem'],
-    ['.10rem', '-.25rem', '.09rem', '-.30rem'],
-    ['.10rem', '-.30rem', '.09rem', '-.34rem'],
+    ['.03rem', '.05rem', '.02rem', '.05rem'],
+    ['.10rem', '.05rem', '.09rem', '.05rem'],
+    ['.10rem', '.085rem', '.09rem', '.085rem'],
 ]);
 
 // Original horizontal geometry belongs to the accepted shell CSS. These
@@ -34,8 +34,8 @@ const SHADOW_START = {
     ].join(', '),
     menu: (middleX, middleY, rearX, rearY) => [
         'inset 0 -1px 0 var(--public-index-rule)',
-        `${middleX}px ${middleY}px 0 var(--public-folio-depth)`,
-        `${rearX}px ${rearY}px 0 var(--public-folio-soft)`,
+        `${middleX}px ${middleY}px 0 2px var(--public-folio-depth)`,
+        `${rearX}px ${rearY}px 0 2px var(--public-folio-soft)`,
     ].join(', '),
 };
 let snapshot = null;
@@ -152,7 +152,7 @@ function renderedShadowCoords(value) {
 // navigation interrupted the preceding plane animation mid-movement.
 export function buildShadowFrames(start, type) {
     const shadow = SHADOW_START[type];
-    const initial = type === 'content' ? [-5, 7, -6, 8] : [-2, 0, -3, 0];
+    const initial = type === 'content' ? [-5, 7, -8, 10] : [-2, 2, -5, 4];
     const rendered = renderedShadowCoords(start) ?? initial;
     const coords = [...rendered];
     const frames = [start];

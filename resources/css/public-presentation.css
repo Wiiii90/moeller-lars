@@ -94,15 +94,16 @@ body {
     background: var(--public-surface);
 }
 
-/* The existing flat paper layers meet the TOP edge of the menu, rather
-   than beginning 3–4px below it. No extra decorative surface is created. */
+/* Existing rear paper layers stay exposed at BOTH left and bottom.
+   Spread reaches the top of the menu while the second layer remains
+   another 3px left and 2px below the first, including during motion. */
 .site-navigation {
     position: relative;
     order: 1;
     box-shadow:
         inset 0 -1px 0 var(--public-index-rule),
-        -2px 0 0 var(--public-folio-depth),
-        -3px 0 0 var(--public-folio-soft);
+        -2px 2px 0 2px var(--public-folio-depth),
+        -5px 4px 0 2px var(--public-folio-soft);
 }
 .site-navigation::before,
 .site-navigation::after {
@@ -111,21 +112,21 @@ body {
     content: "";
     pointer-events: none;
 }
-/* The white OUTER stroke remains within the menu's top boundary.
-   Only the short lower connection extends slightly beneath the sheet. */
+/* Open at the top, with only a short bottom connection into the
+   sheet. The white stroke never extends past the lower menu border. */
 .site-navigation::before {
     top: .03rem;
-    bottom: -.25rem;
+    bottom: .05rem;
     left: -.5rem;
     width: .76rem;
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
-/* Right: likewise open at the top, without a top crossbar or overshoot;
-   the only return is still at the bottom of the paper edge. */
+/* The eastern line also has only its lower joined return, without
+   an overshoot into the rear paper planes. */
 .site-navigation::after {
     top: .02rem;
-    bottom: -.30rem;
+    bottom: .05rem;
     right: -.52rem;
     width: .76rem;
     border-right: 1px solid var(--public-folio-light);
@@ -517,7 +518,7 @@ body {
     box-shadow:
         -2px 3px 0 rgba(28, 35, 32, .09),
         -5px 7px 0 var(--public-folio-soft),
-        -6px 8px 0 var(--public-folio-depth);
+        -8px 10px 0 var(--public-folio-depth);
 }
 /* The original two connected paper-edge drawings are their OWN animation
    surfaces. Neither is replaced, hidden or duplicated at navigation time.
