@@ -102,3 +102,44 @@ it('keeps decorative layout semantic and undated CV entries without inventing da
         ->toContain('grid-template-columns: subgrid')
         ->toContain('.custom-page__legal');
 });
+
+it('stores ordered decorative Image children and rejects incompatible nested components', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Image composition', 'image-composition');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('nested');
+    $children = [
+        ['type' => 'list', 'title' => 'CV', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1989'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+        ['type' => 'text', 'title' => 'Practice', 'body' => 'My work'],
+        ['type' => 'contact', 'title' => 'Contact', 'children' => [
+            ['type' => 'public_email', 'published' => true],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
+        ]],
+    ];
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'image_decorative' => true,
+        'media_asset_id' => $asset->getKey(), 'children' => $children,
+    ]]]);
+    $saved = $settings->fresh()->components()[0];
+    expect(array_column($saved['children'], 'type'))->toBe(['list', 'text', 'contact'])
+        ->and(CustomPageSetting::listItemContext($saved['children'][0]['items'][1]))->toBeNull();
+    $settings->fresh()->assertReadyForPublic();
+
+    foreach ([
+        [['type' => 'image', 'media_asset_id' => $asset->getKey()]],
+        [['type' => 'divider', 'variant' => 'thin']],
+        [['type' => 'list', 'media_asset_id' => $asset->getKey(), 'items' => []]],
+        [['type' => 'contact', 'children' => [['type' => 'contact_form', 'published' => true]]]],
+    ] as $invalid) {
+        expect(fn () => $settings->update(['blocks' => [[
+            'type' => 'image', 'media_asset_id' => $asset->getKey(),
+            'image_decorative' => true, 'children' => $invalid,
+        ]]]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    }
+    expect(fn () => $settings->update(['blocks' => [[
+        'type' => 'image', 'media_asset_id' => $asset->getKey(),
+        'image_decorative' => false, 'children' => $children,
+    ]]]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});

@@ -24,6 +24,9 @@ final class CustomPageSetting extends Model
         'legal_disclaimer',
     ];
 
+    /** Only prose-capable children can wrap beside a decorative Image. */
+    public const IMAGE_CHILD_TYPES = ['text', 'list', 'contact', 'legal_disclaimer'];
+
     public const CONTACT_CHILD_TYPES = [
         'public_email',
         'social_links',
@@ -170,6 +173,7 @@ final class CustomPageSetting extends Model
                     'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
                     'image_decorative' => (bool) ($block['image_decorative'] ?? false),
                     ...$this->normalizedImageScale($block),
+                    ...$this->normalizedImageChildren($block),
                 ],
                 'text' => [
                     'type' => 'text',
@@ -200,6 +204,23 @@ final class CustomPageSetting extends Model
         }
 
         return $normalized;
+    }
+
+    /** Normalize the optional single nesting level using the exact same
+     * component schemas as top-level prose components. */
+    private function normalizedImageChildren(array $image): array
+    {
+        if (! array_key_exists('children', $image)) {
+            return [];
+        }
+        $children = $image['children'];
+        if (! is_array($children) || ! array_is_list($children)) {
+            throw ValidationException::withMessages(['blocks' => 'Image children must be ordered components.']);
+        }
+        $nested = new self;
+        $nested->setAttribute('blocks', $children);
+
+        return ['children' => $nested->normalizedBlocks()];
     }
 
     /**
@@ -253,6 +274,36 @@ final class CustomPageSetting extends Model
 
             if ($type === 'image') {
                 $this->validateImageComponent($block, $public);
+                $children = $block['children'] ?? [];
+                if (! is_array($children) || ! array_is_list($children)) {
+                    throw ValidationException::withMessages(['blocks' => 'Image children must be ordered components.']);
+                }
+                if ($children !== [] && ! ($block['image_decorative'] ?? false)) {
+                    throw ValidationException::withMessages(['blocks' => 'Only decorative Images can contain text children.']);
+                }
+                foreach ($children as $child) {
+                    $childType = is_array($child) ? ($child['type'] ?? null) : null;
+                    if (! in_array($childType, self::IMAGE_CHILD_TYPES, true)) {
+                        throw ValidationException::withMessages(['blocks' => 'Images may only contain Text, List, Contact details or Legal Disclaimer.']);
+                    }
+                    if ($childType === 'list' && ($child['media_asset_id'] ?? null) !== null) {
+                        throw ValidationException::withMessages(['blocks' => 'Lists beside an image cannot contain another image.']);
+                    }
+                    if ($childType === 'contact') {
+                        foreach ($child['children'] ?? [] as $contactChild) {
+                            if (is_array($contactChild) && ($contactChild['type'] ?? null) === 'contact_form'
+                                && self::contactChildPublished($contactChild)) {
+                                throw ValidationException::withMessages(['blocks' => 'Contact Form must remain outside an image.']);
+                            }
+                        }
+                    }
+                    if ($childType === 'legal_disclaimer') {
+                        $legalDisclaimerCount++;
+                    }
+                }
+                $nested = new self;
+                $nested->setAttribute('blocks', $children);
+                $nested->validateBlocks($public);
             }
             if ($type === 'text') {
                 $title = $block['title'] ?? null;
@@ -283,6 +334,9 @@ final class CustomPageSetting extends Model
                     throw ValidationException::withMessages(['blocks' => 'A page can contain at most one Legal Disclaimer component.']);
                 }
             }
+        }
+        if ($legalDisclaimerCount > 1) {
+            throw ValidationException::withMessages(['blocks' => 'A page can contain at most one Legal Disclaimer component.']);
         }
     }
 

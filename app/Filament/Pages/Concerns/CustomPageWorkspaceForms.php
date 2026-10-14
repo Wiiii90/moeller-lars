@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
+use App\Filament\Support\DecorativeImageChildren;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use Closure;
@@ -76,7 +77,8 @@ trait CustomPageWorkspaceForms
                     ->suffix('%')
                     ->default(\App\Models\CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT)
                     ->required(),
-                Toggle::make('image_decorative')->label('Decorative image (beside following content)')->default(false),
+                Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
+                DecorativeImageChildren::make($this->availableSocialPlatforms),
             ],
             'text' => $isNew
                 ? AdminRichText::schema('body', 'Rich Text', 20000)

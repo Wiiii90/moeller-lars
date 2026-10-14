@@ -16,6 +16,10 @@ trait CustomPageWorkspaceSecondaryForms
         ];
         if (($block['type'] ?? null) === 'image') {
             $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
+            $data['image_children'] = array_map(
+                fn (array $child): array => $this->componentEditorData($child),
+                array_values(array_filter($block['children'] ?? [], 'is_array')),
+            );
         }
         if (($block['type'] ?? null) === 'list') {
             $data['items'] = array_map(static fn (array $item): array => [
@@ -62,6 +66,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
                 ...$this->imageScalePayload($data, $existing),
+                ...$this->imageChildrenPayload($data, $existing),
             ],
             'text' => [
                 'type' => 'text',
@@ -84,6 +89,35 @@ trait CustomPageWorkspaceSecondaryForms
             'contact' => $this->contactComponentPayload($data, $published, $existing),
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
+    }
+
+    /** Image children reuse the canonical component editor payloads. The
+     * only permitted Contact branch is email/social, never a Contact Form. */
+    private function imageChildrenPayload(array $data, ?array $existing): array
+    {
+        $children = $data['image_children'] ?? ($existing['children'] ?? []);
+        if (! is_array($children) || ! array_is_list($children)) {
+            throw ValidationException::withMessages(['image_children' => 'Image children must be ordered components.']);
+        }
+        if ($children !== [] && ! ($data['image_decorative'] ?? false)) {
+            throw ValidationException::withMessages(['image_decorative' => 'Remove image children before disabling Decorative image.']);
+        }
+        $normalized = [];
+        foreach ($children as $child) {
+            if (! is_array($child) || ! in_array($child['type'] ?? null, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+                throw ValidationException::withMessages(['image_children' => 'Choose a text-capable child component.']);
+            }
+            if (($child['type'] ?? null) === 'list') {
+                // No nested media: it is prose wrapping the owning image.
+                $child['media_asset_id'] = null;
+            }
+            if (($child['type'] ?? null) === 'contact') {
+                $child['contact_form_enabled'] = false;
+            }
+            $normalized[] = $this->componentPayload($child);
+        }
+
+        return $normalized !== [] ? ['children' => $normalized] : [];
     }
 
     /** @param array<string, mixed> $data
