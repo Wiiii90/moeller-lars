@@ -24,6 +24,7 @@
                 <button
                     class="admin-drag-handle"
                     type="button"
+                    data-hierarchy-drag-handle="true"
                     @if ($reorderEnabled) wire:sort:handle @else disabled @endif
                     aria-label="Drag {{ $label }} to a new position"
                     title="Drag to reorder"
@@ -195,31 +196,10 @@
     </div>
 
     @if (! $isChild && $reorderEnabled && $nestedNavigationEnabled)
-        <div
-            class="admin-hierarchy__nest-target admin-pages__nest-target"
-            x-cloak
-            x-show="dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}"
-            x-bind:class="{ 'is-hovered': hoverParent === {{ $section['id'] }} }"
-            x-on:pointerenter="if (dragging) hoverParent = {{ $section['id'] }}"
-            x-on:pointerleave="if (hoverParent === {{ $section['id'] }}) hoverParent = null"
-            x-on:dragenter.stop.prevent="hoverParent = {{ $section['id'] }}"
-            x-on:dragover.stop.prevent="hoverParent = {{ $section['id'] }}"
-            x-on:dragleave.stop="if (!$el.contains($event.relatedTarget) && hoverParent === {{ $section['id'] }}) hoverParent = null"
-            x-on:pointerup.stop.prevent="
-                if (dragging && draggedId !== null && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) {
-                    $wire.sortSection(draggedId, 999999, {{ $section['id'] }});
-                }
-                resetDrag();
-            "
-            x-on:drop.stop.prevent="
-                if (dragging && draggedId !== null && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) {
-                    $wire.sortSection(draggedId, 999999, {{ $section['id'] }});
-                }
-                resetDrag();
-            "
-            aria-hidden="true"
-        >
-            <span>Drop as child of {{ $label }}</span>
+        <div class="admin-hierarchy__nest-target admin-pages__nest-target"
+            data-hierarchy-drop="nest" data-hierarchy-parent="{{ $section['id'] }}"
+            role="button" aria-label="Move dragged page under {{ $label }}">
+            <span>Drop as child</span>
         </div>
     @endif
 </div>

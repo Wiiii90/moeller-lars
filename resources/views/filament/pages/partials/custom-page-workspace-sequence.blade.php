@@ -1,56 +1,13 @@
         <x-admin.table>
             <section class="custom-page-component-sequence admin-hierarchy" aria-label="Page component sequence"
-                x-data="{
-                    dragging: false, dragArmed: false, startX: 0, startY: 0,
-                    sourceIndex: null, sourceType: null, sourceCanNest: false,
-                    sourceImage: null, sourceChild: null, hoverParent: null,
-                    resetDrag() {
-                        this.dragging = false; this.dragArmed = false;
-                        this.sourceIndex = null; this.sourceType = null;
-                        this.sourceCanNest = false; this.sourceImage = null;
-                        this.sourceChild = null; this.hoverParent = null;
-                    },
-                }"
-                x-on:pointerdown.capture="
-                    const grip = $event.target.closest('[data-hierarchy-drag-handle]:not(:disabled)');
-                    if (!grip) return;
-                    const row = grip.closest('[data-component-index]');
-                    if (!row) return;
-                    dragArmed = true;
-                    startX = $event.clientX; startY = $event.clientY;
-                    sourceIndex = Number(row.dataset.componentIndex);
-                    sourceType = row.dataset.componentType;
-                    sourceCanNest = row.dataset.canNest === 'true';
-                    sourceImage = grip.hasAttribute('data-image-index') ? Number(grip.dataset.imageIndex) : null;
-                    sourceChild = grip.hasAttribute('data-child-index') ? Number(grip.dataset.childIndex) : null;
-                "
-                x-on:pointermove.window="
-                    if (dragArmed && !dragging && ($event.buttons & 1) === 1 &&
-                        Math.hypot($event.clientX - startX, $event.clientY - startY) >= 4) dragging = true;
-                "
-                x-on:dragstart.capture="if (dragArmed) dragging = true"
-                x-on:pointerup.window="resetDrag()"
-                x-on:pointercancel.window="resetDrag()"
-                x-on:dragend.window="resetDrag()"
-                x-on:drop.window="resetDrag()"
+                data-admin-hierarchy="custom"
             >
             <div class="custom-page-component-sequence__header admin-hierarchy__header">
                 <div class="admin-hierarchy__nest-target custom-page-component__unnest-target"
-                    x-cloak x-show="dragging && sourceChild !== null"
-                    x-on:dragover.stop.prevent
-                    x-on:pointerup.stop.prevent="
-                        if (dragging && sourceImage !== null && sourceChild !== null) {
-                            $wire.unnestImageChild(sourceImage, sourceChild);
-                        }
-                        resetDrag();
-                    "
-                    x-on:drop.stop.prevent="
-                        if (dragging && sourceImage !== null && sourceChild !== null) {
-                            $wire.unnestImageChild(sourceImage, sourceChild);
-                        }
-                        resetDrag();
-                    "
-                ><span>Drop to page level</span></div>
+                    data-hierarchy-drop="root" data-hierarchy-parent="root"
+                    role="button" aria-label="Move dragged image child to page level">
+                    <span>Drop to page level</span>
+                </div>
                 <span class="admin-hierarchy__ordering-heading">Position</span>
                 <span>Component</span>
                 <span>Content</span>
@@ -151,25 +108,10 @@
 
                             @if ($reorderEnabled && $pageComponent['accepts_children'])
                                 <div class="admin-hierarchy__nest-target custom-page-component__nest-target"
-                                    x-cloak
-                                    x-show="dragging && sourceCanNest && sourceChild === null && sourceIndex !== {{ $pageComponent['index'] }}"
-                                    x-bind:class="{ 'is-hovered': hoverParent === {{ $pageComponent['index'] }} }"
-                                    x-on:pointerenter="if (dragging) hoverParent = {{ $pageComponent['index'] }}"
-                                    x-on:pointerleave="if (hoverParent === {{ $pageComponent['index'] }}) hoverParent = null"
-                                    x-on:dragover.stop.prevent
-                                    x-on:pointerup.stop.prevent="
-                                        if (dragging && sourceCanNest && sourceIndex !== null) {
-                                            $wire.nestComponent(sourceIndex, sourceType, {{ $pageComponent['index'] }});
-                                        }
-                                        resetDrag();
-                                    "
-                                    x-on:drop.stop.prevent="
-                                        if (dragging && sourceCanNest && sourceIndex !== null) {
-                                            $wire.nestComponent(sourceIndex, sourceType, {{ $pageComponent['index'] }});
-                                        }
-                                        resetDrag();
-                                    "
-                                ><span>Drop inside image</span></div>
+                                    data-hierarchy-drop="nest" data-hierarchy-parent="{{ $pageComponent['index'] }}"
+                                    role="button" aria-label="Move dragged content under this image">
+                                    <span>Drop inside image</span>
+                                </div>
                             @endif
 
                             @if ($pageComponent['children'] !== [])

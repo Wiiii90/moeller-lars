@@ -728,3 +728,18 @@
 /* Root and child Sortable groups have distinct names: moving between groups
    requires the explicit Nest drop surface, never an accidental sort. */
 .admin-hierarchy--pages .admin-hierarchy__group { position: relative; }
+
+/* The central pointer/drag controller alone reveals eligible parent targets.
+   Ordinary sortable rows remain unobstructed for same-level reordering. */
+.admin-hierarchy__nest-target {
+    display: none;
+}
+.admin-hierarchy__nest-target.is-eligible {
+    display: flex;
+}
+.admin-hierarchy__nest-target.is-hovered {
+    border-color: var(--admin-accent);
+    border-style: solid;
+    background: var(--admin-subtle);
+}
+.admin-hierarchy__header { position: relative; }
