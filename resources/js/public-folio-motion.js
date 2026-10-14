@@ -124,7 +124,7 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     return frames.map((frame, index) => ({
         ...frame,
         offset: index / (frames.length - 1),
-        easing: 'cubic-bezier(.38, .05, .42, .95)',
+        easing: 'cubic-bezier(.35, .18, .65, .82)',
     }));
 }
 
@@ -144,7 +144,7 @@ export function buildMenuCornerFrames(start, index) {
         fixed];
     return stops.map((frame, i) => ({
         ...frame, offset: i / (stops.length - 1),
-        easing: 'cubic-bezier(.38, .05, .42, .95)',
+        easing: 'cubic-bezier(.35, .18, .65, .82)',
     }));
 }
 
@@ -218,7 +218,7 @@ export function buildShadowFrames(start, type) {
     frames.push(start);
     return frames.map((boxShadow, i) => ({
         boxShadow, offset: i / (frames.length - 1),
-        easing: 'cubic-bezier(.38, .02, .26, 1)',
+        easing: 'cubic-bezier(.32, .16, .68, .84)',
     }));
 }
 
