@@ -91,15 +91,53 @@ test('ambient and navigation-impulse corners only move one axis per frame',()=>{
         buildCornerImpulse(start,start,edge,true),
         buildCornerImpulse(start,start,edge,false),
     ];
-    for(const frames of sequences){
-        assert.deepEqual([frames[0].top,frames[0].bottom,frames[0].left,frames[0].width],
-            [frames.at(-1).top,frames.at(-1).bottom,frames.at(-1).left,frames.at(-1).width]);
+    for(const [index,frames] of sequences.entries()){
+        assert.equal(frames[0].top,frames.at(-1).top);
+        assert.equal(frames[0].bottom,frames.at(-1).bottom);
+        if(index===0){
+            assert.equal(frames[0].left,frames.at(-1).left);
+            assert.equal(frames[0].width,frames.at(-1).width);
+        } else {
+            // A one-shot must finish on canonical CSS, not the old in-flight
+            // offset. Comparing starting strings would hide the real snap.
+            assert.equal(frames.at(-1).left,edge.offset);
+            assert.equal(frames.at(-1).width,edge.width);
+        }
+        assert.equal(frames[0].offset,0);
+        assert.equal(frames.at(-1).offset,1);
         for(let i=1;i<frames.length;i++){
             const a=frames[i-1],b=frames[i];
             const vertical=a.top!==b.top||a.bottom!==b.bottom;
             const horizontal=a.left!==b.left||a.width!==b.width;
             assert.ok(!(vertical&&horizontal),'not diagonal');
+            assert.ok(b.offset>a.offset, 'all frame offsets must strictly increase');
         }
+    }
+});
+
+test('rapid successive builds never accumulate corner offset or jump at completion',()=>{
+    const base={top:'17.6px',bottom:'64px',left:'-11.2px',width:'8.8px'};
+    const edge={side:'left',offset:'-.7rem',width:'.55rem'};
+    // Equivalent to a click in the middle of a prior build, with its corner
+    // already pushed out and shortened.
+    const active={top:'24px',bottom:'70px',left:'-15px',width:'12.6px'};
+    for (const growing of [true,false]) {
+        const frames=buildCornerImpulse(active,base,edge,growing);
+        assert.equal(frames[0].left,active.left);
+        assert.deepEqual([frames.at(-1).top,frames.at(-1).bottom,
+            frames.at(-1).left,frames.at(-1).width],
+            [base.top,base.bottom,edge.offset,edge.width]);
+        const out=frames.find(f=>f.left.includes(' - 3.1px)'));
+        assert.equal(out.left,'calc(-.7rem - 3.1px)');
+        assert.equal(out.width,'calc(.55rem + 3.1px)');
+        assert.ok(frames.every(f=>!f.left.includes('-15px - 3.1px')),
+            'a second click cannot add distance to an already displaced line');
+        assert.ok(frames.some(f=>f.top==='calc(17.6px + 7px)'
+            || f.top==='calc(17.6px + 5px)'),
+            'the vertical contour briefly contracts from its canonical top');
+        assert.ok(frames.some(f=>f.bottom==='calc(64px + 6px)'
+            || f.bottom==='calc(64px + 5px)'),
+            'the lower endpoint also contracts briefly');
     }
 });
 
