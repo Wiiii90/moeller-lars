@@ -173,14 +173,41 @@
                             @endif
 
                             @if ($pageComponent['children'] !== [])
-                                <div class="custom-page-component__children" role="list" aria-label="Content inside image">
+                                <div class="custom-page-component__children" role="list" aria-label="Content inside image"
+                                    @if ($reorderEnabled && count($pageComponent['children']) > 1)
+                                        wire:sort="sortImageChild"
+                                        wire:sort:group="image-{{ $pageComponent['index'] }}"
+                                        wire:sort:group-id="{{ $pageComponent['index'] }}"
+                                    @endif
+                                >
                                     @foreach ($pageComponent['children'] as $childIndex => $child)
-                                        <div class="custom-page-component__child" role="listitem" wire:key="image-child-{{ $pageComponent['target'] }}-{{ $childIndex }}">
+                                        <div class="custom-page-component__child" role="listitem"
+                                            wire:key="image-child-{{ $pageComponent['target'] }}-{{ $childIndex }}"
+                                            @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:item="{{ $childIndex }}" @endif
+                                        >
+                                            <button type="button" class="admin-drag-handle custom-page-component__child-drag"
+                                                data-hierarchy-drag-handle="true"
+                                                data-image-index="{{ $pageComponent['index'] }}"
+                                                data-child-index="{{ $childIndex }}"
+                                                @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:handle @else disabled @endif
+                                                aria-label="Reorder image child {{ $child['title'] }}"
+                                            >⋮⋮</button>
                                             <span class="custom-page-component__child-type">{{ $child['type'] }}</span>
                                             <strong>{{ $child['title'] }}</strong>
                                             @if ($child['meta'] !== '')
                                                 <small>{{ $child['meta'] }}</small>
                                             @endif
+                                            @unless ($child['published'])
+                                                <small>Unpublished</small>
+                                            @endunless
+                                            <button type="button" class="admin-action custom-page-component__child-out"
+                                                wire:click="unnestImageChild({{ $pageComponent['index'] }}, {{ $childIndex }})"
+                                                aria-label="Move {{ $child['title'] }} out of image"
+                                            >Move out</button>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                                             @unless ($child['published'])
                                                 <small>Unpublished</small>
                                             @endunless
