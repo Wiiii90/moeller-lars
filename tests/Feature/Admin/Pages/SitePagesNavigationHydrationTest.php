@@ -11,6 +11,11 @@ use App\Models\SiteSection;
 use App\Models\User;
 use Livewire\Livewire;
 
+beforeEach(function (): void {
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+});
+
 function navigationLabels(): array
 {
     return array_map(
@@ -166,4 +171,28 @@ it('removes a deleted draft from the Sidebar through the same native refresh', f
 
     expect(SiteSection::query()->whereKey($draft->getKey())->exists())->toBeFalse()
         ->and(navigationLabels())->not->toContain('Remove Draft Nav');
+});
+
+it('keeps anonymous navigation on its committed order until the reordered Working tree is committed', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+    $pages = app(SiteSectionEditorialService::class);
+    $first = $pages->createCustomPage('First committed navigation', 'first-committed-navigation');
+    $second = $pages->createCustomPage('Second committed navigation', 'second-committed-navigation');
+    $pages->updatePlacement($first, 'published', null);
+    $pages->updatePlacement($second, 'published', null);
+    app(\App\Domain\Publication\PublicationService::class)->commit($actor);
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertSeeInOrder(['First committed navigation', 'Second committed navigation']);
+    $this->actingAs($actor, 'web');
+    Livewire::test(SitePages::class)->call('moveSection', $second->id, 'up')->assertDispatched('refresh-sidebar');
+    $labels = navigationLabels();
+    expect(array_search('Second committed navigation', $labels, true))
+        ->toBeLessThan(array_search('First committed navigation', $labels, true));
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertSeeInOrder(['First committed navigation', 'Second committed navigation']);
+    $this->actingAs($actor, 'web');
+    app(\App\Domain\Publication\PublicationService::class)->commit($actor);
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertSeeInOrder(['Second committed navigation', 'First committed navigation']);
 });

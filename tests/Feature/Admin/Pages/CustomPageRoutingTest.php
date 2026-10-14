@@ -28,8 +28,10 @@ it('updates Custom Page identity placement and flat public path through the cano
     $sections = app(SiteSectionEditorialService::class);
     $parent = $sections->createNavigationGroup('About');
     [$section] = customPageWorkspaceRecord('Original title', 'original-page-slug');
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $auditCount = \App\Models\AuditEvent::query()->count();
 
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('pageSettings')
         ->fillForm([
             'title' => 'Updated title',
@@ -40,7 +42,7 @@ it('updates Custom Page identity placement and flat public path through the cano
         ])
         ->callMountedAction()
         ->assertHasNoFormErrors()
-        ->assertSet('pageTitle', 'Updated title');
+        ->assertSet('pageTitle', 'Updated title')->assertSee('Updated title');
 
     $fresh = $section->fresh();
     expect($fresh->title)->toBe('Updated title')
@@ -48,7 +50,27 @@ it('updates Custom Page identity placement and flat public path through the cano
         ->and($fresh->slug)->toBe('updated-page-slug')
         ->and($fresh->state)->toBe('published')
         ->and((int) $fresh->parent_id)->toBe((int) $parent->id)
-        ->and(app(SiteNodeRoute::class)->path($fresh))->toBe('/updated-page-slug');
+        ->and(app(SiteNodeRoute::class)->path($fresh))->toBe('/updated-page-slug')
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($auditCount + 2)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->callMountedAction()->assertNotDispatched('admin-header-notification');
+    expect(\App\Models\AuditEvent::query()->count())->toBe($auditCount + 2)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
+});
+
+it('keeps duplicate Custom Page slug errors in the mounted form and rolls back the combined edit', function (): void {
+    [$section] = customPageWorkspaceRecord('Original', 'routing-original');
+    customPageWorkspaceRecord('Reserved', 'routing-reserved');
+    $auditCount = \App\Models\AuditEvent::query()->count();
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('pageSettings')->fillForm(['title' => 'Rejected title', 'slug' => 'routing-reserved'])
+        ->callMountedAction()->assertHasFormErrors(['slug'])->assertNotDispatched('admin-header-notification');
+    expect($section->fresh()->title)->toBe('Original')->and($section->fresh()->slug)->toBe('routing-original')
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($auditCount)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+    $editor->set('mountedActions.0.data.slug', 'routing-corrected')->callMountedAction()->assertHasNoFormErrors();
+    expect($section->fresh()->title)->toBe('Rejected title')->and($section->fresh()->slug)->toBe('routing-corrected');
 });
 
 
@@ -72,14 +94,19 @@ it('retains old Custom Page slugs as direct 301 redirects collapses chains and p
         ->and($owned->contains(fn (Redirect $redirect): bool => $redirect->source_path === $redirect->target_path))->toBeFalse();
 
     // A Working redirect must not affect public URLs until an explicit Commit.
+    $actor = auth()->user();
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
     $this->get('/redirect-a')->assertNotFound();
 
+    $this->actingAs($actor, 'web');
     expect(app(PublicationService::class)->commit(auth()->user()))->not->toBeNull();
 
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
     $this->get('/redirect-a')->assertStatus(301)->assertRedirect('/redirect-c');
     $this->get('/redirect-b')->assertStatus(301)->assertRedirect('/redirect-c');
     $this->get('/redirect-c')->assertOk();
 
+    $this->actingAs($actor, 'web');
     expect(fn () => $service->updateCustomPageIdentity($section, 'Redirect page', null, 'redirect-a'))
         ->toThrow(ValidationException::class, 'This public URL slug is reserved or already in use.');
 

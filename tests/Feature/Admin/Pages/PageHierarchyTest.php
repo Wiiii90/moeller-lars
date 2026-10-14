@@ -13,6 +13,11 @@ use Filament\Facades\Filament;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
+beforeEach(function (): void {
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+});
+
 require_once __DIR__.'/PagesFixtures.php';
 
 it('keeps root reorder and child reorder canonical', function (): void {
@@ -187,3 +192,57 @@ it('immediately flattens nested pages through Settings autosave without a second
     expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
         ->and($child->fresh()->parent_id)->toBeNull();
 });
+
+it('persists cross-parent sorting with one audit and notification and ignores the repeated position', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    $pages = app(SiteSectionEditorialService::class);
+    $parent = $pages->createNavigationGroup('Sort destination');
+    $child = $pages->createCustomPage('Sort child', 'sort-child');
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = AuditEvent::query()->count();
+    $editor = Livewire::test(SitePages::class)->call('sortSection', $child->id, 0, $parent->id)
+        ->assertHasNoErrors()->assertDispatched('refresh-sidebar');
+    expect($child->fresh()->parent_id)->toBe($parent->id)->and($child->fresh()->position)->toBe(10)
+        ->and(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->call('sortSection', $child->id, 0, $parent->id)
+        ->assertNotDispatched('admin-header-notification')->assertNotDispatched('refresh-sidebar');
+    expect(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
+});
+
+it('rolls back both hierarchy groups when cross-parent sorting cannot record its audit', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    $pages = app(SiteSectionEditorialService::class);
+    $parent = $pages->createNavigationGroup('Atomic destination');
+    $child = $pages->createCustomPage('Atomic child', 'atomic-child');
+    $before = SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray();
+    $auditCount = AuditEvent::query()->count();
+    $audit = Mockery::mock(app(\App\Domain\Admin\AdminAuditService::class));
+    $audit->shouldReceive('recordOrdering')->once()->andThrow(new RuntimeException('Audit unavailable'));
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->forgetInstance(SiteSectionOrderService::class);
+    expect(fn () => Livewire::test(SitePages::class)->call('sortSection', $child->id, 0, $parent->id))
+        ->toThrow(RuntimeException::class, 'Audit unavailable');
+    expect(SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray())->toBe($before)
+        ->and(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+});
+
+it('rejects direct hierarchy sorting after admin authorization is lost', function (bool $guest): void {
+    $actor = pagesTestAdmin();
+    $this->actingAs($actor, 'web');
+    $pages = app(SiteSectionEditorialService::class);
+    $parent = $pages->createNavigationGroup('Protected destination');
+    $child = $pages->createCustomPage('Protected child', 'protected-child');
+    $editor = Livewire::test(SitePages::class);
+    $before = SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray();
+    $auditCount = AuditEvent::query()->count();
+    if ($guest) { \Illuminate\Support\Facades\Auth::guard('web')->logout(); }
+    else { $actor->forceFill(['is_admin' => false])->save(); }
+    $editor->call('sortSection', $child->id, 0, $parent->id)->assertForbidden();
+    expect(SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray())->toBe($before)
+        ->and(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+})->with(['guest' => true, 'revoked admin' => false]);

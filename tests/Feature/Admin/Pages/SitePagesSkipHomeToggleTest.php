@@ -8,6 +8,11 @@ use App\Models\AuditEvent;
 use App\Models\User;
 use Livewire\Livewire;
 
+beforeEach(function (): void {
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+});
+
 it('toggles Skip Home directly without mounting an Action dialog and records both changes', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
@@ -62,12 +67,14 @@ it('selects and clears a Skip Home destination directly from Pages without any d
     $before = AuditEvent::query()->where('action', 'site_section.updated')->count();
 
     $component->call('changeSkipHomeTarget', (string) $second->getKey());
+    $notificationsAfterChange = \App\Models\AdminNotification::query()->count();
     expect($routing->configuredTargetId($settings->fresh()))->toBe((int) $second->getKey())
         ->and(AuditEvent::query()->where('action', 'site_section.updated')->count())->toBe($before + 1);
 
     // A repeated selection is a true no-op, with no additional audit mutation.
-    $component->call('changeSkipHomeTarget', (string) $second->getKey());
-    expect(AuditEvent::query()->where('action', 'site_section.updated')->count())->toBe($before + 1);
+    $component->call('changeSkipHomeTarget', (string) $second->getKey())->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->where('action', 'site_section.updated')->count())->toBe($before + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notificationsAfterChange);
 
     $component->call('changeSkipHomeTarget', '');
     expect($routing->configuredTargetId($settings->fresh()))->toBeNull()

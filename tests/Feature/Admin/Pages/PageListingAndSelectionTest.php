@@ -11,6 +11,11 @@ use App\Models\SiteSection;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
+beforeEach(function (): void {
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+});
+
 require_once __DIR__.'/PagesFixtures.php';
 
 it('derives the six wide metrics and compact navigation count from real SiteSections', function (): void {
@@ -106,9 +111,11 @@ it('resets paging on filters and keeps root groups intact across pagination', fu
     expect(array_map('intval', $component->get('selectedSectionIds')))->toEqualCanonicalizing($pageTwoIds);
 
     $component->set('search', 'Paged Root 26');
+    $matchingId = (int) SiteSection::query()->where('title', 'Paged Root 26')->value('id');
     expect($component->get('pageNumber'))->toBe(1)
         ->and($component->get('filtersActive'))->toBeTrue()
-        ->and($component->get('selectedSectionIds'))->toBe([])
+        ->and(array_map('intval', $component->get('selectedSectionIds')))->toBe([$matchingId])
+        ->and(array_column($component->get('filteredRows'), 'id'))->toBe([$matchingId])
         ->and($component->get('reorderEnabled'))->toBeFalse();
 });
 

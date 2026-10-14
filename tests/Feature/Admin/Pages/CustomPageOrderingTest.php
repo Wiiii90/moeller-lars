@@ -64,3 +64,48 @@ it('persists native parent drag sorting through the canonical component order se
         'Component 2',
     ]);
 });
+
+it('audits and notifies a real component reorder once and stays silent for repetition', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Order feedback', 'order-feedback');
+    $settings->update(['blocks' => customPageWorkspaceBlocks(3)]);
+    $before = \App\Models\AuditEvent::query()->count();
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->call('sortComponent', '2:list', 0)->assertHasNoErrors()->assertSee('Component 3');
+    expect(array_column($settings->fresh()->components(), 'title'))->toBe(['Component 3', 'Component 1', 'Component 2'])
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($before + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->call('sortComponent', '0:list', 0)->assertNotDispatched('admin-header-notification');
+    expect(\App\Models\AuditEvent::query()->count())->toBe($before + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
+});
+
+it('rejects invalid component order sequences without partial changes or feedback', function (array $targets): void {
+    [$section, $settings] = customPageWorkspaceRecord('Invalid order', 'invalid-order');
+    $settings->update(['blocks' => customPageWorkspaceBlocks(3)]);
+    $before = \App\Models\AuditEvent::query()->count();
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->call('reorderComponents', $targets)->assertHasErrors(['component'])->assertNotDispatched('admin-header-notification');
+    expect(array_column($settings->fresh()->components(), 'title'))->toBe(['Component 1', 'Component 2', 'Component 3'])
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($before)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+})->with([
+    'missing component' => [['0:list', '1:list']],
+    'duplicate component' => [['0:list', '0:list', '2:list']],
+    'wrong type' => [['0:list', '1:text', '2:list']],
+]);
+
+it('rolls back a reordered component sequence if its audit fails', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Atomic order', 'atomic-order');
+    $settings->update(['blocks' => customPageWorkspaceBlocks(3)]);
+    $before = \App\Models\AuditEvent::query()->count();
+    $audit = Mockery::mock(app(\App\Domain\Admin\AdminAuditService::class));
+    $audit->shouldReceive('recordOrdering')->once()->andThrow(new RuntimeException('Audit unavailable'));
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->forgetInstance(\App\Domain\Content\CustomPageEditorialService::class);
+    expect(fn () => Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])->call('sortComponent', '2:list', 0))
+        ->toThrow(RuntimeException::class, 'Audit unavailable');
+    expect(array_column($settings->fresh()->components(), 'title'))->toBe(['Component 1', 'Component 2', 'Component 3'])
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($before)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+});
