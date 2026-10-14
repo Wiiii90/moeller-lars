@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     FOLIO_VARIANTS, MENU_VARIANTS, FOLIO_PLANE_BASE,
-    buildCornerFrames, buildShadowFrames, buildCornerImpulse,
+    buildCornerFrames, buildMenuCornerFrames, buildShadowFrames, buildCornerImpulse,
     buildPageImpulse, animatePageHeight, capturePublicFolio,
-    advancePublicFolio,
+    advancePublicFolio, animatePublicHeroChange,
 } from '../../resources/js/public-folio-motion.js';
 
 const CONTENT_SHADOW = 'rgba(28,35,32,.09) -2px 3px 0px 0px, rgba(255,255,255,.31) -5px 7px 0px 0px, rgba(28,35,32,.12) -8px 10px 0px 0px';
@@ -14,10 +14,12 @@ function fixture({ height = 540, menu = true, content = true } = {}) {
     const effects = [], animations = [], computed = new Map();
     const create = (name, shadow, topLeft, bottomLeft, topRight, bottomRight) => {
         const el = {
-            name, style: { overflow: '' },
-            getBoundingClientRect: () => ({ height }),
+            name, style: { overflow: '' }, height,
+            getBoundingClientRect() { return { height: this.height }; },
+            getAnimations() { return []; },
             animate(frames, options) {
-                const a = { name, frames, options, finished: new Promise(() => {}) };
+                const a = { name, frames, options, finished: new Promise(() => {}),
+                    cancel() { a.cancelled = true; } };
                 animations.push(a);
                 return a;
             },
@@ -47,7 +49,7 @@ function browser(run, options = {}) {
     const scene = fixture(options);
     const saved = {};
     for (const key of ['document','getComputedStyle','KeyframeEffect','Animation']) saved[key] = globalThis[key];
-    globalThis.document = { timeline: {} };
+    globalThis.document = { timeline: {}, getAnimations: () => [] };
     globalThis.getComputedStyle = (el,pseudo) => scene.computed.get(el)[pseudo || ''];
     globalThis.KeyframeEffect = class {
         constructor(el, frames, options) { Object.assign(this,{el,frames,options}); scene.effects.push(this); }
@@ -101,12 +103,19 @@ test('ambient and navigation-impulse corners only move one axis per frame',()=>{
     }
 });
 
-test('menu impulse always ends ABOVE its bottom border, never under it',()=>{
-    const right={top:'0px',bottom:'0px',right:'-5.12px',width:'8.96px'};
-    const frames=buildCornerImpulse(right,{side:'right',offset:'-.32rem',width:'.56rem'},true,'menu');
-    const bottoms=frames.map(x=>x.bottom);
-    assert.ok(bottoms.every(v=>v==='0px'||!v.includes(' - ')));
-    assert.ok(bottoms.some(v=>v.includes('+ 2px')));
+test('menu corners remain attached to the TOP edge and move only their lower joint',()=>{
+    for (const [index,side,value,width] of [
+        [0,'left','-5.6px','5.6px'], [1,'right','-5.76px','5.76px'],
+    ]) {
+        const frames=buildMenuCornerFrames({
+            top:'0px',bottom:'0px',[side]:value,width,
+        },index);
+        assert.ok(frames.every(frame=>frame.top==='0px'));
+        assert.ok(frames.every(frame=>frame.width===width&&frame[side]===value));
+        assert.ok(frames.every(frame=>parseFloat(frame.bottom)>=0));
+        assert.ok(frames.some(frame=>parseFloat(frame.bottom)>0));
+        assert.equal(frames[0].bottom,frames.at(-1).bottom);
+    }
 });
 
 test('ambient paper, growth and contraction preserve both exposed rear layers',()=>{
@@ -155,7 +164,7 @@ test('initial document keeps slow breathing on content and menu',()=>{
         assert.equal(advancePublicFolio(root),true);
         assert.equal(effects.length,4);
         assert.ok(effects.every(e=>e.options.iterations===Infinity));
-        assert.deepEqual(effects.map(e=>e.options.duration),[19800,23600,21900,25800]);
+        assert.deepEqual(effects.map(e=>e.options.duration),[25100,29700,34200,38800]);
         assert.equal(animations.filter(a=>a.options.iterations===Infinity).length,2);
     });
 });
@@ -165,9 +174,10 @@ test('SPA swaps for any page type trigger a coordinated pulse and height build',
     browser(({root,effects,animations,body})=>{
         assert.equal(advancePublicFolio(root),true);
         assert.equal(effects.length,4);
-        assert.ok(effects.every(e=>e.options.iterations===1));
+        assert.deepEqual(effects.map(e=>e.options.iterations),[1,1,Infinity,Infinity]);
         assert.equal(animations.filter(a=>a.name==='content').length,1);
         assert.equal(animations.filter(a=>a.name==='menu').length,1);
+        assert.equal(animations.find(a=>a.name==='menu').options.iterations,Infinity);
         const reveal=animations.find(a=>a.name==='body');
         assert.ok(reveal);
         assert.deepEqual(reveal.frames,[{height:'780px'},{height:'420px'}]);
@@ -182,6 +192,7 @@ test('same-height public page swaps still start the machine impulse',()=>{
         advancePublicFolio(root);
         assert.equal(animations.some(a=>a.name==='body'),false);
         assert.equal(effects.length,4);
+        assert.deepEqual(effects.map(e=>e.options.iterations),[1,1,Infinity,Infinity]);
         assert.ok(animations.some(a=>a.name==='content'&&a.options.duration===1480));
     },{height:500});
 });
@@ -192,4 +203,38 @@ test('missing public DOM does not add overlays or animations',()=>{
         assert.equal(effects.length,0);
         assert.equal(animations.length,0);
     },{content:false,menu:false});
+});
+
+test('Home Hero in-place slide changes pulse ONLY content and reuse page-height animation', () => {
+    browser(({root,body,paper,nav,effects,animations})=>{
+        let changed=0;
+        const done=animatePublicHeroChange(()=>{
+            changed++;
+            body.height=840;
+        },root);
+        assert.equal(done,true);
+        assert.equal(changed,1);
+        assert.equal(effects.length,2);
+        assert.ok(effects.every(effect=>effect.el===paper&&effect.options.iterations===1));
+        assert.equal(animations.filter(animation=>animation.name==='content').length,1);
+        assert.equal(animations.filter(animation=>animation.name==='menu').length,0);
+        const height=animations.find(animation=>animation.name==='body');
+        assert.deepEqual(height.frames,[{height:'540px'},{height:'840px'}]);
+        assert.equal(body.style.overflow,'clip');
+        assert.equal(nav.name,'menu');
+    });
+});
+
+test('Home Hero change cancels only old content animation and leaves menu breathing intact', () => {
+    browser(({root,body,paper,nav,animations})=>{
+        const oldContent={effect:{target:paper},cancel(){this.cancelled=true}};
+        const oldMenu={effect:{target:nav},cancel(){this.cancelled=true}};
+        globalThis.document.getAnimations=()=>[oldContent,oldMenu];
+        let called=0;
+        assert.equal(animatePublicHeroChange(()=>{called++;body.height=710;},root),true);
+        assert.equal(called,1);
+        assert.equal(oldContent.cancelled,true);
+        assert.equal(oldMenu.cancelled,undefined);
+        assert.equal(animations.filter(animation=>animation.name==='menu').length,0);
+    });
 });
