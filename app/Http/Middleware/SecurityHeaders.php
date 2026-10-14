@@ -33,6 +33,11 @@ final class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+        // Public content and media reserve text/data mining rights, independently of CSP.
+        if ($isPublicRequest && ! $isArtistPreviewRequest) {
+            $response->headers->set('tdm-reservation', '1');
+        }
+
         if ($isPulseRequest) {
             $response->headers->set('Content-Security-Policy', $this->pulseContentSecurityPolicy());
         } elseif ($isPublicRequest) {

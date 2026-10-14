@@ -34,6 +34,18 @@ Only publicly eligible content appears in public rendering/navigation/sitemap/vi
 
 A canonical media **reference** does not automatically mean the asset is publicly deliverable.
 
+## Rights and privacy
+
+Public HTML/media responses declare a TDM rights reservation with the
+`tdm-reservation: 1` header and `/.well-known/tdmrep.json`. The public
+`robots.txt` excludes documented model-training/data collectors while
+preserving search indexing and the sitemap. These signals do not block
+human access to high-quality Artwork Viewer originals. No additional
+footer, menu entry, visual copyright overlay or quality downgrade is part
+of this contract. Artist-authored texts may live on the About/Contact
+Custom Page; Matomo consent is owned by the website, not the artist's
+editable content. See `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`.
+
 ## Site navigation
 
 Public visits use the already installed Livewire 4 `wire:navigate` document-swap

@@ -80,11 +80,32 @@ final class PublicSeoController extends Controller
             'User-agent: *',
             'Allow: /',
             'Disallow: /admin',
+            'Disallow: /preview',
+            '',
+            // Documented model-training / dataset crawlers only; preserve search bots.
+            'User-agent: GPTBot',
+            'Disallow: /',
+            '',
+            'User-agent: Google-Extended',
+            'Disallow: /',
+            '',
+            'User-agent: ClaudeBot',
+            'Disallow: /',
+            '',
+            'User-agent: CCBot',
+            'Disallow: /',
+            '',
             'Sitemap: '.$this->canonical->forPath('/sitemap.xml'),
             '',
         ]);
 
         return response($body)->header('Content-Type', 'text/plain; charset=UTF-8');
+    }
+
+    public function tdmReservation(): Response
+    {
+        return response('[{"location":"/","tdm-reservation":1}]'."\n")
+            ->header('Content-Type', 'application/json; charset=UTF-8');
     }
 
     /** @param list<string> $urls */

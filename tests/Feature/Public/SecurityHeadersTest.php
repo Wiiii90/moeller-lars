@@ -38,6 +38,18 @@ it('uses a Pulse-specific CSP without weakening the public CSP', function (): vo
         ->not->toContain("'unsafe-eval'");
 });
 
+it('emits TDM rights reservation for public HTML and media without affecting admin CSP', function (): void {
+    $middleware = app(SecurityHeaders::class);
+    foreach (['/', '/artworks/example', '/media/original/9', '/media/variant/9'] as $path) {
+        $response = $middleware->handle(Request::create($path, 'GET'), static fn (): Response => new Response('ok'));
+        expect($response->headers->get('tdm-reservation'))->toBe('1');
+    }
+    foreach (['/admin', '/pulse', '/preview/artworks/example'] as $path) {
+        $response = $middleware->handle(Request::create($path, 'GET'), static fn (): Response => new Response('ok'));
+        expect($response->headers->has('tdm-reservation'))->toBeFalse();
+    }
+});
+
 it('serves the public CSP-safe Livewire script without changing the Admin runtime configuration', function (): void {
     $before = config('livewire.csp_safe', false);
 

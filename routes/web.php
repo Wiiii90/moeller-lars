@@ -19,6 +19,7 @@ Route::post('/contact', [PublicContactController::class, 'submit'])
     ->name('contact.submit');
 Route::get('/sitemap.xml', [PublicSeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/robots.txt', [PublicSeoController::class, 'robots'])->name('seo.robots');
+Route::get('/.well-known/tdmrep.json', [PublicSeoController::class, 'tdmReservation'])->name('seo.tdm-reservation');
 
 // The public Blade shell has a strict no-unsafe-eval CSP. Livewire's
 // ordinary bundle remains unchanged for Filament; only this asset endpoint
