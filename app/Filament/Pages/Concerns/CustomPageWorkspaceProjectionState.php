@@ -52,6 +52,14 @@ trait CustomPageWorkspaceProjectionState
         $this->loadComponentProjection();
     }
 
+    private function componentReorderEnabled(): bool
+    {
+        return trim($this->componentSearch) === ''
+            && $this->componentType === 'any'
+            && $this->page === 1
+            && $this->total <= $this->pageSize;
+    }
+
     private function loadComponentProjection(bool $refreshCvCount = false): void
     {
         $settings = $this->settings();

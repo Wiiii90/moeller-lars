@@ -161,18 +161,12 @@ trait CustomPageWorkspacePresentationHelpers
     private function retainVisibleSelections(): void
     {
         $visibleParents = collect($this->components)->pluck('target')->filter(static fn (mixed $target): bool => is_string($target))->all();
-        $visibleChildren = collect($this->components)
-            ->flatMap(static fn (array $component): array => is_array($component['children'] ?? null) ? $component['children'] : [])
-            ->pluck('target')->filter(static fn (mixed $target): bool => is_string($target))->all();
-
         $this->selectedComponentTargets = array_values(array_intersect($this->selectedComponentTargets, $visibleParents));
-        $this->selectedChildTargets = array_values(array_intersect($this->selectedChildTargets, $visibleChildren));
     }
 
     private function clearSelections(): void
     {
         $this->selectedComponentTargets = [];
-        $this->selectedChildTargets = [];
     }
 
     private function metricValue(mixed $metric): string
