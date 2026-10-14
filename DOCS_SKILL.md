@@ -168,7 +168,8 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   internen Counter, separates Count-`span` innerhalb des terminalen
   Selection-Bereichs) ist jetzt am selben kanonischen Selection-Owner
   mit dem Dashboard-Blade abgeglichen. `ui-skills.md` leitet auf
-  diese Normen weiter, statt eigene Achsen-/Counter-Regeln zu führen.
+  diese Normen weiter, statt eigene Achsen-/Counter-/Drag-/Home-
+  Details erneut festzuschreiben.
 - [Dialoge](docs/ADMIN-DIALOG-CONTRACT.md) besitzen Edit-/Create-/Command-
   Persistenz, Page-Heading-Autosave, Pages Settings und Journal-/
   Gallery-/Custom-Settings-Konsistenz. Gallery Artwork Create/Edit teilen

@@ -185,26 +185,7 @@ The canonical ordinary editorial-table geometry, semantics, action order, respon
 
 ## 9. Drag and ordering
 
-Use native Livewire sorting only:
-
-```text
-wire:sort
-wire:sort:item
-wire:sort:handle
-```
-
-Do not build custom HTML5 `draggable`/dragstart/drop state machines.
-
-Rules:
-
-- when both exist, Position precedes Drag and both belong to the leading ordering region;
-- drag handles share one visual geometry on a given table hierarchy;
-- use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
-- ordering is persisted by the canonical domain ordering service;
-- drag is disabled when Search/filters/pagination make canonical order ambiguous;
-- in Custom Page, a drag handle is enabled only when its own sibling scope has at least two items; parent component order and each List/Contact child order are independent, so a single parent does not expose an inert parent drag target or disable sorting multiple children;
-- ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
-- filtered reorder must not pretend that a filtered projection is the complete canonical sequence.
+The [canonical Table contract](docs/ADMIN-TABLE-CONTRACT.md#position-and-add-row) owns Position's display semantics, Add Row alignment and shared ordering axes. Its [Component sequence section](docs/ADMIN-TABLE-CONTRACT.md#component-sequences) owns native `wire:sort`/`wire:sort:item`/`wire:sort:handle`, sibling-scope eligibility, the existing Move up/down fallback, filtering/pagination restrictions and the shared `admin-drag-handle` geometry. Use the existing domain ordering owner. Do **not** build a separate HTML5 drag/drop state machine or duplicate those task rules here.
 
 ## 10. Parent/child hierarchical tables
 
@@ -212,9 +193,7 @@ The single owner of Home and Custom Page component-table geometry and hierarchy 
 
 ## 11. Home component table
 
-Home Custom and Under Construction share the component sequence in [ADMIN-TABLE-CONTRACT.md](docs/ADMIN-TABLE-CONTRACT.md#component-sequences). Their editable display choices include Image, Heading, Rich Text, Divider, List, Contact and Legal Disclaimer; Heading/Rich Text are both serialized as the canonical `text` component. The [structured content model](docs/architecture/structured-components.md) owns JSON representation and the [Dialog contract](docs/ADMIN-DIALOG-CONTRACT.md) owns Edit/conversion semantics.
-
-**Mutation feedback is governed by the [Notification contract](docs/ADMIN-NOTIFICATION-CONTRACT.md#admin-mutation-feedback-integration), not a fixed one-message-per-action rule.** Real changes may produce multiple verified Activity presentations, and each delivered presentation has its own mailbox/header projection. No-op and invalid actions must not produce a false success. A source read alone does not establish successful delivery; check the real Livewire/DB/browser lifecycle.
+Home Custom and Under Construction use the **same** hierarchy, Component controls, Add Row, Selection and action grammar as Custom Pages, owned in [ADMIN-TABLE-CONTRACT.md](docs/ADMIN-TABLE-CONTRACT.md#component-sequences). See [Structured Components](docs/architecture/structured-components.md) for the persisted Heading/Rich Text `text` distinction and [ADMIN-DIALOG-CONTRACT.md](docs/ADMIN-DIALOG-CONTRACT.md) for Edit/conversion. Notification count, no-op and header/mailbox feedback are owned by [ADMIN-NOTIFICATION-CONTRACT.md](docs/ADMIN-NOTIFICATION-CONTRACT.md#admin-mutation-feedback-integration), not by a Home-specific per-action claim.
 
 ## 12. Journal table references
 
