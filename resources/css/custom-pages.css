@@ -149,33 +149,39 @@
 .custom-page__list-item:last-child {
     margin-bottom: 0;
 }
+/* Grid is local to EACH record: the two cells share a row even beside a
+   floated Image. The context wraps inside its own right-hand column; it
+   cannot drop below the entire left-hand description as flex used to do. */
 .custom-page__list-line {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    column-gap: clamp(.45rem, 1.5vw, .85rem);
     min-width: 0;
-    align-items: baseline;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: .2rem clamp(.6rem, 2vw, 1.2rem);
+    align-items: start;
 }
 .custom-page__list-line strong {
-    flex: 1 1 10rem;
+    grid-column: 1;
     min-width: 0;
     font: inherit;
     font-weight: 500;
     overflow-wrap: anywhere;
+}
+.custom-page__list-line strong:only-child {
+    grid-column: 1 / -1;
 }
 .custom-page__list-item > .rich-text {
     color: inherit;
     font: inherit;
 }
 .custom-page__context {
-    flex: 0 1 auto;
+    grid-column: 2;
     min-width: 0;
-    margin-left: auto;
     color: var(--public-muted);
     font: inherit;
     font-size: .82rem;
+    line-height: 1.45;
     text-align: right;
+    overflow-wrap: normal;
     overflow-wrap: anywhere;
 }
 
