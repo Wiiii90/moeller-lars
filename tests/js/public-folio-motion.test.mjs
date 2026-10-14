@@ -163,6 +163,29 @@ test('a DOM swap continues from in-flight geometry without creating other lines'
     });
 });
 
+test('a real detail-to-detail SPA swap grows and shrinks from the outgoing rendered article height', () => {
+    withBrowser(({ root }) => {
+        assert.equal(capturePublicFolio(root), true);
+    }, { detailHeight: 740 });
+    withBrowser(({ root, article, animations }) => {
+        assert.equal(advancePublicFolio(root), true);
+        const reveal = animations.find(a => a.name === 'article');
+        assert.ok(reveal);
+        assert.deepEqual(reveal.frames, [{ height: '740px' }, { height: '420px' }]);
+        assert.equal(article.style.overflow, 'clip');
+        reveal.complete();
+        assert.equal(article.style.overflow, '');
+    }, { detailHeight: 420 });
+
+    withBrowser(({ root }) => assert.equal(capturePublicFolio(root), true), { detailHeight: 360 });
+    withBrowser(({ root, animations }) => {
+        advancePublicFolio(root);
+        assert.deepEqual(animations.find(a => a.name === 'article').frames, [
+            { height: '360px' }, { height: '880px' },
+        ]);
+    }, { detailHeight: 880 });
+});
+
 test('detail-to-detail page height reveals the next image without scaling or extra wrappers', () => {
     withBrowser(({ root, article, animations }) => {
         assert.equal(animateArtworkHeight(780, root), true);
