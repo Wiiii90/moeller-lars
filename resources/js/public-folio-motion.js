@@ -83,42 +83,32 @@ export function capturePublicFolio(root = document) {
     return Boolean(snapshot.content || body);
 }
 
-// Each successive frame changes ONLY one axis: top, bottom or a horizontal
-// (offset+width) pair. Connected return strokes cannot detach or become
-// diagonal. The final frame is exactly the captured initial configuration.
+// Calm, asymmetric ambient choreography. Long sweeps and deliberate resting
+// intervals replace the many equally timed micro-steps which looked jittery.
+// Every segment still changes only one axis. The last frame equals the first.
 export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
-    const frames = [{ ...start }];
-    const step = patch => frames.push({ ...frames[frames.length - 1], ...patch });
-    // Pauses are ordinary repeated WAAPI frames, NOT timers: individual
-    // strokes may rest while others continue. One direction per segment.
-    const rest = () => step({});
-    step({ top: base.top });
-    step({ bottom: base.bottom });
-    rest(); rest();
-    step({
-        [edge.side]: `calc(${edge.offset} - 2.2px)`,
-        width: `calc(${edge.width} + 2.2px)`,
-    });
-    rest();
-    step({ top: nextTop });
-    rest();
-    step({ bottom: nextBottom });
-    rest();
-    step({
-        [edge.side]: `calc(${edge.offset} + 1.2px)`,
-        width: `calc(${edge.width} - 1.2px)`,
-    });
-    rest(); rest();
-    step({ top: base.top });
-    step({ bottom: base.bottom });
-    step({ [edge.side]: start[edge.side], width: start.width });
-    step({ top: start.top });
-    step({ bottom: start.bottom });
-    rest(); rest();
-    return frames.map((frame, index) => ({
-        ...frame,
-        offset: index / (frames.length - 1),
-        easing: 'cubic-bezier(.35, .18, .65, .82)',
+    const states = [{ ...start }];
+    const next = (changes = {}) =>
+        states.push({ ...states[states.length - 1], ...changes });
+    next({ top: base.top });
+    next({ bottom: base.bottom });
+    next({ [edge.side]: `calc(${edge.offset} - 2px)`,
+        width: `calc(${edge.width} + 2px)` });
+    next(); // long rest at the outer edge
+    next({ top: nextTop });
+    next({ bottom: nextBottom });
+    next(); // let the paper breathe without changing direction instantly
+    next({ [edge.side]: edge.offset, width: edge.width });
+    next({ top: base.top });
+    next({ bottom: base.bottom });
+    next(); // quiet end of cycle
+    next({ [edge.side]: start[edge.side], width: start.width });
+    next({ top: start.top });
+    next({ bottom: start.bottom });
+    const offsets = [0, .07, .16, .30, .43, .52, .61, .73, .81, .88, .93, .97, .985, 1];
+    return states.map((frame, index) => ({
+        ...frame, offset: offsets[index],
+        easing: 'cubic-bezier(.36, .08, .64, .92)',
     }));
 }
 
@@ -216,31 +206,37 @@ export function buildShadowFrames(start, type) {
     }));
 }
 
-// A directional sequence: steady approach, a visible paper-driven thrust,
-// a short follow-through, then a controlled return. In each keyframe only
-// ONE axis changes; lateral movement adjusts width with the offset so the
-// original corner remains connected to the same white-sheet edge.
-export function buildCornerImpulse(start, edge, growing) {
+// Build transitions are always measured against the destination's STATIC
+// paper geometry, not the last active animation. A rapid second click can
+// begin at the current in-flight pose, but must never extend it cumulatively.
+// The contour first shortens vertically, then opens as the white sheet
+// grows, finally settling into the authored CSS at the exact final frame.
+// Horizontal movement updates its return width in lockstep (no loose line).
+export function buildCornerImpulse(start, base, edge, growing) {
     const frames = [{ ...start }];
-    const step = patch => frames.push({ ...frames[frames.length - 1], ...patch });
+    const step = (changes, offset) => frames.push({
+        ...frames[frames.length - 1], ...changes, offset,
+        easing: 'cubic-bezier(.36, .08, .64, .92)',
+    });
     const amplitude = 3.1;
-    const vertical = 3.2;
-    const delta = growing ? 1 : -1;
-    step({ [edge.side]: `calc(${start[edge.side]} - ${amplitude}px)`,
-        width: `calc(${start.width} + ${amplitude}px)` });
-    // Menu outside strokes must end inside their white bottom border.
-    // A content corner may extend further down during the page build.
-    const bottomDelta = -vertical * delta;
-    step({ bottom: `calc(${start.bottom} + ${bottomDelta}px)` });
-    step({ top: `calc(${start.top} + ${vertical * .68}px)` });
-    step({ [edge.side]: start[edge.side], width: start.width });
-    step({ bottom: start.bottom });
-    step({ top: start.top });
-    return frames.map((frame, index) => ({
-        ...frame,
-        offset: index / (frames.length - 1),
-        easing: 'cubic-bezier(.35, 0, .25, 1)',
-    }));
+    const shrinkTop = growing ? 7 : 5;
+    const shrinkBottom = growing ? 6 : 5;
+    // The CSS corner returns remain outside the sheet, even during
+    // a shrinking page. These targets are ABSOLUTE, not start-relative.
+    step({ [edge.side]: `calc(${edge.offset} - ${amplitude}px)`,
+        width: `calc(${edge.width} + ${amplitude}px)` }, .15);
+    step({ top: `calc(${base.top} + ${shrinkTop}px)` }, .32);
+    step({ bottom: `calc(${base.bottom} + ${shrinkBottom}px)` }, .45);
+    step({ top: `calc(${base.top} - 2px)` }, .63);
+    step({ bottom: `calc(${base.bottom} - 2px)` }, .76);
+    step({ [edge.side]: edge.offset, width: edge.width }, .89);
+    step({ top: base.top }, .95);
+    step({ bottom: base.bottom }, 1);
+    return [
+        { ...frames[0], offset: 0,
+            easing: 'cubic-bezier(.36, .08, .64, .92)' },
+        ...frames.slice(1),
+    ];
 }
 
 function nativeCorner(element, pseudo, frames, duration, loop = false) {
@@ -372,10 +368,14 @@ function pulsePaper(element, corners, oldShadow, growing, root) {
     const token = {};
     activePaperPulses.set(element, token);
     const animations = [];
+    // Fresh DOM on Livewire swaps and canceled DOM on Home Hero both expose
+    // the true destination base here. Never derive the new excursion from
+    // corners sampled mid-flight on a previous pulse.
+    const canonical = pairGeometry(element);
     for (let i = 0; i < 2; i += 1) {
         const animation = nativeCorner(element, i === 0 ? '::before' : '::after',
-            buildCornerImpulse(corners[i], CONTENT_EDGES[i], growing),
-            BUILD_DURATION);
+            buildCornerImpulse(corners[i], canonical?.[i] ?? corners[i],
+                CONTENT_EDGES[i], growing), BUILD_DURATION);
         if (animation) animations.push(animation);
     }
     if (oldShadow && typeof element.animate === 'function') {

@@ -84,8 +84,13 @@ artificially assigning a height or clipping the content.
 Each real Public SPA transition triggers a stronger directed Content
 paper-machine build, retaining the accepted ~1480ms transition duration:
 the current Content pseudo corners and rear layers assemble in ordered
-right-angled stages and return to natural CSS geometry. The Content
-corner's bottom/outside excursion is bounded more tightly than before.
+right-angled stages and return to natural CSS geometry. The Content corner's outside excursion is bounded against the
+destination's STATIC geometry: even rapid repeated clicks can start from
+the current visible stroke without accumulating another offset. Its
+vertical stroke briefly contracts from both ends (about 5–7px), opens
+again as the content builds, and finishes on the exact authored CSS
+top/bottom/side positions. This prevents a late snap when a temporary
+animation ends; the lower white line cannot keep wandering outward.
 A Home Hero Artwork GROUP arrow swaps its already-rendered hidden slide
 in place. It calls the SAME central content-only height/paper transition
 around that visibility change, WITHOUT making a synthetic Livewire
@@ -101,12 +106,12 @@ Livewire node is replaced, the new menu starts only ambient effects.
 Both white menu pseudo-contours remain connected to the upper menu
 border at `top: 0` throughout ALL keyframes. Only their bottom
 endpoints rise and fall gently, making the attached lower returns
-move up/down while the upper connection NEVER opens. Their fixed
-horizontal offsets and widths meet the white menu face exactly,
+move up/down while the upper connection NEVER opens. Their equal left/right horizontal offsets (`-.35rem`) and widths
+(`.35rem`) meet the white menu face exactly,
 so no left/right stroke can spill into the white content area. Menu
-ambient animation periods are longer (~34–39 seconds). Content ambient
-periods are calmer/slower (~25–30 seconds), with smoother directional
-easing and modest outside movement; the visible paper-machine pulse
+ambient animation periods are longer (~34–39 seconds). Content ambient periods are calmer/slower (~25–30 seconds), using longer
+single-axis sweeps with unequal timing and real quiet intervals rather
+than equally spaced micro-steps; the visible paper-machine pulse
 retains its existing speed and remains much stronger than ambient
 motion. Only Content is animated on Home group changes. No extra
 DOM lines, interval polling or duplicate animation service is added.

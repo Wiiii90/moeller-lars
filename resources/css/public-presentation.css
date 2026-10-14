@@ -127,8 +127,8 @@ body {
 .site-navigation::after {
     top: 0;
     bottom: 0;
-    right: -.36rem;
-    width: .36rem;
+    right: -.35rem;
+    width: .35rem;
     border-right: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
