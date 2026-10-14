@@ -122,34 +122,157 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ## Aktueller Prüfstand und Wiedereinstieg (14.10.2026)
 
-**Branch-Checkpoint:** Letzter kontrollierter Zwei-Eltern-Merge `319804faec1538d78d7b755e8341fa372d1610d6` mit `dev@44667847f1de7ab43e1341c09ee2a5e4c0a40982`. Die letzte nachfolgende Dokumentations-Commit-SHA ist stets aus dem aktuellen `docs`-Ref zu lesen, nicht aus diesem vor dem Commit geschriebenen Text zu erraten. Neue `dev`-Commits und eventuelle überschneidende `docs`-Änderungen vor jedem nächsten Merge separat prüfen. Keine Änderungen an `dev`, `testing`, `main`, CI oder persistenten Daten.
+### Quell- und Generatorstand
 
-**Quellinventar:** Der ursprüngliche vollständige Katalog [php-source-audit.md](docs/architecture/php-source-audit.md) hat **248 `app/**/*.php`-Dateien / 214 Klassen / 27 Traits / 7 Enums / 900 interne Imports / 717 Cross-Module-Kanten / 20 Importdiagramme**. Der vollständige Blobvergleich bis zum obigen `dev`-Stand ergibt nur zwei geänderte PHP-Blobs (`JournalWorkspace.php`, `SecurityHeaders.php`), beide ohne neue/entfernte projektinterne Imports oder Typen. Das JSON behält bewusst die ursprüngliche `source_ref`: Dateibytes/rohe Zeilendaten sind **nicht** als vollregeneriert auszugeben. Alle **26 Models / 48 Relation-Methoden** wurden mit der aktuellen Quelle erneut auf Typ/Ziel/Zeile abgeglichen; zwei BlogPost-Zeilennummern wurden nachgezogen. Eloquent- und Importkanten sind keine physischen FKs.
+- **Zuletzt vollständig aufgenommener Originalbestand:** 248 App-PHP-Dateien,
+  214 Klassen, 27 Traits, 7 Enums, 900 deklarierte interne Imports,
+  davon 717 modulübergreifend, und 20 einzelne Importdiagramme.
+  Der Journal-/Settings-Refactor ergab in einer **statischen Delta-Prüfung**
+  **901 interne / 718 modulübergreifende Imports**. Die eingefrorenen
+  JSON-/Mermaid-Graphen wurden **noch nicht vollständig regeneriert**;
+  ihre ursprüngliche `source_ref` nicht fälschlich auf den neuen Commit
+  heben. [Import-Audit](docs/architecture/php-source-audit.md).
+- **Models/Relationen:** 26 Eloquent-Modelldateien und 48 explizite
+  Relationsmethoden abgeglichen; kein aus PostgreSQL abgeleitetes ERD.
+  **HTTP:** 20 explizite Laravel-Routen; Filament-/Livewire-Registrierung
+  bleibt dynamisch. **Admin-Quelle:** 9 Pages, 26 Concerns, 2 Livewire-
+  Komponenten; 26 interne Trait-Uses, 72 wörtlich benannte Actions.
+- **Generatoren und Laufgrenzen:** Die vorhandenen
+  `scripts/generate-architecture-*.php` und
+  `scripts/check-documentation-links.php` besitzen tatsächlich lokal
+  ausgeführte, isolierte PHP-8.4-Parser-/Write-/Check-Fixtures.
+  Kein kompletter nativer PHP-Generatorlauf über alle echten Dateien.
+  `generate-architecture-relations.php` benötigt zuerst
+  `generated/php-symbols.json` aus dem Inventory-Generator
+  (noch nicht eingecheckt). Ein echtes `artisan route:list`, Filament,
+  PostgreSQL-Schemaexport, Laravel-/Livewire-Featurelauf oder Playwright
+  wurde hier **nicht ausgeführt**. Vollständiges `pg_catalog` nur mit
+  ausdrücklich disposable, vollständig migrierter Testdatenbank.
+- **Markdown-Verweise:** Authentifizierter unabhängiger GitHub-Tree-
+  Quellscan auf `docs@f7bdc77d6`: **63** Markdown-Dateien,
+  **609** einfache Inline-Linkvorkommen, davon **581** relative lokale
+  Ziele; **25** Abschnittsanker-Verwendungen, **17** eindeutige
+  Ziel/Fragment-Paare; **0** fehlende relative Ziele oder geprüfte
+  Anker. Kein vollständiger CommonMark-Parser-/nativer PHP-Checkout-
+  Lauf. [Dokumentationsindex](docs/README.md#local-documentation-link-verification).
 
-**Dokumentationsgeneratoren:** PHP-Tokenizer/Relation-Parser erfassen Namespace-/Closure-Scope, globale `app()/resolve()` statt Methoden/Static-Calls, Konstruktor-Union/Intersection/Attribute und direkt typisierte Eloquent-Methoden. Routenprüfer trennt die **20** expliziten Routen von Kommentaren/Strings. Parser haben **lokale PHP-8.4-Fixtures**, Eloquent zudem einen ausgeführten **synthetischen 3-Model-/3-Relationen-`--write/--check`-Lauf**, aber keinen echten vollständigen Application-Checkout. `generate-architecture-relations.php` erwartet `generated/php-symbols.json`, derzeit **nicht eingecheckt**; dafür muss im echten Checkout zuvor `generate-architecture-inventory.php --write` laufen. Der unabhängige Importkatalog ersetzt die native Eingabe nicht. Von den 900 internen Imports enthalten **0** gruppierte `use`-Deklarationen oder `as`-Aliase, sodass dafür im geprüften Quellstand kein aktiver Produktionsfall vorliegt.
+### Kanonische Dokumentations-Owner und bereits bereinigte Normen
 
-**Markdown-Verweise:** Unabhängiger GitHub-Tree-Scan `docs@f7bdc77d6` über **63 Markdown-Dateien, 609 einfache Inline-Linkvorkommen, davon 581 relative Ziele**: kein fehlender relativer Zielpfad. **25** Abschnittsanker-Verwendungen (17 unterschiedliche Ziel-/Fragment-Paare) stimmen mit den Zielüberschriften überein. Der Quellscanner ersetzt keinen kompletten CommonMark-/PHP-Linkprüferlauf. Neuer [lokaler Linkprüfer](scripts/check-documentation-links.php) prüft Pfade und einfache Überschriftenanker mit `--check|--summary|--self-test`. **Identischer Blob-SHA** unter PHP 8.4 lokal syntaktisch geprüft, Selbsttest und positive/negative Fixture-Repositorys ausgeführt. **Kein** voller Checkout-Run dieses Skripts behauptet; komplexes CommonMark/HTML/MDX liegt außerhalb seines dokumentierten Parsermodells.
+- [Tabellen](docs/ADMIN-TABLE-CONTRACT.md) besitzen Home-/Custom-Page-
+  Component-Hierarchie, permanente Component-Selects und Parent-/Child-
+  Achsen sowie Blog-/Exhibition-Splitfold, Toolbar- und Selection-
+  Geometrie. `ui-skills.md` leitet auf diese Normen weiter.
+- [Dialoge](docs/ADMIN-DIALOG-CONTRACT.md) besitzen Edit-/Create-
+  Persistenz, Page-Heading-Autosave, Pages Settings und Journal-/
+  Gallery-/Custom-Settings-Konsistenz. Die `dev`-Änderungen wurden
+  inhaltlich mit den zusätzlichen Pages-Regeln zusammengeführt.
+- [Benachrichtigungen](docs/ADMIN-NOTIFICATION-CONTRACT.md) definieren
+  die Meldungskardinalität anhand tatsächlich konsumierter Activity-
+  Präsentationen, **nicht** pauschal „eine Home-Notification pro Aktion“;
+  Mailbox-Idempotenz (`firstOrCreate`) ist nicht dasselbe wie Header-
+  UUID-/Transport-Idempotenz.
+- [Public](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md): Home besitzt
+  **Hero Artwork, Under Construction, Custom**; Skip Home bleibt ein
+  separates Routingflag. Menü-/Content-Folio nutzt nur vorhandene
+  Pseudoelemente/Schatten und native Livewire-Dokumentnavigation,
+  keine zusätzlichen Overlay-Knoten oder JS-Timer. In
+  [General](app/Filament/Pages/General.php) erlaubt Page Width jetzt
+  Einzelpixel (`step(1)`) innerhalb unveränderter Min-/Max-Grenzen.
+- CV ist heute Teil strukturierter Custom-Page-Komponenten; die
+  historische `cv_entries`-Tabelle ist nicht aktiv. Historisch
+  **16** Publication-Tabellen einschließlich CV, aktuell **15**.
+  v0.4 ist noch nicht nach `main` abgenommen; v0.5-Cutover ist
+  weiterhin bedingt, kein vollzogener Produktionswechsel.
+  Altvertrag und Migrationsbelege nicht durch aktuelle Policies ersetzen.
 
-**Normative UI-Owner:** [ADMIN-TABLE-CONTRACT](docs/ADMIN-TABLE-CONTRACT.md) besitzt Blog-/Exhibition-Splitfold, stabile siebenachsige Blog-Actions und nun die gesamten Home-/Custom-Page-Component-Hierarchien (permanenter Component-Select, gemeinsame Parent-/Child-Achsen, Edit, Selection, Add Row). `ui-skills.md` verweist auf diese Details statt sie erneut festzuschreiben; [ADMIN-DIALOG-CONTRACT](docs/ADMIN-DIALOG-CONTRACT.md) besitzt Pages-Settings und Dialogpersistenz, [ADMIN-RESPONSIVE-METRICS](docs/ADMIN-RESPONSIVE-METRICS.md) nur Metrics. Die frühere Aussage „genau eine Home-Erfolgsnotification pro Aktion“ wurde entfernt: [Notification-Vertrag](docs/ADMIN-NOTIFICATION-CONTRACT.md) und `AdminNotifier` bestimmen die Meldungszahl anhand der tatsächlich konsumierten validen Activity-Präsentationen, potenziell mehr als eine.
+### Offene konkret belegte Produkt-/Testpfade
 
-**Media Reference/Cleanup (Quelle, 14.10.2026):** [Architekturbeleg](docs/architecture/media-reference-and-cleanup.md) ordnet Storage-Löschung (Publication-Advisory-Lock, Canonical-Detach, logische Löschung), physische Dateilöschung (Working/LIVE/History-Guards, Queue) und `Free storage` (geschützter LIVE-/Working-Source-Snapshot, Undo-Receipts, Variante nur nach reproduzierbarem SHA/Byte-/Dimension-Check) getrennt ein. **Konkrete Lücke:** Home-`list.media_asset_id` und `list.items[].body` werden trotz gültiger Home-List-Speicherung/Rendering nicht von `MediaReferenceQuery::mediaIdsForHome()`, `MediaReferenceCatalog::contentReferenceRowsByMediaId()` oder `MediaAssetEditorialService::removeHomeReferences()` berücksichtigt; Custom Page besitzt beide Pfade. Zusätzlich unmittelbarer `deleteNow()`-Fehlerpfad ohne Queue-Nachtrag und boolescher No-op bei erneutem `delete(deleted)`. Alles statische Testfälle für `dev`/Testing, keine Runtime-Reproduktion und keine Application-Änderung hier.
+1. **Pages → Edit: getrennte Titel und Navigationslabels.**
+   `SitePages::sectionLabel()` gibt beim Form-Fill vorrangig
+   `navigation_label` als `name` zurück;
+   `ManagesSitePageEditDialog::updateDialogIdentity()` speichert
+   dies auch bei vermeintlichem No-op als `title`, bei nicht-Gallery
+   über `SiteSectionIdentityService`. Journal, Custom Page und
+   Navigation Node sind betroffen; Gallery synchronisiert über
+   `GalleryEditorialService` ebenfalls einen Label-Wert in die
+   kanonische Namens-/Titelschicht. Journal-Listing-Titel können
+   unbeabsichtigt mitfolgen. Konvertierung und mehrfaches Autosave
+   sind zusätzliche Negativfälle. [Quellpfad/Testmatrix](docs/architecture/ui-surfaces.md).
+   **Kein ausgeführter Livewire-Nachweis**.
+2. **Home/Custom Page: gleichartige Komponenten nach Reorder.**
+   Ein fehlender `CustomPageWorkspaceTargetHelpers::componentAt()`-
+   Zugriff wurde inzwischen auf `dev` wiederhergestellt, inklusive
+   Test für die dritte Textkomponente nach einem Divider.
+   Beide Home-/Custom-Page-Editoren prüfen jedoch als Stale-Target nur
+   **absoluten Index + Persistenztyp**. Vertauscht ein zweiter Kontext
+   zwei `text`-Blöcke, kann ein weiterhin offener Editor bei gleicher
+   Typprüfung den falschen Block überschreiben. Home-Heading und
+   Home-Rich-Text persistieren beide als `type=text`.
+   Konkret geforderter Zweifenster-Reorder-/Save-Konflikttest und
+   stabile Identity-/Revision-Guard-Prüfung in
+   [UI-Surfaces](docs/architecture/ui-surfaces.md).
+3. **Home-List-Media:** `MediaReferenceQuery::mediaIdsForHome()`,
+   `MediaReferenceCatalog::contentReferenceRowsByMediaId()` und
+   `MediaAssetEditorialService::removeHomeReferences()` erfassen
+   Home-List-`media_asset_id` und Medien aus `items[].body` nicht
+   vollständig; die Custom-Page-Pfade tun dies bereits.
+   Referenzlisten/Storage/Detach müssen separat von LIVE-/History-
+   Schutz bei physischem Reclaim bewertet werden.
+   Zudem Fehler nach schon committeter logischer Löschung und
+   Retry-/Queue-Übergänge untersuchen.
+   [Media-/Cleanup-Audit](docs/architecture/media-reference-and-cleanup.md).
+4. **Publication/Audit/Migration:** Gallery-/Undo-Publish-Readiness
+   unterscheidet sich bei ALT-Override, Video und Thumbnail;
+   ein kanonischer Guard mit Negativtests fehlt.
+   Revert liest LIVE und Parent vor dem Advisory Lock (potenzielles
+   Revert-/Commit-Interleaving). Historische Versioning-Migration
+   referenziert das aktuelle `PublicationSnapshot::TABLES`
+   dynamisch, obwohl historische CV-Tabelle abweicht.
+   Weitere Quelle: [Importgrenzen](docs/architecture/import-boundaries.md),
+   [Publication-Operationen](docs/architecture/publication-working-operations.md),
+   [Schemaevolution](docs/architecture/schema-evolution.md).
+5. **Public-Folio/SPA-Lifecycle:** Stand `dev@44667847f`,
+   synchronisiert mit `docs` über echten Zwei-Eltern-Merge
+   `319804faec1538d78d7b755e8341fa372d1610d6`.
+   Vier endlose native Pseudo-`Animation`-Objekte;
+   Content-/Menü-Schatten-Ambient-Loops über **34,8/36,4 s**
+   mit achsweiser Bewegung und ruhenden WAAPI-Keyframes.
+   Bei Artwork-Detail-zu-Detail-Höhenänderung animiert
+   `.artwork-detail` **700 ms** samt endlicher, richtungsabhängiger
+   Content-Papieröffnung; währenddessen kein paralleler unendlicher
+   Content-Shadow-Loop, Wiederaufnahme nach `finished` nur noch
+   am aktuellen DOM-Element. Die mit neuem CSS entstandenen
+   alten Testassertionen für `MENU_VARIANTS`/Shadow-Spread wurden
+   durch `dev@44667847f` **quellseitig korrigiert**;
+   ebenso ein früherer doppelt escapeter Shadow-RegExp-Parser
+   durch `dev@e8ae2042`. Neue JS-Fixtures decken Ruhe, Sichtbarkeit
+   beider Papierlagen, Zwischenpositionen und Artwork-Grow/Shrink ab;
+   ein vollständiger JS-/Browserlauf wurde **nicht** ausgeführt.
+   Die unendlichen Animation-Handles werden weiterhin nicht mit
+   einem expliziten `cancel()`-Disposer verfolgt. Das ist eine
+   **Browser-Lifecycle-/Retention-Testlücke**, kein bewiesener Leak.
+   Reduced Motion, Back/Forward und die finale visuelle Abnahme
+   sind ebenfalls offen.
+   [Public-SPA-Architektur](docs/architecture/public-spa-lifecycle.md).
+6. **Weitere Quellgrenzen:** `AdminNotifier`/Mailbox-Pin-Limits,
+   Restore-/Revert-/Reset-Working-vs-LIVE-/History-Guards,
+   Medienvarianten mit Byte-/Hash-identischer Regenerierung,
+   Migrationskompatibilität und dynamische Action-Mount-Lebensdauer.
+   Diese Punkte nicht als Browser-/DB-bestätigte Defekte behandeln.
 
-**Quelle statt Runtime-Erfolg:** [Admin Notifications](docs/architecture/admin-notification-transport.md) dokumentiert `firstOrCreate` nur für Mailbox-Idempotenz, nicht Header-Payload-UUID; ausgeschöpftes Pin-Kontingent kann neue ungepinnte Records verdrängen. [Artwork-Publish/Undo](docs/architecture/import-boundaries.md) besitzt eine Positiv-/Negativmatrix für ALT-Override/Video/Thumbnail-Readiness, da Gallery- und Undo-Publish-Services unterschiedliche Guards haben. [Publication-Revert](docs/architecture/publication-working-operations.md) dokumentiert das vorgelagerte H/P-Lesen vor dem Advisory Lock und das mögliche H2-Race. [Migrationsevolution](docs/architecture/schema-evolution.md) trennt historische 16 Tabellen (inkl. CV) vom aktuellen dynamisch verwendeten 15er History-Backfill. [Structured Components](docs/architecture/structured-components.md) trennt direktes Model-`saving` (Normalisierung vor Validation) vom Home-Edit- und öffentlichen Readiness-Guard. [Public SPA](docs/architecture/public-spa-lifecycle.md) dokumentiert Viewer-/Map-/Slideshow-/Matomo-Disposer und Folio-Pseudoelement-Animation samt offener Reduced-Motion-Abnahme. Diese potenziellen Fehler sind **quellenbasiert**, nicht durch Runtime-, DB- oder Browser-Tests bestätigt.
+### Weiterarbeiten
 
-**Public-Folio-Dev-Merge (14.10.2026):** Sechs neue `dev`-Commits bis `b3439bb` per echtem Zwei-Eltern-Merge übernommen. `General.php` erlaubt mit `->step(1)` bei Page Width jetzt ganze Einzelpixel innerhalb der unveränderten Min-/Max-Grenzen, nicht mehr nur Zehnerschritte. Public-Folio bewegt vorhandene Content-/Menü-Pseudokonturen nur auf einer Achse je Keyframe, mit verbundenen horizontalen Rückläufen; Content 28,6/31,8 Sekunden, Menü 27/30,9 Sekunden. Beide vorhandenen Paper-Schatten laufen mit 31,2/32,4 Sekunden; Artwork-Detail-Artikelhöhe wird nur beim Detail-zu-Detail-Navigieren 700 ms animiert. Quellbasierter Ablauf in [Public-SPA](docs/architecture/public-spa-lifecycle.md), neue JS-/Browser-Testquellen nur gelesen, nicht als ausgeführt gemeldet.
-
-**Folio-Daueranimation und Shadow-Parser (14.10.2026):** `advancePublicFolio()` startet vier unendliche Pseudo- und zwei unendliche Shadow-Animationen pro neuer Seite, ohne expliziten `cancel()`-Disposer. Kein Browser-Leak nachgewiesen. Der zuvor im Regex-Quellcode und isolierten Node-22-Fixture belegte Mid-Flight-Parsingfehler wurde bereits durch `dev@e8ae2042` korrigiert, ebenso die doppelte Escapierung des Unit-Tests. **Quelle erneut geprüft, aber kein vollständiger JS-/Browserlauf.** Auch ein neuer Test für wachsende/schrumpfende Artwork-Detail-Wechsel liegt vor. [Aktueller Public-SPA-Beleg](docs/architecture/public-spa-lifecycle.md).
-
-**Journal-/Settings-`dev`-Refactor (14.10.):** `dev` bis `9db6e93dbe1c80ba075413bac8ce088a2cfab2ae` leitet Journal-Identity über `SiteSectionIdentityService` und nichtdestruktive Templatewechsel über `SiteSectionEditorialService`; nicht individuell gesetzte Navigation Labels folgen geänderten Titeln. Custom Page respektiert den globalen Nested-Navigation-Guard; Settings-Dialoge verwenden responsive `md`-Spalten und `Default`-Breite. Die neue `dev`-Dialognorm wurde mit dem bereits auf `docs` ergänzten Pages-Settings-Vertrag **zusammengeführt**, nicht überschrieben. Tests aus dem nachfolgenden `dev`-Commit wurden nur quellengeprüft. Sieben veränderte App-PHP-Dateien: −1 `Domain/Admin`-Import, +2 `Models`-Imports, mithin **901** aktuelle Quell-Importdeklarationen/**718** modulübergreifende Kanten. Alte 900/717-JSON-/Diagramme bleiben als ursprüngliche Version erhalten und sind als **nicht vollständig aktuell** markiert; Delta in [PHP-Source-Audit](docs/architecture/php-source-audit.md), keine Generator-/Runtime-Checks.
-
-**Home-/Custom-Page-Komponenten-Zielidentität (14.10.):** Der neue `dev`-Commit `21e907f` stellt `CustomPageWorkspaceTargetHelpers::componentAt()` als kanonischen absoluten Index+Typ-Reader wieder her und ergänzt einen Livewire-Test für das dritte Rich-Text-Element hinter einem Divider. Quellseitig repariert für gültige Position+Typ; **offen bleibt ein statischer Stale-Target-Race bei Reorder zweier Komponenten gleichen Typs** (Index+Typ prüft keine eindeutige Blockidentität). Der neue Livewire-Test prüft nur die unveränderte Sequenz. Dieselbe statische Lücke wurde jetzt für Home über `HomePresentation::componentFromArguments()`/`HomePresentationEditorialService::updateComponent()` und deren reine Index-/Typ-Prüfung nachgewiesen: zwei `text`-Blöcke sind auch mit unterschiedlichen UI-Unterarten keine stabile Targetidentität. Konkrete Zweifenster-Testmatrix für Home und Custom Page in [UI-Komposition](docs/architecture/ui-surfaces.md); kein Livewire-Lauf hier.
-
-**Pages-/Identity-Abweichung (Quellbefund, 14.10.):** `SitePages::sectionLabel()` wählt für den Pages-Edit-Formwert das Präsentationslabel; `ManagesSitePageEditDialog` persistiert dieses über `SiteSectionIdentityService` als Titel und Standard-Label, auch nach einem scheinbaren No-op. Journal, Custom Page und Navigation Node betroffen; Gallery über `GalleryEditorialService` ebenfalls als abweichender Titel-/Gallery-Name-Pfad. Die vorhandenen Tests decken nur ursprünglich identische Titel/Labels oder isolierte Journal-Settings ab, nicht Pages-Edit mit getrenntem Label. Umfang, Konversions-/No-op-Fälle und konkrete Regressionstests in [UI-Komposition](docs/architecture/ui-surfaces.md). **Kein Livewire-Lauf.**
-
-**Neuer `dev`-Merge und Folio-Testdelta (14.10.):** Der echte Zwei-Eltern-Merge `54a8b80aa3d1c33d4fb11d7b587db49a1f10fe3a` enthält `dev@44f3d01b`: Menü zeigt zwei äußere Paper-Schatten durch 2-px-Spread und angepasste Offsets; seine verbundenen Pseudokonturen bleiben innerhalb der unteren Menükante. Der unveränderte [Folio-Unit-Test](tests/js/public-folio-motion.test.mjs) erwartet noch `MENU_VARIANTS[0]` mit negativen Bottom-Werten und einen Shadow-Ausdruck ohne `2px`-Spread. Beides war beim damaligen Stand ein **statischer Testbruch**, wurde aber durch `dev@44667847f` nachgezogen; kein in dieser Umgebung ausgeführter Testlauf. [Public-SPA-Beleg](docs/architecture/public-spa-lifecycle.md). Tests gehören zur getrennten `testing`-/`dev`-Arbeit, nicht als opportunistische Mutation auf `docs`.
-
-**Ambient-Folio-/Artwork-Synchronisierung (14.10., neuer `dev`-Stand):** `dev@a6ee7b6` ist über den echten Zwei-Eltern-Merge `e85bc649` enthalten. `buildCornerFrames()` und `shadowMotionFrames()` besitzen explizite wiederholte WAAPI-Frames als Ruhephasen, keine Timer. Content-/Menü-Schatten-Loop nun 34,8/36,4 Sekunden. Bei Artwork-Detail-zu-Detail-Höhenwechsel (700 ms) ruht die unendliche **Content**-Schattenanimation; `playArtworkBuild()` animiert die Papierlagen einmal achsengebunden und startet die Ambient-Animation am noch verbundenen `#content` nach `finished` wieder. Keine Browser-/Runtimebestätigung und weiterhin keine explizite Cancellation aller unendlichen WAAPI-Handles. Die vormals veralteten JS-Assertions zu Menü-Bottom und Shadow-Spread wurden anschließend durch `dev@44667847f` **quellseitig nachgezogen** (siehe unten). [Source-Ablauf](docs/architecture/public-spa-lifecycle.md).
-
-**Folio-Test-Reconciliation (14.10.):** Neuer `dev@44667847f`-Testcommit als echter Zwei-Eltern-Merge `319804fa` übernommen. Die bisherigen statischen Testfehler durch geänderte `MENU_VARIANTS` und Spread-Radius sind **behoben**, mit ergänzter Shadow-Geometrie, Bewegungsruhe, in-flight-Wiederaufnahme und 700-ms-Artwork-Synchronisierungs-Assertions. Der vollständige JS-/Browser-Lauf ist weiterhin **nicht** ausgeführt. [Quellbeleg](docs/architecture/public-spa-lifecycle.md).
-
-**Nächste Arbeit:** Weiterhin kontradiktorische UI-Vertragsduplikate nur nach tatsächlichem Blade/CSS-/Domain-Quellenabgleich reduzieren; weitere konkrete Media-/Publication-Negativpfade aufzeichnen. Native Full-Checkout-Generatorläufe und `pg_catalog` erst bei sicherem vollständigem Checkout bzw. ausdrücklich wegwerfbarer vollständig migrierter PostgreSQL-Instanz. Keine Runtime-Fixes auf `docs`, kein CI und keine Testbehauptungen aus bloßen Quelltexten.
+1. Neuesten `docs`-/`dev`-HEAD **neu abfragen**, Pfadüberschneidungen
+   prüfen und nur sichere Änderungen als **echten Zwei-Eltern-Merge**
+   nach `docs` übernehmen. Stand oben ist nur Referenz.
+2. Die offenen Identity-/Index+Typ-/Media-/Publication-Negativpfade
+   mit zusätzlicher Quell- und Testabdeckung präzisieren; keine
+   Anwendungscode-Reparaturen auf `docs`.
+3. Normative Doppelungen zwischen `ui-skills.md`, Admin-Verträgen
+   und dem Public-Vertrag **am vorhandenen Owner** konsolidieren.
+4. Native PHP-Generatorläufe und den vollständigen Graphenabgleich erst
+   auf einem vollständigen Checkout durchführen. `pg_catalog` nur
+   auf einer **disposable**, vollständig migrierten DB.
+5. Nach jeder abgeschlossenen Einheit `docs` committen/pushen,
+   diese Arbeitsakte **inhaltlich aktualisieren statt fortschreiben**;
+   niemals CI, fremde Branches oder persistente Daten anfassen.
