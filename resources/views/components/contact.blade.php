@@ -1,6 +1,7 @@
 @props([
     'generalSettings',
     'children' => [],
+    'title' => 'Contact',
 ])
 
 @php
@@ -9,7 +10,7 @@
 @endphp
 
 <section class="contact-section" aria-labelledby="contact-heading">
-    <h2 id="contact-heading" class="category-heading">Contact</h2>
+    <h2 id="contact-heading" class="category-heading">{{ filled($title) ? $title : 'Contact' }}</h2>
 
     @foreach ($children as $childIndex => $child)
         @continue(! is_array($child))

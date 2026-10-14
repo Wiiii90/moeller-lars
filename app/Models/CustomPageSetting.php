@@ -80,6 +80,38 @@ final class CustomPageSetting extends Model
         return ($item['published'] ?? true) === true;
     }
 
+    /** Read old Date / Organisation / Location fields as one Context. */
+    public static function listItemContext(array $item): ?string
+    {
+        $value = $item['context'] ?? null;
+        if (is_string($value) && trim($value) !== '') {
+            return trim($value);
+        }
+        $parts = [];
+        foreach (['date', 'meta', 'location'] as $key) {
+            $part = $item[$key] ?? null;
+            if (is_string($part) && trim($part) !== '') {
+                $parts[] = trim($part);
+            }
+        }
+
+        return $parts === [] ? null : implode(' · ', $parts);
+    }
+
+    /** Preserve existing optional links as part of Details when migrating. */
+    public static function listItemDetails(array $item): ?string
+    {
+        $body = is_string($item['body'] ?? null) ? trim($item['body']) : '';
+        $url = is_string($item['url'] ?? null) ? trim($item['url']) : '';
+        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)
+            && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            $link = '[More information]('.str_replace(['(', ')'], ['%28', '%29'], $url).')';
+            $body = $body !== '' ? $body."\n\n".$link : $link;
+        }
+
+        return $body === '' ? null : $body;
+    }
+
     public static function contactChildPublished(array $child): bool
     {
         return ($child['published'] ?? true) === true;
@@ -143,6 +175,7 @@ final class CustomPageSetting extends Model
                 'contact' => [
                     'type' => 'contact',
                     'published' => $published,
+                    'title' => $this->nullableTrimmedString($block['title'] ?? null),
                     'children' => $this->normalizeContactChildren($block),
                 ],
                 'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
@@ -195,6 +228,10 @@ final class CustomPageSetting extends Model
                 }
             }
             if ($type === 'contact') {
+                $title = $block['title'] ?? null;
+                if ($title !== null && (! is_string($title) || mb_strlen($title) > 160)) {
+                    throw ValidationException::withMessages(['blocks' => 'Contact headings must be short text.']);
+                }
                 $this->validateContactComponent($block);
             }
             if ($type === 'legal_disclaimer') {
@@ -290,7 +327,9 @@ final class CustomPageSetting extends Model
                 throw ValidationException::withMessages(['blocks' => 'Each list entry requires a short title.']);
             }
             $this->validateRichText($item['body'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.body', $requirePublicMedia && self::listItemPublished($item));
-            $this->validateUrl($item['url'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.url');
+            if (isset($item['context']) && (! is_string($item['context']) || mb_strlen($item['context']) > 600)) {
+                throw ValidationException::withMessages(['blocks' => 'List entry context may not exceed 600 characters.']);
+            }
         }
     }
 
@@ -352,12 +391,9 @@ final class CustomPageSetting extends Model
 
             return [
                 'published' => self::listItemPublished($item),
-                'date' => $this->nullableTrimmedString($item['date'] ?? null),
                 'title' => $this->nullableTrimmedString($item['title'] ?? null),
-                'meta' => $this->nullableTrimmedString($item['meta'] ?? null),
-                'location' => $this->nullableTrimmedString($item['location'] ?? null),
-                'url' => $this->nullableTrimmedString($item['url'] ?? null),
-                'body' => $item['body'] ?? null,
+                'context' => self::listItemContext($item),
+                'body' => self::listItemDetails($item),
             ];
         }, $items);
     }
