@@ -8,7 +8,7 @@ import {
 } from '../../resources/js/public-folio-motion.js';
 
 const CONTENT_SHADOW = 'rgba(255,255,255,.31) -5px 7px 0px 0px';
-const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -5px 7px 0px 0px';
+const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -8.5px 3.5px 0px 3.5px';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
     const effects = [], animations = [], computed = new Map();
@@ -91,7 +91,7 @@ test('accepted original lines, bounded menu ends and visible paper baselines',()
     assert.deepEqual(FOLIO_VARIANTS[0],['1.10rem','4rem','3.8rem','1.15rem']);
     assert.deepEqual(MENU_VARIANTS[0],['0rem','32%','0rem','1px']);
     assert.ok(MENU_VARIANTS.every(v=>v.every(p=>parseFloat(p)>=0)));
-    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-5,7]);
+    assert.deepEqual(FOLIO_PLANE_BASE.menu,[-8.5,3.5]);
     assert.deepEqual(FOLIO_PLANE_BASE.content,[-5,7]);
 });
 
@@ -212,16 +212,24 @@ test('exactly one pale outer paper is used even during animation',()=>{
             const [sheet]=projected(frame.boxShadow);
             assert.ok(sheet.left<-.3,'one paper backing must show on left');
             assert.ok(sheet.bottom>.3,'one paper backing must show below');
-            if(type==='menu') assert.ok(sheet.right<0,
-                'menu paper never protrudes beyond the right edge');
+            if(type==='menu') {
+                assert.ok(Math.abs(sheet.top)<.001,
+                    'the menu backing remains flush with the top edge');
+                assert.ok(sheet.right<=-5+.001,
+                    'menu paper keeps at least 5px inset on the right');
+            }
         }
     }
 });
 
-test('menu ambient backing remains at least 5px inside its right edge',()=>{
-    for(const frame of buildShadowFrames(MENU_SHADOW,'menu')){
+test('menu backing meets the top and keeps at least 5px right inset through ambient motion',()=>{
+    const frames=buildShadowFrames(MENU_SHADOW,'menu');
+    assert.ok(frames.some(frame=>coords(frame.boxShadow)[1]>3.5),
+        'menu backing retains its vertical ambient movement');
+    for(const frame of frames){
         const [sheet]=projected(frame.boxShadow);
-        assert.ok(sheet.right<=-5,'the menu backing must keep the same right inset as Content');
+        assert.ok(Math.abs(sheet.top)<.001,'the menu backing stays attached at the top');
+        assert.ok(sheet.right<=-5+.001,'the menu backing never crosses the right inset');
     }
 });
 

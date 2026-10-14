@@ -93,14 +93,14 @@ body {
     background: var(--public-surface);
 }
 
-/* One light backing sheet with the same 5px right inset as Content.
-   No positive spread: the old menu backing protruded beyond its right edge. */
+/* One light backing sheet. Its spread joins the menu at the top; the larger
+   negative x-offset keeps its right edge inset by 5px, like Content. */
 .site-navigation {
     position: relative;
     order: 1;
     box-shadow:
         inset 0 -1px 0 var(--public-index-rule),
-        -5px 7px 0 var(--public-folio-soft);
+        -8.5px 3.5px 0 3.5px var(--public-folio-soft);
 }
 .site-navigation::before,
 .site-navigation::after {
