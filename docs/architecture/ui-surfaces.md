@@ -173,4 +173,38 @@ kanonischen stabilen Identität. Keinesfalls darf B unbeabsichtigt
 gehört in den bestehenden Domain-Target-/Revision-Guard, nicht in eine
 zweite Action-Pipeline.
 
+### Home-Komponenten: dieselbe Identitätsgrenze
+
+Der [HomePresentation-Editor](../../app/Filament/Pages/HomePresentation.php)
+(`homeComponentEditingAction()`, ungefähr Zeilen 525–626) lädt über
+`componentFromArguments()` (ungefähr Zeilen 1461–1482) nur anhand
+von `index` und `type`. Auf Speichern setzt
+[HomePresentationEditorialService::updateComponent()](../../app/Domain/Content/HomePresentationEditorialService.php)
+innerhalb von `mutateComponents()` die neue Komponente an
+`components[$index]`; `assertTarget()` kontrolliert den gespeicherten
+Typ, nicht eine eindeutige unveränderliche Block-Identität.
+`moveComponent()` und `reorderComponents()` können zwei Blöcke
+desselben Typs permutieren, ohne diese Typprüfung zu verändern.
+
+Der zuvor beschriebene Konkurrenzfall gilt deshalb **auch für Home**
+in den strukturierte-Komponenten-Templates: Ein offener Editor für
+`text A` an Index 0 und eine zwischenzeitliche Vertauschung mit
+`text B` gleicher Persistenzart können beim späteren Save B überschreiben.
+Auch `heading` und `rich_text` sind dort beide gespeicherte `text`-
+Komponenten; die UI-Unterarten sind keine eindeutigen Persistenzidentitäten.
+Dies ist eine **statisch belegte Identitäts-/Interleaving-Lücke**,
+kein hier ausgeführter Mehrfenster-Test.
+
+[Test HomeComponentTypeEditingTest](../../tests/Feature/Admin/Home/HomeComponentTypeEditingTest.php)
+prüft direkte Typumwandlung, Content-Regeln und Zieltypen, aber keinen
+konkurrierenden Edit/Reorder zweier gleichartiger Blöcke. Ergänzungsfall:
+Home Custom mit `text A` und `text B`, Editor A öffnen, in anderem
+Livewire-Kontext beide Blöcke tauschen, ursprünglichen Editor absenden;
+das Ergebnis muss A gezielt treffen oder als Stale-Target abgelehnt
+werden, niemals B überarbeiten. Zweite Variante:
+`heading`/`rich_text` (beide `type=text`) und List mit
+verschachtelten Child-Änderungen. Für Home und Custom Page soll
+**ein gemeinsam begründetes** Target-/Revision-Konzept gelten, keine
+unabhängigen lokalen Sonderlösungen.
+
 **Weitere Untersuchungen:** dynamisch angelegte Filament-Actions, Mount-/Autosave-Reihenfolgen, JavaScript-Event-Dispatch, Modal-State und Notification-Pipeline. Diese müssen an konkreten Quellstellen erhoben werden, nicht aus Dateinamen extrapoliert werden.
