@@ -35,6 +35,9 @@ test('original paper corners animate in one axis at a time, with connected horiz
             children: main.children.length,
             effects, menuTop: bounds.map(b => b.borderTopStyle),
             menuBottom: bounds.map(b => b.borderBottomStyle),
+            menuEnds: bounds.map(b => ({ top: parseFloat(b.top), bottom: parseFloat(b.bottom) })),
+            menuShadow: getComputedStyle(nav).boxShadow,
+            contentShadow: getComputedStyle(main).boxShadow,
         };
     });
     expect(state.children).toBe(1);
@@ -43,6 +46,20 @@ test('original paper corners animate in one axis at a time, with connected horiz
     expect(state.effects.every(e => e.iterations === Infinity)).toBe(true);
     expect(state.menuTop).toEqual(['none', 'none']);
     expect(state.menuBottom).toEqual(['solid', 'solid']);
+    for (const end of state.menuEnds) {
+        expect(end.top).toBeGreaterThanOrEqual(0);
+        expect(end.bottom).toBeGreaterThanOrEqual(0);
+    }
+    // Each of the existing rear planes remains exposed beside and beneath
+    // the nearer plane. Spread makes the menu reach its top and bottom.
+    expect(state.menuShadow).toContain('2px');
+    const coords = shadow => [...shadow.matchAll(/(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+0px/g)]
+        .slice(-2).map(m => [Number(m[1]), Number(m[2])]);
+    for (const [shadow, plane] of [[state.menuShadow, 'menu'], [state.contentShadow, 'content']]) {
+        const [[x1,y1],[x2,y2]] = coords(shadow);
+        expect(x2, plane + ' rear plane must be left of the middle plane').toBeLessThanOrEqual(x1 - 2);
+        expect(y2, plane + ' rear plane must be lower than the middle plane').toBeGreaterThanOrEqual(y1 + 1.5);
+    }
     for (const effect of state.effects.filter(e => e.pseudo)) {
         for (let i = 1; i < effect.frames.length; i += 1) {
             const a = effect.frames[i - 1], b = effect.frames[i];
@@ -75,6 +92,15 @@ test('different artwork heights build or shrink the WHITE paper without scaling 
             paperOverflow: getComputedStyle(document.querySelector('#content')).overflow,
             keys: motion?.effect.getKeyframes(),
             duration: motion?.effect.getTiming().duration,
+            paperBuild: document.getAnimations()
+                .filter(a => a.effect.target === document.querySelector('#content')
+                    && !a.effect.pseudoElement)
+                .map(a => ({
+                    duration: a.effect.getTiming().duration,
+                    iterations: a.effect.getTiming().iterations,
+                    first: a.effect.getKeyframes()[0].boxShadow,
+                    last: a.effect.getKeyframes().at(-1).boxShadow,
+                })),
         };
     }, sheet('Short artwork', 390));
     expect(replacement.original).toBeGreaterThan(750);
@@ -83,8 +109,19 @@ test('different artwork heights build or shrink the WHITE paper without scaling 
     expect(replacement.keys?.[0]?.height).toContain('px');
     expect(replacement.keys?.[1]?.height).toContain('px');
     expect(replacement.duration).toBe(700);
-    await page.waitForTimeout(780);
+    expect(replacement.paperBuild).toHaveLength(1);
+    expect(replacement.paperBuild[0].duration).toBe(700);
+    expect(replacement.paperBuild[0].iterations).toBe(1);
+    expect(replacement.paperBuild[0].first).toBeTruthy();
+    expect(replacement.paperBuild[0].last).toBeTruthy();
+    await page.waitForTimeout(820);
     await expect(page.locator('.artwork-detail')).toHaveCSS('overflow', 'visible');
+    await expect.poll(() => page.evaluate(() =>
+        document.getAnimations().filter(a =>
+            a.effect.target === document.querySelector('#content')
+            && !a.effect.pseudoElement
+            && a.effect.getTiming().iterations === Infinity).length,
+    )).toBe(1);
 });
 
 test('actual Livewire detail navigation can retain the same document', async ({ page }) => {
