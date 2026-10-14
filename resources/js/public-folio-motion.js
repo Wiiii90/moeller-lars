@@ -8,9 +8,9 @@ export const FOLIO_VARIANTS = Object.freeze([
     ['1.25rem', '4.14rem', '3.93rem', '1.28rem'],
 ]);
 export const MENU_VARIANTS = Object.freeze([
-    ['.03rem', '.05rem', '.02rem', '.05rem'],
-    ['.10rem', '.05rem', '.09rem', '.05rem'],
-    ['.10rem', '.085rem', '.09rem', '.085rem'],
+    ['0rem', '0rem', '0rem', '0rem'],
+    ['.16rem', '0rem', '.13rem', '0rem'],
+    ['.16rem', '.10rem', '.13rem', '.10rem'],
 ]);
 
 // Original horizontal geometry belongs to the accepted shell CSS. These
@@ -20,8 +20,8 @@ const CONTENT_EDGES = [
     { side: 'right', offset: '-.55rem', width: '.55rem' },
 ];
 const MENU_EDGES = [
-    { side: 'left', offset: '-.5rem', width: '.76rem' },
-    { side: 'right', offset: '-.52rem', width: '.76rem' },
+    { side: 'left', offset: '-.31rem', width: '.55rem' },
+    { side: 'right', offset: '-.32rem', width: '.56rem' },
 ];
 const CONTENT_DURATIONS = [28600, 31800];
 const MENU_DURATIONS = [27000, 30900];
@@ -34,8 +34,8 @@ const SHADOW_START = {
     ].join(', '),
     menu: (middleX, middleY, rearX, rearY) => [
         'inset 0 -1px 0 var(--public-index-rule)',
-        `${middleX}px ${middleY}px 0 2px var(--public-folio-depth)`,
-        `${rearX}px ${rearY}px 0 2px var(--public-folio-soft)`,
+        `${middleX}px ${middleY}px 0 1px var(--public-folio-depth)`,
+        `${rearX}px ${rearY}px 0 1px var(--public-folio-soft)`,
     ].join(', '),
 };
 let snapshot = null;
@@ -160,7 +160,7 @@ function renderedShadowCoords(value) {
 // planes must remain separate along LEFT and BOTTOM for every animation frame.
 export const FOLIO_PLANE_BASE = Object.freeze({
     content: [-5, 7, -8, 10],
-    menu: [-2, 2, -5, 4],
+    menu: [-1, 1, -3, 2],
 });
 
 function shadowMotionFrames(start, type, direction, end = start) {

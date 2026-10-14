@@ -102,8 +102,8 @@ body {
     order: 1;
     box-shadow:
         inset 0 -1px 0 var(--public-index-rule),
-        -2px 2px 0 2px var(--public-folio-depth),
-        -5px 4px 0 2px var(--public-folio-soft);
+        -1px 1px 0 1px var(--public-folio-depth),
+        -3px 2px 0 1px var(--public-folio-soft);
 }
 .site-navigation::before,
 .site-navigation::after {
@@ -115,20 +115,20 @@ body {
 /* Open at the top, with only a short bottom connection into the
    sheet. The white stroke never extends past the lower menu border. */
 .site-navigation::before {
-    top: .03rem;
-    bottom: .05rem;
-    left: -.5rem;
-    width: .76rem;
+    top: 0;
+    bottom: 0;
+    left: -.31rem;
+    width: .55rem;
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
 /* The eastern line also has only its lower joined return, without
    an overshoot into the rear paper planes. */
 .site-navigation::after {
-    top: .02rem;
-    bottom: .05rem;
-    right: -.52rem;
-    width: .76rem;
+    top: 0;
+    bottom: 0;
+    right: -.32rem;
+    width: .56rem;
     border-right: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -555,11 +555,11 @@ body {
  * remaining viewport. Match rendered element children, not whitespace text:
  * unpublished or absent entries produce no elements. Home components are
  * explicitly excluded and retain the normal content-driven height. */
-#content:not(:has(> .public-page-heading)):has(
-    > .artwork-list:not(:has(> *)),
-    > .exhibitions-page:not(:has(> *)),
-    > .blog-page:not(:has(> *)),
-    > .custom-page:not(.home-components):not(:has(> *))
+#content:not(:has(> .public-content-reveal > .public-page-heading)):has(
+    > .public-content-reveal > .artwork-list:not(:has(> *)),
+    > .public-content-reveal > .exhibitions-page:not(:has(> *)),
+    > .public-content-reveal > .blog-page:not(:has(> *)),
+    > .public-content-reveal > .custom-page:not(.home-components):not(:has(> *))
 ) {
     flex: 1 0 auto;
 }
@@ -569,6 +569,13 @@ body {
     padding-inline: var(--public-content-inset);
     border: 0;
     overflow-wrap: break-word;
+}
+/* The structural inner flow alone gets transient height/clip on navigation.
+   Outer #content remains overflow-visible for its original paper contours. */
+.public-content-reveal {
+    display: flow-root;
+    min-width: 0;
+    width: 100%;
 }
 
 .category-heading {

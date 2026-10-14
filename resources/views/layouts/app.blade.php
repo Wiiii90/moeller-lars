@@ -137,7 +137,11 @@
             @endunless
         </header>
         <main id="content" class="site-content">
-            @yield('content')
+            {{-- One content owner for every public page. Only this inner flow
+                 is clipped briefly on SPA swaps; exterior folio stays visible. --}}
+            <div class="public-content-reveal">
+                @yield('content')
+            </div>
         </main>
         <x-artwork-viewer />
         @livewireScripts(['nonce' => $publicStyleNonce, 'url' => route('public.livewire.csp')])
