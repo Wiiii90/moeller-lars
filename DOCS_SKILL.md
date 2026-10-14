@@ -29,8 +29,8 @@
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
 | letzter bestätigter Zwei-Eltern-`docs`-Merge | `9b6b2547fdd34c774ca5750b38642ae775e3e25d` |
-| darin aufgenommener `dev`-Stand | `e06c7391b4a52ab8102b31ca7fbc1e872dfeb529` |
-| Status | Bis `e06c7391b` in `docs` enthalten; neue Heads immer erneut prüfen |
+| darin aufgenommener `dev`-Stand | `298bf74bce837385b8a7261b145d2b9fd887ed7c` |
+| Status | Zehn weitere `dev`-Commits mit zwölf geprüften Quellpfaden übernommen; neue Heads erneut prüfen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -166,9 +166,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   Selection-Bereichs) ist jetzt am selben kanonischen Selection-Owner
   mit dem Dashboard-Blade abgeglichen. `ui-skills.md` leitet auf
   diese Normen weiter, statt eigene Achsen-/Counter-Regeln zu führen.
-- [Dialoge](docs/ADMIN-DIALOG-CONTRACT.md) besitzen Edit-/Create-
+- [Dialoge](docs/ADMIN-DIALOG-CONTRACT.md) besitzen Edit-/Create-/Command-
   Persistenz, Page-Heading-Autosave, Pages Settings und Journal-/
-  Gallery-/Custom-Settings-Konsistenz. Die `dev`-Änderungen wurden
+  Gallery-/Custom-Settings-Konsistenz. Gallery Artwork Create/Edit teilen
+  nun den fachlichen `ArtworkEditDialog::schema()`-Owner; Gallery-Edit-
+  Header-Moves/Publication/Detach und Materials-Repeater-Commit sind
+  nach Quellvergleich im Dialogvertrag nachgeführt. Die `dev`-Änderungen wurden
   inhaltlich mit den zusätzlichen Pages-Regeln zusammengeführt.
 - [Benachrichtigungen](docs/ADMIN-NOTIFICATION-CONTRACT.md) definieren
   die Meldungskardinalität anhand tatsächlich konsumierter Activity-
@@ -235,34 +238,27 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
    Weitere Quelle: [Importgrenzen](docs/architecture/import-boundaries.md),
    [Publication-Operationen](docs/architecture/publication-working-operations.md),
    [Schemaevolution](docs/architecture/schema-evolution.md).
-5. **Public-Folio/SPA-Lifecycle:** Stand `dev@e06c7391b`,
-   synchronisiert mit `docs` über echten Zwei-Eltern-Merge
-   `9b6b2547fdd34c774ca5750b38642ae775e3e25d`.
-   Vier endlose native Pseudo-`Animation`-Objekte;
-   Content-/Menü-Schatten-Ambient-Loops über **34,8/36,4 s**
-   mit achsweiser Bewegung und ruhenden WAAPI-Keyframes.
-   Bei Artwork-Detail-zu-Detail-Höhenänderung animiert
-   `.artwork-detail` **700 ms** samt endlicher, richtungsabhängiger
-   Content-Papieröffnung; währenddessen kein paralleler unendlicher
-   Content-Shadow-Loop, Wiederaufnahme nach `finished` nur noch
-   am aktuellen DOM-Element. Die mit neuem CSS entstandenen
-   alten Testassertionen für `MENU_VARIANTS`/Shadow-Spread wurden
-   durch `dev@44667847f` **quellseitig korrigiert**;
-   ebenso ein früherer doppelt escapeter Shadow-RegExp-Parser
-   durch `dev@e8ae2042`. Neue JS-Fixtures decken Ruhe, Sichtbarkeit
-   beider Papierlagen, Zwischenpositionen und Artwork-Grow/Shrink ab;
-   der zusätzlich übernommene **Browser-Test** prüft positive
-   Menü-Top-/Bottom-Abstände, real gerenderte hintere Shadow-Lagen
-   und die 700-ms-Shadow-Build-Animation samt anschließender
-   unendlicher Wiederaufnahme. Der zugehörige Public-Produktvertrag
-   ist entsprechend nachgezogen, **keine Browserabnahme**.
-   Vollständige JS-/Playwright-Läufe wurden hier **nicht** ausgeführt.
-   Die unendlichen Animation-Handles werden weiterhin nicht mit
-   einem expliziten `cancel()`-Disposer verfolgt. Das ist eine
-   **Browser-Lifecycle-/Retention-Testlücke**, kein bewiesener Leak.
-   Reduced Motion, Back/Forward und die finale visuelle Abnahme
-   sind ebenfalls offen.
-   [Public-SPA-Architektur](docs/architecture/public-spa-lifecycle.md).
+5. **Public-Folio/SPA-Lifecycle:** Im jüngsten `dev@298bf74bce837385b8a7261b145d2b9fd887ed7c`
+   besitzt **jeder** Public-Inhalt (Home, Gallery, Artwork, Blog,
+   Exhibitions, Custom, CV) dieselbe `#content > .public-content-reveal`-
+   Hülle. Der frühere Artwork-only-700-ms-Höhenübergang ist entfernt.
+   Beim Livewire-Swap misst `capturePublicFolio()` die vorherige
+   Innenhöhe; `animatePageHeight()` nutzt **980 ms** bei Differenz
+   mindestens 7 px und clippt ausschließlich die innere Hülle.
+   **Jeder** tatsächliche Swap erhält einen `pulsePaper()`-Impuls,
+   selbst bei gleicher Höhe: Content-Ecken/Schatten **1.480 ms**,
+   Menü-Ecken/Schatten **980 ms**. Erst wenn die endlichen
+   Animationen fertig sind und das DOM-Ziel noch dasselbe ist,
+   startet `startAmbient()` erneut: Content-Ecken
+   **19,8/23,6 s**, Menü-Ecken **21,9/25,8 s**,
+   Content-/Menü-Schatten **24,7/28,1 s**, ohne JS-Timer.
+   Echte Papierlagen, keine zusätzlichen DOM-Dekorationen;
+   einheitliche Source in [Public-SPA](docs/architecture/public-spa-lifecycle.md)
+   und [Public-Vertrag](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md).
+   Aktuelle Unit-/Browser-Testdateien wurden nur **gelesen**;
+   kein Runtime-/Browser-Lauf. Unendliche WAAPI-Handles weiterhin
+   ohne explizite `cancel()`-Disposer: mögliche Retention **nur
+   als Browser-Testlücke**, nicht als bestätigter Leak.
 6. **Weitere Quellgrenzen:** `AdminNotifier`/Mailbox-Pin-Limits,
    Restore-/Revert-/Reset-Working-vs-LIVE-/History-Guards,
    Medienvarianten mit Byte-/Hash-identischer Regenerierung,

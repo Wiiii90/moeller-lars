@@ -221,6 +221,14 @@ These examples apply the existing shared Create/Edit Action lifecycle; they do n
 
 **Source:** [General actions](../app/Filament/Pages/General.php), [Social Blade stable keys](../resources/views/filament/schemas/components/general-social-links.blade.php), [Pages Create](../app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php) and [Pages Edit](../app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php). Actual browser interaction was not re-executed for this documentation change.
 
+## Gallery Artwork edit/create und Material-Presets
+
+Die Gallery verwendet [`ArtworkEditDialog::schema()`](../app/Filament/Support/ArtworkEditDialog.php) für **beide** Artwork-Formulare. [`GalleryWorkspaceFormSupport::artworkCreateFormSchema()`](../app/Filament/Pages/Concerns/GalleryWorkspaceFormSupport.php) ruft denselben Schema-Owner mit `creating: true` auf; die Create-Variante prüft Slug-Eindeutigkeit vor dem Anlegen. Edit nutzt dieselbe fachlich gruppierte Basics-/Dimensions-/Content-/Media-/Presentation-Formstruktur. Die Create-/Edit-Actions bleiben unterschiedliche Lebenszyklen (Create mit explizitem Commit, Edit mit native Discrete-Change-Autosave); die gemeinsame Felddefinition ist kein zweiter Persistenz-Owner.
+
+Der Gallery-Edit-Header verwendet [`artworkEditHeaderActions()`](../app/Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php): Move up/down remountet gegen die persistierte Artwork-ID, Publish/Unpublish benutzt denselben fachlichen Publication-Pfad wie die Row-Actions (Unpublish über die bestehende Bestätigung), und **Remove bedeutet Detach aus der Gallery**, nicht Löschen des Artwork-Datensatzes oder seiner Mediendateien. Remove ist bei veröffentlichtem Artwork deaktiviert. Erfolgsmeldung/Refresh werden am existierenden Mutation-Owner veranlasst; rein statisches Lesen ist **keine** Bestätigung des vollständigen Livewire-Header-Action-Flows.
+
+Die Materials-Settings-`presets` sind eine **Repeater-Collection**. [`materialPresetsAction()`](../app/Filament/Pages/Concerns/GalleryWorkspaceUploadSettings.php) verwendet deshalb `AdminDialog::command(..., 'Apply changes', Default)`: Reorder/Add/Delete innerhalb dieser Liste sind Entwurfszustand bis zum expliziten Commit, **nicht** einzelne Edit-`wire:change`-Persistenzen. No-op und Validierungsfehler dürfen keine unzutreffende Erfolgsbenachrichtigung erhalten. Ein hier ausgeführter Gallery-Browser-/Featuretest liegt nicht vor.
+
 ## Exhibition map autosave
 
 The Exhibition Map uses the ordinary Edit dialog and its semantic `change`

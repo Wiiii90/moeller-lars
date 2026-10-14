@@ -15,7 +15,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 9. [Restore, Revert und Reset](publication-working-operations.md) — Activity UI bis zum Working-Snapshot, mit drei getrennten Ablaufdiagrammen, Guards und No-ops.
 10. [Strukturierte Komponenten](structured-components.md) — die sechs persistierten JSON-Typen, Contact-/List-Kinder, Medienreferenzen und Home-Konfiguration.
 11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 20 explizite HTTP-Routen mit [PHP-Quellprüfer](../../scripts/check-architecture-routes.php), Middleware, Filament-Discovery und Public-JS.
-12. [Public-SPA-Dokumentlebenszyklus](public-spa-lifecycle.md) — Livewire 4 Navigation, CSP-Metadaten, JS-Disposer und Matomo pro Besuch.
+12. [Public-SPA-Dokumentlebenszyklus](public-spa-lifecycle.md) — Livewire 4 Navigation, CSP-Metadaten, JS-Disposer, einheitlicher Content-Reveal und Paper-Build bei allen internen Public-Seitenwechseln.
 13. [Filament-/Livewire-Komposition und Pages-Identity-Negativpfad](ui-surfaces.md) — 37 Quelleinheiten, 26 interne Traits, 72 literal Actions und quellbelegte Trennung von Titel und Navigation Label in [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd).
 14. [Admin Notification transport](admin-notification-transport.md) — quellenverankerte Audit-/Inbox-/Header-Sequenz, Session-/Livewire-Dispatch, Retention und nicht runtimegeprüfte Negativpfade.
 15. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
