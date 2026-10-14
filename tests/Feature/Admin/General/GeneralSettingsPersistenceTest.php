@@ -2,6 +2,7 @@
 
 use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminSettingsService;
+use App\Domain\Admin\AdminAuditService;
 use App\Filament\Pages\General;
 use App\Models\AdminNotification;
 use App\Models\PublicContentSetting;
@@ -13,6 +14,27 @@ beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
+});
+
+it('rolls back an autosave audit failure and successfully retries without false success', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['public_email' => 'before@example.invalid']);
+    app(AdminActivityNotificationContext::class)->discard();
+    $before = generalSettingsAuditCount();
+    $audit = Mockery::mock(app(AdminAuditService::class));
+    $audit->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit unavailable'));
+    app()->instance(AdminAuditService::class, $audit);
+    app()->forgetInstance(AdminSettingsService::class);
+    $component = Livewire::test(General::class)->set('data.public_email', 'after@example.invalid')->assertHasErrors(['data.public_email']);
+    expect(PublicContentSetting::query()->findOrFail(1)->public_email)->toBe('before@example.invalid')
+        ->and(generalSettingsAuditCount())->toBe($before)
+        ->and(AdminNotification::query()->where('status', 'success')->count())->toBe(0)
+        ->and(AdminNotification::query()->where('status', 'danger')->count())->toBe(1);
+    app()->forgetInstance(AdminAuditService::class);
+    app()->forgetInstance(AdminSettingsService::class);
+    $component->call('persistChangedField', 'public_email')->assertHasNoErrors()->assertDispatched('admin-header-notification');
+    expect(PublicContentSetting::query()->findOrFail(1)->public_email)->toBe('after@example.invalid')
+        ->and(generalSettingsAuditCount())->toBe($before + 1)
+        ->and(AdminNotification::query()->where('status', 'success')->count())->toBe(1);
 });
 
 require_once __DIR__.'/GeneralFixtures.php';

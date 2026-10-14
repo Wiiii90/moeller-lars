@@ -7,12 +7,14 @@ use App\Models\JournalSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 final class AdminSettingsService
 {
     public function __construct(private readonly AdminAuditService $audit) {}
 
-    public function updatePublicContent(PublicContentSetting $setting, array $data): PublicContentSetting
+    /** @param array<string,mixed> $expected Expected original values for optimistic editor concurrency. */
+    public function updatePublicContent(PublicContentSetting $setting, array $data, array $expected = []): PublicContentSetting
     {
         /** @var PublicContentSetting $updated */
         $updated = $this->update(
@@ -20,6 +22,7 @@ final class AdminSettingsService
             $this->normalizePublicContent($data),
             'public_content_setting.updated',
             'public_content_setting',
+            $expected,
         );
 
         return $updated;
@@ -64,14 +67,19 @@ final class AdminSettingsService
         return $data;
     }
 
-    private function update(Model $record, array $data, string $action, string $entityType): Model
+    private function update(Model $record, array $data, string $action, string $entityType, array $expected = []): Model
     {
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($record, $data, $action, $entityType, $actor): Model {
+        return DB::transaction(function () use ($record, $data, $action, $entityType, $actor, $expected): Model {
             $class = $record::class;
             /** @var Model $fresh */
             $fresh = $class::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
+            foreach ($expected as $field => $value) {
+                if ($this->comparisonValue($fresh->getAttribute($field)) !== $this->comparisonValue($value)) {
+                    throw ValidationException::withMessages([$field => 'This setting changed since the editor was opened. Reopen the editor.']);
+                }
+            }
             $fresh->fill($data);
 
             if ($fresh->isDirty()) {
@@ -81,5 +89,19 @@ final class AdminSettingsService
 
             return $fresh;
         });
+    }
+
+    // JSONB object key order is immaterial; list order and scalar types remain significant.
+    private function comparisonValue(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+        $value = array_map($this->comparisonValue(...), $value);
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
     }
 }

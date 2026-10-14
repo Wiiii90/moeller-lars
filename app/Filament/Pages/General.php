@@ -14,9 +14,11 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
+use App\Models\User;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -75,6 +77,13 @@ final class General extends Page
     // Edit Action identity is the unique social platform, not a mutable row index.
     // Autosaved reordering must not redirect later field edits to another profile.
     public ?string $editingSocialPlatform = null;
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
 
     public function mount(): void
     {
@@ -167,11 +176,7 @@ final class General extends Page
                                     ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
                                     ->afterStateUpdated(function ($livewire): void {
                                         if ($livewire instanceof self) {
-                                            $livewire->persistChangedField('background_mode');
-                                            if (($livewire->data['background_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
-                                                $livewire->persistChangedField('background_color');
-                                            }
-                                            $livewire->syncAppearanceControlState();
+                                            $livewire->persistAppearanceMode();
                                         }
                                     }),
 
@@ -373,19 +378,25 @@ final class General extends Page
             return;
         }
 
-        if ($mode === PublicAppearance::MODE_SOLID) {
-            $this->persistChangedField('background_mode');
-        }
-
         $alias = $slot === 'primary' ? 'background_primary_color' : 'background_secondary_color';
         $this->resetErrorBag('data.'.$alias);
         $this->data[$field] = $value;
-        $this->persistChangedField($field);
+        $this->persistChangedFields($mode === PublicAppearance::MODE_SOLID ? ['background_mode', $field] : [$field]);
 
         foreach ($this->getErrorBag()->get('data.'.$field) as $message) {
             $this->addError('data.'.$alias, $message);
         }
 
+        $this->syncAppearanceControlState();
+    }
+
+    public function persistAppearanceMode(): void
+    {
+        $fields = ['background_mode'];
+        if (($this->data['background_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
+            $fields[] = 'background_color';
+        }
+        $this->persistChangedFields($fields);
         $this->syncAppearanceControlState();
     }
 
@@ -440,7 +451,7 @@ final class General extends Page
 
             foreach ($links as $link) {
                 if (($link['platform'] ?? null) === $platform) {
-                    throw ValidationException::withMessages([
+                    $this->throwSocialDialogValidation([
                         'platform' => 'Each social platform can only be configured once.',
                     ]);
                 }
@@ -505,7 +516,7 @@ final class General extends Page
                 fn (array $link): bool => ($link['platform'] ?? null) === $this->editingSocialPlatform,
             );
             if ($index === false) {
-                throw ValidationException::withMessages([
+                $this->throwSocialDialogValidation([
                     'platform' => 'This social profile no longer exists. Reopen the editor.',
                 ]);
             }
@@ -514,7 +525,7 @@ final class General extends Page
 
             foreach ($links as $otherIndex => $link) {
                 if ($otherIndex !== $index && ($link['platform'] ?? null) === $platform) {
-                    throw ValidationException::withMessages([
+                    $this->throwSocialDialogValidation([
                         'platform' => 'Each social platform can only be configured once.',
                     ]);
                 }
@@ -640,26 +651,43 @@ final class General extends Page
 
     public function persistChangedField(string $field): void
     {
-        if (! in_array($field, self::PERSISTED_FIELDS, true) || ! is_array($this->data) || ! array_key_exists($field, $this->data)) {
+        $this->persistChangedFields([$field]);
+    }
+
+    /** @param list<string> $fields */
+    private function persistChangedFields(array $fields): void
+    {
+        if (! is_array($this->data)) {
             return;
         }
 
-        $this->clearPersistenceErrors($field);
         $record = PublicContentSetting::general();
-        $candidate = $this->normalizePersistenceValue($field, $this->data[$field]);
-        $persisted = $this->normalizePersistenceValue($field, $record->getAttribute($field));
+        $changes = [];
+        foreach ($fields as $field) {
+            if (! in_array($field, self::PERSISTED_FIELDS, true) || ! array_key_exists($field, $this->data)) {
+                continue;
+            }
+            $this->clearPersistenceErrors($field);
+            $candidate = $this->normalizePersistenceValue($field, $this->data[$field]);
+            if ($candidate !== $this->normalizePersistenceValue($field, $record->getAttribute($field))) {
+                $changes[$field] = $candidate;
+            }
+        }
 
-        if ($candidate === $persisted) {
+        if ($changes === []) {
             return;
         }
 
         try {
-            app(AdminSettingsService::class)->updatePublicContent($record, [$field => $candidate]);
+            $updated = app(AdminSettingsService::class)->updatePublicContent($record, $changes);
             $this->settingsRecord = null;
-            if (in_array($field, ['background_color', 'background_gradient_start', 'background_gradient_end'], true)) {
-                $this->data[$field] = $candidate;
+            if (! $updated->wasChanged()) {
+                return;
             }
-            if (in_array($field, [
+            foreach (array_keys($changes) as $field) {
+                $this->data[$field] = $updated->getAttribute($field);
+            }
+            if (array_intersect(array_keys($changes), [
                 'favicon_media_asset_id',
                 'background_mode',
                 'background_color',
@@ -668,13 +696,13 @@ final class General extends Page
                 'background_gradient_angle',
                 'public_page_width',
                 'public_content_padding',
-            ], true)) {
+            ]) !== []) {
                 $this->dispatch('general-appearance-updated');
             }
 
             app(AdminNotifier::class)->notification(
                 'Changes saved',
-                $this->persistenceFeedbackLabel($field).' updated.',
+                implode(', ', array_map($this->persistenceFeedbackLabel(...), array_keys($changes))).' updated.',
                 'success',
             );
         } catch (ValidationException $exception) {
@@ -694,7 +722,9 @@ final class General extends Page
         } catch (Throwable $exception) {
             report($exception);
             $message = 'This setting could not be saved. Please try again.';
-            $this->addError('data.'.$field, $message);
+            foreach (array_keys($changes) as $field) {
+                $this->addError('data.'.$field, $message);
+            }
             app(AdminNotifier::class)->notification('Change not saved', $message, 'danger');
         }
     }
@@ -860,9 +890,16 @@ final class General extends Page
         $links = array_values($links);
 
         try {
+            $record = PublicContentSetting::general();
+            if ($this->normalizeSocialLinks($record->social_links) === $this->normalizeSocialLinks($links)) {
+                $this->data['social_links'] = $links;
+
+                return;
+            }
             $updated = app(AdminSettingsService::class)->updatePublicContent(
-                PublicContentSetting::general(),
+                $record,
                 ['social_links' => $links],
+                ['social_links' => $this->data['social_links'] ?? null],
             );
             $this->settingsRecord = null;
 
@@ -877,22 +914,35 @@ final class General extends Page
             foreach ($exception->errors() as $key => $messages) {
                 if (str_ends_with($key, '.platform')) {
                     $mapped['platform'] = $messages;
+                } elseif ($key === 'social_links') {
+                    $mapped['platform'] = $messages;
                 } elseif (str_ends_with($key, '.url')) {
                     $mapped['url'] = $messages;
                 }
             }
 
-            throw ValidationException::withMessages(
+            $this->throwSocialDialogValidation(
                 $mapped !== [] ? $mapped : ['url' => 'This social profile could not be saved.'],
             );
         } catch (Throwable $exception) {
             report($exception);
-            throw ValidationException::withMessages([
+            $this->throwSocialDialogValidation([
                 'url' => 'This social profile could not be saved. Please try again.',
             ]);
         }
 
         $this->data['social_links'] = $links;
+    }
+
+    /** @param array<string, string|list<string>> $errors */
+    private function throwSocialDialogValidation(array $errors): never
+    {
+        $statePath = $this->getMountedActionSchema()->getStatePath();
+        $mapped = [];
+        foreach ($errors as $field => $messages) {
+            $mapped[$statePath.'.'.$field] = $messages;
+        }
+        throw ValidationException::withMessages($mapped);
     }
 
     private function socialLinkIndexForAction(array $arguments): ?int

@@ -5,6 +5,8 @@ use App\Domain\Content\PublicAppearance;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\General;
 use App\Models\PublicContentSetting;
+use App\Models\AdminNotification;
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Validation\ValidationException;
@@ -14,6 +16,49 @@ beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
+});
+
+it('saves a first solid color as one complete action and repeats silently', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['background_mode' => null, 'background_color' => '#123456']);
+    app(AdminActivityNotificationContext::class)->discard();
+    $before = generalSettingsAuditCount();
+    $component = Livewire::test(General::class)->call('persistAppearanceColor', 'primary', '#ABCDEF');
+    expect(PublicContentSetting::general()->background_mode)->toBe('solid')
+        ->and(PublicContentSetting::general()->background_color)->toBe('#ABCDEF')
+        ->and(generalSettingsAuditCount())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe(1)
+        ->and(collect($component->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $component->call('persistAppearanceColor', 'primary', '#ABCDEF')->assertNotDispatched('admin-header-notification');
+    expect(generalSettingsAuditCount())->toBe($before + 1);
+});
+
+it('rolls back the complete first color action when its color is invalid', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['background_mode' => null, 'background_color' => '#123456']);
+    app(AdminActivityNotificationContext::class)->discard();
+    $before = generalSettingsAuditCount();
+    $component = Livewire::test(General::class)->call('persistAppearanceColor', 'primary', 'invalid')
+        ->assertHasErrors(['data.background_primary_color']);
+    $saved = PublicContentSetting::query()->findOrFail(1);
+    expect($saved->background_mode)->toBeNull()->and($saved->background_color)->toBe('#123456')
+        ->and(generalSettingsAuditCount())->toBe($before)
+        ->and(AdminNotification::query()->where('status', 'success')->count())->toBe(0)
+        ->and(AdminNotification::query()->where('status', 'danger')->count())->toBe(1);
+    $component->call('persistAppearanceColor', 'primary', '#ABCDEF')->assertHasNoErrors();
+    expect(PublicContentSetting::general()->background_mode)->toBe('solid')
+        ->and(PublicContentSetting::general()->background_color)->toBe('#ABCDEF')
+        ->and(generalSettingsAuditCount())->toBe($before + 1)
+        ->and(AdminNotification::query()->where('status', 'success')->count())->toBe(1);
+});
+
+it('commits a mode switch and its effective solid color with one feedback', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['background_mode' => null, 'background_color' => '#123456']);
+    app(AdminActivityNotificationContext::class)->discard();
+    $before = generalSettingsAuditCount();
+    Livewire::test(General::class)->set('data.background_mode', 'solid')->assertDispatched('admin-header-notification');
+    expect(PublicContentSetting::general()->background_mode)->toBe('solid')
+        ->and(PublicContentSetting::general()->background_color)->toBe('#777777')
+        ->and(generalSettingsAuditCount())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe(1);
 });
 
 require_once __DIR__.'/GeneralFixtures.php';
