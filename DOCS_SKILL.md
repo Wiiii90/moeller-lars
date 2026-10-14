@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `8e9a57ad352b53ecd61a11ce08815400a09d4e4e` |
-| darin aufgenommener `dev`-Stand | `bb824317cb0832b7358857a8a2f4ffa0f9c05bdd` |
-| Status | 22 neue Public-Commits übernommen; aktualisierte Motion-/Gallery-Owner quellengeprüft |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | `d6fd9a832ea1cfd9258e93f06d857a0fa3ff2d68` |
+| darin aufgenommener `dev`-Stand | `3c1bc75f84e56a5fefc84a4342f2dce6a1a2e48e` |
+| Status | neun weitere Custom-Page/Home/Public-Commits konfliktgeprüft in echtem Zwei-Eltern-Merge; `dev` neu prüfen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -51,7 +51,7 @@ PHP-/DB-/Browser-Prüfungen ohne tatsächliche Ausführung.
 | Admin UI | [ui-surfaces.md](docs/architecture/ui-surfaces.md): **eingefrorener Stand `337da15b`** mit 9 Pages, 26 Concerns, 2 Livewire-Komponenten, 26 Trait-Kanten und 72 literal Actions; **nach Gallery-/Journal-Header-Refactor nicht regeneriert** |
 | Services und HTTP | [admin-publication-calls.md](docs/architecture/admin-publication-calls.md): **21** quellenverankerte direkte Call-Sites; [runtime-entrypoints.md](docs/architecture/runtime-entrypoints.md): **20** explizite Webrouten plus Middleware/Filament/JS; dynamische Route-Registrierung offen |
 | Lifecycle / Activity | [lifecycles.md](docs/architecture/lifecycles.md): **5** Domänenautomaten, **35** geprüfte Quellanker; [Working-Operationen](docs/architecture/publication-working-operations.md): Restore/Revert/Reset und **36** geprüfte Anker |
-| Public Inhaltsdaten | [structured-components.md](docs/architecture/structured-components.md): **6** Komponenten, **3** Contact-Kinder, List-Nesting, drei Home-Content-Modi und separates Skip-Home-Routing; JSON-Referenzen ≠ SQL-FKs |
+| Public Inhaltsdaten | [structured-components.md](docs/architecture/structured-components.md): sechs Persistenztypen; Contact-Heading und drei JSON-Kinder, List-`context` mit Legacy-Projektion; **älterer JSON-Typkatalog eingefroren**, Home/UI separat |
 | Datenbankschema | [schema-evolution.md](docs/architecture/schema-evolution.md): konkrete Migrationen/Legacy-Snapshot-Kontrakte, `publication_version_rows` ist SQL-View mit Triggern; [read-only PostgreSQL-Exporter](scripts/export-architecture-postgres.php) vorhanden, **kein echter isolierter DB-Export** |
 | Browser-Sequenzen | [Publication](docs/architecture/publication.md) inkl. Admin-Commit, [Exhibition-Map](docs/architecture/exhibition-map.md) inkl. Toggle/Geocoder/Notifications; quellenbasiert, kein aktueller Browserlauf |
 
@@ -161,17 +161,18 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 
 ### Kanonische Dokumentations-Owner und bereits bereinigte Normen
 
+- **Komponentenstand bis `dev@3c1bc75f`:** Custom Page hat die alten Child-Ordering-/Projection-/Action-Traits entfernt. Contact-Heading sowie Toggles und bedingte Felder leben in einem Parent-Edit-Owner; verdeckte Social-/Formwerte bleiben beim Speichern erhalten. Der geteilte Home-/Custom-List-Editor nutzt `Entry / Context / Published / Details`; alte Date-/Meta-/Location-/URL-Felder werden über die Model-Compatibility-Projektion abgebildet. [Content-Audit](docs/architecture/structured-components.md) und [Dialogvertrag](docs/ADMIN-DIALOG-CONTRACT.md) dokumentieren diese Grenze; `structured-components.json` bleibt ausdrücklich ein älterer eingefrorener Generatorstand. Keine Tests dieses Workstreams ausgeführt.
+
 - **Root-Rich-Text-Regel abgeglichen:** `AGENTS.md` erlaubt jetzt ausdrücklich die zentral validierte externe HTTP(S)-Image-Option neben kanonischem Storage-`media:<id>`. `AdminRichText`, `SafeRichTextRenderer` und `SafeLinkPolicy` zeigen diesen tatsächlich existierenden Pfad; unvalidierte/externe unsichere Schemes und zweite Editor-Pipelines bleiben ausgeschlossen.
 
-- [Tabellen](docs/ADMIN-TABLE-CONTRACT.md) besitzen Home-/Custom-Page-
-  Component-Hierarchie, permanente Component-Selects und Parent-/Child-
-  Achsen sowie Blog-/Exhibition-Splitfold, Toolbar- und Selection-
-  Geometrie. Die **Dashboard-Feed-Ausnahme** (Selected-Trigger ohne
-  internen Counter, separates Count-`span` innerhalb des terminalen
-  Selection-Bereichs) ist jetzt am selben kanonischen Selection-Owner
-  mit dem Dashboard-Blade abgeglichen. `ui-skills.md` leitet auf
-  diese Normen weiter, statt eigene Achsen-/Counter-/Drag-/Home-
-  Details erneut festzuschreiben.
+- [Tabellen](docs/ADMIN-TABLE-CONTRACT.md) besitzen die gemeinsam
+  ausgerichteten Parent-Spalten, Component-Selbstbearbeitung, Actions,
+  Selection und Journal-Splitfold. **Custom Page** ist jetzt flach:
+  List und Contact haben je eine Parent-Zeile, nur Parent-Selection.
+  **Home** nutzt denselben Tabellenrahmen, behält aber eigene
+  Contact-Kindzeilen und Kind-Selection. Die Dashboard-Feed-Ausnahme
+  bleibt allein beim Tabellen-Selection-Owner. `ui-skills.md`
+  verweist auf diese Norm, statt eine zweite einzuführen.
 - [Dialoge](docs/ADMIN-DIALOG-CONTRACT.md) besitzen Edit-/Create-/Command-
   Persistenz, Page-Heading-Autosave, Pages Settings und Journal-/
   Gallery-/Custom-Settings-Konsistenz. Gallery Artwork Create/Edit teilen
@@ -254,9 +255,11 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
    Weitere Quelle: [Importgrenzen](docs/architecture/import-boundaries.md),
    [Publication-Operationen](docs/architecture/publication-working-operations.md),
    [Schemaevolution](docs/architecture/schema-evolution.md).
-5. **Public-Folio/SPA, Home Hero und Gallery-Puffer (`dev@bb824317cb0832b7358857a8a2f4ffa0f9c05bdd`):**
+5. **Public-Folio/SPA, Home Hero und Gallery-Puffer (`dev@3c1bc75f84e56a5fefc84a4342f2dce6a1a2e48e`):**
    Gemeinsame `#content > .public-content-reveal`-Hülle;
-   **ein** äußerer heller CSS-Papierschatten pro Content/Menu-Fläche;
+   **ein** äußerer heller CSS-Papierschatten pro Content/Menu-Fläche,
+   inzwischen **beide -5px/7px ohne Spread** und mit 5px
+   rechtem Inset; Menü-Top-Verbindung gehört allein den Konturen;
    alte dunkle/doppelte Lagen und `--public-folio-depth` entfernt.
    Page/Hero-`pulsePaper()` nur Content (**1.240 ms**), Menü nie
    navigationsgetrieben. Innere Höhenanimation **780 ms** erst

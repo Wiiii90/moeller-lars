@@ -1,6 +1,6 @@
 # Strukturierte Content-Daten: Custom Pages, Home, Contact
 
-**Quellenstand:** `a71ec7d1b28d09cec1399998239b09bdaefdea11` (Anwendungscode). [Maschinenlesbarer Typkatalog](structured-components.json) mit normalisierten Feldern, Quellen und Geltungsgrenzen. Er ist **kein ausführbarer JSON-Schema-Validator**, sondern die dokumentierte Form der aktuellen PHP-Implementierung.
+**Aktueller Quellvergleich:** `dev@3c1bc75f84e56a5fefc84a4342f2dce6a1a2e48e` für das Custom-Page-Modell, Home-List-Editor und die Contact-Persistenz. Der [maschinenlesbare Typkatalog](structured-components.json) ist weiterhin ein **eingefrorener älterer Quellstand `a71ec7d1b28d09cec1399998239b09bdaefdea11`**. Er enthält die neuen Felder `context` und `contact.title` noch nicht; ohne vollständigen Regenerierungslauf darf seine Quellreferenz nicht umetikettiert werden. Er ist kein ausführbarer JSON-Schema-Validator.
 
 Ein klassisches Eloquent- oder SQL-ERD bildet diese Zusammenhänge nicht ab: `CustomPageSetting.blocks` und `HomePresentationSetting.configuration` enthalten **geordnete, geschachtelte JSON-Daten**. Medienreferenzen sind IDs im Payload, nicht automatisch Datenbank-Fremdschlüssel. Die genauen SQL-Spaltentypen und Constraints bleiben Aufgabe des gesonderten PostgreSQL-Katalogexports.
 
@@ -17,9 +17,9 @@ flowchart TD
     Block --> Image["image: media_asset_id"]
     Block --> Text["text: title/body"]
     Block --> List["list: items[] + media_asset_id"]
-    List --> Entry["List item: published, title, date, meta, location, url, body"]
+    List --> Entry["List item: published, title, context, body"]
     Block --> Divider["divider: variant"]
-    Block --> Contact["contact: children[]"]
+    Block --> Contact["contact: title, children[]"]
     Contact --> Email["public_email"]
     Contact --> Social["social_links"]
     Contact --> Form["contact_form"]
@@ -40,14 +40,16 @@ Die folgenden Werte entsprechen `CustomPageSetting::COMPONENT_TYPES`:
 | `text` | `type, published, title, body` | Titel höchstens 160 Zeichen, Body über kanonische Rich-Text-Validierung |
 | `list` | `type, published, title, media_asset_id, items` | Titel höchstens 160 Zeichen; Liste geordneter Untereinträge; optionale Bildreferenz |
 | `divider` | `type, published, variant` | `thin`, `subtle`, `strong` oder `dotted`, Default `thin` (siehe [DividerVariant](../../app/Domain/Content/DividerVariant.php)) |
-| `contact` | `type, published, children` | Unterkomponenten sind geordnet; jeder Untertyp höchstens einmal |
+| `contact` | `type, published, title, children` | Optionale Überschrift bis 160 Zeichen; geordnete Untertypen, jeder höchstens einmal |
 | `legal_disclaimer` | `type, published` | Maximal einmal je Komponentenfolge |
 
 `published` ist bei allen Komponenten und Untereinträgen separat. Fehlt das Flag, werten die jeweiligen PHP-Methoden es standardmäßig als `true`. Es handelt sich **nicht** um den Veröffentlichungszustand der Seite oder den globalen LIVE-Commit.
 
 ### Ebene 2: `list.items[]`
 
-Die Normalisierung erzeugt je Eintrag die Felder `published, date, title, meta, location, url, body`. Der Titel muss nichtleer und höchstens 240 Zeichen lang sein. `url` darf nur eine über `SafeLinkPolicy` zulässige HTTP-/HTTPS-Adresse sein. `body` wird als Rich Text validiert; verschachtelte Medien müssen öffentlich bereit sein, wenn sowohl die umgebende Komponente als auch der Eintrag publiziert werden.
+`CustomPageSetting::normalizeListItems()` persistiert pro List-Eintrag die Felder **`published, title, context, body`**. Der Titel ist erforderlich und auf 240 Zeichen begrenzt; `context` ist optionaler Freitext mit maximal **600 Zeichen**, etwa für Jahr, Organisation oder andere Angaben. `body` bleibt der kanonische Rich-Text-Inhalt. Der gemeinsame [`ComponentListEditor`](../../app/Filament/Support/ComponentListEditor.php) für Home und Custom Page zeigt **Entry, Context, Published und Details**. Der Details-Editor hat keine Embedded-Media-Einfügeaktion (`allowEmbeddedMedia: false`); die getrennte Modelvalidierung älterer Rich-Text-Daten bleibt weiterhin maßgeblich.
+
+**Legacy-Eingabedaten:** `listItemContext()` bevorzugt einen gesetzten nichtleeren `context`; andernfalls kombiniert es vorhandene `date`, `meta` und `location`-Werte mit ` · `. `listItemDetails()` hängt einen optionalen gültigen HTTP(S)-`url`-Wert als Markdown-Link **More information** an den bestehenden Body an. Die nachfolgende Normalisierung schreibt ausschließlich die vier neuen Felder und entfernt die separaten alten Schlüssel. Auch `HomePresentation` projiziert bestehende Einträge beim Öffnen des gemeinsamen Editors über diese beiden Methoden. Das ist **Quellbeleg für eine Kompatibilitätsprojektion**, kein tatsächlich ausgeführter historischer Datenmigrations- oder Undo-Test.
 
 ### Ebene 2: `contact.children[]`
 
@@ -58,6 +60,9 @@ Die Normalisierung erzeugt je Eintrag die Felder `published, date, title, meta, 
 | `contact_form` | `type, published, form_state, status_text` | `enabled` oder `under_construction`; letzterer Zustand braucht Statustext bis 500 Zeichen |
 
 Die Normalisierung dedupliziert Contact-Kinder anhand ihres Typs. [`contact.blade.php`](../../resources/views/components/contact.blade.php) blendet ihre nicht publizierten Einträge außerhalb der Preview aus.
+
+**Custom Page UI:** Contact ist **eine einzige Parent-Tabellenzeile**. Im Parent-Create-/Edit-Dialog werden die optionale Heading (Default-Anzeige `Contact`) sowie Public Email, Social Media Links und Contact Form einschließlich Plattformwahl, Formdarstellung und Statustext bearbeitet. Neue Komponenten starten mit drei aktivierten Optionen. Die bisherigen Child-Mutation-Traits und Child-Zeilen sind auf Custom Page entfernt; die JSON-Kinder bleiben aber persistierte Untertypen. `CustomPageWorkspaceSecondaryForms::contactComponentPayload()` bewahrt bereits verfasste Social-Plattformen, Formmodus und Statustext, auch wenn ihr jeweiliges Toggle die Eingabe vorübergehend ausblendet. `contact.blade.php` rendert die optionale Überschrift. **Home** hat derzeit weiterhin eine eigene Contact-Child-Tabellenprojektion mit eigenen Targets; die gleiche JSON-Domain erzwingt keine identische Editor-UI.
+
 
 ## Home: drei verschiedene Ebenen
 
