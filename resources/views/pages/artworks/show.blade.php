@@ -11,7 +11,6 @@
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
     $primaryMedia = $media->primaryMedia($artwork);
     $primaryAsset = $primaryMedia->getRelationValue('mediaAsset');
-    $effectiveCopyright = $primaryAsset->effectiveCopyrightNotice();
     $category = $artwork->getRelationValue('category');
     $sequence = $viewerArtworks->values();
     $currentIndex = $sequence->search(fn ($candidate) => $candidate->getKey() === $artwork->getKey());
@@ -85,14 +84,9 @@
             </div>
         @endif
 
-        @if ($primaryAsset->credit || $effectiveCopyright)
+        @if ($primaryAsset->credit)
             <div class="artwork-detail__credits">
-                @if ($primaryAsset->credit)
-                    <p class="artwork-credit">{{ $primaryAsset->credit }}</p>
-                @endif
-                @if ($effectiveCopyright)
-                    <p class="artwork-copyright">{{ $effectiveCopyright }}</p>
-                @endif
+                <p class="artwork-credit">{{ $primaryAsset->credit }}</p>
             </div>
         @endif
 

@@ -440,6 +440,28 @@ it('persists media copyright and legal settings through event-driven controls', 
         ->and(generalSettingsAuditCount())->toBeGreaterThan($auditBefore);
 });
 
+it('keeps General Legal balanced and each field help-enabled without visual copyrights on artwork detail pages', function (): void {
+    $general = file_get_contents(app_path('Filament/Pages/General.php'));
+    $css = file_get_contents(resource_path('css/admin/general.css'));
+    $artwork = file_get_contents(resource_path('views/pages/artworks/show.blade.php'));
+
+    expect($general)->toContain("TextInput::make('default_media_copyright_notice')")
+        ->toContain("Textarea::make('legal_imprint')")
+        ->toContain("Textarea::make('legal_privacy')")
+        ->toContain("Textarea::make('legal_usage_rights')")
+        ->toContain("Textarea::make('legal_disclaimer')")
+        ->toContain("->label(self::imprintLabel())")
+        ->toContain("->label(self::privacyLabel())")
+        ->toContain("->label(self::usageRightsLabel())")
+        ->toContain("->label(self::legalDisclaimerLabel())")
+        ->and($css)->toContain('.general-legal-settings > .fi-sc > :first-child')
+        ->toContain('grid-column: 1 / -1 !important')
+        ->toContain('.general-legal-settings textarea')
+        ->and($artwork)->not->toContain('artwork-copyright')
+        ->not->toContain('effectiveCopyrightNotice')
+        ->toContain('artwork-credit');
+});
+
 it('keeps text persistence event-driven without debounce or timer autosave', function (): void {
     $pageSource = file_get_contents(app_path('Filament/Pages/General.php'));
     $viewSource = file_get_contents(resource_path('views/filament/pages/general.blade.php'));

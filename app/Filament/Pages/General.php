@@ -329,39 +329,36 @@ final class General extends Page
                             ->maxLength(500)
                             ->nullable()
                             ->lazy()
+                            ->columnSpanFull()
                             ->extraInputAttributes(self::commitOnEnterAttributes())
                             ->afterStateUpdated(self::persist('default_media_copyright_notice')),
                         Textarea::make('legal_imprint')
-                            ->label('Imprint')
-                            ->rows(5)
+                            ->label(self::imprintLabel())
+                            ->rows(8)
                             ->maxLength(20000)
                             ->nullable()
                             ->lazy()
-                            ->columnSpanFull()
                             ->afterStateUpdated(self::persist('legal_imprint')),
                         Textarea::make('legal_privacy')
-                            ->label('Privacy Policy')
-                            ->rows(7)
+                            ->label(self::privacyLabel())
+                            ->rows(8)
                             ->maxLength(20000)
                             ->nullable()
                             ->lazy()
-                            ->columnSpanFull()
                             ->afterStateUpdated(self::persist('legal_privacy')),
                         Textarea::make('legal_usage_rights')
-                            ->label('Copyright & AI Use')
-                            ->rows(5)
+                            ->label(self::usageRightsLabel())
+                            ->rows(8)
                             ->maxLength(20000)
                             ->nullable()
                             ->lazy()
-                            ->columnSpanFull()
                             ->afterStateUpdated(self::persist('legal_usage_rights')),
                         Textarea::make('legal_disclaimer')
                             ->label(self::legalDisclaimerLabel())
-                            ->rows(3)
+                            ->rows(8)
                             ->maxLength(20000)
                             ->nullable()
                             ->lazy()
-                            ->columnSpanFull()
                             ->afterStateUpdated(self::persist('legal_disclaimer')),
                     ])
                         ->columns(2)
@@ -772,7 +769,34 @@ final class General extends Page
         return self::helpLabel(
             'Default copyright notice',
             'About the default copyright notice',
-            'Used as the inherited copyright notice for media assets. Individual media can override this default or explicitly use no notice.',
+            'Used as the inherited media copyright notice. Individual assets may override it or use no notice. This setting does not add a copyright line to artwork detail pages.',
+        );
+    }
+
+    private static function imprintLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Imprint',
+            'About the imprint',
+            'Provider identification and contact details for the website operator. Use accurate information supplied by the responsible person.',
+        );
+    }
+
+    private static function privacyLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Privacy Policy',
+            'About the privacy policy',
+            'Explain the actual processing of visitor data, including hosting, server logs, contact messages and analytics where applicable.',
+        );
+    }
+
+    private static function usageRightsLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Copyright & AI Use',
+            'About copyright and AI use',
+            'Explain artwork and photographic rights, reproduction and licensing requests, and the reservation of rights for AI training and data mining.',
         );
     }
 
