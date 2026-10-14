@@ -95,7 +95,7 @@ it('keeps decorative layout semantic and undated CV entries without inventing da
     $view = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
     expect($view)->toContain('custom-page__image--wrapped')
         ->toContain('pages.partials.component-sequence')
-        ->toContain('Rechtlicher Hinweis');
+        ->toContain('Rechtliches');
 
     $styles = file_get_contents(resource_path('css/custom-pages.css'));
     expect($styles)->toContain('float: left')
@@ -165,4 +165,78 @@ it('moves an existing CV list into an Image atomically without losing its entrie
     $after = $settings->fresh()->components();
     expect($after)->toHaveCount(1)
         ->and($after[0]['children'][0])->toBe($original[1]);
+});
+
+
+it('preserves the existing disclaimer component while rendering separately authored legal sections', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Artist legal', 'artist-legal');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $settings->update(['blocks' => [['type' => 'legal_disclaimer', 'published' => true]]]);
+
+    expect($settings->fresh()->components()[0]['type'])->toBe('legal_disclaimer');
+
+    $general = \App\Models\PublicContentSetting::general();
+    $general->update([
+        'legal_imprint' => "Artist\nStreet 3",
+        'legal_privacy' => 'Data processing',
+        'legal_usage_rights' => 'No AI training',
+        'legal_disclaimer' => 'Archived external links notice',
+    ]);
+
+    $sections = \App\Domain\Content\PublicLegalContent::sections($general);
+    expect(array_column($sections, 'slug'))->toBe([
+        'impressum', 'datenschutz', 'urheberrecht', 'externe-links',
+    ]);
+
+    $general->update(['legal_privacy' => null]);
+    expect(array_column(\App\Domain\Content\PublicLegalContent::sections($general), 'slug'))
+        ->toBe(['impressum', 'urheberrecht', 'externe-links']);
+});
+
+it('renders legal copy as escaped disclosures and omits unpublished or blank content', function (): void {
+    $generalSettings = new \App\Models\PublicContentSetting;
+    $generalSettings->setRawAttributes([
+        'legal_imprint' => "Line A\nLine B",
+        'legal_privacy' => '<script>alert(1)</script>',
+        'legal_usage_rights' => null,
+        'legal_disclaimer' => 'External notes',
+    ], true);
+    $blocks = [['type' => 'legal_disclaimer', 'published' => true]];
+    $assets = collect();
+    $media = null;
+    $label = 'About Artist';
+    $isHome = false;
+    $isPreview = false;
+
+    $html = \Illuminate\Support\Facades\Blade::render(
+        "@include('pages.partials.component-sequence')",
+        compact('generalSettings', 'blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
+    );
+
+    expect($html)->toContain('>Rechtliches</h2>')
+        ->toContain('id="rechtliches-impressum"')
+        ->toContain('id="rechtliches-datenschutz"')
+        ->toContain('id="rechtliches-externe-links"')
+        ->not->toContain('id="rechtliches-urheberrecht"')
+        ->toContain("Line A\nLine B")
+        ->toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+        ->not->toContain('<script>alert(1)</script>')
+        ->toContain('<details');
+
+    $blocks = [['type' => 'legal_disclaimer', 'published' => false]];
+    $hidden = \Illuminate\Support\Facades\Blade::render(
+        "@include('pages.partials.component-sequence')",
+        compact('generalSettings', 'blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
+    );
+    expect($hidden)->not->toContain('rechtliches-impressum');
+
+    $blocks = [['type' => 'legal_disclaimer', 'published' => true]];
+    foreach (['legal_imprint', 'legal_privacy', 'legal_usage_rights', 'legal_disclaimer'] as $field) {
+        $generalSettings->setAttribute($field, null);
+    }
+    $empty = \Illuminate\Support\Facades\Blade::render(
+        "@include('pages.partials.component-sequence')",
+        compact('generalSettings', 'blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
+    );
+    expect($empty)->not->toContain('custom-page__legal-sections');
 });

@@ -26,7 +26,7 @@ final class DecorativeImageChildren
                         'text' => 'Text',
                         'list' => 'List',
                         'contact' => 'Contact details',
-                        'legal_disclaimer' => 'Legal Disclaimer',
+                        'legal_disclaimer' => 'Rechtliches',
                     ])
                     ->required()
                     ->live(),
@@ -60,10 +60,8 @@ final class DecorativeImageChildren
                         ],
                         'legal_disclaimer' => [
                             Placeholder::make('legal_disclaimer_note')
-                                ->label('Legal disclaimer from General')
-                                ->content(fn (): string =>
-                                    trim((string) PublicContentSetting::general()->getAttribute('legal_disclaimer'))
-                                    ?: 'No legal disclaimer is configured in General.')
+                                ->label('Rechtliches aus General')
+                                ->content(fn (): string => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()))
                                 ->columnSpanFull(),
                         ],
                         default => [],
@@ -74,7 +72,7 @@ final class DecorativeImageChildren
             ->defaultItems(0)
             ->itemLabel(fn (array $state): string => match ($state['type'] ?? '') {
                 'text', 'list', 'contact' => trim((string) ($state['title'] ?? '')) ?: ucfirst((string) $state['type']),
-                'legal_disclaimer' => 'Legal Disclaimer',
+                'legal_disclaimer' => 'Rechtliches',
                 default => 'Content',
             })
             ->collapsible()

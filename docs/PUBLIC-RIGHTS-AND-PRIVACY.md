@@ -1,6 +1,6 @@
 # Public rights, artwork protection and privacy — implementation plan
 
-Status: architectural plan accepted in principle, not a claim that all described functions exist. Last reviewed: 2026-10-14. Current public/UI rendering and artist-specific legal wording are NOT browser-accepted by this document.
+Status: architectural contract and implementation criteria. Block A General/Rechtliches has source changes authored, but migration application, local test execution and browser acceptance are still open. No provider identity or legal wording has been invented. Last reviewed: 2026-10-14.
 
 ## Product boundaries and ownership
 
@@ -37,6 +37,26 @@ No per-crawler, per-method or per-media copyright text fields in General. Fixed 
 - From that component render whichever of the authored legal sections have actual content; no invented defaults. Preferred compact concept: quietly identifiable Impressum / Datenschutz / Urheberrecht links/expandable subsections **inside the existing About/Contact content**, not a footer or new public page. Optional external-link note last. Ensure accessible keyboard/focus, logical headings, anchors/deep links, mobile widths, opening direct fragments across Livewire SPA and no hidden unreachable disclosures.
 - The short inherited copyright belongs on applicable artwork/other media credits according to existing editorial display rules. The long rights statement belongs in the Legal component. Do not stamp `© Lars Möller` onto every artwork or page.
 - Test site/artist preview and published/unpublished paths, including the Public Home Gate. Distinguish technical reachability from the artist's decision to publish.
+
+### Implementation note (2026-10-14)
+
+The implementation keeps the persisted component type `legal_disclaimer` for migration
+compatibility, but calls it **Rechtliches** in the Admin and renders authored
+Impressum, Datenschutz, Urheberrecht & KI-Nutzung, then the unchanged legacy
+external-links note through one shared `PublicLegalContent` projection.
+General stores the three new nullable long texts without inserting any legal
+placeholders; the older default-media notice remains the fourth independent
+copyright authority and the legacy optional text is preserved. The public UI
+uses unobtrusive native details/summary and deterministic fragment identifiers
+(`#rechtliches-impressum`, `#rechtliches-datenschutz`, `#rechtliches-urheberrecht`,
+`#rechtliches-externe-links`), which a bundled Vite helper reveals on SPA/hash
+navigation. Only nonempty authored sections render and texts are HTML-escaped.
+The existing artwork-detail credit now reads the effective inherited notice.
+
+This is implementation intent/source work, not a declaration that the tests
+have run or the actual browser layout has been accepted. The artist still
+needs to supply accurate legal text. Do not turn this temporary status note
+into a permanent misleading completion claim.
 
 ## B. Rights metadata across Storage, public files and SEO
 

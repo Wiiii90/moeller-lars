@@ -296,8 +296,8 @@
     color: #222;
 }
 
-/* Disclaimer shares editorial type and participates in normal text wrapping
-   when it is a child of a decorative image. */
+/* Legal content follows the same editorial text flow as other component
+   prose, including beside a decorative Image with native float wrapping. */
 .custom-page__legal {
     display: block;
     min-width: 0;
@@ -307,8 +307,36 @@
     color: inherit;
     font: inherit;
 }
-.custom-page__legal p {
-    margin: .35rem 0 0;
+.custom-page__legal-sections {
+    display: block;
+}
+
+.custom-page__legal-section {
+    min-width: 0;
+    border-bottom: 1px solid rgba(69, 71, 67, .16);
+}
+
+.custom-page__legal-section > summary {
+    padding: .38rem 0;
+    color: var(--public-ink);
+    font: inherit;
+    cursor: pointer;
+}
+
+.custom-page__legal-section > summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+.custom-page__legal-text {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    padding: .35rem 0 .9rem;
+    line-height: inherit;
+}
+
+.custom-page__legal-section[open] > summary {
+    color: #535b56;
 }
 
 .public-preview-state {

@@ -63,7 +63,7 @@ Ein Arbeitsblock zählt erst als „FERTIG“, wenn nicht nur der Code, sondern 
 
 ## 4. Arbeitsblock A — General, Rechtliches, Copyright-Anzeige
 
-**Status:** ◻ NICHT BEGONNEN. **Priorität:** zuerst. **Domänen:** General, Custom Page, Public-Blade, Validation, Audit, Notifications.
+**Status:** ◐ Implementierung als zusammenhängender `dev`-Änderungssatz vorbereitet; Migration, lokale Tests und Browserabnahme stehen aus. **Priorität:** zuerst. **Domänen:** General, Custom Page, Public-Blade, Validation, Audit, Notifications.
 
 **Bestehende General Legal Felder (nicht duplizieren):**
 
@@ -148,17 +148,18 @@ Ein Arbeitsblock zählt erst als „FERTIG“, wenn nicht nur der Code, sondern 
 
 | Slice | Quellcode | Tests | Browser/Runtime | Nutzerabnahme | nächster Schritt |
 | --- | --- | --- | --- | --- | --- |
-| A General/Rechtliches | Offen | Offen | Offen | Designort vorläufig angenommen | Kanonische Felder + Custom Page End-to-End implementieren |
+| A General/Rechtliches | Drei neue General-Felder, bestehende Legal-Komponente, Public-Details/Fragments und Artwork-Vererbung als Änderungssatz; Commit nachprüfen | Regressionstests geschrieben, noch nicht ausgeführt | Offen | UI nicht abgenommen | Isolierte Migration/Pest/Node-JS/Browserprüfung ausführen, Nutzerabnahme für Rechtliches |
 | B Metadaten/SEO | Offen | Offen | Offen | fachliches Ziel angenommen | Nach A Public-Artefakt-Pipeline planen/umsetzen |
 | C KI/Bot/Download | TDM/Robots **teilweise** vorhanden | Frühe Tests ergänzt; nicht hier ausgeführt | Offen | fachliches Ziel angenommen | Server-Missbrauchskontrolle + echte Header/SEO-Abnahme |
 | D Consent/Datenschutz | Offen | Offen | Offen | fachliches Ziel angenommen | Consent-Lifecycle + Datenschutzdaten integrieren |
 
-**Aktiver Slice:** A. **Arbeitseigentümer:** dieser Rechte-Workstream; andere laufende Chats können sich gleichzeitig um unabhängig benannte Dateien kümmern. Bevor gemeinsame Owner wie `General.php`, `PublicContentSetting.php`, `MediaAsset.php`, `component-sequence.blade.php` oder `AGENTS.md` verändert werden, aktuelle HEAD-Diffs prüfen und laufende Paralleländerungen versöhnen.
+**Aktiver Slice:** A (Quellcode vorbereitet; lokale Testausführung und Browserabnahme offen). **Arbeitseigentümer:** dieser Rechte-Workstream; andere laufende Chats können sich gleichzeitig um unabhängig benannte Dateien kümmern. Bevor gemeinsame Owner wie `General.php`, `PublicContentSetting.php`, `MediaAsset.php`, `component-sequence.blade.php` oder `AGENTS.md` verändert werden, aktuelle HEAD-Diffs prüfen und laufende Paralleländerungen versöhnen.
 
 **Fortschrittslog – nur wesentliche Zustandswechsel eintragen:**
 - 2026-10-14: Früher technischer Schritt (`eedc0cbb4274e1ab7dd8408796720baf02eb7539`) führte TDM/Header/Robots ein, aber **keinen** Rate-Limiter, Copyright-Metadaten oder Matomo-Consent.
 - 2026-10-14: Fachliche Gesamtarchitektur in `docs/PUBLIC-RIGHTS-AND-PRIVACY.md` (`f03bd7e9aa3634aca9dd43cf736efa5eb956d1a9`) zusammengeführt.
-- 2026-10-14: Diese Root-Arbeitsakte eingerichtet; Umsetzungsstatus noch offen. Genaue Erstanlage-Commit-SHA steht in Git-Historie; HEAD kann durch parallele Chats fortschreiten.
+- 2026-10-14: Diese Root-Arbeitsakte eingerichtet (`658b8f5464cdf00ad8ca2e986d74b24b1e34d523`), noch keine Implementierung.
+- 2026-10-14: **Block A Implementierung**: `legal_imprint`, `legal_privacy`, `legal_usage_rights` als neue nullable General-Felder mit 20k-Validierung und Event-Autosave/Audit/Notification; unveränderte historische Kennung `legal_disclaimer`, jetzt als „Rechtliches“ mit Abschnittsprojektion und ankergesteuerten, nativen Details gerendert. Bestehenden Alttext unverändert als optionale externe Hinweise bewahrt; Artwork-Detail zeigt effektiven Copyright-Hinweis. Quell-/PHP-/JS-Regressionstests ergänzt. **Noch keine Testausführung, Migration oder Browserabnahme behaupten**; Commit-SHA über git log/aktiven Head ermitteln. Alte Komponentendaten behalten ihre interne Kennung.
 
 **Nach JEDEM Slice aktualisieren:** Implementierungs-SHA, veränderte Systeme, genaue Tests mit Befehlen/Ergebnissen, gezielt noch unverified/browser-pending, neu entdeckte Risiken, offene Entscheidungen, aktuell freigegebener nächster Slice. Kein „fertig“ bei nur statischer Sicht. Gesondert bestätigen, ob die Originalbilder unangetastet geblieben sind.
 

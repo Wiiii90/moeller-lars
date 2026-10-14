@@ -132,14 +132,8 @@ trait CustomPageWorkspaceForms
             ],
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')
-                    ->label('Legal disclaimer from General')
-                    ->content(function (): string {
-                        $value = PublicContentSetting::general()->getAttribute('legal_disclaimer');
-
-                        return is_string($value) && trim($value) !== ''
-                            ? $value
-                            : 'No legal disclaimer is configured in General.';
-                    })
+                    ->label('Rechtliches aus General')
+                    ->content(fn (): string => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()))
                     ->columnSpanFull(),
             ],
             default => [],

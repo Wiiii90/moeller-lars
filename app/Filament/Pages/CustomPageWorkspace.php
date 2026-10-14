@@ -33,7 +33,7 @@ final class CustomPageWorkspace extends Page
         'list' => 'List',
         'divider' => 'Divider',
         'contact' => 'Contact',
-        'legal_disclaimer' => 'Legal Disclaimer',
+        'legal_disclaimer' => 'Rechtliches',
     ];
 
     /** @var array<string, string> */

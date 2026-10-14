@@ -128,11 +128,21 @@
                 </div>
             @endif
 
-            @if ($type === 'legal_disclaimer' && $generalSettings->legal_disclaimer !== null)
-                <section class="legal-disclaimer custom-page__legal" aria-labelledby="legal-disclaimer-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
-                    <h2 id="legal-disclaimer-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Rechtlicher Hinweis</h2>
-                    <p>{{ $generalSettings->legal_disclaimer }}</p>
-                </section>
+            @if ($type === 'legal_disclaimer')
+                @php($legalSections = \App\Domain\Content\PublicLegalContent::sections($generalSettings))
+                @if ($legalSections !== [])
+                    <section class="legal-disclaimer custom-page__component custom-page__legal" aria-labelledby="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
+                        <h2 id="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Rechtliches</h2>
+                        <div class="custom-page__legal-sections">
+                            @foreach ($legalSections as $legalSection)
+                                <details id="rechtliches-{{ $legalSection['slug'] }}" class="custom-page__legal-section">
+                                    <summary>{{ $legalSection['label'] }}</summary>
+                                    <div class="custom-page__legal-text">{{ $legalSection['text'] }}</div>
+                                </details>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
             @endif
         @endforeach
     </div>
