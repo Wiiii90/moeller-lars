@@ -2,22 +2,24 @@
     display: flow-root;
     width: min(100%, var(--public-art-max));
     margin: 0 auto;
-    color: #444;
+    color: var(--public-ink);
+    font-size: .88rem;
     line-height: 1.55;
 }
-
-/* Components remain editorial content, not independently framed cards.
-   A decorative image starts one floating image column; subsequent components
-   establish their own formatting contexts alongside it until it ends. */
+/* Nested text deliberately participates in the parent's float formatting
+   context. No flow-root/grid wrapper may isolate it beside the image. */
+.custom-page--embedded {
+    display: block;
+    width: auto;
+    margin: 0;
+}
+.custom-page__image-group {
+    display: flow-root;
+    min-width: 0;
+}
 .custom-page__component {
     min-width: 0;
-    padding: 0 0 1.45rem;
-}
-.custom-page__component:not(.custom-page__image) {
-    display: flow-root;
-}
-.custom-page__component:first-child {
-    padding-top: 0;
+    padding: 0 0 1.2rem;
 }
 .custom-page__component:last-child {
     padding-bottom: 0;
@@ -27,13 +29,21 @@
     min-width: 0;
 }
 
-.custom-page__copy > h3 {
-    margin: 0 0 .85rem;
-    color: #393a38;
+/* A single editorial heading scale for Text, List, Contact and Legal.
+   The public page heading is one larger rank in the same family. */
+.custom-page__copy > h3,
+.custom-page__copy > h2,
+.custom-page__contact .category-heading,
+.custom-page__legal h2 {
+    width: auto;
+    margin: 0 0 .75rem;
+    color: #535b56;
     font-family: var(--public-index-typeface);
-    font-size: 1.12rem;
+    font-size: 1.08rem;
     font-weight: 400;
-    line-height: 1.2;
+    letter-spacing: 0;
+    line-height: 1.25;
+    text-transform: none;
 }
 
 .custom-page__media {
@@ -43,17 +53,14 @@
 .custom-page__image {
     width: min(100%, var(--custom-page-image-width, 28rem));
 }
-.custom-page__image:not(.custom-page__image--decorative) {
-    clear: both;
-}
-@media (min-width: 42.001rem) {
-    .custom-page__image--decorative {
-        float: left;
-        clear: left;
-        width: min(35%, var(--custom-page-image-width, 28rem));
-        margin: 0 clamp(1.4rem, 3.8vw, 2.2rem) 1rem 0;
-        padding: 0;
-    }
+/* Native float, not a manufactured second column or breakpoint.
+   Lines flow around the image until there is not enough room, then continue
+   beneath it. The parent's formatting context ends the effect explicitly. */
+.custom-page__image--wrapped {
+    float: left;
+    width: min(42%, var(--custom-page-image-width, 28rem));
+    margin: 0 clamp(.8rem, 3vw, 1.6rem) .8rem 0;
+    padding: 0;
 }
 
 .custom-page__media img {
@@ -132,55 +139,34 @@
 }
 
 .custom-page__list {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
-    column-gap: clamp(.8rem, 2vw, 1.3rem);
-    row-gap: .68rem;
+    display: block;
 }
-
 .custom-page__list-item {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
+    display: block;
+    margin: 0 0 .7rem;
     min-width: 0;
-    gap: .16rem 0;
 }
-
+.custom-page__list-item:last-child {
+    margin-bottom: 0;
+}
 .custom-page__list-line {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
+    display: block;
     min-width: 0;
-    align-items: baseline;
 }
-
 .custom-page__list-line strong {
-    grid-column: 2;
-    min-width: 0;
-    font-size: .9rem;
+    font: inherit;
     font-weight: 500;
-    line-height: 1.45;
+    overflow-wrap: anywhere;
 }
-
-.custom-page__list-item:not(.custom-page__list-item--with-context) .custom-page__list-line strong {
-    grid-column: 1 / -1;
-}
-
 .custom-page__list-item > .rich-text {
-    grid-column: 2;
-    color: #575956;
-    font-size: .88rem;
+    color: inherit;
+    font: inherit;
 }
-.custom-page__list-item:not(.custom-page__list-item--with-context) > .rich-text {
-    grid-column: 1 / -1;
-}
-
 .custom-page__context {
-    grid-column: 1;
-    min-width: 0;
-    color: #797671;
-    font-size: .81rem;
-    line-height: 1.45;
+    display: inline;
+    color: var(--public-muted);
+    font: inherit;
+    margin-right: .5rem;
     overflow-wrap: anywhere;
 }
 
@@ -205,58 +191,44 @@
     margin: 0;
 }
 
-.custom-page__contact .category-heading {
-    width: auto;
-    margin: 0 0 1rem;
-    color: #393a38;
-    font-family: var(--public-index-typeface);
-    font-size: 1.12rem;
-    font-weight: 400;
-    line-height: 1.2;
-}
-
 .custom-page__contact .contact-details__row {
-    display: grid;
-    grid-template-columns: minmax(4.75rem, .55fr) minmax(0, 1.45fr);
-    gap: .65rem;
-    align-items: baseline;
-    line-height: 1.65;
+    display: block;
+    min-width: 0;
+    line-height: inherit;
+    margin: 0 0 .5rem;
 }
 .custom-page__contact .contact-details__label {
-    color: #817971;
-    font-size: .69rem;
-    letter-spacing: .045em;
+    display: inline;
+    color: var(--public-muted);
+    font-size: .76rem;
+    font-weight: 400;
+    letter-spacing: .035em;
+    margin-right: .65rem;
     text-transform: uppercase;
 }
 .custom-page__contact .contact-details a {
+    display: inline;
     overflow-wrap: anywhere;
+    font: inherit;
     text-decoration-color: #bdb6af;
-    text-underline-offset: .19em;
+    text-underline-offset: .2em;
 }
-
 .custom-page__contact-child + .custom-page__contact-child {
     margin-top: .75rem;
 }
-
 .custom-page__contact .contact-status {
     margin-bottom: 1rem;
 }
-
+/* All contact fields are single-column and full width. */
 .custom-page__contact .contact-form {
-    display: grid;
+    display: block;
     width: 100%;
-    margin: .65rem 0 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .78rem .8rem;
+    max-width: none;
+    margin: .75rem 0 0;
 }
-.custom-page__contact .contact-form__field--message,
-.custom-page__contact .contact-form__honeypot,
-.custom-page__contact .contact-form button {
-    grid-column: 1 / -1;
-}
-
 .custom-page__contact .contact-form__field {
-    margin: 0;
+    width: 100%;
+    margin: 0 0 1rem;
 }
 
 .custom-page__contact .contact-form label {
@@ -274,12 +246,13 @@
     display: block;
     width: 100%;
     min-width: 0;
-    padding: .58rem .64rem;
+    padding: .58rem .15rem;
     appearance: none;
     -webkit-appearance: none;
-    border: 1px solid #d0ccc8;
+    border: 0;
+    border-bottom: 1px solid #c5bfba;
     border-radius: 0;
-    background: #fff;
+    background: transparent;
     color: #444;
     font: inherit;
     line-height: 1.4;
@@ -294,13 +267,12 @@
 
 .custom-page__contact .contact-form input:focus-visible,
 .custom-page__contact .contact-form textarea:focus-visible {
-    border-color: #8d857e;
-    outline: 1px solid #8d857e;
-    outline-offset: 1px;
+    border-bottom-color: #645d56;
+    outline: 1px solid #a79e96;
+    outline-offset: 2px;
 }
 
 .custom-page__contact .contact-form button {
-    justify-self: start;
     width: fit-content;
     min-width: 0;
     min-height: 0;
@@ -327,24 +299,16 @@
 /* Disclaimer reads as a restrained colophon, not another content heading.
    It never wraps around a preceding decorative image. */
 .custom-page__legal {
-    clear: both;
-    max-width: 44rem;
-    margin-top: 1.2rem;
-    padding: 1.15rem 0 0;
-    border-top: 1px solid rgba(93, 83, 72, .17);
-    color: #81807c;
-    font-size: .76rem;
-    line-height: 1.55;
-}
-.custom-page__legal h2 {
-    margin: 0 0 .45rem;
-    color: #6c6964;
-    font-family: var(--public-index-typeface);
-    font-size: .91rem;
-    font-weight: 400;
+    display: block;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0 0 1.2rem;
+    color: inherit;
+    font: inherit;
 }
 .custom-page__legal p {
-    margin: 0;
+    margin: .35rem 0 0;
 }
 
 .public-preview-state {
@@ -355,21 +319,9 @@
 
 /* Custom Page components recompose inside the public Narrow state when their
  * own content stops fitting; this threshold is intentionally content-driven. */
+/* The optional List's own second image never shares an Image child tree;
+   this is a normal full-width List. */
 @media (max-width: 42rem) {
-    .custom-page__image {
-        float: none;
-        clear: both;
-        width: min(100%, var(--custom-page-image-width-narrow, 20rem));
-        margin: 0 0 1.45rem;
-    }
-
-    .custom-page__list {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
-    }
-    .custom-page__contact .contact-form {
-        grid-template-columns: 1fr;
-    }
-
     .custom-page__list-layout--with-media {
         grid-template-columns: 1fr;
     }
