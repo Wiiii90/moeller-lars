@@ -23,8 +23,8 @@ const CONTENT_EDGES = [
 ];
 const CONTENT_DURATIONS = [25100, 29700];
 const MENU_DURATIONS = [34200, 38800];
-const BUILD_DURATION = 1480;
-const HEIGHT_DURATION = 980;
+const BUILD_DURATION = 1240;
+const HEIGHT_DURATION = 780;
 
 const SHADOW_START = {
     content: (middleX, middleY, rearX, rearY) => [
@@ -266,6 +266,23 @@ function nativeCorner(element, pseudo, frames, duration, loop = false) {
     }
 }
 
+// The part of a long page below the viewport isn't visible and must NOT
+// be dragged through thousands of pixels during a shorter-page navigation.
+// Bound both ends of the reveal to what can currently be seen (+48px).
+// After the animation, auto height reveals all content without a jump in
+// the viewport. No scroll manipulation, DOM cloning, or JS timers.
+export function visibleHeightTransition(previousHeight, nextHeight, viewportHeight, bodyTop = 0) {
+    if (!Number.isFinite(previousHeight) || previousHeight <= 0
+        || !Number.isFinite(nextHeight) || nextHeight <= 0) return null;
+    if (!Number.isFinite(viewportHeight) || viewportHeight <= 0) {
+        return { from: previousHeight, to: nextHeight };
+    }
+    const top = Number.isFinite(bodyTop) ? Math.max(0, bodyTop) : 0;
+    const cap = Math.min(viewportHeight + 48,
+        Math.max(96, viewportHeight - top + 48));
+    return { from: Math.min(previousHeight, cap), to: Math.min(nextHeight, cap) };
+}
+
 // All pages share the same inner content wrapper. Its animated height
 // controls the parent paper's natural height, but ONLY the wrapper clips:
 // the original external folio lines/shadows never get cut off.
@@ -273,8 +290,12 @@ export function animatePageHeight(previousHeight, root = document) {
     if (!Number.isFinite(previousHeight) || previousHeight <= 0) return null;
     const body = pageBody(root);
     if (!body || typeof body.animate !== 'function') return null;
-    const natural = body.getBoundingClientRect().height;
-    if (!Number.isFinite(natural) || Math.abs(natural - previousHeight) < 7) return null;
+    const bounds = body.getBoundingClientRect();
+    const natural = bounds.height;
+    const viewportHeight = typeof window === 'undefined' ? null : window.innerHeight;
+    const visible = visibleHeightTransition(previousHeight, natural,
+        viewportHeight, bounds.top);
+    if (!visible || Math.abs(visible.from - visible.to) < 7) return null;
     const prior = activeHeightAnimations.get(body);
     const original = prior?.originalOverflow ?? body.style.overflow;
     // A second Hero click may interrupt the first height reveal. Only the
@@ -283,8 +304,8 @@ export function animatePageHeight(previousHeight, root = document) {
     body.style.overflow = 'clip';
     try {
         const animation = body.animate([
-            { height: `${previousHeight}px` },
-            { height: `${natural}px` },
+            { height: `${visible.from}px` },
+            { height: `${visible.to}px` },
         ], {
             duration: HEIGHT_DURATION,
             easing: 'cubic-bezier(.18, .74, .32, 1)',

@@ -123,13 +123,21 @@ palette order matches the Content paper. Both planes remain distinct
 outside the front white face.
 
 On each normal Content build, both ends of the vertical pseudo strokes
-now contract up to 40px at top and 46px at bottom, with staged
+contract up to 40px at top and 46px at bottom, with staged
 right-angled changes. A short page limits their combined contraction
 to leave at least 40px of visible line. The stroke grows again a few
 pixels beyond resting length, then finishes on the static geometry.
-The accepted 1480ms paper impulse and 980ms content-height reveal
-retain their original durations. Rapid clicks cannot cumulatively
-increase the excursion because target geometry remains absolute.
+The page-build impulse now lasts 1240ms and the content-height reveal
+780ms. Both viewport-aware height keyframes are capped to the currently
+visible portion of the incoming page plus 48px, not the entire old
+Gallery/Journal page length. Thus long → short changes skip thousands
+of offscreen pixels instantly, and long → long changes with no visible
+height difference avoid unnecessary height animation altogether.
+After completion the content wrapper returns to natural auto height,
+without scrolling, repositioning or scaling the artwork. The outside
+paper pulse still runs normally even if height animation is omitted.
+Rapid clicks cannot cumulatively increase the excursion because target
+geometry remains absolute.
 The menu retains its slower independent 34–39s ambient only.
 
 Missing native animation support leaves the authored static form intact.
