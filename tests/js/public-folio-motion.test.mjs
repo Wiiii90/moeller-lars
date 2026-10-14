@@ -236,6 +236,13 @@ test('menu backing stays between the white left contour and its 5px right inset'
     }
 });
 
+test('menu never receives a separate page-build backing impulse',()=>{
+    for(const growing of [true,false]){
+        const frames=buildPageImpulse(MENU_SHADOW,MENU_SHADOW,'menu',growing);
+        assert.ok(frames.every(frame=>frame.boxShadow===MENU_SHADOW));
+    }
+});
+
 test('ambient Content lines take one vertical excursion per endpoint and return smoothly',()=>{
     for(const side of ['left','right']){
         const start={top:'18px',bottom:'64px',width:'9px',[side]:'-9px'};

@@ -341,6 +341,15 @@ export function animatePageHeight(previousHeight, root = document) {
 // is based on canonical coordinates, preventing cumulative extension on
 // rapid Hero clicks. The page-height reveal keeps its own existing pace.
 export function buildPageImpulse(start, end, type, growing) {
+    // Only Content has a build impulse; menu motion belongs exclusively
+    // to its ambient animation. An accidental call must not project an
+    // extra menu backing outside the fixed folio corridor.
+    if (type === 'menu') {
+        return [
+            { boxShadow: start, offset: 0, easing: 'cubic-bezier(.35, 0, .25, 1)' },
+            { boxShadow: start, offset: 1, easing: 'cubic-bezier(.35, 0, .25, 1)' },
+        ];
+    }
     const base = FOLIO_PLANE_BASE[type];
     const xy = [...(renderedShadowCoords(start, type) ?? base)];
     const shadow = SHADOW_START[type];
