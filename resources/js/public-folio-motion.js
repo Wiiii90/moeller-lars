@@ -126,26 +126,54 @@ function playCorner(element, pseudo, frames, duration) {
     }
 }
 
-// The existing two rear paper planes can travel left/down (outward) and
-// right/up (inward) by at most two pixels; each step changes just one x or y.
+// Parse only the two existing rear planes, respecting commas inside rgb()
+// functions. SPA swaps may interrupt a plane halfway across an axis;
+// restoring each coordinate separately prevents a diagonal reset.
+function renderedShadowCoords(value) {
+    const layers = [];
+    let depth = 0, begin = 0;
+    for (let i = 0; i < value.length; i += 1) {
+        if (value[i] === '(') depth += 1;
+        else if (value[i] === ')') depth -= 1;
+        else if (value[i] === ',' && depth === 0) {
+            layers.push(value.slice(begin, i));
+            begin = i + 1;
+        }
+    }
+    layers.push(value.slice(begin));
+    if (layers.length !== 3) return null;
+    const positions = layers.slice(1).flatMap(layer =>
+        [...layer.matchAll(/(-?\\d+(?:\\.\\d+)?)px/g)].slice(0, 2).map(m => Number(m[1])));
+    return positions.length === 4 && positions.every(Number.isFinite) ? positions : null;
+}
+
+// The two existing rear paper planes travel left/down or right/up by 1–2px.
+// EVERY transition segment changes one x or y coordinate, even if a SPA
+// navigation interrupted the preceding plane animation mid-movement.
 export function buildShadowFrames(start, type) {
     const shadow = SHADOW_START[type];
     const initial = type === 'content' ? [-5, 7, -6, 8] : [-2, 0, -3, 0];
-    const coords = [...initial];
-    const frames = [start, shadow(...coords)];
+    const rendered = renderedShadowCoords(start) ?? initial;
+    const coords = [...rendered];
+    const frames = [start];
     const move = (index, value) => {
+        if (coords[index] === value) return;
         coords[index] = value;
         frames.push(shadow(...coords));
     };
-    move(0, initial[0] - 1); // middle layer out, x only
-    move(2, initial[2] - 1); // rear layer out, x only
-    move(1, initial[1] + 1); // middle layer down, y only
-    move(3, initial[3] + 2); // rear layer down, y only
-    move(0, initial[0]);     // middle layer in, x only
-    move(2, initial[2]);     // rear layer in, x only
-    move(1, initial[1]);     // middle layer up, y only
-    move(3, initial[3]);     // rear layer up, y only
-    frames.push(start);      // close the cycle at the rendered state
+    // Realign a captured intermediate state one axis at a time.
+    initial.forEach((value, index) => move(index, value));
+    if (frames.length === 1) frames.push(shadow(...coords));
+    move(0, initial[0] - 1); // middle layer outward, x
+    move(2, initial[2] - 1); // rear layer outward, x
+    move(1, initial[1] + 1); // middle layer down, y
+    move(3, initial[3] + 2); // rear layer down, y
+    move(0, initial[0]);     // middle layer inward, x
+    move(2, initial[2]);     // rear layer inward, x
+    move(1, initial[1]);     // middle layer up, y
+    move(3, initial[3]);     // rear layer up, y
+    rendered.forEach((value, index) => move(index, value));
+    frames.push(start);      // same computed starting state at loop boundary
     return frames.map((boxShadow, index) => ({
         boxShadow, offset: index / (frames.length - 1), easing: 'ease-in-out',
     }));

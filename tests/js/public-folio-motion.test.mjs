@@ -121,6 +121,25 @@ test('both existing paper planes move one axis at a time and end at the start', 
     }
 });
 
+test('captured mid-flight paper shadows return to base one axis at a time', () => {
+    const start = 'rgba(28, 35, 32, .09) -2px 3px 0px 0px, rgba(255, 255, 255, .31) -6.5px 8px 0px 0px, rgba(28, 35, 32, .12) -7px 9.5px 0px 0px';
+    const frames = buildShadowFrames(start, 'content');
+    assert.equal(frames[0].boxShadow, start);
+    assert.equal(frames.at(-1).boxShadow, start);
+    const coordinates = string => {
+        const matches = [...string.matchAll(/(-?\\d+(?:\\.\\d+)?)px\\s+(-?\\d+(?:\\.\\d+)?)px\\s+0(?:px)?/g)];
+        return matches.slice(-2).flatMap(m => [Number(m[1]), Number(m[2])]);
+    };
+    for (let i = 1; i < frames.length - 1; i += 1) {
+        const previous = coordinates(frames[i - 1].boxShadow);
+        const next = coordinates(frames[i].boxShadow);
+        assert.equal(previous.length, 4);
+        assert.equal(next.length, 4);
+        assert.ok(previous.filter((v, j) => v !== next[j]).length <= 1,
+            'mid-visit shadow motion must never change x and y together');
+    }
+});
+
 test('both paper surfaces breathe continuously from the initial page', () => {
     withBrowser(({ root, effects, animations, painting, navigation }) => {
         assert.equal(advancePublicFolio(root), true);
