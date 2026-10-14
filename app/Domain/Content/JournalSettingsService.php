@@ -15,7 +15,7 @@ final class JournalSettingsService
     ) {}
 
     /** @param array<string, mixed> $data */
-    public function update(SiteSection $section, array $data): SiteSection
+    public function update(SiteSection $section, array $data, ?array $expectedOriginal = null): SiteSection
     {
         if ($section->nodeType() !== SiteSectionType::Journal) {
             throw ValidationException::withMessages(['section' => 'Only Journal pages have Journal settings.']);
@@ -30,11 +30,14 @@ final class JournalSettingsService
         $slug = $this->slug($data['slug'] ?? null);
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($section, $templateValue, $title, $navigationLabel, $slug, $actor): SiteSection {
+        return DB::transaction(function () use ($section, $templateValue, $title, $navigationLabel, $slug, $actor, $expectedOriginal): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             if ($fresh->nodeType() !== SiteSectionType::Journal) {
                 throw ValidationException::withMessages(['section' => 'This page is no longer a Journal.']);
+            }
+            if ($expectedOriginal !== null && $fresh->only(array_keys($expectedOriginal)) !== $expectedOriginal) {
+                throw ValidationException::withMessages(['title' => 'This Journal changed. Reopen the settings dialog.']);
             }
 
             $currentSlug = (string) $fresh->getAttribute('slug');
@@ -42,6 +45,9 @@ final class JournalSettingsService
                 throw ValidationException::withMessages(['slug' => 'This public URL slug is reserved or already in use.']);
             }
 
+            if ((string) $fresh->getAttribute('template') !== $templateValue) {
+                $fresh = app(SiteSectionEditorialService::class)->updateJournalTemplate($fresh, $templateValue);
+            }
             $fresh->fill([
                 'template' => $templateValue,
                 'title' => $title,

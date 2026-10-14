@@ -166,6 +166,7 @@ final class BlogEditorialService
             $postId = (int) $fresh->getKey();
             $sectionId = (int) $fresh->getAttribute('site_section_id');
             $fresh->delete();
+            $this->order->compactAfterDeletion($fresh);
             $this->audit->record($actor, 'blog_post.deleted', 'blog_post', $postId, [
                 'site_section_id' => $sectionId,
             ]);

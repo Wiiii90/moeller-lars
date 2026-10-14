@@ -212,6 +212,7 @@ final class ExhibitionEditorialService
             $id = (int) $fresh->getKey();
             $sectionId = (int) $fresh->getAttribute('site_section_id');
             $fresh->delete();
+            $this->order->compactAfterDeletion($fresh);
             $this->audit->record($actor, 'exhibition.deleted', 'exhibition', $id, ['site_section_id' => $sectionId]);
         });
     }

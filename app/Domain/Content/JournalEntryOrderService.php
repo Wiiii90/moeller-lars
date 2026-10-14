@@ -155,6 +155,37 @@ final class JournalEntryOrderService
             ->all();
         $afterOrder = array_map(static fn (Model $candidate): int => (int) $candidate->getKey(), $ordered);
 
+        if (! $this->writePositions($record, $records, $ordered)) {
+            return false;
+        }
+
+        $this->audit->recordOrdering(
+            $actor,
+            $record instanceof BlogPost ? 'blog_post.reordered' : 'exhibition.reordered',
+            $record instanceof BlogPost ? 'blog_post' : 'exhibition',
+            (int) $record->getKey(),
+            ($record instanceof BlogPost ? 'journal-blog:' : 'journal-exhibitions:').$sectionId,
+            $beforeOrder,
+            $afterOrder,
+            ['site_section_id' => $sectionId],
+        );
+
+        return true;
+    }
+
+    /** Compact the surviving sequence as part of the caller's logical deletion. */
+    public function compactAfterDeletion(Model $record): void
+    {
+        $this->assertSupported($record);
+        DB::transaction(function () use ($record): void {
+            $records = $this->lockedRecords($record, $this->sectionId($record));
+            $this->writePositions($record, $records, $records->values()->all());
+        });
+    }
+
+    /** @param list<Model> $ordered */
+    private function writePositions(Model $record, Collection $records, array $ordered): bool
+    {
         $changes = [];
         foreach ($ordered as $index => $candidate) {
             $position = $index + 1;
@@ -174,17 +205,6 @@ final class JournalEntryOrderService
         foreach ($changes as [$candidate, $position]) {
             DB::table($record->getTable())->where('id', $candidate->getKey())->update(['position' => $position, 'updated_at' => now()]);
         }
-
-        $this->audit->recordOrdering(
-            $actor,
-            $record instanceof BlogPost ? 'blog_post.reordered' : 'exhibition.reordered',
-            $record instanceof BlogPost ? 'blog_post' : 'exhibition',
-            (int) $record->getKey(),
-            ($record instanceof BlogPost ? 'journal-blog:' : 'journal-exhibitions:').$sectionId,
-            $beforeOrder,
-            $afterOrder,
-            ['site_section_id' => $sectionId],
-        );
 
         return true;
     }

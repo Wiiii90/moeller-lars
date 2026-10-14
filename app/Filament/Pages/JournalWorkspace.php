@@ -21,6 +21,8 @@ use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
+use App\Models\User;
+use Filament\Facades\Filament;
 use App\Routing\SiteNodeRoute;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
@@ -34,12 +36,25 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Throwable;
 
 final class JournalWorkspace extends Page
 {
+    #[Locked]
+    public array $journalSettingsOriginal = [];
+
+    #[Locked]
+    public array $entryEditorOriginal = [];
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
 
     private const PAGE_SIZES = [25, 50, 100];
 
@@ -298,7 +313,7 @@ final class JournalWorkspace extends Page
             if ($direction === 'down') {
                 $records = $records->reverse();
             }
-            [$ok, $failed] = $this->bestEffort($records, fn (BlogPost $post): bool => app(BlogEditorialService::class)->move($post, $direction));
+            [$ok, $failed] = $this->runEntryBatch($records, fn (BlogPost $post): bool => app(BlogEditorialService::class)->move($post, $direction));
             $this->notifyBatch('posts reordered', $ok, $failed);
             $this->loadPosts(false);
 
@@ -308,7 +323,7 @@ final class JournalWorkspace extends Page
         if ($direction === 'down') {
             $records = $records->reverse();
         }
-        [$ok, $failed] = $this->bestEffort($records, fn (Exhibition $entry): bool => app(ExhibitionEditorialService::class)->move($entry, $direction));
+        [$ok, $failed] = $this->runEntryBatch($records, fn (Exhibition $entry): bool => app(ExhibitionEditorialService::class)->move($entry, $direction));
         $this->notifyBatch('exhibitions reordered', $ok, $failed);
         $this->loadExhibitions(false);
     }
@@ -368,7 +383,7 @@ final class JournalWorkspace extends Page
             ->fillForm(function (): array {
                 $section = $this->section();
 
-                return [
+                return $this->journalSettingsOriginal = [
                     'template' => (string) $section->getAttribute('template'),
                     'title' => $section->getAttribute('title'),
                     'navigation_label' => $section->getAttribute('navigation_label'),
@@ -386,7 +401,12 @@ final class JournalWorkspace extends Page
             ])
             ->modalHeading('Journal settings')
             ->action(function (Action $action, array $data): void {
-                $updated = app(JournalSettingsService::class)->update($this->section(), $data);
+                try {
+                    $updated = app(JournalSettingsService::class)->update($this->section(), $data, $this->journalSettingsOriginal);
+                } catch (ValidationException $exception) {
+                    $this->throwMountedValidation($exception);
+                }
+                $this->journalSettingsOriginal = $updated->only(array_keys($this->journalSettingsOriginal));
                 $template = $updated->journalTemplate();
                 abort_unless($template instanceof JournalTemplate, 404);
                 $this->template = $template->value;
@@ -399,6 +419,7 @@ final class JournalWorkspace extends Page
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
                 if ($updated->wasChanged()) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Journal settings saved',
                         status: 'success',
@@ -440,6 +461,7 @@ final class JournalWorkspace extends Page
             ->fillForm(function (array $arguments): array {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
 
+                $this->entryEditorOriginal = $this->journalEntryMutationState($post);
                 return [...$post->attributesToArray(), ...app(JournalEntryEditorState::class)->for($post)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
@@ -449,16 +471,15 @@ final class JournalWorkspace extends Page
                 $before = $this->journalEntryMutationState($post);
                 $data = [...$data, 'site_section_id' => $this->sectionId, 'state' => $post->getAttribute('state'), 'position' => $post->getAttribute('position'), 'published_at' => $post->getAttribute('published_at'), 'scheduled_at' => $post->getAttribute('scheduled_at')];
                 try {
-                    $updated = app(BlogEditorialService::class)->update($post, $data);
+                    $updated = $this->saveEditedEntry($post, $data);
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Post unchanged', $exception);
-                    $action->halt();
-
-                    return;
+                    $this->throwMountedValidation($exception);
                 }
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadPosts(false);
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Post saved',
                         status: 'success',
@@ -524,6 +545,7 @@ final class JournalWorkspace extends Page
             ->fillForm(function (array $arguments): array {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
 
+                $this->entryEditorOriginal = $this->journalEntryMutationState($entry);
                 return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
@@ -533,7 +555,7 @@ final class JournalWorkspace extends Page
                 $before = $this->journalEntryMutationState($entry);
                 $data['site_section_id'] = $this->sectionId;
                 try {
-                    $updated = app(ExhibitionEditorialService::class)->update($entry, $data);
+                    $updated = $this->saveEditedEntry($entry, $data);
                 } catch (ValidationException $exception) {
                     // A rejected map toggle must not remain visually enabled
                     // merely because Alpine updated its local switch state.
@@ -546,9 +568,7 @@ final class JournalWorkspace extends Page
                         'geocoded_at' => $saved->getAttribute('geocoded_at')?->toIso8601String(),
                     ]);
                     $this->notifyValidationFailure('Exhibition unchanged', $exception);
-                    $action->halt();
-
-                    return;
+                    $this->throwMountedValidation($exception);
                 }
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 // Domain geocoding owns coordinate changes. Keep the mounted
@@ -561,6 +581,7 @@ final class JournalWorkspace extends Page
                 ]);
                 $this->loadExhibitions(false);
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Exhibition saved',
                         status: 'success',
@@ -621,7 +642,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('deleteSelectedPosts')->label('Delete selected')->color('danger')
             ->action(function (): void {
-                [$ok, $failed] = $this->bestEffort($this->selectedPosts(), fn (BlogPost $post): bool => tap(true, fn () => app(BlogEditorialService::class)->delete($post)));
+                [$ok, $failed] = $this->runEntryBatch($this->selectedPosts(), fn (BlogPost $post): bool => tap(true, fn () => app(BlogEditorialService::class)->delete($post)));
                 $this->selectedPostIds = [];
                 $this->notifyBatch('posts deleted', $ok, $failed);
                 $this->loadPosts();
@@ -640,7 +661,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('deleteSelectedExhibitions')->label('Delete selected')->color('danger')
             ->action(function (): void {
-                [$ok, $failed] = $this->bestEffort($this->selectedExhibitions(), fn (Exhibition $entry): bool => tap(true, fn () => app(ExhibitionEditorialService::class)->delete($entry)));
+                [$ok, $failed] = $this->runEntryBatch($this->selectedExhibitions(), fn (Exhibition $entry): bool => tap(true, fn () => app(ExhibitionEditorialService::class)->delete($entry)));
                 $this->selectedExhibitionIds = [];
                 $this->notifyBatch('exhibitions deleted', $ok, $failed);
                 $this->loadExhibitions();
@@ -942,30 +963,32 @@ final class JournalWorkspace extends Page
 
     private function runPostBatch(string $label, callable $action): void
     {
-        [$ok, $failed] = $this->bestEffort($this->selectedPosts(), $action);
+        [$ok, $failed] = $this->runEntryBatch($this->selectedPosts(), $action);
         $this->selectedPostIds = [];
         $this->notifyBatch($label, $ok, $failed);
         $this->loadPosts();
     }
 
-    private function bestEffort(iterable $records, callable $action): array
+    private function runEntryBatch(iterable $records, callable $action): array
     {
-        $changed = 0;
-        $failed = 0;
-        foreach ($records as $record) {
-            try {
-                if ($action($record) !== false) {
-                    $changed++;
+        try {
+            return DB::transaction(function () use ($records, $action): array {
+                $changed = 0;
+                foreach ($records as $record) {
+                    if ($action($record) !== false) {
+                        $changed++;
+                    }
                 }
-            } catch (ValidationException) {
-                $failed++;
-            } catch (Throwable $exception) {
-                report($exception);
-                $failed++;
-            }
-        }
 
-        return [$changed, $failed];
+                return [$changed, 0];
+            });
+        } catch (ValidationException) {
+            return [0, 1];
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [0, 1];
+        }
     }
 
     private function notifyBatch(string $label, int $changed, int $failed): void
@@ -981,9 +1004,25 @@ final class JournalWorkspace extends Page
         );
     }
 
-    /**
-     * @return array{record:array<string,mixed>,media:list<array<string,mixed>>}
-     */
+    /** @param array<string, mixed> $data */
+    private function saveEditedEntry(BlogPost|Exhibition $entry, array $data): BlogPost|Exhibition
+    {
+        $updated = DB::transaction(function () use ($entry, $data): BlogPost|Exhibition {
+            $locked = $entry->newQuery()->whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
+            if ($this->journalEntryMutationState($locked) !== $this->entryEditorOriginal) {
+                throw ValidationException::withMessages(['title' => 'This entry changed. Reopen the editor.']);
+            }
+
+            return $locked instanceof BlogPost
+                ? app(BlogEditorialService::class)->update($locked, $data)
+                : app(ExhibitionEditorialService::class)->update($locked, $data);
+        });
+        $this->entryEditorOriginal = $this->journalEntryMutationState($updated);
+
+        return $updated;
+    }
+
+    /** @return array{record:array<string,mixed>,media:list<array<string,mixed>>} */
     private function journalEntryMutationState(BlogPost|Exhibition $entry): array
     {
         $fresh = $entry instanceof BlogPost
@@ -1001,6 +1040,16 @@ final class JournalWorkspace extends Page
             'record' => $fresh->getAttributes(),
             'media' => $media,
         ];
+    }
+
+    private function throwMountedValidation(ValidationException $exception): never
+    {
+        $path = $this->getMountedActionSchema()->getStatePath();
+        $errors = [];
+        foreach ($exception->errors() as $field => $messages) {
+            $errors[$path.'.'.$field] = $messages;
+        }
+        throw ValidationException::withMessages($errors);
     }
 
     private function notifyValidationFailure(string $title, ValidationException $exception): void
