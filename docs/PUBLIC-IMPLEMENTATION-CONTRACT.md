@@ -105,31 +105,26 @@ only the latest height animation can release the clipping state.
 All Home hero media/viewer navigation/focus continues to be owned by the
 existing Home Hero and Artwork Viewer code.
 
-The menu NEVER performs a page-build impulse. Its white outer strokes
-remain connected to the UPPER border (top: 0) at all times, and their
-outside horizontal positions are fixed. Their lower connected return can
-rise to 71% of the menu height on the left and 65% on the right,
-leaving a deliberately short exposed vertical. The ambient choreography
-now has just ONE continuous ascent, a resting phase, ONE continuous
-descent and another rest. The former intermediate back-and-forth and
-rapid corrections at loop boundaries are removed. Both sides remain
-asynchronous and their top connections never open.
+The menu NEVER performs a page-build impulse. Its top-connected outer
+white strokes NEVER touch the lower menu edge. The left stroke's static
+bottom anchor is 32% and cycles through 60%, 42%, 73%; the right starts
+1px above the bottom and cycles through 17%, 6%, 26%. Each reverses
+before reaching a previous extreme as well as pausing. The nonoverlapping
+movement ranges guarantee that the left white line is always shorter
+than the right, even with asynchronous animation periods.
 
-Content's ambient white contours likewise make one orderly outward
-and vertical shortening movement, rest, then return one axis at a time
-without concentrated micro-movements near loop completion. This affects
-ambient motion ONLY: the quicker Content page-build impulse and the
-viewport-aware height reveal keep their accepted speeds and geometry.
-
-The apparent black/green-grey paper surface was caused by the dark
-`--public-folio-depth` box-shadow backing plane and a second dark near
-shadow behind Content. Both are replaced with WHITE, translucent paper
-shades: the rear plane is rgba(255,255,255,.20), the near Content micro
-shadow rgba(255,255,255,.14), and the established nearer white sheet
-rgba(255,255,255,.31). The menu retains only its subtle grey 1px inset
-divider, not a dark exterior surface. No new decoration or shadow layers
-are added. The existing paper layers continue to meet the upper menu
-border and to remain staggered to the left and below.
+There is exactly ONE visible exterior light paper backing per surface.
+Content uses one `-5px 7px 0 var(--public-folio-soft)` shadow; Menu
+retains its existing inner inset rule and only ONE exterior shadow,
+`-1.5px 3.5px 0 3.5px var(--public-folio-soft)`. The prior extra
+dark/grey/white shadow layers and `--public-folio-depth` palette token
+are DELETED, not merely recolored. The only menu backing's upward
+spread meets the menu's top edge; that invariance continues through
+its axis-only ambient movement. The shared Public motion module now
+owns only a single backing x/y coordinate pair per surface, and the
+Content page-build impulse travels on this ONE backing.
+Never reintroduce multiple stacked grey/white exterior planes without
+an explicit new request.
 
 On each normal Content build, both ends of the vertical pseudo strokes
 contract up to 40px at top and 46px at bottom, with staged

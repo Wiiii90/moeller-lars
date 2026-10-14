@@ -32,8 +32,6 @@
     /* One neutral contour palette; individual surfaces vary the pressure. */
     --public-folio-light: rgba(255, 255, 255, .49);
     --public-folio-soft: rgba(255, 255, 255, .31);
-    /* Both backing sheets are white; no dark painted shadow planes. */
-    --public-folio-depth: rgba(255, 255, 255, .20);
     --public-ink: #555;
     --public-muted: #777;
     --public-active: #746a60;
@@ -95,15 +93,13 @@ body {
     background: var(--public-surface);
 }
 
-/* Two original menu paper planes have the same VISIBLE side and lower
-   extents as the Content planes. Their spread meets the upper border. */
+/* One light backing sheet. Spread meets the menu's upper edge. */
 .site-navigation {
     position: relative;
     order: 1;
     box-shadow:
         inset 0 -1px 0 var(--public-index-rule),
-        -1.5px 3.5px 0 3.5px var(--public-folio-soft),
-        -3px 5px 0 5px var(--public-folio-depth);
+        -1.5px 3.5px 0 3.5px var(--public-folio-soft);
 }
 .site-navigation::before,
 .site-navigation::after {
@@ -116,7 +112,7 @@ body {
    sheet. The white stroke never extends past the lower menu border. */
 .site-navigation::before {
     top: 0;
-    bottom: 0;
+    bottom: 32%;
     left: -.52rem;
     width: .52rem;
     border-left: 1px solid var(--public-folio-light);
@@ -126,7 +122,7 @@ body {
    an overshoot into the rear paper planes. */
 .site-navigation::after {
     top: 0;
-    bottom: 0;
+    bottom: 1px;
     right: -.44rem;
     width: .44rem;
     border-right: 1px solid var(--public-folio-light);
@@ -515,10 +511,7 @@ body {
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
     background: var(--public-surface);
-    box-shadow:
-        -2px 3px 0 rgba(255, 255, 255, .14),
-        -5px 7px 0 var(--public-folio-soft),
-        -8px 10px 0 var(--public-folio-depth);
+    box-shadow: -5px 7px 0 var(--public-folio-soft);
 }
 /* The original two connected paper-edge drawings are their OWN animation
    surfaces. Neither is replaced, hidden or duplicated at navigation time.

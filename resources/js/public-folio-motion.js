@@ -9,10 +9,13 @@ export const FOLIO_VARIANTS = Object.freeze([
 ]);
 // Menu strokes are connected to the TOP border for their entire life.
 // Only their lower joint rises/falls, never the upper endpoint.
+// Nonoverlapping cycles: LEFT always ends above RIGHT, regardless of
+// each side's phase. Neither lower joint touches the menu bottom.
 export const MENU_VARIANTS = Object.freeze([
-    ['0rem', '0rem', '0rem', '0rem'],
-    ['0rem', '34%', '0rem', '29%'],
-    ['0rem', '71%', '0rem', '65%'],
+    ['0rem', '32%', '0rem', '1px'],
+    ['0rem', '60%', '0rem', '17%'],
+    ['0rem', '42%', '0rem', '6%'],
+    ['0rem', '73%', '0rem', '26%'],
 ]);
 
 // Original horizontal geometry belongs to the accepted shell CSS. These
@@ -26,18 +29,16 @@ const MENU_DURATIONS = [34200, 38800];
 const BUILD_DURATION = 1240;
 const HEIGHT_DURATION = 780;
 
+// Precisely one outer paper on each surface. The menu's internal rule is
+// an inset stroke, not another backing sheet.
 const SHADOW_START = {
-    content: (middleX, middleY, rearX, rearY) => [
-        '-2px 3px 0 rgba(255, 255, 255, .14)',
-        `${middleX}px ${middleY}px 0 var(--public-folio-soft)`,
-        `${rearX}px ${rearY}px 0 var(--public-folio-depth)`,
-    ].join(', '),
-    menu: (middleX, middleY, rearX, rearY) => [
+    content: (x, y) => `${x}px ${y}px 0 var(--public-folio-soft)`,
+    menu: (x, y) => [
         'inset 0 -1px 0 var(--public-index-rule)',
-        `${middleX}px ${middleY}px 0 ${middleY}px var(--public-folio-soft)`,
-        `${rearX}px ${rearY}px 0 ${rearY}px var(--public-folio-depth)`,
+        `${x}px ${y}px 0 ${y}px var(--public-folio-soft)`,
     ].join(', '),
 };
+
 let snapshot = null;
 const activeHeightAnimations = new WeakMap();
 const activePaperPulses = new WeakMap();
@@ -108,111 +109,99 @@ export function buildCornerFrames(start, nextTop, nextBottom, edge) {
     }));
 }
 
-// The top stays attached for the entire cycle. Instead of repeatedly
-// braking at intermediate bottom positions, the line rises ONCE to its
-// short form, rests, then descends ONCE and rests. There are exactly two
-// vertical movements and no fast correction at the loop seam.
+// One anchored stroke per side. There are deliberate early reversals:
+ // extend -> partially retract -> extend again -> rest. The left lower
+// endpoint is ALWAYS >=32% high, the right never >26% and never <1px.
+// Separate cycle periods cannot invert the visual left/right hierarchy.
 export function buildMenuCornerFrames(start, index) {
     const column = index === 0 ? 1 : 3;
     const fixed = { ...start, top: '0px' };
-    const high = MENU_VARIANTS[2][column];
-    const stops = [
-        { ...fixed, offset: 0 },
-        { ...fixed, offset: .13 },
-        { ...fixed, bottom: high, offset: .48 },
-        { ...fixed, bottom: high, offset: .62 },
-        { ...fixed, bottom: start.bottom, offset: .89 },
-        { ...fixed, offset: 1 },
+    const steps = [
+        { bottom: start.bottom, offset: 0 },
+        { bottom: start.bottom, offset: .08 },
+        { bottom: MENU_VARIANTS[1][column], offset: .29 },
+        { bottom: MENU_VARIANTS[1][column], offset: .37 },
+        { bottom: MENU_VARIANTS[2][column], offset: .54 },
+        { bottom: MENU_VARIANTS[2][column], offset: .61 },
+        { bottom: MENU_VARIANTS[3][column], offset: .80 },
+        { bottom: MENU_VARIANTS[3][column], offset: .86 },
+        { bottom: start.bottom, offset: .97 },
+        { bottom: start.bottom, offset: 1 },
     ];
-    return stops.map(frame => ({
-        ...frame, easing: 'cubic-bezier(.42, 0, .58, 1)',
+    return steps.map(({ bottom, offset }) => ({
+        ...fixed, bottom, offset, easing: 'cubic-bezier(.42, 0, .58, 1)',
     }));
 }
 
-// Parse only the two existing rear planes, respecting commas inside rgb()
-// functions. SPA swaps may interrupt a plane halfway across an axis;
-// restoring each coordinate separately prevents a diagonal reset.
-function renderedShadowCoords(value) {
-    const layers = [];
+// Parse comma-separated shadow layers without splitting inside rgba().
+function shadowLayers(value) {
+    const parts = [];
     let depth = 0, begin = 0;
     for (let i = 0; i < value.length; i += 1) {
         if (value[i] === '(') depth += 1;
         else if (value[i] === ')') depth -= 1;
         else if (value[i] === ',' && depth === 0) {
-            layers.push(value.slice(begin, i));
+            parts.push(value.slice(begin, i).trim());
             begin = i + 1;
         }
     }
-    layers.push(value.slice(begin));
-    if (layers.length !== 3) return null;
-    const positions = layers.slice(1).flatMap(layer =>
-        [...layer.matchAll(/(-?\d+(?:\.\d+)?)px/g)].slice(0, 2).map(m => Number(m[1])));
-    return positions.length === 4 && positions.every(Number.isFinite) ? positions : null;
+    parts.push(value.slice(begin).trim());
+    return parts;
 }
 
-// These match the three CSS layers exactly. The second and third paper
-// planes must remain separate along LEFT and BOTTOM for every animation frame.
+function renderedShadowCoords(value, type) {
+    const layers = shadowLayers(value);
+    if (layers.length !== (type === 'menu' ? 2 : 1)) return null;
+    const xy = [...layers.at(-1).matchAll(/(-?\d+(?:\.\d+)?)px/g)]
+        .slice(0, 2).map(m => Number(m[1]));
+    return xy.length === 2 && xy.every(Number.isFinite) ? xy : null;
+}
+
+// The single existing exterior sheet on each surface.
 export const FOLIO_PLANE_BASE = Object.freeze({
-    content: [-5, 7, -8, 10],
-    menu: [-1.5, 3.5, -3, 5],
+    content: [-5, 7],
+    menu: [-1.5, 3.5],
 });
 
-// Existing paper layers alternate one-axis excursions, with rests.
-// Intermediate values are read on Livewire swaps; the rear layer always
-// leads outward and restores its visibility before the front shifts inward.
+// The backing sheet moves one x or y axis at a time, rests and returns.
+// No hidden second sheet, independent shadow copy or interpolated dark fill.
 export function buildShadowFrames(start, type) {
     const shadow = SHADOW_START[type];
     const base = FOLIO_PLANE_BASE[type];
-    const rendered = renderedShadowCoords(start) ?? base;
-    const positions = [...rendered];
+    const rendered = renderedShadowCoords(start, type) ?? base;
+    const xy = [...rendered];
     const frames = [{ boxShadow: start, weight: 0 }];
-    // Give longer sweeps to farther travel and generous quiet holds.
-    // Uniform tiny keyframe steps previously made the paper look nervous.
-    const move = (index, value) => {
-        if (positions[index] === value) return;
-        const distance = Math.abs(positions[index] - value);
-        positions[index] = value;
-        frames.push({
-            boxShadow: shadow(...positions),
-            weight: Math.max(2.5, 2.3 * distance),
-        });
+    const move = (i, value) => {
+        if (xy[i] === value) return;
+        const distance = Math.abs(xy[i] - value);
+        xy[i] = value;
+        frames.push({ boxShadow: shadow(...xy),
+            weight: Math.max(4, 3 * distance) });
     };
-    const rest = (weight = 6) =>
-        frames.push({ boxShadow: shadow(...positions), weight });
-
-    base.forEach((value, index) => move(index, value));
-    rest(7);
-    // Rear paper leads outward; near paper retreats first on closing.
-    move(2, base[2] - (type === 'menu' ? 1.8 : 3.5));
-    move(0, base[0] - (type === 'menu' ? 1 : 2));
-    rest(5);
-    move(3, base[3] + (type === 'menu' ? 1.4 : 3));
-    move(1, base[1] + (type === 'menu' ? .75 : 1.7));
-    rest(8);
-    move(0, base[0]); move(1, base[1]);
-    move(2, base[2]); move(3, base[3]);
+    const rest = weight => frames.push({ boxShadow: shadow(...xy), weight });
+    base.forEach((value, i) => move(i, value));
     rest(9);
-    move(0, base[0] + (type === 'menu' ? .4 : 1));
-    move(2, base[2] + (type === 'menu' ? .1 : 1.2));
-    rest(5);
-    move(1, base[1] - (type === 'menu' ? .2 : .6));
-    move(3, base[3] - (type === 'menu' ? .1 : .3));
-    rest(8);
-    move(2, base[2]); move(3, base[3]);
+    move(0, base[0] - (type === 'menu' ? 1 : 2));
+    rest(4);
+    move(1, base[1] + (type === 'menu' ? 1.3 : 2));
+    rest(10);
     move(0, base[0]); move(1, base[1]);
-    rest(8);
-    rendered.forEach((value, index) => move(index, value));
+    rest(10);
+    move(0, base[0] + (type === 'menu' ? .4 : .8));
+    move(1, base[1] - (type === 'menu' ? .2 : .5));
+    rest(7);
+    move(1, base[1]); move(0, base[0]);
+    rest(9);
+    rendered.forEach((value, i) => move(i, value));
     frames.push({ boxShadow: start, weight: 4 });
 
     const total = frames.reduce((sum, frame) => sum + frame.weight, 0);
     let elapsed = 0;
     return frames.map((frame, index) => {
         elapsed += frame.weight;
-        return {
-            boxShadow: frame.boxShadow,
+        return { boxShadow: frame.boxShadow,
             offset: index === frames.length - 1 ? 1 : elapsed / total,
-            easing: 'cubic-bezier(.36, .08, .64, .92)',
-        };
+            easing: 'cubic-bezier(.42, 0, .58, 1)' };
     });
 }
 
@@ -334,41 +323,33 @@ export function animatePageHeight(previousHeight, root = document) {
 // Two genuine rear paper planes advance in measured separate directions;
 // exposed separation from the white front and from one another is preserved.
 // The first and final frames are actual sampled CSS values.
+// On navigation, push the SAME single sheet outward or inward. Geometry
+// is based on canonical coordinates, preventing cumulative extension on
+// rapid Hero clicks. The page-height reveal keeps its own existing pace.
 export function buildPageImpulse(start, end, type, growing) {
     const base = FOLIO_PLANE_BASE[type];
-    const coords = [...(renderedShadowCoords(start) ?? base)];
+    const xy = [...(renderedShadowCoords(start, type) ?? base)];
     const shadow = SHADOW_START[type];
-    const values = [start];
-    const set = (i, v) => {
-        if (coords[i] === v) return;
-        coords[i] = v;
-        values.push(shadow(...coords));
+    const frames = [start];
+    const move = (index, value) => {
+        if (xy[index] === value) return;
+        xy[index] = value;
+        frames.push(shadow(...xy));
     };
-    // In a growing page the rear plane leads outward. When shrinking the
-    // middle plane retracts first so the rear one never gets swallowed.
-    const scale = type === 'menu' ? .48 : 1;
-    const outward = growing !== false;
-    const middleX = base[0] + (outward ? -2.4 : 1.4) * scale;
-    const rearX = base[2] + (outward ? -4.8 : 1.0) * scale;
-    const middleY = base[1] + (outward ? 1.8 : -.9) * scale;
-    const rearY = base[3] + (outward ? 4 : -.7) * scale;
-    if (outward) {
-        set(2, rearX); set(3, rearY); set(0, middleX); set(1, middleY);
+    const scale = type === 'menu' ? .5 : 1;
+    if (growing !== false) {
+        move(0, base[0] - 3.2 * scale);
+        move(1, base[1] + 2.8 * scale);
     } else {
-        set(0, middleX); set(1, middleY); set(2, rearX); set(3, rearY);
+        move(0, base[0] + 1.2 * scale);
+        move(1, base[1] - .8 * scale);
     }
-    // Each plane retracts in one-axis movements before returning to the
-    // destination's authored styling; never snap two axes simultaneously.
-    const target = renderedShadowCoords(end) ?? base;
-    if (outward) {
-        set(0, target[0]); set(1, target[1]); set(2, target[2]); set(3, target[3]);
-    } else {
-        set(2, target[2]); set(3, target[3]); set(0, target[0]); set(1, target[1]);
-    }
-    values.push(end);
-    return values.map((boxShadow, index) => ({
-        boxShadow,
-        offset: index / (values.length - 1),
+    const destination = renderedShadowCoords(end, type) ?? base;
+    move(0, destination[0]);
+    move(1, destination[1]);
+    frames.push(end);
+    return frames.map((boxShadow, index) => ({
+        boxShadow, offset: index / (frames.length - 1),
         easing: 'cubic-bezier(.35, 0, .25, 1)',
     }));
 }
