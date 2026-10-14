@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
@@ -58,6 +59,7 @@ final class HomeSettingsDialog
             'rotation_interval_unit' => $hero['rotation_interval']['unit'],
             'public_site_gate' => (bool) ($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? false),
             ...$this->routingDialog->fill($settings),
+            'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
             ...SitePageHeading::formState($section),
         ];
     }
@@ -75,6 +77,17 @@ final class HomeSettingsDialog
                         ->required()
                         ->live(),
                     ...$this->routingDialog->schema(),
+                    AdminControl::toggle('show_in_navigation', 'Show in public navigation')
+                        ->live()
+                        ->visible(fn (callable $get): bool => ! (bool) $get('skip_home'))
+                        ->afterStateUpdated(function (mixed $state): void {
+                            if ($this->saveNavigationVisibility((bool) $state)) {
+                                app(AdminNotifier::class)->notification(
+                                    title: 'Home navigation updated',
+                                    status: 'success',
+                                );
+                            }
+                        }),
                     Select::make('group_source')
                         ->label('Group source')
                         ->options(['automatic' => 'Automatic', 'manual' => 'Manual'])
@@ -197,6 +210,9 @@ final class HomeSettingsDialog
         }
 
         $changed = $this->routingDialog->save($data) || $changed;
+        if (array_key_exists('show_in_navigation', $data)) {
+            $changed = $this->saveNavigationVisibility((bool) $data['show_in_navigation']) || $changed;
+        }
 
         $section = $this->homeSection($settings);
         $section = app(SiteSectionEditorialService::class)->updatePlacement($section, 'published', null);
@@ -242,6 +258,14 @@ final class HomeSettingsDialog
         }
 
         return $toggle;
+    }
+
+    private function saveNavigationVisibility(bool $visible): bool
+    {
+        return app(SiteSectionEditorialService::class)->updateHomeNavigationVisibility(
+            $this->homeSection($this->resolver->settings()),
+            $visible,
+        );
     }
 
     private function homeSection(HomePresentationSetting $settings): SiteSection

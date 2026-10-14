@@ -85,6 +85,8 @@ it('hides Home in both navigation projections immediately on Skip Home, then res
 
     $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
     $homeLabel = (string) ($home->navigation_label ?: $home->title);
+    // Home's menu switch defaults off; enable it here to isolate Skip behavior.
+    $editor->updateHomeNavigationVisibility($home, true);
     $routing = app(HomeRoutingSettingsService::class);
     $settings = app(HomePresentationResolver::class)->settings();
     expect($routing->enabled($settings))->toBeFalse();

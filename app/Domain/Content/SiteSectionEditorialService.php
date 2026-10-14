@@ -54,6 +54,33 @@ final class SiteSectionEditorialService
         });
     }
 
+    /** Home-only public menu control; routing and publication stay independent. */
+    public function updateHomeNavigationVisibility(SiteSection $section, bool $visible): bool
+    {
+        return DB::transaction(function () use ($section, $visible): bool {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if ($fresh->nodeType() !== SiteSectionType::Home) {
+                throw ValidationException::withMessages(['show_in_navigation' => 'Only Home supports this navigation setting.']);
+            }
+
+            $fresh->setAttribute('show_in_navigation', $visible);
+            if (! $fresh->isDirty('show_in_navigation')) {
+                return false;
+            }
+
+            $fresh->save();
+            $this->audit->record(
+                $this->audit->requireActor(),
+                'site_section.updated',
+                'site_section',
+                (int) $fresh->getKey(),
+            );
+
+            return true;
+        });
+    }
+
     public function createNavigationGroup(string $title): SiteSection
     {
         $title = $this->validatedTitle($title);
