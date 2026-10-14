@@ -127,7 +127,7 @@ test('captured mid-flight paper shadows return to base one axis at a time', () =
     assert.equal(frames[0].boxShadow, start);
     assert.equal(frames.at(-1).boxShadow, start);
     const coordinates = string => {
-        const matches = [...string.matchAll(/(-?\\d+(?:\\.\\d+)?)px\\s+(-?\\d+(?:\\.\\d+)?)px\\s+0(?:px)?/g)];
+        const matches = [...string.matchAll(/(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+0(?:px)?/g)];
         return matches.slice(-2).flatMap(m => [Number(m[1]), Number(m[2])]);
     };
     for (let i = 1; i < frames.length - 1; i += 1) {
