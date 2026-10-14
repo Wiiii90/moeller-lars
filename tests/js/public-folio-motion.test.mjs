@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    FOLIO_VARIANTS, MENU_VARIANTS, buildCornerFrames, buildShadowFrames,
+    FOLIO_VARIANTS, MENU_VARIANTS, FOLIO_PLANE_BASE,
+    buildCornerFrames, buildShadowFrames, buildArtworkRevealFrames,
     capturePublicFolio, advancePublicFolio, animateArtworkHeight,
 } from '../../resources/js/public-folio-motion.js';
 
@@ -19,8 +20,10 @@ function scene({ content = true, menu = true, hidden = false, detailHeight = nul
                 '': { boxShadow: shadow },
             },
             animate(frames, options) {
-                animations.push({ name, frames, options });
-                return { finished: { then(done) { this.complete = done; } } };
+                const animation = { name, frames, options,
+                    finished: { then(done) { animation.complete = done; } } };
+                animations.push(animation);
+                return animation;
             },
         };
         computed.set(node, node.computed);
@@ -29,11 +32,11 @@ function scene({ content = true, menu = true, hidden = false, detailHeight = nul
     const painting = content ? fake('content',
         ['18px', '64px', '-11.2px', '8.8px'],
         ['61px', '19px', '-8.8px', '8.8px'],
-        'rgba(28, 35, 32, 0.09) -2px 3px 0px 0px, rgba(255, 255, 255, 0.31) -5px 7px 0px 0px, rgba(28, 35, 32, 0.12) -6px 8px 0px 0px') : null;
+        'rgba(28, 35, 32, 0.09) -2px 3px 0px 0px, rgba(255, 255, 255, 0.31) -5px 7px 0px 0px, rgba(28, 35, 32, 0.12) -8px 10px 0px 0px') : null;
     const navigation = menu ? fake('menu',
-        ['.48px', '-4px', '-8px', '12.16px'],
-        ['.32px', '-4.8px', '-8.32px', '12.16px'],
-        'rgba(65, 70, 65, 0.22) 0px -1px 0px 0px inset, rgba(28, 35, 32, 0.12) -2px 0px 0px 0px, rgba(255, 255, 255, 0.31) -3px 0px 0px 0px') : null;
+        ['.48px', '.8px', '-8px', '12.16px'],
+        ['.32px', '.8px', '-8.32px', '12.16px'],
+        'rgba(65, 70, 65, 0.22) 0px -1px 0px 0px inset, rgba(28, 35, 32, 0.12) -2px 2px 0px 2px, rgba(255, 255, 255, 0.31) -5px 4px 0px 2px') : null;
     let article = null;
     if (detailHeight !== null) {
         article = {
@@ -76,7 +79,10 @@ function withBrowser(run, options) {
 
 test('accepted first folio and menu remain the exact static geometries', () => {
     assert.deepEqual(FOLIO_VARIANTS[0], ['1.10rem', '4rem', '3.8rem', '1.15rem']);
-    assert.deepEqual(MENU_VARIANTS[0], ['.03rem', '-.25rem', '.02rem', '-.30rem']);
+    assert.deepEqual(MENU_VARIANTS[0], ['.03rem', '.05rem', '.02rem', '.05rem']);
+    assert.ok(MENU_VARIANTS.every(v => v.every(x => parseFloat(x) >= 0)));
+    assert.deepEqual(FOLIO_PLANE_BASE.content, [-5, 7, -8, 10]);
+    assert.deepEqual(FOLIO_PLANE_BASE.menu, [-2, 2, -5, 4]);
     assert.ok(MENU_VARIANTS.every(v => parseFloat(v[0]) >= 0 && parseFloat(v[2]) >= 0));
 });
 
@@ -97,46 +103,85 @@ test('each animated corner step moves only vertically or horizontally, never dia
         assert.equal(v && h, false, 'a keyframe must never move diagonally');
         assert.ok(next.offset > prev.offset);
     }
+    assert.ok(frames.some((f, i) => i > 0 && f.top === frames[i - 1].top
+        && f.bottom === frames[i - 1].bottom && f.left === frames[i - 1].left),
+        'ambient motion contains genuine resting intervals');
     const outside = frames.find(v => v.left === 'calc(-.7rem - 1.5px)');
     assert.equal(outside.width, 'calc(.55rem + 1.5px)');
     const inside = frames.find(v => v.left === 'calc(-.7rem + 1px)');
     assert.equal(inside.width, 'calc(.55rem - 1px)');
 });
 
-test('both existing paper planes move one axis at a time and end at the start', () => {
+function positions(value) {
+    const chunks = [];
+    let depth = 0, from = 0;
+    for (let i = 0; i < value.length; i += 1) {
+        if (value[i] === '(') depth++;
+        else if (value[i] === ')') depth--;
+        else if (value[i] === ',' && depth === 0) {
+            chunks.push(value.slice(from, i)); from = i + 1;
+        }
+    }
+    chunks.push(value.slice(from));
+    assert.equal(chunks.length, 3);
+    return chunks.slice(1).flatMap(layer => [...layer.matchAll(/(-?\d+(?:\.\d+)?)px/g)]
+        .slice(0, 2).map(m => Number(m[1])));
+}
+
+function assertVisibleLayers(frames, type) {
+    for (const frame of frames) {
+        const [middleX, middleY, rearX, rearY] = positions(frame.boxShadow);
+        assert.ok(rearX <= middleX - 2, 'rear sheet must show on the left');
+        assert.ok(rearY >= middleY + 1.5, 'rear sheet must show below the middle sheet');
+        if (type === 'menu') {
+            assert.ok(middleX <= -1.5 && middleY >= 1.5,
+                'front paper must remain outside white and visible at menu bottom');
+            assert.ok(rearY + 2 >= 4, 'rear menu paper must remain exposed below');
+        }
+    }
+}
+
+test('paper planes keep visible outer margins and move only one axis per step', () => {
     for (const type of ['content', 'menu']) {
-        const frames = buildShadowFrames('the originally rendered shadow', type);
-        assert.equal(frames[0].boxShadow, frames.at(-1).boxShadow);
-        assert.equal(frames.at(-1).offset, 1);
-        for (let i = 2; i < frames.length - 1; i += 1) {
-            const prev = frames[i - 1].boxShadow, next = frames[i].boxShadow;
-            const xy = x => [...x.matchAll(/(-?\d+)px (-?\d+)px 0 var\(/g)]
-                .flatMap(m => [Number(m[1]), Number(m[2])]);
-            const before = xy(prev), after = xy(next);
-            assert.equal(before.length, 4);
-            assert.equal(after.length, 4);
-            assert.equal(before.filter((x, j) => x !== after[j]).length, 1,
-                'only one existing paper-plane coordinate may change per step');
+        const sample = type === 'content'
+            ? 'rgba(28, 35, 32, 0.09) -2px 3px 0px 0px, rgba(255, 255, 255, 0.31) -5px 7px 0px 0px, rgba(28, 35, 32, 0.12) -8px 10px 0px 0px'
+            : 'rgba(65, 70, 65, 0.22) 0px -1px 0px 0px inset, rgba(28, 35, 32, 0.12) -2px 2px 0px 2px, rgba(255, 255, 255, 0.31) -5px 4px 0px 2px';
+        const frames = buildShadowFrames(sample, type);
+        assert.equal(frames[0].boxShadow, sample);
+        assert.equal(frames.at(-1).boxShadow, sample);
+        assertVisibleLayers(frames, type);
+        assert.ok(frames.some((v, i) => i > 0 && v.boxShadow === frames[i - 1].boxShadow),
+            'a sheet must sometimes rest');
+        for (let i = 1; i < frames.length; i += 1) {
+            const before = positions(frames[i - 1].boxShadow);
+            const after = positions(frames[i].boxShadow);
+            assert.ok(before.filter((x, j) => x !== after[j]).length <= 1,
+                'only one horizontal or vertical coordinate changes per step');
         }
     }
 });
 
-test('captured mid-flight paper shadows return to base one axis at a time', () => {
-    const start = 'rgba(28, 35, 32, .09) -2px 3px 0px 0px, rgba(255, 255, 255, .31) -6.5px 8px 0px 0px, rgba(28, 35, 32, .12) -7px 9.5px 0px 0px';
+test('an interrupted shadow resumes axis by axis, never covering the other sheet', () => {
+    const start = 'rgba(28, 35, 32, .09) -2px 3px 0px 0px, rgba(255, 255, 255, .31) -5.5px 7.5px 0px 0px, rgba(28, 35, 32, .12) -8.4px 10.7px 0px 0px';
     const frames = buildShadowFrames(start, 'content');
-    assert.equal(frames[0].boxShadow, start);
-    assert.equal(frames.at(-1).boxShadow, start);
-    const coordinates = string => {
-        const matches = [...string.matchAll(/(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+0(?:px)?/g)];
-        return matches.slice(-2).flatMap(m => [Number(m[1]), Number(m[2])]);
-    };
-    for (let i = 1; i < frames.length - 1; i += 1) {
-        const previous = coordinates(frames[i - 1].boxShadow);
-        const next = coordinates(frames[i].boxShadow);
-        assert.equal(previous.length, 4);
-        assert.equal(next.length, 4);
-        assert.ok(previous.filter((v, j) => v !== next[j]).length <= 1,
-            'mid-visit shadow motion must never change x and y together');
+    assertVisibleLayers(frames, 'content');
+    for (let i = 1; i < frames.length; i++) {
+        assert.ok(positions(frames[i - 1].boxShadow).filter(
+            (x, j) => x !== positions(frames[i].boxShadow)[j]).length <= 1);
+    }
+});
+
+test('growth and shrink have distinct brief paper-build directions', () => {
+    const sample = 'rgba(28, 35, 32, .09) -2px 3px 0px 0px, rgba(255, 255, 255, .31) -5px 7px 0px 0px, rgba(28, 35, 32, .12) -8px 10px 0px 0px';
+    const growing = buildArtworkRevealFrames(sample, sample, true);
+    const shrinking = buildArtworkRevealFrames(sample, sample, false);
+    assertVisibleLayers(growing, 'content');
+    assertVisibleLayers(shrinking, 'content');
+    assert.ok(Math.min(...growing.map(f => positions(f.boxShadow)[0])) < -5);
+    assert.ok(Math.max(...shrinking.map(f => positions(f.boxShadow)[0])) > -5);
+    for (const frames of [growing, shrinking]) {
+        assert.equal(frames[0].boxShadow, sample);
+        assert.equal(frames.at(-1).boxShadow, sample);
     }
 });
 
@@ -150,6 +195,7 @@ test('both paper surfaces breathe continuously from the initial page', () => {
         assert.deepEqual(effects.map(e => e.options.duration), [28600, 31800, 27000, 30900]);
         assert.equal(animations.length, 2);
         assert.ok(animations.every(a => a.options.iterations === Infinity));
+        assert.deepEqual(animations.map(a => a.options.duration), [34800, 36400]);
     });
 });
 
@@ -170,11 +216,19 @@ test('a real detail-to-detail SPA swap grows and shrinks from the outgoing rende
     withBrowser(({ root, article, animations }) => {
         assert.equal(advancePublicFolio(root), true);
         const reveal = animations.find(a => a.name === 'article');
+        const paperBuild = animations.find(a => a.name === 'content' && a.options.duration === 700);
         assert.ok(reveal);
+        assert.ok(paperBuild);
+        assert.equal(animations.filter(a => a.name === 'content').length, 1,
+            'ambient shadow must wait until the build finishes');
         assert.deepEqual(reveal.frames, [{ height: '740px' }, { height: '420px' }]);
         assert.equal(article.style.overflow, 'clip');
         reveal.complete();
+        paperBuild.complete();
         assert.equal(article.style.overflow, '');
+        assert.equal(animations.filter(a => a.name === 'content').length, 2,
+            'ambient breathing resumes after the build');
+        assert.equal(animations.at(-1).options.iterations, Infinity);
     }, { detailHeight: 420 });
 
     withBrowser(({ root }) => assert.equal(capturePublicFolio(root), true), { detailHeight: 360 });
