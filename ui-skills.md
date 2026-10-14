@@ -354,6 +354,8 @@ Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy sh
 
 All admin dialogs use the canonical [ADMIN-DIALOG-CONTRACT.md](docs/ADMIN-DIALOG-CONTRACT.md): native Filament Action lifecycle and scroll lock, shared measured content frame, dialog types/sizes, header action rail, semantic autosave, form controls and responsive scrolling. The physical modal geometry and the version-pinned Filament scroll-lock patch belong to that one owner, **not** to page-specific CSS or an independent JavaScript lock.
 
+For current Journal Blog/Exhibition and Gallery Artwork Create/Edit layouts, header mutations and the atomically committed Gallery Materials Repeater, consult the [single Gallery/Journal dialog owner](docs/ADMIN-DIALOG-CONTRACT.md#journal-blogexhibitions-edit-aktionen) and its Gallery section; do not restate per-action rules here.
+
 For a task involving a dialog, inspect the actual shared `AdminDialog` adapter, modal/geometry CSS and the relevant Livewire/Filament Action before implementation. The dialog contract takes priority over obsolete working-round descriptions; preserve current browser-accepted behavior and do not create second modal/confirmation systems.
 
 ## 17. Rich Text editor UI

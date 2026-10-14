@@ -28,9 +28,9 @@
 
 | Zuletzt geprüfte Referenz (14.10.2026) | SHA |
 | --- | --- |
-| letzter bestätigter Zwei-Eltern-`docs`-Merge | `40e62a12f1928feec45ed54d440fdad1abe22660` |
-| darin aufgenommener `dev`-Stand | `f9afd7aa3b31f9a5c012c2032554ecb1336cc89d` |
-| Status | Drei weitere `dev`-Commits nach `298bf74b` übernommen; neue Heads erneut prüfen |
+| letzter bestätigter Zwei-Eltern-`docs`-Merge | pending merge of `dev@1a6cbe45` |
+| darin aufgenommener `dev`-Stand | `1a6cbe45cfa81df0ba2d224bbed2eb9ffc377528` |
+| Status | Gallery-/Journal-Livewire-Testquellen und Dokumentationsänderungen konfliktgeprüft; neue Heads erneut prüfen |
 
 **Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
 prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
@@ -173,7 +173,10 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
   Header-Moves/Publication/Detach und Materials-Repeater-Commit sind
   nach Quellvergleich im Dialogvertrag nachgeführt. Gleiches gilt
   für Blog-/Exhibition-Edit-Header-Rollen und responsive `md`-Formen
-  aus dem anschließenden `dev@f9afd7aa`-Stand. Die `dev`-Änderungen wurden
+  aus dem anschließenden `dev@f9afd7aa`-Stand. Neue `dev@1a6cbe45`-Featuretests prüfen Gallery-Materials-
+  Commit erst nach explicit Action sowie Gallery-/Journal-Create-/Edit-
+  Mounts. Tests wurden auf `docs` **nicht ausgeführt**; sie ersetzen
+  weder tatsächliche Header-Action-Mutationen noch Browser-Akzeptanz. Die `dev`-Änderungen wurden
   inhaltlich mit den zusätzlichen Pages-Regeln zusammengeführt.
 - [Benachrichtigungen](docs/ADMIN-NOTIFICATION-CONTRACT.md) definieren
   die Meldungskardinalität anhand tatsächlich konsumierter Activity-
