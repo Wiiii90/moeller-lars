@@ -51,6 +51,25 @@ trait CustomPageWorkspaceTargetHelpers
         return [(int) $index, $type];
     }
 
+    /**
+     * Read the persisted component at its absolute sequence index. The type
+     * is part of the action target: reject a row that was reordered or
+     * converted since the action was rendered.
+     *
+     * @return array<string, mixed>
+     */
+    private function componentAt(int $index, string $expectedType): array
+    {
+        $block = $this->settings()->components()[$index] ?? null;
+        if (! is_array($block) || ($block['type'] ?? null) !== $expectedType) {
+            throw ValidationException::withMessages([
+                'component' => 'This component changed. Reload the workspace and try again.',
+            ]);
+        }
+
+        return $block;
+    }
+
     private function actionTargetComponentType(array $arguments): string
     {
         $type = $arguments['targetType'] ?? null;
@@ -75,23 +94,6 @@ trait CustomPageWorkspaceTargetHelpers
         [$index, $type] = $this->actionComponentTarget($arguments);
 
         return $this->componentAt($index, $type);
-    }
-
-    /** @return array<string, mixed> */
-    private function actionListItem(array $arguments): array
-    {
-        $block = $this->actionComponent($arguments);
-        if (($block['type'] ?? null) !== 'list') {
-            throw ValidationException::withMessages(['component' => 'The selected component is not a List.']);
-        }
-        $itemIndex = $this->actionListItemIndex($arguments);
-        $items = is_array($block['items'] ?? null) ? array_values($block['items']) : [];
-        $item = $items[$itemIndex] ?? null;
-        if (! is_array($item)) {
-            throw ValidationException::withMessages(['component' => 'This list entry changed. Reload and try again.']);
-        }
-
-        return $item;
     }
 
     private function actionContactChildType(array $arguments): string

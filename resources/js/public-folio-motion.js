@@ -143,7 +143,7 @@ function renderedShadowCoords(value) {
     layers.push(value.slice(begin));
     if (layers.length !== 3) return null;
     const positions = layers.slice(1).flatMap(layer =>
-        [...layer.matchAll(/(-?\\d+(?:\\.\\d+)?)px/g)].slice(0, 2).map(m => Number(m[1])));
+        [...layer.matchAll(/(-?\d+(?:\.\d+)?)px/g)].slice(0, 2).map(m => Number(m[1])));
     return positions.length === 4 && positions.every(Number.isFinite) ? positions : null;
 }
 

@@ -127,7 +127,7 @@ test('captured mid-flight paper shadows return to base one axis at a time', () =
     assert.equal(frames[0].boxShadow, start);
     assert.equal(frames.at(-1).boxShadow, start);
     const coordinates = string => {
-        const matches = [...string.matchAll(/(-?\\d+(?:\\.\\d+)?)px\\s+(-?\\d+(?:\\.\\d+)?)px\\s+0(?:px)?/g)];
+        const matches = [...string.matchAll(/(-?\d+(?:\.\d+)?)px\s+(-?\d+(?:\.\d+)?)px\s+0(?:px)?/g)];
         return matches.slice(-2).flatMap(m => [Number(m[1]), Number(m[2])]);
     };
     for (let i = 1; i < frames.length - 1; i += 1) {
@@ -161,6 +161,29 @@ test('a DOM swap continues from in-flight geometry without creating other lines'
         assert.equal(effects[2].frames[0].top, '.48px');
         assert.equal(animations.length, 2);
     });
+});
+
+test('a real detail-to-detail SPA swap grows and shrinks from the outgoing rendered article height', () => {
+    withBrowser(({ root }) => {
+        assert.equal(capturePublicFolio(root), true);
+    }, { detailHeight: 740 });
+    withBrowser(({ root, article, animations }) => {
+        assert.equal(advancePublicFolio(root), true);
+        const reveal = animations.find(a => a.name === 'article');
+        assert.ok(reveal);
+        assert.deepEqual(reveal.frames, [{ height: '740px' }, { height: '420px' }]);
+        assert.equal(article.style.overflow, 'clip');
+        reveal.complete();
+        assert.equal(article.style.overflow, '');
+    }, { detailHeight: 420 });
+
+    withBrowser(({ root }) => assert.equal(capturePublicFolio(root), true), { detailHeight: 360 });
+    withBrowser(({ root, animations }) => {
+        advancePublicFolio(root);
+        assert.deepEqual(animations.find(a => a.name === 'article').frames, [
+            { height: '360px' }, { height: '880px' },
+        ]);
+    }, { detailHeight: 880 });
 });
 
 test('detail-to-detail page height reveals the next image without scaling or extra wrappers', () => {

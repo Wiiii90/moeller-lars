@@ -460,3 +460,33 @@ it('persists consecutive component edits without closing the autosaving dialog',
 
     expect($settings->fresh()->components()[0]['body'])->toBe('Later rich text');
 });
+
+it('opens and saves the third Rich Text component from its absolute row target', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Targeted editor', 'targeted-editor');
+    $settings->update(['blocks' => [
+        ['type' => 'text', 'published' => true, 'title' => null, 'body' => 'First text'],
+        ['type' => 'divider', 'published' => true, 'variant' => 'dotted'],
+        ['type' => 'text', 'published' => true, 'title' => null, 'body' => 'Third text'],
+    ]]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 2, 'componentType' => 'text'])
+        ->assertMountedActionModalSee('Edit component')
+        ->fillForm([
+            'type' => 'text',
+            'publication_state' => 'published',
+            'title' => 'Third heading',
+            'body' => 'Updated third text',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertMountedActionModalSee('Edit component');
+
+    $components = $settings->fresh()->components();
+    expect($components)->toHaveCount(3)
+        ->and($components[0]['body'])->toBe('First text')
+        ->and($components[1]['type'])->toBe('divider')
+        ->and($components[1]['variant'])->toBe('dotted')
+        ->and($components[2]['title'])->toBe('Third heading')
+        ->and($components[2]['body'])->toBe('Updated third text');
+});
