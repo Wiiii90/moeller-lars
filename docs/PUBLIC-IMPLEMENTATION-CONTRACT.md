@@ -108,11 +108,18 @@ existing Home Hero and Artwork Viewer code.
 The menu NEVER performs a page-build impulse. Its white outer strokes
 remain connected to the UPPER border (top: 0) at all times, and their
 outside horizontal positions are fixed. Their lower connected return can
-now rise to 71% of the menu height on the left and 65% on the right,
-leaving a deliberately short exposed vertical for part of the slower
-ambient cycle. These percentages scale responsively. The line comes
-back down without ever leaving the top border or entering the white menu
-face.
+rise to 71% of the menu height on the left and 65% on the right,
+leaving a deliberately short exposed vertical. The ambient choreography
+now has just ONE continuous ascent, a resting phase, ONE continuous
+descent and another rest. The former intermediate back-and-forth and
+rapid corrections at loop boundaries are removed. Both sides remain
+asynchronous and their top connections never open.
+
+Content's ambient white contours likewise make one orderly outward
+and vertical shortening movement, rest, then return one axis at a time
+without concentrated micro-movements near loop completion. This affects
+ambient motion ONLY: the quicker Content page-build impulse and the
+viewport-aware height reveal keep their accepted speeds and geometry.
 
 The apparent black/green-grey paper surface was caused by the dark
 `--public-folio-depth` box-shadow backing plane and a second dark near

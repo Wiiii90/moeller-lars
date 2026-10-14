@@ -83,57 +83,49 @@ export function capturePublicFolio(root = document) {
     return Boolean(snapshot.content || body);
 }
 
-// Calm, asymmetric ambient choreography. Long sweeps and deliberate resting
-// intervals replace the many equally timed micro-steps which looked jittery.
-// Every segment still changes only one axis. The last frame equals the first.
+// One calm outward/shortening sweep and ONE return per cycle. Repeated
+// micro-corrections and rapid turns near the loop seam looked like shaking.
+// Start from the actual displayed state; close on that EXACT state so a
+// repeated WAAPI cycle never jumps. Each leg changes only one axis.
 export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
-    const states = [{ ...start }];
-    const next = (changes = {}) =>
-        states.push({ ...states[states.length - 1], ...changes });
-    next({ top: base.top });
-    next({ bottom: base.bottom });
-    next({ [edge.side]: `calc(${edge.offset} - 2px)`,
-        width: `calc(${edge.width} + 2px)` });
-    next(); // long rest at the outer edge
-    next({ top: nextTop });
-    next({ bottom: nextBottom });
-    next(); // let the paper breathe without changing direction instantly
-    next({ [edge.side]: edge.offset, width: edge.width });
-    next({ top: base.top });
-    next({ bottom: base.bottom });
-    next(); // quiet end of cycle
-    next({ [edge.side]: start[edge.side], width: start.width });
-    next({ top: start.top });
-    next({ bottom: start.bottom });
-    const offsets = [0, .06, .13, .22, .37, .48, .57, .66, .75, .83, .89, .94, .97, .985, 1];
-    return states.map((frame, index) => ({
-        ...frame, offset: offsets[index],
-        easing: 'cubic-bezier(.36, .08, .64, .92)',
+    const states = [{ ...start, offset: 0 }];
+    const step = (changes, offset) => states.push({
+        ...states[states.length - 1], ...changes, offset,
+    });
+    step({}, .12); // stationary
+    step({ [edge.side]: `calc(${edge.offset} - 2px)`,
+        width: `calc(${edge.width} + 2px)` }, .26);
+    step({}, .36);
+    step({ top: nextTop }, .49);
+    step({ bottom: nextBottom }, .62);
+    step({}, .70);
+    step({ top: start.top }, .81);
+    step({ bottom: start.bottom }, .91);
+    step({ [edge.side]: start[edge.side], width: start.width }, .98);
+    step({}, 1);
+    return states.map(frame => ({
+        ...frame, easing: 'cubic-bezier(.42, 0, .58, 1)',
     }));
 }
 
-// Top connection stays fixed at the menu border. The lower return can
-// now climb well above the bottom of the sheet, leaving a genuinely SHORT
-// exposed line for part of the slow cycle. Percentage-based bottom anchors
-// scale with responsive menu height; there is always >=29% visible length.
-// Only the existing bottom joint moves. No top escape or lateral shift.
+// The top stays attached for the entire cycle. Instead of repeatedly
+// braking at intermediate bottom positions, the line rises ONCE to its
+// short form, rests, then descends ONCE and rests. There are exactly two
+// vertical movements and no fast correction at the loop seam.
 export function buildMenuCornerFrames(start, index) {
     const column = index === 0 ? 1 : 3;
     const fixed = { ...start, top: '0px' };
     const high = MENU_VARIANTS[2][column];
-    const middle = MENU_VARIANTS[1][column];
     const stops = [
         { ...fixed, offset: 0 },
         { ...fixed, offset: .13 },
-        { ...fixed, bottom: middle, offset: .29 },
         { ...fixed, bottom: high, offset: .48 },
         { ...fixed, bottom: high, offset: .62 },
-        { ...fixed, bottom: middle, offset: .80 },
-        { ...fixed, bottom: '0rem', offset: .94 },
+        { ...fixed, bottom: start.bottom, offset: .89 },
         { ...fixed, offset: 1 },
     ];
     return stops.map(frame => ({
-        ...frame, easing: 'cubic-bezier(.35, .12, .65, .88)',
+        ...frame, easing: 'cubic-bezier(.42, 0, .58, 1)',
     }));
 }
 
