@@ -100,9 +100,71 @@ stateDiagram-v2
 
 **Hinweis zu weiteren persistierten Werten:** Die ursprünglichen DB-CHECK-Constraints erlaubten für Artworks und Exhibitions zusätzlich Hidden/Archived sowie für MediaAssets Quarantined. Die obigen Graphen zeigen **nachverfolgte aktuelle Workflow-Transitionen**, nicht bereits sämtliche historisch oder physisch zulässigen Werte. Details und ausstehende Endschema-Verifikation stehen in [Schemaentwicklung](schema-evolution.md).
 
+## 6. Home: drei orthogonale Zustandsachsen (neu, `dev@f69e0e7e`)
+
+Home ist **keine einzelne vierwertige Zustandsmaschine**. Aktueller Source in [`HomePresentationSetting`](../../app/Models/HomePresentationSetting.php), [`HomeRoutingSettingsService`](../../app/Domain/Content/HomeRoutingSettingsService.php), [`HomePresentationResolver`](../../app/Domain/Content/HomePresentationResolver.php), [`SiteSectionEditorialService`](../../app/Domain/Content/SiteSectionEditorialService.php) und [`PublicNavigationService`](../../app/Domain/Content/PublicNavigationService.php) besitzt drei unabhängige Achsen:
+
+| Achse | Gespeichert in | Werte/Guard | No-op/Seiteneffekt |
+| --- | --- | --- | --- |
+| Inhaltstemplate | `home_presentation_settings.template` | `artwork`, `under_construction`, `custom`; historische `skip_home`-Enum-Form wird auf Artwork-Inhalt + separates Routing abgebildet | `changeTemplate()` ersetzt **nicht** die separat gespeicherte Skip-Home-Zielwahl |
+| Root-Routing | `home_presentation_settings.skip_home`, `skip_target_section_id` | aktiv/inaktiv; explizites Ziel nur **publizierte** top-level SiteSection mit öffentlichem Pfad und Content-Seite, nie Home/Navigation Node | `HomeRoutingSettingsService::update()` sperrt Row, prüft `isDirty`, speichert und auditiert nur bei Änderung; bei inaktivem Skip wird Ziel-ID auf null gesetzt |
+| Menüzugehörigkeit | `site_sections.show_in_navigation` **nur Home** | eigener Bool; Publikum sieht Home im Menü nur bei `published && show_in_navigation && !skip_home` | separater Domain-Lock + Audit/No-op; weder Root-Routing noch Template werden geändert |
+
+`skipTargetForSettings()` nimmt zuerst ein **zur Lesezeit noch gültiges** explizites Ziel. Andernfalls sucht es ab der Position von Home in `position/id`-Reihenfolge die nächste veröffentlichte Top-Level-Content-Seite. Fehlt eine, gibt es `null` zurück; der öffentliche Resolver muss entsprechend den Home-Content-Fallback statt einer Endlosschleife verwenden. Die Vorschau hat eine eigene URL-Projektion. Die Menüprojektion enthält weiterhin veröffentlichte Kinder auch dann, wenn deren Editorial-Parent nicht in ihrer gefilterten Ergebnismenge enthalten ist; diese werden zu sichtbaren Root-Items **nur im projizierten Menü**, nicht in der Datenbank umgehängt.
+
+```mermaid
+flowchart LR
+    T["Inhalt: Artwork / Under Construction / Custom"] --> R["Home Resolver"]
+    S{"Skip Home aktiviert?"} -->|nein| R
+    S -->|ja| V{"Gültiges Ziel vorhanden?"}
+    V -->|ja| D["Separate Zielroute"]
+    V -->|nein| R
+    M{"Home publiziert UND Menüflag UND nicht Skip?"} -->|ja| N["Home im Public-Menü"]
+    M -->|nein| O["Kein Home-Menüeintrag"]
+    N -. "Menü ändert Routing nicht" .-> R
+```
+
+Die parallelen Wege sind **bewusst keine zeitliche Sequenz**: Der Renderer liest Template/Routing; der Navigator entscheidet eine separate Menüsichtbarkeit. Die Source-Fallmatrix zur Livewire-Action, Transaktion, Audit und Notification steht unter [Editorial-Mutationspfade](editorial-mutation-paths.md).
+
+## 7. Publication: Working-Context, LIVE-Head und Snapshot-Verfügbarkeit
+
+**Quellen:** [`PublicationService::commit()`](../../app/Domain/Publication/PublicationService.php), [`PublicationVersionService`](../../app/Domain/Publication/PublicationVersionService.php), [`PublicationCheckpoint`](../../app/Models/PublicationCheckpoint.php). Diese drei Aspekte dürfen nicht zu einem einzigen `published`-Boolean zusammengeschoben werden:
+
+- **Working (public-Schema):** bearbeitbare fachliche Tabellen. Ihre Unterschiede gegenüber `committed.*` sind ein **abgeleiteter Row-Diff**, kein zwingend persistierter Dirty-Boolean.
+- **LIVE:** Inhalt der Tabellen unter `committed.*` plus neuester `PublicationCheckpoint` nach Commit; **vorherige** Working-Edits werden durch einen normalen öffentlichen Request nicht automatisch ausgeliefert.
+- **Version/History:** `publication_checkpoints`, `publication_version_rows`, `schema_hash`, `snapshot_available`, Parent- und Source-Checkpoint sind eigenständige Provenienz-/Recovery-Daten. Ein History-Metadatensatz mit `snapshot_available=false` bleibt historisch existent, ist aber **nicht restorable**.
+
+| Operation | Transaktion, Guard und Änderung | No-op/Fehler/Seitenwirkung |
+| --- | --- | --- |
+| `stageVersion(old)` | Advisory Lock und Schema-Parität; `assertRestorable()` verlangt Snapshot + kompatiblen Hash; ersetzt Working aus dem Version-JSON und markiert Working-Context `operation=restore` mit Source `old.id` | Auch wenn die Diffzahl null ist: Working-Context und `publication.version_restored`-Audit werden gesetzt; Media-Cleanup wird nach dem DB-Commit gedraint |
+| `stageRevertOfCurrent()` | Aktuellen LIVE und Parent lesen, anschließend unter Advisory Lock Parent-Kompatibilität und Working-Replacement; Kontext `operation=revert`, Source = alter LIVE | Erste Version ohne Parent / fehlender Snapshot werfen ValidationException; **LIVE/Parent wurden vor Lock gelesen** und unter Lock nicht erneut gegen HEAD geprüft: Interleaving-Risiko |
+| `resetStagedChanges()` | Advisory Lock, Schema-Parität, Working-Diff; bei echtem Diff Working aus LIVE restaurieren, Context löschen und `publication.stage_reset` auditieren | Diff=0: nur Context-Clear, keine neue Reset-Audit-Aufzeichnung; kein Cleanup-Drain. Historische Snapshots werden nicht gelöscht |
+| `commit()` | Advisory Lock, Schema-Parität, SHARE TABLE Lock, neue Working/LIVE-Diff-Berechnung; nur bei echtem Diff `committed.*` atomar ersetzen, Checkpoint/Versionrows erfassen, Audit-Lebenszyklus an Checkpoint binden und zugehörige Undo-Receipts freigeben | Diff=0: Context-Clear, Rückgabe `null`, **kein** neuer Checkpoint. `mediaCleanup->drain()` läuft bei echtem Commit **nach** Ende der DB-Transaktion; Dateisystemfehler sind nicht ein DB-Rollback |
+
+```mermaid
+stateDiagram-v2
+    state "Working (uncommitted edits möglich)" as W
+    state "Working aus historischer Version geladen" as R
+    state "Working aus LIVE-Parent geladen" as V
+    state "Working entspricht LIVE" as C
+    [*] --> W
+    W --> R: stageVersion (Guard + Audit)
+    W --> V: stageRevertOfCurrent (Guard + Audit)
+    W --> C: resetStagedChanges
+    R --> C: resetStagedChanges
+    V --> C: resetStagedChanges
+    R --> W: weitere Edit-Aktionen
+    V --> W: weitere Edit-Aktionen
+    W --> C: commit bei echtem Diff
+    R --> C: commit bei echtem Diff
+    V --> C: commit bei echtem Diff
+```
+
+**Graph-Geltungsgrenze:** Die Zustände sind **fachliche Working-Relationen und Kontextmarker**, nicht gespeicherte diskrete Enum-Zustände. Auch nach einem Stage mit null ermittelten Änderungszeilen kann ein `restore/revert`-Kontext bestehen; nach `commit` mit null Diff wird er entfernt. `commit` ist der einzige hier dargestellte Übergang, der LIVE neu erzeugt; Reset/Restore/Revert tun das **nicht**. Für die tatsächliche historische Version und Transaktionsrace siehe die bereits detaillierte [Restore-/Revert-/Reset-Untersuchung](publication-working-operations.md). Kein synchroner Snapshot- oder Dateisystemerfolg wird über diese Grenzen hinaus behauptet.
+
 ## Quellen- und Vollständigkeitsregel
 
-Die fünf Maschinen enthalten zunächst **35 kuratierte Kanten**, keine vollständige Lebenszykluskarte aller PHP-Objekte. Als Nächstes fehlen unter anderem Publication und Undo/Activity, Home-Routing und Template, Journal-Templatewechsel, MediaVariant-Recovery und UI-interne Zustände. Für jeden weiteren Workflow müssen auch No-op-, Fehler-, Rollback- und indirekte Fremdservicepfade erfasst werden.
+Der historische generierte Ursprungskatalog umfasste **fünf** Modelle und **35** kuratierte Kanten. Zusätzlich sind jetzt **Home-Achsen** und **Publication-Working-Kontext** anhand aktueller Quellen manuell modelliert; sie sind **nicht** in den eingefrorenen Generatorzahlen enthalten. Weiter offen bleiben insbesondere Undo/Activity, Journal-Templatewechsel, MediaVariant-Recovery und UI-interne Zustände. Weder das Mermaid-Modell noch die Generatorausgabe beweisen sämtliche physischen Datenbank-/Laufzeittransitionen. Für jeden weiteren Workflow müssen auch No-op-, Fehler-, Rollback- und indirekte Fremdservicepfade erfasst werden.
 
 ```sh
 php scripts/generate-architecture-lifecycles.php --write
