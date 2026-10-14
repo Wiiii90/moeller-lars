@@ -324,23 +324,31 @@ trait CustomPageWorkspaceComponentActions
                 if ($adoptIndex === false) {
                     throw ValidationException::withMessages(['adopt_component_index' => 'Choose an existing component.']);
                 }
-                $moveIntoImage = $type !== 'image' ? ($data['move_into_image'] ?? null) : null;
-                if ($moveIntoImage !== null && $moveIntoImage !== '') {
-                    $imageIndex = filter_var($moveIntoImage, FILTER_VALIDATE_INT, [
+                $parentValue = $type !== 'image' ? ($data['parent_image_index'] ?? null) : null;
+                $payload = $this->componentPayload($data, $existing);
+                if ($parentValue !== null && $parentValue !== '') {
+                    $imageIndex = filter_var($parentValue, FILTER_VALIDATE_INT, [
                         'options' => ['min_range' => 0],
                     ]);
                     if ($imageIndex === false) {
-                        throw ValidationException::withMessages(['move_into_image' => 'Select a decorative image.']);
+                        throw ValidationException::withMessages(['parent_image_index' => 'Choose a decorative Image parent.']);
                     }
-                    $changed = app(CustomPageEditorialService::class)->nestBlock(
-                        $this->settings(), $index, $type, $imageIndex,
+                    $changed = app(CustomPageEditorialService::class)->updateAndNestBlock(
+                        $this->settings(), $index, $type, $payload, $imageIndex,
                     );
                     $this->clearSelections();
                     $this->reloadWorkspace();
-
+                    if ($changed) {
+                        app(AdminNotifier::class)->notification(
+                            title: 'Component moved into image', status: 'success',
+                        );
+                        $newIndex = $index < $imageIndex ? $imageIndex - 1 : $imageIndex;
+                        $this->replaceMountedAction('editComponent', [
+                            'componentIndex' => $newIndex, 'componentType' => 'image',
+                        ]);
+                    }
                     return;
                 }
-                $payload = $this->componentPayload($data, $existing);
                 $changed = $adoptIndex === null
                     ? app(CustomPageEditorialService::class)->updateBlock(
                         $this->settings(), $index, $type, $payload,

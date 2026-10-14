@@ -93,6 +93,17 @@ final class CustomPageEditorialService
         });
     }
 
+    /** Persist edited component values together with a Parent change. */
+    public function updateAndNestBlock(
+        CustomPageSetting $settings, int $sourceIndex, string $type, array $updated, int $imageIndex,
+    ): bool {
+        return DB::transaction(function () use ($settings, $sourceIndex, $type, $updated, $imageIndex): bool {
+            $saved = $this->updateBlock($settings, $sourceIndex, $type, $updated);
+            $nested = $this->nestBlock($settings, $sourceIndex, $type, $imageIndex);
+            return $saved || $nested;
+        });
+    }
+
     /** Move an existing top-level prose block into a decorative Image.
      * No copy/delete intermediate state; sibling order is rewritten once. */
     public function nestBlock(CustomPageSetting $settings, int $sourceIndex, string $type, int $imageIndex): bool

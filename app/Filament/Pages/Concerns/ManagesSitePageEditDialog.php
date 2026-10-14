@@ -75,13 +75,9 @@ trait ManagesSitePageEditDialog
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                             ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
                             ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
-                        Select::make('parent_id')
-                            ->label('Parent page')
-                            ->options(fn (): array => $this->parentOptions)
-                            ->placeholder('Top level')
-                            ->native()
-                            ->nullable()
-                            ->visible(fn (): bool => $this->nestedNavigationEnabled),
+                        \App\Filament\Support\HierarchyParentField::make(
+                            'parent_id', fn (): array => $this->parentOptions, 'Parent page',
+                        )->visible(fn (): bool => $this->nestedNavigationEnabled),
                         TextInput::make('position')
                             ->label('Position')
                             ->numeric()
