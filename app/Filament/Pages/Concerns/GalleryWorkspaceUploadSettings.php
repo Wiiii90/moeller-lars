@@ -116,6 +116,8 @@ trait GalleryWorkspaceUploadSettings
                 }
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Default);
+        // Repeater add/delete/reorder operations are a draft collection.
+        // Commit once using the shared Command lifecycle, not Edit blur events.
+        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Default);
     }
 }

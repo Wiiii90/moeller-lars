@@ -132,7 +132,8 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('return AdminDialog::edit($action, AdminDialogSize::Default);')
         ->toContain('return AdminDialog::edit($action, AdminDialogSize::Large);');
 
-    expect(substr_count($gallerySettings, 'AdminDialog::edit($action, AdminDialogSize::Default)'))->toBe(2);
+    expect(substr_count($gallerySettings, 'AdminDialog::edit($action, AdminDialogSize::Default)'))->toBe(1)
+        ->and($gallerySettings)->toContain("AdminDialog::command($action, 'Apply changes', AdminDialogSize::Default)");
 
     expect(substr_count($mediaAssets, 'AdminDialog::edit($action, AdminDialogSize::Default)'))->toBe(2);
 
@@ -254,7 +255,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     expect($artworkEditDialog)
         ->toContain('final class ArtworkEditDialog')
         ->toContain('public function fill(Artwork $artwork): array')
-        ->toContain('public function schema(): array')
+        ->toContain('public function schema(bool $includeGalleryAssignment = false, bool $creating = false): array')
         ->toContain('public function save(Artwork $artwork, array $data): bool');
 
     expect($galleryArtworkDialogs)

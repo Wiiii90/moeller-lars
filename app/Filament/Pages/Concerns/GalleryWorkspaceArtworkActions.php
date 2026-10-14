@@ -149,24 +149,32 @@ trait GalleryWorkspaceArtworkActions
         return Action::make('publishArtwork')
             ->label('Publish')
             ->action(function (array $arguments): void {
-                try {
-                    $artwork = $this->actionArtwork($arguments);
-                    $previousState = (string) $artwork->getAttribute('state');
-                    $updated = app(ArtworkPublicationService::class)->publish($artwork);
-                } catch (ValidationException $exception) {
-                    $this->notifyValidationFailure('Artwork cannot be published', $exception);
-
-                    return;
-                }
-
-                $this->refreshWorkspaceAfterMutation();
-                if ($previousState !== (string) $updated->getAttribute('state')) {
-                    app(AdminNotifier::class)->notification(
-                        title: 'Artwork published',
-                        status: 'success',
-                    );
-                }
+                $this->publishArtworkInGallery((int) ($arguments['artwork'] ?? 0));
             });
+    }
+
+    /** Reused by the Gallery row Action and the Edit header Action. */
+    private function publishArtworkInGallery(int $id): bool
+    {
+        try {
+            $artwork = $this->actionArtwork(['artwork' => $id])->fresh();
+            $previousState = (string) $artwork->getAttribute('state');
+            $updated = app(ArtworkPublicationService::class)->publish($artwork);
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Artwork cannot be published', $exception);
+
+            return false;
+        }
+
+        $this->refreshWorkspaceAfterMutation();
+        if ($previousState !== (string) $updated->getAttribute('state')) {
+            app(AdminNotifier::class)->notification(
+                title: 'Artwork published',
+                status: 'success',
+            );
+        }
+
+        return true;
     }
 
     public function unpublishArtworkAction(): Action
