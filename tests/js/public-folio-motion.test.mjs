@@ -8,7 +8,7 @@ import {
 } from '../../resources/js/public-folio-motion.js';
 
 const CONTENT_SHADOW = 'rgba(28,35,32,.09) -2px 3px 0px 0px, rgba(255,255,255,.31) -5px 7px 0px 0px, rgba(28,35,32,.12) -8px 10px 0px 0px';
-const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(28,35,32,.12) -1px 1px 0px 1px, rgba(255,255,255,.31) -3px 2px 0px 1px';
+const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -1.5px 3.5px 0px 3.5px, rgba(28,35,32,.12) -3px 5px 0px 5px';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
     const effects = [], animations = [], computed = new Map();
@@ -27,11 +27,11 @@ function fixture({ height = 540, menu = true, content = true } = {}) {
         computed.set(el, {
             '': { boxShadow: shadow },
             '::before': { content: '""', display: 'block',
-                top: topLeft, bottom: bottomLeft, left: name === 'menu' ? '-4.96px' : '-11.2px',
-                width: name === 'menu' ? '8.8px' : '8.8px' },
+                top: topLeft, bottom: bottomLeft, left: name === 'menu' ? '-8.32px' : '-9.28px',
+                width: name === 'menu' ? '8.32px' : '9.28px' },
             '::after': { content: '""', display: 'block',
-                top: topRight, bottom: bottomRight, right: name === 'menu' ? '-5.12px' : '-8.8px',
-                width: name === 'menu' ? '8.96px' : '8.8px' },
+                top: topRight, bottom: bottomRight, right: name === 'menu' ? '-7.04px' : '-7.68px',
+                width: name === 'menu' ? '7.04px' : '7.68px' },
         });
         return el;
     };
@@ -73,6 +73,24 @@ function coords(value) {
     assert.equal(chunks.length,3);
     return chunks.slice(1).flatMap(v => [...v.matchAll(/(-?\d+(?:\.\d+)?)px/g)]
         .slice(0,2).map(m=>Number(m[1])));
+}
+
+// Compare the actual projected sheet edges, including each shadow's spread.
+// Menu spread follows Y to remain flush with the top (unlike Content's 0px).
+function projected(value) {
+    const chunks=[];let depth=0,start=0;
+    for(let i=0;i<value.length;i++){
+        if(value[i]==='(')depth++;
+        else if(value[i]===')')depth--;
+        else if(value[i]===','&&depth===0){chunks.push(value.slice(start,i));start=i+1;}
+    }
+    chunks.push(value.slice(start));
+    return chunks.slice(1).map(layer=>{
+        const values=[...layer.matchAll(/(-?\d+(?:\.\d+)?)px/g)]
+            .slice(0,4).map(match=>Number(match[1]));
+        const [x,y,,spread=0]=values;
+        return { left:x-spread, bottom:y+spread, top:y-spread };
+    });
 }
 
 test('accepted original lines, bounded menu ends and visible paper baselines',()=>{
@@ -153,7 +171,7 @@ test('short pages keep at least 40px of visible contour during a build',()=>{
 
 test('menu corners remain attached to the TOP edge and move only their lower joint',()=>{
     for (const [index,side,value,width] of [
-        [0,'left','-5.6px','5.6px'], [1,'right','-5.76px','5.76px'],
+        [0,'left','-8.32px','8.32px'], [1,'right','-7.04px','7.04px'],
     ]) {
         const frames=buildMenuCornerFrames({
             top:'0px',bottom:'0px',[side]:value,width,
@@ -178,11 +196,17 @@ test('ambient paper, growth and contraction preserve both exposed rear layers',(
             assert.equal(frames[0].boxShadow,start);
             assert.equal(frames.at(-1).boxShadow,start);
             for(const frame of frames){
-                const [middleX,middleY,rearX,rearY]=coords(frame.boxShadow);
-                assert.ok(rearX<=middleX-1.9, 'rear plane must show on left');
-                assert.ok(rearY>=middleY+.7, 'rear plane must show below');
-                assert.ok(middleX<0, 'middle plane must show beyond white');
-                assert.ok(middleY>=.5, 'middle plane must show at bottom');
+                const [middle,rear]=projected(frame.boxShadow);
+                assert.ok(rear.left<=middle.left-1.5,
+                    'rear paper must remain exposed to the left');
+                assert.ok(rear.bottom>=middle.bottom+1,
+                    'rear paper must remain exposed below');
+                assert.ok(middle.left<=-1.5,'near paper must show beyond white');
+                assert.ok(middle.bottom>=.5,'near paper must show below white');
+                if(type==='menu'){
+                    assert.ok(middle.top<=.01 && rear.top<=.01,
+                        'menu paper planes must always connect at their top');
+                }
             }
         }
     }

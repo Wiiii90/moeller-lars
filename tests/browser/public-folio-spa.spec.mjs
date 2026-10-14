@@ -55,10 +55,41 @@ test('only the existing menu strokes and rear paper planes show, without oversho
     expect(result.bottomBorders).toEqual(['solid', 'solid']);
     expect(result.top.every(n => n >= 0)).toBe(true);
     expect(result.bottom.every(n => n >= 0)).toBe(true);
-    expect(result.outside.every(n => n < 0 && n > -7)).toBe(true);
+    expect(result.outside.every(n => n < 0 && n > -10)).toBe(true);
     expect(result.animations.filter(a => a.pseudo)).toHaveLength(4);
     expect(result.animations.filter(a => a.target !== 'other' && !a.pseudo)).toHaveLength(2);
     expect(result.animations.every(a => a.iterations === Infinity)).toBe(true);
+    const paperProjections = await page.evaluate(() => {
+        const parse = (node) => {
+            const layers=[];
+            const string=getComputedStyle(node).boxShadow;
+            let level=0,begin=0;
+            for(let i=0;i<string.length;i++){
+                if(string[i]==='(')level++;
+                else if(string[i]===')')level--;
+                else if(string[i]===','&&level===0){
+                    layers.push(string.slice(begin,i)); begin=i+1;
+                }
+            }
+            layers.push(string.slice(begin));
+            return layers.slice(1).map(layer=>{
+                const [x,y,blur,spread=0]=[...layer.matchAll(/(-?\\d+(?:\\.\\d+)?)px/g)]
+                    .slice(0,4).map(match=>Number(match[1]));
+                return { left:x-spread, bottom:y+spread, top:y-spread };
+            });
+        };
+        return {
+            menu:parse(document.querySelector('.site-navigation')),
+            content:parse(document.querySelector('#content')),
+        };
+    });
+    for(let i=0;i<2;i++){
+        const menu=paperProjections.menu[i];
+        const content=paperProjections.content[i];
+        expect(menu.top).toBeLessThanOrEqual(.05);
+        expect(menu.left).toBeCloseTo(content.left,0);
+        expect(menu.bottom).toBeCloseTo(content.bottom,0);
+    }
     const menu = await page.evaluate(() => {
         const element = document.querySelector('.site-navigation');
         return document.getAnimations()
@@ -211,10 +242,10 @@ test('Home Hero arrows animate the same paper/content, without touching the menu
     const right = afterFastClick.find(a => a.pseudo === '::after');
     expect(left.last.top).toBeTruthy();
     expect(right.last.bottom).toBeTruthy();
-    expect(left.last.left).toBe('-.7rem');
-    expect(right.last.right).toBe('-.55rem');
-    expect(left.out).toContain('calc(-.7rem - 3.1px)');
-    expect(right.out).toContain('calc(-.55rem - 3.1px)');
+    expect(left.last.left).toBe('-.58rem');
+    expect(right.last.right).toBe('-.48rem');
+    expect(left.out).toContain('calc(-.58rem - 3.1px)');
+    expect(right.out).toContain('calc(-.48rem - 3.1px)');
     expect(left.out.every(v => !v?.includes('calc(calc('))).toBe(true);
     expect(right.out.every(v => !v?.includes('calc(calc('))).toBe(true);
     expect(reference.before).toBeTruthy();
