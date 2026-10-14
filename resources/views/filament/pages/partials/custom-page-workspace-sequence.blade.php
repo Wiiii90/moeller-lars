@@ -96,6 +96,22 @@
                                 </label>
                             </div>
 
+                            @if ($pageComponent['children'] !== [])
+                                <div class="custom-page-component__children" role="list" aria-label="Content inside image">
+                                    @foreach ($pageComponent['children'] as $childIndex => $child)
+                                        <div class="custom-page-component__child" role="listitem" wire:key="image-child-{{ $pageComponent['target'] }}-{{ $childIndex }}">
+                                            <span class="custom-page-component__child-type">{{ $child['type'] }}</span>
+                                            <strong>{{ $child['title'] }}</strong>
+                                            @if ($child['meta'] !== '')
+                                                <small>{{ $child['meta'] }}</small>
+                                            @endif
+                                            @unless ($child['published'])
+                                                <small>Unpublished</small>
+                                            @endunless
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </article>
                     @endforeach
                 </div>

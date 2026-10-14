@@ -74,7 +74,7 @@ it('renders authored image width through nonce-authorized CSS rather than blocke
         ->and($layout)->toContain("@stack('public-component-styles')")
         ->and($styles)
         ->toContain('var(--custom-page-image-width, 28rem)')
-        ->toContain('var(--custom-page-image-width-narrow, 20rem)');
+        ->not->toContain('var(--custom-page-image-width-narrow, 20rem)');
 });
 
 
@@ -109,6 +109,6 @@ it('renders 50 percent Custom Page image size as CSP-authorized rules in Blade',
     expect($rendered)->toContain('id="custom-page-image-0"')
         ->toContain('<style nonce="image-size-test-nonce">')
         ->toContain('--custom-page-image-width: 14rem;')
-        ->toContain('--custom-page-image-width-narrow: 10rem;')
+        ->not->toContain('--custom-page-image-width-narrow: 10rem;')
         ->not->toContain('style="--custom-page-image-width');
 });

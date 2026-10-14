@@ -10,6 +10,18 @@ The maintained, authoritative process is [.agents/skills/handoff/SKILL.md](.agen
 - `main` release/deployment: only under separate explicit authorization.
 - **Never touch CI** in the current workstreams. Do not inspect its status/logs or trigger runs.
 
+## Temporary PUBLIC RIGHTS handoff invariant
+
+For a `dev` implementation continuation on rights, privacy, media protection
+or SEO, first read root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md).
+It records the active slice, real implementation SHA, executed versus unexecuted
+tests, accepted browser results and blockers; the durable architecture is
+[`docs/PUBLIC-RIGHTS-AND-PRIVACY.md`](docs/PUBLIC-RIGHTS-AND-PRIVACY.md).
+Before a handoff, update that temporary file as part of the **implementation**
+commit. Do not mark plans complete by implication. On full completion the root
+temporary workstream and this instruction are retired. The `docs` workstream
+is independent and resumes from [`DOCS_SKILL.md`](DOCS_SKILL.md).
+
 ## What a continuation must preserve
 
 First verify the current Git branch/HEAD and existing sources. A fresh ChatGPT environment may not have the user's Windows checkout `P:\moeller-lars`; use the available authenticated repository tools before declaring source access unavailable. Do not invent browser runs, container details, migrations or test results.

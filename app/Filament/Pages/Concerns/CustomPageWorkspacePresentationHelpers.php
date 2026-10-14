@@ -72,6 +72,30 @@ trait CustomPageWorkspacePresentationHelpers
         return ['primary' => '', 'secondary' => '', 'meta' => ''];
     }
 
+    /** @return list<array{type:string,title:string,meta:string,published:bool}> */
+    private function imageChildSummaries(CustomPageSetting $settings, array $image): array
+    {
+        $summaries = [];
+        foreach ($image['children'] ?? [] as $child) {
+            if (! is_array($child)) {
+                continue;
+            }
+            $type = (string) ($child['type'] ?? '');
+            if (! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+                continue;
+            }
+            $content = $this->componentContent($settings, $child, null);
+            $summaries[] = [
+                'type' => self::COMPONENT_LABELS[$type] ?? $type,
+                'title' => $content['primary'],
+                'meta' => $content['meta'],
+                'published' => CustomPageSetting::componentPublished($child),
+            ];
+        }
+
+        return $summaries;
+    }
+
     private function contentExcerpt(mixed $value, int $limit = 170): string
     {
         if (! is_string($value)) {

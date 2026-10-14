@@ -101,3 +101,39 @@
     white-space: nowrap;
     text-overflow: ellipsis;
 }
+
+/* Nested Image prose is visible in the owning row, without a second set of
+   drag handles, selection controls or a competing component action system. */
+.custom-page-component__children {
+    display: grid;
+    gap: .25rem;
+    min-width: 0;
+    padding: .35rem 1rem .7rem 3rem;
+}
+.custom-page-component__child {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    min-width: 0;
+    gap: .25rem .75rem;
+    color: var(--admin-muted);
+    font-size: .77rem;
+}
+.custom-page-component__child::before {
+    content: "↳";
+    color: var(--admin-faint);
+}
+.custom-page-component__child-type {
+    min-width: 4rem;
+    color: var(--admin-faint);
+}
+.custom-page-component__child strong {
+    color: inherit;
+    font-weight: 500;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.custom-page-component__child small {
+    color: var(--admin-faint);
+    font-size: inherit;
+}

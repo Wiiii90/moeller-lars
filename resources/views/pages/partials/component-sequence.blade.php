@@ -36,7 +36,6 @@
                             <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
                                 #custom-page-image-{{ $blockIndex }} {
                                     --custom-page-image-width: {{ 28 * $imageScale }}rem;
-                                    --custom-page-image-width-narrow: {{ 20 * $imageScale }}rem;
                                 }
                             </style>
                         @endpush

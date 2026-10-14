@@ -24,6 +24,19 @@ focus/close lifecycle, browser/test references and version-upgrade guards.
 Filament remains the single lock owner: do not replace its patched lifecycle
 with a second JS lock, global wheel interceptor or permanent scrollbar gutter.
 
+## Active public-rights implementation workstream (temporary)
+
+The agreed cross-cutting public-rights/privacy/media/SEO implementation is
+tracked in root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md).
+Before relevant `dev` code changes or public-rights continuation prompts, read
+and update this living execution state and consult the durable
+[`docs/PUBLIC-RIGHTS-AND-PRIVACY.md`](docs/PUBLIC-RIGHTS-AND-PRIVACY.md).
+Update it in the **same commit** as implementation changes. It is temporary:
+upon full implementation and acceptance, transfer durable rules into `docs/`,
+remove this pointer and delete the temporary root file. The `docs` branch
+maintains its own separate [`DOCS_SKILL.md`](DOCS_SKILL.md) checkpoint and
+must not edit the concurrently owned rights execution state on `dev`.
+
 ## Public CSP and rights protection
 
 Public scripts, styles, image features and animations MUST use the existing
