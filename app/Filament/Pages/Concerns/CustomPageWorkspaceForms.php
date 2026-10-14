@@ -85,12 +85,28 @@ trait CustomPageWorkspaceForms
                 Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
             ],
             'contact' => [
-                Placeholder::make('contact_note')
-                    ->label('Contact items')
-                    ->content($isNew
-                        ? 'Public Email, Social Media Links and Contact Form are created with this component.'
-                        : 'Contact items are managed in the child rows below.')
+                TextInput::make('title')->label('Heading')->placeholder('Contact')->maxLength(160)->columnSpanFull(),
+                Toggle::make('contact_email_enabled')->label('Public Email')->default(true)->live(),
+                Toggle::make('contact_social_enabled')->label('Social Media Links')->default(true)->live(),
+                Select::make('contact_social_platforms')
+                    ->label('Social links from General')
+                    ->options($this->availableSocialPlatforms)
+                    ->multiple()
+                    ->default(array_keys($this->availableSocialPlatforms))
+                    ->visible(fn (Get $get): bool => (bool) $get('contact_social_enabled'))
                     ->columnSpanFull(),
+                Toggle::make('contact_form_enabled')->label('Contact Form')->default(true)->live(),
+                Select::make('contact_form_state')
+                    ->label('Form presentation')
+                    ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
+                    ->default('enabled')
+                    ->live()
+                    ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled')),
+                TextInput::make('contact_status_text')
+                    ->label('Status text')
+                    ->maxLength(500)
+                    ->required(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction')
+                    ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction'),
             ],
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')

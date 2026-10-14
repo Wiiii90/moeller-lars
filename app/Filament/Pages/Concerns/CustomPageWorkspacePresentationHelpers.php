@@ -42,14 +42,25 @@ trait CustomPageWorkspacePresentationHelpers
             return ['primary' => self::DIVIDER_LABELS[$variant] ?? self::DIVIDER_LABELS['thin'], 'secondary' => '', 'meta' => ''];
         }
         if ($type === 'contact') {
-            $count = count($settings->contactChildren($block));
+            $enabled = [];
+            foreach ($settings->contactChildren($block) as $child) {
+                $type = $child['type'] ?? null;
+                if (is_string($type) && CustomPageSetting::contactChildPublished($child)) {
+                    $enabled[] = self::CONTACT_CHILD_LABELS[$type] ?? $type;
+                }
+            }
+            $title = trim((string) ($block['title'] ?? ''));
 
-            return ['primary' => $count.' '.($count === 1 ? 'item' : 'items'), 'secondary' => '', 'meta' => ''];
+            return [
+                'primary' => $title !== '' ? $title : 'Contact',
+                'secondary' => $enabled === [] ? 'No contact items enabled' : implode(' · ', $enabled),
+                'meta' => '',
+            ];
         }
         if ($type === 'legal_disclaimer') {
             $text = PublicContentSetting::general()->getAttribute('legal_disclaimer');
 
-            return ['primary' => 'General legal disclaimer', 'secondary' => $this->contentExcerpt($text, 120), 'meta' => 'Canonical General setting'];
+            return ['primary' => 'General legal disclaimer', 'secondary' => $this->contentExcerpt($text, 240), 'meta' => ''];
         }
 
         return ['primary' => '', 'secondary' => '', 'meta' => ''];
@@ -94,40 +105,6 @@ trait CustomPageWorkspacePresentationHelpers
         }
 
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
-    }
-
-    private function socialChildDetail(array $child): string
-    {
-        $platforms = is_array($child['social_platforms'] ?? null) ? $child['social_platforms'] : [];
-        $labels = array_values(array_filter(array_map(
-            fn (mixed $platform): ?string => is_string($platform) ? ($this->availableSocialPlatforms[$platform] ?? null) : null,
-            $platforms,
-        )));
-
-        return $labels === [] ? 'No social links selected' : implode(', ', $labels);
-    }
-
-    /** @return array<string,string> */
-    private function availableContactChildOptions(array $arguments): array
-    {
-        try {
-            $block = $this->actionComponent($arguments);
-        } catch (ValidationException) {
-            return self::CONTACT_CHILD_LABELS;
-        }
-        if (($block['type'] ?? null) !== 'contact') {
-            return [];
-        }
-        $existing = collect($this->settings()->contactChildren($block))
-            ->pluck('type')
-            ->filter(static fn (mixed $value): bool => is_string($value))
-            ->all();
-
-        return array_filter(
-            self::CONTACT_CHILD_LABELS,
-            static fn (string $label, string $type): bool => ! in_array($type, $existing, true),
-            ARRAY_FILTER_USE_BOTH,
-        );
     }
 
     /** @return list<string> */

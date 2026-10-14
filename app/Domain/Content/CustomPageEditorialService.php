@@ -565,7 +565,7 @@ final class CustomPageEditorialService
     /** @param array<string,mixed> $block */
     private function convertedBlock(array $block, string $targetType): array
     {
-        $title = in_array($block['type'] ?? null, ['text', 'list'], true) && is_string($block['title'] ?? null)
+        $title = in_array($block['type'] ?? null, ['text', 'list', 'contact'], true) && is_string($block['title'] ?? null)
             ? $block['title']
             : null;
         $published = CustomPageSetting::componentPublished($block);
@@ -578,6 +578,7 @@ final class CustomPageEditorialService
             'contact' => [
                 'type' => 'contact',
                 'published' => $published,
+                'title' => $title,
                 'children' => [
                     ['type' => 'public_email', 'published' => true],
                     ['type' => 'social_links', 'published' => true, 'social_platforms' => array_keys(SocialLinks::options())],
