@@ -666,7 +666,7 @@ it('rejects out-of-range and noninteger image sizes while keeping image aspect r
     $css = file_get_contents(resource_path('css/custom-pages.css'));
     expect($view)->toContain('CustomPageSetting::imageScalePercent($block)')
         ->and($css)->toContain('var(--custom-page-image-width, 28rem)')
-        ->toContain('var(--custom-page-image-width-narrow, 20rem)')
+        ->not->toContain('var(--custom-page-image-width-narrow, 20rem)')
         ->toContain('height: auto');
 });
 
@@ -812,4 +812,49 @@ it('moves the existing CV List under a decorative Image from its Edit dialog', f
     expect($children)->toHaveCount(1)
         ->and($children[0]['type'])->toBe('list')
         ->and(array_values($children[0]['items'])[1]['title'])->toBe('Lives and works in Hamburg');
+});
+
+it('offers a visible Parent selector in CV List Edit and persists the nesting', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Parent chooser CV', 'parent-chooser-cv');
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'originals/parent-chooser-cv.jpg',
+        'original_filename' => 'parent-chooser-cv.jpg',
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'parent-chooser-cv'),
+        'state' => 'available',
+        'alt_text' => 'CV portrait',
+    ]);
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'image_decorative' => true, 'media_asset_id' => $asset->getKey()],
+        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1989'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+    ]]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editListComponent', ['componentIndex' => 1, 'componentType' => 'list'])
+        ->assertMountedActionModalSee('Parent')
+        ->assertFormSet(['type' => 'list'])
+        ->set('mountedActions.0.data.parent_image_index', '0')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    $blocks = $settings->fresh()->components();
+    expect($blocks)->toHaveCount(1)
+        ->and($blocks[0]['children'][0]['type'])->toBe('list')
+        ->and($blocks[0]['children'][0]['items'][1]['title'])->toBe('Lives and works in Hamburg')
+        ->and($blocks[0]['children'][0]['items'][1]['context'])->toBeNull();
+});
+
+it('exposes the same Parent field above the content of a Text Edit', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Text parent chooser', 'text-parent-chooser');
+    $settings->update(['blocks' => [
+        ['type' => 'text', 'title' => 'Artist statement', 'body' => 'Words'],
+    ]]);
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->assertMountedActionModalSee('Parent')
+        ->assertHasNoFormErrors();
 });
