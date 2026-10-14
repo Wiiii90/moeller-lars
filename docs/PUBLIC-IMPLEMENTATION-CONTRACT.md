@@ -81,35 +81,36 @@ The old artwork-only height animation is deleted. On a navigation where
 page heights are the same, the paper impulse still executes, without
 artificially assigning a height or clipping the content.
 
-Each real public SPA transition triggers a stronger, directed
-paper-machine build lasting about 1.5 seconds: both original Content
-corners move along a staged right-angled sequence (one axis per stage;
-the horizontal return width adjusts with the outer offset and remains
-connected to the paper), and the two existing rear paper planes move
-outward/inward with distinct, direction-aware steps. The menu receives
-only a shorter, bounded ~980ms contour/plane impulse; it never changes
-intrinsic width or height. No corner or paper plane may disappear entirely
-into a white front sheet, and the rear plane remains visible outside the
-nearer plane throughout all ambient and build frames. The initial
-computed geometry, including in-flight animations interrupted by another
-SPA visit, is captured before the Livewire body swap. A completed page
-build is the only point at which calm ambient animations restart: there
-are NEVER competing ambient and transition effects on the same CSS
-property. Asynchronous native animation completion is used for
-handoff, never setTimeout or setInterval.
+Each real Public SPA transition triggers a stronger directed Content
+paper-machine build, retaining the accepted ~1480ms transition duration:
+the current Content pseudo corners and rear layers assemble in ordered
+right-angled stages and return to natural CSS geometry. The Content
+corner's bottom/outside excursion is bounded more tightly than before.
+A Home Hero Artwork GROUP arrow swaps its already-rendered hidden slide
+in place. It calls the SAME central content-only height/paper transition
+around that visibility change, WITHOUT making a synthetic Livewire
+navigation or triggering menu motion. Any interrupted prior Home content
+or height animation is canceled after sampling its displayed geometry;
+only the latest height animation can release the clipping state.
+All Home hero media/viewer navigation/focus continues to be owned by the
+existing Home Hero and Artwork Viewer code.
 
-In the absence of a page swap, original Content and menu paper elements
-run slow, staggered native animations with purposeful directional
-movement, rests, visible changes of several pixels, and continuous
-nonjumping loop endpoints. Keyframes never move diagonally, and the
-original paper connection is always intact. The menu is restrained:
-both exterior strokes start at the UPPER border and terminate at its
-LOWER border with only a short lower return, no upper crossbar or line
-hanging beneath the menu. Its rear paper planes have a compact
-staggered outline visible at LEFT and BOTTOM without protruding too
-far outward. Its canonical first and rear plane positions are
-(-1px,1px) and (-3px,2px), both with 1px spread. Content uses
-(-5px,7px) and (-8px,10px) for the same two rear layers.
+The menu NEVER performs a page-build impulse. It has the same slow,
+asynchronous ambient animation before and after navigating; when its
+Livewire node is replaced, the new menu starts only ambient effects.
+Both white menu pseudo-contours remain connected to the upper menu
+border at `top: 0` throughout ALL keyframes. Only their bottom
+endpoints rise and fall gently, making the attached lower returns
+move up/down while the upper connection NEVER opens. Their fixed
+horizontal offsets and widths meet the white menu face exactly,
+so no left/right stroke can spill into the white content area. Menu
+ambient animation periods are longer (~34–39 seconds). Content ambient
+periods are calmer/slower (~25–30 seconds), with smoother directional
+easing and modest outside movement; the visible paper-machine pulse
+retains its existing speed and remains much stronger than ambient
+motion. Only Content is animated on Home group changes. No extra
+DOM lines, interval polling or duplicate animation service is added.
+
 Missing native animation support leaves the authored static form intact.
 The user's explicitly requested paper-only motion continues despite
 the local browser's reduced-motion preference; content itself never
