@@ -616,3 +616,53 @@ it('creates Contact with all three options enabled by default and an editable he
         'meta' => '',
     ]);
 });
+
+it('edits image size in the owning component and keeps legacy 100% implicit', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image sizing', 'image-sizing');
+    $image = [
+        'type' => 'image',
+        'published' => false,
+        'media_asset_id' => null,
+        'image_decorative' => false,
+    ];
+    $settings->update(['blocks' => [$image]]);
+    expect($settings->fresh()->components()[0])->not->toHaveKey('image_scale_percent');
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertMountedActionModalSee('Image size')
+        ->assertFormSet(['image_scale_percent' => CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT]);
+
+    $service = app(\App\Domain\Content\CustomPageEditorialService::class);
+    expect($service->updateBlock($settings, 0, 'image', $image))->toBeFalse();
+
+    $scaled = [...$image, 'image_scale_percent' => 150];
+    expect($service->updateBlock($settings, 0, 'image', $scaled))->toBeTrue();
+    expect($settings->fresh()->components()[0]['image_scale_percent'])->toBe(150);
+    expect(CustomPageSetting::imageScalePercent($settings->fresh()->components()[0]))->toBe(150);
+
+    expect($service->updateBlock($settings, 0, 'image', $scaled))->toBeFalse();
+    expect($service->updateBlock($settings, 0, 'image', $image))->toBeTrue();
+    expect($settings->fresh()->components()[0])->not->toHaveKey('image_scale_percent');
+    expect(CustomPageSetting::imageScalePercent($settings->fresh()->components()[0]))->toBe(100);
+});
+
+it('rejects out-of-range and noninteger image sizes while keeping image aspect ratio styling', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image sizing bounds', 'image-sizing-bounds');
+    $image = ['type' => 'image', 'published' => false, 'media_asset_id' => null, 'image_decorative' => false];
+
+    foreach ([24, 201, '80.5', 'invalid'] as $invalid) {
+        expect(fn () => $settings->update(['blocks' => [[...$image, 'image_scale_percent' => $invalid]]]))
+            ->toThrow(ValidationException::class);
+    }
+
+    $settings->update(['blocks' => [[...$image, 'image_scale_percent' => '175']]]);
+    expect($settings->fresh()->components()[0]['image_scale_percent'])->toBe(175);
+
+    $view = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
+    $css = file_get_contents(resource_path('css/custom-pages.css'));
+    expect($view)->toContain('CustomPageSetting::imageScalePercent($block)')
+        ->and($css)->toContain('var(--custom-page-image-width, 28rem)')
+        ->toContain('var(--custom-page-image-width-narrow, 20rem)')
+        ->toContain('height: auto');
+});

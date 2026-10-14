@@ -114,17 +114,19 @@ movement ranges guarantee that the left white line is always shorter
 than the right, even with asynchronous animation periods.
 
 There is exactly ONE visible exterior light paper backing per surface.
-Content and Menu each use one `-5px 7px 0 var(--public-folio-soft)`
-outer shadow. The menu retains its own inset divider rule. Both single
-paper backings are inset 5px from the white surface's right edge;
-the former positive-spread menu backing was removed because it
-protruded too far to the right. The Menu outer shadow therefore begins
-below the upper edge; its **separate white pseudo-element strokes**
-remain attached to that upper edge during their ambient motion.
-The prior dark/grey/multiple shadow layers and `--public-folio-depth`
-token remain deleted. The public motion owner has one x/y coordinate
-pair per backing; the Menu ambient shadow must not cross the 5px right
-inset, and only Content has a page-build impulse.
+Content keeps one `-5px 7px 0 var(--public-folio-soft)` exterior
+shadow. The menu retains its inset divider and one exterior shadow,
+now `-8.5px 3.5px 0 3.5px var(--public-folio-soft)`.
+The menu's spread equals its y-offset, so its single pale backing
+**meets the top edge** while its larger negative x-offset guarantees
+at least **5px right inset**, just as on Content. In ambient frames,
+the horizontal stroke creates room before the y-axis excursion, and
+the y-offset returns before x, preserving top contact and the right
+inset throughout the cycle. The separate white menu pseudo-corners
+remain top-attached as well. Old dark or duplicate shadow planes and
+`--public-folio-depth` remain deleted. The shared motion owner has
+one coordinate pair per backing and gives a page-build impulse to
+Content only.
 Never reintroduce multiple stacked grey/white exterior planes without
 an explicit new request.
 
