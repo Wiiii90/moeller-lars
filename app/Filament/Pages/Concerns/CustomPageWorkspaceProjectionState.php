@@ -142,6 +142,12 @@ trait CustomPageWorkspaceProjectionState
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
                 'children' => $type === 'image' ? $this->imageChildSummaries($settings, $block) : [],
+                'accepts_children' => $type === 'image' && ($block['image_decorative'] ?? false) === true,
+                'can_nest' => in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                    && ($type !== 'list' || ($block['media_asset_id'] ?? null) === null)
+                    && ($type !== 'contact' || ! collect($settings->contactChildren($block))
+                        ->contains(fn (array $item): bool => ($item['type'] ?? null) === 'contact_form'
+                            && CustomPageSetting::contactChildPublished($item))),
             ];
         }
 
