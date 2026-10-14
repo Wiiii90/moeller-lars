@@ -18,7 +18,19 @@
                 @endphp
 
                 @if ($asset !== null && $variant !== null)
-                    <figure class="custom-page__component custom-page__media custom-page__image" style="--custom-page-image-width: {{ 28 * $imageScale }}rem; --custom-page-image-width-narrow: {{ 20 * $imageScale }}rem;">
+                    {{-- Public CSP rejects style attributes; authorize the per-image
+                         CSS variables with the request's nonce instead. --}}
+                    @if ($imageScale !== 1.0)
+                        @push('public-component-styles')
+                            <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
+                                #custom-page-image-{{ $blockIndex }} {
+                                    --custom-page-image-width: {{ 28 * $imageScale }}rem;
+                                    --custom-page-image-width-narrow: {{ 20 * $imageScale }}rem;
+                                }
+                            </style>
+                        @endpush
+                    @endif
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image">
                         <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
                 @endif

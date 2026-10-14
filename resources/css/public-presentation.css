@@ -17,6 +17,9 @@
     --public-short-page-min-height: 15rem;
     --public-section-gap: 3.55rem;
     --public-page: #777;
+    /* Shared reference offset for Menu and Content backing papers. */
+    --public-folio-sheet-x: -3px;
+    --public-folio-sheet-y: 4px;
     /* Neutral presentation surfaces; no tinted 'paper' treatment. */
     --public-surface: #fff;
     --public-plaque-surface: #fff;
@@ -30,8 +33,8 @@
     --public-index-ink: #444640;
     --public-index-rule: rgba(65, 70, 65, .22);
     /* One neutral contour palette; individual surfaces vary the pressure. */
-    --public-folio-light: rgba(255, 255, 255, .49);
-    --public-folio-soft: rgba(255, 255, 255, .31);
+    --public-folio-light: rgba(255, 255, 255, .34);
+    --public-folio-soft: rgba(255, 255, 255, .20);
     --public-ink: #555;
     --public-muted: #777;
     --public-active: #746a60;
@@ -93,14 +96,24 @@ body {
     background: var(--public-surface);
 }
 
-/* One light backing sheet. Its spread joins the menu at the top; the larger
-   negative x-offset keeps its right edge inset by 5px, like Content. */
+/* The connected Menu backing and Content shadow use the same base offsets.
+   The L-shape allows the menu to remain top-connected without an extra plane. */
+@property --public-menu-sheet-x {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: -3px;
+}
+@property --public-menu-sheet-y {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 4px;
+}
 .site-navigation {
     position: relative;
     order: 1;
-    box-shadow:
-        inset 0 -1px 0 var(--public-index-rule),
-        -8.5px 3.5px 0 3.5px var(--public-folio-soft);
+    --public-menu-sheet-x: var(--public-folio-sheet-x);
+    --public-menu-sheet-y: var(--public-folio-sheet-y);
+    box-shadow: inset 0 -1px 0 var(--public-index-rule);
 }
 .site-navigation::before,
 .site-navigation::after {
@@ -113,9 +126,9 @@ body {
    sheet. The white stroke never extends past the lower menu border. */
 .site-navigation::before {
     top: 0;
-    bottom: 32%;
-    left: -.52rem;
-    width: .52rem;
+    bottom: var(--public-menu-left-bottom, 40%);
+    left: -6px;
+    width: 6px;
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -123,15 +136,17 @@ body {
    an overshoot into the rear paper planes. */
 .site-navigation::after {
     top: 0;
-    bottom: 1px;
-    right: -.44rem;
-    width: .44rem;
+    bottom: var(--public-menu-right-bottom, 9%);
+    right: -5.5px;
+    width: 5.5px;
     border-right: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
 
 .site-navigation__rail,
 .site-navigation__submenu {
+    position: relative;
+    isolation: isolate;
     display: grid;
     width: 100%;
     min-width: 0;
@@ -141,6 +156,29 @@ body {
         minmax(0, 1fr);
     align-items: stretch;
     background: var(--public-surface);
+}
+
+/* One CSS-drawn paper on the visible rail OR submenu. The pseudo only
+   paints the connected outside L, not the interior white surface. */
+.site-navigation__rail::before,
+.site-navigation__submenu::before {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    bottom: calc(-1 * var(--public-menu-sheet-y));
+    left: var(--public-menu-sheet-x);
+    right: calc(-1 * var(--public-menu-sheet-x));
+    content: "";
+    pointer-events: none;
+    background: var(--public-folio-soft);
+    clip-path: polygon(
+        0 0,
+        calc(-1 * var(--public-menu-sheet-x)) 0,
+        calc(-1 * var(--public-menu-sheet-x)) calc(100% - var(--public-menu-sheet-y)),
+        100% calc(100% - var(--public-menu-sheet-y)),
+        100% 100%,
+        0 100%
+    );
 }
 
 .site-navigation__rail > nav,
@@ -512,7 +550,7 @@ body {
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
     background: var(--public-surface);
-    box-shadow: -5px 7px 0 var(--public-folio-soft);
+    box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
 }
 /* The original TWO attached edge contours remain separate pseudo-element
    animation targets. Each white sheet uses only ONE external backing shadow;
@@ -525,21 +563,21 @@ body {
     pointer-events: none;
 }
 #content::before {
-    top: var(--public-folio-left-top, 1.1rem);
-    bottom: var(--public-folio-left-bottom, 4rem);
-    left: -.58rem;
-    width: .58rem;
+    top: var(--public-folio-left-top, 20px);
+    bottom: var(--public-folio-left-bottom, 55px);
+    left: -7px;
+    width: 7px;
     border-left: 1px solid var(--public-folio-light);
     border-top: 1px solid var(--public-folio-soft);
     border-bottom: 1px solid var(--public-folio-soft);
     transform: skewY(-.6deg);
 }
 #content::after {
-    top: var(--public-folio-right-top, 3.8rem);
-    right: -.48rem;
-    width: .48rem;
-    bottom: var(--public-folio-right-bottom, 1.15rem);
-    border-right: 1px solid rgba(255, 255, 255, .41);
+    top: var(--public-folio-right-top, 55px);
+    right: -6px;
+    width: 6px;
+    bottom: var(--public-folio-right-bottom, 18px);
+    border-right: 1px solid rgba(255, 255, 255, .32);
     border-top: 1px solid var(--public-folio-soft);
     border-bottom: 1px solid var(--public-folio-light);
     transform: skewY(.7deg);

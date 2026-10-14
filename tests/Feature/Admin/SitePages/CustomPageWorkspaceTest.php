@@ -666,3 +666,103 @@ it('rejects out-of-range and noninteger image sizes while keeping image aspect r
         ->toContain('var(--custom-page-image-width-narrow, 20rem)')
         ->toContain('height: auto');
 });
+
+it('renders a scaled image and derives move permissions after filtering and pagination', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image projection', 'image-projection');
+    $settings->update(['blocks' => [
+        [
+            'type' => 'image',
+            'published' => false,
+            'media_asset_id' => null,
+            'image_decorative' => false,
+            'image_scale_percent' => 150,
+        ],
+        ['type' => 'text', 'published' => false, 'title' => 'Second component', 'body' => 'Text'],
+        ['type' => 'divider', 'published' => false, 'variant' => 'thin'],
+    ]]);
+
+    // Exercise the real GET that previously threw before the editor could open.
+    $this->get('/admin/pages/custom/'.$section->getKey())->assertOk();
+
+    $page = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->assertSet('total', 3);
+
+    $rows = $page->get('components');
+    expect($rows)->toHaveCount(3)
+        ->and($rows[0]['can_move_up'])->toBeFalse()
+        ->and($rows[0]['can_move_down'])->toBeTrue()
+        ->and($rows[1]['can_move_up'])->toBeTrue()
+        ->and($rows[1]['can_move_down'])->toBeTrue()
+        ->and($rows[2]['can_move_up'])->toBeTrue()
+        ->and($rows[2]['can_move_down'])->toBeFalse();
+
+    $page->set('componentType', 'image')->assertSet('total', 1);
+    $filtered = $page->get('components');
+    expect($filtered[0]['can_move_up'])->toBeFalse()
+        ->and($filtered[0]['can_move_down'])->toBeFalse();
+
+    $page->set('componentType', 'any')
+        ->set('componentSearch', 'Second component')
+        ->assertSet('total', 1);
+    $searched = $page->get('components');
+    expect($searched[0]['can_move_up'])->toBeFalse()
+        ->and($searched[0]['can_move_down'])->toBeFalse();
+});
+
+
+it('autosaves an image selection without closing the editor and notifies once per real change', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image replacement', 'image-replacement');
+
+    $createImage = static fn (string $filename): \App\Models\MediaAsset => \App\Models\MediaAsset::query()->create([
+        'storage_key' => 'originals/'.$filename,
+        'original_filename' => $filename,
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', $filename),
+        'state' => 'available',
+        'alt_text' => 'Artist image',
+    ]);
+    $first = $createImage('first-image.jpg');
+    $replacement = $createImage('replacement-image.jpg');
+    $settings->update(['blocks' => [[
+        'type' => 'image',
+        'published' => true,
+        'media_asset_id' => $first->getKey(),
+        'image_decorative' => false,
+        'image_scale_percent' => 50,
+    ]]]);
+
+    $notificationsBefore = \App\Models\AdminNotification::query()->count();
+    $auditsBefore = \App\Models\AuditEvent::query()
+        ->where('action', 'site_section.updated')
+        ->where('entity_type', 'site_section')
+        ->where('entity_id', $section->getKey())
+        ->count();
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertFormSet(['media_asset_id' => $first->getKey(), 'image_scale_percent' => 50])
+        ->set('mountedActions.0.data.media_asset_id', (string) $replacement->getKey())
+        ->assertHasNoFormErrors()
+        ->assertMountedActionModalSee('Edit component')
+        ->assertDispatched('admin-header-notification');
+
+    $updated = $settings->fresh()->components()[0];
+    expect($updated['media_asset_id'])->toBe((int) $replacement->getKey())
+        ->and($updated['image_scale_percent'])->toBe(50)
+        ->and($updated['image_decorative'])->toBeFalse()
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notificationsBefore + 1)
+        ->and(\App\Models\AuditEvent::query()
+            ->where('action', 'site_section.updated')
+            ->where('entity_type', 'site_section')
+            ->where('entity_id', $section->getKey())
+            ->count())->toBe($auditsBefore + 1);
+
+    // A second form-level autosave must not duplicate the persisted mutation.
+    $editor->call('callMountedAction')->assertHasNoFormErrors();
+    expect(\App\Models\AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertFormSet(['media_asset_id' => $replacement->getKey(), 'image_scale_percent' => 50]);
+});

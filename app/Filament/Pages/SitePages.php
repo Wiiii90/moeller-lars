@@ -654,8 +654,8 @@ final class SitePages extends Page
             $this->parentOptions[(int) $group['id']] = (string) ($group['navigation_label'] ?: $group['title']);
         }
 
-        // Match public navigation's publication/Skip Home rules. A published
-        // child remains visible even when its editorial parent is a draft.
+        // Match public navigation: published pages and the Home-only menu switch.
+        // Editorial rows remain present regardless of their menu visibility.
         $skipHome = app(HomePresentationResolver::class)->skipEnabled();
         $this->metrics = [
             'total' => count($allRows),
@@ -664,7 +664,10 @@ final class SitePages extends Page
             'top_level' => count($allGroups),
             'children' => count(array_filter($allRows, static fn (array $row): bool => $row['parent_id'] !== null)),
             'navigation' => count(array_filter($allRows, static fn (array $row): bool =>
-                $row['state'] === 'published' && (! $skipHome || $row['type'] !== SiteSectionType::Home->value)
+                $row['state'] === 'published' && (
+                    $row['type'] !== SiteSectionType::Home->value
+                    || (! $skipHome && $row['show_in_navigation'])
+                )
             )),
             'galleries' => count(array_filter($allRows, static fn (array $row): bool => $row['type'] === SiteSectionType::Gallery->value)),
         ];
@@ -759,6 +762,9 @@ final class SitePages extends Page
             'type_label' => $type->label(),
             'title' => (string) $section->getAttribute('title'),
             'navigation_label' => $navigationLabel,
+            'show_in_navigation' => $type === SiteSectionType::Home
+                ? (bool) $section->getAttribute('show_in_navigation')
+                : true,
             'slug' => $section->getAttribute('slug'),
             'state' => (string) $section->getAttribute('state'),
             'position' => (int) $section->getAttribute('position'),

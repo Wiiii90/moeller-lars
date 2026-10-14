@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
     'template',
     'title',
     'navigation_label',
+    'show_in_navigation',
     'slug',
     'state',
     'position',
@@ -54,6 +55,7 @@ final class SiteSection extends Model
     {
         return [
             'position' => 'integer',
+            'show_in_navigation' => 'boolean',
             'parent_id' => 'integer',
             'artwork_category_id' => 'integer',
             'content_heading_enabled' => 'boolean',
@@ -146,8 +148,9 @@ final class SiteSection extends Model
                 }
             }
 
-            // Publication is the only menu eligibility state. Home and other
-            // sections may use their title when no separate label is configured.
+            // Publication controls general menu eligibility. Home additionally
+            // owns its explicit navigation visibility without changing its route.
+            // Published sections may use their title when no label is configured.
             if ((string) $section->getAttribute('state') === 'published') {
                 $label = $section->getAttribute('navigation_label') ?: $section->getAttribute('title');
                 if (! is_string($label) || trim($label) === '') {

@@ -17,7 +17,7 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(?Closure $onTypeChange = null): array
+    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null): array
     {
         $typeField = Select::make('type')
             ->label('Component')
@@ -44,7 +44,7 @@ trait CustomPageWorkspaceForms
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null),
+                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange),
             ])
             ->key('dynamicComponentFields')
             ->columnSpanFull();
@@ -61,11 +61,11 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return list<mixed> */
-    private function componentTypeFields(string $type, bool $isNew): array
+    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null): array
     {
         return match ($type) {
             'image' => [
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', imagesOnly: true)->required(),
+                $this->imageSelectField($onImageChange),
                 TextInput::make('image_scale_percent')
                     ->label('Image size')
                     ->numeric()
@@ -132,6 +132,22 @@ trait CustomPageWorkspaceForms
             ],
             default => [],
         };
+    }
+
+    private function imageSelectField(?Closure $onImageChange): Select
+    {
+        $field = MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', imagesOnly: true)
+            ->required();
+
+        // Searchable Filament selects update their Livewire state without a
+        // reliable native change event on the surrounding Edit dialog.
+        // Persist only on an actual field update; the existing action remains
+        // the owner of the other component fields.
+        if ($onImageChange !== null) {
+            $field->live()->afterStateUpdated($onImageChange);
+        }
+
+        return $field;
     }
 
 }
