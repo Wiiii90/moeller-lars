@@ -125,18 +125,6 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     }));
 }
 
-function playCorner(element, pseudo, frames, duration) {
-    if (typeof KeyframeEffect !== 'function' || typeof Animation !== 'function') return;
-    try {
-        const effect = new KeyframeEffect(element, frames, {
-            pseudoElement: pseudo, duration, iterations: Infinity,
-        });
-        new Animation(effect, document.timeline).play();
-    } catch {
-        // Unsupported browsers retain the same complete static border.
-    }
-}
-
 // Parse only the two existing rear planes, respecting commas inside rgb()
 // functions. SPA swaps may interrupt a plane halfway across an axis;
 // restoring each coordinate separately prevents a diagonal reset.
@@ -218,13 +206,6 @@ export function buildShadowFrames(start, type) {
     return shadowMotionFrames(start, type, 'cycle');
 }
 
-// During a taller/shorter artwork swap the two rear paper planes briefly
-// open or close together with the 700ms article-height reveal, then settle
-// back on the authored background. No new surfaces or image transformations.
-export function buildArtworkRevealFrames(start, end, growing) {
-    return shadowMotionFrames(start, 'content', growing ? 'outward' : 'inward', end);
-}
-
 function playShadowBreathing(element, shadow, type) {
     if (!element || !shadow || typeof element.animate !== 'function') return;
     try {
@@ -269,7 +250,10 @@ export function buildCornerImpulse(start, edge, growing, type = 'content') {
     const delta = growing ? 1 : -1;
     step({ [edge.side]: `calc(${start[edge.side]} - ${amplitude}px)`,
         width: `calc(${start.width} + ${amplitude}px)` });
-    step({ bottom: `calc(${start.bottom} - ${vertical * delta}px)` });
+    // Menu outside strokes must end inside their white bottom border.
+    // A content corner may extend further down during the page build.
+    const bottomDelta = type === 'menu' ? vertical : -vertical * delta;
+    step({ bottom: `calc(${start.bottom} + ${bottomDelta}px)` });
     step({ top: `calc(${start.top} + ${vertical * .68}px)` });
     step({ [edge.side]: start[edge.side], width: start.width });
     step({ bottom: start.bottom });
