@@ -196,7 +196,7 @@
 
     @if (! $isChild && $reorderEnabled && $nestedNavigationEnabled)
         <div
-            class="admin-pages__nest-target"
+            class="admin-hierarchy__nest-target admin-pages__nest-target"
             x-cloak
             x-show="dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}"
             x-bind:class="{ 'is-hovered': hoverParent === {{ $section['id'] }} }"
