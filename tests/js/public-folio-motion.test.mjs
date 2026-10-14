@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
     FOLIO_VARIANTS, MENU_VARIANTS, FOLIO_PLANE_BASE,
     buildCornerFrames, buildMenuCornerFrames, buildShadowFrames, buildCornerImpulse,
-    buildPageImpulse, animatePageHeight, capturePublicFolio,
+    buildPageImpulse, animatePageHeight, visibleHeightTransition, capturePublicFolio,
     advancePublicFolio, animatePublicHeroChange,
 } from '../../resources/js/public-folio-motion.js';
 
@@ -220,13 +220,39 @@ test('navigation impulses are visibly stronger than ambient excursions',()=>{
     assert.ok(Math.max(...shrinking.map(f=>coords(f.boxShadow)[0]))>-4);
 });
 
+test('long pages skip invisible heights while short pages animate their visible extent',()=>{
+    assert.deepEqual(visibleHeightTransition(9000,280,800,180), {from:668,to:280});
+    assert.deepEqual(visibleHeightTransition(280,9000,800,180), {from:280,to:668});
+    assert.deepEqual(visibleHeightTransition(9000,7000,800,180), {from:668,to:668});
+    assert.deepEqual(visibleHeightTransition(340,600,800,180), {from:340,to:600});
+    assert.deepEqual(visibleHeightTransition(8000,250,800,-300), {from:848,to:250});
+    assert.deepEqual(visibleHeightTransition(8000,250,800,1400), {from:96,to:96});
+    // Non-browser/test consumers retain their natural dimensions.
+    assert.deepEqual(visibleHeightTransition(900,300,null), {from:900,to:300});
+});
+
+test('height animation itself uses the viewport cap, not the old gallery height',()=>{
+    const previous=globalThis.window;
+    globalThis.window={innerHeight:800};
+    try {
+        browser(({root,animations,body})=>{
+            const animation=animatePageHeight(9000,root);
+            assert.ok(animation);
+            assert.deepEqual(animation.frames,[{height:'848px'},{height:'280px'}]);
+            assert.equal(animation.options.duration,780);
+            assert.equal(body.style.overflow,'clip');
+            assert.equal(animations.filter(a=>a.name==='body').length,1);
+        },{height:280});
+    } finally {globalThis.window=previous;}
+});
+
 test('every public page uses the same height transition and clips ONLY the inner body',()=>{
     browser(({root,body,animations})=>{
         const transition=animatePageHeight(940,root);
         assert.ok(transition);
         assert.equal(body.style.overflow,'clip');
         assert.deepEqual(transition.frames,[{height:'940px'},{height:'440px'}]);
-        assert.equal(transition.options.duration,980);
+        assert.equal(transition.options.duration,780);
         assert.equal(animations.filter(x=>x.name==='body').length,1);
         assert.equal(animatePageHeight(444,root),null);
     },{height:440});
@@ -255,7 +281,7 @@ test('SPA swaps for any page type trigger a coordinated pulse and height build',
         assert.ok(reveal);
         assert.deepEqual(reveal.frames,[{height:'780px'},{height:'420px'}]);
         assert.equal(body.style.overflow,'clip');
-        assert.equal(animations.find(a=>a.name==='content').options.duration,1480);
+        assert.equal(animations.find(a=>a.name==='content').options.duration,1240);
     },{height:420});
 });
 
@@ -266,7 +292,7 @@ test('same-height public page swaps still start the machine impulse',()=>{
         assert.equal(animations.some(a=>a.name==='body'),false);
         assert.equal(effects.length,4);
         assert.deepEqual(effects.map(e=>e.options.iterations),[1,1,Infinity,Infinity]);
-        assert.ok(animations.some(a=>a.name==='content'&&a.options.duration===1480));
+        assert.ok(animations.some(a=>a.name==='content'&&a.options.duration===1240));
     },{height:500});
 });
 

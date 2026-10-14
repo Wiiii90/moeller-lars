@@ -20,7 +20,7 @@ async function initialize(page, label = 'Painting', height = 520, kind = 'artwor
     await page.addStyleTag({ path: 'resources/css/public-presentation.css' });
     await page.addScriptTag({
         content: source.replace(/^export /gm, '')
-            + '\nwindow.paper = { capturePublicFolio, advancePublicFolio };',
+            + '\nwindow.paper = { capturePublicFolio, advancePublicFolio, visibleHeightTransition };',
     });
     await page.evaluate(() => window.paper.advancePublicFolio());
 }
@@ -113,6 +113,9 @@ test('only the existing menu strokes and rear paper planes show, without oversho
 for (const scenario of [
     { from: ['Exhibitions', 330, 'exhibitions-page'], to: ['Painting', 810, 'artwork-detail'] },
     { from: ['Blog', 870, 'blog-page'], to: ['Home', 300, 'home-components'] },
+    { from: ['Gallery', 9000, 'artwork-list'], to: ['Home', 280, 'home-components'] },
+    { from: ['Gallery', 9000, 'artwork-list'], to: ['CV', 350, 'custom-page'] },
+    { from: ['Gallery', 9000, 'artwork-list'], to: ['Blog', 7000, 'blog-page'] },
     { from: ['CV', 450, 'custom-page'], to: ['Gallery', 450, 'artwork-list'] },
 ]) {
     test(`all-page paper build: ${scenario.from[0]} -> ${scenario.to[0]}`, async ({ page }) => {
@@ -121,6 +124,10 @@ for (const scenario of [
             const oldHeight = document.querySelector('.public-content-reveal').getBoundingClientRect().height;
             window.paper.capturePublicFolio();
             document.body.innerHTML = nextMarkup;
+            const newBody = document.querySelector('.public-content-reveal');
+            const frameBudget = window.paper.visibleHeightTransition(
+                oldHeight, newBody.getBoundingClientRect().height,
+                window.innerHeight, newBody.getBoundingClientRect().top);
             window.paper.advancePublicFolio();
             const content = document.querySelector('#content');
             const inner = content.querySelector('.public-content-reveal');
@@ -131,7 +138,9 @@ for (const scenario of [
             const menuPulse = animations.filter(a => a.effect.target === menu);
             return {
                 oldHeight,
+                frameBudget,
                 naturalHeight: inner.querySelector('section').getBoundingClientRect().height,
+                viewportHeight: window.innerHeight,
                 innerOverflow: getComputedStyle(inner).overflow,
                 paperOverflow: getComputedStyle(content).overflow,
                 heightFrames: height?.effect.getKeyframes(),
@@ -143,25 +152,30 @@ for (const scenario of [
         }, sheet(...scenario.to));
         expect(result.childCount).toBe(1);
         expect(result.paperOverflow).toBe('visible');
-        expect(result.pulseDurations).toEqual([1480, 1480, 1480]);
+        expect(result.pulseDurations).toEqual([1240, 1240, 1240]);
         // A SPA swap cannot force the menu into a new assembly impulse.
         expect(result.menuPulseDurations).toEqual([34200, 38800, 36400]);
-        if (scenario.from[1] !== scenario.to[1]) {
+        if (Math.abs(result.frameBudget.from - result.frameBudget.to) >= 7) {
             expect(result.innerOverflow).toBe('clip');
-            expect(result.heightDuration).toBe(980);
-            expect(parseFloat(result.heightFrames[0].height)).toBeCloseTo(result.oldHeight, 0);
-            expect(parseFloat(result.heightFrames[1].height)).toBeCloseTo(result.naturalHeight, 0);
+            expect(result.heightDuration).toBe(780);
+            expect(parseFloat(result.heightFrames[0].height))
+                .toBeCloseTo(result.frameBudget.from, 0);
+            expect(parseFloat(result.heightFrames[1].height))
+                .toBeCloseTo(result.frameBudget.to, 0);
+            expect(result.frameBudget.from)
+                .toBeLessThanOrEqual(result.viewportHeight + 48);
+            expect(result.frameBudget.to)
+                .toBeLessThanOrEqual(result.viewportHeight + 48);
         } else {
             expect(result.heightFrames).toBeUndefined();
         }
-        await page.waitForTimeout(1550);
         await expect.poll(() => page.evaluate(() => document.getAnimations()
             .filter(a => a.effect.target === document.querySelector('#content')
                 && a.effect.getTiming().iterations === Infinity).length)).toBe(3);
         await expect.poll(() => page.evaluate(() => document.getAnimations()
             .filter(a => a.effect.target === document.querySelector('.site-navigation')
                 && a.effect.getTiming().iterations === Infinity).length)).toBe(3);
-        if (scenario.from[1] !== scenario.to[1]) {
+        if (Math.abs(result.frameBudget.from - result.frameBudget.to) >= 7) {
             await expect(page.locator('.public-content-reveal')).toHaveCSS('overflow', 'visible');
         }
     });
@@ -213,8 +227,8 @@ test('Home Hero arrows animate the same paper/content, without touching the menu
         };
     });
     expect(result.visible).toEqual([false, true]);
-    expect(result.paper).toEqual([1480, 1480, 1480]);
-    expect(result.height).toEqual([980]);
+    expect(result.paper).toEqual([1240, 1240, 1240]);
+    expect(result.height).toEqual([780]);
     expect(result.menu).toEqual(oldMenu);
 
     // The next click starts from an in-flight corner, but the END keyframe
