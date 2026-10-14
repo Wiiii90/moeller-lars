@@ -724,3 +724,7 @@
 }
 
 
+
+/* Root and child Sortable groups have distinct names: moving between groups
+   requires the explicit Nest drop surface, never an accidental sort. */
+.admin-hierarchy--pages .admin-hierarchy__group { position: relative; }

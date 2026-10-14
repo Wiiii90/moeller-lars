@@ -189,7 +189,8 @@
                             @if ($reorderEnabled)
                                 wire:sort="sortSection"
                                 
-                                wire:sort:group-id="root"
+                                wire:sort:group="site-pages-root"
+                                    wire:sort:group-id="root"
                             @endif
                         >
                             @foreach ($sections as $section)
@@ -211,7 +212,8 @@
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
                                                     
-                                                    wire:sort:group-id="{{ $section['id'] }}"
+                                                    wire:sort:group="site-pages-{{ $section['id'] }}"
+                                                     wire:sort:group-id="{{ $section['id'] }}"
                                                 @endif
                                             >
                                                 @foreach ($section['children'] as $child)
