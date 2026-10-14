@@ -136,97 +136,6 @@ final class CustomPageEditorialService
         });
     }
 
-    /** @param array<string, mixed> $child */
-    public function addContactChild(CustomPageSetting $settings, int $index, string $expectedType, array $child): bool
-    {
-        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($child): array {
-            $type = $this->contactChildType($child);
-            if ($this->contactChildIndex($children, $type) !== null) {
-                throw ValidationException::withMessages(['component' => 'This Contact child already exists.']);
-            }
-            $children[] = $child;
-
-            return $children;
-        });
-    }
-
-    /** @param array<string, mixed> $child */
-    public function updateContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType, array $child): bool
-    {
-        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $child): array {
-            if ($this->contactChildType($child) !== $childType) {
-                throw ValidationException::withMessages(['component' => 'The Contact child type changed while it was being edited.']);
-            }
-            $children[$this->requiredContactChildIndex($children, $childType)] = $child;
-
-            return $children;
-        });
-    }
-
-    public function setContactChildPublished(CustomPageSetting $settings, int $index, string $expectedType, string $childType, bool $published): bool
-    {
-        return $this->setContactChildrenPublished($settings, $index, $expectedType, [$childType], $published);
-    }
-
-    /** @param list<string> $childTypes */
-    public function setContactChildrenPublished(CustomPageSetting $settings, int $index, string $expectedType, array $childTypes, bool $published): bool
-    {
-        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childTypes, $published): array {
-            foreach (array_values(array_unique($childTypes)) as $childType) {
-                $children[$this->requiredContactChildIndex($children, $childType)]['published'] = $published;
-            }
-
-            return $children;
-        });
-    }
-
-    public function moveContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType, string $direction): bool
-    {
-        $this->assertDirection($direction);
-
-        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $direction): array {
-            $childIndex = $this->requiredContactChildIndex($children, $childType);
-            $target = $direction === 'up' ? $childIndex - 1 : $childIndex + 1;
-            if (! array_key_exists($target, $children)) {
-                return $children;
-            }
-            [$children[$childIndex], $children[$target]] = [$children[$target], $children[$childIndex]];
-
-            return $children;
-        }, ordering: true);
-    }
-
-    public function sortContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType, int $position): bool
-    {
-        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $position): array {
-            $childIndex = $this->requiredContactChildIndex($children, $childType);
-            $moved = $children[$childIndex];
-            array_splice($children, $childIndex, 1);
-            $position = max(0, min($position, count($children)));
-            array_splice($children, $position, 0, [$moved]);
-
-            return $children;
-        }, ordering: true);
-    }
-
-    public function deleteContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType): bool
-    {
-        return $this->deleteContactChildren($settings, $index, $expectedType, [$childType]);
-    }
-
-    /** @param list<string> $childTypes */
-    public function deleteContactChildren(CustomPageSetting $settings, int $index, string $expectedType, array $childTypes): bool
-    {
-        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childTypes): array {
-            foreach (array_values(array_unique($childTypes)) as $childType) {
-                unset($children[$this->requiredContactChildIndex($children, $childType)]);
-                $children = array_values($children);
-            }
-
-            return $children;
-        });
-    }
-
     public function convertBlock(CustomPageSetting $settings, int $index, string $expectedType, string $targetType): bool
     {
         $this->assertComponentType($targetType);
@@ -417,39 +326,6 @@ final class CustomPageEditorialService
         });
     }
 
-    /** @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator */
-    private function mutateContactChildren(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        callable $mutator,
-        bool $ordering = false,
-    ): bool {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $mutator, $ordering): bool {
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $this->assertContactTarget($blocks, $index, $expectedType);
-            $beforeChildren = $fresh->contactChildren($blocks[$index]);
-            $afterChildren = $mutator($beforeChildren);
-            $blocks[$index] = [
-                'type' => 'contact',
-                'published' => CustomPageSetting::componentPublished($blocks[$index]),
-                'children' => $afterChildren,
-            ];
-
-            return $this->persist(
-                $fresh,
-                $blocks,
-                $ordering ? [
-                    'action' => 'site_section.contact_items_reordered',
-                    'scope' => 'page-contact:'.(int) $fresh->getAttribute('site_section_id').':'.$index,
-                    'before' => AdminOrderingState::fingerprints($beforeChildren),
-                    'after' => AdminOrderingState::fingerprints($afterChildren),
-                ] : null,
-            );
-        });
-    }
-
     private function locked(CustomPageSetting $settings): CustomPageSetting
     {
         /** @var CustomPageSetting $fresh */
@@ -500,15 +376,6 @@ final class CustomPageEditorialService
         }
     }
 
-    /** @param list<array<string,mixed>> $blocks */
-    private function assertContactTarget(array $blocks, int $index, string $expectedType): void
-    {
-        $this->assertTarget($blocks, $index, $expectedType);
-        if ($expectedType !== 'contact') {
-            throw ValidationException::withMessages(['component' => 'Only Contact components contain Contact children.']);
-        }
-    }
-
     /** @param array<string,mixed> $block
      * @return list<array<string,mixed>>
      */
@@ -523,43 +390,6 @@ final class CustomPageEditorialService
         if ($itemIndex < 0 || ! array_key_exists($itemIndex, $items)) {
             throw ValidationException::withMessages(['component' => 'This list entry changed. Reload the workspace and try again.']);
         }
-    }
-
-    /** @param array<string,mixed> $child */
-    private function contactChildType(array $child): string
-    {
-        $type = $child['type'] ?? null;
-        if (! is_string($type) || ! in_array($type, CustomPageSetting::CONTACT_CHILD_TYPES, true)) {
-            throw ValidationException::withMessages(['component' => 'Choose a supported Contact child component.']);
-        }
-
-        return $type;
-    }
-
-    /** @param list<array<string,mixed>> $children */
-    private function contactChildIndex(array $children, string $childType): ?int
-    {
-        foreach ($children as $index => $child) {
-            if (($child['type'] ?? null) === $childType) {
-                return $index;
-            }
-        }
-
-        return null;
-    }
-
-    /** @param list<array<string,mixed>> $children */
-    private function requiredContactChildIndex(array $children, string $childType): int
-    {
-        if (! in_array($childType, CustomPageSetting::CONTACT_CHILD_TYPES, true)) {
-            throw ValidationException::withMessages(['component' => 'Choose a supported Contact child component.']);
-        }
-        $index = $this->contactChildIndex($children, $childType);
-        if ($index === null) {
-            throw ValidationException::withMessages(['component' => 'This Contact child changed. Reload the workspace and try again.']);
-        }
-
-        return $index;
     }
 
     /** @param array<string,mixed> $block */
