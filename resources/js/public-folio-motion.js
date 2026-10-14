@@ -105,7 +105,7 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     next({ [edge.side]: start[edge.side], width: start.width });
     next({ top: start.top });
     next({ bottom: start.bottom });
-    const offsets = [0, .07, .16, .30, .43, .52, .61, .73, .81, .88, .93, .97, .985, 1];
+    const offsets = [0, .06, .13, .22, .37, .48, .57, .66, .75, .83, .89, .94, .97, .985, 1];
     return states.map((frame, index) => ({
         ...frame, offset: offsets[index],
         easing: 'cubic-bezier(.36, .08, .64, .92)',

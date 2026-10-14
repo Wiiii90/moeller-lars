@@ -88,8 +88,8 @@ test('ambient and navigation-impulse corners only move one axis per frame',()=>{
     const edge={side:'left',offset:'-.7rem',width:'.55rem'};
     const sequences=[
         buildCornerFrames(start,{top:'1.1rem',bottom:'4rem'},'1.25rem','4.14rem',edge),
-        buildCornerImpulse(start,edge,true),
-        buildCornerImpulse(start,edge,false),
+        buildCornerImpulse(start,start,edge,true),
+        buildCornerImpulse(start,start,edge,false),
     ];
     for(const frames of sequences){
         assert.deepEqual([frames[0].top,frames[0].bottom,frames[0].left,frames[0].width],
