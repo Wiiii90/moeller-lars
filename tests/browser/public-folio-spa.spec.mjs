@@ -103,6 +103,10 @@ test('only the existing menu strokes and rear paper planes show, without oversho
     });
     expect(menu).toHaveLength(2);
     for (const frames of menu) {
+        expect(frames.some(frame => frame.bottom.endsWith('%')
+            && parseFloat(frame.bottom) >= 60)).toBe(true);
+        expect(frames.every(frame => !frame.bottom.endsWith('%')
+            || parseFloat(frame.bottom) <= 75)).toBe(true);
         expect(frames.every(frame => parseFloat(frame.top) === 0)).toBe(true);
         expect(frames.every(frame => parseFloat(frame.bottom) >= 0)).toBe(true);
         expect(new Set(frames.map(frame => frame.width)).size).toBe(1);

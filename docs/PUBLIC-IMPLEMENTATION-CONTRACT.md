@@ -105,22 +105,24 @@ only the latest height animation can release the clipping state.
 All Home hero media/viewer navigation/focus continues to be owned by the
 existing Home Hero and Artwork Viewer code.
 
-The menu NEVER performs a page-build impulse. It retains only its
-slow ambient movement. Its top-connected left and right strokes now have
-matching outside offsets and return widths, so the horizontal ends meet
-the white face precisely. Menu left is -0.52rem/0.52rem and right is
--0.44rem/0.44rem; Content left is -0.58rem/0.58rem and right is
--0.48rem/0.48rem. This brings the two levels within roughly a pixel
-on the same side and draws BOTH right contours farther inward.
+The menu NEVER performs a page-build impulse. Its white outer strokes
+remain connected to the UPPER border (top: 0) at all times, and their
+outside horizontal positions are fixed. Their lower connected return can
+now rise to 71% of the menu height on the left and 65% on the right,
+leaving a deliberately short exposed vertical for part of the slower
+ambient cycle. These percentages scale responsively. The line comes
+back down without ever leaving the top border or entering the white menu
+face.
 
-The menu's two original rear paper planes project to roughly the same
-left/bottom silhouette as the Content planes (-5px/+7px and
--8px/+10px). Their base shadows are (-1.5px,+3.5px, spread3.5px)
-and (-3px,+5px, spread5px). On every intermediate menu shadow frame,
-spread tracks vertical offset, keeping the top edge flush against the
-menu rather than introducing an exposed gap. The near-soft and rear-depth
-palette order matches the Content paper. Both planes remain distinct
-outside the front white face.
+The apparent black/green-grey paper surface was caused by the dark
+`--public-folio-depth` box-shadow backing plane and a second dark near
+shadow behind Content. Both are replaced with WHITE, translucent paper
+shades: the rear plane is rgba(255,255,255,.20), the near Content micro
+shadow rgba(255,255,255,.14), and the established nearer white sheet
+rgba(255,255,255,.31). The menu retains only its subtle grey 1px inset
+divider, not a dark exterior surface. No new decoration or shadow layers
+are added. The existing paper layers continue to meet the upper menu
+border and to remain staggered to the left and below.
 
 On each normal Content build, both ends of the vertical pseudo strokes
 contract up to 40px at top and 46px at bottom, with staged

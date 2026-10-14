@@ -11,8 +11,8 @@ export const FOLIO_VARIANTS = Object.freeze([
 // Only their lower joint rises/falls, never the upper endpoint.
 export const MENU_VARIANTS = Object.freeze([
     ['0rem', '0rem', '0rem', '0rem'],
-    ['0rem', '.15rem', '0rem', '.12rem'],
-    ['0rem', '.30rem', '0rem', '.25rem'],
+    ['0rem', '34%', '0rem', '29%'],
+    ['0rem', '71%', '0rem', '65%'],
 ]);
 
 // Original horizontal geometry belongs to the accepted shell CSS. These
@@ -28,7 +28,7 @@ const HEIGHT_DURATION = 780;
 
 const SHADOW_START = {
     content: (middleX, middleY, rearX, rearY) => [
-        '-2px 3px 0 rgba(28, 35, 32, .09)',
+        '-2px 3px 0 rgba(255, 255, 255, .14)',
         `${middleX}px ${middleY}px 0 var(--public-folio-soft)`,
         `${rearX}px ${rearY}px 0 var(--public-folio-depth)`,
     ].join(', '),
@@ -112,23 +112,28 @@ export function buildCornerFrames(start, base, nextTop, nextBottom, edge) {
     }));
 }
 
-// The MENU always touches the top border. A bottom-only rise makes it
-// visibly travel upward without opening a gap at the upper connection.
-// No sideways movement means the white return cannot enter the white face.
+// Top connection stays fixed at the menu border. The lower return can
+// now climb well above the bottom of the sheet, leaving a genuinely SHORT
+// exposed line for part of the slow cycle. Percentage-based bottom anchors
+// scale with responsive menu height; there is always >=29% visible length.
+// Only the existing bottom joint moves. No top escape or lateral shift.
 export function buildMenuCornerFrames(start, index) {
-    const base = MENU_VARIANTS;
     const column = index === 0 ? 1 : 3;
     const fixed = { ...start, top: '0px' };
-    const stops = [fixed, fixed,
-        { ...fixed, bottom: base[1][column] },
-        { ...fixed, bottom: base[2][column] },
-        { ...fixed, bottom: base[2][column] },
-        { ...fixed, bottom: '0rem' },
-        { ...fixed, bottom: '0rem' },
-        fixed];
-    return stops.map((frame, i) => ({
-        ...frame, offset: i / (stops.length - 1),
-        easing: 'cubic-bezier(.35, .18, .65, .82)',
+    const high = MENU_VARIANTS[2][column];
+    const middle = MENU_VARIANTS[1][column];
+    const stops = [
+        { ...fixed, offset: 0 },
+        { ...fixed, offset: .13 },
+        { ...fixed, bottom: middle, offset: .29 },
+        { ...fixed, bottom: high, offset: .48 },
+        { ...fixed, bottom: high, offset: .62 },
+        { ...fixed, bottom: middle, offset: .80 },
+        { ...fixed, bottom: '0rem', offset: .94 },
+        { ...fixed, offset: 1 },
+    ];
+    return stops.map(frame => ({
+        ...frame, easing: 'cubic-bezier(.35, .12, .65, .88)',
     }));
 }
 

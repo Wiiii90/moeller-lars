@@ -7,8 +7,8 @@ import {
     advancePublicFolio, animatePublicHeroChange,
 } from '../../resources/js/public-folio-motion.js';
 
-const CONTENT_SHADOW = 'rgba(28,35,32,.09) -2px 3px 0px 0px, rgba(255,255,255,.31) -5px 7px 0px 0px, rgba(28,35,32,.12) -8px 10px 0px 0px';
-const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -1.5px 3.5px 0px 3.5px, rgba(28,35,32,.12) -3px 5px 0px 5px';
+const CONTENT_SHADOW = 'rgba(255,255,255,.14) -2px 3px 0px 0px, rgba(255,255,255,.31) -5px 7px 0px 0px, rgba(255,255,255,.20) -8px 10px 0px 0px';
+const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset, rgba(255,255,255,.31) -1.5px 3.5px 0px 3.5px, rgba(255,255,255,.20) -3px 5px 0px 5px';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
     const effects = [], animations = [], computed = new Map();
@@ -182,6 +182,46 @@ test('menu corners remain attached to the TOP edge and move only their lower joi
         assert.ok(frames.every(frame=>parseFloat(frame.bottom)>=0));
         assert.ok(frames.some(frame=>parseFloat(frame.bottom)>0));
         assert.equal(frames[0].bottom,frames.at(-1).bottom);
+    }
+});
+
+test('menu lines grow short while remaining connected to their top edge',()=>{
+    for (let side=0;side<2;side++) {
+        const initial={top:'0px',bottom:'0px',width:'8px',
+            [side===0?'left':'right']:'-8px'};
+        const frames=buildMenuCornerFrames(initial,side);
+        assert.ok(frames.every(frame=>frame.top==='0px'));
+        assert.ok(frames.every(frame=>frame.width==='8px'));
+        assert.ok(frames.every(frame=>frame.left==='-8px'
+            ||frame.right==='-8px'));
+        assert.ok(frames.every(frame=>parseFloat(frame.bottom)>=0));
+        assert.ok(frames.some(frame=>frame.bottom.endsWith('%')
+            &&parseFloat(frame.bottom)>=60), 'line must become conspicuously shorter');
+        assert.ok(frames.some(frame=>frame.bottom.endsWith('%')
+            &&parseFloat(frame.bottom)<40), 'line must also cover mid-length positions');
+        assert.equal(frames[0].bottom,frames.at(-1).bottom);
+        assert.equal(frames.at(-1).offset,1);
+    }
+});
+
+test('paper backing layers cannot turn black during ambient or page build',()=>{
+    for (const type of ['content','menu']) {
+        const initial=type==='menu'?MENU_SHADOW:CONTENT_SHADOW;
+        for (const frames of [
+            buildShadowFrames(initial,type),
+            buildPageImpulse(initial,initial,type,true),
+            buildPageImpulse(initial,initial,type,false),
+        ]) {
+            // The navigation's thin inset divider is allowed to stay grey.
+            const layers=frames.map(f=>f.boxShadow.split(/,(?![^()]*\))/));
+            for(const list of layers) {
+                const backing=list.slice(1).join(',');
+                assert.ok(!/rgba\(28,\s*35,\s*32/.test(backing),
+                    'no dark painted paper surface');
+                assert.ok(/rgba\(255,\s*255,\s*255/.test(backing)
+                    || /var\(--public-folio-(soft|depth)\)/.test(backing));
+            }
+        }
     }
 });
 

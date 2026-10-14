@@ -32,7 +32,8 @@
     /* One neutral contour palette; individual surfaces vary the pressure. */
     --public-folio-light: rgba(255, 255, 255, .49);
     --public-folio-soft: rgba(255, 255, 255, .31);
-    --public-folio-depth: rgba(28, 35, 32, .12);
+    /* Both backing sheets are white; no dark painted shadow planes. */
+    --public-folio-depth: rgba(255, 255, 255, .20);
     --public-ink: #555;
     --public-muted: #777;
     --public-active: #746a60;
@@ -515,7 +516,7 @@ body {
     margin-block: var(--public-shell-gap);
     background: var(--public-surface);
     box-shadow:
-        -2px 3px 0 rgba(28, 35, 32, .09),
+        -2px 3px 0 rgba(255, 255, 255, .14),
         -5px 7px 0 var(--public-folio-soft),
         -8px 10px 0 var(--public-folio-depth);
 }
