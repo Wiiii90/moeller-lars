@@ -240,8 +240,12 @@ ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
 3. **Home-List-Media:** `MediaReferenceQuery::mediaIdsForHome()`,
    `MediaReferenceCatalog::contentReferenceRowsByMediaId()` und
    `MediaAssetEditorialService::removeHomeReferences()` erfassen
-   Home-List-`media_asset_id` und Medien aus `items[].body` nicht
-   vollständig; die Custom-Page-Pfade tun dies bereits.
+   Home-List-`media_asset_id` und historische Medien aus `items[].body`
+   nicht vollständig; die Custom-Page-Pfade tun dies bereits.
+   **Wichtig nach dem neuen List-Editor:** Embedded-Image-Insertion
+   ist dort deaktiviert, aber der Rich-Text-Datenpfad und die
+   Modellvalidierung akzeptieren bestehende `media:<id>` weiterhin.
+   Eine neue UI-Option eliminiert historische Media-Refs nicht.
    Referenzlisten/Storage/Detach müssen separat von LIVE-/History-
    Schutz bei physischem Reclaim bewertet werden.
    Zudem Fehler nach schon committeter logischer Löschung und

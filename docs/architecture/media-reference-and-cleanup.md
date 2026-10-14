@@ -47,6 +47,8 @@ sequenceDiagram
 
 Die [Home-Komponenten-Validierung](../../app/Domain/Content/HomePresentationEditorialService.php) unterstützt `list` mit `media_asset_id` und `items[].body` (Rich Text), und der [öffentliche Component-Renderer](../../resources/views/pages/partials/component-sequence.blade.php) verwendet beide. `CustomPageSetting` hat dasselbe Modell.
 
+**Neuer UI-/Legacy-Kontext (Quellstand `dev@b6fa7a46`):** Der gemeinsame [List-Editor](../../app/Filament/Support/ComponentListEditor.php) zeigt jetzt nur Entry, Context, Published und Details; seine Rich-Text-Eingabe erlaubt **keine neue eingebettete Storage-Bildauswahl** (`allowEmbeddedMedia: false`). Das **entfernt aber keine historischen `media:<id>`-Verweise aus gespeicherten `items[].body`-Werten**: Die bestehende Normalisierung projiziert weiterhin `body`, und `CustomPageSetting::validateRichText()` ruft die zentrale Rich-Text-Validierung mit `allowEmbeddedMedia: true` auf. Außerdem besitzt eine List-Komponente weiterhin ihr eigenes optionales `media_asset_id`. Deshalb müssen **beide** Medienpfade im Referenz-/Delete-Lebenszyklus weiterhin berücksichtigt werden; eine UI-Einschränkung ist kein Backend-Referenz- oder Cleanup-Guard.
+
 **Asymmetrie:**
 
 - [`MediaReferenceQuery::mediaIdsForCustomPage()`](../../app/Domain/Media/MediaReferenceQuery.php) zählt direkte Image-/List-Medien plus `RichTextMediaReference::idsFromCustomPageBlocks()` (einschließlich List-Item-Body).
@@ -77,6 +79,7 @@ Das ist eine **Source-konkrete Coverage-Lücke**, keine Erweiterung des Produktv
 | --- | --- |
 | Home Custom List verweist ausschließlich über `media_asset_id` auf Asset A | A erscheint als **referenziert**; autorisierte Löschung bereinigt die List-Bildreferenz ohne andere Listdaten zu verlieren |
 | Home Under Construction List verweist ausschließlich über `items[].body` auf Asset B | B erscheint als **referenziert**; autorisierte Löschung entfernt nur kanonische Rich-Text-Referenzen |
+| Historische Home List wurde im neuen List-Editor geöffnet, enthält aber noch `media:<id>` aus dem alten Rich Text | Keine stillschweigende Löschung des `body`-Inhalts, Referenzindex und Remove-Path berücksichtigen die historische ID trotzdem; Einfüge-UI bleibt deaktiviert |
 | Home List-Medium im Storage-Destination-Filter und in der Detailreferenz | Beide Projektionen sowie Gesamt-In-Use zeigen konsistent die Home-List-Referenz, statt parallele unvollständige Home-Scanner zu behalten |
 | Gleichzeitige Home- und Custom-Page-List-Referenz, plus Artwork/Journal-Usage | Alle konkreten Referenz-Owner werden symmetrisch bereinigt; fremde MediaAssets bleiben unberührt |
 | LIVE/History referenziert A nach Working-Deletion | A-Original/Variant-Dateien bleiben bestehen, bis **alle** tatsächlichen Recovery-Roots sicher entfallen |
