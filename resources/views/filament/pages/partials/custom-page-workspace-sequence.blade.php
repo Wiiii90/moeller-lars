@@ -36,9 +36,6 @@
                         <article
                             class="custom-page-component admin-hierarchy__group"
                             wire:key="custom-component-{{ $pageComponent['target'] }}"
-                            data-component-index="{{ $pageComponent['index'] }}"
-                            data-component-type="{{ $pageComponent['type'] }}"
-                            data-can-nest="{{ $pageComponent['can_nest'] ? 'true' : 'false' }}"
                             @if ($reorderEnabled) wire:sort:item="{{ $pageComponent['target'] }}" @endif
                         >
                             @include('filament.pages.partials.custom-page-component-row', [

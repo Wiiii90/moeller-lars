@@ -313,6 +313,9 @@ final class CustomPageEditorialService
             $blocks = $fresh->components();
             if ($sourceChild === null) {
                 $this->assertTarget($blocks, $sourceIndex, $expectedType);
+                if ($parent === $sourceIndex) {
+                    throw ValidationException::withMessages(['component' => 'A component cannot be its own parent.']);
+                }
                 $item = $blocks[$sourceIndex];
                 array_splice($blocks, $sourceIndex, 1);
                 // The target Image moves one index to the left when a
