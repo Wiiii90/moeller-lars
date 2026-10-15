@@ -291,6 +291,16 @@
 .admin-detail-dialog__release-notes > :first-child { margin-top: 0; }
 .admin-detail-dialog__release-notes :is(p, ul, ol, blockquote) { margin: 0 0 .8rem; }
 .admin-detail-dialog__release-notes :is(ul, ol) { padding-inline-start: 1.5rem; }
+.admin-detail-dialog__release-notes ul { list-style: disc outside; }
+.admin-detail-dialog__release-notes ol { list-style: decimal outside; }
+.admin-detail-dialog__field .admin-detail-dialog__release-notes p {
+    margin: 0 0 .8rem;
+    color: inherit;
+    font-size: inherit;
+    font-weight: 400;
+    line-height: inherit;
+    white-space: normal;
+}
 .admin-detail-dialog__release-notes li { margin-block: .28rem; }
 .admin-detail-dialog__release-notes li > :last-child { margin-bottom: 0; }
 .admin-detail-dialog__release-notes a { text-decoration: underline; }
