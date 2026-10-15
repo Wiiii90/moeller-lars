@@ -173,7 +173,7 @@ trait CustomPageWorkspaceSecondaryForms
                 [
                     'type' => 'social_links',
                     'published' => (bool) ($data['contact_social_enabled'] ?? true),
-                    'social_platforms' => $this->validatedSocialPlatforms($platforms),
+                    'social_platforms' => $this->validatedSocialPlatforms($platforms, $previousPlatforms),
                 ],
                 [
                     'type' => 'contact_form',

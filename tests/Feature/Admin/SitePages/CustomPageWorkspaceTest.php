@@ -1,9 +1,11 @@
 <?php
 
+use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Filament\Pages\CustomPageWorkspace;
 use App\Http\Controllers\PublicSiteSectionController;
+use App\Models\AdminNotification;
 use App\Models\CustomPageSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
@@ -533,6 +535,65 @@ it('edits the Contact heading and all Contact settings in the owning component w
         'meta' => '',
     ]);
     $preview->assertDontSeeHtml('custom-page-child-row');
+});
+
+it('retains an unavailable Contact platform across edits and restores its selection when General restores the profile', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Missing social profile', 'missing-social-profile');
+    $instagram = ['platform' => 'instagram', 'url' => 'https://example.invalid/instagram'];
+    $facebook = ['platform' => 'facebook', 'url' => 'https://example.invalid/facebook'];
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'social_links' => [$instagram, $facebook],
+    ]);
+    $settings->update(['blocks' => [[
+        'type' => 'contact',
+        'published' => true,
+        'title' => 'Original contact',
+        'children' => [
+            ['type' => 'public_email', 'published' => true],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => ['instagram', 'facebook']],
+            ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled'],
+        ],
+    ]]]);
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'social_links' => [$instagram],
+    ]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->assertSet('availableSocialPlatforms', ['instagram' => 'Instagram'])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact']);
+
+    $editor->set('mountedActions.0.data.title', 'Updated contact')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
+        ->assertMountedActionModalSee('Edit component');
+
+    $contact = $settings->fresh()->components()[0];
+    $social = collect($settings->fresh()->contactChildren($contact))->firstWhere('type', 'social_links');
+    expect($contact['title'])->toBe('Updated contact')
+        ->and($social['social_platforms'])->toBe(['instagram', 'facebook'])
+        ->and(AdminNotification::query()->count())->toBe(1);
+
+    $editor->set('mountedActions.0.data.contact_social_selected.instagram', false)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    $contact = $settings->fresh()->components()[0];
+    $social = collect($settings->fresh()->contactChildren($contact))->firstWhere('type', 'social_links');
+    expect($social['social_platforms'])->toBe(['facebook'])
+        ->and(AdminNotification::query()->count())->toBe(2);
+
+    $editor->call('callMountedAction')->assertHasNoFormErrors();
+    expect(AdminNotification::query()->count())->toBe(2);
+
+    $editor->call('unmountAction');
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'social_links' => [$instagram, $facebook],
+    ]);
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
+        ->assertSet('mountedActions.0.data.contact_social_selected.instagram', false)
+        ->assertSet('mountedActions.0.data.contact_social_selected.facebook', true);
 });
 
 it('preserves legacy List metadata as Context and links in Details without duplicate conversions', function (): void {
