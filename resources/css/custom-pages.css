@@ -90,6 +90,11 @@
     border: 0;
     background: none;
 }
+/* A nested Divider participates beside either float without drawing a rule
+   underneath the Image. On very narrow widths it naturally moves below. */
+.custom-page__image-group .custom-page--embedded > .custom-page__divider {
+    display: flow-root;
+}
 
 .custom-page__divider::before {
     position: absolute;
