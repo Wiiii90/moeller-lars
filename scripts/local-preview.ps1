@@ -28,9 +28,7 @@ if ($LASTEXITCODE) { throw 'Git SHA konnte nicht gelesen werden.' }
 $AnalyticsDemo = 'storage\app\analytics-demo.php'
 if (-not (Test-Path $AnalyticsDemo)) { throw "Lokale Analytics-Demo fehlt: $AnalyticsDemo" }
 
-# local-dev and local-preview intentionally share 127.0.0.1:8001.
-docker compose --profile dev stop dev-app dev-vite | Out-Null
-if ($LASTEXITCODE) { throw 'Lokaler Dev-Modus konnte vor dem Preview-Build nicht gestoppt werden.' }
+# Never let a local Vite dev-server marker leak into the frozen preview image.
 Remove-Item 'public\hot' -Force -ErrorAction SilentlyContinue
 
 Write-Host "[2/3] Preview-Image bauen ($($env:APP_GIT_SHA.Substring(0, 7)))"

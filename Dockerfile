@@ -50,18 +50,6 @@ RUN set -eu; \
 COPY docker/php-runtime.ini /usr/local/etc/php/conf.d/zz-moeller-lars-runtime.ini
 COPY docker/apache-mpm.conf /etc/apache2/mods-available/mpm_prefork.conf
 
-# Local development keeps Apache/X-Sendfile semantics while reading the live
-# Windows checkout through a bind mount. Dependencies live in named volumes and
-# Vite runs as a separate development service.
-FROM php-base AS local-dev
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-WORKDIR /var/www/html
-COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
-
-EXPOSE 8080
-HEALTHCHECK --interval=5s --timeout=3s --start-period=10s --retries=12 CMD curl --fail --silent --show-error http://127.0.0.1:8080/up >/dev/null || exit 1
-CMD ["apache2-foreground"]
-
 FROM php-base AS dependencies
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html

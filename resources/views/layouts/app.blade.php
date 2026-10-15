@@ -35,11 +35,6 @@
                 data-matomo-site-id="{{ $matomoTracking['site_id'] }}"
             >
         @endif
-        {{-- Vite uses this per-request nonce for development-time style injection;
-             Production/Validation keep the same strict nonce-based CSP. --}}
-        @if (app()->environment('local') && is_file(public_path('hot')) && is_string($publicStyleNonce) && $publicStyleNonce !== '')
-            <meta property="csp-nonce" nonce="{{ $publicStyleNonce }}">
-        @endif
         {{-- All public CSS is bundled in the single app.js Vite entry. --}}
         @vite('resources/js/app.js')
         {{-- Navigation uses Livewire's established document-swap runtime, not a

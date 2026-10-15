@@ -24,66 +24,6 @@ services:
         condition: service_healthy
     command: sleep infinity
 
-  dev-app:
-    profiles: ["dev"]
-    image: moeller-lars-local-dev
-    container_name: moeller-lars-local-dev-web
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: local-dev
-    working_dir: /var/www/html
-    ports:
-      - "127.0.0.1:8001:8080"
-    env_file:
-      - .env
-    environment:
-      APP_ENV: local
-      APP_URL: http://127.0.0.1:8001
-      APP_RELEASE_SHA: ${APP_GIT_SHA:-local}
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: moeller_lars_testing
-      DB_USERNAME: postgres
-      DB_PASSWORD: moeller_lars_local
-      MATOMO_TRACKING_ENABLED: "false"
-      MATOMO_REPORTING_ENABLED: "true"
-      MOELLER_LARS_PERSISTENT_PREVIEW: "1"
-    volumes:
-      - .:/var/www/html
-      - local_dev_vendor:/var/www/html/vendor
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: apache2-foreground
-    healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent --show-error http://127.0.0.1:8080/up >/dev/null || exit 1"]
-      interval: 2s
-      timeout: 5s
-      retries: 30
-      start_period: 10s
-
-  dev-vite:
-    profiles: ["dev"]
-    image: node:22-bookworm-slim
-    container_name: moeller-lars-local-vite
-    working_dir: /var/www/html
-    ports:
-      - "127.0.0.1:5173:5173"
-    environment:
-      MOELLER_LARS_VITE_DOCKER: "1"
-    volumes:
-      - .:/var/www/html
-      - local_dev_node_modules:/var/www/html/node_modules
-    command: npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:5173/@vite/client').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
-      interval: 2s
-      timeout: 5s
-      retries: 30
-      start_period: 10s
-
   preview:
     profiles: ["preview"]
     image: moeller-lars-local-preview
@@ -132,8 +72,6 @@ services:
       retries: 15
 
 volumes:
-  local_dev_vendor:
-  local_dev_node_modules:
   postgres_data:
     external: true
     name: moeller-lars_postgres_data

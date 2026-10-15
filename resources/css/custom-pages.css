@@ -38,7 +38,7 @@
 .custom-page__contact .category-heading,
 .custom-page__legal h2 {
     width: auto;
-    margin: 0 0 .75rem;
+    margin: 0 0 .85rem;
     color: #535b56;
     font-family: var(--public-index-typeface);
     font-size: 1.08rem;
@@ -161,7 +161,7 @@
 }
 .custom-page__list-item {
     display: block;
-    margin: 0 0 .7rem;
+    margin: 0 0 .48rem;
     min-width: 0;
 }
 .custom-page__list-item:last-child {
@@ -172,7 +172,7 @@
    cannot drop below the entire left-hand description as flex used to do. */
 .custom-page__list-line {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
     column-gap: clamp(.45rem, 1.5vw, .85rem);
     min-width: 0;
     align-items: start;
@@ -228,7 +228,7 @@
     display: block;
     min-width: 0;
     line-height: inherit;
-    margin: 0 0 .5rem;
+    margin: 0;
 }
 .custom-page__contact .contact-details__label {
     display: inline;
@@ -246,8 +246,11 @@
     text-decoration-color: #bdb6af;
     text-underline-offset: .2em;
 }
-.custom-page__contact-child + .custom-page__contact-child {
-    margin-top: .75rem;
+/* The same line rhythm applies between Contact subsections and
+   consecutive configured social profiles. */
+.custom-page__contact-child + .custom-page__contact-child,
+.custom-page__contact .contact-details__row + .contact-details__row {
+    margin-top: .48rem;
 }
 .custom-page__contact .contact-status {
     margin-bottom: 1rem;

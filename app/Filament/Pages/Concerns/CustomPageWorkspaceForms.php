@@ -107,11 +107,17 @@ trait CustomPageWorkspaceForms
                 TextInput::make('title')->label('Heading')->placeholder('Contact')->maxLength(160)->columnSpanFull(),
                 Toggle::make('contact_email_enabled')->label('Public Email')->default(true)->live(),
                 Toggle::make('contact_social_enabled')->label('Social Media Links')->default(true)->live(),
-                Select::make('contact_social_platforms')
-                    ->label('Social links from General')
-                    ->options($this->availableSocialPlatforms)
-                    ->multiple()
-                    ->default(array_keys($this->availableSocialPlatforms))
+                // Every profile reuses the same Toggle control as the rest
+                // of Contact. The old native multi-select rendered chips and
+                // obscured which configured platforms were actually enabled.
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema(collect($this->availableSocialPlatforms)
+                        ->map(fn (string $label, string $platform): Toggle =>
+                            Toggle::make('contact_social_selected.'.$platform)
+                                ->label($label)
+                                ->default(true)
+                        )->values()->all())
                     ->visible(fn (Get $get): bool => (bool) $get('contact_social_enabled'))
                     ->columnSpanFull(),
                 Toggle::make('contact_form_enabled')->label('Contact Form')->default(true)->live(),
