@@ -35,6 +35,14 @@ Use **Unit** when the subject can be constructed and exercised without Laravel i
 
 A test that needs `RefreshDatabase` is not automatically a Feature test. A test that renders HTML is not automatically a browser test. Classification follows the contract being protected.
 
+## Branch provenance for documenting test coverage
+
+The **implementation and normative contracts** are pinned to an explicitly identified `dev` (or incorporated `docs` merge) SHA. The independently maintained **`testing` branch is a read-only, often further evolved source for test taxonomy, fixtures, regression cases and assertions**. Compare with `dev` rather than assuming either branch is a superset; capture both SHAs and distinguish tests that were authored from tests that were actually executed against compatible application code. Do not merge or change `testing` from the docs workstream.
+
+At `testing@a29c0ad86867679f180ccd775dffa366f444ba74` versus `dev@51ed24d8c7c7eabc6c9be33b9e218a19c8c873fc`, a Git-tree comparison found **152** versus **154** tracked files under `tests/`, **including fixtures and non-PHP files rather than test-case counts**. Directory totals (testing/dev): Unit 11/12, Integration 34/21, Feature 79/60, Architecture 0/35, Migration 3/2, browser 14/13 and JavaScript 8/9. Other root files account for the difference between category sums and total. The histories have **diverged**: `testing` contains granular Pages/Gallery/Storage/Publication workflows, while `dev` still has distinct Architecture tests. **These are dated source snapshots, not live statistics or CI results.**
+
+The [architecture completion matrix](architecture/completion-criteria.md#testabdeckung-quellvergleich-testing-und-dev) traces selected test assertions to exact branch SHAs and identifies gaps. For new test documentation, reread both trees and source assertions before asserting coverage; neither a file name nor a successful browser profiling flow proves the overall product acceptance.
+
 ## Current structure
 
 ```text

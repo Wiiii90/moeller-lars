@@ -15,11 +15,12 @@ The documents in this directory are split by purpose so current application cont
 
 Run `php scripts/check-documentation-links.php --check` from the repository root to check relative Markdown file links and heading fragments without Laravel, a database, CI or network access. `--summary` reports counts without failing and `--self-test` runs isolated parser fixtures. The scanner covers simple inline Markdown links and reference definitions, ignoring fenced/inline code and non-local URI schemes; HTML anchors, dynamic MDX, multiline destinations and arbitrary complex CommonMark are **outside its contract**.
 
-The latest independent authenticated GitHub-tree source audit on `docs@1a6955f16d5728065ed8857220e6fcd266941b28` examined **63 Markdown files**, **643 simple inline Markdown-link occurrences** (of which **615** had local relative destinations), and **33 heading-fragment occurrences** (**21 distinct target/fragment pairs**). Every simple relative target exists in the Git tree and all 21 heading fragments match their target headings. This scope is a GitHub-source link extraction, not a complete CommonMark parser or a native checkout run. This GitHub-tree inspection is **not** a native full-repository run of the new PHP script; the script's exact content was checked locally under PHP 8.4 using syntax, isolated `--self-test` and positive/negative fixture-repository `--check` runs.
+The [architecture completion report](architecture/completion-criteria.md#abnahmekriterien-für-das-ende-der-inhaltlichen-arbeit) records the newer **GitHub-tree source audit on `docs@8b3bc15b`**: **77 Markdown files, 1,008 local relative destinations and 107 heading references (52 distinct target/fragment pairs)**. No relative target was missing; two obsolete media heading fragments were corrected on `docs@9d5233a4`. This independent source inspection is **not** a native execution of the PHP link checker or a full CommonMark/HTML/external-link audit. The earlier PHP 8.4 isolated fixture checks remain prior evidence, not an equivalent current full checkout run.
 
 ## Documentation method
 
-- [Documentation skill](../.agents/skills/documentation/SKILL.md) — how to maintain source-backed architecture, merge `dev` safely into `docs`, classify verification and simplify normative contracts without duplication.
+- [Documentation skill](../.agents/skills/documentation/SKILL.md) — maintain architecture against `dev`, **read tests/fixtures on divergent `testing` without modifying or merging it**, classify authored-vs-executed verification and close finite documentation tasks before bundled `dev` imports.
+- [Test strategy and branch provenance](TESTING.md#branch-provenance-for-documenting-test-coverage) — compare test assertions on both `testing` and `dev`, pin their SHAs; [selected six-invariant source coverage audit](architecture/completion-criteria.md#testabdeckung-quellvergleich-testing-und-dev).
 
 ## Living documentation work state
 
@@ -27,13 +28,7 @@ The latest independent authenticated GitHub-tree source audit on `docs@1a6955f16
 
 ## Branch ownership for documentation
 
-Two exceptional, long-lived branches are explicitly authorized: `docs` for
-documentation, architecture inventories and their read-only/local generators;
-`testing` for a separate test-refactor workstream. Ordinary application work
-still uses `dev`, and `main` remains the release branch. `docs` periodically
-merges new `dev` commits after conflict review; it does not overwrite `dev`
-or edit `testing`. No additional branches/worktrees or CI interaction are
-authorized. See [AGENTS.md](../AGENTS.md).
+Two exceptional long-lived branches are authorized: `docs` for the documentation artifacts and local read-only generators, and `testing` for the independently managed test-refactor workstream. Ordinary implementation uses `dev`; `main` remains the release branch. Documentation work **reads all three branch HEADs** but writes **only `docs`**: coherent relevant `dev` changes are imported periodically as conflict-reviewed genuine two-parent merges; `testing` test-source evidence is **read-only and never merged**. This does not authorize new branches/worktrees or CI interaction. See [AGENTS.md](../AGENTS.md).
 
 ## Current application contracts
 

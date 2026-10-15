@@ -1,6 +1,6 @@
 # Architektur: Quelleninventar und Modelle
 
-Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls dauerhaft erlaubte Branch `testing` ist ein getrennter Arbeitsbereich; Änderungen und Tests dort sind nicht Aufgabe dieses Dokumentationszweigs. Laufende Anwendungscodeänderungen bleiben auf `dev`. Neue `dev`-Commits werden bewusst und ohne History-Rewrite in `docs` übernommen. Keine CI-Interaktion.
+Diese Sektion entsteht ausschließlich auf `docs`. Anwendungscode und normative Umsetzung stammen aus `dev`; die eigenständig gepflegte **Teststruktur/Assertions** aus `testing` werden bei Testabdeckungsfragen **read-only** eingesehen, niemals auf `docs` importiert oder dort ausgeführt. Beide Source-Stände erhalten eigene SHAs und behaupten keine bestandenen Tests. Relevante `dev`-Änderungen kommen nach fachlicher Triage als echter Zwei-Eltern-Merge gebündelt nach `docs`, ohne dem laufenden Entwicklungsbranch bei jedem Commit hinterherzulaufen. Keine CI-Interaktion. [Test-Quellabdeckung und Grenzen](completion-criteria.md#testabdeckung-quellvergleich-testing-und-dev).
 
 ## Einstieg
 
