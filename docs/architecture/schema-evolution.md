@@ -34,6 +34,10 @@ Wichtig für das spätere ERD: `journal_entry_media` ist kein generisch polymorp
 
 [`BlogPost::galleryPresentation()`](../../app/Models/BlogPost.php) normalisiert die akzeptierten Darstellungswerte `sequence`, `grid`, `mosaic` und `slideshow` und fällt bei unbekanntem Altwert auf `sequence` zurück. [`BlogEditorialService::validate()`](../../app/Domain/Content/BlogEditorialService.php) prüft die Benutzer-Eingabe. [`journal-gallery.blade.php`](../../resources/views/components/journal-gallery.blade.php) rendert die Gallery entsprechend, für `mosaic` über `JournalMosaicColumns`, für `slideshow` mit dedizierten Prev-/Next-/Status-Knoten. Die Gallery-Medien bleiben `JournalEntryMedia` und werden **nicht** zu neuen Eloquent-Relationen. Die exakte DOM-/JS-Lifecycle-Verifikation bleibt separat offen.
 
+### Aktuelle Media-Rechte-Schema-Parität (Migration `2026_10_15_180000`)
+
+[`2026_10_15_180000_add_media_file_rights.php`](../../database/migrations/2026_10_15_180000_add_media_file_rights.php) fügt `media_assets` vier optionale Spalten hinzu: `file_creator varchar(240)`, `file_rights_holder varchar(240)`, `rights_usage_terms text`, `license_inquiry_url varchar(2048)`. Bei PostgreSQL schreibt `up()` dieselben vier Spalten ausdrücklich nach `committed.media_assets`; `down()` entfernt sie auf beiden Seiten. Die Migration verändert **keine** der aktuellen 15 Publication-Tabellenidentitäten und ist **kein** physischer Schema-Nachweis. Die [kanonische Rechteprojektion](../../app/Domain/Media/MediaRightsProjection.php) nutzt die neuen Eloquent-Felder, aber die in DB gesicherte LIVE-Äquivalenz, die korrekte Snapshot-History-Payload und alte Checkpoints sind **erst** nach isoliertem Migrations-/Commit-/Restore-/Revert- und `pg_catalog`-Test belegbar. PostgreSQL-Zweig ist explizit; SQLite-/andere isolierte Testpfade können die `committed`-DDL überspringen.
+
 ## Publication-Snapshot und History-Payloads
 
 ```mermaid

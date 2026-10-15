@@ -884,6 +884,32 @@ final class ListMediaAssets extends Page
                         ->nullable()
                         ->columnSpanFull(),
                 ]),
+            AdminForm::section('Image rights and licensing')
+                ->schema([
+                    TextInput::make('file_creator')
+                        ->label('Photographer / file creator')
+                        ->helperText('Enter the photographer only if known; the artwork creator may differ.')
+                        ->maxLength(240)
+                        ->nullable(),
+                    TextInput::make('file_rights_holder')
+                        ->label('Photo rights holder')
+                        ->helperText('Who holds rights in this particular image, if known.')
+                        ->maxLength(240)
+                        ->nullable(),
+                    Textarea::make('rights_usage_terms')
+                        ->label('Specific usage terms')
+                        ->helperText('Optional asset-specific permissions and restrictions.')
+                        ->maxLength(2000)
+                        ->rows(3)
+                        ->nullable(),
+                    TextInput::make('license_inquiry_url')
+                        ->label('License / rights inquiry URL')
+                        ->helperText('Optional HTTPS contact or license-information URL; not a grant of an open license.')
+                        ->url()
+                        ->maxLength(2048)
+                        ->nullable(),
+                ])
+                ->columns(2),
         ];
     }
 
@@ -895,6 +921,10 @@ final class ListMediaAssets extends Page
             'credit' => $asset->getAttribute('credit'),
             'copyright_notice_mode' => $asset->getAttribute('copyright_notice_mode') ?: MediaAsset::COPYRIGHT_INHERIT,
             'copyright_notice' => $asset->getAttribute('copyright_notice'),
+            'file_creator' => $asset->getAttribute('file_creator'),
+            'file_rights_holder' => $asset->getAttribute('file_rights_holder'),
+            'rights_usage_terms' => $asset->getAttribute('rights_usage_terms'),
+            'license_inquiry_url' => $asset->getAttribute('license_inquiry_url'),
         ];
     }
 
@@ -906,6 +936,10 @@ final class ListMediaAssets extends Page
             'credit' => $data['credit'] ?? null,
             'copyright_notice_mode' => $data['copyright_notice_mode'] ?? MediaAsset::COPYRIGHT_INHERIT,
             'copyright_notice' => $data['copyright_notice'] ?? null,
+            'file_creator' => $data['file_creator'] ?? null,
+            'file_rights_holder' => $data['file_rights_holder'] ?? null,
+            'rights_usage_terms' => $data['rights_usage_terms'] ?? null,
+            'license_inquiry_url' => $data['license_inquiry_url'] ?? null,
         ]);
 
         $this->loadLibrary();
