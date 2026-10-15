@@ -1,4 +1,5 @@
 .custom-page {
+    --custom-page-component-gap: 1.15rem;
     display: flow-root;
     width: min(100%, var(--public-art-max));
     margin: 0 auto;
@@ -17,12 +18,13 @@
     display: flow-root;
     min-width: 0;
 }
+/* One editorial vertical rhythm at every component nesting level. Space
+   belongs BETWEEN blocks; dividers don't own one-sided extra padding. */
+.custom-page > :not(:first-child) {
+    margin-block-start: var(--custom-page-component-gap);
+}
 .custom-page__component {
     min-width: 0;
-    padding: 0 0 1.2rem;
-}
-.custom-page__component:last-child {
-    padding-bottom: 0;
 }
 
 .custom-page__copy {
@@ -86,7 +88,7 @@
 .custom-page__divider {
     position: relative;
     height: .45rem;
-    margin: .15rem 0;
+    margin: 0;
     border: 0;
     background: none;
 }
@@ -330,8 +332,7 @@
     display: block;
     min-width: 0;
     max-width: none;
-    margin: 0;
-    padding: 0 0 1.2rem;
+    padding: 0;
     color: inherit;
     font: inherit;
 }
