@@ -134,35 +134,58 @@ it('applies dashboard feed filters to the pinned priority list', function (): vo
         ->and(array_column($pins->entries('catalogue', 'all'), 'key'))->toBe(['contact:'.$contact->getKey()]);
 });
 
-it('reads versioned release notes and the linked pre-release announcement from source', function (): void {
-    config()->set('dashboard-feed.items', require config_path('dashboard-feed.php'));
+it('keeps every versioned note and announcement in the immutable Dashboard manifest', function (): void {
+    $manifest = require config_path('dashboard-feed.php');
+    config()->set('dashboard-feed.items', $manifest['items']);
+
+    $notePaths = glob(resource_path('release-notes/versions/v*.md')) ?: [];
+    $expectedFiles = array_map(
+        static fn (string $path): string => 'versions/'.basename($path),
+        $notePaths,
+    );
+    sort($expectedFiles);
+
+    $changelogs = collect($manifest['items'])->where('type', 'changelog')->values();
+    $configuredFiles = $changelogs->pluck('body_file')->sort()->values()->all();
+
+    expect($configuredFiles)->toBe($expectedFiles)
+        ->and($configuredFiles)->toHaveCount(count(array_unique($configuredFiles)));
 
     $feed = app(DashboardFeed::class);
-    $items = $feed->paginate('', 'changelog', 1, 25);
+    $page = $feed->paginate('', 'changelog', 1, 100);
 
-    expect($items['total'])->toBe(3)
-        ->and(array_column($items['items'], 'key'))->toBe([
-            'static:changelog-v0.3.0',
-            'static:changelog-v0.2.0',
-            'static:changelog-v0.1.0',
-        ]);
+    expect($page['total'])->toBe(count($expectedFiles));
 
-    foreach ($items['items'] as $item) {
-        expect($item['body'])->toContain('## Added')
-            ->and($item['body'])->toContain('github.com/Wiiii90/moeller-lars/issues/');
-        app(\App\Domain\Content\SafeRichTextRenderer::class)->assertValid(
-            $item['body'],
-            allowEmbeddedMedia: false,
-        );
+    $index = (string) file_get_contents(base_path('CHANGELOG.md'));
+    $renderer = app(\App\Domain\Content\SafeRichTextRenderer::class);
+
+    foreach ($changelogs as $item) {
+        $version = pathinfo($item['body_file'], PATHINFO_FILENAME);
+        expect($item['id'])->toBe('changelog-'.$version)
+            ->and($index)->toContain('resources/release-notes/'.$item['body_file']);
+
+        $entry = $feed->entry('static:'.$item['id']);
+        expect($entry)->not->toBeNull()
+            ->and($entry['body'])->toContain('## Added');
+
+        $renderer->assertValid($entry['body'], allowEmbeddedMedia: false);
     }
 
-    $announcement = $feed->entry('static:announcement-pre-release');
-    expect($announcement)->not->toBeNull()
-        ->and($announcement['related_key'])->toBe('static:changelog-v0.3.0')
-        ->and($announcement['body'])->toContain('## Curate your artwork');
+    foreach (collect($manifest['items'])->where('type', 'announcement') as $item) {
+        $entry = $feed->entry('static:'.$item['id']);
+        expect($entry)->not->toBeNull()
+            ->and(is_file(resource_path('release-notes/'.$item['body_file'])))->toBeTrue();
 
-    app(\App\Domain\Content\SafeRichTextRenderer::class)->assertValid(
-        $announcement['body'],
-        allowEmbeddedMedia: false,
-    );
+        $renderer->assertValid($entry['body'], allowEmbeddedMedia: false);
+
+        if (isset($item['related_key'])) {
+            $related = $feed->entry($item['related_key']);
+            expect($related)->not->toBeNull()
+                ->and($related['type'])->toBe('changelog');
+        }
+    }
+
+    $sample = $renderer->render('## Added'."\n\n".'- **Gallery:** Curated order');
+    expect($sample->toHtml())->toContain('<h2>Added</h2>')
+        ->and($sample->toHtml())->toContain('<strong>Gallery:</strong>');
 });
