@@ -10,7 +10,7 @@
     $label = $row['type_label'];
 @endphp
 <div
-    class="custom-page-component__header custom-page-child-row admin-hierarchy__row {{ $isChild ? 'is-child' : '' }}"
+    class="custom-page-component__header admin-hierarchy__row {{ $isChild ? 'custom-page-child-row is-child' : '' }}"
     data-component-index="{{ $isChild ? $imageIndex : $index }}"
     data-component-type="{{ $type }}"
     data-can-nest="{{ $isChild ? 'true' : ($row['can_nest'] ? 'true' : 'false') }}"
@@ -22,12 +22,8 @@
         </span>
     </div>
     <button class="admin-drag-handle custom-page-component__drag" type="button"
-        data-hierarchy-drag-handle="true"
-        @if ($isChild) data-image-index="{{ $imageIndex }}" data-child-index="{{ $index }}" data-child-type="{{ $type }}" @endif
-        @if ($reorderEnabled && ($isChild ? count($pageComponent['children']) > 1 : count($components) > 1))
-            wire:sort:handle
-        @endif
-        @disabled(! $reorderEnabled || (! $isChild && count($components) < 2))
+        @if ($reorderEnabled) wire:sort:handle @endif
+        @disabled(! $reorderEnabled)
         aria-label="Drag {{ $label }}" title="Drag to reorder or change parent"
     >⋮⋮</button>
     <div class="custom-page-component__type">

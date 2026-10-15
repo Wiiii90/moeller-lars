@@ -195,11 +195,4 @@
         </label>
     </div>
 
-    @if (! $isChild && $reorderEnabled && $nestedNavigationEnabled)
-        <div class="admin-hierarchy__nest-target admin-pages__nest-target"
-            data-hierarchy-drop="nest" data-hierarchy-parent="{{ $section['id'] }}"
-            role="button" aria-label="Move dragged page under {{ $label }}">
-            <span>Drop as child</span>
-        </div>
-    @endif
 </div>

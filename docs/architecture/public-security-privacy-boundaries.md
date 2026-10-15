@@ -60,7 +60,7 @@ Die tatsächliche TDM-Header-Weitergabe bei `X-Sendfile`, eine vom Proxy möglic
 
 ## 5. Neue dekorative Image-Children: referenzielle Asymmetrie
 
-[`CustomPageSetting`](../../app/Models/CustomPageSetting.php) validiert `image.children` für dekorative Bilder als eine geordnete Textebene: Text, imagefreie List, Contact ohne Form, höchstens ein Legal Disclaimer auf der Page; die rekursive Teilvalidierung erlaubt in Text- und List-Rich-Text weiterhin kanonische `media:<id>`-Markdown-Referenzen. [`DecorativeImageChildren`](../../app/Filament/Support/DecorativeImageChildren.php) verwendet für Text den vorhandenen `AdminRichText`-Medienpicker. [`component-sequence.blade.php`](../../resources/views/pages/partials/component-sequence.blade.php) rendert veröffentlichte Child-Prose innerhalb eines nativen Bild-Float-Kontexts.
+[`CustomPageSetting`](../../app/Models/CustomPageSetting.php) validiert `image.children` für dekorative Bilder als eine geordnete Textebene: Text, imagefreie List, Contact ohne Form, höchstens ein Legal Disclaimer auf der Page; die rekursive Teilvalidierung erlaubt in Text- und List-Rich-Text weiterhin kanonische `media:<id>`-Markdown-Referenzen. Die frühere `DecorativeImageChildren`-Repeater-Klasse ist inzwischen **gelöscht**; eigenständige Image-Child-Zeilen bearbeiten Text über das gemeinsame `componentEditorSchema` mit `AdminRichText`. [`component-sequence.blade.php`](../../resources/views/pages/partials/component-sequence.blade.php) rendert veröffentlichte Child-Prose innerhalb eines nativen Bild-Float-Kontexts.
 
 **Es gibt aber mehrere nichtrekursive Leser:**
 

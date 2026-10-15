@@ -289,6 +289,74 @@ final class CustomPageEditorialService
         });
     }
 
+    /**
+     * One native Sortable placement contract for both hierarchy levels.
+     * Root and Image children are one Livewire sort group; the receiving
+     * group's ID is the desired parent. No second JavaScript drag owner.
+     * Mutation is locked, validated and persisted atomically.
+     */
+    public function placeComponent(CustomPageSetting $settings, string $locator, int $position, int|string|null $groupId): bool
+    {
+        if (! preg_match('/^(\\d+)(?:\\.(\\d+))?:([a-z_]+)$/', $locator, $match)) {
+            throw ValidationException::withMessages(['component' => 'Invalid component drag target.']);
+        }
+        $sourceIndex = (int) $match[1];
+        $sourceChild = isset($match[2]) && $match[2] !== '' ? (int) $match[2] : null;
+        $expectedType = $match[3];
+        $parent = $groupId === null || $groupId === 'root' ? null
+            : filter_var($groupId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        if ($parent === false) {
+            throw ValidationException::withMessages(['component' => 'Invalid parent for component.']);
+        }
+        return DB::transaction(function () use ($settings, $sourceIndex, $sourceChild, $expectedType, $parent, $position): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            if ($sourceChild === null) {
+                $this->assertTarget($blocks, $sourceIndex, $expectedType);
+                $item = $blocks[$sourceIndex];
+                array_splice($blocks, $sourceIndex, 1);
+                // The target Image moves one index to the left when a
+                // preceding top-level sibling is taken out of the array.
+                if ($parent !== null && $sourceIndex < $parent) {
+                    $parent--;
+                }
+            } else {
+                $this->assertTarget($blocks, $sourceIndex, 'image');
+                $children = $blocks[$sourceIndex]['children'] ?? [];
+                if (($children[$sourceChild]['type'] ?? null) !== $expectedType) {
+                    throw ValidationException::withMessages(['component' => 'Child component changed during dragging.']);
+                }
+                $item = $children[$sourceChild];
+                array_splice($children, $sourceChild, 1);
+                if ($children === []) unset($blocks[$sourceIndex]['children']);
+                else $blocks[$sourceIndex]['children'] = $children;
+            }
+
+            if ($parent === null) {
+                array_splice($blocks, max(0, min($position, count($blocks))), 0, [$item]);
+            } else {
+                $this->assertTarget($blocks, $parent, 'image');
+                if (! ($blocks[$parent]['image_decorative'] ?? false)
+                    || ! in_array($expectedType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                    || ($expectedType === 'list' && ($item['media_asset_id'] ?? null) !== null)) {
+                    throw ValidationException::withMessages(['component' => 'Only suitable text components can be children of a decorative Image.']);
+                }
+                if ($expectedType === 'contact') {
+                    foreach ($item['children'] ?? [] as $child) {
+                        if (is_array($child) && ($child['type'] ?? null) === 'contact_form'
+                            && CustomPageSetting::contactChildPublished($child)) {
+                            throw ValidationException::withMessages(['component' => 'A Contact Form cannot wrap around an Image.']);
+                        }
+                    }
+                }
+                $children = $blocks[$parent]['children'] ?? [];
+                array_splice($children, max(0, min($position, count($children))), 0, [$item]);
+                $blocks[$parent]['children'] = $children;
+            }
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
     /** Reorder children within one Image; never change their parent by sorting. */
     public function sortImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, int $position): bool
     {
