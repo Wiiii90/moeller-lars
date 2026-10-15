@@ -6,43 +6,10 @@ use App\Models\AdminNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
-use Livewire\Component;
 use Livewire\Livewire;
+use Tests\Feature\Admin\Notifications\AdminHeaderNotificationProbe;
 
 uses(RefreshDatabase::class);
-
-final class AdminHeaderNotificationProbe extends Component
-{
-    public function emitNotification(): void
-    {
-        app(AdminNotifier::class)->notification(
-            title: 'Changes saved',
-            body: 'Background gradient updated.',
-            status: 'success',
-        );
-    }
-
-    public function emitIdempotent(int $userId): void
-    {
-        app(AdminNotifier::class)->notification(
-            user: $userId,
-            sourceId: 'media-cleanup:asset-72',
-            title: 'File cleanup failed',
-            body: 'Stored file cleanup could not be completed.',
-            status: 'danger',
-            context: [
-                'type' => 'media.cleanup_failure',
-                'entity_type' => 'media_asset',
-                'entity_id' => 72,
-            ],
-        );
-    }
-
-    public function render(): string
-    {
-        return '<div></div>';
-    }
-}
 
 it('persists an authenticated admin Notification and projects it into the header', function (): void {
     $user = User::factory()->admin()->create();
