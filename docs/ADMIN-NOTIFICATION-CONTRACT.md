@@ -112,6 +112,25 @@ Mailbox behavior includes:
 
 Deleting or pruning a Notification never deletes Activity or Publication history.
 
+## Versioned Dashboard release communication
+
+Announcements and Changelogs are immutable, Git-owned Markdown documents,
+projected by the existing `DashboardFeed` rather than persisted as editable
+Notification content. Their read/unread and automatic highlight-pin receipts
+are **per-admin** in `dashboard_feed_release_states`. New documents are
+unread until opened or explicitly marked read; marking unread is reversible.
+The newest Announcement is the first default pin and the newest Changelog
+the second. Older automatic highlights lose their automatic pin when
+superseded; explicit admin unpin or reordered/manual pins are respected.
+Announcements and Changelogs cannot be deleted from the Dashboard.
+
+Ordinary administrator Notifications remain separately persisted, deletable
+and subject to retention; their sender is presented as System, not as a
+human administrator. Contact messages retain their actual sender.
+Bulk read/unread applies to all readable feed entries, whereas delete actions
+remain restricted to Contact and Notification records. These inbox interactions
+must not recursively generate a Notification.
+
 ## Activity relationship
 
 Activity is immutable factual history of successful administrative mutations.

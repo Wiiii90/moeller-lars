@@ -65,8 +65,8 @@
                     <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
                         <button class="admin-action" type="button" role="menuitem" wire:click="bulkPin" @disabled(! $selectionCapabilities['has_selection'])>Pin selected</button>
                         <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpin" @disabled(! $selectionCapabilities['has_selection'])>Unpin selected</button>
-                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkRead" @disabled(! $selectionCapabilities['all_mutable'])>Mark read</button>
-                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkUnread" @disabled(! $selectionCapabilities['all_mutable'])>Mark unread</button>
+                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkRead" @disabled(! $selectionCapabilities['all_readable'])>Mark read</button>
+                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkUnread" @disabled(! $selectionCapabilities['all_readable'])>Mark unread</button>
                         @if ($deleteWithoutConfirmation)
                             <button class="admin-action is-danger" type="button" role="menuitem" wire:click="bulkDelete" @disabled(! $selectionCapabilities['all_mutable'])>Delete selected</button>
                         @else

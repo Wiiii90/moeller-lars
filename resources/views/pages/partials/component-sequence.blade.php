@@ -16,6 +16,7 @@
                     $asset = $assetId !== null ? $assets->get($assetId) : null;
                     $variant = $asset !== null && $asset->getAttribute('state') === 'available' ? $media->thumbnailVariantForAsset($asset) : null;
                     $decorative = (bool) ($block['image_decorative'] ?? false);
+                    $imageAlignment = \App\Models\CustomPageSetting::imageAlignment($block);
                     $imageAlt = $asset !== null && ! $decorative ? $media->altTextForAsset($asset) : '';
                     $loading = $blockIndex === 0 ? 'eager' : 'lazy';
                     $imageScale = \App\Models\CustomPageSetting::imageScalePercent($block) / 100;
@@ -40,7 +41,7 @@
                             </style>
                         @endpush
                     @endif
-                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image custom-page__image--align-{{ $imageAlignment }}{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
                         <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
                     @if ($imageChildren !== [])

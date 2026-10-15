@@ -7,6 +7,14 @@ RUN npm run build
 
 FROM php:8.3-apache-bookworm AS php-base
 
+# Shared by application, release and local-preview; CPAN production checksum.
+# Bookworm's 12.57 cannot write IPTC/PLUS DataMining (requires >=12.67).
+ARG EXIFTOOL_VERSION=13.55
+ARG EXIFTOOL_SHA256=5f4c81d34ad406538c2871ad72dbfceb5d9b412b2f16cbbeb4d712d270846667
+
+# Run the unpacked script from alongside its bundled Perl ./lib directory.
+ENV PATH="/opt/Image-ExifTool-${EXIFTOOL_VERSION}:${PATH}"
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
@@ -18,6 +26,7 @@ RUN apt-get update \
         libpq-dev \
         libwebp-dev \
         libzip-dev \
+        perl \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" gd intl opcache pdo_pgsql zip \
@@ -25,8 +34,33 @@ RUN apt-get update \
     && sed -ri 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && rm -rf /var/lib/apt/lists/*
 
+# Verify source digest, exact tool release and availability of the writable
+# IPTC/PLUS DataMining property. This runs at image build, never on requests.
+RUN set -eu; \
+    curl --fail --silent --show-error --location \
+      "https://www.cpan.org/authors/id/E/EX/EXIFTOOL/Image-ExifTool-${EXIFTOOL_VERSION}.tar.gz" \
+      --output /tmp/image-exiftool.tar.gz; \
+    printf '%s  %s\n' "$EXIFTOOL_SHA256" /tmp/image-exiftool.tar.gz | sha256sum --check --status; \
+    mkdir -p /opt; \
+    tar -xzf /tmp/image-exiftool.tar.gz -C /opt; \
+    rm /tmp/image-exiftool.tar.gz; \
+    test "$(exiftool -ver)" = "$EXIFTOOL_VERSION"; \
+    exiftool -listw | grep -qw DataMining
+
 COPY docker/php-runtime.ini /usr/local/etc/php/conf.d/zz-moeller-lars-runtime.ini
 COPY docker/apache-mpm.conf /etc/apache2/mods-available/mpm_prefork.conf
+
+# Local development keeps Apache/X-Sendfile semantics while reading the live
+# Windows checkout through a bind mount. Dependencies live in named volumes and
+# Vite runs as a separate development service.
+FROM php-base AS local-dev
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+WORKDIR /var/www/html
+COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
+
+EXPOSE 8080
+HEALTHCHECK --interval=5s --timeout=3s --start-period=10s --retries=12 CMD curl --fail --silent --show-error http://127.0.0.1:8080/up >/dev/null || exit 1
+CMD ["apache2-foreground"]
 
 FROM php-base AS dependencies
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

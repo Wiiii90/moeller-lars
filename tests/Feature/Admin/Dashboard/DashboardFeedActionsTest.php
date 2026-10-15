@@ -16,6 +16,7 @@ beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
+    config()->set('dashboard-feed.items', []);
 });
 
 it('filters the Dashboard feed through Livewire and clears stale selections', function (): void {

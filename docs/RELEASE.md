@@ -152,6 +152,14 @@ Current application media ceilings:
 
 The canonical media policy supports validated image/video/audio content. Consumer support remains narrower where appropriate.
 
+## Release notes and Dashboard announcements
+
+The canonical technical release history is [CHANGELOG.md](../CHANGELOG.md), with one Markdown body per version in `resources/release-notes/versions/`. Artist-facing milestone Announcements live in `resources/release-notes/announcements/`. The existing Dashboard feed indexes and renders these immutable Markdown texts; it does not store a second editable copy in PostgreSQL.
+
+Before approving a version, derive the technical changes from the **exact previous-to-new candidate Git range** and accepted issues, grouping corrections into their final shipped behavior. Review the complete Changelog, version/date/SHA metadata, and for milestone releases the corresponding Announcement and direct internal Changelog link. Hotfixes require a Changelog, not automatically an Announcement. Validation preview builds are not standalone release publications.
+
+This is a release-qualification requirement, not a request to generate or publish text during CI. Existing feature tests can verify manifest consistency; a future explicit release check may reject missing/unapproved notes. No additional CI workflow or scheduler is introduced.
+
 ## Database migrations
 
 - database: PostgreSQL;
@@ -169,6 +177,8 @@ Authoritative non-reproducible state:
 
 - PostgreSQL application data;
 - canonical private MediaAsset originals.
+
+For initial cutover, the artist-approved **protected Validation** PostgreSQL content and original-media corpus are the candidate source; the new Production set is independently restored/reconstructed and checked. Preserve editorial changes across Validation preview deployments. Legacy snapshots remain immutable provenance; never reset Validation from old Legacy on ordinary release. See [MIGRATION-PLAN.md](MIGRATION-PLAN.md) and [#209](https://github.com/Wiiii90/moeller-lars/issues/209).
 
 Generated/rebuildable state:
 

@@ -295,6 +295,7 @@ trait CustomPageWorkspaceComponentActions
                 ];
             })
             ->schema(fn (array $arguments): array => $this->componentEditorSchema(
+                editingType: $this->imageChildTarget($arguments)[2],
                 onTypeChange: function (mixed $state) use ($arguments): void {
                     [, , $type] = $this->imageChildTarget($arguments);
                     if (! is_string($state) || $state === $type) return;
@@ -455,6 +456,7 @@ trait CustomPageWorkspaceComponentActions
                 return $this->componentEditorData($block);
             })
             ->schema(fn (array $arguments): array => $this->componentEditorSchema(
+                editingType: $this->actionComponentTarget($arguments)[1],
                 onTypeChange: function (mixed $state) use ($arguments): void {
                     $target = is_string($state) ? $state : '';
                     [, $currentType] = $this->actionComponentTarget($arguments);

@@ -195,3 +195,66 @@ it('paginates notifications with other feed sources while applying recipient and
         ->and($feed->paginate('', 'all')['total'])->toBe(16)
         ->and($feed->paginate('Own notification 2', 'notification')['total'])->toBe(6);
 });
+
+it('renders four canonical metadata cells for the three Dashboard message kinds', function (): void {
+    config()->set('dashboard-feed.items', [
+        ['id' => 'news', 'type' => 'announcement', 'date' => '2026-10-15', 'title' => 'Welcome', 'body' => 'Announcement text'],
+        ['id' => 'release', 'type' => 'changelog', 'date' => '2026-10-14', 'title' => 'v0.3.0', 'body' => '## Added'],
+    ]);
+
+    $feed = app(DashboardFeed::class);
+    $metaFor = static function (array $entry): string {
+        $html = view('filament.pages.partials.dashboard-feed-dialog', ['entry' => $entry])->render();
+        expect($html)->toContain('admin-detail-dialog__meta--four');
+
+        return (string) \Illuminate\Support\Str::between($html, '<dl class="admin-detail-dialog__meta admin-detail-dialog__meta--four">', '</dl>');
+    };
+
+    foreach (['static:news', 'static:release'] as $key) {
+        $meta = $metaFor($feed->entry($key));
+        expect(substr_count($meta, '<dt>'))->toBe(4)
+            ->and($meta)->toContain('<dt>Type</dt>')
+            ->and($meta)->toContain('<dt>Date</dt>')
+            ->and($meta)->toContain('<dt>Sender</dt>')
+            ->and($meta)->toContain('<dt>Status</dt>')
+            ->and($meta)->not->toContain('<dt>Time</dt>');
+    }
+
+    $notification = [
+        'type' => 'notification',
+        'type_label' => 'Notifications',
+        'date_display' => '15 Oct 2026',
+        'time_display' => '15:36',
+        'status' => 'Read — Success',
+        'notification_status' => 'success',
+        'title' => 'Edited website page',
+        'body' => 'One completed edit',
+        'link' => null,
+        'link_label' => null,
+    ];
+    $meta = $metaFor($notification);
+    expect(substr_count($meta, '<dt>'))->toBe(4)
+        ->and($meta)->toContain('<dt>Time</dt>')
+        ->and($meta)->toContain('<dt>Status</dt>')
+        ->and($meta)->not->toContain('<dt>Sender</dt>');
+
+    // Real persisted local-test Contact fixture: no external mail is sent,
+    // and RefreshDatabase keeps it out of all actual admin inboxes.
+    $message = ContactMessage::query()->create([
+        'sender_name' => 'Contact Preview',
+        'sender_email' => 'preview@example.test',
+        'message' => 'Please send information about available artworks.',
+        'mail_delivery_status' => ContactMessage::DELIVERY_UNAVAILABLE,
+    ]);
+    $contact = $feed->entry('contact:'.$message->getKey());
+    $meta = $metaFor($contact);
+    expect(substr_count($meta, '<dt>'))->toBe(4)
+        ->and($meta)->toContain('<dt>Time</dt>')
+        ->and($meta)->toContain('<dt>Sender</dt>')
+        ->and($meta)->toContain('preview@example.test')
+        ->and($meta)->not->toContain('<dt>Status</dt>');
+
+    $contactHtml = view('filament.pages.partials.dashboard-feed-dialog', ['entry' => $contact])->render();
+    expect($contactHtml)->toContain('Mail unavailable')
+        ->and($contactHtml)->toContain('Unread');
+});

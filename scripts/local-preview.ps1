@@ -1,5 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
+$RunTimer = [System.Diagnostics.Stopwatch]::StartNew()
+
 Set-Location 'P:\moeller-lars'
 
 $Changes = git status --porcelain
@@ -26,6 +28,11 @@ if ($LASTEXITCODE) { throw 'Git SHA konnte nicht gelesen werden.' }
 $AnalyticsDemo = 'storage\app\analytics-demo.php'
 if (-not (Test-Path $AnalyticsDemo)) { throw "Lokale Analytics-Demo fehlt: $AnalyticsDemo" }
 
+# local-dev and local-preview intentionally share 127.0.0.1:8001.
+docker compose --profile dev stop dev-app dev-vite | Out-Null
+if ($LASTEXITCODE) { throw 'Lokaler Dev-Modus konnte vor dem Preview-Build nicht gestoppt werden.' }
+Remove-Item 'public\hot' -Force -ErrorAction SilentlyContinue
+
 Write-Host "[2/3] Preview-Image bauen ($($env:APP_GIT_SHA.Substring(0, 7)))"
 docker compose build preview
 if ($LASTEXITCODE) { throw 'Lokaler Preview-Build fehlgeschlagen. Alter Preview-Container bleibt unangetastet.' }
@@ -46,3 +53,10 @@ if ($LASTEXITCODE) { throw 'Lokale Analytics-Demo konnte nicht geladen werden.' 
 Write-Host ''
 Write-Host "Git:     $($env:APP_GIT_SHA.Substring(0, 7))"
 Write-Host 'Preview: http://127.0.0.1:8001'
+
+$RunTimer.Stop()
+$RunFinishedAt = Get-Date
+$RunDuration = '{0:00}:{1:00}:{2:00}' -f [math]::Floor($RunTimer.Elapsed.TotalHours), $RunTimer.Elapsed.Minutes, $RunTimer.Elapsed.Seconds
+
+Write-Host "Dauer:   $RunDuration"
+Write-Host "Fertig:  $($RunFinishedAt.ToString('yyyy-MM-dd HH:mm:ss'))"

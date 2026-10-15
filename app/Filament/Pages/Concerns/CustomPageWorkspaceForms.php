@@ -18,7 +18,7 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null): array
+    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?string $editingType = null): array
     {
         $typeField = Select::make('type')
             ->label('Component')
@@ -56,7 +56,9 @@ trait CustomPageWorkspaceForms
                 ->schema([
                     $typeField,
                     $statusField,
-                    ...($onTypeChange === null ? [] : [$this->componentParentField()]),
+                    ...($onTypeChange !== null && in_array($editingType, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                        ? [$this->componentParentField($editingType)]
+                        : []),
                     $dynamicFields,
                 ]),
         ];
@@ -78,8 +80,12 @@ trait CustomPageWorkspaceForms
                     ->suffix('%')
                     ->default(\App\Models\CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT)
                     ->required(),
+                Select::make('image_alignment')
+                    ->label('Image alignment')
+                    ->options(['left' => 'Left', 'right' => 'Right'])
+                    ->default('left')
+                    ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
-
             ],
             'text' => $isNew
                 ? AdminRichText::schema('body', 'Rich Text', 20000)
@@ -133,17 +139,18 @@ trait CustomPageWorkspaceForms
 
     /** Visible at the top of every eligible component edit, even for List
      * dialogs with long repeater content. Null means Page level. */
-    private function componentParentField(): Select
+    private function componentParentField(string $editingType): Select
     {
+        // Root and child Edit Actions already know the persisted type.
+        // Do not hide Divider's Parent based on a reactive Grid path.
         return HierarchyParentField::make(
             'parent_image_index',
             fn (): array => $this->decorativeImageParentOptions(),
             'Parent', 'Page level',
         )
-            ->visible(fn (Get $get): bool =>
-                in_array((string) $get('type'), \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
-                && ($get('type') !== 'list' || blank($get('media_asset_id')))
-                && ($get('type') !== 'contact' || ! $get('contact_form_enabled'))
+            ->disabled(fn (Get $get): bool =>
+                ($editingType === 'list' && filled($get('media_asset_id')))
+                || ($editingType === 'contact' && (bool) $get('contact_form_enabled'))
             )
             ->columnSpanFull();
     }

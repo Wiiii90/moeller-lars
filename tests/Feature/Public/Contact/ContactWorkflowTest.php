@@ -338,3 +338,57 @@ it('requires an enabled Contact component on a published Custom Page', function 
 
     expect(ContactMessage::query()->count())->toBe(0);
 });
+
+it('limits repeated contact submissions across distinct client IP addresses', function (): void {
+    config([
+        'contact.recipient' => 'artist@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    // Every source stays below the existing five-per-minute IP threshold.
+    // A new sender on each request keeps the sender quota independent.
+    foreach (range(1, 60) as $attempt) {
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.'.(($attempt % 200) + 1)])
+            ->post('/contact', contactPayload([
+                'email' => "visitor{$attempt}@example.test",
+                'message' => "Distributed attempt {$attempt}",
+            ]))->assertRedirect();
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+        ->post('/contact', contactPayload([
+            'email' => 'next-visitor@example.test',
+            'message' => 'Should be blocked by site quota',
+        ]))->assertTooManyRequests();
+
+    expect(ContactMessage::query()->count())->toBe(60);
+});
+
+it('limits one sender across changing addresses without a plain-text email cache key', function (): void {
+    config([
+        'contact.recipient' => 'artist@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    foreach (range(1, 6) as $attempt) {
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.'.($attempt + 100)])
+            ->post('/contact', contactPayload([
+                'email' => 'One.Sender@example.test',
+                'message' => "Sender attempt {$attempt}",
+            ]))->assertRedirect();
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.100'])
+        ->post('/contact', contactPayload([
+            'email' => 'one.sender@EXAMPLE.test',
+            'message' => 'Over sender limit',
+        ]))->assertTooManyRequests();
+
+    expect(ContactMessage::query()->count())->toBe(6);
+});

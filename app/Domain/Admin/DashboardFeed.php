@@ -11,6 +11,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use LogicException;
 
 final class DashboardFeed
 {
@@ -86,7 +87,35 @@ final class DashboardFeed
             }
         }
 
+        if (in_array($entry['type'] ?? null, ['announcement', 'changelog'], true)) {
+            app(DashboardFeedReleaseState::class)->markRead($key, true);
+
+            return $this->entry($key);
+        }
+
         return $entry;
+    }
+
+    public function markReleaseUnread(string $key): void
+    {
+        $entry = $this->entry($key);
+        if (is_array($entry) && in_array($entry['type'] ?? null, ['announcement', 'changelog'], true)) {
+            app(DashboardFeedReleaseState::class)->markRead($key, false);
+        }
+    }
+
+    /** @return array{announcement?:string,changelog?:string} */
+    public function latestReleaseKeys(): array
+    {
+        $latest = [];
+        foreach (['announcement', 'changelog'] as $type) {
+            $entry = $this->filteredStaticItems('', $type)->first();
+            if (is_array($entry)) {
+                $latest[$type] = (string) $entry['key'];
+            }
+        }
+
+        return $latest;
     }
 
     public function markContactUnread(int $contactMessageId): void
@@ -445,14 +474,37 @@ final class DashboardFeed
     private function staticItems(): Collection
     {
         /** @var Collection<int, array<string, mixed>> $items */
-        $items = collect(config('dashboard-feed.items', []))
+        $configured = collect(config('dashboard-feed.items', []))->filter(
+            static fn (mixed $item): bool => is_array($item),
+        );
+        $keys = $configured->pluck('id')
+            ->filter(static fn (mixed $id): bool => is_string($id) && $id !== '')
+            ->map(static fn (string $id): string => 'static:'.$id)
+            ->all();
+        $readFlags = app(DashboardFeedReleaseState::class)->readFlags($keys);
+
+        $items = $configured
             ->filter(static fn (mixed $item): bool => is_array($item))
-            ->map(function (array $item): ?array {
+            ->map(function (array $item) use ($readFlags): ?array {
                 $id = is_string($item['id'] ?? null) ? trim($item['id']) : '';
                 $type = is_string($item['type'] ?? null) ? trim($item['type']) : '';
                 $date = is_string($item['date'] ?? null) ? trim($item['date']) : '';
                 $title = is_string($item['title'] ?? null) ? trim($item['title']) : '';
                 $body = is_string($item['body'] ?? null) ? trim($item['body']) : '';
+                $bodyFile = is_string($item['body_file'] ?? null) ? $item['body_file'] : '';
+                if ($bodyFile !== '') {
+                    if (preg_match('~\\A(?:versions/v\\d+\\.\\d+\\.\\d+|announcements/[a-z0-9-]+)\\.md\\z~D', $bodyFile) !== 1) {
+                        throw new LogicException('Invalid release note file name.');
+                    }
+
+                    $path = resource_path('release-notes/'.$bodyFile);
+                    $content = is_file($path) ? file_get_contents($path) : false;
+                    if (! is_string($content) || strlen($content) > 65536) {
+                        throw new LogicException('Release note file is unavailable or too large: '.$bodyFile);
+                    }
+
+                    $body = trim($content);
+                }
 
                 if ($id === '' || ! in_array($type, ['announcement', 'changelog'], true) || $date === '' || $title === '' || $body === '') {
                     return null;
@@ -487,16 +539,18 @@ final class DashboardFeed
                     'date_display' => $parsedDate->format('j M Y'),
                     'time_display' => '—',
                     'title' => $title,
-                    'sender' => '—',
-                    'sender_name' => '',
+                    'sender' => 'System',
+                    'sender_name' => 'System',
                     'sender_email' => '',
                     'message_excerpt' => Str::limit($body, 120),
                     'body' => $body,
-                    'status' => '—',
+                    'status' => ($readFlags['static:'.$id] ?? false) ? 'Read' : 'Unread',
                     'mail_delivery_status' => null,
                     'mail_delivered_at' => null,
                     'link' => $link,
                     'link_label' => $linkLabel,
+                    'related_key' => is_string($item['related_key'] ?? null) && preg_match('/\Astatic:changelog-v\d+\.\d+\.\d+\z/D', $item['related_key']) === 1 ? $item['related_key'] : null,
+                    'related_label' => is_string($item['related_label'] ?? null) ? $item['related_label'] : null,
                 ];
             })
             ->filter()
@@ -581,8 +635,8 @@ final class DashboardFeed
             'date_display' => $receivedAt->format('j M Y'),
             'time_display' => $receivedAt->format('H:i'),
             'title' => $title,
-            'sender' => 'Admin',
-            'sender_name' => 'Admin',
+            'sender' => 'System',
+            'sender_name' => 'System',
             'sender_email' => '',
             'message_excerpt' => Str::limit($body !== '' ? preg_replace('/\s+/u', ' ', $body) : $title, 120),
             'body' => $body !== '' ? $body : $title,

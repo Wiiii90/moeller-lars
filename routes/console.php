@@ -2,6 +2,7 @@
 
 use App\Domain\Admin\AdminLocalHistoryResetService;
 use App\Domain\Content\ExhibitionAddressNormalizer;
+use App\Domain\Contact\ContactMessageRetentionService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
@@ -16,8 +17,33 @@ use App\Support\PulseReport;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
+
+// Contact messages are retained in this database for 180 days. The command
+// is preview-only unless --apply is explicit. Existing mailboxes and backup
+// retention are separate policies. No independent worker or polling loop.
+Artisan::command('contact:purge {--apply : Delete contact messages older than 180 days}', function (ContactMessageRetentionService $retention): int {
+    $cutoff = $retention->cutoff();
+    $eligible = $retention->eligibleCount($cutoff);
+    $this->info($eligible.' contact messages older than 180 days are eligible for deletion.');
+
+    if (! $this->option('apply')) {
+        $this->comment('Preview only. Use --apply to execute permanent database deletion.');
+
+        return 0;
+    }
+
+    $deleted = $retention->purge($cutoff);
+    $this->info($deleted.' expired contact messages deleted from the database.');
+
+    return 0;
+})->purpose('Preview or purge database contact messages after 180 days');
+
+// Activated only where an operator runs Laravel's standard schedule:run.
+// That runtime scheduler has not been verified on the server.
+Schedule::command('contact:purge --apply')->daily()->withoutOverlapping()->onOneServer();
 
 // Legacy Exhibition addresses are normalised only by explicit local action:
 // the preview is the default; ambiguous strings and edited structured fields

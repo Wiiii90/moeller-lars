@@ -113,6 +113,7 @@ it('stores ordered decorative Image children and rejects incompatible nested com
             ['title' => 'Lives and works in Hamburg', 'context' => null],
         ]],
         ['type' => 'text', 'title' => 'Practice', 'body' => 'My work'],
+        ['type' => 'divider', 'variant' => 'thin'],
         ['type' => 'contact', 'title' => 'Contact', 'children' => [
             ['type' => 'public_email', 'published' => true],
             ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
@@ -123,13 +124,12 @@ it('stores ordered decorative Image children and rejects incompatible nested com
         'media_asset_id' => $asset->getKey(), 'children' => $children,
     ]]]);
     $saved = $settings->fresh()->components()[0];
-    expect(array_column($saved['children'], 'type'))->toBe(['list', 'text', 'contact'])
+    expect(array_column($saved['children'], 'type'))->toBe(['list', 'text', 'divider', 'contact'])
         ->and(CustomPageSetting::listItemContext($saved['children'][0]['items'][1]))->toBeNull();
     $settings->fresh()->assertReadyForPublic();
 
     foreach ([
         [['type' => 'image', 'media_asset_id' => $asset->getKey()]],
-        [['type' => 'divider', 'variant' => 'thin']],
         [['type' => 'list', 'media_asset_id' => $asset->getKey(), 'items' => []]],
         [['type' => 'contact', 'children' => [['type' => 'contact_form', 'published' => true]]]],
     ] as $invalid) {

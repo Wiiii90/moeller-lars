@@ -171,6 +171,22 @@ For media/detail viewers:
 
 Compact summary/fact cells are optional inside dialogs. They are a layout device, not a requirement and not necessarily numerical metrics. Render only meaningful facts, and use exactly as many cells as the content and available width justify; never manufacture or pad a dialog to a fixed metric count.
 
+The shared `admin-detail-dialog__meta` uses a three-column default for
+existing detail viewers. When a Viewer has **exactly four meaningful facts**,
+apply the centrally owned `admin-detail-dialog__meta--four` variant.
+It uses four equal cells at the existing `Large` dialog width, two at reduced
+content width and one on narrow screens; all borders, cell padding and
+responsive breakpoints are defined in `dialog-contract.css`. No individual
+Viewer may synthesize its own grid or expand beyond its assigned
+`AdminDialogSize`.
+
+The Dashboard feed Viewer uses `Large` and the four-fact variant:
+Announcements/Changelogs show Type, Date, Sender, Status (their source
+has no meaningful time-of-day); Notifications show Type, Date, Time, Status;
+Contact shows Type, Date, Time, Sender, while delivery/read information
+remains in its separate factual context line. A Reference link belongs to
+its existing action/link field rather than becoming a fifth fact cell.
+
 ## Chrome and actions
 
 The native Filament close control is always the final top-right control. Filament continues to own modal state, focus trapping and Escape behavior.

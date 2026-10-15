@@ -12,7 +12,7 @@ For every in-scope source Artwork:
 - provenance remains evidence, never runtime fallback;
 - public ordering is persisted rather than inferred from IDs/insertion order.
 
-The current application also supports a later editorial unassigned Artwork state; that does not change imported-source reconciliation.
+The current application also supports a later editorial unassigned Artwork state; that does not change imported-source reconciliation. Artist-approved changes on Validation (including reassignment, addition, removal and reordering) may intentionally diverge from the original import; preserve provenance and record the approved outcome rather than overwriting curation.
 
 ## Media and original-file integrity
 
@@ -54,7 +54,7 @@ Do not reintroduce legacy token parsing as a normal runtime fallback after migra
 
 Legacy Gallery display order is reconciled into explicit target positions. Equal-date rows are not silently ordered by source/target ID or incidental DB order.
 
-When authoritative ordering cannot be established, migration records an explicit reviewed/editorial exception.
+When authoritative ordering cannot be established, migration records an explicit reviewed/editorial exception. Following the initial import, the final Gallery order is the artist-approved persisted order on protected Validation, even when intentionally different from the Legacy snapshot.
 
 The Home candidate/winner for the reviewed snapshot reconciles with approved source behavior while current runtime uses explicit Gallery eligibility and Artwork date/tie-break semantics.
 
@@ -65,7 +65,7 @@ Reviewed legacy Vita textual inventory contains exactly **31 source rows**:
 - **2 Biography/CV source rows**;
 - **29 Exhibition rows**.
 
-Each source row is accounted once. Exhibition rows are not duplicated as CV content. Portrait provenance reconciles by source identity/bytes/SHA-256/MediaAsset attachment.
+Each source row is accounted once. Exhibition rows are not duplicated as CV content. Portrait provenance reconciles by source identity/bytes/SHA-256/MediaAsset attachment. These are original **source accounting** counts; they do not force the final artist-edited Validation/Production content to have exactly 2 Biography and 29 Exhibition entries. Explicit additions, removals and changes require approved traceable outcomes.
 
 Public CV/Vita placement is a Custom Page composition, not a dedicated runtime Site Node type.
 
@@ -154,16 +154,19 @@ Missing required settings are not repaired at read time through silent fallback 
 
 ## Fresh import versus protected canonical data
 
-A clean-database source import remains repeatable for rehearsal/reconstruction.
+A clean-database source import remains repeatable for historical provenance/migration rehearsal, but is not the required source of the final v0.5 artist-curated Production presentation.
 
 Once reviewed data exists in protected Validation/Production:
 
-- it is canonical application data;
-- target evolution uses forward Laravel migrations;
+- it is canonical application data and, on Validation, the evolving authoritative editorial candidate;
+- target evolution uses forward Laravel migrations, preserving database content and canonical media across version changes;
 - source importer is not rerun destructively into non-empty canonical tables;
-- reconciliation is read-only except for explicitly approved forward migrations/editorial corrections.
+- Legacy reconciliation is read-only except for explicitly approved forward migrations or artist/editorial corrections;
+- intentional editorial differences from Legacy remain documented rather than classified as unexplained import loss.
 
-A failed forward migration is a release blocker, not permission to erase protected evidence.
+For cutover, freeze the **approved** Validation PostgreSQL and matching original-media set as one auditable, recoverable candidate. Build a new Production database/media set from this snapshot, with an explicit sanitization matrix for environment-specific users/secrets/sessions, mail/runtime state and test-only artifacts. Validate publication/Working/LIVE references, content/media integrity, historic checkpoints as applicable, and exact release compatibility. Prove isolated restore and rollback before acceptance; never reuse live Validation infrastructure as Production.
+
+A failed forward migration or cutover rehearsal is a release blocker, not permission to erase protected evidence. See [#209](https://github.com/Wiiii90/moeller-lars/issues/209).
 
 ## Historical migration self-containment
 
@@ -196,11 +199,11 @@ No standalone Contact route is required merely because legacy content had Contac
 
 `php artisan legacy:validate <manifest>` is read-only reconciliation for the reviewed source snapshot. It makes counts, checksum/provenance, ordering, Site Node projection, Vita/CV/Exhibition accounting, route checks, warnings and reviewed exceptions visible.
 
-No unexplained discrepancy is silently normalized.
+No unexplained discrepancy is silently normalized. An intentional artist-approved edit on protected Validation is a reviewed source-to-final difference, not evidence that the original import failed.
 
 ## Acceptance boundary
 
-Migration reconciliation is necessary but not sufficient for Production acceptance. Separate gates remain application verification, exact release identity, protected Validation, public/admin browser acceptance, editorial approval and platform backup/restore/rollback readiness.
+Migration provenance and artist-approved Validation-to-Production reconciliation are necessary but not sufficient for Production acceptance. Separate gates remain application verification, exact release identity, protected Validation, public/admin browser acceptance, editorial approval and platform backup/restore/rollback readiness.
 
 ## Explicit exclusions
 

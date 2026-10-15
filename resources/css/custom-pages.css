@@ -1,4 +1,5 @@
 .custom-page {
+    --custom-page-component-gap: 1.15rem;
     display: flow-root;
     width: min(100%, var(--public-art-max));
     margin: 0 auto;
@@ -17,12 +18,13 @@
     display: flow-root;
     min-width: 0;
 }
+/* One editorial vertical rhythm at every component nesting level. Space
+   belongs BETWEEN blocks; dividers don't own one-sided extra padding. */
+.custom-page > :not(:first-child) {
+    margin-block-start: var(--custom-page-component-gap);
+}
 .custom-page__component {
     min-width: 0;
-    padding: 0 0 1.2rem;
-}
-.custom-page__component:last-child {
-    padding-bottom: 0;
 }
 
 .custom-page__copy {
@@ -53,14 +55,25 @@
 .custom-page__image {
     width: min(100%, var(--custom-page-image-width, 28rem));
 }
+/* Alignment is independent of whether Image is decorative. Standalone
+   images use an auto margin; grouped Images float to the selected side. */
+.custom-page__image--align-right {
+    margin-left: auto;
+}
 /* Native float, not a manufactured second column or breakpoint.
    Lines flow around the image until there is not enough room, then continue
    beneath it. The parent's formatting context ends the effect explicitly. */
 .custom-page__image--wrapped {
     float: left;
     width: min(42%, var(--custom-page-image-width, 28rem));
-    margin: 0 clamp(.8rem, 3vw, 1.6rem) .8rem 0;
+    /* The Image group owns its float height; the next component gets the
+       shared sibling gap. A bottom float margin double-counted that gap. */
+    margin: 0 clamp(.8rem, 3vw, 1.6rem) 0 0;
     padding: 0;
+}
+.custom-page__image--wrapped.custom-page__image--align-right {
+    float: right;
+    margin: 0 0 0 clamp(.8rem, 3vw, 1.6rem);
 }
 
 .custom-page__media img {
@@ -77,9 +90,14 @@
 .custom-page__divider {
     position: relative;
     height: .45rem;
-    margin: .15rem 0;
+    margin: 0;
     border: 0;
     background: none;
+}
+/* A nested Divider participates beside either float without drawing a rule
+   underneath the Image. On very narrow widths it naturally moves below. */
+.custom-page__image-group .custom-page--embedded > .custom-page__divider {
+    display: flow-root;
 }
 
 .custom-page__divider::before {
@@ -316,8 +334,7 @@
     display: block;
     min-width: 0;
     max-width: none;
-    margin: 0;
-    padding: 0 0 1.2rem;
+    padding: 0;
     color: inherit;
     font: inherit;
 }
