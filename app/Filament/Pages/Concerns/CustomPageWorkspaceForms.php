@@ -78,8 +78,12 @@ trait CustomPageWorkspaceForms
                     ->suffix('%')
                     ->default(\App\Models\CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT)
                     ->required(),
+                Select::make('image_alignment')
+                    ->label('Image alignment')
+                    ->options(['left' => 'Left', 'right' => 'Right'])
+                    ->default('left')
+                    ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
-
             ],
             'text' => $isNew
                 ? AdminRichText::schema('body', 'Rich Text', 20000)

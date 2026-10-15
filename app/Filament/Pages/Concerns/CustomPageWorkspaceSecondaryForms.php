@@ -16,6 +16,7 @@ trait CustomPageWorkspaceSecondaryForms
         ];
         if (($block['type'] ?? null) === 'image') {
             $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
+            $data['image_alignment'] = CustomPageSetting::imageAlignment($block);
         }
         if (($block['type'] ?? null) === 'list') {
             $data['items'] = array_map(static fn (array $item): array => [
@@ -61,6 +62,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'published' => $published,
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                ...$this->imageAlignmentPayload($data, $existing),
                 ...$this->imageScalePayload($data, $existing),
                 ...$this->imageChildrenPayload($data, $existing),
             ],
@@ -93,6 +95,17 @@ trait CustomPageWorkspaceSecondaryForms
     {
         $children = $existing['children'] ?? [];
         return $children === [] ? [] : ['children' => $children];
+    }
+
+    /** Left is implicit to preserve the historical image representation. */
+    private function imageAlignmentPayload(array $data, ?array $existing): array
+    {
+        $alignment = $data['image_alignment'] ?? ($existing['image_alignment'] ?? 'left');
+        if (! is_string($alignment) || ! in_array($alignment, CustomPageSetting::IMAGE_ALIGNMENTS, true)) {
+            throw ValidationException::withMessages(['image_alignment' => 'Choose Left or Right alignment.']);
+        }
+
+        return $alignment === 'left' ? [] : ['image_alignment' => 'right'];
     }
 
     /** @param array<string, mixed> $data

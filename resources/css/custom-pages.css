@@ -53,6 +53,11 @@
 .custom-page__image {
     width: min(100%, var(--custom-page-image-width, 28rem));
 }
+/* Alignment is independent of whether Image is decorative. Standalone
+   images use an auto margin; grouped Images float to the selected side. */
+.custom-page__image--align-right {
+    margin-left: auto;
+}
 /* Native float, not a manufactured second column or breakpoint.
    Lines flow around the image until there is not enough room, then continue
    beneath it. The parent's formatting context ends the effect explicitly. */
@@ -61,6 +66,10 @@
     width: min(42%, var(--custom-page-image-width, 28rem));
     margin: 0 clamp(.8rem, 3vw, 1.6rem) .8rem 0;
     padding: 0;
+}
+.custom-page__image--wrapped.custom-page__image--align-right {
+    float: right;
+    margin: 0 0 .8rem clamp(.8rem, 3vw, 1.6rem);
 }
 
 .custom-page__media img {
