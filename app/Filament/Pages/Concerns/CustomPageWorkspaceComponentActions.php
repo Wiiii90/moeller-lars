@@ -275,6 +275,156 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
+
+    /** Child components own the SAME Edit schema, action rail and persisted
+     * data as their top-level counterparts. The Image owns only placement. */
+    public function editImageChildAction(): Action
+    {
+        $action = Action::make('editImageChild')
+            ->label('Edit')
+            ->fillForm(function (array $arguments): array {
+                [$image, $child, $type] = $this->imageChildTarget($arguments);
+                return [
+                    ...$this->componentEditorData($this->imageChildAt($image, $child, $type)),
+                    'parent_image_index' => (string) $image,
+                ];
+            })
+            ->schema(fn (array $arguments): array => $this->componentEditorSchema(
+                onTypeChange: function (mixed $state) use ($arguments): void {
+                    [, , $type] = $this->imageChildTarget($arguments);
+                    if (! is_string($state) || $state === $type) return;
+                    $this->replaceMountedAction('changeImageChildType', [
+                        ...$arguments, 'targetType' => $state,
+                    ]);
+                },
+            ))
+            ->modalHeading('Edit component')
+            ->extraModalFooterActions(function (array $arguments): array {
+                [$image, $child, $type] = $this->imageChildTarget($arguments);
+                $blocks = $this->componentAt($image, 'image')['children'] ?? [];
+                $args = ['imageIndex' => $image, 'childIndex' => $child, 'componentType' => $type];
+                $actions = [];
+                foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $dir => $role) {
+                    $canMove = $this->componentReorderEnabled() && ($dir === 'up' ? $child > 0 : $child < count($blocks) - 1);
+                    $actions[] = AdminDialog::headerAction(
+                        'childMove'.ucfirst($dir), $role,
+                        function () use ($image, $child, $type, $dir): void {
+                            $this->moveImageChildSibling($image, $child, $type, $dir);
+                            $this->replaceMountedAction('editImageChild', [
+                                'imageIndex' => $image,
+                                'childIndex' => $child + ($dir === 'up' ? -1 : 1),
+                                'componentType' => $type,
+                            ]);
+                        },
+                    )->disabled(! $canMove);
+                }
+                $published = \App\Models\CustomPageSetting::componentPublished($blocks[$child]);
+                $actions[] = AdminDialog::headerAction(
+                    'childPublish', $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+                    function () use ($image, $child, $type, $published, $args): void {
+                        $this->setImageChildPublished($image, $child, $type, ! $published);
+                        $this->replaceMountedAction('editImageChild', $args);
+                    },
+                );
+                $actions[] = AdminDialog::headerAction('childDelete', AdminRowAction::Delete,
+                    fn () => $this->replaceMountedAction('deleteImageChild', $args));
+                return $actions;
+            })
+            ->action(function (array $data, array $arguments): void {
+                [$image, $child, $type] = $this->imageChildTarget($arguments);
+                if (($data['type'] ?? null) !== $type) return;
+                $existing = $this->imageChildAt($image, $child, $type);
+                $updated = $this->componentPayload($data, $existing);
+                $parentValue = $data['parent_image_index'] ?? (string) $image;
+                $newParent = ($parentValue === null || $parentValue === '') ? null
+                    : filter_var($parentValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+                if ($newParent === false) {
+                    throw ValidationException::withMessages(['parent_image_index' => 'Choose a decorative Image.']);
+                }
+                $changed = DB::transaction(function () use ($image, $child, $type, $updated, $newParent): bool {
+                    $editor = app(CustomPageEditorialService::class);
+                    $saved = $editor->updateImageChild($this->settings(), $image, $child, $type, $updated);
+                    if ($newParent === null) {
+                        return $editor->unnestImageChild($this->settings(), $image, $child) || $saved;
+                    }
+                    if ($newParent !== $image) {
+                        return $editor->moveImageChild($this->settings(), $image, $child, $newParent) || $saved;
+                    }
+                    return $saved;
+                });
+                $this->clearSelections();
+                $this->reloadWorkspace();
+                if ($changed) {
+                    app(AdminNotifier::class)->notification(title: 'Component saved', status: 'success');
+                }
+            });
+        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large);
+    }
+
+    public function setImageChildPublished(int $image, int $child, string $type, bool $published): void
+    {
+        $block = $this->imageChildAt($image, $child, $type);
+        $block['published'] = $published;
+        $changed = app(CustomPageEditorialService::class)->updateImageChild(
+            $this->settings(), $image, $child, $type, $block,
+        );
+        $this->loadComponentProjection();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(
+                title: $published ? 'Component published' : 'Component unpublished', status: 'success',
+            );
+        }
+    }
+
+    public function moveImageChildSibling(int $image, int $child, string $type, string $direction): void
+    {
+        if (! $this->componentReorderEnabled()) return;
+        $changed = app(CustomPageEditorialService::class)->moveImageChildByDirection(
+            $this->settings(), $image, $child, $type, $direction,
+        );
+        $this->clearSelections();
+        $this->reloadWorkspace();
+        if ($changed) app(AdminNotifier::class)->notification(title: 'Component order updated', status: 'success');
+    }
+
+    public function deleteImageChildAction(): Action
+    {
+        $action = Action::make('deleteImageChild')
+            ->label('Delete')
+            ->color('danger')
+            ->action(function (array $arguments): void {
+                [$image, $child, $type] = $this->imageChildTarget($arguments);
+                app(CustomPageEditorialService::class)->deleteImageChild(
+                    $this->settings(), $image, $child, $type,
+                );
+                $this->clearSelections();
+                $this->reloadWorkspace();
+                app(AdminNotifier::class)->notification(title: 'Component deleted', status: 'success');
+            });
+        return AdminDialog::confirm($action, 'Delete component?', submitLabel: 'Delete', danger: true);
+    }
+
+    public function changeImageChildTypeAction(): Action
+    {
+        $action = Action::make('changeImageChildType')
+            ->label('Change component type')
+            ->action(function (array $arguments): void {
+                [$image, $child, $type] = $this->imageChildTarget($arguments);
+                $target = $this->actionTargetComponentType($arguments);
+                $changed = app(CustomPageEditorialService::class)->convertImageChild(
+                    $this->settings(), $image, $child, $type, $target,
+                );
+                $this->clearSelections();
+                $this->reloadWorkspace();
+                if ($changed) app(AdminNotifier::class)->notification(title: 'Component type updated', status: 'success');
+            });
+        return AdminDialog::confirm(
+            $action, 'Change type?',
+            'Changing a component type can remove content that cannot be carried over.',
+            'Change type',
+        );
+    }
+
     public function editComponentAction(): Action
     {
         return $this->componentEditingAction('editComponent', committed: false);
@@ -341,13 +491,6 @@ trait CustomPageWorkspaceComponentActions
                     return; // A type change is handled by changeComponentType.
                 }
 
-                $adoptValue = $type === 'image' ? ($data['adopt_component_index'] ?? null) : null;
-                $adoptIndex = $adoptValue === null || $adoptValue === ''
-                    ? null
-                    : filter_var($adoptValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-                if ($adoptIndex === false) {
-                    throw ValidationException::withMessages(['adopt_component_index' => 'Choose an existing component.']);
-                }
                 $parentValue = $type !== 'image' ? ($data['parent_image_index'] ?? null) : null;
                 $payload = $this->componentPayload($data, $existing);
                 if ($parentValue !== null && $parentValue !== '') {
@@ -373,23 +516,11 @@ trait CustomPageWorkspaceComponentActions
                     }
                     return;
                 }
-                $changed = $adoptIndex === null
-                    ? app(CustomPageEditorialService::class)->updateBlock(
-                        $this->settings(), $index, $type, $payload,
-                    )
-                    : app(CustomPageEditorialService::class)->updateImageAndNest(
-                        $this->settings(), $index, $payload, $adoptIndex,
-                    );
-
+                $changed = app(CustomPageEditorialService::class)->updateBlock(
+                    $this->settings(), $index, $type, $payload,
+                );
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                if ($changed && $adoptIndex !== null) {
-                    $this->replaceMountedAction(
-                        'editComponent',
-                        ['componentIndex' => $adoptIndex < $index ? $index - 1 : $index,
-                            'componentType' => 'image'],
-                    );
-                }
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Component saved',

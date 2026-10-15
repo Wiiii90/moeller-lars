@@ -56,6 +56,28 @@ trait CustomPageWorkspaceTargetHelpers
         return $block;
     }
 
+    /** Stable child target: owning Image, child position and expected type. */
+    private function imageChildTarget(array $arguments): array
+    {
+        $image = filter_var($arguments['imageIndex'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        $child = filter_var($arguments['childIndex'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        $type = $arguments['componentType'] ?? null;
+        if ($image === false || $child === false || ! is_string($type)
+            || ! in_array($type, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'The child component is invalid.']);
+        }
+        return [(int) $image, (int) $child, $type];
+    }
+
+    private function imageChildAt(int $image, int $child, string $type): array
+    {
+        $item = $this->componentAt($image, 'image')['children'][$child] ?? null;
+        if (! is_array($item) || ($item['type'] ?? null) !== $type) {
+            throw ValidationException::withMessages(['component' => 'This child component changed. Reload and try again.']);
+        }
+        return $item;
+    }
+
     private function actionTargetComponentType(array $arguments): string
     {
         $type = $arguments['targetType'] ?? null;

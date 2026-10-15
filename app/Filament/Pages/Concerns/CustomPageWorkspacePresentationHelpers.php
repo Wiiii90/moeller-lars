@@ -18,13 +18,9 @@ trait CustomPageWorkspacePresentationHelpers
     {
         $type = $block['type'] ?? null;
         if ($type === 'image') {
-            $count = count(is_array($block['children'] ?? null) ? $block['children'] : []);
-
-            return [
-                'primary' => $imageName ?: 'Image unavailable',
-                'secondary' => ($block['image_decorative'] ?? false) ? 'Decorative · wraps text' : '',
-                'meta' => $count ? $count.' '.($count === 1 ? 'child' : 'children') : '',
-            ];
+            // No invented subordinate metadata: the hierarchy itself shows
+            // children, while the Content cell stays a concise identity.
+            return ['primary' => $imageName ?: 'Image unavailable', 'secondary' => '', 'meta' => ''];
         }
         if ($type === 'text') {
             $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
@@ -74,27 +70,31 @@ trait CustomPageWorkspacePresentationHelpers
         return ['primary' => '', 'secondary' => '', 'meta' => ''];
     }
 
-    /** @return list<array{type:string,title:string,meta:string,published:bool}> */
-    private function imageChildSummaries(CustomPageSetting $settings, array $image): array
+    /** Each Image child is projected as a normal component row with its
+     * own identity and complete actions, not a summary inside the Image. */
+    private function imageChildSummaries(CustomPageSetting $settings, array $image, int $imageIndex): array
     {
+        $children = $image['children'] ?? [];
         $summaries = [];
-        foreach ($image['children'] ?? [] as $child) {
-            if (! is_array($child)) {
-                continue;
-            }
+        foreach ($children as $childIndex => $child) {
+            if (! is_array($child)) continue;
             $type = (string) ($child['type'] ?? '');
-            if (! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
-                continue;
-            }
-            $content = $this->componentContent($settings, $child, null);
+            if (! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) continue;
+            $published = CustomPageSetting::componentPublished($child);
             $summaries[] = [
-                'type' => self::COMPONENT_LABELS[$type] ?? $type,
-                'title' => $content['primary'],
-                'meta' => $content['meta'],
-                'published' => CustomPageSetting::componentPublished($child),
+                'image_index' => $imageIndex,
+                'index' => $childIndex,
+                'position' => ($imageIndex + 1).'.'.($childIndex + 1),
+                'type' => $type,
+                'type_label' => self::COMPONENT_LABELS[$type] ?? $type,
+                'content' => $this->componentContent($settings, $child, null),
+                'published' => $published,
+                'editable' => $type !== 'legal_disclaimer',
+                'can_move_up' => $childIndex > 0,
+                'can_move_down' => $childIndex < count($children) - 1,
+                'target' => $imageIndex.'.'.$childIndex.':'.$type,
             ];
         }
-
         return $summaries;
     }
 
