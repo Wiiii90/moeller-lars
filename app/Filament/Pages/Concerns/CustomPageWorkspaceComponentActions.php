@@ -491,13 +491,6 @@ trait CustomPageWorkspaceComponentActions
                     return; // A type change is handled by changeComponentType.
                 }
 
-                $adoptValue = $type === 'image' ? ($data['adopt_component_index'] ?? null) : null;
-                $adoptIndex = $adoptValue === null || $adoptValue === ''
-                    ? null
-                    : filter_var($adoptValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-                if ($adoptIndex === false) {
-                    throw ValidationException::withMessages(['adopt_component_index' => 'Choose an existing component.']);
-                }
                 $parentValue = $type !== 'image' ? ($data['parent_image_index'] ?? null) : null;
                 $payload = $this->componentPayload($data, $existing);
                 if ($parentValue !== null && $parentValue !== '') {
@@ -523,23 +516,11 @@ trait CustomPageWorkspaceComponentActions
                     }
                     return;
                 }
-                $changed = $adoptIndex === null
-                    ? app(CustomPageEditorialService::class)->updateBlock(
-                        $this->settings(), $index, $type, $payload,
-                    )
-                    : app(CustomPageEditorialService::class)->updateImageAndNest(
-                        $this->settings(), $index, $payload, $adoptIndex,
-                    );
-
+                $changed = app(CustomPageEditorialService::class)->updateBlock(
+                    $this->settings(), $index, $type, $payload,
+                );
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                if ($changed && $adoptIndex !== null) {
-                    $this->replaceMountedAction(
-                        'editComponent',
-                        ['componentIndex' => $adoptIndex < $index ? $index - 1 : $index,
-                            'componentType' => 'image'],
-                    );
-                }
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Component saved',
