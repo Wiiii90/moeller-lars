@@ -180,9 +180,8 @@ it('allows canonical reorder only for a neutral complete parent sequence', funct
         ->and($sequenceSource)->toContain('wire:sort:item=')
         ->and($sequenceSource)->toContain('wire:sort:handle')
         ->and($sequenceSource)->not->toContain('draggable=')
-        ->and($sequenceSource)->toContain('data-admin-hierarchy="custom"')
-        ->and($sequenceSource)->toContain('data-hierarchy-drag-handle')
-        ->and($sequenceSource)->toContain('data-hierarchy-drop="nest"');
+        ->and($sequenceSource)->toContain('wire:sort:group="custom-components"')
+        ->and($sequenceSource)->toContain('custom-page-component-row');
 });
 
 it('persists native parent drag sorting through the canonical component order service', function (): void {
@@ -768,50 +767,6 @@ it('autosaves an image selection without closing the editor and notifies once pe
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
         ->assertFormSet(['media_asset_id' => $replacement->getKey(), 'image_scale_percent' => 50]);
-});
-
-it('moves the existing CV List under a decorative Image from its Edit dialog', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Nested CV', 'nested-cv-editor');
-    $asset = MediaAsset::query()->create([
-        'storage_key' => 'originals/nested-cv-editor.jpg',
-        'original_filename' => 'nested-cv-editor.jpg',
-        'mime_type' => 'image/jpeg',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'nested-cv-editor'),
-        'state' => 'available',
-        'alt_text' => 'Portrait',
-        'width' => 2,
-        'height' => 2,
-    ]);
-    $settings->update(['blocks' => [
-        ['type' => 'image', 'image_decorative' => true,
-            'media_asset_id' => $asset->getKey()],
-        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
-            ['title' => 'Born in Hamburg', 'context' => '1989'],
-            ['title' => 'Lives and works in Hamburg', 'context' => null],
-        ]],
-    ]]);
-
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
-        ->assertSet('mountedActions.0.data.image_children', [])
-        ->set('mountedActions.0.data.adopt_component_index', 1)
-        ->call('callMountedAction')
-        ->assertHasNoFormErrors()
-        ->assertDispatched('admin-header-notification');
-
-    $blocks = $settings->fresh()->components();
-    expect($blocks)->toHaveCount(1)
-        ->and($blocks[0]['children'][0]['type'])->toBe('list')
-        ->and($blocks[0]['children'][0]['items'][1]['context'])->toBeNull()
-        ->and($blocks[0]['children'][0]['items'][1]['title'])->toBe('Lives and works in Hamburg');
-
-    $reopened = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image']);
-    $children = array_values($reopened->get('mountedActions.0.data.image_children'));
-    expect($children)->toHaveCount(1)
-        ->and($children[0]['type'])->toBe('list')
-        ->and(array_values($children[0]['items'])[1]['title'])->toBe('Lives and works in Hamburg');
 });
 
 it('offers a visible Parent selector in CV List Edit and persists the nesting', function (): void {

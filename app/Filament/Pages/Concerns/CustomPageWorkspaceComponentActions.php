@@ -100,7 +100,9 @@ trait CustomPageWorkspaceComponentActions
             : [$b['index'], $b['child_index']] <=> [$a['index'], $a['child_index']]);
         $changed = DB::transaction(function () use ($parents, $children, $direction): bool {
             $editor = app(CustomPageEditorialService::class);
-            $changed = $parents !== [] && $editor->moveSelectedBlocks($this->settings(), $parents, $direction);
+            $changed = false;
+            // Child locators retain their original Image index until after
+            // sibling reordering. Move any selected top-level parents LAST.
             foreach ($children as $t) {
                 $index = $t['child_index'];
                 $position = $index + ($direction === 'up' ? -1 : 1);
@@ -108,6 +110,9 @@ trait CustomPageWorkspaceComponentActions
                 $siblings = $blocks[$t['index']]['children'] ?? [];
                 if ($position < 0 || $position >= count($siblings)) continue;
                 $changed = $editor->sortImageChild($this->settings(), $t['index'], $index, $position) || $changed;
+            }
+            if ($parents !== []) {
+                $changed = $editor->moveSelectedBlocks($this->settings(), $parents, $direction) || $changed;
             }
             return $changed;
         });
@@ -633,6 +638,7 @@ trait CustomPageWorkspaceComponentActions
                 if ($parents === []) {
                     return;
                 }
+                DB::transaction(function () use ($parents): void {
                 $editor = app(CustomPageEditorialService::class);
                 $topLevel = array_values(array_filter($parents, static fn (array $t): bool => ! isset($t['child_index'])));
                 $nested = array_values(array_filter($parents, static fn (array $t): bool => isset($t['child_index'])));
@@ -643,6 +649,7 @@ trait CustomPageWorkspaceComponentActions
                     $editor->deleteImageChild($this->settings(), $t['index'], $t['child_index'], $t['type']);
                 }
                 if ($topLevel !== []) $editor->deleteBlocks($this->settings(), $topLevel);
+                });
                 $count = count($parents);
                 $this->clearSelections();
                 $this->reloadWorkspace();

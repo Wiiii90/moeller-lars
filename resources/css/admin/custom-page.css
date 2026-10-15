@@ -135,10 +135,10 @@
     min-width: 0;
 }
 
-/* Image nesting uses the shared small drop affordance; the sortable
-   row surface remains unobstructed. Child controls do not change parents. */
+/* The native child sort group needs a hit area even before an Image has
+   children. It is a quiet blank insertion gap, not a new UI control. */
+.custom-page-component__children .admin-hierarchy__children-rows:empty {
+    min-height: 1.75rem;
+}
 .custom-page-component { position: relative; }
-.custom-page-component-sequence__header { position: relative; }
-.custom-page-component__unnest-target { top: .3rem; }
-.custom-page-component__nest-target { top: .65rem; }
 /* Shared action, drag and selection primitives style both levels. */

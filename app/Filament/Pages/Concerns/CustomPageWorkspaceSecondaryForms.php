@@ -87,42 +87,12 @@ trait CustomPageWorkspaceSecondaryForms
         };
     }
 
-    /** Image children reuse the canonical component editor payloads. The
-     * only permitted Contact branch is email/social, never a Contact Form. */
+    /** Image settings never rewrite children. Child edits go through their
+     * own component Actions and the canonical content service. */
     private function imageChildrenPayload(array $data, ?array $existing): array
     {
-        // Child content is NEVER editable in the Image form. Retain the
-        // independently authored children byte-for-byte on an Image edit.
-        if (! array_key_exists('image_children', $data)) {
-            $preserved = $existing['children'] ?? [];
-            return $preserved === [] ? [] : ['children' => $preserved];
-        }
-        $children = $data['image_children'];
-        if (! is_array($children)) {
-            throw ValidationException::withMessages(['image_children' => 'Image children must be ordered components.']);
-        }
-        // Filament Repeater item keys are UUIDs until dehydration. Persist
-        // the authored visual order as the canonical zero-based JSON list.
-        $children = array_values($children);
-        if ($children !== [] && ! ($data['image_decorative'] ?? false)) {
-            throw ValidationException::withMessages(['image_decorative' => 'Remove image children before disabling Decorative image.']);
-        }
-        $normalized = [];
-        foreach ($children as $child) {
-            if (! is_array($child) || ! in_array($child['type'] ?? null, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
-                throw ValidationException::withMessages(['image_children' => 'Choose a text-capable child component.']);
-            }
-            if (($child['type'] ?? null) === 'list') {
-                // No nested media: it is prose wrapping the owning image.
-                $child['media_asset_id'] = null;
-            }
-            if (($child['type'] ?? null) === 'contact') {
-                $child['contact_form_enabled'] = false;
-            }
-            $normalized[] = $this->componentPayload($child);
-        }
-
-        return $normalized !== [] ? ['children' => $normalized] : [];
+        $children = $existing['children'] ?? [];
+        return $children === [] ? [] : ['children' => $children];
     }
 
     /** @param array<string, mixed> $data

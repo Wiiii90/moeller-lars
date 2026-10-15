@@ -44,7 +44,7 @@ human access to high-quality Artwork Viewer originals. No additional
 footer, menu entry, visual copyright overlay or quality downgrade is part
 of this contract. Artist-authored texts may live on the About/Contact
 Custom Page; Matomo consent is owned by the website, not the artist's
-editable content. See [the implementation plan](PUBLIC-RIGHTS-AND-PRIVACY.md).
+editable content. See `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`.
 
 ## Site navigation
 
@@ -186,17 +186,19 @@ The image viewer supports close/Escape, visible zoom, wheel/trackpad zoom, touch
 
 Canonical Rich Text public rendering uses Markdown through `SafeRichTextRenderer`.
 
-Embedded Storage media images use canonical `media:<id>` references resolved by central media rendering. Explicitly validated HTTP(S) external-image URLs are supported through `SafeLinkPolicy` and `SafeRichTextRenderer`; they are not equivalent to canonical Storage `media:<id>` references and must also satisfy the delivered public CSP. Legacy Journal inline-token runtime syntax is not a canonical public format.
+Embedded Storage media images use canonical `media:<id>` references resolved by central media rendering. Arbitrary external-image URLs and legacy Journal inline-token runtime syntax are not equivalent public formats.
 
 ## Custom Pages, CV and Contact
 
-Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type. The parent component sequence stays flat and independently publishable/reorderable in Admin.
+Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type. The root component sequence and eligible Image-child sequence are independently editable, publishable and reorderable in Admin.
 
-A decorative Image (`image_decorative`) may contain one ordered level of prose children: Text; List without a second image; Contact details (public email and social links, without Contact Form); and the page's unique Legal Disclaimer. They are edited within the Image's dialog as `image.children` and have own publication states and order. Nested images/dividers/forms/image-bearing Lists/second-level child groups are not supported. The public composition renders image and child prose within **one native float context**: lines wrap beside the image and then naturally below it; neither a rigid two-column grid nor breakpoint-dependent reflow is the owner. An Image without children never auto-absorbs later sibling blocks.
+An Image marked `image_decorative` can own one ordered level of prose children: Text, List (without another image), Contact details (Email and Social links, not Form), and Legal Disclaimer. The Image controls only its own media settings. Each child remains a complete, independently editable component row with its own Position, Type, Content, five Actions and Selection, using the SAME row partial as root components. Storage uses `image.children` but this does not move child editing into Image Edit. Native parent/child sorting and its domain guards are owned by the [Admin Table Contract](ADMIN-TABLE-CONTRACT.md#component-sequences), not a second Public drag specification. Child publication, ordering and parent changes remain independent. Validation forbids images, dividers, nested Contact Forms, image-bearing Lists and second-level nested content; the Legal Disclaimer remains unique across the entire page.
 
-A subsequent top-level Contact component, including Contact Form, begins after the image group and spans the available content width. Form fields stay single-column/full-width. A List record with Context renders **Title and Context as two cells in its own grid row** (`.custom-page__list-line`), keeping description and date/context aligned even inside flowing prose beside a decorative Image. This **row-local grid** does not replace the outer image/children native float with a rigid two-column layout. If Context is absent, Title spans the available record row; Details render separately below it. The [feature stylesheet](../resources/css/custom-pages.css) owns the behavior, not a second generic Rich Text grammar. The Legal Disclaimer retains its General-owned content and restrained typography, rather than synthesizing legal copy. Contact is a reusable structured component on Custom Page and Home, not a standalone runtime page type. Home's distinct Contact child editing remains independently owned.
+The public image and its children render in ONE native float formatting context. Lines wrap next to the floated image and then naturally below its bottom at whatever available inline width; no fixed columns or media-breakpoint switching is involved. A subsequent top-level Contact component (including its Contact Form) starts after that image group and uses fully wide, single-column fields. A regular Image remains an independent image block. An Image without children does not automatically absorb subsequent sibling content.
 
-Public Contact workflow validates server-side, enforces honeypot/rate-limit controls, delivers to configured private recipient, uses visitor email as Reply-To rather than forged From, exposes safe outcome and fails in controlled fashion when delivery unavailable.
+The CV List keeps Context and Title inline in semantic records so they naturally wrap around image floats. An undated entry has no synthetic context or empty column. List Details, publication filters and optional image remain owned by the existing generic List component. Contact is a reusable structured component on Custom Page and Home, not a standalone runtime page type. Its public presentation uses understated editorial type and a compact two-column Name/Email form when width permits; form validation, honeypot, delivery and reporting semantics remain unchanged. The Legal Disclaimer remains General-owned text, presented as a restrained colophon with a neutral title; the editorial component does not invent new legal copy.
+
+Public Contact workflow validates server-side and enforces honeypot/rate-limit controls. It saves a ContactMessage before attempting mail delivery to the configured private recipient; unavailable or failed SMTP does not roll back the stored message and the visitor still sees the received outcome. Visitor email is Reply-To, not forged From. Retention, logs and consent boundaries belong to the [source-verified privacy flow](architecture/public-security-privacy-boundaries.md#6-matomo-tracking-vs-consent-und-contact-verarbeitung).
 
 General owns public email/visibility, social links, favicon, private Contact recipient and truly global legal/public text. SMTP/DKIM/TLS remain runtime/platform secrets.
 
@@ -484,4 +486,3 @@ The target does not preserve insecure HTTP behavior, blanket legacy query dispat
 ## Acceptance
 
 Public acceptance requires durable publication/routing/data verification, media integrity, viewer interaction checks, isolated Validation, representative browser comparison and explicit editorial/artist review before Production cutover.
-
