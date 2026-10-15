@@ -189,3 +189,77 @@ it('keeps every versioned note and announcement in the immutable Dashboard manif
     expect($sample->toHtml())->toContain('<h2>Added</h2>')
         ->and($sample->toHtml())->toContain('<strong>Gallery:</strong>');
 });
+
+it('stores per-admin release read receipts without making release messages deletable', function (): void {
+    config()->set('dashboard-feed.items', [
+        ['id' => 'notice', 'type' => 'announcement', 'date' => '2026-10-15', 'title' => 'Welcome', 'body' => 'Introduction'],
+        ['id' => 'version', 'type' => 'changelog', 'date' => '2026-10-14', 'title' => 'v0.3.0', 'body' => '## Added'],
+    ]);
+
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+    $this->actingAs($first);
+
+    $feed = app(DashboardFeed::class);
+    expect($feed->entry('static:notice')['status'])->toBe('Unread')
+        ->and($feed->entry('static:notice')['sender'])->toBe('System');
+
+    expect($feed->openEntry('static:notice')['status'])->toBe('Read');
+
+    $dashboard = new \App\Filament\Pages\Dashboard;
+    $dashboard->markFeedUnread('static:notice');
+    expect($feed->entry('static:notice')['status'])->toBe('Unread');
+
+    $dashboard->selectedFeedKeys = ['static:notice', 'static:version'];
+    $dashboard->bulkMarkRead();
+    expect($feed->entry('static:notice')['status'])->toBe('Read')
+        ->and($feed->entry('static:version')['status'])->toBe('Read');
+
+    $dashboard->deleteFeedEntry('static:notice');
+    $dashboard->selectedFeedKeys = ['static:notice'];
+    $dashboard->bulkDelete();
+    expect($feed->entry('static:notice'))->not->toBeNull();
+
+    $this->actingAs($second);
+    expect($feed->entry('static:notice')['status'])->toBe('Unread')
+        ->and($feed->entry('static:version')['status'])->toBe('Unread');
+
+    $this->actingAs($first);
+    expect($feed->entry('static:notice')['status'])->toBe('Read');
+});
+
+it('pins the newest announcement and changelog once while preserving explicit user choices', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    config()->set('dashboard-feed.items', [
+        ['id' => 'notice-1', 'type' => 'announcement', 'date' => '2026-10-15', 'title' => 'Welcome', 'body' => 'Old notice'],
+        ['id' => 'change-1', 'type' => 'changelog', 'date' => '2026-10-14', 'title' => 'v0.3.0', 'body' => 'Old change'],
+        ['id' => 'change-0', 'type' => 'changelog', 'date' => '2026-08-15', 'title' => 'v0.2.0', 'body' => 'Earlier change'],
+    ]);
+    $pins = app(DashboardFeedPins::class);
+
+    expect(array_column($pins->entries(), 'key'))->toBe(['static:notice-1', 'static:change-1']);
+    expect(array_column($pins->entries(), 'key'))->toBe(['static:notice-1', 'static:change-1']);
+
+    $pins->toggle('static:notice-1');
+    expect(array_column($pins->entries(), 'key'))->toBe(['static:change-1']);
+
+    $pins->pinMany(['static:change-0']);
+
+    config()->set('dashboard-feed.items', [
+        ['id' => 'notice-2', 'type' => 'announcement', 'date' => '2026-11-01', 'title' => 'Update', 'body' => 'New notice'],
+        ['id' => 'change-2', 'type' => 'changelog', 'date' => '2026-11-01', 'title' => 'v0.4.0', 'body' => 'New change'],
+        ['id' => 'notice-1', 'type' => 'announcement', 'date' => '2026-10-15', 'title' => 'Welcome', 'body' => 'Old notice'],
+        ['id' => 'change-1', 'type' => 'changelog', 'date' => '2026-10-14', 'title' => 'v0.3.0', 'body' => 'Old change'],
+        ['id' => 'change-0', 'type' => 'changelog', 'date' => '2026-08-15', 'title' => 'v0.2.0', 'body' => 'Earlier change'],
+    ]);
+
+    $keys = array_column($pins->entries(), 'key');
+    expect(array_slice($keys, 0, 2))->toBe(['static:notice-2', 'static:change-2'])
+        ->and($keys)->toContain('static:change-0')
+        ->and($keys)->not->toContain('static:change-1')
+        ->and($keys)->not->toContain('static:notice-1');
+
+    $pins->toggle('static:notice-2');
+    expect(array_column($pins->entries(), 'key'))->not->toContain('static:notice-2');
+});

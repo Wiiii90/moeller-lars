@@ -76,6 +76,35 @@ final class DashboardFeedReleaseState
         return $claimed > 0 && ! $alreadyPinned;
     }
 
+    /** @param list<string> $latest */
+    public function needsPinReconciliation(array $latest): bool
+    {
+        $userId = $this->userId();
+        if ($userId === null) {
+            return false;
+        }
+
+        $rows = DB::table('dashboard_feed_release_states')
+            ->where('user_id', $userId)
+            ->get(['entry_key', 'auto_pin_initialized_at', 'auto_pinned'])
+            ->keyBy('entry_key');
+
+        foreach ($latest as $key) {
+            $row = $rows->get($key);
+            if ($row === null || $row->auto_pin_initialized_at === null) {
+                return true;
+            }
+        }
+
+        foreach ($rows as $key => $row) {
+            if ($row->auto_pinned && ! in_array((string) $key, $latest, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** @return list<string> */
     public function automaticallyPinnedKeys(): array
     {

@@ -198,6 +198,9 @@ final class DashboardFeedPins
         $latest = $this->feed->latestReleaseKeys();
         $wanted = array_values($latest);
         $states = app(DashboardFeedReleaseState::class);
+        if (! $states->needsPinReconciliation($wanted)) {
+            return;
+        }
 
         DB::transaction(function () use ($userId, $latest, $wanted, $states): void {
             $oldAutomatic = array_diff($states->automaticallyPinnedKeys(), $wanted);
@@ -231,7 +234,12 @@ final class DashboardFeedPins
                 $this->move($latest['announcement'], 0, false);
             }
             if (isset($latest['changelog'])) {
-                $this->move($latest['changelog'], isset($latest['announcement']) ? 1 : 0, false);
+                $hasPinnedAnnouncement = isset($latest['announcement'])
+                    && DB::table('dashboard_feed_pins')
+                        ->where('user_id', $userId)
+                        ->where('entry_key', $latest['announcement'])
+                        ->exists();
+                $this->move($latest['changelog'], $hasPinnedAnnouncement ? 1 : 0, false);
             }
         });
     }
