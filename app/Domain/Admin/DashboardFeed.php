@@ -460,7 +460,8 @@ final class DashboardFeed
                         throw new LogicException('Invalid release note file name.');
                     }
 
-                    $content = file_get_contents(resource_path('release-notes/'.$bodyFile));
+                    $path = resource_path('release-notes/'.$bodyFile);
+                    $content = is_file($path) ? file_get_contents($path) : false;
                     if (! is_string($content) || strlen($content) > 65536) {
                         throw new LogicException('Release note file is unavailable or too large: '.$bodyFile);
                     }

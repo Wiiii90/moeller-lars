@@ -54,7 +54,11 @@
             <span>Message</span>
             @if (in_array($entry['type'], ['announcement', 'changelog'], true))
                 <div class="admin-detail-dialog__release-notes">
-                    {!! app(\App\Domain\Content\SafeRichTextRenderer::class)->render($message) !!}
+                    @php
+                        $releaseRenderer = app(\App\Domain\Content\SafeRichTextRenderer::class);
+                        $releaseRenderer->assertValid($message, allowEmbeddedMedia: false);
+                    @endphp
+                    {!! $releaseRenderer->render($message) !!}
                 </div>
             @else
                 <p>{{ $message }}</p>
