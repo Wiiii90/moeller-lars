@@ -1,315 +1,56 @@
 # DOCS_SKILL — lebende Arbeitsakte (`docs`)
 
-> **Erst diese Datei vollständig lesen**, dann [AGENTS.md](AGENTS.md),
-> [.agents/skills/documentation/SKILL.md](.agents/skills/documentation/SKILL.md)
-> und [docs/architecture/README.md](docs/architecture/README.md).
->
-> **Diese Datei beschreibt den gegenwärtigen Arbeitsstand, kein chronologisches
-> Chatprotokoll.** Nach jedem wesentlichen Schritt den betroffenen Abschnitt
-> **ersetzen oder korrigieren**, statt einen neuen „Fortsetzung“-Block anzuhängen.
-> Einzelne historische Commits/Quellen bleiben über Git und die Architekturdokumente
-> nachvollziehbar.
+> **Bei jedem Neueinstieg zuerst diese Datei**, danach [AGENTS.md](AGENTS.md), [Documentation-Skill](.agents/skills/documentation/SKILL.md) und [Architekturindex](docs/architecture/README.md) lesen. Dies ist ein **konsolidierter Status**, kein Verlaufsprotokoll. Nach Änderungen vorhandene Aussagen **ersetzen**, keine chronologischen Fortschrittsblöcke anhängen. Detailbelege gehören in ihre verlinkten Dokumente und ins Git-Protokoll.
 
-## Branches, Schutz und Wiedereinstieg
+## Arbeitsgrenzen und Branch-Stand
 
-- Repository: `Wiiii90/moeller-lars`.
-- `docs`: **eigener dauerhaft genehmigter Branch** für Architektur, Dokumentation,
-  Skills und lokal/read-only nutzbare Dokumentationsgeneratoren. Nur hier committen.
-- `dev`: kanonische Quelle der parallelen Anwendung/UI-Änderungen. Neu eingetroffene
-  Änderungen nach Pfadprüfung als **echten Zwei-Eltern-Merge** nach `docs` holen.
-  Niemals ohne Freigabe `docs` nach `dev`/`main` mergen.
-- `testing`: separat genehmigt und von anderem Chat verwaltet; **nicht verändern**.
-  Keine neuen Branches/Worktrees, kein Force-Push, keine Rewrites.
-- **CI absolut tabu:** nicht auslösen, lesen, monitoren, abbrechen oder Workflows
-  ändern. Keine versehentlichen Server-/Produktions-/Preview-DB-Mutationen.
-- Jeder neue Chat ermittelt **zuerst** `docs`- und `dev`-HEAD über GitHub,
-  vergleicht die Entwicklung und übernimmt nur konfliktgeprüfte Änderungen.
-  Der folgende Stand ist eine Momentaufnahme, keine festgeschriebene Basis:
+- Repository: `Wiiii90/moeller-lars`. **Nur auf `docs` schreiben** (Dokumentation, Skills, rein lokale Dokumentationsgeneratoren). `dev` liefert den Anwendungscode; neue Änderungen nach Dateivergleich als **echten Zwei-Eltern-Merge** nach `docs` übernehmen. `testing` ist separat verwaltet. Kein neuer Branch/Worktree, Force-Push oder Merge nach `dev`/`main`.
+- **CI vollständig tabu:** weder starten noch ansehen, überwachen, abbrechen oder reparieren. Ebenso keine Produktiv-/Validation-/persistenten lokalen DB-Schreibzugriffe, kein Release/Deploy; keine Anwendungscode-Fixes auf `docs`.
+- **Letzter übernommener `dev`-Quellstand:** `a316e59b60ad1cf78d3a975b31581261c9e1050a`, übernommen durch den `docs`-Zwei-Eltern-Merge [`6eb55c28`](https://github.com/Wiiii90/moeller-lars/commit/6eb55c28be8ab0133c396e943ebd50c862a55790). Bei der letzten Prüfung waren auf `dev` **weitere, noch nicht aufgenommene Änderungen** vorhanden. Beide Branch-HEADs **immer frisch ermitteln**; historische Zahlen sind keine festgehaltenen Arbeitsbasen.
+- Aktueller Dokumentationsmodus: **Quelltexte über GitHub-Connector**, kein vollständiger lokaler Checkout dieser Arbeitsumgebung. Den erwarteten `docs`-HEAD vor jedem Commit erneut lesen und Ref nur mit `expected_sha` atomar vorwärtsbewegen; bei Parallel-Commit neu abgleichen.
+- **Belegklassen strikt trennen:** Quellinspektion, Parser-/Fixtureprüfung, ausgeführter Test, Browser-Akzeptanz, physisches PostgreSQL-Schema und Produktions-/Ingress-Prüfung. In diesem Workstream zuletzt **keine** CI-, PHP-App-/DB-, Browser-, Playwright-, Node- oder vollständigen nativen Generatorläufe. Gelesene Tests ≠ ausgeführte Tests.
 
-| Zuletzt geprüfte Referenz (15.10.2026) | SHA |
+## Dokumentations-Owner und belegter Bestand
+
+Die [Abschlussmatrix](docs/architecture/completion-criteria.md) ist **alleiniger Owner der fachlichen Abdeckung**; der [Architekturindex](docs/architecture/README.md) listet die Quellmodelle. Diese Arbeitsakte hält nur wichtige Grenzen und offene Entscheidungen fest.
+
+| Fachfläche | Kanonischer Detail-Owner und derzeitiger Evidenzstatus |
 | --- | --- |
-| `docs`-Ausgangspunkt des aktuellen Merges | `856e14e89e6cffdaaaa2946a2227f7c648b93d99` |
-| neu aufgenommener `dev`-Stand | `a316e59b60ad1cf78d3a975b31581261c9e1050a` |
-| Status | Sieben neue `dev`-Commits in drei kontrollierten Zwei-Eltern-Merges seit `643a89e0`: gemeinsame Parent-/Child-Row (4), Child-Bulk-Auswertung (1) und native Cross-Level-Sortierung (2). Der frühere JS-Drag-Owner und Child-Repeater sind entfernt; identitätsstabile Konkurrenz, gemischte Bulk-Atomicity, Child-Media-Referenzen und Browserabnahme bleiben offen. Keine CI-, DB-, Browser- oder Generatorläufe |
+| PHP-Quellen und Abhängigkeiten | [PHP-Audit](docs/architecture/php-source-audit.md), [Importgrenzen](docs/architecture/import-boundaries.md), [Graphen](docs/architecture/class-import-diagrams.md): **eingefrorener Originalkatalog** 248 PHP-Typdateien, 214 Klassen, 27 Traits, 7 Enums, 900 deklarierte interne Imports (717 modulübergreifend), 20 einzelne Importgraphen. Letzter separater Tree-Abgleich: **245** App-PHP-Dateien nach Trait-Cleanup; aktuelle Voll-Importsumme unbekannt. Syntaktische Imports sind keine Runtime-Aufrufe. |
+| UI und Beziehungen | [UI-Flächen](docs/architecture/ui-surfaces.md) (eingefrorener UI-Katalog 9 Pages / 26 Concerns / 2 Livewire / 26 Trait-Edges / 72 literal Actions; neuerer Tree zuletzt 23 Concerns), [Eloquent](docs/architecture/eloquent-relations.md): 26 Models und 48 **deklarierte** Relationen; **kein** physisches ERD. |
+| HTTP und Security | [HTTP-Einstieg](docs/architecture/runtime-entrypoints.md) und [Literalmanifest](docs/architecture/runtime-entrypoints.json): 21 explizite `routes/web.php`-GET/POST-Routen einschließlich `/.well-known/tdmrep.json`, auf Quellstand `cbc3f5ad` abgeglichen. Dynamische Filament-/Livewire-Routen und echte HTTP-/Ingress-Antworten nicht verifiziert. [Public-Sicherheitsfluss](docs/architecture/public-security-privacy-boundaries.md). |
+| Strukturierte Inhalte/Admin | [JSON-Content](docs/architecture/structured-components.md), [UI-Mutationen](docs/architecture/editorial-mutation-paths.md), [Dialoge](docs/ADMIN-DIALOG-CONTRACT.md), [Tabellen](docs/ADMIN-TABLE-CONTRACT.md), [Notifications](docs/ADMIN-NOTIFICATION-CONTRACT.md). Sechs persistierte Custom-Page-Komponententypen; der generierte [JSON-Typkatalog](docs/architecture/structured-components.json) bleibt **historisch**, nicht aktualisiert. |
+| Publication / Activity | [Publication](docs/architecture/publication.md), [Working-Operationen](docs/architecture/publication-working-operations.md), [Undo/Activity](docs/architecture/activity-undo-lifecycle.md), [Lifecycle](docs/architecture/lifecycles.md): Working/LIVE/History, Commit/Restore/Revert/Reset, Audit-/Receipt-/Rollback-Semantik source-traced. Eingefrorener ursprünglicher Fünfer-State-Katalog ist **nicht** die ganze heutige Domain. |
+| Journal / Gallery | [Journal-Lifecycle](docs/architecture/journal-content-lifecycle.md), [Exhibition Map](docs/architecture/exhibition-map.md), [Artwork-Publication](docs/architecture/artwork-gallery-publication.md), [Readiness-Matrix](docs/architecture/import-boundaries.md). Quelle, keine aktuelle Laufzeitabnahme. |
+| Media / Public | [Referenz und Cleanup](docs/architecture/media-reference-and-cleanup.md), [Public-SPA](docs/architecture/public-spa-lifecycle.md), [Public-Vertrag](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md), [Rechte/Privacy](docs/PUBLIC-RIGHTS-AND-PRIVACY.md). Public-LIVE, Working-Preview, Medien-/CSP-/TDM-/Matomo-Grenzen unterscheiden. |
+| Schema / Deploy | [Schemahistorie](docs/architecture/schema-evolution.md), [Runtime-Boundary](docs/architecture/application-runtime-boundaries.md), [Release](docs/RELEASE.md), [Plattform](docs/SERVER-OPERATIONS-BASELINE.md). Migrationen und Source-Guards sind **keine** getestete Datenbank oder bekannte Hosttopologie. |
 
-**Statischer Architektur-Linkaudit (read-only, Quellstand vor Journal-Neudokument):** 22 `docs/architecture/*.md` remote aus Tree gelesen, **485 lokale Inline-Zielvorkommen** in drei Batches auf Repository-Existenz geprüft, **0 bestätigte fehlende Dateiziele**. Ein Regex-False-Positive war Code `![alt](media:ID)`, nicht Dateilink. **Kein** vollständiger Markdown-Parser-/Fragment-/`scripts/check-documentation-links.php --check`-Lauf. Nach Finalisierung neue Diagramme/Links nochmals kontrollieren.
+**Generator-/Linkstatus:** Vorhandene `scripts/generate-architecture-*.php` und `scripts/check-documentation-links.php` besitzen **früher tatsächlich ausgeführte isolierte PHP-8.4-Fixtures**, aber **keinen vollständigen Checkout-`--write/--check`-Lauf**. Der Relationsgenerator benötigt zuerst `generated/php-symbols.json` (noch nicht eingecheckt); eingefrorene JSON/Mermaid-`source_ref` nicht auf neue Commits umetikettieren. `pg_catalog`-Export ausschließlich auf einer ausdrücklich wegwerfbaren vollständig migrierten DB; bisher kein Export. Frühere unabhängige Linkprüfung: 63 Markdown-Dateien, 615 relative Ziele, 0 damals fehlende; **kein** vollständiger aktueller `scripts/check-documentation-links.php --check`. Zuletzt wurden die geänderten Dokumente per GitHub-Tree auf vorhandene relative Ziele geprüft; kein kompletter Markdown-/Anchor-Scan nach dem jüngsten Merge.
 
-**Arbeitstechnik:** Genaues aktuelles `docs`-HEAD vor jedem Remote-Ref-Update
-prüfen, atomaren Tree/Commit mit expected SHA verwenden. Bei fremden
-Zwischencommits bewusst erneut vergleichen. Lokaler Windows-Pfad
-`P:\\moeller-lars` steht dieser Linux-Laufzeit **nicht** als Checkout zur Verfügung.
-GitHub-DNS ist hier gesperrt; GitHub-Connector erlaubt Datei-/Tree-Lesezugriff
-und kontrollierte `docs`-Commits. Keine angeblich ausgeführten vollen
-PHP-/DB-/Browser-Prüfungen ohne tatsächliche Ausführung.
+## Aktuelle Architektursemantik (nicht mehr die alten Zwischenlösungen)
 
-## Bereits tatsächlich erstellt
+- **Custom Page und Pages Hierarchie:** Der frühere eigene `admin-hierarchy-drag.js` samt JS-Gesture-Test ist **gelöscht**. Native Livewire-`wire:sort:group` mit Ziel-`group-id=root|parent` ist Drag-Owner; für Custom Page führt `sortComponent`/`sortImageChild` über das transaktionale, Row-locked `CustomPageEditorialService::placeComponent()`. `HierarchyParentField` bietet Parentwahl im Edit als Alternative. [UI-Quellfluss](docs/architecture/ui-surfaces.md#native-hierarchie-placement-pages-und-custom-pages); verbindlicher [Tabellenvertrag](docs/ADMIN-TABLE-CONTRACT.md#component-sequences). **Keine zweite Drag-Engine, keine JS-Timer.**
+- **Dekorative Image-Children:** Persistenz in genau einer geordneten `image.children[]`-Ebene, erlaubte Text-/List-ohne-Bild-/Contact-ohne-Form-/Legal-Child-Typen. **Kein Image-Repeater mehr.** Parent und Children teilen die vollständige [Component-Row](resources/views/filament/pages/partials/custom-page-component-row.blade.php) mit getrenntem Edit/Publish/Move/Delete/Convert. Die Child-Selection samt Select-All und Bulk-Parser ist seit `dev@8d38922e` quellenbasiert integriert; ursprüngliche Parent-only-Selection-Abweichung ist **nicht mehr aktuell**. [JSON](docs/architecture/structured-components.md) / [UI](docs/architecture/ui-surfaces.md#custom-page-image-children-komponentenaktionen-und-selektionsgrenze).
+- **Home / Custom Content:** Home-Inhaltstypen sind **Hero Artwork, Under Construction, Custom**; `skip_home` und `show_in_navigation` sind orthogonale Routing-/Menüflags. Contact/List haben in Custom Page eigene Parent-Zeilen; Home kann separate Contact-Child-Zeilen behalten. List nutzt `Entry / Context / Published / Details` samt Legacy-Projektion; Public List-Title/Context besitzt ein **lokales Zeilen-Grid**, während Image-Prose nativ um das Bild fließt. `image_scale_percent` 25–200 %, impliziter Default 100 %. [JSON](docs/architecture/structured-components.md) und [Public-Vertrag](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md).
+- **Editorial / Journal:** Content-Heading und Page-Name/Navigation-Label sind verschiedene Felder; eigene `PageHeadingFields`-Autosave-Semantik. Journal-Blog-`scheduled` kann nach `scheduled_at <= now()` **öffentlich sichtbar** sein, ohne persistenten Statuswechsel; Admin-`Scheduled` zählt weiterhin Status, nicht ausstehende Scheduler-Arbeit. Journal-Templatewechsel bewahrt beide Entry-Bestände. [UI](docs/architecture/ui-surfaces.md) / [Journal](docs/architecture/journal-content-lifecycle.md).
+- **Rechte/Sicherheit:** `legal_disclaimer` bleibt Persistenzschlüssel/Komponententyp; die Public-/General-Feldbezeichnung **External Links Notice** ist davon zu unterscheiden. Imprint, Privacy, Copyright/AI sind Code/Plan, **keine** juristische oder Laufzeitabnahme. HTTP(S)-externe Rich-Text-Images sind zentral validierbar, aber unbekannte Hosts von strikter Public-CSP nicht allgemein erlaubt. TDM-/robots-Signale sind **kein** Kopierschutz. Matomo erfordert Consent; aktueller Stand nicht als vollständig umgesetzt kennzeichnen. Temporäre [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md) wird von `dev`-Produktarbeit gepflegt, **nicht** durch diesen `docs`-Workstream.
 
-| Thema | Beleg und aktueller Umfang |
-| --- | --- |
-| PHP-Quellkatalog | [php-source-audit.md](docs/architecture/php-source-audit.md): **eingefroren** 248 Typdateien / 214 Klassen / 27 Traits / 7 Enums / 900 Imports (717 cross-module); **aktueller Tree 245 PHP-Dateien** nach drei entfernten Custom-Page-Traits, aktuelle Importgesamtsumme **unbekannt**, Generator/Graph nicht regeneriert |
-| Modul-/Klassendiagramme | [20 einzelne Importgraphen](docs/architecture/class-import-diagrams.md) sowie [aggregierter Modulgraph](docs/architecture/generated/app-module-imports.mmd); **nur deklarative Imports**, keine Laufzeitaufrufe |
-| Eloquent | [eloquent-relations.md](docs/architecture/eloquent-relations.md): alle **26** Models, **48** explizite Relation-Kanten, auch Self-Relations; **nicht** physisches SQL-ERD |
-| PHP-Generatoren | `scripts/generate-architecture-inventory.php`, `generate-architecture-relations.php`, `generate-architecture-eloquent.php`, `generate-architecture-import-diagrams.php` und weitere unter `scripts/`; **isolierte Fixture-Prüfungen**, kein vollständiger nativer Checkout-Lauf |
-| Admin UI | [ui-surfaces.md](docs/architecture/ui-surfaces.md): **eingefroren** 9 Pages / 26 Concerns / 2 Livewire / 26 Trait-Kanten / 72 literal Actions; aktueller Tree hat **23 Concerns**, Custom Page **sieben** direkte Traits; der UI-Generator ist **nicht** neu gelaufen |
-| Services und HTTP | [admin-publication-calls.md](docs/architecture/admin-publication-calls.md): **21** quellenverankerte direkte Call-Sites; [runtime-entrypoints.md](docs/architecture/runtime-entrypoints.md): **21** explizite Webrouten plus Middleware/Filament/JS; dynamische Route-Registrierung offen |
-| Lifecycle / Activity | [lifecycles.md](docs/architecture/lifecycles.md): **5** Domänenautomaten, **35** geprüfte Quellanker; [Working-Operationen](docs/architecture/publication-working-operations.md): Restore/Revert/Reset und **36** geprüfte Anker |
-| Public Inhaltsdaten | [structured-components.md](docs/architecture/structured-components.md): sechs Persistenztypen; Contact-Heading und drei JSON-Kinder, List-`context` mit Legacy-Projektion; **älterer JSON-Typkatalog eingefroren**, Home/UI separat |
-| Datenbankschema | [schema-evolution.md](docs/architecture/schema-evolution.md): konkrete Migrationen/Legacy-Snapshot-Kontrakte, `publication_version_rows` ist SQL-View mit Triggern; [read-only PostgreSQL-Exporter](scripts/export-architecture-postgres.php) vorhanden, **kein echter isolierter DB-Export** |
-| Browser-Sequenzen | [Publication](docs/architecture/publication.md) inkl. Admin-Commit, [Exhibition-Map](docs/architecture/exhibition-map.md) inkl. Toggle/Geocoder/Notifications; quellenbasiert, kein aktueller Browserlauf |
-| Application Build / Runtime | [application-runtime-boundaries.md](docs/architecture/application-runtime-boundaries.md): Docker→Production-Entrypoint→Apache/X-Sendfile→Health/Smoke vs persistent Local Preview; reale Plattform-/Ingress-/Restore-Verifikation offen |
+## Offene fachliche Risiken — nach Owner, jeweils **nur Source-Befund**
 
-Alle generierten Artefakte haben ihr eigenes Eingabeformat, Quellen-SHA und
-Abdeckungsgrenze. Syntaktisch belegte Kanten dürfen nicht als ausgeführte
-PHP-Aufrufe, tatsächlich registrierte Laravel-Routen oder Datenbankconstraints
-ausgegeben werden. Ein lokaler Fixture-Lauf ist **kein** Full-Checkout-Test.
+1. **Page-Identität:** `SitePages::sectionLabel()` kann beim Edit Navigation Label als `name` in die kanonische Titel-Persistenz übernehmen, auch bei scheinbarem No-op; getrennte `title/navigation_label`-Regression inklusive Journal/Custom/Home/Gallery. [UI-Surfaces](docs/architecture/ui-surfaces.md).
+2. **Stale Komponentenidentität:** Home-/Custom- und Image-Child-Editoren prüfen absolute Indizes + Typ, **keine stabile ID/erwartete Revision**; paralleler Reorder gleichartiger Komponenten kann eine andere Komponente treffen. Native Cross-Group-Drops (auch leere Image-Gruppe) und Edit+Parent-Commit isoliert prüfen. [UI-Surfaces](docs/architecture/ui-surfaces.md).
+3. **Gemischte Child-Bulk-Aktionen:** `moveSelected()` verschiebt Parents vor positionsgebundenen Child-Zielen; `deleteSelectedAction()` besitzt **keine gemeinsame äußere Transaktion** über mehrere Child-/Parent-Löschungen und sendet unbedingtes Erfolgssignal. No-op-/Audit-/Rollback-Kardinalität offen. [UI-Surfaces](docs/architecture/ui-surfaces.md#custom-page-image-children-komponentenaktionen-und-selektionsgrenze).
+4. **Media-Referenzsymmetrie:** `RichTextMediaReference` / `MediaReferenceQuery`, `PublicMedia`, Storage-Usage und `MediaAssetEditorialService::removeCustomPageReferences()` steigen nicht durchgängig in `image.children[]`; beim Child-only-Medium kann schon der vorgelagerte Guard negativ sein. Auch Home-List-`media_asset_id`/historisches `items[].body` und Public-List-Direktmedia sind teils unvollständig. **Delete ≠ physische Dateilöschung**; LIVE/History-/Working-Schutz, `deleteNow`-Fehlversuch ohne automatische Queue und `drain`-Retry getrennt prüfen. [Media-Audit](docs/architecture/media-reference-and-cleanup.md).
+5. **Gallery-Publish / History:** Gallery-Publish und Activity-Undo-Re-Publish haben divergierende ALT-/Video-/Thumbnail-Guards; Gallery-Batch-Publish ist atomar, Activity-Selection-Undo nicht. Revert liest LIVE/Parent **vor** dem Advisory Lock. Historisch 16 Publication-Tabellen inkl. `cv_entries`, aktuell 15; die alte Versioning-Migration verwendet das aktuelle `PublicationSnapshot::TABLES` dynamisch. [Readiness](docs/architecture/import-boundaries.md), [Operations](docs/architecture/publication-working-operations.md), [Schema](docs/architecture/schema-evolution.md).
+6. **Journal-/Public-Negativpfade:** identisches zukünftiges Blog-Schedule-Datum schreibt quellenbasiert erneut Audit und UI-Success; Public Gallery lädt zwei Bilder eager, während ein Vertrag nur eins nennt. SPA/Folio-/Livewire-Disposer, CSP-/SEO-/Consent- und PublicMedia-Requests müssen browser-/HTTP-seitig geprüft werden. [Journal](docs/architecture/journal-content-lifecycle.md), [Public-SPA](docs/architecture/public-spa-lifecycle.md), [Security](docs/architecture/public-security-privacy-boundaries.md).
+7. **Runtime-/Deploy-Verifikation:** `/app-release.json` wird laut Dockerfile außerhalb Apache-DocumentRoot geschrieben, während HTTP-Abnahme diesen Pfad fordert (Plattformabbildung möglich, ungeprüft). Production-Entrypoint prüft Matomo-Config unter `MATOMO_ENABLED` statt dem aktuellen Tracking-Schalter `MATOMO_TRACKING_ENABLED`. Build, Entrypoint, Health und Smoke beweisen keine Mail-/Media-/Consent-/Recovery-Funktion. [Runtime-Audit](docs/architecture/application-runtime-boundaries.md).
 
-## Dokumentationskorrekturen und fachliche Befunde
+**Nicht ungefragt auf `docs` reparieren.** Jeden Produktbefund als konkrete Source-Regel + reproduzierbaren isolierten Negativfall beim bestehenden Owner dokumentieren; erst `dev` implementiert. Keine Source-Feststellung als ausgeführten Fehlernachweis ausgeben.
 
-- `README.md`, `docs/ARCHITECTURE.md` und `docs/DATA-MODEL.md` behandeln
-  die Home-Templates nun korrekt als **Artwork, Under Construction, Custom**;
-  `Skip Home` ist ein eigenständiges Routingflag, nicht der vierte Inhaltstyp.
-- `CvEntry` ist Migration-/Legacy-PHP-Modell, keine aktive CV-Tabelle;
-  `cv_entries` wurde in Working und LIVE entfernt. CV heute als
-  Custom-Page-List-/Rich-Text-Komposition.
-- `docs/MIGRATION-PLAN.md`: v0.3-Akzeptanz ist historische Aussage, **v0.4**
-  wird noch bearbeitet; Promotion nach `main` nur nach ausdrücklicher Abnahme
-  eines **genauen SHAs**. v0.5-Cutover bleibt ein bedingtes Vorhaben.
-- Aktuell **15** Publication-Snapshot-Tabellen, historischer Initialzustand
-  mit **16** inkl. CV. Die historische Versioning-Migration referenziert
-  `PublicationSnapshot::TABLES` dynamisch – ein noch zu beurteilender
-  Vertragskonflikt, **nicht** ungeprüft zu reparieren.
-- [Importgrenzen](docs/architecture/import-boundaries.md): acht Module in
-  gemeinsamer Importkomponente. Direkte Imports ≠ Runtime-Zyklus.
-- **Produktabweichung (Quelle, nicht runtimegetestet):** Gallery-Publish über `ArtworkPublicationService` akzeptiert ALT-Override und unterstützte Videos ohne Bild-Thumbnail; Undo-Re-Publish über `AdminLifecycleRegistry` benutzt den strengeren `ArtworkEditorialService` mit Asset-ALT/Thumbnail-Pflicht. [Testmatrix](docs/architecture/import-boundaries.md#negativfallmatrix-für-eine-kanonische-publish-readiness) einschließlich möglicher umgekehrter MIME-Guard-Lücke und Validation-/Receipt-Fragen ist erfasst. Kein Application-Fix auf `docs`; später eine einzige kanonische Domain-Readiness abnehmen.
-- Restore/Revert/Reset arbeiten zunächst nur auf **Working**. Revert liest
-  LIVE-/Parent-Checkpoint vor dem Advisory Lock; mögliche Konkurrenzprüfung
-  offen. Historische Custom-Page-Blöcke werden beim Restore kanonisiert.
-- `blog_posts.gallery_presentation` wurde auf `dev` in Working und LIVE
-  ergänzt, Werte `sequence/grid/mosaic/slideshow`.
+## Endlicher Abschluss und nächste Schritte
 
-## Task-spezifische Anleitungen
-
-- [Documentation](.agents/skills/documentation/SKILL.md) – Normen und Methode.
-- [Admin UI](.agents/skills/admin-ui/SKILL.md) – verweist auf `ui-skills.md`,
-  Tabellen-, Controls- und Dialog-Owners.
-- [Public UI](.agents/skills/public-ui/SKILL.md) – Routing, Navigation, Home,
-  Journal, Medien und public acceptance.
-- Die großen Bestandsdokumente `AGENTS.md` und `ui-skills.md` sind noch
-  **nicht radikal gekürzt**. Nur abgesichert konsolidieren, keine akzeptierten
-  Browserregeln verlieren und keine neuen UI-Regeln aus unakzeptierten
-  Designentwürfen erfinden.
-
-**Markdown-Verweisprüfung (14.10.2026):** Aktueller **unabhängiger GitHub-Tree-Quellscan** über 63 Markdown-Dateien und 643 einfache Inline-Linkvorkommen (615 relative lokale Ziele) auf `docs@1a6955f1`: **kein fehlender relativer Pfad**. 33 Ziel-Fragment-Verwendungen (21 verschiedene Paare) gegen vorhandene Überschriften geprüft: **alle vorhanden**. URI-Beispiel `media:123` ist ausdrücklich kein relativer Dateipfad. Neuer reiner PHP-Linkprüfer `scripts/check-documentation-links.php` mit `--check|--summary|--self-test` erstellt. Sein **identischer Git-Blob** wurde unter lokalem PHP 8.4 mit `php -l`, `--self-test` und einem synthetischen positiven sowie absichtlich negativen Checkout-Fixture tatsächlich ausgeführt; der neue Checker wurde **noch nicht** auf einem vollständigen realen Checkout ausgeführt. Komplexe/mehrzeilige Markdown-Destinations und HTML-/MDX-Links außerhalb des Scanner-Modells; dazu siehe [docs/README.md](docs/README.md#local-documentation-link-verification).
-
-## Abschlussstrategie — verbindliche Reihenfolge (14.10.2026)
-
-**Kostendisziplin/User-Entscheidung:** Zunächst die **gesamte fachliche Architekturarbeit, Quellprüfung und Dokumentationskonsolidierung ohne Codex** mit den bereits verfügbaren Mitteln fertigstellen. Keine kleinteiligen lokalen Codex-Aufträge, keine Generator-Experimentierwellen, keinerlei CI-Ersatz. Der Nutzer bietet lokalen Codex **erst nach Abschluss dieser inhaltlichen Arbeit** für eine bewusst geplante **gebündelte** Generierung/Prüfung und abschließende Artefaktordnung an. Das ist ein späterer optionaler Schritt, **nicht** die aktuelle Arbeitsweise und keine Begründung, inhaltliche Lücken zu vertagen. Neue `dev`-Änderungen regelmäßig konfliktgeprüft mergen, aber nicht als Grund verwenden, nie ein abgeschlossenes Dokumentationspaket zu erreichen.
-
-**Definition eines endlichen Abschlusses:** Nach benannten Architekturflächen muss jede Quelle einen Verantwortungs-/Datenfluss, relevante Guards, Fehl-/No-op-/Rollback-Pfade und Quellanker haben. Doppelte normative Verträge sind zu konsolidieren; Mermaid gehört nur dauerhaft hinein, wenn es die fachliche Struktur erklärt, nicht allein die Kantenmenge aufbläht. Statische Evidenz, tatsächliche Laufzeitbelege und unprüfbare Grenzen bleiben getrennt. Erst dann ein **einmaliges vorbereitetes** lokales Generator-/Verifikationspaket und geprüfte Entscheidung je Artefakt: dauerhafter Source-Output, nur lokal generierter Vollkatalog oder entbehrliches Zwischenprodukt. Abschluss bedeutet konkrete Kriterien und Grenzen, nicht endloses Nachziehen jeder neuen `dev`-Änderung.
-
-### Jetzt: fachliche Arbeitsreihenfolge ohne Codex
-
-1. **Lifecycle-/Transaktionsketten:** Admin-Actions bis persistiertem Domainzustand, Audit, Notification, Reopen; Page-/Component-Identity, Home-/Custom-Edit und parallel reordern. Jede kritische Kante explizit quellenverankern, negative Flows markieren.
-2. **Publication/History/Media:** Working/LIVE, Publish-Readiness, Undo/Restore/Revert/Reset, Advisory-Lock-Grenzen, Storage-Ref- und physische Cleanup-Grenzen; bestehende Belege vervollständigen, nicht kopieren.
-3. **Public/Navigation/CSP:** Routen, Navigationsfenster und Home-Sonderfall, Livewire-Swap/Disposer, deterministische Folio-Pose, Gallery-Puffer, öffentliche Media/SEO/Analytics und strikte CSP. Aktuelle Quelle über alte Animationsnummern stellen.
-4. **Persistenz-/Schema-/Legacy-Grenzen:** Models und JSON-Content, deklarative vs physische Beziehungen, migrationshistorische Beweiskraft, Cutover; PostgreSQL-Katalog erst auf ausdrücklich isolierter Wegwerf-DB.
-5. **Endredaktion:** einen normativen Owner je Verhalten behalten, tote/duplizierte Diagramme und Verträge gezielt entfernen/vereinfachen, Inhalts-/Linkkonsistenz und Qualitäts-/Coverage-Matrix. Status nachvollziehbar abschließen, nicht bloß inventarisieren.
-
-### Später, erst bei fachlicher Vollständigkeit
-
-Lokale Codex-/native PHP-Generatorläufe, isolierter PostgreSQL-Export und reproduzierbare `--write/--check`-Abnahme sind **zurückgestellt**. Bis dahin vorhandene eingefrorene JSON-/Mermaid-Artefakte als historischen Stand kennzeichnen. Es werden **keine** lokalen Commands an den Nutzer ausgelagert, solange die oben genannte fachliche Schreib-/Analysearbeit offen ist.
-
-## Explizite fachliche Abschlussmatrix (14.10.2026)
-
-[**`docs/architecture/completion-criteria.md`**](docs/architecture/completion-criteria.md) ist die verbindliche fachliche Abdeckungs- und Qualitätsmatrix dieses Workstreams: zehn Architekturflächen, jeweils bereits source-geprüfte Flüsse, noch fehlende inhaltliche Arbeit und **separat** später ausführbare technische Verifikation. Der geprüfte Bestand `docs@d88bd8f4` umfasst **19 Architektur-Markdown-Dateien**, **26 eingebettete Mermaid-Blöcke**, **32 eigenständige `.mmd`-Diagramme**, davon allein **20 Klassenimport-Graphen**. Die Mengen belegen keine fachliche End-to-end-Abdeckung. Jedes dauerhaft aufbewahrte Diagramm braucht eine erkennbar beantwortete Architekturfrage; rohe generierte Vollinventare können nach späterer Prüfung lokal bleiben.
-
-**Verbindliche Kostenregel:** Solange auch nur eine fachliche Zeile der Abschlussmatrix unvollständig ist: **keinerlei Codex-Aufträge, keine CI-Nutzung, keine Generatorwellen**, keine lokalen Experimente zulasten des Nutzers. Erst **nach** vollständiger Dokumentationsanalyse, source-geprüften Abläufen und normativer Konsolidierung wird **ein** vorher vorbereiteter lokaler Verifikations-/Generator- und Artefaktordnungsauftrag geplant. Bestehende Source-Defekte werden als reproduzierbare offene Anwendungsthemen festgehalten; ihr Fix auf `dev` ist keine Voraussetzung, die Dokumentation selbst endlich abzuschließen.
-
-## Aktueller Prüfstand und Wiedereinstieg (14.10.2026)
-
-### Quell- und Generatorstand
-
-- **Zuletzt vollständig aufgenommener *historischer* Originalbestand:** 248 App-PHP-Dateien,
-  214 Klassen, 27 Traits, 7 Enums, 900 deklarierte interne Imports,
-  davon 717 modulübergreifend, und 20 einzelne Importdiagramme.
-  Der Journal-/Settings-Refactor ergab in einer **statischen Delta-Prüfung**
-  **901 interne / 718 modulübergreifende Imports** *nur zum damaligen Zwischenstand*. Der aktuelle Tree enthält nach drei gelöschten Traits **245 PHP-Dateien**; die Importgesamtsumme wurde noch nicht vollständig neu gezählt. Die eingefrorenen
-  JSON-/Mermaid-Graphen wurden **noch nicht vollständig regeneriert**;
-  ihre ursprüngliche `source_ref` nicht fälschlich auf den neuen Commit
-  heben. [Import-Audit](docs/architecture/php-source-audit.md).
-- **Models/Relationen:** 26 Eloquent-Modelldateien und 48 explizite
-  Relationsmethoden abgeglichen; kein aus PostgreSQL abgeleitetes ERD.
-  **HTTP:** 21 explizite Laravel-Routen; Filament-/Livewire-Registrierung
-  bleibt dynamisch. **Eingefrorene Admin-Quelle:** 9 Pages, 26 Concerns, 2 Livewire-
-  Komponenten; 26 Trait-Kanten/72 literal `Action::make`-
-  Vorkommen **nur im eingefrorenen `337da15b`-Quellkatalog**.
-  Die jüngsten Journal-/Gallery-Header-Rollen sind nicht als
-  vollständig neu gezählter Live-Katalog zu deklarieren.
-- **Generatoren und Laufgrenzen:** Die vorhandenen
-  `scripts/generate-architecture-*.php` und
-  `scripts/check-documentation-links.php` besitzen tatsächlich lokal
-  ausgeführte, isolierte PHP-8.4-Parser-/Write-/Check-Fixtures.
-  Kein kompletter nativer PHP-Generatorlauf über alle echten Dateien.
-  `generate-architecture-relations.php` benötigt zuerst
-  `generated/php-symbols.json` aus dem Inventory-Generator
-  (noch nicht eingecheckt). Ein echtes `artisan route:list`, Filament,
-  PostgreSQL-Schemaexport, Laravel-/Livewire-Featurelauf oder Playwright
-  wurde hier **nicht ausgeführt**. Vollständiges `pg_catalog` nur mit
-  ausdrücklich disposable, vollständig migrierter Testdatenbank.
-- **Markdown-Verweise:** Authentifizierter unabhängiger GitHub-Tree-
-  Quellscan auf `docs@1a6955f1`: **63** Markdown-Dateien,
-  **643** einfache Inline-Linkvorkommen, davon **615** relative lokale
-  Ziele; **33** Abschnittsanker-Verwendungen, **21** eindeutige
-  Ziel/Fragment-Paare; **0** fehlende relative Ziele oder geprüfte
-  Anker. Kein vollständiger CommonMark-Parser-/nativer PHP-Checkout-
-  Lauf. [Dokumentationsindex](docs/README.md#local-documentation-link-verification).
-
-### Kanonische Dokumentations-Owner und bereits bereinigte Normen
-
-- **Dev-Merges bis `a316e59b` (zuvor 17 + 14, jetzt weitere 4 + 1 + 2 Commits):** Der temporäre [Public Rights Workstream](PUBLIC_RIGHTS_WORKSTREAM.md) und der [Public-Rights-Vertrag](docs/PUBLIC-RIGHTS-AND-PRIVACY.md) melden neue General- und Public-`legal_disclaimer`-Implementierung als **Code, nicht reale Abnahme**. UI-Sprache **Englisch**; bestehender sichtbarer Name bleibt **Legal Disclaimer**. Drei neue General-Texte Imprint, Privacy Policy, Copyright & AI Use plus erhaltene External Links und inherited media copyright. [Public-Sicherheitsarchitektur](docs/architecture/public-security-privacy-boundaries.md#neue-general--public-legal-quelle-stand-devc33d7e9c) korrigiert den bisherigen „noch nicht implementiert“-Teil; echte Migration, Tests, Browser, Betreiberdaten, Consent/IPTC/Ratelimit sind weiterhin offen. **Hier auf `docs` keine Umsetzung auf `dev` als fertig werten.**
-- **Neue Image-Child-Bearbeitung (Stand `dev@4efcfba3`):** Top-Level und verschachtelte Children verwenden nun dieselbe [Blade-Komponentenzeile](resources/views/filament/pages/partials/custom-page-component-row.blade.php) samt eigenständigen Edit/Publish/Move/Delete/Convert-Actions; Image-Edit-Repeater `DecorativeImageChildren` entfernt. [Structured Components](docs/architecture/structured-components.md) erklärt den JSON-Owner, [UI-Surfaces](docs/architecture/ui-surfaces.md#custom-page-image-children-komponentenaktionen-und-selektionsgrenze) den Action-Pfad und **ursprüngliche Child-Selection-Divergenz** wird in `dev@8d38922e` durch Child-Target-Parsing, Select-All, Visible-Reconciliation und gemischte Bulk-Actions quellenbasiert behoben. Offen bleiben eine fehlende äußere Transaktion bei Bulk Delete, nach Parent-Move veraltete Child-Indizes und generell Index+Typ statt stabiler ID. Runtime/Browser offen.
-- **Native Hierarchie-Sortierung ab `dev@a316e59b`:** Der alte `resources/js/admin-hierarchy-drag.js`-Controller und sein JS-Test sind gelöscht. Pages und Custom Pages verwenden nun **eine gemeinsame native `wire:sort:group` je Editorfläche**, mit `wire:sort:group-id=root|parentId` für die Ziel-Ebene. Bei Custom Page führt `sortComponent`/`sortImageChild` über `placeSortedComponent()` auf den atomaren, row-locked [`CustomPageEditorialService::placeComponent()`](app/Domain/Content/CustomPageEditorialService.php); Quelle ist `index[:type]` oder `imageIndex.childIndex:type`. [ADMIN-TABLE-CONTRACT](docs/ADMIN-TABLE-CONTRACT.md#component-sequences) ist normativer UI-Owner, [UI-Surfaces](docs/architecture/ui-surfaces.md#native-hierarchie-placement-pages-und-custom-pages) der Quelltrace. `HierarchyParentField` bleibt als Edit-Alternative. **Keine** zweite Pointer-/HTML5-Drag-Engine reintroduzieren. Stale-Target-/Concurrent-Reorder-/Empty-Parent-Drop-Tests weiter offen.
-
-- **Pages Heading vs Site Identity (aktueller `dev@470f2daa`):** Die neue `PageHeadingFields`-Komponente ist über Pages Add, Edit und Home integriert. Autosave für Content-Heading ist quellengeprüft (Domain-Owner mit Row-Lock und No-op); neue Featuretests beschreiben die Fälle, wurden hier nicht ausgeführt. **Alte Titel-/Navigationslabel-Fehlzuordnung bleibt bestehen**: `editPageAction` nimmt `sectionLabel()` als `name`, `SiteSectionIdentityService::update` synchronisiert bei fehlendem vierten Labelparameter beide Werte. Neu betroffen als statischer Fall auch **Home** bei eigenem Label; [UI-Surfaces](docs/architecture/ui-surfaces.md#pages--edit-titel-navigation-label-und-no-op-statischer-negativpfad) enthält Regressionen.
-- **Zwei bewusst getrennte lebende Zustandsdateien:** Root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md) steuert die **parallele Produktimplementierung auf `dev`** und wird ausschließlich dort im gleichen Commit wie Codeänderungen fortgeschrieben; unser [`DOCS_SKILL.md`](DOCS_SKILL.md) steuert die **Architekturdokumentation auf `docs`**. Bei Dev-Änderungen die Rechteakte als Source importieren, aber `docs`-Audits nicht als erfüllte Produkt-Slices kennzeichnen. Temporäre Produktdatei erst beim tatsächlichen G0–G10-Endabschluss entfernen; Codex erst nach fachlicher Vollständigkeit dieses Docs-Workstreams.
-- **Structured-Content-Source erneuert:** [structured-components.md](docs/architecture/structured-components.md) beschreibt jetzt `image.children[]` als **eine** geordnete Prose-Ebene bei dekorativen Images, die ein Repeater im Parent-Image-Dialog editiert. Unterstützte Child-Typen/Verbote, Model-Normalisierung, Repeater-UUID→JSON-Order, native Float-Include, separate Top-Level-Contact-Form und transaktionales **Adopt existing prose** (Source entfernen, Child anhängen, Index neu mounten) sind verankert. **Index+Typ-Stale-Target** bleibt offen. Public/Storage-Media-Reader sind noch nicht rekursiv; JSON-Typkatalog weiterhin historisch eingefroren, nicht regeneriert.
-- **Public Security/Rights/Privacy neu als End-to-end-Sourcepfad:** [public-security-privacy-boundaries.md](docs/architecture/public-security-privacy-boundaries.md) trennt LIVE-GET-/HEAD, Admin-Preview, Public/Private-Medien, Contact-POST, Nonce/CSP, TDM/robots, Matomo und Datenschutzerfassung. Zwei neue Quellenlücken: **HTTP(S)-Rich-Text-Bilder werden validiert, aber Public-CSP blockiert unbekannte Bild-Hosts**; **dekorative Image-Children mit kanonischem eingebettetem Media werden vom nichtrekursiven Working-/PublicMedia-Reader übersehen**, außerdem top-level List-Bilder im PublicMedia-Guard. Source-belegt, keine ausgeführten Negativtests. [Public-Rechte-/Privacy-Plan](docs/PUBLIC-RIGHTS-AND-PRIVACY.md) ist **teilimplementierter Produktplan**, kein vollzogener Schutz/Consent; keine falschen Download- oder Matomo-Compliance-Versprechen.
-- **Journal-Entry-Lifecycle sourcegetraced:** [journal-content-lifecycle.md](docs/architecture/journal-content-lifecycle.md) trennt gespeicherte Blog-Zustände von Scheduled-`now()`-Read (ohne Timer), Exhibition-Temporal von Publication, DB-Lock/Audit/No-op, Medien-Kopplung und Public-Template/Preview/LIVE. **Identisches zukünftiges Schedule-Datum löst quellenbasiert erneut AuditEvent und UI-Success aus, ohne No-op-Vergleich**; [Journal Source-Trace](docs/architecture/journal-content-lifecycle.md#journal-ui-schedule-notification-und-metrics-sind-andere-projektionen) unterscheidet außerdem `Scheduled`-Metrik (`state`-Zählung) und bereits durch Zeitpunkt öffentlich sichtbare Scheduled Posts. Doppel-Audit-/Receipt-/Temporal-LIVE-Negativtests offen; Media-Delete kann einen Blog nach leergeräumtem Body indirekt unpublishen/draften. Journal-Templatewechsel bleibt in `lifecycles.md`, Geocoding-Autosave in `exhibition-map.md` statt redundante Normen.
-- **Gallery/Artwork-Publication zusammenhängend erklärt:** [artwork-gallery-publication.md](docs/architecture/artwork-gallery-publication.md) verankert Gallery `ArtworkPublicationService`-Guard, UI Readiness, Einzel-/Batch-Transaktionsgrenzen (**Gallery Batch atomar, im Unterschied zu Activity Selection Undo**), Public/Preview-`PublicArtworkQuery`-Eligibility/Viewer-Positionen und die andere `ArtworkEditorialService::publish`-Undo-Inverse. Video/ALT-Override/Thumbnail-Divergenz und Publish-vs-Media-Delete-Guard-vor-Transaktion als konkrete isolierte Negativfälle, **nicht** als getestete Fehler. Normative Guard-Testmatrix bleibt in `import-boundaries.md` statt kopiert.
-- **Activity/Undo als eigenen Source-Flow dokumentiert:** [activity-undo-lifecycle.md](docs/architecture/activity-undo-lifecycle.md) unterscheidet Audit-/Receipt-/Ordering-Projektionen, individuelle transaktionale Snapshot-/Media-/Lifecycle-/Ordering-Inversen, Actor-/TTL-/Commit-Guards, fehlende neue Undo-Receipts bei Inversen und das **nicht atomare** Selection-Undo über einzelne Receipts. Kein Livewire/DB-Test ausgeführt.
-- **Abdeckungsmaßstab statt Quantität:** [Abschlussmatrix](docs/architecture/completion-criteria.md) koordiniert jetzt alle Quellketten und noch offenen fachlichen Zeilen; 20 eingefrorene Importdiagramme ausdrücklich nicht als 20 fachlich abgeschlossene Workflow-Diagramme zählen.
-
-- **Journal-Template-Lifecycle:** `lifecycles.md` beschreibt jetzt `JournalTemplate::Blog/Exhibitions` als **reine Präsentationswahl**, nicht als Datenmigration: `updateJournalTemplate` sperrt SiteSection, schützt No-op, auditiert echte Änderungen, behält beide Eintragsbestände; `JournalSettingsService` kapselt Identität/Redirect + Template in äußerer Transaktion. Öffentliche Blog-Detailroute existiert nur unter aktivem Blog-Template; inaktive Daten bleiben erhalten. Journal-Settings-Testdefinitionen gelesen; keine Ausführung. Offene parallele Livewire-Stale-Targets als Negativfall.
-- **MediaVariant-Recovery fachlich abgeschlossen als Sourcefluss:** [media-reference-and-cleanup.md](docs/architecture/media-reference-and-cleanup.md#rekonstruierbare-mediavariants-ein-file-lifecycle-ohne-neue-identität) zeigt Ingest-Datei-vor-DB-Grenze, 60-s-Cache-Locks, vor Reclaim notwendigen exakten WebP-/Hash-/Byte-/Dimensions-Nachweis, on-demand `EnsureMediaVariantFile` nur bei öffentlichem/Preview/Admin-Eligibility-Guard, vorübergehende 404 bei belegtem Lock und den vorhandenen **lesbaren, aber hashtechnisch ungeprüften** Datei-Negativpfad. DB-Row und immutable URL bleiben beim Reclaim erhalten. Die geplante IPTC/XMP-Public-Artefaktversionierung gehört zum externen Rechte-Workstream, nicht als eigenmächtige Mutation der Originale zu `docs`.
-- **Image-Child-Medienreferenzen erneut verfolgt:** [Media-Audit](docs/architecture/media-reference-and-cleanup.md#zweite-quellabweichung-dekorative-image-children-und-öffentliche-list-medien) weist weiterhin nichtrekursive Working-/PublicMedia-Reader sowie den vorgelagerten `removeCustomPageReferences()`-Guard und ausschließlich äußere Removal-Logik nach. Der separate neue Child-Editor repariert diese zentrale Referenzlücke nicht; Datenbank-/HTTP-/Delete-Tests bleiben offen.
-- **Medienlöschung fachlich vertieft:** [`media-reference-and-cleanup.md`](docs/architecture/media-reference-and-cleanup.md) beschreibt nun die echte `MediaAssetEditorialService::delete`-Kette als **DB-Commit → getrennte physische Bereinigung** samt Guard-Tabelle für LIVE, Versionrows, Working-State/-Refs; unterscheidet direkte `deleteNow`-Fehler (noch **keine automatische Queue-Nachbuchung**) vom wiederholbaren `drain`. Auch `delete() === true` bei bereits gelöschtem Working-Asset/fehlendem erneutem Audit sowie Home-List-Coverage als separater Sicherheitspfad ausdrücklich abgegrenzt. Statische Quelle, kein DB-/Storage-Test.
-- **Fachliche Zustandsachsen:** [`lifecycles.md`](docs/architecture/lifecycles.md) ergänzt gegenüber dem **eingefrorenen Fünferkatalog** zwei aktuelle Modelle: Home-Inhalt/Skip-/Menüflags als **orthogonale** Persistenz-/Routingzustände, und Publication-Working/LIVE/History mit konkreten Restore-/Revert-/Reset-/Commit-Guards. Explizit getrennt: Context-Staging mit 0-Diff-Audit, Commit mit 0-Diff ohne Checkpoint, Media-Drain nach Transaktionsende und vor-lock Revert-HEAD-Race. Manuell quellengeprüft, **nicht** aus Generator, DB- oder Runtime-Test bewiesen.
-- **Quellgetragene Mutationsketten:** [`editorial-mutation-paths.md`](docs/architecture/editorial-mutation-paths.md) trennt für **Home-Show-in-Navigation** und **Custom-Page-Image-Wechsel** Filament-Event, Domain-Lock, Guard, Persistenz, Audit, No-op, Projektion und Notification. Enthält Home-Menü/Skip/Publication-Wahrheitstabelle, Browser-/Livewire-Negativfälle und den **nicht gelösten Index+Typ-Reorder-Race**. Quellstand `f69e0e7e`, kein Test ausgeführt. Weitere Domänen- und Recovery-Owner auf dieser Granularität nachziehen; **keinen Codex/Generator vor inhaltlichem Abschluss**.
-- **Neue Home/Public- und Admin-Semantik (eingeführter `dev@f69e0e7e`-Stand):** Home besitzt `show_in_navigation` als eigenen Bool-Guard neben Publication und `skip_home`, Default in der Public-UI aus; das ist **kein** globaler Sichtbarkeits-Schalter für andere Seitentypen. Custom-Page-Image Select besitzt nun `live()->afterStateUpdated()` in der Edit-Action und notifiziert nur auf geändertes Domain-Ergebnis; die Rolle ist vom bisherigen Native-Change für andere Felder getrennt. Quellenbewertung und Negativefälle unter `docs/architecture/` vervollständigen. Testquellen gelesen, nicht ausgeführt.
-- **Image-Größe (`dev@b6fa7a46`):** Custom Page bietet `image_scale_percent` 25–200 %, Default 100 % als implizites **nicht gespeichertes** Feld. Das Public-Layout multipliziert seine bestehenden Maximalbreiten, ohne Bildzoom oder neue Media-Auslieferung. Home kann den JSON-Wert lesen, sein Editor hat nicht automatisch dieselbe Kontrolle. Siehe [Content-Audit](docs/architecture/structured-components.md#image-size-optionales-persistenzfeld); Feature-Testdatei nur gelesen.
-- **Aktueller Tree-Delta (14.10.2026):** Insgesamt 245 `app/**/*.php` statt eingefrorenen 248; `app/Filament/Pages/Concerns/` enthält 23 Dateien statt 26. `CustomPageWorkspace` bindet sieben statt zehn eigene Traits ein. [UI-Audit](docs/architecture/ui-surfaces.md) und [PHP-Audit](docs/architecture/php-source-audit.md) begrenzen die Ableitung auf Source/Tree und erhalten den alten Generatorstand ausdrücklich.
-- **Komponentenstand bis `dev@3c1bc75f`:** Custom Page hat die alten Child-Ordering-/Projection-/Action-Traits entfernt. Contact-Heading sowie Toggles und bedingte Felder leben in einem Parent-Edit-Owner; verdeckte Social-/Formwerte bleiben beim Speichern erhalten. Der geteilte Home-/Custom-List-Editor nutzt `Entry / Context / Published / Details`; alte Date-/Meta-/Location-/URL-Felder werden über die Model-Compatibility-Projektion abgebildet. [Content-Audit](docs/architecture/structured-components.md) und [Dialogvertrag](docs/ADMIN-DIALOG-CONTRACT.md) dokumentieren diese Grenze; `structured-components.json` bleibt ausdrücklich ein älterer eingefrorener Generatorstand. Keine Tests dieses Workstreams ausgeführt.
-
-- **General Legal/Public-Rechte-Abweichungen nachgezogen (14.10.2026):** Der Datenbankschlüssel `legal_disclaimer` und die Komponente **Legal Disclaimer** bleiben bestehen; das Formularfeld und der Public-Unterabschnitt heißen jetzt **External Links Notice**. Default Copyright Notice belegt im Admin die volle Zeile, vier Textareas bilden responsiv 2×2 mit unsichtbarer Scrollbar. Die Artwork-Detailseite zeigt auf ausdrücklichen Wunsch **keine** automatische Copyright-Notice, erhält aber Credits. [Rechte-Plan](docs/PUBLIC-RIGHTS-AND-PRIVACY.md) und [Sicherheitsfluss](docs/architecture/public-security-privacy-boundaries.md) trennen implementierten Code von Migration/Abnahme und den weiterhin offenen Metadaten-/Consent-Themen.
-- **Deployment-/Runtime-Source verankert (15.10.2026):** [application-runtime-boundaries.md](docs/architecture/application-runtime-boundaries.md) unterscheidet unveränderlichen Build/Production-Start ohne automatische Migration, persistente Local-Preview mit Startmigration, Apache/X-Sendfile, Health/Smoke und Plattformzuständigkeit. Zwei **ungetestete** Produkt-/Deployment-Negativfälle: `/app-release.json` wird im Image außerhalb von Apache DocumentRoot geschrieben, aber als HTTP-Abnahmepfad gefordert (mögliche externe Plattformabbildung unbekannt); Entrypoint prüft bei `MATOMO_ENABLED` statt dem aktuellen `MATOMO_TRACKING_ENABLED`. Keine Plattformquelle/Runtime/Ingress/Migration geprüft. Der normative [RELEASE-Vertrag](docs/RELEASE.md#validation-checks) verweist auf die belegte Grenze.
-- **Aktuelles kuratiertes HTTP-Inventar (15.10.2026):** 21 statt 20 explizite Web-GET/POST-Routen; `/.well-known/tdmrep.json` war im JSON-Katalog zuvor nicht aufgeführt. [`runtime-entrypoints.json`](docs/architecture/runtime-entrypoints.json) umfasst jetzt alle 21 Deklarationen, Quellzeilen und den Source-Ref `cbc3f5ad`. [HTTP-Trace](docs/architecture/runtime-entrypoints.md#public-seo-discovery-und-dynamische-grenzen-stand-devcbc3f5ad) erklärt Discovery-/CSP-/LIVE-/Preview- und Negativrouten-Grenzen. **Kein** nativer Routenchecker, `route:list` oder HTTP-Test ausgeführt.
-- **Public List/CV CSS nachgezogen:** [Public-Vertrag](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md#custom-pages-cv-and-contact) unterscheidet den nativen Image-Prose-Float vom **lokalen 2-Spalten-Grid innerhalb jeder List-Titel/Context-Zeile**, auch wenn die Liste als Child neben dem Bild fließt. Das Grid lässt Kontext nicht unter die gesamte Beschreibung fallen. Kein aktueller Browsernachweis.
-- **Root-Rich-Text-Regel abgeglichen:** `AGENTS.md` erlaubt jetzt ausdrücklich die zentral validierte externe HTTP(S)-Image-Option neben kanonischem Storage-`media:<id>`. `AdminRichText`, `SafeRichTextRenderer` und `SafeLinkPolicy` zeigen diesen tatsächlich existierenden Pfad; unvalidierte/externe unsichere Schemes und zweite Editor-Pipelines bleiben ausgeschlossen.
-
-- [Tabellen](docs/ADMIN-TABLE-CONTRACT.md) besitzen die gemeinsam
-  ausgerichteten Parent-Spalten, Component-Selbstbearbeitung, Actions,
-  Selection und Journal-Splitfold. **Custom Page** ist jetzt flach:
-  List und Contact haben je eine Parent-Zeile, nur Parent-Selection.
-  **Home** nutzt denselben Tabellenrahmen, behält aber eigene
-  Contact-Kindzeilen und Kind-Selection. Die Dashboard-Feed-Ausnahme
-  bleibt allein beim Tabellen-Selection-Owner. `ui-skills.md`
-  verweist auf diese Norm, statt eine zweite einzuführen.
-- [Dialoge](docs/ADMIN-DIALOG-CONTRACT.md) besitzen Edit-/Create-/Command-
-  Persistenz, Page-Heading-Autosave, Pages Settings und Journal-/
-  Gallery-/Custom-Settings-Konsistenz. Gallery Artwork Create/Edit teilen
-  nun den fachlichen `ArtworkEditDialog::schema()`-Owner; Gallery-Edit-
-  Header-Moves/Publication/Detach und Materials-Repeater-Commit sind
-  nach Quellvergleich im Dialogvertrag nachgeführt. Gleiches gilt
-  für Blog-/Exhibition-Edit-Header-Rollen und responsive `md`-Formen
-  aus dem anschließenden `dev@f9afd7aa`-Stand. Neue `dev@1a6cbe45`-Featuretests prüfen Gallery-Materials-
-  Commit erst nach explicit Action sowie Gallery-/Journal-Create-/Edit-
-  Mounts. Tests wurden auf `docs` **nicht ausgeführt**; sie ersetzen
-  weder tatsächliche Header-Action-Mutationen noch Browser-Akzeptanz.
-  Zusätzlich wurde der neue `dev@7a5bf344`-
-  [Architekturtest](tests/Architecture/Admin/AdminEditorialDialogArchitectureTest.php)
-  zu einem zentralen Gallery-/Journal-Dialogowner übernommen;
-  er ist ein **gelesener deklarativer Architekturtest**, kein
-  in diesem Workstream ausgeführter PHP-/Livewire-Test. Die `dev`-Änderungen wurden
-  inhaltlich mit den zusätzlichen Pages-Regeln zusammengeführt.
-- [Benachrichtigungen](docs/ADMIN-NOTIFICATION-CONTRACT.md) definieren
-  die Meldungskardinalität anhand tatsächlich konsumierter Activity-
-  Präsentationen, **nicht** pauschal „eine Home-Notification pro Aktion“;
-  Mailbox-Idempotenz (`firstOrCreate`) ist nicht dasselbe wie Header-
-  UUID-/Transport-Idempotenz.
-- [Public](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md): Home besitzt
-  **Hero Artwork, Under Construction, Custom**; Skip Home bleibt ein
-  separates Routingflag. Menü-/Content-Folio nutzt nur vorhandene
-  Pseudoelemente/Schatten und native Livewire-Dokumentnavigation,
-  keine zusätzlichen Overlay-Knoten oder JS-Timer. In
-  [General](app/Filament/Pages/General.php) erlaubt Page Width jetzt
-  Einzelpixel (`step(1)`) innerhalb unveränderter Min-/Max-Grenzen.
-- CV ist heute Teil strukturierter Custom-Page-Komponenten; die
-  historische `cv_entries`-Tabelle ist nicht aktiv. Historisch
-  **16** Publication-Tabellen einschließlich CV, aktuell **15**.
-  v0.4 ist noch nicht nach `main` abgenommen; v0.5-Cutover ist
-  weiterhin bedingt, kein vollzogener Produktionswechsel.
-  Altvertrag und Migrationsbelege nicht durch aktuelle Policies ersetzen.
-
-### Offene konkret belegte Produkt-/Testpfade
-
-1. **Pages → Edit: getrennte Titel und Navigationslabels.**
-   `SitePages::sectionLabel()` gibt beim Form-Fill vorrangig
-   `navigation_label` als `name` zurück;
-   `ManagesSitePageEditDialog::updateDialogIdentity()` speichert
-   dies auch bei vermeintlichem No-op als `title`, bei nicht-Gallery
-   über `SiteSectionIdentityService`. Journal, Custom Page und
-   Navigation Node sind betroffen; Gallery synchronisiert über
-   `GalleryEditorialService` ebenfalls einen Label-Wert in die
-   kanonische Namens-/Titelschicht. Journal-Listing-Titel können
-   unbeabsichtigt mitfolgen. Konvertierung und mehrfaches Autosave
-   sind zusätzliche Negativfälle. [Quellpfad/Testmatrix](docs/architecture/ui-surfaces.md).
-   **Kein ausgeführter Livewire-Nachweis**.
-2. **Home/Custom Page: gleichartige Komponenten nach Reorder.**
-   Ein fehlender `CustomPageWorkspaceTargetHelpers::componentAt()`-
-   Zugriff wurde inzwischen auf `dev` wiederhergestellt, inklusive
-   Test für die dritte Textkomponente nach einem Divider.
-   Beide Home-/Custom-Page-Editoren einschließlich der neuen Child-Edit-/Move-/Delete-Targets prüfen als Stale-Target nur
-   **absolute Indizes + Persistenztyp**. Vertauscht ein zweiter Kontext
-   zwei `text`-Blöcke, kann ein weiterhin offener Editor bei gleicher
-   Typprüfung den falschen Block überschreiben. Home-Heading und
-   Home-Rich-Text persistieren beide als `type=text`.
-   Konkret geforderter Zweifenster-Reorder-/Save-Konflikttest und
-   stabile Identity-/Revision-Guard-Prüfung in
-   [UI-Surfaces](docs/architecture/ui-surfaces.md).
-3. **Home-List-Media:** `MediaReferenceQuery::mediaIdsForHome()`,
-   `MediaReferenceCatalog::contentReferenceRowsByMediaId()` und
-   `MediaAssetEditorialService::removeHomeReferences()` erfassen
-   Home-List-`media_asset_id` und historische Medien aus `items[].body`
-   nicht vollständig; die Custom-Page-Pfade tun dies bereits.
-   **Wichtig nach dem neuen List-Editor:** Embedded-Image-Insertion
-   ist dort deaktiviert, aber der Rich-Text-Datenpfad und die
-   Modellvalidierung akzeptieren bestehende `media:<id>` weiterhin.
-   Eine neue UI-Option eliminiert historische Media-Refs nicht.
-   Referenzlisten/Storage/Detach müssen separat von LIVE-/History-
-   Schutz bei physischem Reclaim bewertet werden.
-   Zudem Fehler nach schon committeter logischer Löschung und
-   Retry-/Queue-Übergänge untersuchen.
-   [Media-/Cleanup-Audit](docs/architecture/media-reference-and-cleanup.md).
-4. **Publication/Audit/Migration:** Gallery-/Undo-Publish-Readiness
-   unterscheidet sich bei ALT-Override, Video und Thumbnail;
-   ein kanonischer Guard mit Negativtests fehlt.
-   Revert liest LIVE und Parent vor dem Advisory Lock (potenzielles
-   Revert-/Commit-Interleaving). Historische Versioning-Migration
-   referenziert das aktuelle `PublicationSnapshot::TABLES`
-   dynamisch, obwohl historische CV-Tabelle abweicht.
-   Weitere Quelle: [Importgrenzen](docs/architecture/import-boundaries.md),
-   [Publication-Operationen](docs/architecture/publication-working-operations.md),
-   [Schemaevolution](docs/architecture/schema-evolution.md).
-5. **Public-Folio/SPA, Home Hero, Gallery-Puffer (Quellstand `dev@f69e0e7e`):** URL-stabile **sechs** Ecken/Endpunkte in `layouts/app.blade.php` aus dem Pfad-Hash; sechs Meta-Daten und nonce-autorisierte Root-Variablen, bei Livewire-Swaps mit `applyPublicLayoutFromMeta()` erneuert. Content/Menu-Papierbasis `[-3,4]`, Seitenimpuls **620 ms** und innere Höhe **480 ms**; Ambient-Ecken 98/113 s bzw. 117/133 s, Content-Shadow 129 s, Menu-Sheet 145 s. Home Hero weiterhin nur Content, nicht Menü; `activePaperPulses` und `activeHeightAnimations` trennen veraltete Completion-Handler. `public-spa-lifecycle.md` beschreibt den aktuellen Source-Flow und WAAPI-Retention-Prüfbedarf. **Abweichung:** Gallery-Blade lädt zwei Bilder eager (nur erstes high), neuester Public-Vertrag spricht von einem eager Bild; nicht als erledigt behandeln. **CSP-Image:** statt Inline-Style-Attribut nonce-autorisierter `@stack('public-component-styles')`. Weder Browser- noch Node-/Livewire-Test ausgeführt.
-6. **Weitere Quellgrenzen:** Runtime-SHA-Marker außerhalb des DocumentRoot und Matomo-Boot-Flag-Skew ([Build/Runtime](docs/architecture/application-runtime-boundaries.md)) sowie `AdminNotifier`/Mailbox-Pin-Limits,
-   Restore-/Revert-/Reset-Working-vs-LIVE-/History-Guards,
-   Medienvarianten mit Byte-/Hash-identischer Regenerierung,
-   Migrationskompatibilität und dynamische Action-Mount-Lebensdauer.
-   Diese Punkte nicht als Browser-/DB-bestätigte Defekte behandeln.
-
-### Weiterarbeiten
-
-1. Neuesten `docs`-/`dev`-HEAD **neu abfragen**, Pfadüberschneidungen
-   prüfen und nur sichere Änderungen als **echten Zwei-Eltern-Merge**
-   nach `docs` übernehmen. Stand oben ist nur Referenz.
-2. Die offenen Identity-/Index+Typ-/Media-/Publication-Negativpfade
-   mit zusätzlicher Quell- und Testabdeckung präzisieren; keine
-   Anwendungscode-Reparaturen auf `docs`.
-3. Normative Doppelungen zwischen `ui-skills.md`, Admin-Verträgen
-   und dem Public-Vertrag **am vorhandenen Owner** konsolidieren.
-4. Native PHP-Generatorläufe und den vollständigen Graphenabgleich erst
-   auf einem vollständigen Checkout durchführen. `pg_catalog` nur
-   auf einer **disposable**, vollständig migrierten DB.
-5. Nach jeder abgeschlossenen Einheit `docs` committen/pushen,
-   diese Arbeitsakte **inhaltlich aktualisieren statt fortschreiben**;
-   niemals CI, fremde Branches oder persistente Daten anfassen.
+1. **Zuerst** `docs`-/`dev`-HEAD neu lesen; zwischenzeitliche `dev`-Dateien/Überschneidungen konfliktgeprüft als Zwei-Eltern-Merge übernehmen. Neue `dev`-Commits nicht zum Vorwand nehmen, fachliche Dokumentation endlos offen zu halten.
+2. Die [Abschlussmatrix](docs/architecture/completion-criteria.md) **fachlich endlich** schließen: pro relevanter Fläche Eingang/Owner/Persistenz, Guards, No-op/Fehler/Rollback, Projektion und belegte Source-Links; Restannahmen explizit offen. Vorrang: Identity/Concurrency, Media-Symmetrie, Publication-Locks, Public-Read-CSP und Norm-Konsistenz.
+3. **Normative Konsolidierung:** je Verhalten **ein** Owner (Admin Table/Dialog/Notification, Public, Media, Release); andere Texte verlinken. Doppelte oder obsolete Diagramme/Verträge nur nach referenzgeprüftem Ersatz entfernen. Bestehende `AGENTS.md`- und `ui-skills.md`-Akzeptanzregeln nicht unbesehen radikal kürzen.
+4. **Erst nach fachlicher Vollständigkeit**, optional und **gebündelt**: ein lokaler Codex-/PHP-Generator-/Link-/Graph-Check im vollständigen Checkout, isolierter PostgreSQL-Export **nur** mit explizit wegwerfbarer migrierter DB; danach pro erzeugtem Artefakt entscheiden: dauerhafter Source-Beleg, rein lokales Vollinventar oder entbehrliches Zwischenprodukt. **Keine einzelnen Codex-Aufträge und keine CI.**
+5. Nach jeder echten Arbeitseinheit `docs`-Commit/push, `DOCS_SKILL.md` **in-place konsolidieren** (Status ersetzen, nicht append), Architekturdokument und Abschlussmatrix synchronisieren; Ergebnisse mit Belegtyp und fehlender Laufzeitprüfung benennen. Neue Chats starten aus dieser Arbeitsakte, **nicht** aus dem alten Chatverlauf.
