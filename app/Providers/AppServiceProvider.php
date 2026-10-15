@@ -16,7 +16,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\PostgresConnection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -47,6 +50,29 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Keep all contact limits at the existing HTTP boundary. A shared
+        // cache makes the hourly ceiling effective across independent IPs.
+        // Hash valid sender addresses to avoid storing personal data in
+        // cache keys. Bad/oversized addresses still hit IP + global limits
+        // and are subsequently rejected by the existing form validation.
+        RateLimiter::for('public-contact', static function (Request $request): array {
+            $limits = [
+                Limit::perMinute(5)->by('public-contact:ip:'.($request->ip() ?? 'unknown')),
+                Limit::perHour(60)->by('public-contact:site'),
+            ];
+
+            $email = $request->input('email');
+            if (is_string($email) && strlen($email) <= 320
+                && filter_var(trim($email), FILTER_VALIDATE_EMAIL) !== false) {
+                $sender = strtolower(trim($email));
+                $limits[] = Limit::perHour(6)->by('public-contact:sender:'.hash_hmac(
+                    'sha256', $sender, (string) config('app.key'),
+                ));
+            }
+
+            return $limits;
+        });
+
         Password::defaults(fn (): Password => AdminPasswordPolicy::rule());
 
         Gate::define('viewPulse', static fn (User $user): bool => (bool) $user->getAttribute('is_admin'));

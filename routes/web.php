@@ -15,7 +15,7 @@ use Livewire\Mechanisms\FrontendAssets\FrontendAssets;
 
 Route::get('/', [PublicHomeController::class, 'show'])->name('home');
 Route::post('/contact', [PublicContactController::class, 'submit'])
-    ->middleware([EnforceHomePresentationGate::class, 'throttle:5,1'])
+    ->middleware([EnforceHomePresentationGate::class, 'throttle:public-contact'])
     ->name('contact.submit');
 Route::get('/sitemap.xml', [PublicSeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/robots.txt', [PublicSeoController::class, 'robots'])->name('seo.robots');
