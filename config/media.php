@@ -15,6 +15,10 @@ $positiveBytes = static function (mixed $value, int $default): int {
 return [
     'disk' => env('MEDIA_DISK', 'local'),
 
+    // Required by the *offline* IPTC/XMP staging writer, never public requests.
+    // The executable must be ExifTool >=12.67; Debian Bookworm's 12.57 is too old.
+    'exiftool_binary' => env('MEDIA_EXIFTOOL_BINARY', 'exiftool'),
+
     // Runtime/operator contract. Blank means unconfigured; a non-empty invalid
     // value is handled fail-closed by MediaCapacityService.
     'quota_bytes' => env('MEDIA_STORAGE_QUOTA_BYTES'),
