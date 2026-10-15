@@ -113,47 +113,12 @@
                     class="admin-hierarchy admin-hierarchy--pages"
                     role="table"
                     aria-label="Pages"
-                    x-data="{
-                        dragging: false,
-                        dragArmed: false,
-                        dragStartX: 0,
-                        dragStartY: 0,
-                        draggedId: null,
-                        draggedParentId: null,
-                        draggedHasChildren: false,
-                        hoverParent: null,
-                        resetDrag() {
-                            this.dragging = false;
-                            this.dragArmed = false;
-                            this.draggedId = null;
-                            this.draggedParentId = null;
-                            this.draggedHasChildren = false;
-                            this.hoverParent = null;
-                        },
-                    }"
-                    x-on:pointerdown.capture="
-                        const handle = $event.target.closest('.admin-drag-handle:not(:disabled)');
-                        if (!handle) return;
-                        const row = handle.closest('.admin-pages__row');
-                        if (!row) return;
-                        dragArmed = true;
-                        dragStartX = $event.clientX;
-                        dragStartY = $event.clientY;
-                        draggedId = Number(row.dataset.sectionId);
-                        draggedParentId = row.dataset.parentId === '' ? null : Number(row.dataset.parentId);
-                        draggedHasChildren = row.dataset.hasChildren === 'true';
-                    "
-                    x-on:pointermove.window="
-                        if (!dragArmed || dragging || ($event.buttons & 1) !== 1) return;
-                        if (Math.hypot($event.clientX - dragStartX, $event.clientY - dragStartY) >= 4) dragging = true;
-                    "
-                    x-on:dragstart.capture="if (dragArmed) dragging = true"
-                    x-on:pointerup.window="resetDrag()"
-                    x-on:pointercancel.window="resetDrag()"
-                    x-on:dragend.window="resetDrag()"
-                    x-on:drop.window="resetDrag()"
+                    data-admin-hierarchy="pages"
                 >
                     <div class="admin-hierarchy__header admin-pages__header" role="row">
+                        <div class="admin-hierarchy__nest-target admin-hierarchy__nest-target--page-level"
+                            data-hierarchy-drop="root" data-hierarchy-parent="root" role="button"
+                            aria-label="Move dragged page to top level"><span>Drop to top level</span></div>
                         <div class="admin-pages__primary-grid" role="presentation">
                             <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
                             <span role="columnheader" data-column="page">Name</span>
@@ -188,8 +153,9 @@
                             role="rowgroup"
                             @if ($reorderEnabled)
                                 wire:sort="sortSection"
-                                wire:sort:group="site-pages"
-                                wire:sort:group-id="root"
+
+                                wire:sort:group="site-pages-root"
+                                    wire:sort:group-id="root"
                             @endif
                         >
                             @foreach ($sections as $section)
@@ -210,8 +176,9 @@
                                                 @if ($reorderEnabled && $nestedNavigationEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
-                                                    wire:sort:group="site-pages"
-                                                    wire:sort:group-id="{{ $section['id'] }}"
+
+                                                    wire:sort:group="site-pages-{{ $section['id'] }}"
+                                                     wire:sort:group-id="{{ $section['id'] }}"
                                                 @endif
                                             >
                                                 @foreach ($section['children'] as $child)

@@ -94,6 +94,13 @@ trait CustomPageWorkspaceProjectionState
             if ($type === 'list' && is_array($block['items'] ?? null)) {
                 $listEntryCount += count($block['items']);
             }
+            if ($type === 'image') {
+                foreach ($block['children'] ?? [] as $child) {
+                    if (is_array($child) && ($child['type'] ?? null) === 'list') {
+                        $listEntryCount += count($child['items'] ?? []);
+                    }
+                }
+            }
             if ($this->componentType !== 'any' && $type !== $this->componentType) {
                 continue;
             }
@@ -134,7 +141,13 @@ trait CustomPageWorkspaceProjectionState
                 'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
-                'children' => [],
+                'children' => $type === 'image' ? $this->imageChildSummaries($settings, $block) : [],
+                'accepts_children' => $type === 'image' && ($block['image_decorative'] ?? false) === true,
+                'can_nest' => in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                    && ($type !== 'list' || ($block['media_asset_id'] ?? null) === null)
+                    && ($type !== 'contact' || ! collect($settings->contactChildren($block))
+                        ->contains(fn (array $item): bool => ($item['type'] ?? null) === 'contact_form'
+                            && CustomPageSetting::contactChildPublished($item))),
             ];
         }
 

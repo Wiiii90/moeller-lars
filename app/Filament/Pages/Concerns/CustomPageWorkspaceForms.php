@@ -4,6 +4,8 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
+use App\Filament\Support\DecorativeImageChildren;
+use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use Closure;
@@ -17,7 +19,7 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(?Closure $onTypeChange = null): array
+    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null): array
     {
         $typeField = Select::make('type')
             ->label('Component')
@@ -44,7 +46,7 @@ trait CustomPageWorkspaceForms
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null),
+                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange),
             ])
             ->key('dynamicComponentFields')
             ->columnSpanFull();
@@ -55,17 +57,18 @@ trait CustomPageWorkspaceForms
                 ->schema([
                     $typeField,
                     $statusField,
+                    ...($onTypeChange === null ? [] : [$this->componentParentField()]),
                     $dynamicFields,
                 ]),
         ];
     }
 
     /** @return list<mixed> */
-    private function componentTypeFields(string $type, bool $isNew): array
+    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null): array
     {
         return match ($type) {
             'image' => [
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', imagesOnly: true)->required(),
+                $this->imageSelectField($onImageChange),
                 TextInput::make('image_scale_percent')
                     ->label('Image size')
                     ->numeric()
@@ -76,7 +79,18 @@ trait CustomPageWorkspaceForms
                     ->suffix('%')
                     ->default(\App\Models\CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT)
                     ->required(),
-                Toggle::make('image_decorative')->label('Decorative image')->default(false),
+                Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
+                DecorativeImageChildren::make($this->availableSocialPlatforms),
+                ...(! $isNew ? [
+                    Select::make('adopt_component_index')
+                        ->label('Move existing component under image')
+                        ->options(fn (): array => $this->adoptableImageComponents())
+                        ->placeholder('No move')
+                        ->native()
+                        ->nullable()
+                        ->visible(fn (Get $get): bool => (bool) $get('image_decorative'))
+                        ->columnSpanFull(),
+                ] : []),
             ],
             'text' => $isNew
                 ? AdminRichText::schema('body', 'Rich Text', 20000)
@@ -120,18 +134,85 @@ trait CustomPageWorkspaceForms
             ],
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')
-                    ->label('Legal disclaimer from General')
-                    ->content(function (): string {
-                        $value = PublicContentSetting::general()->getAttribute('legal_disclaimer');
-
-                        return is_string($value) && trim($value) !== ''
-                            ? $value
-                            : 'No legal disclaimer is configured in General.';
-                    })
+                    ->label('Legal Disclaimer from General')
+                    ->content(fn (): string => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()))
                     ->columnSpanFull(),
             ],
             default => [],
         };
+    }
+
+    /** Visible at the top of every eligible component edit, even for List
+     * dialogs with long repeater content. Null means Page level. */
+    private function componentParentField(): Select
+    {
+        return HierarchyParentField::make(
+            'parent_image_index',
+            fn (): array => $this->decorativeImageParentOptions(),
+            'Parent', 'Page level',
+        )
+            ->visible(fn (Get $get): bool =>
+                in_array((string) $get('type'), \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                && ($get('type') !== 'list' || blank($get('media_asset_id')))
+                && ($get('type') !== 'contact' || ! $get('contact_form_enabled'))
+            )
+            ->columnSpanFull();
+    }
+
+    /** @return array<int,string> */
+    private function decorativeImageParentOptions(): array
+    {
+        $options = [];
+        foreach ($this->settings()->components() as $index => $block) {
+            if (($block['type'] ?? null) === 'image' && ($block['image_decorative'] ?? false)) {
+                $options[$index] = 'Decorative Image '.($index + 1);
+            }
+        }
+        return $options;
+    }
+
+    /** Only eligible standalone prose can become an Image child. */
+    private function adoptableImageComponents(): array
+    {
+        $options = [];
+        foreach ($this->settings()->components() as $index => $block) {
+            $type = $block['type'] ?? null;
+            if (! in_array($type, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+                continue;
+            }
+            if ($type === 'list' && ($block['media_asset_id'] ?? null) !== null) {
+                continue;
+            }
+            if ($type === 'contact') {
+                $hasForm = collect($this->settings()->contactChildren($block))
+                    ->contains(fn (array $item): bool => ($item['type'] ?? null) === 'contact_form'
+                        && \App\Models\CustomPageSetting::contactChildPublished($item));
+                if ($hasForm) {
+                    continue;
+                }
+            }
+            $title = trim((string) ($block['title'] ?? ''));
+            $options[$index] = ($index + 1).' · '.(self::COMPONENT_LABELS[$type] ?? $type)
+                .($title === '' ? '' : ' — '.$title);
+        }
+
+        return $options;
+    }
+
+    private function imageSelectField(?Closure $onImageChange): Select
+    {
+        $field = MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', imagesOnly: true)
+            ->required();
+
+        // Searchable Filament selects update their Livewire state without a
+        // reliable native change event on the surrounding Edit dialog.
+        // Persist only on an actual field update; the existing action remains
+        // the owner of the other component fields.
+        if ($onImageChange !== null) {
+            $field->live()->afterStateUpdated($onImageChange);
+        }
+
+        return $field;
     }
 
 }

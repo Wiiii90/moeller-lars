@@ -16,6 +16,15 @@ function customPageWorkspaceRecord(string $title = 'Custom Page test', string $s
     return [$section, $settings];
 }
 
+function customPageWorkspaceImage(string $suffix): \App\Models\MediaAsset
+{
+    return \App\Models\MediaAsset::query()->create([
+        'storage_key' => 'originals/'.$suffix.'.jpg', 'original_filename' => $suffix.'.jpg',
+        'mime_type' => 'image/jpeg', 'byte_size' => 4, 'sha256' => hash('sha256', $suffix),
+        'state' => 'available', 'alt_text' => 'Artist portrait', 'width' => 2, 'height' => 2,
+    ]);
+}
+
 /** @return list<array<string,mixed>> */
 function customPageWorkspaceBlocks(int $count): array
 {

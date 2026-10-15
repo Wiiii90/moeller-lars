@@ -210,3 +210,64 @@ it('persists media copyright and legal settings through event-driven controls', 
         ->and($fresh->getAttribute('legal_disclaimer'))->toBe('Legal text.')
         ->and(generalSettingsAuditCount())->toBeGreaterThan($auditBefore);
 });
+
+it('autosaves legal copy only on real changes, including notification and audit', function (): void {
+    $settings = PublicContentSetting::general();
+    $audits = generalSettingsAuditCount();
+    $notifications = \App\Models\AdminNotification::query()->count();
+
+    $page = Livewire::test(General::class)
+        ->assertSet('data.legal_imprint', null)
+        ->set('data.legal_imprint', "  Artist Name\nStudio address  ")
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return $event === 'admin-header-notification'
+                && (int) (AdminNotification::query()->find($params['notification']['notification_id'] ?? null)?->getAttribute('audit_event_id') ?? 0) === (int) \App\Models\AuditEvent::query()->latest('id')->value('id')
+                && ($params['notification']['status'] ?? null) === 'success';
+        });
+
+    expect($settings->fresh()->getAttribute('legal_imprint'))->toBe("Artist Name\nStudio address")
+        ->and(generalSettingsAuditCount())->toBe($audits + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 1);
+
+    $page->call('persistChangedField', 'legal_imprint');
+    expect(generalSettingsAuditCount())->toBe($audits + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 1);
+
+    $page->set('data.legal_privacy', 'Test privacy information.')
+        ->set('data.legal_usage_rights', 'Test rights reservation.');
+
+    expect($settings->fresh()->getAttribute('legal_privacy'))->toBe('Test privacy information.')
+        ->and($settings->fresh()->getAttribute('legal_usage_rights'))->toBe('Test rights reservation.')
+        ->and(generalSettingsAuditCount())->toBe($audits + 3)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 3);
+
+    Livewire::test(General::class)
+        ->assertSet('data.legal_imprint', "Artist Name\nStudio address")
+        ->assertSet('data.legal_privacy', 'Test privacy information.')
+        ->assertSet('data.legal_usage_rights', 'Test rights reservation.');
+});
+
+it('rejects overlong legal copy without overwriting persisted data', function (): void {
+    $settings = PublicContentSetting::general();
+    $settings->update(['legal_privacy' => 'Existing privacy text']);
+    $before = generalSettingsAuditCount();
+
+    Livewire::test(General::class)
+        ->set('data.legal_privacy', str_repeat('x', 20001))
+        ->assertHasErrors(['data.legal_privacy']);
+
+    expect($settings->fresh()->getAttribute('legal_privacy'))->toBe('Existing privacy text')
+        ->and(generalSettingsAuditCount())->toBe($before);
+});
+
+it('does not rewrite archived disclaimer whitespace when another General field changes', function (): void {
+    $settings = PublicContentSetting::general();
+    $legacy = "  Archive note\n\n";
+    $settings->update(['legal_disclaimer' => $legacy]);
+
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'public_email' => 'legal-editor@example.invalid',
+    ]);
+
+    expect($settings->fresh()->getAttribute('legal_disclaimer'))->toBe($legacy);
+});

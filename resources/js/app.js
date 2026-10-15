@@ -12,6 +12,7 @@ import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
 import { capturePublicFolio, advancePublicFolio, animatePublicHeroChange } from './public-folio-motion.js';
 import { applyPublicLayoutFromMeta, initializePublicSpaLinks } from './public-spa.js';
+import { revealLinkedLegalSection } from './public-legal.js';
 
 // The module and delegation are loaded once. Page-local resources aren't.
 let currentContent = null;
@@ -36,6 +37,7 @@ function initializePage() {
     disposers.push(initializeMatomoTracking(root));
     disposers.push(initializePublicNavigation());
     advancePublicFolio();
+    revealLinkedLegalSection();
 }
 
 document.addEventListener('livewire:navigating', (event) => {
@@ -44,6 +46,7 @@ document.addEventListener('livewire:navigating', (event) => {
     event.detail.onSwap?.(applyPublicLayoutFromMeta);
 });
 document.addEventListener('livewire:navigated', initializePage);
+window.addEventListener('hashchange', () => revealLinkedLegalSection());
 
 initializePublicSpaLinks();
 if (document.readyState === 'loading') {

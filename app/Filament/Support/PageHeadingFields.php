@@ -17,7 +17,7 @@ use Livewire\Component;
 final class PageHeadingFields
 {
     /** Persist each heading field through the owner on a Livewire update. */
-    public static function schema(Closure $persist, string $successTitle): Grid
+    public static function schema(?Closure $persist = null, string $successTitle = 'Page updated'): Grid
     {
         return Grid::make()
             ->columns(['md' => 2])
@@ -61,8 +61,11 @@ final class PageHeadingFields
      * Heading fields have one autosave owner. A no-op never produces a second
      * Notification, even when the containing Edit modal also receives change.
      */
-    private static function persist(Component $livewire, Closure $persist, string $field, mixed $value, string $title): void
+    private static function persist(Component $livewire, ?Closure $persist, string $field, mixed $value, string $title): void
     {
+        if ($persist === null) {
+            return; // Add Page persists heading fields only after creation.
+        }
         $schemaName = $livewire->getMountedActionSchemaName();
         $path = $livewire->{$schemaName}->getStatePath();
         $livewire->resetErrorBag($path.'.'.$field);

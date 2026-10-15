@@ -39,6 +39,34 @@ The admin dialog behavior accepted in browser review on 2026-10-11 is a
 
 See `docs/ADMIN-DIALOG-CONTRACT.md` and `ui-skills.md` for shared UI geometry.
 
+## Active public-rights implementation workstream (temporary)
+
+The agreed cross-cutting public-rights/privacy/media/SEO implementation is
+tracked in root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md).
+**Before any relevant code change or continuation prompt, read and update that
+living workstream**, then consult the durable
+[`docs/PUBLIC-RIGHTS-AND-PRIVACY.md`](docs/PUBLIC-RIGHTS-AND-PRIVACY.md).
+It records the accepted scope, current slice, completion evidence and
+cross-chat handoff. Update it in the **same commit** as implementation changes;
+reconcile concurrent `dev` commits before editing. It is temporary: when the
+full workstream is genuinely complete, transfer durable rules to docs,
+remove this link, and delete the temporary root file.
+
+## Public CSP and rights protection
+
+Public scripts, styles, image features and animations MUST use the existing
+strict nonce-based CSP in `app/Http/Middleware/SecurityHeaders.php`. Never
+copy the permissive Admin/Pulse policy into Public, or add `unsafe-inline`,
+`unsafe-eval` or wildcard hosts as a workaround. Use Vite-bundled resources
+and the established nonce path; verify Livewire navigation too.
+
+Preserve the public HTML/media TDM rights reservation and its
+`/.well-known/tdmrep.json` discovery route, and the SEO-compatible robot
+opt-outs. Neither TDM nor robots.txt protects against downloads. Full-quality
+public Artwork Viewer originals are a deliberate product requirement.
+Matomo tracking must not operate without legally sufficient prior consent.
+Read `docs/PUBLIC-RIGHTS-AND-PRIVACY.md` before new public privacy work.
+
 ## No workarounds — mandatory stop rule
 
 This project builds coherent, canonical systems. **Workarounds, symptom-level patches, compensating hacks and parallel implementations are prohibited by default.** The moment an agent starts considering a workaround rather than a root-cause correction, it **MUST STOP IMMEDIATELY**: do not implement it, do not commit it, and do not continue by layering additional conditions, listeners, timers, retries, CSS overrides, state flags, fallback lifecycles or alternate persistence paths.

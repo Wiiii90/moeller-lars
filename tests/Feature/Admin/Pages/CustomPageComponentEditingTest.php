@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\CustomPageWorkspace;
 use App\Models\CustomPageSetting;
+use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
 use App\Models\AuditEvent;
@@ -483,4 +484,245 @@ it('renders a scaled image and derives move permissions after filtering and pagi
     $searched = $page->get('components');
     expect($searched[0]['can_move_up'])->toBeFalse()
         ->and($searched[0]['can_move_down'])->toBeFalse();
+});
+
+
+it('autosaves an image selection without closing the editor and notifies once per real change', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image replacement', 'image-replacement');
+
+    $createImage = static fn (string $filename): \App\Models\MediaAsset => \App\Models\MediaAsset::query()->create([
+        'storage_key' => 'originals/'.$filename,
+        'original_filename' => $filename,
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', $filename),
+        'state' => 'available',
+        'alt_text' => 'Artist image',
+    ]);
+    $first = $createImage('first-image.jpg');
+    $replacement = $createImage('replacement-image.jpg');
+    $settings->update(['blocks' => [[
+        'type' => 'image',
+        'published' => true,
+        'media_asset_id' => $first->getKey(),
+        'image_decorative' => false,
+        'image_scale_percent' => 50,
+    ]]]);
+
+    $notificationsBefore = \App\Models\AdminNotification::query()->count();
+    $auditsBefore = \App\Models\AuditEvent::query()
+        ->where('action', 'site_section.updated')
+        ->where('entity_type', 'site_section')
+        ->where('entity_id', $section->getKey())
+        ->count();
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertSet('mountedActions.0.data.media_asset_id', $first->getKey())
+        ->assertSet('mountedActions.0.data.image_scale_percent', 50)
+        ->set('mountedActions.0.data.media_asset_id', (string) $replacement->getKey())
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSee('replacement-image.jpg')
+        ->assertDispatched('admin-header-notification');
+
+    $updated = $settings->fresh()->components()[0];
+    expect($updated['media_asset_id'])->toBe((int) $replacement->getKey())
+        ->and($updated['image_scale_percent'])->toBe(50)
+        ->and($updated['image_decorative'])->toBeFalse()
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notificationsBefore + 1)
+        ->and(\App\Models\AuditEvent::query()
+            ->where('action', 'site_section.updated')
+            ->where('entity_type', 'site_section')
+            ->where('entity_id', $section->getKey())
+            ->count())->toBe($auditsBefore + 1);
+
+    // A second form-level autosave must not duplicate the persisted mutation.
+    $editor->call('callMountedAction')->assertHasNoFormErrors();
+    expect(\App\Models\AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertSet('mountedActions.0.data.media_asset_id', $replacement->getKey())
+        ->assertSet('mountedActions.0.data.image_scale_percent', 50);
+});
+
+it('moves the existing CV List under a decorative Image from its Edit dialog', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Nested CV', 'nested-cv-editor');
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'originals/nested-cv-editor.jpg',
+        'original_filename' => 'nested-cv-editor.jpg',
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'nested-cv-editor'),
+        'state' => 'available',
+        'alt_text' => 'Portrait',
+        'width' => 2,
+        'height' => 2,
+    ]);
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'image_decorative' => true,
+            'media_asset_id' => $asset->getKey()],
+        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1989'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+    ]]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertSet('mountedActions.0.data.image_children', [])
+        ->set('mountedActions.0.data.adopt_component_index', 1)
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    $blocks = $settings->fresh()->components();
+    expect($blocks)->toHaveCount(1)
+        ->and($blocks[0]['children'][0]['type'])->toBe('list')
+        ->and($blocks[0]['children'][0]['items'][1]['context'])->toBeNull()
+        ->and($blocks[0]['children'][0]['items'][1]['title'])->toBe('Lives and works in Hamburg');
+
+    $reopened = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image']);
+    $children = array_values($reopened->get('mountedActions.0.data.image_children'));
+    expect($children)->toHaveCount(1)
+        ->and($children[0]['type'])->toBe('list')
+        ->and(array_values($children[0]['items'])[1]['title'])->toBe('Lives and works in Hamburg');
+});
+
+it('offers a visible Parent selector in CV List Edit and persists the nesting', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Parent chooser CV', 'parent-chooser-cv');
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'originals/parent-chooser-cv.jpg',
+        'original_filename' => 'parent-chooser-cv.jpg',
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'parent-chooser-cv'),
+        'state' => 'available',
+        'alt_text' => 'CV portrait',
+    ]);
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'image_decorative' => true, 'media_asset_id' => $asset->getKey()],
+        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
+            ['title' => 'Born in Hamburg', 'context' => '1989'],
+            ['title' => 'Lives and works in Hamburg', 'context' => null],
+        ]],
+    ]]);
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editListComponent', ['componentIndex' => 1, 'componentType' => 'list'])
+        ->assertMountedActionModalSee('Parent')
+        ->assertSet('mountedActions.0.data.type', 'list')
+        ->set('mountedActions.0.data.parent_image_index', '0')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors();
+
+    $blocks = $settings->fresh()->components();
+    expect($blocks)->toHaveCount(1)
+        ->and($blocks[0]['children'][0]['type'])->toBe('list')
+        ->and($blocks[0]['children'][0]['items'][1]['title'])->toBe('Lives and works in Hamburg')
+        ->and($blocks[0]['children'][0]['items'][1]['context'])->toBeNull();
+});
+
+it('exposes the same Parent field above the content of a Text Edit', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Text parent chooser', 'text-parent-chooser');
+    $settings->update(['blocks' => [
+        ['type' => 'text', 'title' => 'Artist statement', 'body' => 'Words'],
+    ]]);
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->assertMountedActionModalSee('Parent')
+        ->assertHasNoFormErrors();
+});
+
+
+it('protects stale image autosave and nesting edits through the mounted validation owner', function (string $operation): void {
+    [$section, $settings] = customPageWorkspaceRecord('Protected image', 'protected-image');
+    $asset = customPageWorkspaceImage('protected-image');
+    $replacement = customPageWorkspaceImage('replacement');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true],
+        ['type' => 'text', 'title' => 'Original', 'body' => 'Original body'],
+    ]]);
+    $index = $operation === 'parent' ? 1 : 0;
+    $type = $index === 1 ? 'text' : 'image';
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => $index, 'componentType' => $type]);
+    $block = $settings->fresh()->components()[$index];
+    $block[$type === 'text' ? 'body' : 'image_scale_percent'] = $type === 'text' ? 'Concurrent content' : 75;
+    app(\App\Domain\Content\CustomPageEditorialService::class)->updateBlock($settings, $index, $type, $block);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = $settings->fresh()->components();
+    $audits = AuditEvent::query()->count();
+    if ($operation === 'autosave') {
+        $editor->set('mountedActions.0.data.media_asset_id', (string) $replacement->id);
+    } else {
+        $editor->fillForm($operation === 'parent' ? ['parent_image_index' => '0'] : ['adopt_component_index' => '1'])
+            ->callMountedAction();
+    }
+    $editor->assertHasFormErrors(['type'])->assertNotDispatched('admin-header-notification');
+    expect($settings->fresh()->components())->toBe($before)
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(AdminNotification::query()->count())->toBe(0);
+})->with(['autosave', 'adopt', 'parent']);
+
+it('rolls back edited content and nesting together if the second audit fails and retries once', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Atomic nesting', 'atomic-nesting');
+    $asset = customPageWorkspaceImage('atomic-nesting');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true],
+        ['type' => 'text', 'title' => 'Original', 'body' => 'Original body'],
+    ]]);
+    $before = $settings->fresh()->components();
+    $audits = AuditEvent::query()->count();
+    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $audit = Mockery::mock($realAudit);
+    $recordings = 0;
+    $audit->shouldReceive('record')->twice()->andReturnUsing(function (...$parameters) use ($realAudit, &$recordings): AuditEvent {
+        if (++$recordings === 2) {
+            throw new RuntimeException('Nesting audit failed');
+        }
+        return $realAudit->record(...$parameters);
+    });
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    try {
+        $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+            ->mountAction('editComponent', ['componentIndex' => 1, 'componentType' => 'text'])
+            ->fillForm(['body' => 'Edited content', 'parent_image_index' => '0']);
+        expect(fn () => $editor->callMountedAction())->toThrow(RuntimeException::class, 'Nesting audit failed');
+        expect($settings->fresh()->components())->toBe($before)
+            ->and(AuditEvent::query()->count())->toBe($audits)
+            ->and(AdminNotification::query()->count())->toBe(0);
+    } finally {
+        app()->instance(\App\Domain\Admin\AdminAuditService::class, $realAudit);
+    }
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 1, 'componentType' => 'text'])
+        ->fillForm(['body' => 'Edited content', 'parent_image_index' => '0'])->callMountedAction()
+        ->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
+    expect($settings->fresh()->components())->toHaveCount(1)
+        ->and($settings->fresh()->components()[0]['children'][0]['body'])->toBe('Edited content')
+        ->and(AuditEvent::query()->count())->toBe($audits + 2)
+        ->and(AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->callMountedAction()->assertHasNoFormErrors()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($audits + 2)
+        ->and(AdminNotification::query()->count())->toBe(1);
+});
+
+
+it('rejects an invalid image replacement at the mounted field without mutation or feedback', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Invalid replacement', 'invalid-replacement');
+    $asset = customPageWorkspaceImage('invalid-replacement');
+    $settings->update(['blocks' => [['type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true]]]);
+    $before = $settings->fresh()->components();
+    $audits = AuditEvent::query()->count();
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->set('mountedActions.0.data.media_asset_id', '0')
+        ->assertHasFormErrors(['media_asset_id'])->assertNotDispatched('admin-header-notification');
+    expect($settings->fresh()->components())->toBe($before)
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(AdminNotification::query()->count())->toBe(0);
 });

@@ -119,3 +119,28 @@ it('fails closed before snapshot promotion when committed schema parity drifts',
         ->and(PublicationCheckpoint::query()->count())->toBe($checkpointCount)
         ->and(app(PublicationService::class)->hasPendingChanges())->toBeTrue();
 });
+
+it('keeps legal copy schema and authored values consistent across working and committed publication', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+
+    app(PublicationSchemaGuard::class)->assertParity();
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'legal_imprint' => "Artist\nMailing address",
+        'legal_privacy' => 'Current privacy notice',
+        'legal_usage_rights' => 'Artwork reproduction policy',
+    ]);
+
+    app(PublicationService::class)->commit($actor, 'Publish authored legal information');
+    $committed = DB::table('committed.public_content_settings')
+        ->where('scope', 'general')
+        ->first();
+
+    expect($committed)->not->toBeNull()
+        ->and($committed->legal_imprint)->toBe("Artist\nMailing address")
+        ->and($committed->legal_privacy)->toBe('Current privacy notice')
+        ->and($committed->legal_usage_rights)->toBe('Artwork reproduction policy');
+
+    app(PublicationSchemaGuard::class)->assertParity();
+});

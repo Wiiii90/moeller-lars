@@ -163,3 +163,66 @@ it('keeps invalid heading values on the correct mounted field without persistenc
     $component->set('mountedActions.0.data.content_heading_alignment', 'right')->assertHasNoFormErrors();
     expect($section->fresh()->content_heading_alignment)->toBe('right');
 });
+
+
+it('creates a Custom Page with its heading authored through the shared Pages form', function (): void {
+    Livewire::test(SitePages::class)
+        ->mountAction('addPage')
+        ->set('mountedActions.0.data.type', 'custom')
+        ->set('mountedActions.0.data.name', 'About artist')
+        ->set('mountedActions.0.data.slug', 'about-artist')
+        ->set('mountedActions.0.data.content_heading_enabled', true)
+        ->set('mountedActions.0.data.content_heading_override', 'About the artist')
+        ->set('mountedActions.0.data.content_heading_alignment', 'left')
+        ->set('mountedActions.0.data.content_heading_divider', 'subtle')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    $section = SiteSection::query()->where('slug', 'about-artist')->firstOrFail();
+    expect($section->content_heading_enabled)->toBeTrue()
+        ->and($section->content_heading_override)->toBe('About the artist')
+        ->and($section->content_heading_divider)->toBe('subtle');
+
+    Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $section->getKey()])
+        ->assertSet('mountedActions.0.data.content_heading_enabled', true)
+        ->assertSet('mountedActions.0.data.content_heading_override', 'About the artist');
+});
+
+it('keeps Home identity and heading in Pages Edit without changing its root route', function (): void {
+    $home = app(HomePresentationResolver::class)->settings()->siteSection;
+    $page = Livewire::test(SitePages::class)
+        ->mountAction('editHome')
+        ->assertSet('mountedActions.0.data.public_path', '/')
+        ->assertSet('mountedActions.0.data.parent_page', 'Top level')
+        ->assertSet('mountedActions.0.data.position', 1);
+
+    $page->set('mountedActions.0.data.name', 'Atelier')
+        ->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect($home->fresh()->title)->toBe('Atelier')
+        ->and($home->fresh()->slug)->toBeNull()
+        ->and($home->fresh()->parent_id)->toBeNull();
+
+    $count = AdminNotification::query()->count();
+    $page->call('callMountedAction')->assertHasNoFormErrors();
+    expect(AdminNotification::query()->count())->toBe($count);
+});
+
+it('rejects stale Home identity edits without overwriting another editor or notifying', function (): void {
+    $home = app(HomePresentationResolver::class)->settings()->siteSection;
+    $first = Livewire::test(SitePages::class)->mountAction('editHome');
+    $stale = Livewire::test(SitePages::class)->mountAction('editHome');
+    $first->fillForm(['name' => 'Current studio'])->callMountedAction()->assertHasNoFormErrors();
+    $audits = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+
+    $stale->fillForm(['name' => 'Stale studio'])->callMountedAction()
+        ->assertHasFormErrors(['name'])->assertNotDispatched('admin-header-notification');
+    expect($home->fresh()->title)->toBe('Current studio')
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(AdminNotification::query()->count())->toBe($notifications);
+});

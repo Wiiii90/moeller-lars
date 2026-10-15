@@ -206,6 +206,77 @@ trait CustomPageWorkspaceComponentActions
         return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
     }
 
+    /** Explicit nesting is the only hierarchy-changing drag/drop operation.
+     * Standard wire:sort never changes parentage. */
+    public function nestComponent(int $sourceIndex, string $type, int $imageIndex): void
+    {
+        if (! $this->componentReorderEnabled()) {
+            return;
+        }
+        try {
+            $changed = app(CustomPageEditorialService::class)->nestBlock(
+                $this->settings(), $sourceIndex, $type, $imageIndex,
+            );
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Component moved into image', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            app(AdminNotifier::class)->notification(title: 'Cannot nest component', status: 'warning');
+        }
+        $this->clearSelections();
+        $this->reloadWorkspace();
+    }
+
+    public function moveImageChild(int $fromImage, int $childIndex, int $toImage): void
+    {
+        if (! $this->componentReorderEnabled()) {
+            return;
+        }
+        try {
+            $changed = app(CustomPageEditorialService::class)->moveImageChild(
+                $this->settings(), $fromImage, $childIndex, $toImage,
+            );
+            $this->clearSelections();
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Image child moved', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            app(AdminNotifier::class)->notification(
+                title: 'Image child unchanged',
+                body: collect($exception->errors())->flatten()->first() ?? 'The selected parent is not allowed.',
+                status: 'warning',
+            );
+            $this->reloadWorkspace();
+        }
+    }
+
+    public function unnestImageChild(int $imageIndex, int $childIndex): void
+    {
+        $changed = app(CustomPageEditorialService::class)->unnestImageChild(
+            $this->settings(), $imageIndex, $childIndex,
+        );
+        $this->clearSelections();
+        $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Component moved to page level', status: 'success');
+        }
+    }
+
+    public function sortImageChild(int|string $childIndex, int $position, int|string|null $groupId = null): void
+    {
+        if (! $this->componentReorderEnabled() || ! is_numeric($groupId) || ! is_numeric($childIndex)) {
+            return;
+        }
+        $changed = app(CustomPageEditorialService::class)->sortImageChild(
+            $this->settings(), (int) $groupId, (int) $childIndex, $position,
+        );
+        $this->loadComponentProjection();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Image content order updated', status: 'success');
+        }
+    }
+
     public function editComponentAction(): Action
     {
         return $this->componentEditingAction('editComponent', committed: false);
@@ -238,6 +309,41 @@ trait CustomPageWorkspaceComponentActions
                         'targetType' => $target,
                     ]);
                 },
+                onImageChange: function (mixed $state) use ($arguments): void {
+                    [$index, $type] = $this->actionComponentTarget($arguments);
+                    if ($type !== 'image') {
+                        return;
+                    }
+
+                    try {
+                        $id = filter_var($state, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                        if ($id === false) {
+                            throw ValidationException::withMessages(['media_asset_id' => 'Choose an image from Storage.']);
+                        }
+                        $existing = $this->componentAt($index, 'image');
+                        $changed = app(CustomPageEditorialService::class)->updateBlock(
+                            $this->settings(),
+                            $index,
+                            'image',
+                            [...$existing, 'media_asset_id' => $id],
+                            $this->editingComponentOriginal,
+                        );
+                    } catch (ValidationException $exception) {
+                        $this->throwComponentEditValidation($exception);
+                    }
+                    $this->editingComponentOriginal = $this->settings()->components()[$index];
+                    if (! $changed) {
+                        return;
+                    }
+
+                    $this->clearSelections();
+                    $this->loadComponentProjection();
+                    $this->forceRender();
+                    app(AdminNotifier::class)->notification(
+                        title: 'Component saved',
+                        status: 'success',
+                    );
+                },
             ))
             ->modalHeading('Edit component')
             ->extraModalFooterActions(fn (array $arguments): array => $this->componentEditHeaderActions($arguments, $actionName))
@@ -249,25 +355,61 @@ trait CustomPageWorkspaceComponentActions
                 }
 
                 try {
-                    $changed = app(CustomPageEditorialService::class)->updateBlock(
-                        $this->settings(),
-                        $index,
-                        $type,
-                        $this->componentPayload($data, $existing),
-                        $this->editingComponentOriginal,
-                    );
-                } catch (ValidationException $exception) {
-                    $path = $this->getMountedActionSchema()->getStatePath();
-                    $errors = [];
-                    foreach ($exception->errors() as $field => $messages) {
-                        $errors[$path.'.'.($field === 'component' ? 'type' : $field)] = $messages;
+                    $adoptValue = $type === 'image' ? ($data['adopt_component_index'] ?? null) : null;
+                    $adoptIndex = $adoptValue === null || $adoptValue === ''
+                        ? null
+                        : filter_var($adoptValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+                    if ($adoptIndex === false) {
+                        throw ValidationException::withMessages(['adopt_component_index' => 'Choose an existing component.']);
                     }
-                    throw ValidationException::withMessages($errors);
+                    $parentValue = $type !== 'image' ? ($data['parent_image_index'] ?? null) : null;
+                    $payload = $this->componentPayload($data, $existing);
+                    if ($parentValue !== null && $parentValue !== '') {
+                        $imageIndex = filter_var($parentValue, FILTER_VALIDATE_INT, [
+                            'options' => ['min_range' => 0],
+                        ]);
+                        if ($imageIndex === false) {
+                            throw ValidationException::withMessages(['parent_image_index' => 'Choose a decorative Image parent.']);
+                        }
+                        $changed = app(CustomPageEditorialService::class)->updateAndNestBlock(
+                            $this->settings(), $index, $type, $payload, $imageIndex, $this->editingComponentOriginal,
+                        );
+                        $this->clearSelections();
+                        $this->reloadWorkspace();
+                        if ($changed) {
+                            app(AdminNotifier::class)->notification(
+                                title: 'Component moved into image', status: 'success',
+                            );
+                            $newIndex = $index < $imageIndex ? $imageIndex - 1 : $imageIndex;
+                            $this->replaceMountedAction('editComponent', [
+                                'componentIndex' => $newIndex, 'componentType' => 'image',
+                            ]);
+                        }
+                        return;
+                    }
+                    $changed = $adoptIndex === null
+                        ? app(CustomPageEditorialService::class)->updateBlock(
+                            $this->settings(), $index, $type, $payload, $this->editingComponentOriginal,
+                        )
+                        : app(CustomPageEditorialService::class)->updateImageAndNest(
+                            $this->settings(), $index, $payload, $adoptIndex, $this->editingComponentOriginal,
+                        );
+                } catch (ValidationException $exception) {
+                    $this->throwComponentEditValidation($exception);
                 }
-                $this->editingComponentOriginal = $this->settings()->components()[$index];
+                if ($adoptIndex === null) {
+                    $this->editingComponentOriginal = $this->settings()->components()[$index];
+                }
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
+                if ($changed && $adoptIndex !== null) {
+                    $this->replaceMountedAction(
+                        'editComponent',
+                        ['componentIndex' => $adoptIndex < $index ? $index - 1 : $index,
+                            'componentType' => 'image'],
+                    );
+                }
                 if ($changed) {
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
@@ -280,6 +422,16 @@ trait CustomPageWorkspaceComponentActions
         return $committed
             ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
             : AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    private function throwComponentEditValidation(ValidationException $exception): never
+    {
+        $path = $this->getMountedActionSchema()->getStatePath();
+        $errors = [];
+        foreach ($exception->errors() as $field => $messages) {
+            $errors[$path.'.'.($field === 'component' ? 'type' : $field)] = $messages;
+        }
+        throw ValidationException::withMessages($errors);
     }
 
     /** @param array<string,mixed> $arguments

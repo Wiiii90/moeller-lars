@@ -269,6 +269,67 @@
     padding-left: var(--admin-stage-pane-space);
 }
 
+/* Legal: one compact default notice followed by a balanced 2 × 2 grid.
+ * The existing Filament form controls remain the only field owners. */
+.general-legal-settings > .fi-sc {
+    gap: var(--admin-section-gap) var(--admin-stage-pane-space) !important;
+    align-items: start;
+}
+
+.general-legal-settings > .fi-sc > * {
+    grid-column: span 1 !important;
+    min-width: 0;
+    padding: 0 !important;
+}
+
+.general-legal-settings > .fi-sc > :first-child {
+    grid-column: 1 / -1 !important;
+}
+
+.general-legal-settings textarea {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    height: 12rem;
+    min-height: 12rem;
+    padding: .55rem .6rem;
+    background: transparent !important;
+    color: var(--admin-text) !important;
+    font: inherit;
+    font-size: .78rem;
+    line-height: 1.5;
+    overflow-y: auto;
+    scrollbar-width: none;
+    resize: vertical;
+}
+
+/* Match scrollable admin stages: content remains scrollable without a rail. */
+.general-legal-settings textarea::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.admin-general .general-legal-settings .fi-input-wrp:has(textarea) {
+    min-height: 12rem;
+    border: 1px solid var(--admin-line-strong) !important;
+    background: transparent !important;
+}
+
+.admin-general .general-legal-settings .fi-input-wrp:has(textarea):focus-within {
+    border-color: var(--admin-accent) !important;
+}
+
+@media (max-width: 48rem) {
+    .general-legal-settings > .fi-sc {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .general-legal-settings > .fi-sc > :first-child {
+        grid-column: 1 !important;
+    }
+}
+
 /* Preview toolbar */
 .general-live-preview__toolbar {
     display: flex;

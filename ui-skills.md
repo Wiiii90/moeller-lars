@@ -231,6 +231,25 @@ Journal already uses visible Position and is the current reference for the conve
 
 ## 9. Drag and ordering
 
+
+For hierarchical editors (Pages and Custom Pages), sorting and parenting are
+different operations: each sibling level gets an isolated native `wire:sort:group`
+name with a stable `group-id`. The SINGLE drag-intent owner is
+`resources/js/admin-hierarchy-drag.js`; the tables provide only
+`data-admin-hierarchy`, drag handles and explicitly labeled
+`data-hierarchy-drop` targets. Do not recreate local Alpine drag state, use
+row-sized nest overlays or allow native sibling Sortable to change parents.
+A top-level drop target restores a Page or Image child to the root sequence;
+parent drops invoke the existing domain placement methods. Never add a
+second HTML5 draggable/sort engine: the shared controller merely disambiguates
+targeted parent changes from native Livewire sibling sorting.
+
+The shared `HierarchyParentField` provides a top-level placeholder in
+page and component Edit dialogs. On Custom Page Edit, a visible Parent
+selector appears ABOVE long Text/List content; changing Parent persists both
+content edits and hierarchy transactionally. Image children can also be
+released with `Move out`. Preserve publication, list contexts and text.
+
 Use native Livewire sorting only:
 
 ```text
@@ -263,6 +282,10 @@ Custom Page is a **flat sequence of components**:
 The Component selector is essential and remains editable at all supported widths. Content is separate from Component, never a duplicate type label. Blog-style child rows are not part of Custom Page: List entries use the owning List `Apply changes` Repeater dialog; Contact is a single component with editable Heading, Public Email, Social Media Links and Contact Form switches, platform selection, form presentation, and status text. All three Contact switches default on when creating. No Add/Edit/Sort/Publish/Delete Contact child actions or child-selection axes are emitted by Custom Page.
 
 Custom Page Contact Content shows only two lines: the authored heading (default `Contact`) and one ellipsized summary of enabled options. Legal Disclaimer Content shows `General legal disclaimer` followed by one ellipsized line of the actual General legal text, without redundant third-line metadata. The same semantic layout applies at every responsive width.
+
+Public Image nesting belongs to a decorative Image's ordered `children`, edited as a nested Repeater inside that Image's component dialog; the top-level component table stays a flat list of owners. Only Text, List without media, Contact *details* (email/social, no form), and Legal Disclaimer may be nested. Public text follows a native float around its owning Image and then beneath it—no two-column grid or viewport breakpoint. A following top-level Contact Form is full width, with Name, Email and Message stacked at every size. All Custom Page component headings reuse one serif typographic grammar aligned to the public page heading's family; prose, list titles and contact/disclaimer body use one body scale.
+
+Pages is the canonical page-level editor for Name, public route/slug, Parent, Position and optional page heading. Both Add and Edit expose the same heading vocabulary; the actual SiteSection owns the persisted heading. Home Edit shows its editable Name alongside the fixed root path, top-level parent and first position, plus the same Heading fields. These fixed root invariants must be shown rather than silently pretending that Home can have a custom slug or parent. Gallery/Journal/Custom Page may later surface the same settings in their own workspaces without duplicating data owners.
 
 List entries have `Entry`, one `Context` field (date, year, organisation or other free context), `Published`, and `Details`. No separate Date, Organisation, Location, URL or Insert image controls in the List entry editor. Old Date/Organisation/Location values fold into Context and old links into Details through the model's normalizer without silent content loss. Existing Home List components use the same List editor. Parent selections and publication actions apply only to parent components.
 

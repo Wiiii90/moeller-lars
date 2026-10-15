@@ -20,6 +20,9 @@ use LogicException;
     'show_instagram',
     'social_links',
     'legal_disclaimer',
+    'legal_imprint',
+    'legal_privacy',
+    'legal_usage_rights',
     'favicon_media_asset_id',
     'default_media_copyright_notice',
     'background_mode',
@@ -229,11 +232,26 @@ class PublicContentSetting extends Model
             }
         }
 
-        $legalDisclaimer = $setting->getAttribute('legal_disclaimer');
-        if ($legalDisclaimer !== null && (! is_string($legalDisclaimer) || trim($legalDisclaimer) === '')) {
-            throw ValidationException::withMessages([
-                'legal_disclaimer' => 'The legal disclaimer must contain text or be empty.',
-            ]);
+        foreach (\App\Domain\Content\PublicLegalContent::EDITORIAL_FIELDS as $field => $label) {
+            $value = $setting->getAttribute($field);
+            if ($value === null) {
+                continue;
+            }
+            if (! is_string($value) || mb_strlen($value) > 20000) {
+                throw ValidationException::withMessages([$field => $label.' must contain no more than 20,000 characters.']);
+            }
+            // Existing disclaimers may contain historical formatting. Editing
+            // another General setting must not silently rewrite that text.
+            if ($field === 'legal_disclaimer') {
+                if (trim($value) === '') {
+                    throw ValidationException::withMessages([$field => 'The existing legal note must contain text or be empty.']);
+                }
+
+                continue;
+            }
+
+            $normalized = trim($value);
+            $setting->setAttribute($field, $normalized === '' ? null : $normalized);
         }
     }
 }

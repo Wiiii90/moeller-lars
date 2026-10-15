@@ -18,7 +18,13 @@ trait CustomPageWorkspacePresentationHelpers
     {
         $type = $block['type'] ?? null;
         if ($type === 'image') {
-            return ['primary' => $imageName ?: 'Image unavailable', 'secondary' => '', 'meta' => ''];
+            $count = count(is_array($block['children'] ?? null) ? $block['children'] : []);
+
+            return [
+                'primary' => $imageName ?: 'Image unavailable',
+                'secondary' => ($block['image_decorative'] ?? false) ? 'Decorative · wraps text' : '',
+                'meta' => $count ? $count.' '.($count === 1 ? 'child' : 'children') : '',
+            ];
         }
         if ($type === 'text') {
             $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
@@ -58,12 +64,38 @@ trait CustomPageWorkspacePresentationHelpers
             ];
         }
         if ($type === 'legal_disclaimer') {
-            $text = PublicContentSetting::general()->getAttribute('legal_disclaimer');
-
-            return ['primary' => 'General legal disclaimer', 'secondary' => $this->contentExcerpt($text, 240), 'meta' => ''];
+            return [
+                'primary' => 'Legal Disclaimer from General',
+                'secondary' => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()),
+                'meta' => '',
+            ];
         }
 
         return ['primary' => '', 'secondary' => '', 'meta' => ''];
+    }
+
+    /** @return list<array{type:string,title:string,meta:string,published:bool}> */
+    private function imageChildSummaries(CustomPageSetting $settings, array $image): array
+    {
+        $summaries = [];
+        foreach ($image['children'] ?? [] as $child) {
+            if (! is_array($child)) {
+                continue;
+            }
+            $type = (string) ($child['type'] ?? '');
+            if (! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+                continue;
+            }
+            $content = $this->componentContent($settings, $child, null);
+            $summaries[] = [
+                'type' => self::COMPONENT_LABELS[$type] ?? $type,
+                'title' => $content['primary'],
+                'meta' => $content['meta'],
+                'published' => CustomPageSetting::componentPublished($child),
+            ];
+        }
+
+        return $summaries;
     }
 
     private function contentExcerpt(mixed $value, int $limit = 170): string
@@ -87,7 +119,21 @@ trait CustomPageWorkspacePresentationHelpers
         if (in_array($type, ['image', 'list'], true)) {
             $parts[] = $imageName;
         }
-        if ($type === 'text') {
+        if ($type === 'image') {
+            foreach ($block['children'] ?? [] as $child) {
+                if (! is_array($child)) {
+                    continue;
+                }
+                $parts[] = $this->componentParentSearchText($settings, $child, null);
+                if (($child['type'] ?? null) === 'list') {
+                    foreach ($child['items'] ?? [] as $item) {
+                        if (is_array($item)) {
+                            $parts[] = ($item['title'] ?? '').' '.(CustomPageSetting::listItemContext($item) ?? '');
+                        }
+                    }
+                }
+            }
+        } elseif ($type === 'text') {
             $parts[] = $block['title'] ?? null;
             $parts[] = $block['body'] ?? null;
         } elseif ($type === 'list') {
@@ -101,7 +147,7 @@ trait CustomPageWorkspacePresentationHelpers
                 $settings->contactChildren($block),
             ));
         } elseif ($type === 'legal_disclaimer') {
-            $parts[] = PublicContentSetting::general()->getAttribute('legal_disclaimer');
+            $parts[] = \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general());
         }
 
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));

@@ -84,14 +84,9 @@
             </div>
         @endif
 
-        @if ($primaryAsset->credit || $primaryAsset->copyright_notice)
+        @if ($primaryAsset->credit)
             <div class="artwork-detail__credits">
-                @if ($primaryAsset->credit)
-                    <p class="artwork-credit">{{ $primaryAsset->credit }}</p>
-                @endif
-                @if ($primaryAsset->copyright_notice)
-                    <p class="artwork-copyright">{{ $primaryAsset->copyright_notice }}</p>
-                @endif
+                <p class="artwork-credit">{{ $primaryAsset->credit }}</p>
             </div>
         @endif
 

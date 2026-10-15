@@ -281,13 +281,9 @@ final class SitePages extends Page
                     ];
                 })
                 ->schema([
-                    Select::make('parent_id')
-                        ->label('Parent page')
-                        ->options(fn (): array => $this->parentOptions)
-                        ->placeholder('Top level')
-                        ->native()
-                        ->nullable()
-                        ->visible(fn (): bool => $this->nestedNavigationEnabled),
+                    \App\Filament\Support\HierarchyParentField::make(
+                        'parent_id', fn (): array => $this->parentOptions, 'Parent page',
+                    )->visible(fn (): bool => $this->nestedNavigationEnabled),
                 ])
                 ->action(function (array $data, array $arguments): void {
                     /** @var SiteSection $section */

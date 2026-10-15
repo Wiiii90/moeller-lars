@@ -79,13 +79,9 @@ trait ManagesSitePageEditDialog
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                             ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
                             ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
-                        Select::make('parent_id')
-                            ->label('Parent page')
-                            ->options(fn (): array => $this->parentOptions)
-                            ->placeholder('Top level')
-                            ->native()
-                            ->nullable()
-                            ->visible(fn (): bool => $this->nestedNavigationEnabled),
+                        \App\Filament\Support\HierarchyParentField::make(
+                            'parent_id', fn (): array => $this->parentOptions, 'Parent page',
+                        )->visible(fn (): bool => $this->nestedNavigationEnabled),
                         TextInput::make('position')
                             ->label('Position')
                             ->numeric()
@@ -102,7 +98,7 @@ trait ManagesSitePageEditDialog
 
                     return $updated->wasChanged($field);
                 }, 'Page updated')
-                    ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
+                    ->visible(fn (): bool => $this->dialogSection($arguments)->hasPublicPage()),
             ])
             ->action(function (array $data, array $arguments): void {
                 try {
@@ -134,15 +130,62 @@ trait ManagesSitePageEditDialog
         $dialog = app(HomeSettingsDialog::class);
         $action = Action::make('editHome')
             ->label('Edit')
-            ->modalHeading('Home settings')
-            ->fillForm(fn (): array => $dialog->fill())
-            ->schema($dialog->schema())
+            ->modalHeading('Edit page')
+            ->fillForm(function () use ($dialog): array {
+                $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
+                $this->pageDialogOriginals[(int) $home->getKey()] = $this->pageDialogPersistedState($home);
+
+                return [
+                    ...$dialog->fill(),
+                    'name' => (string) $home->getAttribute('title'),
+                    'public_path' => '/',
+                    'parent_page' => 'Top level',
+                    'position' => 1,
+                ];
+            })
+            ->schema([
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema([
+                        TextInput::make('name')->label('Name')->required()->maxLength(160),
+                        TextInput::make('public_path')->label('Public slug')->disabled()->dehydrated(false),
+                        TextInput::make('parent_page')->label('Parent page')->disabled()->dehydrated(false),
+                        TextInput::make('position')->label('Position')->disabled()->dehydrated(false),
+                    ]),
+                ...$dialog->schema(),
+            ])
             ->action(function (array $data) use ($dialog): void {
-                $changed = $dialog->save($data);
+                try {
+                    $changed = DB::transaction(function () use ($dialog, $data): bool {
+                        $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->lockForUpdate()->firstOrFail();
+                        $before = $this->pageDialogPersistedState($home);
+                        $original = $this->pageDialogOriginals[(int) $home->getKey()] ?? [];
+                        // Heading and routing controls own their own autosaves.
+                        // Only the identity authored by this form is optimistic here.
+                        foreach (['title', 'navigation_label'] as $field) {
+                            if (($original[$field] ?? null) !== $before[$field]) {
+                                throw ValidationException::withMessages(['name' => 'This page changed since the editor was opened. Reopen the editor.']);
+                            }
+                        }
+                        $updated = app(SiteSectionIdentityService::class)->update(
+                            $home,
+                            trim((string) ($data['name'] ?? $home->getAttribute('title'))),
+                            null,
+                        );
+                        $settingsChanged = $dialog->save($data);
+                        $after = $this->pageDialogPersistedState($updated->fresh());
+                        $this->pageDialogOriginals[(int) $home->getKey()] = $after;
+
+                        return $settingsChanged || $before !== $after;
+                    });
+                } catch (ValidationException $exception) {
+                    $this->throwPageDialogValidation($exception);
+                }
                 $this->loadSections(navigationChanged: $changed);
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
-                        title: 'Home settings saved',
+                        title: 'Page updated',
                         status: 'success',
                     );
                 }

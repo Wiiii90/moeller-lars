@@ -1,4 +1,8 @@
-    <div class="custom-page{{ $isHome ? ' home-components' : '' }}" aria-label="{{ $label }}">
+    @php
+        $isEmbedded = (bool) ($isEmbedded ?? false);
+        $imageBlockPrefix = $imageBlockPrefix ?? 'page';
+    @endphp
+    <div class="custom-page{{ $isHome ? ' home-components' : '' }}{{ $isEmbedded ? ' custom-page--embedded' : '' }}" @unless($isEmbedded)aria-label="{{ $label }}"@endunless>
         @foreach ($blocks as $blockIndex => $block)
             @php
                 $type = is_array($block) ? ($block['type'] ?? null) : null;
@@ -18,6 +22,13 @@
                 @endphp
 
                 @if ($asset !== null && $variant !== null)
+                    @php
+                        $imageChildren = $decorative && is_array($block['children'] ?? null) && $block['children'] !== []
+                            ? $block['children'] : [];
+                    @endphp
+                    @if ($imageChildren !== [])
+                        <div class="custom-page__image-group">
+                    @endif
                     {{-- Public CSP rejects style attributes; authorize the per-image
                          CSS variables with the request's nonce instead. --}}
                     @if ($imageScale !== 1.0)
@@ -25,14 +36,22 @@
                             <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
                                 #custom-page-image-{{ $blockIndex }} {
                                     --custom-page-image-width: {{ 28 * $imageScale }}rem;
-                                    --custom-page-image-width-narrow: {{ 20 * $imageScale }}rem;
                                 }
                             </style>
                         @endpush
                     @endif
-                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image">
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
                         <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
+                    @if ($imageChildren !== [])
+                        @include('pages.partials.component-sequence', [
+                            'blocks' => $imageChildren,
+                            'label' => $label,
+                            'isEmbedded' => true,
+                            'imageBlockPrefix' => $imageBlockPrefix.'-'.$blockIndex,
+                        ])
+                        </div>
+                    @endif
                 @endif
             @endif
 
@@ -68,10 +87,10 @@
                                     @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
+                                            <strong>{{ $item['title'] ?? '' }}</strong>
                                             @if (filled(\App\Models\CustomPageSetting::listItemContext($item)))
                                                 <span class="custom-page__context">{{ \App\Models\CustomPageSetting::listItemContext($item) }}</span>
                                             @endif
-                                            <strong>{{ $item['title'] ?? '' }}</strong>
                                         </div>
                                         @if (filled(\App\Models\CustomPageSetting::listItemDetails($item)))
                                             <div class="rich-text">{!! $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
@@ -105,15 +124,25 @@
 
             @if ($type === 'contact')
                 <div class="custom-page__component custom-page__contact">
-                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" />
+                    <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" :heading-id="'contact-heading-'.$imageBlockPrefix.'-'.$blockIndex" />
                 </div>
             @endif
 
-            @if ($type === 'legal_disclaimer' && $generalSettings->legal_disclaimer !== null)
-                <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading-{{ $blockIndex }}">
-                    <h2 id="legal-disclaimer-heading-{{ $blockIndex }}">Haftungsablehnung</h2>
-                    <p>{{ $generalSettings->legal_disclaimer }}</p>
-                </section>
+            @if ($type === 'legal_disclaimer')
+                @php($legalSections = \App\Domain\Content\PublicLegalContent::sections($generalSettings))
+                @if ($legalSections !== [])
+                    <section class="legal-disclaimer custom-page__component custom-page__legal" aria-labelledby="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
+                        <h2 id="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Legal Disclaimer</h2>
+                        <div class="custom-page__legal-sections">
+                            @foreach ($legalSections as $legalSection)
+                                <details id="legal-{{ $legalSection['slug'] }}" class="custom-page__legal-section">
+                                    <summary>{{ $legalSection['label'] }}</summary>
+                                    <div class="custom-page__legal-text">{{ $legalSection['text'] }}</div>
+                                </details>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
             @endif
         @endforeach
     </div>

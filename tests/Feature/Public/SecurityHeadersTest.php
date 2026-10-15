@@ -78,6 +78,18 @@ it('enforces non-frameable public pages and same-origin administrator Preview wi
         ->and((string) $preview->getContent())->toContain('nonce="'.$previewNonce[1].'"');
 });
 
+it('emits TDM rights reservation for public HTML and media without affecting admin CSP', function (): void {
+    $middleware = app(SecurityHeaders::class);
+    foreach (['/', '/artworks/example', '/media/original/9', '/media/variant/9'] as $path) {
+        $response = $middleware->handle(Request::create($path, 'GET'), static fn (): Response => new Response('ok'));
+        expect($response->headers->get('tdm-reservation'))->toBe('1');
+    }
+    foreach (['/admin', '/pulse', '/preview/artworks/example'] as $path) {
+        $response = $middleware->handle(Request::create($path, 'GET'), static fn (): Response => new Response('ok'));
+        expect($response->headers->has('tdm-reservation'))->toBeFalse();
+    }
+});
+
 it('serves the public CSP-safe Livewire script without changing the Admin runtime configuration', function (): void {
     $before = config('livewire.csp_safe', false);
 
@@ -119,6 +131,6 @@ it('renders 50 percent Custom Page image size as CSP-authorized rules in Blade',
     expect($rendered)->toContain('id="custom-page-image-0"')
         ->toContain('<style nonce="image-size-test-nonce">')
         ->toContain('--custom-page-image-width: 14rem;')
-        ->toContain('--custom-page-image-width-narrow: 10rem;')
+        ->not->toContain('--custom-page-image-width-narrow: 10rem;')
         ->not->toContain('style="--custom-page-image-width');
 });

@@ -34,6 +34,18 @@ Only publicly eligible content appears in public rendering/navigation/sitemap/vi
 
 A canonical media **reference** does not automatically mean the asset is publicly deliverable.
 
+## Rights and privacy
+
+Public HTML/media responses declare a TDM rights reservation with the
+`tdm-reservation: 1` header and `/.well-known/tdmrep.json`. The public
+`robots.txt` excludes documented model-training/data collectors while
+preserving search indexing and the sitemap. These signals do not block
+human access to high-quality Artwork Viewer originals. No additional
+footer, menu entry, visual copyright overlay or quality downgrade is part
+of this contract. Artist-authored texts may live on the About/Contact
+Custom Page; Matomo consent is owned by the website, not the artist's
+editable content. See `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`.
+
 ## Site navigation
 
 Public visits use the already installed Livewire 4 `wire:navigate` document-swap
@@ -178,10 +190,13 @@ Embedded Storage media images use canonical `media:<id>` references resolved by 
 
 ## Custom Pages, CV and Contact
 
-Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type.
+Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type. The component sequence remains flat and independently publishable/reorderable in Admin.
 
-Contact is a reusable structured component on Custom Page and Home,
-not a standalone runtime page type.
+An Image marked `image_decorative` can own one ordered level of prose children: Text, List (without another image), Contact details (Email and Social links, not Form), and Legal Disclaimer. The nested components are edited inside the Image's single component dialog and persist as `image.children`. Their own publication settings and order are retained. Validation forbids images, dividers, nested Contact Forms, image-bearing Lists and second-level nested content; the Legal Disclaimer remains unique across the entire page.
+
+The public image and its children render in ONE native float formatting context. Lines wrap next to the floated image and then naturally below its bottom at whatever available inline width; no fixed columns or media-breakpoint switching is involved. A subsequent top-level Contact component (including its Contact Form) starts after that image group and uses fully wide, single-column fields. A regular Image remains an independent image block. An Image without children does not automatically absorb subsequent sibling content.
+
+The CV List keeps Context and Title inline in semantic records so they naturally wrap around image floats. An undated entry has no synthetic context or empty column. List Details, publication filters and optional image remain owned by the existing generic List component. Contact is a reusable structured component on Custom Page and Home, not a standalone runtime page type. Its public presentation uses understated editorial type and a compact two-column Name/Email form when width permits; form validation, honeypot, delivery and reporting semantics remain unchanged. The Legal Disclaimer remains General-owned text, presented as a restrained colophon with a neutral title; the editorial component does not invent new legal copy.
 
 Public Contact workflow validates server-side, enforces honeypot/rate-limit controls, delivers to configured private recipient, uses visitor email as Reply-To rather than forged From, exposes safe outcome and fails in controlled fashion when delivery unavailable.
 
@@ -472,3 +487,14 @@ The target does not preserve insecure HTTP behavior, blanket legacy query dispat
 
 Public acceptance requires durable publication/routing/data verification, media integrity, viewer interaction checks, isolated Validation, representative browser comparison and explicit editorial/artist review before Production cutover.
 
+
+
+The admin hierarchy uses one shared `admin-hierarchy-drag.js` controller.
+Native Livewire sorting only changes positions inside a sibling sequence;
+the small, explicit Nest and Page level targets alone change parentage.
+Pages and Custom Pages share drag gesture classification and the same
+`HierarchyParentField` semantics. Custom Page Text/List Edit exposes the
+Parent select above long component content, with a single domain transaction
+for edited content and nesting. Nested Image children can return to page
+level through the shared target or Move out. This is a single interaction
+contract, not independent per-page drag behavior.
