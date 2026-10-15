@@ -214,6 +214,8 @@ If a future feature requires workers/scheduler, update this document and `server
 
 ## Validation checks
 
+The [source-based application-runtime analysis](architecture/application-runtime-boundaries.md#release-marker-im-image-vs-öffentlich-erwarteter-pfad) distinguishes the SHA marker **inside the built image** from a publicly reachable `/app-release.json` URL: the Dockerfile currently writes `/app-release.json` outside Apache's public DocumentRoot and defines no corresponding Laravel route. HTTP delivery may be platform-owned and requires evidence from the actual ingress. Likewise, the [Matomo boot-guard flag difference](architecture/application-runtime-boundaries.md#matomo-tracking-flag-vs-entrypoint-guard) remains a source observation, not an executed failure. Neither observation relaxes the following acceptance requirements.
+
 For an exact deployed candidate:
 
 1. verify `/app-release.json` expected Git SHA;

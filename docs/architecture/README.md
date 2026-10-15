@@ -14,7 +14,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 8. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
 9. [Restore, Revert und Reset](publication-working-operations.md) — Activity UI bis zum Working-Snapshot, mit drei getrennten Ablaufdiagrammen, Guards und No-ops.
 10. [Strukturierte Komponenten](structured-components.md) — sechs persistierte JSON-Typen samt **dekorativen Image-`children[]`** als optionaler geordneter Textebene; Model-Guards, Repeater-Projektion, transaktionale Adoption bereits bestehender Top-Level-Prose, native Float-Darstellung und rekursive Media-Referenzlücke. Contact/Legacy-List-Context/Image-Scale bleiben erklärt; [JSON-Typkatalog](structured-components.json) ist noch eingefroren.
-11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 20 explizite HTTP-Routen mit [PHP-Quellprüfer](../../scripts/check-architecture-routes.php), Middleware, Filament-Discovery und Public-JS.
+11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 21 explizite HTTP-Routen mit [PHP-Quellprüfer](../../scripts/check-architecture-routes.php), Middleware, Filament-Discovery und Public-JS.
 12. [Public-SPA-Dokumentlebenszyklus](public-spa-lifecycle.md) — Livewire-4-Navigation mit deterministischen, URL-gebundenen Eckpositionen und CSP-Nonce, Dokument-Swap/Disposer, Content-only-Folio-Impuls, Hero-Completion-Guard und separatem Gallery-Bildladepuffer; **Bladeseitiger 2-eager-Stand gegen derzeit abweichenden Public-Vertrag** quellenbelegt.
 13. [Filament-/Livewire-Komposition und Pages-Identity-Negativpfad](ui-surfaces.md) — **eingefrorener** UI-Katalog (37 Einheiten, 26 Trait-Kanten, 72 literal Actions); aktueller Tree mit nur noch **23 Concerns** und **sieben Custom-Page-Concerns**. [JSON](generated/ui-surfaces.json)/[Mermaid](generated/ui-composition.mmd) wurden noch nicht regeneriert; Pages-Identity-Negativpfad separat quellengeprüft.
 **Weitere aktuelle fachliche Pfade:** [Editorial-Mutationsketten](editorial-mutation-paths.md) — Home-Sichtbarkeit als eigenständiger Routing-/Menu-Guard und Custom-Page-Image-Select von Livewire-Ereignis über gesperrte Domaintransaktion, Audit, No-op, Projektion und Notification bis zur begrenzten Index+Typ-Stale-Target-Prüfung. Quelle `dev@f69e0e7e`; Tests nur gelesen.
@@ -23,6 +23,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 15. [PostgreSQL-Schemaentwicklung](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände und ein konkreter Migrationskonflikt.
 16. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden.
 17. [Media-Referenzen, Cleanup und Reclaim](media-reference-and-cleanup.md) — DB-Commit-vor-Dateilöschung, direkte-vs-queued Retry-Grenzen, Working/LIVE/History-/Nested-/Home-List-Refs und **bitgenau abgesicherter, unter Cache-Lock durchgeführter Variant-Reclaim/Rebuild** inklusive vorhandener korrupter Datei als offenem Negativfall.
+18. [Application-Build und Runtime-Plattformgrenzen](application-runtime-boundaries.md) — Docker Build/Entrypoint/Apache/X-Sendfile/Local Preview getrennt von Deployment/DB-Migration/Smoke; zwei konkrete Source-Negativfälle zu Release-HTTP-Marker und Matomo-Konfigurationsschalter.
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 
@@ -105,7 +106,7 @@ Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser
 | Zustandsautomaten | Domain-Services und Guards | fünf aktuell untersuchte Modelle / 35 quellverankerte Kanten; weitere Zustände und indirekte Übergänge offen |
 | Ablauf-/Sequenzdiagramme | UI/Controller → Services → Persistenz/Events | Publication, Restore/Revert/Reset, Admin Notifications, Exhibition Map und Public SPA als getrennte statische Quellflüsse; **Runtime-Races/Browser nicht getestet** |
 | Browserinstanzen und -übergänge | Blade, Alpine/Livewire und `resources/js` | konkrete SPA-Disposer, Map/Viewer/Slideshow/Matomo-Pfade und native Folio-Animation quellengeprüft; **dynamische Browser-/Accessibility-Abnahme offen** |
-| Deployment und externe Systeme | Docker-/Laravel-Konfiguration; Plattformgrenze | offen; keine erfundene Hosttopologie |
+| Deployment und externe Systeme | [Build-/Boot-/HTTP-Trace](application-runtime-boundaries.md), [Release-Vertrag](../RELEASE.md) und [Plattformgrenze](../SERVER-OPERATIONS-BASELINE.md) | Source-Guards, Health/Smoke und Preview-vs-Production-Migration dokumentiert; Host-/Ingress-/Restore-Laufzeit, Release-Marker-URL und Matomo-Flag-Negativfälle **offen** |
 
 ### Reihenfolge der weiteren Arbeit
 
