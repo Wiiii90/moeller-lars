@@ -2,7 +2,9 @@
 
 namespace App\Domain\Admin;
 
+use App\Domain\Content\ContactSocialProfileCascade;
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\SocialLinks;
 use App\Models\JournalSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Database\Eloquent\Model;
@@ -14,15 +16,31 @@ final class AdminSettingsService
 
     public function updatePublicContent(PublicContentSetting $setting, array $data): PublicContentSetting
     {
-        /** @var PublicContentSetting $updated */
-        $updated = $this->update(
-            $setting,
-            $this->normalizePublicContent($data),
-            'public_content_setting.updated',
-            'public_content_setting',
-        );
+        $normalized = $this->normalizePublicContent($data);
+        if (! array_key_exists('social_links', $normalized)) {
+            /** @var PublicContentSetting $updated */
+            $updated = $this->update($setting, $normalized, 'public_content_setting.updated', 'public_content_setting');
 
-        return $updated;
+            return $updated;
+        }
+
+        // General owns the profile identity. A removal must clear every
+        // dependent Contact selection in the same transaction as General.
+        return DB::transaction(function () use ($setting, $normalized): PublicContentSetting {
+            $before = PublicContentSetting::query()->whereKey($setting->getKey())->lockForUpdate()->firstOrFail();
+            $previous = array_column(SocialLinks::configured($before->getAttribute('social_links')), 'platform');
+
+            /** @var PublicContentSetting $updated */
+            $updated = $this->update($setting, $normalized, 'public_content_setting.updated', 'public_content_setting');
+            $current = array_column(SocialLinks::configured($updated->getAttribute('social_links')), 'platform');
+            $removed = array_values(array_diff($previous, $current));
+
+            if ($removed !== []) {
+                app(ContactSocialProfileCascade::class)->removePlatforms($removed);
+            }
+
+            return $updated;
+        });
     }
 
     public function updateJournal(JournalSetting $setting, array $data): JournalSetting
