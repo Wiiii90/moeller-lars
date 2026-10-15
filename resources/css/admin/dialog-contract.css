@@ -528,3 +528,76 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
         border-bottom: 0;
     }
 }
+
+/* Shared four-fact Viewer metadata variant. The modal size is owned by
+ * AdminDialogSize; the fact grid responds to the actual content width and
+ * never creates a fifth or wrapped phantom metric cell. */
+.admin-detail-dialog {
+    container-type: inline-size;
+}
+
+.admin-detail-dialog__meta--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-detail-dialog__meta--four > div:nth-child(n) {
+    padding: .75rem .85rem;
+    border: 0;
+}
+
+.admin-detail-dialog__meta--four > div:nth-child(4n + 1) {
+    padding-left: 0;
+}
+
+.admin-detail-dialog__meta--four > div:nth-child(4n) {
+    padding-right: 0;
+}
+
+.admin-detail-dialog__meta--four > div:not(:nth-child(4n + 1)) {
+    border-left: 1px solid var(--admin-line);
+}
+
+.admin-detail-dialog__meta--four > div:nth-child(n + 5) {
+    border-top: 1px solid var(--admin-line);
+}
+
+@container (max-width: 42rem) {
+    .admin-detail-dialog__meta--four {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-child(n) {
+        padding: .7rem .75rem;
+        border: 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-child(2n + 1) {
+        padding-left: 0;
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-child(2n) {
+        padding-right: 0;
+        border-left: 1px solid var(--admin-line);
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-last-child(-n + 2) {
+        border-bottom: 0;
+    }
+}
+
+@container (max-width: 25rem) {
+    .admin-detail-dialog__meta--four {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-child(n) {
+        padding: .65rem 0;
+        border: 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-detail-dialog__meta--four > div:last-child {
+        border-bottom: 0;
+    }
+}

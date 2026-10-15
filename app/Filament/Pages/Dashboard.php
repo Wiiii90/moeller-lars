@@ -410,7 +410,7 @@ final class Dashboard extends Page
                     ['entry' => $this->feedEntry($arguments)],
                 ))
                 ->extraModalFooterActions(fn (array $arguments): array => $this->feedEntryHeaderActions($arguments)),
-            AdminDialogSize::Default,
+            AdminDialogSize::Large,
         );
     }
 

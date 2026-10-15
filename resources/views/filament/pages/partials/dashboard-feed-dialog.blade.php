@@ -8,7 +8,7 @@
 @endphp
 
 <div class="admin-detail-dialog admin-detail-dialog--feed">
-    <dl class="admin-detail-dialog__meta">
+    <dl class="admin-detail-dialog__meta admin-detail-dialog__meta--four">
         <div>
             <dt>Type</dt>
             <dd>{{ $entry['type_label'] }}</dd>
@@ -17,12 +17,12 @@
             <dt>Date</dt>
             <dd>{{ $entry['date_display'] }}</dd>
         </div>
-        <div>
-            <dt>Time</dt>
-            <dd>{{ $entry['time_display'] }}</dd>
-        </div>
 
         @if ($entry['type'] === 'contact')
+            <div>
+                <dt>Time</dt>
+                <dd>{{ $entry['time_display'] }}</dd>
+            </div>
             <div>
                 <dt>Sender</dt>
                 <dd class="admin-detail-dialog__sender">
@@ -32,16 +32,14 @@
             </div>
         @elseif ($entry['type'] === 'notification')
             <div>
+                <dt>Time</dt>
+                <dd>{{ $entry['time_display'] }}</dd>
+            </div>
+            <div>
                 <dt>Status</dt>
                 <dd>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }} — {{ ucfirst($entry['notification_status']) }}</dd>
             </div>
-            @if ($entry['link'] !== null && $entry['link_label'] !== null)
-                <div>
-                    <dt>Reference</dt>
-                    <dd><a href="{{ $entry['link'] }}" @if ($linkNavigatesInAdmin) wire:navigate @endif>{{ $entry['link_label'] }}</a></dd>
-                </div>
-            @endif
-        @elseif (in_array($entry['type'], ['announcement', 'changelog'], true))
+        @else
             <div>
                 <dt>Sender</dt>
                 <dd>System</dd>
@@ -49,11 +47,6 @@
             <div>
                 <dt>Status</dt>
                 <dd>{{ $entry['status'] }}</dd>
-            </div>
-        @elseif ($entry['link'] !== null && $entry['link_label'] !== null)
-            <div>
-                <dt>Reference</dt>
-                <dd><a href="{{ $entry['link'] }}" @if ($linkNavigatesInAdmin) wire:navigate @endif>{{ $entry['link_label'] }}</a></dd>
             </div>
         @endif
     </dl>
