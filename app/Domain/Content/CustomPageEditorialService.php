@@ -202,6 +202,93 @@ final class CustomPageEditorialService
         });
     }
 
+    /** Mutate one nested prose component without ever moving it into the Image
+     * editor. The child remains an independently authored page component. */
+    public function updateImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, array $updated): bool
+    {
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $updated): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (($children[$childIndex]['type'] ?? null) !== $type || ($updated['type'] ?? null) !== $type) {
+                throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
+            }
+            $children[$childIndex] = $updated;
+            $blocks[$imageIndex]['children'] = $children;
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    public function deleteImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type): bool
+    {
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (($children[$childIndex]['type'] ?? null) !== $type) {
+                throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
+            }
+            array_splice($children, $childIndex, 1);
+            if ($children === []) {
+                unset($blocks[$imageIndex]['children']);
+            } else {
+                $blocks[$imageIndex]['children'] = $children;
+            }
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    public function moveImageChildByDirection(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, string $direction): bool
+    {
+        $this->assertDirection($direction);
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $direction): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (($children[$childIndex]['type'] ?? null) !== $type) {
+                throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
+            }
+            $other = $childIndex + ($direction === 'up' ? -1 : 1);
+            if (! array_key_exists($other, $children)) {
+                return false;
+            }
+            [$children[$childIndex], $children[$other]] = [$children[$other], $children[$childIndex]];
+            $blocks[$imageIndex]['children'] = $children;
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    public function convertImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, string $targetType): bool
+    {
+        if (! in_array($targetType, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'Choose a text-capable component.']);
+        }
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $targetType): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (($children[$childIndex]['type'] ?? null) !== $type) {
+                throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
+            }
+            if ($targetType === $type) return false;
+            // Nested Contact is details-only, never an implicit Contact Form.
+            $converted = $this->convertedBlock($children[$childIndex], $targetType);
+            if ($targetType === 'contact') {
+                $converted['children'] = array_values(array_filter(
+                    $converted['children'],
+                    static fn (array $child): bool => ($child['type'] ?? null) !== 'contact_form',
+                ));
+            }
+            $children[$childIndex] = $converted;
+            $blocks[$imageIndex]['children'] = $children;
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
     /** Reorder children within one Image; never change their parent by sorting. */
     public function sortImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, int $position): bool
     {

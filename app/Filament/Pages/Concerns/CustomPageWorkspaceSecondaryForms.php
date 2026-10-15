@@ -16,10 +16,6 @@ trait CustomPageWorkspaceSecondaryForms
         ];
         if (($block['type'] ?? null) === 'image') {
             $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
-            $data['image_children'] = array_map(
-                fn (array $child): array => $this->componentEditorData($child),
-                array_values(array_filter($block['children'] ?? [], 'is_array')),
-            );
         }
         if (($block['type'] ?? null) === 'list') {
             $data['items'] = array_map(static fn (array $item): array => [
@@ -95,7 +91,13 @@ trait CustomPageWorkspaceSecondaryForms
      * only permitted Contact branch is email/social, never a Contact Form. */
     private function imageChildrenPayload(array $data, ?array $existing): array
     {
-        $children = $data['image_children'] ?? ($existing['children'] ?? []);
+        // Child content is NEVER editable in the Image form. Retain the
+        // independently authored children byte-for-byte on an Image edit.
+        if (! array_key_exists('image_children', $data)) {
+            $preserved = $existing['children'] ?? [];
+            return $preserved === [] ? [] : ['children' => $preserved];
+        }
+        $children = $data['image_children'];
         if (! is_array($children)) {
             throw ValidationException::withMessages(['image_children' => 'Image children must be ordered components.']);
         }
