@@ -82,7 +82,7 @@ sequenceDiagram
 
 **Sicherheitsgrenzen und Negativpfade:**
 
-1. Transaction + Advisory Lock schützen Commit/Restore/Reset vor konkurrierenden inkonsistenten Snapshots. Ein Schema-Paritätsfehler verhindert die Operation.
+1. Commit/Restore/Reset/Revert besitzen eine **gemeinsame** transaktionale Advisory-Lock-Grenze für ihre **geschützten** Operationsteile; Commit sperrt zusätzlich die Working-Tabellen in `SHARE MODE` und liest den Pending-Diff **unter** Lock erneut. Das beweist keine vollständige Serialisierung von **vorherigen** UI-/Preflight-Reads. **Revert liest insbesondere LIVE/Parent vor seinem Lock** und validiert den LIVE-Head darunter nicht erneut; die belegte hypothetische Interleaving-/Source-Provenienz-Grenze gehört ausschließlich zur [Working-Operations-Analyse](publication-working-operations.md#statische-race-sequenz-revert-ziel-vor-dem-lock). Ein Schema-Paritätsfehler verhindert die jeweilige geschützte Operation.
 2. Kein fachlicher Diff bedeutet **keinen neuen Commit**. Ein bloßer `updated_at`-Unterschied ist nicht publikationsrelevant.
 3. Der Commit schließt noch nicht zugeordnete Audit-Ereignisse zur aktuellen Generation; einzelne Undo-Receipts für diese Events werden entfernt.
 4. **Restore** lädt einen kompatiblen historischen Zustand in **Working**, nicht unmittelbar nach LIVE. **Revert** ist auf den Parent des aktuellen LIVE-Commits beschränkt und wird ebenfalls zunächst nur staged.

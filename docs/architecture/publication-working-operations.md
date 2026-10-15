@@ -14,6 +14,19 @@ Diese Operationen sind **nicht** identisch mit einem individuellen Activity-Undo
 
 Die **UI-Eligibility** ist keine Sicherheitsgrenze: `PublicationVersionService::assertRestorable` und `PublicationSchemaGuard::assertParity` prüfen vor der Datenmutation erneut. Für Restore wird die gewählte `PublicationCheckpoint`-ID im Action-Handler geladen; ungültige ID führt zu 404, fehlende Snapshot-Verfügbarkeit oder Schemaabweichung zu ValidationException und Warn-Notification.
 
+## Serialisierungsgrenze: Wer bestimmt welches Ziel unter Lock?
+
+**Source-Trace `dev@f4da0424`, nur Inspektion von `PublicationService` und `PublicationVersionService`.** Alle vier Domain-Operationen besitzen einen `DB::transaction`-Aufruf und erwerben `pg_advisory_xact_lock(PublicationSnapshot::LOCK_KEY)`; daraus folgt **nur eine gemeinsame Serialisierung der teilnehmenden Operationen**, nicht automatisch eine unveränderliche Bestätigung aus einer früheren UI-Projektion.
+
+| Domain-Operation | Vor dem Shared-Lock | Unter Shared-Lock | Nach SQL-Commit |
+| --- | --- | --- | --- |
+| `PublicationService::commit` | Eingabe-Längenprüfung; UI-/Preflight-Pending kann veraltet sein | `assertParity()`; zusätzlich `LOCK TABLE public.<tracked> IN SHARE MODE`; **PendingSummary erneut**; bei null Diff nur Kontext löschen, sonst Parent/Historie bestimmen, LIVE-Tabellen ersetzen, Checkpoint/Events/Receipts verknüpfen | `mediaCleanup->drain()` **nur mit neuem Checkpoint** |
+| `stageVersion(checkpoint)` / Restore | Ausgewählte Checkpoint-ID aus Admin-Request; ein altes UI-`can_restore` ist nicht autoritativ | `assertParity()`, `assertRestorable(checkpoint)`, Diff, Working-Replace, Restore-Context, Audit; **kein früher Null-Diff-No-op** | `drain()`, dann geänderten Wert + Checkpoint zurückmelden |
+| `resetStagedChanges` | Confirmation/Actor | `assertParity()`, aktuelle `pendingCount()`; Null-Diff löscht nur Working-Context; andernfalls Working aus LIVE ersetzen, Context löschen, Audit | `drain()` **nur bei geänderten Rows** |
+| `stageRevertOfCurrent` | **`currentLiveCheckpoint()` und `live->parent()` werden vor BEGIN/Lock gelesen**, fehlende Werte sofort abgelehnt | `assertParity()`, **nur** `assertRestorable(parent)`; keine erneute Prüfung, ob der zuvor gelesene LIVE noch aktuell ist; Working-Replace, Context-Source = gelesener LIVE, Audit | `drain()`; Rückgabe von refreshed Parent/LIVE (Refresh ist keine atomare Neuauswahl unter Lock) |
+
+Die `SHARE`-Tabellensperren bei Commit und die für das Ersetzen nötigen `TRUNCATE`-Sperren sind **zusätzliche** PostgreSQL-Datenbankmechanismen; die Domaincode-Stellen beweisen keine ausgeführte Mehrsession-Serialisierungsprobe. Fehler beim nachgelagerten **Datei-Cleanup** liegen außerhalb der bereits committeten Working-/LIVE-Transaktion. Die konkrete hypothetische H→H2-Pfaddifferenz bleibt ausschließlich im [Revert-Race-Diagramm](#statische-race-sequenz-revert-ziel-vor-dem-lock), nicht in einem zweiten generischen Publication-Diagramm. Die **normative** Forderung, den Revert-Head unter derselben Serialisierungsgrenze zu revalidieren, steht im [Publication-Vertrag](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md#transactions-and-locks). Zwei unabhängige PostgreSQL-Sessions sind weiterhin erforderlich, um tatsächliche Konflikt-/Rollback-Semantik zu belegen.
+
 ## 1. Restore: historischer Snapshot → Working
 
 [Sequenzdiagramm](generated/working-operations/restore.mmd) · Quellen: [`Activity`](../../app/Filament/Pages/Activity.php), [`PublicationVersionService`](../../app/Domain/Publication/PublicationVersionService.php)

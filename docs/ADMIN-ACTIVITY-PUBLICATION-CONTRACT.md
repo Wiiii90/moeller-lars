@@ -255,7 +255,7 @@ Those events target the concrete publication Commit when possible and link to th
 
 ## Transactions and locks
 
-Commit, Reset, Restore and Revert use the shared publication advisory lock. Replacement of tracked Working/LIVE tables happens transactionally.
+Commit, Reset, Restore and Revert use the shared publication advisory lock. Replacement of tracked Working/LIVE tables happens transactionally. Commit must re-evaluate the Working/LIVE difference under that lock; it also takes explicit `SHARE` table locks on tracked Working tables. The **Revert current commit** contract additionally requires that the selected LIVE head and its parent be **read or revalidated under that same serialization boundary** before Working is replaced. The present `PublicationVersionService::stageRevertOfCurrent()` reads both before acquiring the lock and checks only parent restorability after it; treat this as an **open source-confirmed race**, not accepted correct behavior. See the [single race/lock source trace](architecture/publication-working-operations.md#serialisierungsgrenze-wer-bestimmt-welches-ziel-unter-lock).
 
 Unsafe partial restore is not acceptable. If schema validation, FK constraints or snapshot hydration fail, the transaction rolls back rather than using `CASCADE`, silently skipping rows or publishing partial state.
 
@@ -287,7 +287,7 @@ Durable tests should prove at least:
 - Reset restores Working exactly to LIVE while preserving Activity;
 - Restore changes Working but not LIVE until Commit;
 - a restore Commit records parent and source lineage;
-- Revert stages only the current LIVE parent and publishes later as a new Commit;
+- Revert stages only the currently confirmed LIVE parent, rejects a concurrent head change detected under the publication lock without replacing Working, and publishes later as a new Commit;
 - Commit history cannot be deleted at the database boundary;
 - media referenced by any retained version cannot be physically deleted;
 - current Activity contains only uncommitted forensic Activities, while Commit details retain their committed Activities;
