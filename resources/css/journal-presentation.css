@@ -115,11 +115,6 @@
     object-fit: contain;
 }
 
-.journal-entry-gallery--slideshow .journal-entry-media figcaption {
-    max-width: 100%;
-    overflow-wrap: anywhere;
-}
-
 .journal-entry-gallery__controls {
     grid-column: 1;
     grid-row: 2;

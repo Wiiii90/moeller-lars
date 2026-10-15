@@ -47,7 +47,7 @@
                         @endif
                     </span>
                     <span class="exhibition-entry__heading">
-                        <h2 class="exhibition-entry__title">{{ $exhibition->title }}</h2>
+                        <span class="exhibition-entry__title">{{ $exhibition->title }}</span>
                         @if ($location !== '')
                             <span class="exhibition-entry__byline">
                                 <span class="exhibition-entry__location">{{ $location }}</span>

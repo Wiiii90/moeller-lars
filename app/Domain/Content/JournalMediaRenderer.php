@@ -44,6 +44,9 @@ final class JournalMediaRenderer
         if ($includeCopyrightNotice && ($includeInheritedCopyright || ! $this->inheritsDefaultNotice($usage))) {
             $copyright = trim((string) ($asset->effectiveCopyrightNotice() ?? ''));
         }
+        // Public Journal presentations may omit visible figure captions.
+        // Asset credit, copyright inheritance and accessible ALT remain owned
+        // by their existing canonical media metadata, not this display flag.
         $caption = trim(implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== '')));
 
         $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';
