@@ -133,3 +133,36 @@ it('applies dashboard feed filters to the pinned priority list', function (): vo
     expect(array_column($pins->entries('', 'announcement'), 'key'))->toBe(['static:announcement'])
         ->and(array_column($pins->entries('catalogue', 'all'), 'key'))->toBe(['contact:'.$contact->getKey()]);
 });
+
+it('reads versioned release notes and the linked pre-release announcement from source', function (): void {
+    config()->set('dashboard-feed.items', require config_path('dashboard-feed.php'));
+
+    $feed = app(DashboardFeed::class);
+    $items = $feed->paginate('', 'changelog', 1, 25);
+
+    expect($items['total'])->toBe(3)
+        ->and(array_column($items['items'], 'key'))->toBe([
+            'static:changelog-v0.3.0',
+            'static:changelog-v0.2.0',
+            'static:changelog-v0.1.0',
+        ]);
+
+    foreach ($items['items'] as $item) {
+        expect($item['body'])->toContain('## Added')
+            ->and($item['body'])->toContain('github.com/Wiiii90/moeller-lars/issues/');
+        app(\App\Domain\Content\SafeRichTextRenderer::class)->assertValid(
+            $item['body'],
+            allowEmbeddedMedia: false,
+        );
+    }
+
+    $announcement = $feed->entry('static:announcement-pre-release');
+    expect($announcement)->not->toBeNull()
+        ->and($announcement['related_key'])->toBe('static:changelog-v0.3.0')
+        ->and($announcement['body'])->toContain('## Curate your artwork');
+
+    app(\App\Domain\Content\SafeRichTextRenderer::class)->assertValid(
+        $announcement['body'],
+        allowEmbeddedMedia: false,
+    );
+});

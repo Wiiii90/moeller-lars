@@ -140,6 +140,15 @@ final class Dashboard extends Page
         $this->mountAction('feedEntry', ['key' => $key]);
     }
 
+    public function openRelatedFeedEntry(string $key): void
+    {
+        $entry = app(DashboardFeed::class)->entry($key);
+        abort_unless(is_array($entry) && ($entry['type'] ?? null) === 'changelog', 404);
+
+        $this->feedEntryCache[$key] = $entry;
+        $this->replaceMountedAction('feedEntry', ['key' => $key]);
+    }
+
     public function toggleFeedPin(string $key): void
     {
         app(DashboardFeedPins::class)->toggle($key);

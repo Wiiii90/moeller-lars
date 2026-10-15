@@ -11,6 +11,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use LogicException;
 
 final class DashboardFeed
 {
@@ -453,6 +454,19 @@ final class DashboardFeed
                 $date = is_string($item['date'] ?? null) ? trim($item['date']) : '';
                 $title = is_string($item['title'] ?? null) ? trim($item['title']) : '';
                 $body = is_string($item['body'] ?? null) ? trim($item['body']) : '';
+                $bodyFile = is_string($item['body_file'] ?? null) ? $item['body_file'] : '';
+                if ($bodyFile !== '') {
+                    if (preg_match('~\\A(?:versions/v\\d+\\.\\d+\\.\\d+|announcements/[a-z0-9-]+)\\.md\\z~D', $bodyFile) !== 1) {
+                        throw new LogicException('Invalid release note file name.');
+                    }
+
+                    $content = file_get_contents(resource_path('release-notes/'.$bodyFile));
+                    if (! is_string($content) || strlen($content) > 65536) {
+                        throw new LogicException('Release note file is unavailable or too large: '.$bodyFile);
+                    }
+
+                    $body = trim($content);
+                }
 
                 if ($id === '' || ! in_array($type, ['announcement', 'changelog'], true) || $date === '' || $title === '' || $body === '') {
                     return null;
@@ -497,6 +511,8 @@ final class DashboardFeed
                     'mail_delivered_at' => null,
                     'link' => $link,
                     'link_label' => $linkLabel,
+                    'related_key' => is_string($item['related_key'] ?? null) && preg_match('/\Astatic:changelog-v\d+\.\d+\.\d+\z/D', $item['related_key']) === 1 ? $item['related_key'] : null,
+                    'related_label' => is_string($item['related_label'] ?? null) ? $item['related_label'] : null,
                 ];
             })
             ->filter()

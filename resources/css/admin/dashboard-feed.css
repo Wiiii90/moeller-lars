@@ -268,3 +268,50 @@
         width: 7rem !important;
     }
 }
+
+/* Release communication reuses the shared read-only viewer and central
+ * safe Rich Text renderer, with compact structured-note typography. */
+.admin-detail-dialog__release-notes {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--admin-text);
+    font-size: .85rem;
+    line-height: 1.65;
+}
+
+.admin-detail-dialog__release-notes :is(h1, h2, h3) {
+    margin: 1.15rem 0 .45rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.admin-detail-dialog__release-notes h1 { font-size: 1.08rem; }
+.admin-detail-dialog__release-notes h2 { font-size: .98rem; }
+.admin-detail-dialog__release-notes h3 { font-size: .9rem; }
+.admin-detail-dialog__release-notes > :first-child { margin-top: 0; }
+.admin-detail-dialog__release-notes :is(p, ul, ol, blockquote) { margin: 0 0 .8rem; }
+.admin-detail-dialog__release-notes :is(ul, ol) { padding-inline-start: 1.5rem; }
+.admin-detail-dialog__release-notes li { margin-block: .28rem; }
+.admin-detail-dialog__release-notes li > :last-child { margin-bottom: 0; }
+.admin-detail-dialog__release-notes a { text-decoration: underline; }
+.admin-detail-dialog__release-notes blockquote {
+    padding-inline-start: .8rem;
+    border-inline-start: 2px solid var(--admin-line-strong);
+    color: var(--admin-muted);
+}
+.admin-detail-dialog__related-link {
+    justify-self: start;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--admin-text);
+    font-size: .82rem;
+    font-weight: 650;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: .2rem;
+}
+.admin-detail-dialog__related-link:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: .22rem;
+}
