@@ -728,3 +728,45 @@
 /* Root and child Sortable groups have distinct names: moving between groups
    requires the explicit Nest drop surface, never an accidental sort. */
 .admin-hierarchy--pages .admin-hierarchy__group { position: relative; }
+
+/* The central pointer/drag controller alone reveals eligible parent targets.
+   Ordinary sortable rows remain unobstructed for same-level reordering. */
+.admin-hierarchy__content.is-hierarchy-parent-eligible {
+    outline: 1px dashed color-mix(in srgb, var(--admin-accent) 32%, transparent);
+    outline-offset: -2px;
+}
+.admin-hierarchy__content.is-hierarchy-parent-hovered {
+    outline-color: var(--admin-accent);
+    background: color-mix(in srgb, var(--admin-accent) 6%, transparent);
+}
+.admin-hierarchy__nest-target {
+    display: none;
+}
+.admin-hierarchy__nest-target.is-eligible {
+    display: flex;
+}
+.admin-hierarchy__nest-target.is-hovered {
+    border-color: var(--admin-accent);
+    border-style: solid;
+    background: var(--admin-subtle);
+}
+/* A fixed target remains reachable when a child is far down a long table.
+   This is the SAME root drop for Pages and decorative Image children. */
+.admin-hierarchy__nest-target[data-hierarchy-drop="root"].is-eligible {
+    position: fixed;
+    z-index: 100;
+    top: auto;
+    right: clamp(1rem, 3vw, 2rem);
+    bottom: clamp(1rem, 3vh, 2rem);
+    width: 11rem;
+    min-height: 2.75rem;
+    padding: .55rem;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, .13);
+}
+/* Component rows reserve their Content region for an eligible image target,
+   not the Action controls or the primary sortable grab handle. */
+.custom-page-component-sequence .admin-hierarchy__nest-target[data-hierarchy-drop="nest"].is-eligible {
+    right: calc(var(--admin-hierarchy-actions-column) + var(--admin-table-selection-width, 2.5rem) + .5rem);
+    width: min(10rem, 25%);
+}
+.admin-hierarchy__header { position: relative; }

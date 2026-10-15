@@ -282,3 +282,41 @@ it('sorts Image children only within their owner while preserving publication st
         ->and($blocks[0]['children'][0]['published'])->toBeFalse()
         ->and($blocks[1]['title'])->toBe('Outside');
 });
+
+it('moves the edited CV content into its chosen Parent as a single operation', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('CV placement', 'cv-placement');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('cv-placement');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true],
+        ['type' => 'list', 'title' => 'CV', 'items' => [['title' => 'Born in Hamburg', 'context' => '1989']]],
+    ]]);
+    $updated = $settings->fresh()->components()[1];
+    $updated['items'][0]['title'] = 'Born in Hamburg, Germany';
+    expect(app(\App\Domain\Content\CustomPageEditorialService::class)->updateAndNestBlock(
+        $settings, 1, 'list', $updated, 0,
+    ))->toBeTrue();
+    $blocks = $settings->fresh()->components();
+    expect($blocks)->toHaveCount(1)
+        ->and($blocks[0]['children'][0]['items'][0]['title'])->toBe('Born in Hamburg, Germany')
+        ->and($blocks[0]['children'][0]['items'][0]['context'])->toBe('1989');
+});
+
+it('moves Image children between decorative parents without changing sibling order', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Image parents', 'image-parents');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('image-parents');
+    $settings->update(['blocks' => [
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true,
+            'children' => [['type' => 'text', 'title' => 'Biography', 'body' => 'Text']]],
+        ['type' => 'text', 'title' => 'Unchanged', 'body' => 'Middle'],
+        ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true],
+    ]]);
+    $editor = app(\App\Domain\Content\CustomPageEditorialService::class);
+    expect($editor->moveImageChild($settings, 0, 0, 2))->toBeTrue();
+    $blocks = $settings->fresh()->components();
+    expect(array_column($blocks, 'type'))->toBe(['image', 'text', 'image'])
+        ->and($blocks[1]['title'])->toBe('Unchanged')
+        ->and($blocks[2]['children'][0]['title'])->toBe('Biography')
+        ->and($blocks[0]['children'] ?? [])->toBe([]);
+});

@@ -16,20 +16,17 @@ Status: architectural contract and implementation criteria. Block A General/Lega
 
 ### Current source-of-truth
 
-`app/Filament/Pages/General.php` currently has precisely two fields under Legal:
+`app/Filament/Pages/General.php` now exposes **five** Legal inputs: the short `default_media_copyright_notice` (max 500 characters), plus `legal_imprint`, `legal_privacy`, `legal_usage_rights`, and the historical persisted key `legal_disclaimer` (visible label **External Links Notice**). The default notice occupies a full-width form row; the other four inputs form a responsive 2×2 grid, remain scrollable and hide only the visible scrollbar. All five have help affordances. The re-used **Legal Disclaimer** Custom Page component reads these texts through `PublicLegalContent`, displaying only nonempty escaped sections with stable deep-link anchors.
 
-1. `default_media_copyright_notice`, max 500 characters, inherited by assets unless overridden/disabled.
-2. `legal_disclaimer`, reusable text displayed only by an explicitly placed Custom Page `legal_disclaimer` component. `resources/views/pages/partials/component-sequence.blade.php` currently renders one heading `Rechtlicher Hinweis` and one escaped paragraph. It does not contain an imprint/privacy/right-of-use content model.
+`MediaAsset::effectiveCopyrightNotice()` continues to implement `inherit | override | none` for supported rights and metadata projections. **The Artwork detail deliberately does not display an automatic copyright-notice row**, including the inherited General default; the existing photographic credit remains. This is an explicit product decision, not missing implementation work. Browser acceptance and legal correctness are still separate.
 
-Existing `MediaAsset::effectiveCopyrightNotice()` implements `inherit | override | none`. Journal uses it in `JournalMediaRenderer`, but the Artwork detail `resources/views/pages/artworks/show.blade.php` currently reads `$primaryAsset->copyright_notice` directly and can miss the inherited default. Repair this mismatch at the existing common rights projection.
-
-### Target editorial schema: 5 fields in General Legal (2 existing, 3 new)
+### Implemented five-field General schema — content and runtime acceptance outstanding
 
 1. **Default copyright notice** (existing, concise inherited notice; e.g. `© Lars Möller. Alle Rechte vorbehalten.` only for media where he actually holds relevant rights).
 2. **Impressum** (new, properly authored provider identification and address; no fabricated data).
 3. **Datenschutz** (new, truthful privacy information based on real app/server/Matomo/contact/map behavior; technically the site developer must own correctness).
 4. **Urheberrecht & KI-Nutzung** (new, broader copyright, reproduction/license inquiries, §44b UrhG TDM rights reservation in accurate terms, and distinctions for third-party photography).
-5. **Hinweise zu externen Links** (rework existing `legal_disclaimer`; OPTIONAL; avoid an ineffective blanket release from liability, migrate text explicitly without data loss).
+5. **External Links Notice** (persisted key `legal_disclaimer`; OPTIONAL; no blanket release from liability, existing content retained).
 
 No per-crawler, per-method or per-media copyright text fields in General. Fixed technical safeguards are application-owned, not arbitrary toggles that accidentally compromise rights.
 
@@ -37,7 +34,7 @@ No per-crawler, per-method or per-media copyright text fields in General. Fixed 
 
 - Reuse the existing Custom Page component type and order/action/published behavior; preserve the established English `Legal Disclaimer` component name while extending its content with a migration/compatibility path for `legal_disclaimer`.
 - From that component render whichever of the authored legal sections have actual content; no invented defaults. Preferred compact concept: quietly identifiable Imprint / Privacy Policy / Copyright & AI Use links/expandable subsections **inside the existing About/Contact content**, not a footer or new public page. Optional external-link note last. Ensure accessible keyboard/focus, logical headings, anchors/deep links, mobile widths, opening direct fragments across Livewire SPA and no hidden unreachable disclosures.
-- The short inherited copyright belongs on applicable artwork/other media credits according to existing editorial display rules. The long rights statement belongs in the Legal component. Do not stamp `© Lars Möller` onto every artwork or page.
+- The inherited default may appear only in specifically authorized media/metadata projections, **not** as an automatic Artwork-detail copyright line. Photographic credit remains. The long rights statement belongs in the Legal Disclaimer component. Do not stamp `© Lars Möller` onto every artwork or page.
 - Test site/artist preview and published/unpublished paths, including the Public Home Gate. Distinguish technical reachability from the artist's decision to publish.
 
 ### Implementation note (2026-10-14)
@@ -53,7 +50,7 @@ uses unobtrusive native details/summary and deterministic fragment identifiers
 (`#legal-imprint`, `#legal-privacy`, `#legal-copyright-ai`,
 `#legal-external-links`), which a bundled Vite helper reveals on SPA/hash
 navigation. Only nonempty authored sections render and texts are HTML-escaped.
-The existing artwork-detail credit now reads the effective inherited notice.
+The artwork detail instead retains the photographic credit and intentionally shows no automatic Copyright Notice. The General external-links field and projected subsection now both carry the English label **External Links Notice**.
 
 This is implementation intent/source work, not a declaration that the tests
 have run or the actual browser layout has been accepted. The artist still
@@ -68,7 +65,7 @@ into a permanent misleading completion claim.
 - `app/Domain/Media/MediaAssetEditorialService.php` edits only those four metadata fields and audits genuine changes. It does not embed rights metadata in media bytes.
 - `app/Domain/Media/MediaIngestService.php` copies canonical original bytes unchanged to `originals/` with SHA-256/length and creates `variants/` WebP thumbnails using PHP GD; re-encoding does not explicitly preserve/add IPTC/XMP and may drop embedded rights metadata. Do not conflate DB metadata with embedded file metadata.
 - `app/Domain/Media/PublicMedia.php` determines whether an asset is public based on publication references. `app/Http/Controllers/PublicMediaController.php` then sends eligible original/variant bytes using `X-Sendfile`. Viewer uses originals by design.
-- Credits are not uniform across artwork, journal, custom images, Home; the effective inherited notice is currently missing from the Artwork detail path.
+- Credits are not uniform across artwork, journal, custom images and Home. Artwork detail intentionally suppresses the automatic inherited copyright-notice row while preserving photographic credit; do not reintroduce it as a generic consistency fix.
 
 ### Target single rights projection (no duplicate authorities)
 

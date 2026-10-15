@@ -147,6 +147,19 @@ Pages-Dialog-/Identity-Datenfluss; keine parallele Identity-Pipeline einführen.
 Das ist ein **quellbelegter produktiver Fehlerpfad**, kein hier ausgeführter
 Browser- oder Datenbanknachweis.
 
+## Gemeinsamer Hierarchie-Drag-Intent: Pages und Custom Pages
+
+**Source-Trace, Stand `dev@cbc3f5ad` (kein Browser-/Node-/Livewire-Test in diesem Workstream):** Die [Pages-Tabelle](../../resources/views/filament/pages/site-pages.blade.php) und die [Custom-Page-Sequenz](../../resources/views/filament/pages/partials/custom-page-workspace-sequence.blade.php) deklarieren jeweils `data-admin-hierarchy`, Grip/Zeilen-Zielattribute und explizite `data-hierarchy-drop=nest|root`-Marker. [`admin-hierarchy-drag.js`](../../resources/js/admin-hierarchy-drag.js) registriert einmal delegierte Pointer-, Drag- und Livewire-Navigation-Listener, ermittelt den Source-Datensatz am Handle und aktiviert einen Parent-Drop erst nach Beginn der Geste. `hierarchyMove()` verwirft nicht kompatible Ziele und unmögliche Parentwechsel. `hitTarget()` erfasst sowohl den kleinen dedizierten Nest-Marker als auch den **Content-Bereich** einer tatsächlich zulässigen Parent-Zeile; Position, Type, Actions, Selection und Sort-Handle bleiben **Sibling-Sort**. `pointerup`, `drop` oder (falls früher als die beiden anderen Ereignisse) `dragend` leiten höchstens die verfügbare `$wire.$call(method, ...args)`-Mutation weiter. `reset()` räumt CSS-Zustand/aktive Geste ab; keine Timer und keine JS-Persistenz.
+
+| Bereich | Parent-Änderung | Ergebnis-/Fehlergrenze |
+| --- | --- | --- |
+| Pages | `sortSection(id, 999999, root|parentId)` → `SiteSectionOrderService::moveTo` | `reorderEnabled` und Domain-Validierung; nur echte Änderung löst Reload/Notification aus; Sibling-Sort nutzt weiterhin `wire:sort` |
+| Custom Page (Top-Level) | `nestComponent(index,type,imageIndex)` → `CustomPageEditorialService::nestBlock` | dekoratives Image und erlaubter Child-Typ erforderlich; sonst Exception/Warning statt bestätigter Änderung |
+| Custom Page (Image child) | `unnestImageChild(image,child)` / `moveImageChild(fromImage,child,toImage)` | Transaktion und erneute Settings-Row-Sperre; gleiche Parent-ID No-op, ungültige Ziele Validation |
+| Custom Page (Edit) | `HierarchyParentField` `parent_image_index` → `updateAndNestBlock` | Content und Parent-Änderung im äußeren DB-Transaktionskontext, Edit-Aktion nach erfolgreichem Move auf Image-Parent re-mountet |
+ 
+**Testquellen vs Laufzeit:** [`tests/js/admin-hierarchy-drag.test.mjs`](../../tests/js/admin-hierarchy-drag.test.mjs) beschreibt Gesture-Klassifikation und einzelne Livewire-`$call`-Dispatches; [`HierarchySortIntentTest`](../../tests/Architecture/Admin/HierarchySortIntentTest.php) überprüft Source-Grenzen; [`CustomPageWorkspaceTest`](../../tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php) und [`CustomPageComponentsTest`](../../tests/Integration/Content/CustomPageComponentsTest.php) enthalten Parentwahl, Reparenting und Context-Erhalt. **Kein Test wurde hier ausgeführt.** Zusätzlich offen: Browser-Drag mit Sortable-Ghost, Keyboard-Alternative, mehrfacher Drag-/Drop-Eventfolge, zweiter Livewire-Client mit konkurrierendem Reorder und die reale Notification-/Audit-Kardinalität bei kombiniertem `updateAndNestBlock`. Der [Tabellenvertrag](../ADMIN-TABLE-CONTRACT.md#component-sequences) ist der einzige normative Interaction-Owner; der [Structured-Content-Audit](structured-components.md) ist Eigentümer der JSON-/Transaktionssemantik.
+
 ## Custom Page: komponentenbezogene Edit-Zielauflösung
 
 **Source-Fix auf `dev@21e907f` (drei neue Commits nach dem

@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\DecorativeImageChildren;
+use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use Closure;
@@ -56,6 +57,7 @@ trait CustomPageWorkspaceForms
                 ->schema([
                     $typeField,
                     $statusField,
+                    ...($onTypeChange === null ? [] : [$this->componentParentField()]),
                     $dynamicFields,
                 ]),
         ];
@@ -95,7 +97,6 @@ trait CustomPageWorkspaceForms
                 : [
                     TextInput::make('title')->label('Heading')->maxLength(160),
                     ...AdminRichText::schema('body', 'Rich Text', 20000),
-                    $this->moveIntoImageField(),
                 ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
@@ -103,7 +104,6 @@ trait CustomPageWorkspaceForms
                     ->placeholder('No list image')
                     ->nullable(),
                 ComponentListEditor::make(),
-                ...(! $isNew ? [$this->moveIntoImageField()] : []),
             ],
             'divider' => [
                 Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
@@ -126,7 +126,6 @@ trait CustomPageWorkspaceForms
                     ->default('enabled')
                     ->live()
                     ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled')),
-                ...(! $isNew ? [$this->moveIntoImageField()] : []),
                 TextInput::make('contact_status_text')
                     ->label('Status text')
                     ->maxLength(500)
@@ -143,20 +142,33 @@ trait CustomPageWorkspaceForms
         };
     }
 
-    private function moveIntoImageField(): Select
+    /** Visible at the top of every eligible component edit, even for List
+     * dialogs with long repeater content. Null means Page level. */
+    private function componentParentField(): Select
     {
-        return Select::make('move_into_image')
-            ->label('Move this component into decorative image')
-            ->options(fn (): array => collect($this->settings()->components())
-                ->filter(static fn (array $block): bool => ($block['type'] ?? '') === 'image'
-                    && ($block['image_decorative'] ?? false) === true)
-                ->mapWithKeys(static fn (array $block, int $index): array => [
-                    $index => 'Image '.($index + 1),
-                ])->all())
-            ->placeholder('Keep at page level')
-            ->nullable()
-            ->native()
+        return HierarchyParentField::make(
+            'parent_image_index',
+            fn (): array => $this->decorativeImageParentOptions(),
+            'Parent', 'Page level',
+        )
+            ->visible(fn (Get $get): bool =>
+                in_array((string) $get('type'), \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                && ($get('type') !== 'list' || blank($get('media_asset_id')))
+                && ($get('type') !== 'contact' || ! $get('contact_form_enabled'))
+            )
             ->columnSpanFull();
+    }
+
+    /** @return array<int,string> */
+    private function decorativeImageParentOptions(): array
+    {
+        $options = [];
+        foreach ($this->settings()->components() as $index => $block) {
+            if (($block['type'] ?? null) === 'image' && ($block['image_decorative'] ?? false)) {
+                $options[$index] = 'Decorative Image '.($index + 1);
+            }
+        }
+        return $options;
     }
 
     /** Only eligible standalone prose can become an Image child. */
