@@ -15,11 +15,18 @@ trait CustomPageWorkspaceTargetHelpers
             if (! str_contains($target, ':')) {
                 continue;
             }
-            [$index, $type] = explode(':', $target, 2);
-            if (! ctype_digit($index) || ! array_key_exists($type, self::COMPONENT_LABELS)) {
+            [$position, $type] = explode(':', $target, 2);
+            if (! array_key_exists($type, self::COMPONENT_LABELS)) continue;
+            if (preg_match('/^(\\d+)\\.(\\d+)$/', $position, $matches)) {
+                $targets[] = [
+                    'index' => (int) $matches[1], 'child_index' => (int) $matches[2],
+                    'type' => $type,
+                ];
                 continue;
             }
-            $targets[] = ['index' => (int) $index, 'type' => $type];
+            if (ctype_digit($position)) {
+                $targets[] = ['index' => (int) $position, 'type' => $type];
+            }
         }
 
         return $targets;
