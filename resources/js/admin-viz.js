@@ -1,7 +1,6 @@
 import './admin-notifications.js';
 import './admin-action-titles.js';
 import './admin-dialog-geometry.js';
-import './admin-hierarchy-drag.js';
 
 let storageRuntimePromise = null;
 let refreshFrame = null;

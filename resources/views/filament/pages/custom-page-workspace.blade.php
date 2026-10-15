@@ -23,14 +23,17 @@
                 && $page === 1
                 && $total <= $pageSize;
             $selectedItemCount = count($selectedComponentTargets);
-            $selectedParents = collect($components)
-                ->filter(static fn (array $component): bool => in_array($component['target'] ?? null, $selectedComponentTargets, true))
-                ->values();
+            $selectedParents = collect($components)->flatMap(static fn (array $component): array => [
+                $component, ...($component['children'] ?? []),
+            ])->filter(static fn (array $component): bool =>
+                in_array($component['target'] ?? null, $selectedComponentTargets, true)
+            )->values();
             $canMoveSelected = $selectedItemCount > 0 && $reorderEnabled;
             $canPublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === false);
             $canUnpublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === true);
             $canDeleteSelected = $selectedItemCount > 0;
-            $visibleSelectableCount = count($components);
+            $visibleSelectableCount = count($components) + collect($components)
+                ->sum(static fn (array $component): int => count($component['children'] ?? []));
             $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
             $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
         @endphp

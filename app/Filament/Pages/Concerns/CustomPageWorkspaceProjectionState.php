@@ -83,6 +83,7 @@ trait CustomPageWorkspaceProjectionState
 
         $counts = array_fill_keys(array_keys(self::COMPONENT_LABELS), 0);
         $listEntryCount = 0;
+        $childComponentCount = 0;
         $projected = [];
         $needle = mb_strtolower(trim($this->componentSearch));
 
@@ -95,6 +96,7 @@ trait CustomPageWorkspaceProjectionState
                 $listEntryCount += count($block['items']);
             }
             if ($type === 'image') {
+                $childComponentCount += count($block['children'] ?? []);
                 foreach ($block['children'] ?? [] as $child) {
                     if (is_array($child) && ($child['type'] ?? null) === 'list') {
                         $listEntryCount += count($child['items'] ?? []);
@@ -141,7 +143,7 @@ trait CustomPageWorkspaceProjectionState
                 'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
-                'children' => $type === 'image' ? $this->imageChildSummaries($settings, $block) : [],
+                'children' => $type === 'image' ? $this->imageChildSummaries($settings, $block, $index) : [],
                 'accepts_children' => $type === 'image' && ($block['image_decorative'] ?? false) === true,
                 'can_nest' => in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)
                     && ($type !== 'list' || ($block['media_asset_id'] ?? null) === null)
@@ -165,7 +167,7 @@ trait CustomPageWorkspaceProjectionState
         $this->retainVisibleSelections();
 
         $this->metrics = [
-            ['label' => 'Components', 'value' => number_format(count($blocks)), 'description' => 'Page sequence'],
+            ['label' => 'Components', 'value' => number_format(count($blocks) + $childComponentCount), 'description' => 'Page sequence'],
             ['label' => 'Entries', 'value' => number_format($listEntryCount), 'description' => 'List entries'],
             ['label' => 'Images', 'value' => number_format($counts['image']), 'description' => 'Image components'],
             ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],

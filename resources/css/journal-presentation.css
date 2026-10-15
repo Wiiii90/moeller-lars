@@ -76,10 +76,12 @@
 
 .journal-entry-gallery--slideshow {
     display: grid;
-    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    width: min(100%, 34rem);
     min-width: 0;
-    max-width: 42rem;
-    gap: .75rem;
+    gap: .65rem;
+    justify-items: stretch;
+    margin-inline: auto;
 }
 
 .journal-entry-gallery--slideshow .journal-entry-gallery__item[hidden] {
@@ -89,11 +91,12 @@
 /* One restrained image stage, regardless of portrait or landscape source.
    Do not crop original works or let portrait frames consume a full page. */
 .journal-entry-gallery--slideshow .journal-entry-gallery__item {
+    grid-column: 1;
+    grid-row: 1;
     display: grid;
     min-width: 0;
-    min-height: min(15rem, 35dvh);
-    justify-items: center;
-    align-items: center;
+    min-height: min(17rem, 43dvh);
+    place-items: center;
 }
 
 .journal-entry-gallery--slideshow .journal-entry-media {
@@ -112,17 +115,14 @@
     object-fit: contain;
 }
 
-.journal-entry-gallery--slideshow .journal-entry-media figcaption {
-    max-width: 100%;
-    overflow-wrap: anywhere;
-}
-
 .journal-entry-gallery__controls {
+    grid-column: 1;
+    grid-row: 2;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: .7rem;
     align-items: center;
-    margin: 0 0 .35rem;
+    margin: .15rem 0 0;
     color: #61574e;
     font-family: var(--public-index-typeface);
     font-size: .84rem;

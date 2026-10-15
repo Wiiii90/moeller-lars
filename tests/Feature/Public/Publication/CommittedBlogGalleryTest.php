@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-it('serves a committed Blog gallery with authored credits but without copyright captions and keeps Working changes private', function (): void {
+it('serves a committed Blog gallery without visual captions while retaining authored media rights and keeps Working changes private', function (): void {
     Storage::fake('committed-blog-gallery-test');
     config(['media.disk' => 'committed-blog-gallery-test']);
 
@@ -106,27 +106,31 @@ it('serves a committed Blog gallery with authored credits but without copyright 
         ->assertOk()
         ->assertSee('Gallery publication story')
         ->assertSee('journal-entry-gallery--grid', false)
-        ->assertSee('Photograph by North Studio')
-        ->assertSee('Photograph by South Studio')
+        ->assertDontSee('Photograph by North Studio')
+        ->assertDontSee('Photograph by South Studio')
         ->assertDontSee('Inherited gallery rights notice')
         ->assertDontSee('Individual gallery rights notice');
 
     $publication = app(PublicationService::class);
     expect($publication->commit($actor))->not->toBeNull();
+    foreach ($assets as $asset) {
+        expect($asset->fresh()->credit)->toBe($asset->credit)
+            ->and(DB::table('committed.media_assets')->where('id', $asset->id)->value('credit'))->toBe($asset->credit);
+    }
     Auth::guard('web')->logout();
 
     $this->get($indexUrl)
         ->assertOk()
         ->assertSee('Gallery publication story')
-        ->assertSee('Photograph by North Studio')
+        ->assertDontSee('Photograph by North Studio')
         ->assertDontSee('Inherited gallery rights notice');
 
     $this->get($publicUrl)
         ->assertOk()
         ->assertSee('journal-entry-gallery--grid', false)
         ->assertSeeInOrder(['North study image', 'South study image'])
-        ->assertSee('Photograph by North Studio')
-        ->assertSee('Photograph by South Studio')
+        ->assertDontSee('Photograph by North Studio')
+        ->assertDontSee('Photograph by South Studio')
         ->assertDontSee('Inherited gallery rights notice')
         ->assertDontSee('Individual gallery rights notice')
         ->assertDontSee('data-journal-slide-next', false);
@@ -159,8 +163,8 @@ it('serves a committed Blog gallery with authored credits but without copyright 
         ->assertSee('data-journal-slideshow', false)
         ->assertSee('data-journal-slide-next', false)
         ->assertSee('1 / 2')
-        ->assertSee('Photograph by North Studio')
-        ->assertSee('Photograph by South Studio')
+        ->assertDontSee('Photograph by North Studio')
+        ->assertDontSee('Photograph by South Studio')
         ->assertDontSee('Inherited gallery rights notice')
         ->assertDontSee('Individual gallery rights notice');
 });

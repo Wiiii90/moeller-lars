@@ -14,6 +14,50 @@ use Livewire\Livewire;
 
 require_once __DIR__.'/CustomPageFixtures.php';
 
+it('preserves a nested component changed after its own editor was mounted', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Child concurrency', 'child-concurrency');
+    $asset = customPageWorkspaceImage('child-concurrency');
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
+        'children' => [['type' => 'text', 'title' => 'Original', 'body' => 'Original body']],
+    ]]]);
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editImageChild', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text']);
+    $child = $settings->fresh()->components()[0]['children'][0];
+    $child['body'] = 'Concurrent body';
+    app(\App\Domain\Content\CustomPageEditorialService::class)->updateImageChild($settings, 0, 0, 'text', $child);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = $settings->fresh()->components();
+    $audits = AuditEvent::query()->count();
+
+    $editor->fillForm(['body' => 'Stale body'])->callMountedAction()
+        ->assertHasFormErrors(['type'])->assertNotDispatched('admin-header-notification');
+    expect($settings->fresh()->components())->toBe($before)
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(AdminNotification::query()->count())->toBe(0);
+});
+
+it('saves a nested component and returns it to page level when Parent is cleared', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Child parent', 'child-parent');
+    $asset = customPageWorkspaceImage('child-parent');
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
+        'children' => [['type' => 'text', 'title' => 'Original', 'body' => 'Original body']],
+    ]]]);
+    $audits = AuditEvent::query()->count();
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editImageChild', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text']);
+    $editor->fillForm(['body' => 'Edited body', 'parent_image_index' => null])->callMountedAction()
+        ->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
+    $blocks = $settings->fresh()->components();
+    expect($blocks)->toHaveCount(2)
+        ->and($blocks[0]['children'] ?? [])->toBeEmpty()
+        ->and($blocks[1]['body'])->toBe('Edited body')
+        ->and(AuditEvent::query()->count())->toBe($audits + 2)
+        ->and(AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+});
+
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     config()->set('analytics.matomo.reporting_enabled', false);
@@ -547,50 +591,6 @@ it('autosaves an image selection without closing the editor and notifies once pe
         ->assertSet('mountedActions.0.data.image_scale_percent', 50);
 });
 
-it('moves the existing CV List under a decorative Image from its Edit dialog', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Nested CV', 'nested-cv-editor');
-    $asset = MediaAsset::query()->create([
-        'storage_key' => 'originals/nested-cv-editor.jpg',
-        'original_filename' => 'nested-cv-editor.jpg',
-        'mime_type' => 'image/jpeg',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'nested-cv-editor'),
-        'state' => 'available',
-        'alt_text' => 'Portrait',
-        'width' => 2,
-        'height' => 2,
-    ]);
-    $settings->update(['blocks' => [
-        ['type' => 'image', 'image_decorative' => true,
-            'media_asset_id' => $asset->getKey()],
-        ['type' => 'list', 'title' => 'Curriculum Vitae', 'items' => [
-            ['title' => 'Born in Hamburg', 'context' => '1989'],
-            ['title' => 'Lives and works in Hamburg', 'context' => null],
-        ]],
-    ]]);
-
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
-        ->assertSet('mountedActions.0.data.image_children', [])
-        ->set('mountedActions.0.data.adopt_component_index', 1)
-        ->call('callMountedAction')
-        ->assertHasNoFormErrors()
-        ->assertDispatched('admin-header-notification');
-
-    $blocks = $settings->fresh()->components();
-    expect($blocks)->toHaveCount(1)
-        ->and($blocks[0]['children'][0]['type'])->toBe('list')
-        ->and($blocks[0]['children'][0]['items'][1]['context'])->toBeNull()
-        ->and($blocks[0]['children'][0]['items'][1]['title'])->toBe('Lives and works in Hamburg');
-
-    $reopened = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image']);
-    $children = array_values($reopened->get('mountedActions.0.data.image_children'));
-    expect($children)->toHaveCount(1)
-        ->and($children[0]['type'])->toBe('list')
-        ->and(array_values($children[0]['items'])[1]['title'])->toBe('Lives and works in Hamburg');
-});
-
 it('offers a visible Parent selector in CV List Edit and persists the nesting', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Parent chooser CV', 'parent-chooser-cv');
     $asset = MediaAsset::query()->create([
@@ -616,7 +616,9 @@ it('offers a visible Parent selector in CV List Edit and persists the nesting', 
         ->assertSet('mountedActions.0.data.type', 'list')
         ->set('mountedActions.0.data.parent_image_index', '0')
         ->call('callMountedAction')
-        ->assertHasNoFormErrors();
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editImageChild')
+        ->assertSet('mountedActions.0.data.type', 'list');
 
     $blocks = $settings->fresh()->components();
     expect($blocks)->toHaveCount(1)
@@ -658,14 +660,14 @@ it('protects stale image autosave and nesting edits through the mounted validati
     if ($operation === 'autosave') {
         $editor->set('mountedActions.0.data.media_asset_id', (string) $replacement->id);
     } else {
-        $editor->fillForm($operation === 'parent' ? ['parent_image_index' => '0'] : ['adopt_component_index' => '1'])
+        $editor->fillForm($operation === 'parent' ? ['parent_image_index' => '0'] : ['image_scale_percent' => 50])
             ->callMountedAction();
     }
     $editor->assertHasFormErrors(['type'])->assertNotDispatched('admin-header-notification');
     expect($settings->fresh()->components())->toBe($before)
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe(0);
-})->with(['autosave', 'adopt', 'parent']);
+})->with(['autosave', 'save', 'parent']);
 
 it('rolls back edited content and nesting together if the second audit fails and retries once', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Atomic nesting', 'atomic-nesting');

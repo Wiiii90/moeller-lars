@@ -40,6 +40,49 @@ trait CustomPageWorkspaceLifecycle
         $this->reloadWorkspace();
     }
 
+    /**
+     * Livewire public properties are restored from the browser snapshot on
+     * each update. A tab opened before the independent Image-child row
+     * refactor can therefore still carry the old four-field child summary.
+     * The Blade table now requires full component projections. Rebuild only
+     * when a hydrated snapshot has the obsolete shape, before any Action
+     * or Sortable callback operates on its positional targets.
+     */
+    public function hydrate(): void
+    {
+        foreach ($this->components as $component) {
+            if (! is_array($component)
+                || ! isset(
+                    $component['target'], $component['content'],
+                    $component['index'], $component['type'],
+                )
+                || ! array_key_exists('accepts_children', $component)
+                || ! array_key_exists('can_move_up', $component)
+                || ! array_key_exists('can_move_down', $component)
+                || ! is_array($component['children'] ?? null)) {
+                $this->loadComponentProjection();
+                return;
+            }
+
+            foreach ($component['children'] as $child) {
+                if (! is_array($child)
+                    || ! isset(
+                        $child['target'],
+                        $child['index'],
+                        $child['image_index'],
+                        $child['position'],
+                        $child['content'],
+                        $child['type'],
+                    )
+                    || ! array_key_exists('can_move_up', $child)
+                    || ! array_key_exists('can_move_down', $child)) {
+                    $this->loadComponentProjection();
+                    return;
+                }
+            }
+        }
+    }
+
     public function getBreadcrumbs(): array
     {
         return [];
@@ -108,7 +151,9 @@ trait CustomPageWorkspaceLifecycle
         }
 
         $this->selectedComponentTargets = collect($this->components)
-            ->pluck('target')
+            ->flatMap(static fn (array $row): array => [
+                $row['target'], ...array_column($row['children'] ?? [], 'target'),
+            ])
             ->filter(static fn (mixed $target): bool => is_string($target))
             ->values()
             ->all();

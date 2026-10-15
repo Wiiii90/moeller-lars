@@ -32,7 +32,7 @@
                     @if ($hasCover)
                         <div class="blog-entry__mount">
                             <a href="{{ $postUrl }}" class="blog-entry__cover" aria-label="Read {{ $post->title }}">
-                                {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first, includeInheritedCopyright: false, includeCopyrightNotice: false) !!}
+                                {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first, includeInheritedCopyright: false, includeCopyrightNotice: false, showCaption: false) !!}
                             </a>
                         </div>
                     @endif

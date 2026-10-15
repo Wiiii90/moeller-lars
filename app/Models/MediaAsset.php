@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['storage_key', 'original_filename', 'mime_type', 'byte_size', 'sha256', 'state', 'alt_text', 'copyright_notice', 'copyright_notice_mode', 'credit', 'width', 'height', 'metadata', 'focal_point_x', 'focal_point_y', 'legacy_id', 'legacy_source', 'legacy_path', 'legacy_filename', 'legacy_byte_size', 'migration_batch_id', 'migrated_at'])]
+#[Fillable(['storage_key', 'original_filename', 'mime_type', 'byte_size', 'sha256', 'state', 'alt_text', 'copyright_notice', 'copyright_notice_mode', 'credit', 'file_creator', 'file_rights_holder', 'rights_usage_terms', 'license_inquiry_url', 'width', 'height', 'metadata', 'focal_point_x', 'focal_point_y', 'legacy_id', 'legacy_source', 'legacy_path', 'legacy_filename', 'legacy_byte_size', 'migration_batch_id', 'migrated_at'])]
 #[Guarded(['id'])]
 class MediaAsset extends Model
 {

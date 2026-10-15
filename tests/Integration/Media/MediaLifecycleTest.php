@@ -138,7 +138,10 @@ it('rejects uploads over the byte limit before writes', function (): void {
     }
     clearstatcache(true, $path);
 
-    expect(fn () => app(MediaIngestService::class)->ingest($upload))
+    // The fake retains sizeToReport from creation; use the actual file size.
+    $actualUpload = new UploadedFile($path, 'oversized.jpg', null, null, true);
+    expect($actualUpload->getSize())->toBe(MediaTypePolicy::imageMaxBytes() + 1);
+    expect(fn () => app(MediaIngestService::class)->ingest($actualUpload))
         ->toThrow(ValidationException::class, 'The uploaded media has an invalid size for this media type.');
     expect(MediaAsset::count())->toBe(0)
         ->and(Storage::disk(config('media.disk'))->allFiles())->toBeEmpty();

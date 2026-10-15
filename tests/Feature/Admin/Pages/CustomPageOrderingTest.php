@@ -18,6 +18,31 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/CustomPageFixtures.php';
 
+it('moves a component into and out of an Image through native sort groups without losing content', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Native hierarchy', 'native-hierarchy');
+    $asset = customPageWorkspaceImage('native-hierarchy');
+    $settings->update(['blocks' => [
+        ['type' => 'text', 'title' => 'Statement', 'body' => 'Keep this content'],
+        ['type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true],
+    ]]);
+    $before = $settings->fresh()->components();
+    $audits = \App\Models\AuditEvent::query()->count();
+    $component = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
+    $component->call('sortComponent', '0:text', 0, '1')->assertHasNoErrors()
+        ->assertDispatched('admin-header-notification');
+    expect($settings->fresh()->components()[0]['children'])->toBe([$before[0]])
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($audits + 1);
+    $component->call('sortImageChild', '0.0:text', 0, 'root')->assertHasNoErrors();
+    expect($settings->fresh()->components())->toBe($before)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(2)
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($audits + 2);
+    $component->call('sortComponent', '0:text', 0, 'root')
+        ->assertNotDispatched('admin-header-notification');
+    expect(\App\Models\AdminNotification::query()->count())->toBe(2)
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($audits + 2);
+});
+
 it('allows canonical reorder only for a neutral complete parent sequence', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Reorder test', 'reorder-test');
     $settings->update(['blocks' => customPageWorkspaceBlocks(3)]);

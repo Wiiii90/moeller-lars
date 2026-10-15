@@ -102,57 +102,43 @@
     text-overflow: ellipsis;
 }
 
-/* Nested Image prose is visible in the owning row, without a second set of
-   drag handles, selection controls or a competing component action system. */
+/* A child uses the exact same six-column component row as its parent.
+   Indentation is conveyed by the shared hierarchy position/connector,
+   not by reducing the row to an arbitrary inline label. */
 .custom-page-component__children {
-    display: grid;
-    gap: .25rem;
+    display: block;
+    width: 100%;
     min-width: 0;
-    padding: .35rem 1rem .7rem 3rem;
+    padding: 0;
 }
-.custom-page-component__child {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
+.custom-page-component__children .admin-hierarchy__children-rows {
+    width: 100%;
     min-width: 0;
-    gap: .25rem .75rem;
-    color: var(--admin-muted);
-    font-size: .77rem;
 }
-.custom-page-component__child::before {
-    content: "↳";
-    color: var(--admin-faint);
-}
-.custom-page-component__child-type {
-    min-width: 4rem;
-    color: var(--admin-faint);
-}
-.custom-page-component__child strong {
-    color: inherit;
-    font-weight: 500;
+.custom-page-component__child-group {
+    width: 100%;
     min-width: 0;
-    overflow-wrap: anywhere;
 }
-.custom-page-component__child small {
-    color: var(--admin-faint);
-    font-size: inherit;
+.custom-page-child-row {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: var(--admin-hierarchy-columns);
+    border-top: 1px solid var(--admin-line);
+}
+.custom-page-child-row .admin-hierarchy__position-cell {
+    font-variant-numeric: tabular-nums;
+}
+.custom-page-child-row .custom-page-component__content {
+    min-width: 0;
+}
+.custom-page-child-row .custom-page-component__actions {
+    min-width: 0;
 }
 
-/* Image nesting uses the shared small drop affordance; the sortable
-   row surface remains unobstructed. Child controls do not change parents. */
+/* The native child sort group needs a hit area even before an Image has
+   children. It is a quiet blank insertion gap, not a new UI control. */
+.custom-page-component__children .admin-hierarchy__children-rows:empty {
+    min-height: 1.75rem;
+}
 .custom-page-component { position: relative; }
-.custom-page-component-sequence__header { position: relative; }
-.custom-page-component__unnest-target { top: .3rem; }
-.custom-page-component__nest-target { top: .65rem; }
-.custom-page-component__child-drag {
-    flex: 0 0 1.55rem;
-    width: 1.55rem;
-    height: 1.55rem;
-    min-width: 1.55rem;
-    cursor: grab;
-}
-.custom-page-component__child-out {
-    margin-left: auto;
-    min-height: 1.65rem;
-    font-size: .71rem;
-}
+/* Shared action, drag and selection primitives style both levels. */

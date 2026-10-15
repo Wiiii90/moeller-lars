@@ -118,7 +118,7 @@ it('serves a page image only while its reference is part of the committed public
     $this->actingAs($actor, 'web');
     $this->get($previewOriginal)
         ->assertOk()
-        ->assertHeader('Cache-Control', 'private, max-age=3600');
+        ->assertHeader('Cache-Control', 'max-age=0, must-revalidate, no-store, private');
     $this->get($previewVariant)->assertOk();
 
     $publication = app(PublicationService::class);
@@ -130,7 +130,7 @@ it('serves a page image only while its reference is part of the committed public
     $this->get($url)
         ->assertOk()
         ->assertHeader('Content-Type', 'image/jpeg')
-        ->assertHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public');
     $this->get($variantUrl)->assertOk()->assertHeader('Content-Type', 'image/webp');
 
     $this->actingAs($actor, 'web');

@@ -211,6 +211,171 @@ final class CustomPageEditorialService
         });
     }
 
+    /** Mutate one nested prose component without ever moving it into the Image
+     * editor. The child remains an independently authored page component. */
+    public function updateImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, array $updated, ?array $expectedBlock = null): bool
+    {
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $updated, $expectedBlock): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (($children[$childIndex]['type'] ?? null) !== $type || ($updated['type'] ?? null) !== $type) {
+                throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
+            }
+            $this->assertUnchangedBlock($children[$childIndex], $expectedBlock);
+            $children[$childIndex] = $updated;
+            $blocks[$imageIndex]['children'] = $children;
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    public function deleteImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type): bool
+    {
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (($children[$childIndex]['type'] ?? null) !== $type) {
+                throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
+            }
+            array_splice($children, $childIndex, 1);
+            if ($children === []) {
+                unset($blocks[$imageIndex]['children']);
+            } else {
+                $blocks[$imageIndex]['children'] = $children;
+            }
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    public function moveImageChildByDirection(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, string $direction): bool
+    {
+        $this->assertDirection($direction);
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $direction): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (($children[$childIndex]['type'] ?? null) !== $type) {
+                throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
+            }
+            $other = $childIndex + ($direction === 'up' ? -1 : 1);
+            if (! array_key_exists($other, $children)) {
+                return false;
+            }
+            [$children[$childIndex], $children[$other]] = [$children[$other], $children[$childIndex]];
+            $blocks[$imageIndex]['children'] = $children;
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    public function convertImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, string $targetType): bool
+    {
+        if (! in_array($targetType, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'Choose a text-capable component.']);
+        }
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $targetType): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $imageIndex, 'image');
+            $children = $blocks[$imageIndex]['children'] ?? [];
+            if (($children[$childIndex]['type'] ?? null) !== $type) {
+                throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
+            }
+            if ($targetType === $type) return false;
+            // Nested Contact is details-only, never an implicit Contact Form.
+            $converted = $this->convertedBlock($children[$childIndex], $targetType);
+            if ($targetType === 'contact') {
+                $converted['children'] = array_values(array_filter(
+                    $converted['children'],
+                    static fn (array $child): bool => ($child['type'] ?? null) !== 'contact_form',
+                ));
+            }
+            $children[$childIndex] = $converted;
+            $blocks[$imageIndex]['children'] = $children;
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    /**
+     * One native Sortable placement contract for both hierarchy levels.
+     * Root and Image children are one Livewire sort group; the receiving
+     * group's ID is the desired parent. No second JavaScript drag owner.
+     * Mutation is locked, validated and persisted atomically.
+     */
+    public function placeComponent(CustomPageSetting $settings, string $locator, int $position, int|string|null $groupId): bool
+    {
+        if (! preg_match('/^(\\d+)(?:\\.(\\d+))?:([a-z_]+)$/', $locator, $match)) {
+            throw ValidationException::withMessages(['component' => 'Invalid component drag target.']);
+        }
+        $sourceIndex = (int) $match[1];
+        $sourceChild = isset($match[2]) && $match[2] !== '' ? (int) $match[2] : null;
+        $expectedType = $match[3];
+        $parent = $groupId === null || $groupId === 'root' ? null
+            : filter_var($groupId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        if ($parent === false) {
+            throw ValidationException::withMessages(['component' => 'Invalid parent for component.']);
+        }
+        return DB::transaction(function () use ($settings, $sourceIndex, $sourceChild, $expectedType, $parent, $position): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $beforeOrder = AdminOrderingState::fingerprints($blocks);
+            if ($sourceChild === null) {
+                $this->assertTarget($blocks, $sourceIndex, $expectedType);
+                if ($parent === $sourceIndex) {
+                    throw ValidationException::withMessages(['component' => 'A component cannot be its own parent.']);
+                }
+                $item = $blocks[$sourceIndex];
+                array_splice($blocks, $sourceIndex, 1);
+                // The target Image moves one index to the left when a
+                // preceding top-level sibling is taken out of the array.
+                if ($parent !== null && $sourceIndex < $parent) {
+                    $parent--;
+                }
+            } else {
+                $this->assertTarget($blocks, $sourceIndex, 'image');
+                $children = $blocks[$sourceIndex]['children'] ?? [];
+                if (($children[$sourceChild]['type'] ?? null) !== $expectedType) {
+                    throw ValidationException::withMessages(['component' => 'Child component changed during dragging.']);
+                }
+                $item = $children[$sourceChild];
+                array_splice($children, $sourceChild, 1);
+                if ($children === []) unset($blocks[$sourceIndex]['children']);
+                else $blocks[$sourceIndex]['children'] = $children;
+            }
+
+            if ($parent === null) {
+                array_splice($blocks, max(0, min($position, count($blocks))), 0, [$item]);
+            } else {
+                $this->assertTarget($blocks, $parent, 'image');
+                if (! ($blocks[$parent]['image_decorative'] ?? false)
+                    || ! in_array($expectedType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                    || ($expectedType === 'list' && ($item['media_asset_id'] ?? null) !== null)) {
+                    throw ValidationException::withMessages(['component' => 'Only suitable text components can be children of a decorative Image.']);
+                }
+                if ($expectedType === 'contact') {
+                    foreach ($item['children'] ?? [] as $child) {
+                        if (is_array($child) && ($child['type'] ?? null) === 'contact_form'
+                            && CustomPageSetting::contactChildPublished($child)) {
+                            throw ValidationException::withMessages(['component' => 'A Contact Form cannot wrap around an Image.']);
+                        }
+                    }
+                }
+                $children = $blocks[$parent]['children'] ?? [];
+                array_splice($children, max(0, min($position, count($children))), 0, [$item]);
+                $blocks[$parent]['children'] = $children;
+            }
+            return $this->persist($fresh, $blocks, $sourceChild === null && $parent === null ? [
+                'action' => 'site_section.page_components_reordered',
+                'scope' => 'page-components:'.(int) $fresh->getAttribute('site_section_id'),
+                'before' => $beforeOrder,
+                'after' => AdminOrderingState::fingerprints($blocks),
+            ] : null);
+        });
+    }
+
     /** Reorder children within one Image; never change their parent by sorting. */
     public function sortImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, int $position): bool
     {

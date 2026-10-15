@@ -1,13 +1,6 @@
         <x-admin.table>
-            <section class="custom-page-component-sequence admin-hierarchy" aria-label="Page component sequence"
-                data-admin-hierarchy="custom"
-            >
+            <section class="custom-page-component-sequence admin-hierarchy" aria-label="Page component sequence">
             <div class="custom-page-component-sequence__header admin-hierarchy__header">
-                <div class="admin-hierarchy__nest-target custom-page-component__unnest-target"
-                    data-hierarchy-drop="root" data-hierarchy-parent="root"
-                    role="button" aria-label="Move dragged image child to page level">
-                    <span>Drop to page level</span>
-                </div>
                 <span class="admin-hierarchy__ordering-heading">Position</span>
                 <span>Component</span>
                 <span>Content</span>
@@ -32,123 +25,48 @@
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else
-                <div class="custom-page-component-sequence__rows" @if ($reorderEnabled && count($components) > 1) wire:sort="sortComponent" @endif>
+                <div class="custom-page-component-sequence__rows"
+                    @if ($reorderEnabled)
+                        wire:sort="sortComponent"
+                        wire:sort:group="custom-components"
+                        wire:sort:group-id="root"
+                    @endif
+                >
                     @foreach ($components as $pageComponent)
                         <article
                             class="custom-page-component admin-hierarchy__group"
                             wire:key="custom-component-{{ $pageComponent['target'] }}"
-                            data-component-index="{{ $pageComponent['index'] }}"
-                            data-component-type="{{ $pageComponent['type'] }}"
-                            data-can-nest="{{ $pageComponent['can_nest'] ? 'true' : 'false' }}"
-                            @if ($reorderEnabled && count($components) > 1) wire:sort:item="{{ $pageComponent['target'] }}" @endif
+                            @if ($reorderEnabled) wire:sort:item="{{ $pageComponent['target'] }}" @endif
                         >
-                            <div class="custom-page-component__header admin-hierarchy__row">
-                                <div class="admin-hierarchy__position-cell">
-                                    <span class="admin-position" aria-label="Position {{ $pageComponent['position'] }}">
-                                        {{ str_pad((string) $pageComponent['position'], 2, '0', STR_PAD_LEFT) }}
-                                    </span>
-                                </div>
+                            @include('filament.pages.partials.custom-page-component-row', [
+                                'row' => $pageComponent, 'isChild' => false,
+                                'reorderEnabled' => $reorderEnabled, 'componentTypeOptions' => $componentTypeOptions,
+                            ])
 
-                                <button class="admin-drag-handle custom-page-component__drag" type="button" data-hierarchy-drag-handle="true" @if ($reorderEnabled && count($components) > 1) wire:sort:handle @else disabled @endif aria-label="Drag {{ $pageComponent['type_label'] }}" title="{{ ! $reorderEnabled ? 'Clear filters and show all components to reorder' : (count($components) < 2 ? 'At least two components are needed to reorder' : 'Drag to reorder') }}">⋮⋮</button>
-
-                                <div class="custom-page-component__type">
-                                    <select
-                                        class="admin-inline-select custom-page-component__type-select"
-                                        aria-label="Component type"
-                                        wire:change="mountAction('changeComponentType', { componentIndex: {{ $pageComponent['index'] }}, componentType: '{{ $pageComponent['type'] }}', targetType: $event.target.value })"
-                                    >
-                                        @foreach ($componentTypeOptions as $value => $label)
-                                            <option value="{{ $value }}" @selected($value === $pageComponent['type'])>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="custom-page-component__content admin-hierarchy__content {{ in_array($pageComponent['type'], ['contact', 'legal_disclaimer'], true) ? 'custom-page-component__content--two-lines' : '' }}">
-                                    <strong>{{ $pageComponent['content']['primary'] }}</strong>
-                                    @if ($pageComponent['content']['secondary'] !== '')
-                                        <span>{{ $pageComponent['content']['secondary'] }}</span>
-                                    @endif
-                                    @if ($pageComponent['content']['meta'] !== '')
-                                        <small>{{ $pageComponent['content']['meta'] }}</small>
-                                    @endif
-                                </div>
-
-                                <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete custom-page-row-actions custom-page-component__actions admin-toolbar">
-                                    <x-admin.row-action
-                                        :action="\App\Filament\Support\AdminRowAction::MoveUp"
-                                        wire:click="moveComponent({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', 'up')"
-                                        :disabled="! $reorderEnabled || ! $pageComponent['can_move_up']"
-                                        aria-label="Move component up"
-                                    />
-                                    <x-admin.row-action
-                                        :action="\App\Filament\Support\AdminRowAction::MoveDown"
-                                        wire:click="moveComponent({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', 'down')"
-                                        :disabled="! $reorderEnabled || ! $pageComponent['can_move_down']"
-                                        aria-label="Move component down"
-                                    />
-                                    <x-admin.row-action
-                                        :action="\App\Filament\Support\AdminRowAction::Edit"
-                                        wire:click="mountAction('{{ $pageComponent['type'] === 'list' ? 'editListComponent' : 'editComponent' }}', { componentIndex: {{ $pageComponent['index'] }}, componentType: '{{ $pageComponent['type'] }}' })"
-                                        :disabled="! $pageComponent['editable']"
-                                    />
-                                    <x-admin.row-action
-                                        :action="$pageComponent['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
-                                        wire:click="setComponentPublished({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', {{ $pageComponent['published'] ? 'false' : 'true' }})"
-                                    />
-                                    <x-admin.row-action
-                                        :action="\App\Filament\Support\AdminRowAction::Delete"
-                                        wire:click="mountAction('deleteComponent', { componentIndex: {{ $pageComponent['index'] }}, componentType: '{{ $pageComponent['type'] }}' })"
-                                    />
-                                </div>
-
-                                <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select {{ $pageComponent['type_label'] }}">
-                                    <input type="checkbox" value="{{ $pageComponent['target'] }}" wire:model.live="selectedComponentTargets">
-                                </label>
-                            </div>
-
-                            @if ($reorderEnabled && $pageComponent['accepts_children'])
-                                <div class="admin-hierarchy__nest-target custom-page-component__nest-target"
-                                    data-hierarchy-drop="nest" data-hierarchy-parent="{{ $pageComponent['index'] }}"
-                                    role="button" aria-label="Move dragged content under this image">
-                                    <span>Drop inside image</span>
-                                </div>
-                            @endif
-
-                            @if ($pageComponent['children'] !== [])
-                                <div class="custom-page-component__children" role="list" aria-label="Content inside image"
-                                    @if ($reorderEnabled && count($pageComponent['children']) > 1)
-                                        wire:sort="sortImageChild"
-                                        wire:sort:group="image-{{ $pageComponent['index'] }}"
-                                        wire:sort:group-id="{{ $pageComponent['index'] }}"
-                                    @endif
+                            @if ($pageComponent['accepts_children'] || $pageComponent['children'] !== [])
+                                <div class="custom-page-component__children admin-hierarchy__children"
+                                    role="rowgroup" aria-label="Components inside image"
                                 >
-                                    @foreach ($pageComponent['children'] as $childIndex => $child)
-                                        <div class="custom-page-component__child" role="listitem"
-                                            wire:key="image-child-{{ $pageComponent['target'] }}-{{ $childIndex }}"
-                                            @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:item="{{ $childIndex }}" @endif
-                                        >
-                                            <button type="button" class="admin-drag-handle custom-page-component__child-drag"
-                                                data-hierarchy-drag-handle="true"
-                                                data-image-index="{{ $pageComponent['index'] }}"
-                                                data-child-index="{{ $childIndex }}"
-                                                data-child-type="{{ $child['type'] }}"
-                                                @if ($reorderEnabled && count($pageComponent['children']) > 1) wire:sort:handle @endif @disabled(! $reorderEnabled)
-                                                aria-label="Reorder image child {{ $child['title'] }}"
-                                            >⋮⋮</button>
-                                            <span class="custom-page-component__child-type">{{ $child['type'] }}</span>
-                                            <strong>{{ $child['title'] }}</strong>
-                                            @if ($child['meta'] !== '')
-                                                <small>{{ $child['meta'] }}</small>
-                                            @endif
-                                            @unless ($child['published'])
-                                                <small>Unpublished</small>
-                                            @endunless
-                                            <button type="button" class="admin-action custom-page-component__child-out"
-                                                wire:click="unnestImageChild({{ $pageComponent['index'] }}, {{ $childIndex }})"
-                                                aria-label="Move {{ $child['title'] }} out of image"
-                                            >Move out</button>
-                                        </div>
-                                    @endforeach
+                                    <div class="admin-hierarchy__children-rows"
+                                        @if ($reorderEnabled && $pageComponent['accepts_children'])
+                                            wire:sort="sortImageChild"
+                                            wire:sort:group="custom-components"
+                                            wire:sort:group-id="{{ $pageComponent['index'] }}"
+                                        @endif
+                                    >
+                                        @foreach ($pageComponent['children'] as $child)
+                                            <div class="custom-page-component__child-group"
+                                                wire:key="image-child-{{ $pageComponent['target'] }}-{{ $child['target'] }}"
+                                                @if ($reorderEnabled) wire:sort:item="{{ $child['target'] }}" @endif
+                                            >
+                                                @include('filament.pages.partials.custom-page-component-row', [
+                                                    'row' => $child, 'isChild' => true,
+                                                    'reorderEnabled' => $reorderEnabled,
+                                                    'componentTypeOptions' => $componentTypeOptions,
+                                                ])
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 </div>
                             @endif
                         </article>

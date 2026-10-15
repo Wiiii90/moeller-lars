@@ -44,7 +44,7 @@ class MediaAssetEditorialService
             throw ValidationException::withMessages(['media' => 'Deleted media cannot be edited.']);
         }
 
-        $allowed = ['alt_text', 'credit', 'copyright_notice', 'copyright_notice_mode'];
+        $allowed = ['alt_text', 'credit', 'copyright_notice', 'copyright_notice_mode', 'file_creator', 'file_rights_holder', 'rights_usage_terms', 'license_inquiry_url'];
         if (array_diff(array_keys($data), $allowed) !== []) {
             throw ValidationException::withMessages(['media' => 'Only media editorial metadata can be changed.']);
         }
@@ -55,6 +55,22 @@ class MediaAssetEditorialService
         }
         if (array_key_exists('credit', $data)) {
             $values['credit'] = $this->plainText($data['credit'], 240, true);
+        }
+        foreach (['file_creator' => 240, 'file_rights_holder' => 240, 'rights_usage_terms' => 2000] as $field => $maxLength) {
+            if (array_key_exists($field, $data)) {
+                $values[$field] = $this->plainText($data[$field], $maxLength, true);
+            }
+        }
+        if (array_key_exists('license_inquiry_url', $data)) {
+            $url = $this->plainText($data['license_inquiry_url'], 2048, true);
+            if ($url !== null && (filter_var($url, FILTER_VALIDATE_URL) === false
+                || parse_url($url, PHP_URL_SCHEME) !== 'https'
+                || ! is_string(parse_url($url, PHP_URL_HOST)))) {
+                throw ValidationException::withMessages([
+                    'license_inquiry_url' => 'Enter a valid HTTPS license or rights inquiry URL.',
+                ]);
+            }
+            $values['license_inquiry_url'] = $url;
         }
         if (array_key_exists('copyright_notice_mode', $data)) {
             $mode = $data['copyright_notice_mode'];
