@@ -246,7 +246,10 @@
     text-decoration-color: #bdb6af;
     text-underline-offset: .2em;
 }
-.custom-page__contact-child + .custom-page__contact-child {
+/* The same line rhythm applies between Contact subsections and
+   consecutive configured social profiles. */
+.custom-page__contact-child + .custom-page__contact-child,
+.custom-page__contact .contact-details__row + .contact-details__row {
     margin-top: .48rem;
 }
 .custom-page__contact .contact-status {
