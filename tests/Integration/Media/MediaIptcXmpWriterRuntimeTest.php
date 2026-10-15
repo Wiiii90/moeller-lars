@@ -66,11 +66,25 @@ it('writes real JPEG, PNG and WebP rights metadata without changing original byt
         );
         expect($icc)->toBeString();
         file_put_contents($iccFile, $icc);
-        $options = ['-overwrite_original', '-ICC_Profile<='.$iccFile, '-XMP-dc:Creator=Old creator'];
+        $options = ['-overwrite_original', '-ICC_Profile<='.$iccFile, '-XMP-dc:Creator=Old creator', '-XMP-aux:SerialNumber=B2-TEST-CAMERA-SERIAL'];
         if ($mime === 'image/jpeg') {
             array_push($options, '-GPSLatitude=51.5', '-GPSLatitudeRef=N', '-GPSLongitude=9.5', '-GPSLongitudeRef=E');
         }
         b2Exif([...$options, $source]);
+        // Confirm the fixture actually contains sensitive source metadata,
+        // otherwise a passing scrub assertion would be a false positive.
+        $sourceTags = json_decode(b2Exif([
+            '-j', '-s', '-G1', '-XMP:all', '-GPS:all', $source,
+        ]), true, 512, JSON_THROW_ON_ERROR)[0];
+        expect($sourceTags['XMP-dc:Creator'] ?? null)->toBe('Old creator')
+            ->and($sourceTags['XMP-aux:SerialNumber'] ?? null)->toBe('B2-TEST-CAMERA-SERIAL');
+        if ($mime === 'image/jpeg') {
+            expect(array_filter(
+                array_keys($sourceTags),
+                static fn (string $key): bool => str_ends_with($key, ':GPSLatitude'),
+            ))->not->toBeEmpty();
+        }
+
         $originalHash = hash_file('sha256', $source);
         $originalSize = filesize($source);
         $pixels = b2DecodedPixels($source, $mime);
@@ -108,7 +122,7 @@ it('writes real JPEG, PNG and WebP rights metadata without changing original byt
             ->and($tags['XMP-xmpRights:UsageTerms'] ?? null)->toBe('Permission required')
             ->and($tags['XMP-plus:LicensorURL'] ?? null)->toBe('https://example.org/licensing')
             ->and($tags['XMP-plus:DataMining'] ?? null)->toBe('DMI-PROHIBITED-EXCEPTSEARCHENGINEINDEXING');
-        expect(array_filter(array_keys($tags), static fn (string $key): bool => str_contains($key, 'GPSLatitude') || str_contains($key, 'GPSLongitude')))->toBeEmpty();
+        expect(array_filter(array_keys($tags), static fn (string $key): bool => str_contains($key, 'GPSLatitude') || str_contains($key, 'GPSLongitude') || str_contains($key, 'SerialNumber')))->toBeEmpty();
     } finally {
         foreach (glob("$dir/*") ?: [] as $file) {
             unlink($file);
