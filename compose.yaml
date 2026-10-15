@@ -53,6 +53,9 @@ services:
     volumes:
       - .:/var/www/html
       - local_dev_vendor:/var/www/html/vendor
+      - local_dev_filament_css:/var/www/html/public/css/filament
+      - local_dev_filament_fonts:/var/www/html/public/fonts/filament
+      - local_dev_filament_js:/var/www/html/public/js/filament
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,6 +137,9 @@ services:
 volumes:
   local_dev_vendor:
   local_dev_node_modules:
+  local_dev_filament_css:
+  local_dev_filament_fonts:
+  local_dev_filament_js:
   postgres_data:
     external: true
     name: moeller-lars_postgres_data
