@@ -109,4 +109,6 @@ Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser
 
 ### Reihenfolge der weiteren Arbeit
 
+Das kuratierte [HTTP-Literalmanifest](runtime-entrypoints.json) ist am **15.10.2026** mit den **21** aktuellen `routes/web.php`-GET/POST-Deklarationen einschließlich TDM-Discovery und Quellzeilen (Quelle `dev@cbc3f5ad`) abgeglichen worden. [Dynamische und negative HTTP-Quellgrenzen](runtime-entrypoints.md#public-seo-discovery-und-dynamische-grenzen-stand-devcbc3f5ad) sind separat beschrieben. Der native Checker, `artisan route:list` und echte GET/HEAD-/Ingress-Tests bleiben offen.
+
 Die bisher erstellten Objektinventare bleiben als quellengebundene **historische Ausgangsbasis** erhalten. **Jetzt** folgen die fachlichen Sequenz-/Zustandsmodelle, Owner-/Guard-/Fehlerpfad-Lücken und die Konsolidierung bestehender Dokumente; der vollständige lokale Generator-/Artefaktlauf folgt **erst danach** gemäß [Abschlussmatrix](completion-criteria.md). Keine CI-Interaktion, kein Codex-Verbrauch während offener Schreibarbeit; `testing` ist keine verdeckte Voraussetzung.

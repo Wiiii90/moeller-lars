@@ -1,7 +1,7 @@
 {
   "format": "http-entrypoints-v1",
-  "source_code_ref": "18b0a5943aec407fa1bc57e557a2aadcdbf395da",
-  "scope": "20 explicitly declared routes/web.php GET/POST routes, including one named public CSP-safe Livewire asset closure; excludes dynamically registered Filament/package routes.",
+  "source_code_ref": "cbc3f5adb0c2fe942fd079ed8272af311d8c40b7",
+  "scope": "21 explicitly declared routes/web.php GET/POST routes, including the TDM-Reservation discovery endpoint and one named public CSP-safe Livewire asset closure; excludes dynamically registered Filament/package routes.",
   "routes": [
     {
       "method": "GET",
@@ -41,6 +41,15 @@
     },
     {
       "method": "GET",
+      "path": "/.well-known/tdmrep.json",
+      "controller": "PublicSeoController",
+      "action": "tdmReservation",
+      "group": "public-baseline",
+      "source": "routes/web.php",
+      "line": 22
+    },
+    {
+      "method": "GET",
       "path": "/site-assets/livewire-csp.js",
       "controller": null,
       "action": null,
@@ -49,7 +58,7 @@
       "route_name": "public.livewire.csp",
       "group": "public-asset",
       "source": "routes/web.php",
-      "line": 26
+      "line": 27
     },
     {
       "method": "GET",
@@ -58,7 +67,7 @@
       "action": "show",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 44
+      "line": 45
     },
     {
       "method": "GET",
@@ -67,7 +76,7 @@
       "action": "original",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 45
+      "line": 46
     },
     {
       "method": "GET",
@@ -76,7 +85,7 @@
       "action": "variant",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 46
+      "line": 47
     },
     {
       "method": "GET",
@@ -85,7 +94,7 @@
       "action": "show",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 49
+      "line": 50
     },
     {
       "method": "GET",
@@ -94,7 +103,7 @@
       "action": "journalEntry",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 50
+      "line": 51
     },
     {
       "method": "GET",
@@ -103,7 +112,7 @@
       "action": "show",
       "group": "artist-preview",
       "source": "routes/web.php",
-      "line": 53
+      "line": 54
     },
     {
       "method": "GET",
@@ -112,7 +121,7 @@
       "action": "original",
       "group": "admin-media",
       "source": "routes/web.php",
-      "line": 58
+      "line": 59
     },
     {
       "method": "GET",
@@ -121,7 +130,7 @@
       "action": "variant",
       "group": "admin-media",
       "source": "routes/web.php",
-      "line": 60
+      "line": 61
     },
     {
       "method": "GET",
@@ -130,7 +139,7 @@
       "action": "download",
       "group": "admin-media",
       "source": "routes/web.php",
-      "line": 63
+      "line": 64
     },
     {
       "method": "GET",
@@ -139,7 +148,7 @@
       "action": "downloadSelected",
       "group": "admin-media",
       "source": "routes/web.php",
-      "line": 65
+      "line": 66
     },
     {
       "method": "GET",
@@ -148,7 +157,7 @@
       "action": "original",
       "group": "public-media",
       "source": "routes/web.php",
-      "line": 68
+      "line": 69
     },
     {
       "method": "GET",
@@ -157,7 +166,7 @@
       "action": "variant",
       "group": "public-media",
       "source": "routes/web.php",
-      "line": 69
+      "line": 70
     },
     {
       "method": "GET",
@@ -166,7 +175,7 @@
       "action": "show",
       "group": "public-content",
       "source": "routes/web.php",
-      "line": 74
+      "line": 75
     },
     {
       "method": "GET",
@@ -175,7 +184,7 @@
       "action": "journalEntry",
       "group": "public-content",
       "source": "routes/web.php",
-      "line": 75
+      "line": 76
     },
     {
       "method": "GET",
@@ -184,7 +193,7 @@
       "action": "show",
       "group": "public-content",
       "source": "routes/web.php",
-      "line": 78
+      "line": 79
     }
   ]
 }
