@@ -135,6 +135,39 @@ it('writes real JPEG, PNG and WebP rights metadata without changing original byt
     'WebP' => ['image/webp', 'webp'],
 ]);
 
+it('rejects inherited contradictory rights without rewriting archive claims', function (): void {
+    $dir = sys_get_temp_dir().'/b2-rights-conflict-'.bin2hex(random_bytes(12));
+    mkdir($dir, 0700);
+    $source = "$dir/source.jpg";
+    $staged = "$dir/staged.jpg";
+
+    try {
+        b2Raster($source, 'image/jpeg');
+        b2Exif(['-overwrite_original', '-XMP-dc:Rights=Existing photographer claim', $source]);
+        $sourceHash = hash_file('sha256', $source);
+
+        $asset = new MediaAsset;
+        $asset->setRawAttributes([
+            'mime_type' => 'image/jpeg',
+            'byte_size' => filesize($source),
+            'sha256' => $sourceHash,
+            'copyright_notice_mode' => MediaAsset::COPYRIGHT_NONE,
+        ], true);
+        expect(fn () => (new MediaIptcXmpWriter(new MediaRightsProjection))
+            ->stageCopy($asset, $source, $staged))->toThrow(
+                RuntimeException::class,
+                'Original XMP rights conflict',
+            );
+        expect(hash_file('sha256', $source))->toBe($sourceHash)
+            ->and(file_exists($staged))->toBeFalse();
+    } finally {
+        foreach (glob("$dir/*") ?: [] as $file) {
+            unlink($file);
+        }
+        rmdir($dir);
+    }
+});
+
 it('refuses corrupt source checksums without creating a staged copy', function (): void {
     $dir = sys_get_temp_dir().'/b2-integrity-'.bin2hex(random_bytes(12));
     mkdir($dir, 0700);

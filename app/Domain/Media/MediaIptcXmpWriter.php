@@ -67,6 +67,81 @@ final class MediaIptcXmpWriter
         return $tags;
     }
 
+    /**
+     * Fail closed on missing XMP rights, residual private identifiers or
+     * unintended ICC changes. Any failure removes the unpublished copy.
+     * Deep decoded-pixel equivalence remains part of format-specific tests.
+     */
+    private function assertStagedMetadata(
+        MediaAsset $asset,
+        string $binary,
+        string $originalPath,
+        string $stagedPath,
+        bool $mayReserveDataMining,
+    ): void {
+        $read = new Process([
+            $binary, '-j', '-a', '-G1', '-s', '-n',
+            '-XMP:all', '-GPS:all',
+            '-SerialNumber', '-BodySerialNumber', '-LensSerialNumber',
+            $stagedPath,
+        ]);
+        $read->setTimeout(60);
+        $read->mustRun();
+        if (trim($read->getErrorOutput()) !== '') {
+            throw new RuntimeException('ExifTool reported a staged metadata read warning.');
+        }
+        $rows = json_decode($read->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+        $actual = is_array($rows) ? ($rows[0] ?? null) : null;
+        if (! is_array($actual)) {
+            throw new RuntimeException('ExifTool did not return valid staged metadata.');
+        }
+
+        foreach ($this->tagsForAsset($asset, $mayReserveDataMining) as $tag => $value) {
+            $expected = $tag === 'XMP-plus:DataMining'
+                ? 'DMI-PROHIBITED-EXCEPTSEARCHENGINEINDEXING'
+                : $value;
+            if (($actual[$tag] ?? null) !== $expected) {
+                throw new RuntimeException('Staged IPTC/XMP readback mismatch for '.$tag.'.');
+            }
+        }
+
+        foreach (array_keys($actual) as $tag) {
+            if (is_string($tag) && preg_match('/GPS|SerialNumber/i', $tag)) {
+                throw new RuntimeException('Staged image still contains sensitive location or serial metadata.');
+            }
+        }
+
+        // Do not accidentally republish an old rights claim when the editor
+        // explicitly suppresses notices; neither delete unknown grants nor
+        // assert ownership on behalf of the original photographer.
+        if ($asset->getAttribute('copyright_notice_mode') === MediaAsset::COPYRIGHT_NONE
+            && array_key_exists('XMP-dc:Rights', $actual)) {
+            throw new RuntimeException('Original XMP rights conflict with explicit no-notice policy.');
+        }
+        if (! $mayReserveDataMining && array_key_exists('XMP-plus:DataMining', $actual)) {
+            throw new RuntimeException('Unapproved embedded data-mining reservation requires rights review.');
+        }
+
+        // ExifTool metadata updates must not remove or mutate color profiles.
+        $originalICC = $this->readIccProfile($binary, $originalPath);
+        $stagedICC = $this->readIccProfile($binary, $stagedPath);
+        if (! hash_equals($originalICC, $stagedICC)) {
+            throw new RuntimeException('Staged image ICC profile differs from the archived original.');
+        }
+    }
+
+    private function readIccProfile(string $binary, string $path): string
+    {
+        $read = new Process([$binary, '-b', '-ICC_Profile', $path]);
+        $read->setTimeout(60);
+        $read->mustRun();
+        if (trim($read->getErrorOutput()) !== '') {
+            throw new RuntimeException('ExifTool reported an ICC profile read warning.');
+        }
+
+        return $read->getOutput();
+    }
+
     public static function assertExifToolVersion(string $version): void
     {
         $version = trim($version);
@@ -157,6 +232,17 @@ final class MediaIptcXmpWriter
             $process = new Process($args);
             $process->setTimeout(60);
             $process->mustRun();
+
+            // The staging boundary, not the eventual HTTP controller, owns
+            // write/readback validation. A write exit code alone does not
+            // prove that ExifTool embedded the requested standard tags.
+            $this->assertStagedMetadata(
+                $asset,
+                $binary,
+                $originalPath,
+                $stagedPath,
+                $mayReserveDataMining,
+            );
 
             $originalSize = @getimagesize($originalPath);
             $stagedSize = @getimagesize($stagedPath);
