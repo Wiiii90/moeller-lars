@@ -232,16 +232,9 @@ They must not be collapsed into one generic Undo button.
 
 ## Media retention
 
-Publication snapshots reference canonical media instead of cloning binaries.
+Publication snapshots refer to canonical media rather than copying binaries; the **checkpoint history/recovery root** must remain protected while restorable, and `Free storage` must not erase permanent Commit metadata or the current LIVE/Working restoration source.
 
-Physical Media files may be deleted only when none of these still require the asset:
-
-- current Working state;
-- current LIVE/committed state;
-- any retained restorable publication version;
-- canonical current media references.
-
-`PublicationMediaCleanupService` checks retained logical `publication_version_rows` before physical deletion. This ensures a retained historical version cannot remain formally restorable while its binary assets have already disappeared. When `Free storage` releases an older snapshot root, cleanup may finally remove media that has no Working/LIVE/current-reference or other retained recovery dependency.
+The **single media reference, logical deletion, physical cleanup and queued-retry contract** is [MEDIA.md](MEDIA.md#deletion-and-cleanup), backed by its [one source/coverage matrix](architecture/media-reference-and-cleanup.md#fachlicher-abschluss-reader-symmetrie-zustandsfilter-und-schutzwurzeln). Publication does not define a second media walker or independent physical-file deletion policy.
 
 ## Activity integration for publication controls
 

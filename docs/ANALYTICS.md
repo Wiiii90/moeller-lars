@@ -32,15 +32,9 @@ Reporting credentials/tokens remain server-side secrets and are never exposed to
 
 ## Failure isolation
 
-Matomo availability must not be required for:
+A Matomo **network outage or Reporting API failure** must not prevent public page rendering, Contact submission correctness, admin authentication, ordinary editorial work or Media/Storage/Page operations. Reporting uses bounded timeouts and caching; failures may produce unavailable/stale metrics without taking down the admin dashboard.
 
-- public page rendering;
-- Contact submission correctness;
-- admin login/authentication;
-- normal editorial work;
-- Media/Storage/Page operations.
-
-Reporting uses bounded timeouts and bounded caching. Optional report failures may produce explicit unavailable/stale states without taking down the full admin dashboard.
+A malformed **enabled tracking configuration** is different. At inspected `dev@11f7e101`, `SecurityHeaders` rejects an absent/invalid/non-HTTPS Matomo origin while constructing Public CSP **after** the downstream request handler. An authorized Contact POST can therefore persist or send a message before its HTTP response fails. This is a [source-only negative case](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen), not observed Production behavior or acceptable failure isolation. Configuration preflight, retry/deduplication and actual HTTP tests remain open on `dev`/`testing`; weakening the strict CSP is not a fix.
 
 ## Human event taxonomy
 

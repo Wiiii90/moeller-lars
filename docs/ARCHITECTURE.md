@@ -208,32 +208,13 @@ Text settings use event-driven persistence: local while typing, persist on norma
 
 ## Analytics
 
-Self-hosted Matomo Community/Core is the canonical human-analytics source. The application owns semantic tracking and Reporting API presentation. Local aggregates cover operational/error/bot/performance signals only. Matomo failure must not break public rendering or ordinary admin work.
-
-See [ANALYTICS.md](ANALYTICS.md).
+The [Analytics contract](ANALYTICS.md#failure-isolation) alone specifies Matomo tracking/reporting, privacy minimization and network-failure-versus-invalid-configuration. This overview does not create another Analytics availability rule.
 
 ## Admin Notifications, Activity and Publication
 
-Administrative state has three distinct owners:
+Three responsibilities are distinct: [Notification](ADMIN-NOTIFICATION-CONTRACT.md) owns actor-scoped mailbox/header messaging, the `AdminNotifier` API, Activity-derived message identity and delivery/retention; [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) owns audit, Undo, Working/LIVE state and Commit history; [Release](RELEASE.md#release-notes-and-dashboard-announcements) owns static code-backed Changelog/Announcement text. Domain mutation/audit are not automatic Notification delivery.
 
-- **Notification** — user-scoped `AdminNotification` messages, surfaced immediately in the header for the current browser actor; a single success call may consume **multiple** Activity messages rather than exactly one row;
-- **Activity** — append-only factual history of successful administrative changes;
-- **Publication** — Working/LIVE/version state and publication operations.
-
-`App\Domain\Admin\AdminNotifier::notification()` is the single Notification write API. It persists the Dashboard mailbox record first and uses the project-owned `admin-header-notification` event/session channel only as the immediate presentation projection. There is no separate header-only, inbox-only or `both()` application API. `AdminActivityNotificationContext` reuses canonical Activity presentation and audit identity for successful mutation Notifications.
-The Domain service and append-only audit do **not** implicitly call the
-notifier. Every authenticated admin UI mutation must explicitly bridge
-its real success/no-op result into `AdminNotifier` exactly once at its
-single Action/field mutation owner; no-op and failed changes must emit
-no success message. The real Livewire action path must be verified for data + audit + mailbox + header delivery; source review or the existence of test files is not proof those checks have actually run. Browser acceptance is a separate gate.
-
-The authenticated Filament admin uses the framework-native SPA mode. The header Notification surface is rendered through the layout-level `BODY_END` hook, **after** the workspace DOM and outside Livewire page/topbar components, and is persisted with Livewire `@persist`. Page workspaces are replaced through Livewire navigation. Public-site destinations, downloads and separate application surfaces such as Pulse remain document boundaries.
-
-`AdminNotification` remains integrated into `DashboardFeed`, retention, pins and read/unread state. Stable `source_id` values provide `(user_id, source_id)` idempotency and Notifications may carry bounded action/entity/audit/publication context. Background jobs use the same notifier with an explicit recipient; without a matching browser actor they create only the durable mailbox projection.
-
-DOM observation, framework notification markup and browser round-tripping are not persistence sources. Notification retention/deletion never deletes or rewrites Activity/audit history or Publication history.
-
-See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
+Filament uses native Livewire navigation. Its concrete `BODY_END`, `@persist` and disposal behavior is [source-traced](architecture/admin-notification-transport.md), not considered browser-verified by this overview.
 
 ## Audit and logical Commit
 

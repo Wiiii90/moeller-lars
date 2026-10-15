@@ -42,6 +42,32 @@ Bei der abschließenden Artefaktordnung gilt daher für jede Datei: **(A)** daue
 
 **Abschluss der Testquellenprüfung:** Diese sechs Fallfamilien besitzen nun einen präzisen, branch-versionierten Assertion-Beleg oder eine explizite Testlücke. Für `dev`-Änderungen, weitere `testing`-Tests oder spätere tatsächliche Testläufe bleibt ein **gezielter neuer SHA-Abgleich** erforderlich – nicht die rückwirkende Behauptung, die hier gelesenen Tests seien bereits erfolgreich gelaufen.
 
+## Normative Konsolidierung, Konfliktstand und Artefaktentscheidung
+
+**Provenienz:** Normativer Bestand `docs@3b69888a`; fachliche Source-Abschlüsse bis `dev@11f7e101`; authored Testbelege `testing@14af6804`. Neuerer `dev@78c82627` wurde nur hinsichtlich der seit `1365b521` geänderten Pfade (CustomPage-PresentationHelper, PublicContentSetting und Social-Profile-Cascade-Test) triagiert, **nicht neu fachlich abgenommen**. Die **einzige normative Owner-Tabelle** steht im [Dokumentationseinstieg](../README.md#normative-ownership-and-conflict-resolution).
+
+| Überschneidung | Konsolidierung / bewusste Grenze |
+| --- | --- |
+| Notification vs Activity/Publication vs Release | Notification regelt Inbox/Header/Kardinalität, Activity/Publication Audit/Undo/Working/Commit, Release statische Changelogs/Announcements. `ARCHITECTURE.md` verlinkt diese statt eine weitere Delivery-Norm zu wiederholen. |
+| Publication-History vs Media-Dateibereinigung | Publication schützt History-Recovery; [Media](../MEDIA.md#deletion-and-cleanup) ist der alleinige normative Owner von Medien-Eligibility, Delete und physischem Cleanup. Die eigenständige Medienlöschliste aus dem Publication-Vertrag wurde ersetzt. |
+| Analytics vs Public vs Consent | [Analytics](../ANALYTICS.md#failure-isolation) besitzt Tracking/Reporting/Outage, Public nur Siteintegration, [Rights](../PUBLIC-RIGHTS-AND-PRIVACY.md#d-matomo-consent-and-real-privacy-data) den offenen Consent. Ungültig aktiviertes Matomo kann source-seitig erst **nach** Contact-Persistenz im CSP-Headerpfad scheitern; das ist **kein Laufzeittest**. |
+| Admin-Editor-Image-URL vs Public-CSP | HTTP(S)-Validität ist eine editorische Eingaberegel, Public-`img-src` eine engere Browser-Auslieferungsregel. Weder Wildcard-Freigabe noch editorisches Verbot durch Docs-Umformulierung. |
+| Gallery Initial Loading | [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md#gallery-delivery-and-loading) verlangt **ein** eager/high-priority Bild; `dev@11f7e101` rendert **zwei** eager und nur das erste high-priority. Offene Produkt-/Browserentscheidung, **keine** stillschweigende Vertragsänderung. |
+| Test-/Release-/Inventarstände | Source-SHAs und Test-Autorschaft bleiben getrennt, historische Generatorzahlen bewusst eingefroren; ohne isolierte Ausführung keine Runtime-/DB-/Browser-/Release-Abnahme. |
+
+### Abgeleitete Artefakte: A–D ohne voreilige Löschung
+
+Der `docs@3b69888a`-Git-Tree enthält unter `docs/architecture/` **32 externe `.mmd` und acht `.json`** (40 abgeleitete Dateien, eingebettete Mermaid-Codeblöcke nicht mitgezählt). **Vorläufige** Bewertung nach fachlichem Zweck, nicht als Laufzeit- oder aktuelle Generatorvalidierung:
+
+| Klasse | Beispiele / Entscheidung |
+| --- | --- |
+| **A – fachliches Erklärmodell** | `generated/working-operations/{reset,restore,revert}.mmd` und fünf `generated/lifecycles/*.mmd` sollen Guards/States sichtbar machen. Als verlinkte Erklärung behalten, Source-/No-op-/Rollback-Inhalte vor finalem Generatorpaket gegen neuere kuratierte Traces prüfen. |
+| **B – versioniertes Referenzinventar** | `runtime-entrypoints.json`, `publication-working-operations.json`, `lifecycles.json`, `admin-publication-calls.json`, `structured-components.json`, `generated/eloquent-relationships.json`, `generated/ui-surfaces.json`, `generated/app-source-audit.json`. Eingefrorene SHA/Abdeckung kenntlich halten, nicht von Hand „auf aktuellen Stand“ umetikettieren. |
+| **C – bei Bedarf neu erzeugtes Rohdiagramm** | 20 `generated/class-imports/*.mmd`, `generated/app-module-imports.mmd`, `generated/ui-composition.mmd` (bekannt veraltete Traits). **Kandidaten** für rein lokale Wiedererzeugung; bestehende Links, echten Nutzen und Generator-Reproduzierbarkeit vor jeder Entfernung vollständig prüfen. |
+| **D – belegtes obsoletes Duplikat** | Für **keine** konkrete Datei ausreichende Ersatz-/Referenzprüfung vorliegend. **Keine Löschung**; erst nach nachgewiesenem Ersatz in getrenntem Cleanup entscheiden. |
+
+**Endliche Abschlussgrenze:** Komponentenidentität/Concurrency, Media-Symmetrie, Revert-Locks, Public-Read/CSP und Norm-Owner-Konflikte sind **quellseitig dokumentiert**, nicht produktseitig repariert. Es verbleibt ein fokussierter Abgleich bislang nicht modellierter Einzelpfade und aktueller Querverweise, **keine Wiederholung dieser Races**. Ausgeführte Concurrent-/HTTP-/Browser-/Schema-Tests gehören zu `dev`/`testing`; native Checker/Generator und ggf. `pg_catalog` nur später **gebündelt** im sicheren Checkout / in der Wegwerf-DB.
+
 ## Abnahmekriterien für das Ende der *inhaltlichen* Arbeit
 
 1. Jede Zeile der Matrix besitzt eine end-to-end Erklärung mit echten Einstiegspunkten, Domain-Ownern, persistierten/abgeleiteten Daten, Erfolgs-, No-op- und Fehlerwegen, Lock-/Commit-/Cleanup-Grenzen und **unterscheidbaren** Verifikationszuständen. Wo eine Runtime-Frage ohne isolierte Testumgebung nicht beantwortbar ist, muss sie als konkrete reproduzierbare spätere Prüfung notiert sein, ohne eine Source-Hypothese zur nachgewiesenen Regression aufzuwerten.

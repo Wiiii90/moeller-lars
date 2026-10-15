@@ -30,6 +30,25 @@ The [architecture completion report](architecture/completion-criteria.md#abnahme
 
 Two exceptional long-lived branches are authorized: `docs` for the documentation artifacts and local read-only generators, and `testing` for the independently managed test-refactor workstream. Ordinary implementation uses `dev`; `main` remains the release branch. Documentation work **reads all three branch HEADs** but writes **only `docs`**: coherent relevant `dev` changes are imported periodically as conflict-reviewed genuine two-parent merges; `testing` test-source evidence is **read-only and never merged**. This does not authorize new branches/worktrees or CI interaction. See [AGENTS.md](../AGENTS.md).
 
+## Normative ownership and conflict resolution
+
+Each behavior has **one normative owner**. `ARCHITECTURE.md` is the overview; `architecture/` contains versioned source evidence and test gaps, **not** replacement rules. An inspected `dev` implementation, authored `testing` assertion or old generator is not an accepted product change.
+
+| Responsibility | Contract owner | Scope boundary |
+| --- | --- | --- |
+| Admin controls, dialogs, table roles, responsiveness | [Control](ADMIN-CONTROL-CONTRACT.md), [Dialog](ADMIN-DIALOG-CONTRACT.md), [Table](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [admin UI grammar](../ui-skills.md) | Feature documents refer to shared primitives instead of restating geometry, scroll locks or sorting |
+| Admin messages and recipient-specific inbox | [Notification](ADMIN-NOTIFICATION-CONTRACT.md) | [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) owns audit, Undo and Commit state—not message delivery |
+| Working, LIVE, Commit, Restore and Revert | [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) | Publication protects history recovery roots; [Media](MEDIA.md) owns reference eligibility and physical deletion |
+| Media ingest, reference discovery and physical cleanup | [Media](MEDIA.md) | [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md) defines user-facing eligibility/presentation; [Rights](PUBLIC-RIGHTS-AND-PRIVACY.md) owns incomplete rights/privacy requirements |
+| Public navigation, Home, Gallery, Journal, SEO and viewer | [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md) | Descriptive source discrepancies do not automatically alter accepted rendering rules |
+| Matomo tracking/reporting, event data and failure isolation | [Analytics](ANALYTICS.md) | [Public integration](PUBLIC-IMPLEMENTATION-CONTRACT.md#analytics-boundary) links here; [Rights](PUBLIC-RIGHTS-AND-PRIVACY.md#d-matomo-consent-and-real-privacy-data) owns deferred consent |
+| Static Dashboard announcements/changelog and release gates | [Release](RELEASE.md) | Code-owned Markdown is not a per-user Notification record |
+| Test layers/discovery/safe isolated DB and cutover | [Testing](TESTING.md), [Migration invariants](MIGRATION-INVARIANTS.md), [Migration plan](MIGRATION-PLAN.md), [Release](RELEASE.md), [platform boundary](SERVER-OPERATIONS-BASELINE.md) | [Completion matrix](architecture/completion-criteria.md) records evidence, not a second test/release contract |
+
+**Known unresolved norm/source differences:** [Gallery first-image-eager](PUBLIC-IMPLEMENTATION-CONTRACT.md#gallery-delivery-and-loading) is the normative target; inspected `dev@11f7e101` Blade still marks *two* images eager. Editor-valid external HTTPS images may violate strict [Public CSP `img-src`](architecture/public-security-privacy-boundaries.md#4-rich-text-url-validierung-vs-csp-ladefreigabe). Invalid *enabled* Matomo URL is distinct from an analytics network outage and has a [source-identified Contact-response risk](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen). These require product/test decisions, **not** silent documentation redefinition.
+
+[Normative consolidation and derived-artifact classification](architecture/completion-criteria.md#normative-konsolidierung-konfliktstand-und-artefaktentscheidung) records the reconciliation, not a second normative contract.
+
 ## Current application contracts
 
 These describe the durable current application architecture and behavior. Browser/product milestone acceptance, release-candidate promotion and environment-specific evidence are tracked separately through the current review/release workflow:
