@@ -12,6 +12,9 @@ FROM php:8.3-apache-bookworm AS php-base
 ARG EXIFTOOL_VERSION=13.55
 ARG EXIFTOOL_SHA256=5f4c81d34ad406538c2871ad72dbfceb5d9b412b2f16cbbeb4d712d270846667
 
+# Run the unpacked script from alongside its bundled Perl ./lib directory.
+ENV PATH="/opt/Image-ExifTool-${EXIFTOOL_VERSION}:${PATH}"
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
@@ -40,7 +43,6 @@ RUN set -eu; \
     printf '%s  %s\n' "$EXIFTOOL_SHA256" /tmp/image-exiftool.tar.gz | sha256sum --check --status; \
     mkdir -p /opt; \
     tar -xzf /tmp/image-exiftool.tar.gz -C /opt; \
-    ln -s "/opt/Image-ExifTool-${EXIFTOOL_VERSION}/exiftool" /usr/local/bin/exiftool; \
     rm /tmp/image-exiftool.tar.gz; \
     test "$(exiftool -ver)" = "$EXIFTOOL_VERSION"; \
     exiftool -listw | grep -qw DataMining
