@@ -35,6 +35,10 @@ trait CustomPageWorkspaceSecondaryForms
             $data['contact_social_enabled'] = is_array($social) && CustomPageSetting::contactChildPublished($social);
             $data['contact_form_enabled'] = is_array($form) && CustomPageSetting::contactChildPublished($form);
             $data['contact_social_platforms'] = is_array($social) ? ($social['social_platforms'] ?? []) : [];
+            $data['contact_social_selected'] = collect($this->availableSocialPlatforms)
+                ->mapWithKeys(fn (string $label, string $platform): array => [
+                    $platform => in_array($platform, $data['contact_social_platforms'], true),
+                ])->all();
             $data['contact_form_state'] = is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled';
             $data['contact_status_text'] = is_array($form) ? ($form['status_text'] ?? null) : null;
         }
@@ -142,8 +146,19 @@ trait CustomPageWorkspaceSecondaryForms
         $children = $existing !== null ? $this->settings()->contactChildren($existing) : [];
         $social = collect($children)->firstWhere('type', 'social_links');
         $form = collect($children)->firstWhere('type', 'contact_form');
-        $platforms = $data['contact_social_platforms']
-            ?? (is_array($social) ? ($social['social_platforms'] ?? []) : array_keys($this->availableSocialPlatforms));
+        $previousPlatforms = is_array($social) ? ($social['social_platforms'] ?? []) : [];
+        $selection = $data['contact_social_selected'] ?? null;
+        $platforms = is_array($selection)
+            ? [
+                ...array_keys(array_filter($selection, static fn (mixed $selected): bool => $selected === true)),
+                // A General profile temporarily removed from the available
+                // options is not silently discarded by editing Contact.
+                ...array_values(array_filter($previousPlatforms,
+                    fn (mixed $platform): bool => is_string($platform)
+                        && ! array_key_exists($platform, $this->availableSocialPlatforms))),
+            ]
+            : ($data['contact_social_platforms'] ?? ($existing !== null
+                ? $previousPlatforms : array_keys($this->availableSocialPlatforms)));
         $formState = $data['contact_form_state']
             ?? (is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled');
         $statusText = $data['contact_status_text']
