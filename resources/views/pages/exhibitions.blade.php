@@ -47,19 +47,10 @@
                         @endif
                     </span>
                     <span class="exhibition-entry__heading">
-                        <span class="exhibition-entry__title">{{ $exhibition->title }}</span>
-                        @if ($location !== '' || $hasDetails)
+                        <h2 class="exhibition-entry__title">{{ $exhibition->title }}</h2>
+                        @if ($location !== '')
                             <span class="exhibition-entry__byline">
-                                @if ($location !== '')
-                                    <span class="exhibition-entry__location">{{ $location }}</span>
-                                @endif
-                                @if ($hasDetails)
-                                    <span class="exhibition-entry__toggle" aria-hidden="true">
-                                        <span class="exhibition-entry__open-label">Open</span>
-                                        <span class="exhibition-entry__close-label">Close</span>
-                                        <x-public-icon name="arrow-right" />
-                                    </span>
-                                @endif
+                                <span class="exhibition-entry__location">{{ $location }}</span>
                             </span>
                         @endif
                     </span>
@@ -69,9 +60,9 @@
                             {{-- Cover, practical information and long-form prose each have a
                                  stable editorial place. No empty partner column is rendered. --}}
                             @if ($hasCover || $hasFacts || $hasActions || $hasDescription)
-                                <div class="exhibition-entry__feature @if ($hasCover && $hasDescription) exhibition-entry__feature--flow @elseif ($hasCover && ($hasFacts || $hasActions)) exhibition-entry__feature--paired @elseif ($hasCover) exhibition-entry__feature--solo @else exhibition-entry__feature--text @endif">
+                                <div class="exhibition-entry__feature {{ $hasCover ? 'exhibition-entry__feature--with-cover' : 'exhibition-entry__feature--text' }}">
                                     @if ($hasCover)
-                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false) !!}
+                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: false) !!}
                                     @endif
                                     @if ($hasFacts || $hasActions)
                                         <div class="exhibition-entry__info">

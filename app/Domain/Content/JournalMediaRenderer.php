@@ -24,7 +24,7 @@ final class JournalMediaRenderer
             ], true);
     }
 
-    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true, bool $includeCopyrightNotice = true): HtmlString
+    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true, bool $includeCopyrightNotice = true, bool $showCaption = true): HtmlString
     {
         $usage->loadMissing('mediaAsset.variants');
         $asset = $usage->mediaAsset;
@@ -50,7 +50,7 @@ final class JournalMediaRenderer
         $figure = '<figure class="'.e($class).'">'
             .'<img src="'.e($this->media->variantUrl($variant)).'" alt="'.e($alt).'"'.$dimensions
             .' loading="'.($priority ? 'eager' : 'lazy').'" decoding="async" fetchpriority="'.($priority ? 'high' : 'auto').'">'
-            .($caption !== '' ? '<figcaption>'.e($caption).'</figcaption>' : '')
+            .($showCaption && $caption !== '' ? '<figcaption>'.e($caption).'</figcaption>' : '')
             .'</figure>';
 
         return new HtmlString($figure);
