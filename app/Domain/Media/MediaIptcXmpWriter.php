@@ -94,8 +94,19 @@ final class MediaIptcXmpWriter
             throw new RuntimeException('Media staging paths must be readable and writable.');
         }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($originalPath);
-        if (! is_string($mime) || ! MediaTypePolicy::isImage($mime)) {
-            throw new RuntimeException('IPTC/XMP image staging supports JPEG, PNG and WebP only.');
+        if (! is_string($mime) || ! MediaTypePolicy::isImage($mime)
+            || $mime !== $asset->getAttribute('mime_type')) {
+            throw new RuntimeException('Image source type does not match the authoritative media record.');
+        }
+
+        $expectedSize = (int) $asset->getAttribute('byte_size');
+        $expectedHash = $asset->getAttribute('sha256');
+        $actualSize = @filesize($originalPath);
+        $actualHash = @hash_file('sha256', $originalPath);
+        if ($expectedSize <= 0 || ! is_int($actualSize) || $expectedSize !== $actualSize
+            || ! is_string($expectedHash) || ! is_string($actualHash)
+            || ! hash_equals($expectedHash, $actualHash)) {
+            throw new RuntimeException('Immutable source does not match its recorded size and SHA-256.');
         }
 
         // The released Debian Bookworm package (12.57) is too old for this
@@ -117,8 +128,9 @@ final class MediaIptcXmpWriter
                 throw new RuntimeException('Unable to read immutable media original.');
             }
             try {
-                if (stream_copy_to_stream($input, $output) === false) {
-                    throw new RuntimeException('Unable to copy media into the staging file.');
+                $copied = stream_copy_to_stream($input, $output);
+                if ($copied === false || $copied !== $expectedSize) {
+                    throw new RuntimeException('Unable to copy the complete immutable media file.');
                 }
             } finally {
                 fclose($input);
