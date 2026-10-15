@@ -65,29 +65,24 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
-    public function sortComponent(string $target, int $position): void
+    /** One native Livewire Sortable entry for every hierarchy level.
+     * The destination group ID alone determines the new parent. */
+    private function placeSortedComponent(string $target, int $position, int|string|null $groupId): void
     {
-        if (! $this->componentReorderEnabled()) {
-            return;
+        if (! $this->componentReorderEnabled()) return;
+        $changed = app(CustomPageEditorialService::class)->placeComponent(
+            $this->settings(), $target, $position, $groupId,
+        );
+        $this->clearSelections();
+        $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Component order updated', status: 'success');
         }
+    }
 
-        $targets = collect($this->components)
-            ->pluck('target')
-            ->filter(static fn (mixed $value): bool => is_string($value))
-            ->values()
-            ->all();
-
-        $from = array_search($target, $targets, true);
-        if ($from === false) {
-            throw ValidationException::withMessages(['component' => 'The component sequence is invalid.']);
-        }
-
-        $moved = $targets[$from];
-        array_splice($targets, $from, 1);
-        $position = max(0, min($position, count($targets)));
-        array_splice($targets, $position, 0, [$moved]);
-
-        $this->reorderComponents($targets);
+    public function sortComponent(string $target, int $position, int|string|null $groupId = null): void
+    {
+        $this->placeSortedComponent($target, $position, $groupId ?? 'root');
     }
 
     public function moveSelected(string $direction): void
@@ -273,20 +268,10 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
-    public function sortImageChild(int|string $childIndex, int $position, int|string|null $groupId = null): void
+    public function sortImageChild(string $target, int $position, int|string|null $groupId = null): void
     {
-        if (! $this->componentReorderEnabled() || ! is_numeric($groupId) || ! is_numeric($childIndex)) {
-            return;
-        }
-        $changed = app(CustomPageEditorialService::class)->sortImageChild(
-            $this->settings(), (int) $groupId, (int) $childIndex, $position,
-        );
-        $this->loadComponentProjection();
-        if ($changed) {
-            app(AdminNotifier::class)->notification(title: 'Image content order updated', status: 'success');
-        }
+        $this->placeSortedComponent($target, $position, $groupId);
     }
-
 
     /** Child components own the SAME Edit schema, action rail and persisted
      * data as their top-level counterparts. The Image owns only placement. */

@@ -116,9 +116,6 @@
                     data-admin-hierarchy="pages"
                 >
                     <div class="admin-hierarchy__header admin-pages__header" role="row">
-                        <div class="admin-hierarchy__nest-target admin-hierarchy__nest-target--page-level"
-                            data-hierarchy-drop="root" data-hierarchy-parent="root" role="button"
-                            aria-label="Move dragged page to top level"><span>Drop to top level</span></div>
                         <div class="admin-pages__primary-grid" role="presentation">
                             <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
                             <span role="columnheader" data-column="page">Name</span>
@@ -154,7 +151,7 @@
                             @if ($reorderEnabled)
                                 wire:sort="sortSection"
                                 
-                                wire:sort:group="site-pages-root"
+                                wire:sort:group="site-pages"
                                     wire:sort:group-id="root"
                             @endif
                         >
@@ -177,7 +174,7 @@
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
                                                     
-                                                    wire:sort:group="site-pages-{{ $section['id'] }}"
+                                                    wire:sort:group="site-pages"
                                                      wire:sort:group-id="{{ $section['id'] }}"
                                                 @endif
                                             >
