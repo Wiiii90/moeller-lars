@@ -192,7 +192,7 @@ Embedded Storage media images use canonical `media:<id>` references resolved by 
 
 Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita is represented through Custom Page/CV composition rather than a special runtime node type. The component sequence remains flat and independently publishable/reorderable in Admin.
 
-An Image marked `image_decorative` can own one ordered level of prose children: Text, List (without another image), Contact details (Email and Social links, not Form), and Legal Disclaimer. The nested components are edited inside the Image's single component dialog and persist as `image.children`. Their own publication settings and order are retained. Validation forbids images, dividers, nested Contact Forms, image-bearing Lists and second-level nested content; the Legal Disclaimer remains unique across the entire page.
+An Image marked `image_decorative` can own one ordered level of prose children: Text, List (without another image), Contact details (Email and Social links, not Form), and Legal Disclaimer. The Image controls only its own media settings. Each child remains a complete, independently editable component row with its own Position, Type, Content, five Actions and Selection, using the SAME row partial as root components. Storage uses `image.children` but this does not move child editing into Image Edit. Child publication, ordering and parent changes remain independent. Validation forbids images, dividers, nested Contact Forms, image-bearing Lists and second-level nested content; the Legal Disclaimer remains unique across the entire page.
 
 The public image and its children render in ONE native float formatting context. Lines wrap next to the floated image and then naturally below its bottom at whatever available inline width; no fixed columns or media-breakpoint switching is involved. A subsequent top-level Contact component (including its Contact Form) starts after that image group and uses fully wide, single-column fields. A regular Image remains an independent image block. An Image without children does not automatically absorb subsequent sibling content.
 
@@ -489,12 +489,14 @@ Public acceptance requires durable publication/routing/data verification, media 
 
 
 
-The admin hierarchy uses one shared `admin-hierarchy-drag.js` controller.
-Native Livewire sorting only changes positions inside a sibling sequence;
-the small, explicit Nest and Page level targets alone change parentage.
-Pages and Custom Pages share drag gesture classification and the same
-`HierarchyParentField` semantics. Custom Page Text/List Edit exposes the
-Parent select above long component content, with a single domain transaction
-for edited content and nesting. Nested Image children can return to page
-level through the shared target or Move out. This is a single interaction
-contract, not independent per-page drag behavior.
+The admin hierarchy uses ONE native Livewire Sortable group per editor for both
+root and child levels. Its receiving `wire:sort:group-id` determines the parent:
+`root` or the persisted Image/Page index. Pages restores the original
+`site-pages` group shared between both levels. Custom Pages uses one
+`custom-components` group with a single transactional
+`CustomPageEditorialService::placeComponent` owner. Do not reintroduce a
+parallel JavaScript drag engine, hover overlay, floating "Move out" button,
+nested content repeater in Image Edit, redundant child counter or special
+child-row design. Existing Image children remain independently editable
+and selected, and are shown with the canonical full six-column row.
+

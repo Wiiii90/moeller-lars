@@ -232,23 +232,19 @@ Journal already uses visible Position and is the current reference for the conve
 ## 9. Drag and ordering
 
 
-For hierarchical editors (Pages and Custom Pages), sorting and parenting are
-different operations: each sibling level gets an isolated native `wire:sort:group`
-name with a stable `group-id`. The SINGLE drag-intent owner is
-`resources/js/admin-hierarchy-drag.js`; the tables provide only
-`data-admin-hierarchy`, drag handles and explicitly labeled
-`data-hierarchy-drop` targets. Do not recreate local Alpine drag state, use
-row-sized nest overlays or allow native sibling Sortable to change parents.
-A top-level drop target restores a Page or Image child to the root sequence;
-parent drops invoke the existing domain placement methods. Never add a
-second HTML5 draggable/sort engine: the shared controller merely disambiguates
-targeted parent changes from native Livewire sibling sorting.
-
-The shared `HierarchyParentField` provides a top-level placeholder in
-page and component Edit dialogs. On Custom Page Edit, a visible Parent
-selector appears ABOVE long Text/List content; changing Parent persists both
-content edits and hierarchy transactionally. Image children can also be
-released with `Move out`. Preserve publication, list contexts and text.
+For hierarchical editors (Pages and Custom Pages), root and child
+sortable lists share ONE native `wire:sort:group` name per editor, with
+different `wire:sort:group-id` values for each parent and for root.
+This restores the older working Pages behavior. Both sibling sorting
+and root/child transfer are handled by the native Livewire Sortable
+lifecycle, with no shadow Alpine/JS gesture handler or synthetic
+drop targets. Each Image child is a FULL independent six-cell component
+row rendered by the same partial as its root siblings: numbered position,
+normal drag grip, editable component type, at most two content lines,
+Move Up/Down, Edit, Publish/Unpublish, Delete and Selection.
+There is no "Move out" action, arrow glyph, redundant decorative hint,
+child-count metadata or Image-owned child editing. Parent is editable in
+the child's own Edit dialog. Backend mutations are transactional.
 
 Use native Livewire sorting only:
 
