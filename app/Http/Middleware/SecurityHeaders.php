@@ -69,17 +69,6 @@ final class SecurityHeaders
         $styleSources = ["'self'", "'nonce-{$styleNonce}'"];
         $connectSources = ["'self'"];
         $imageSources = ["'self'", 'data:'];
-        $fontSources = ["'self'", 'data:'];
-
-        if ($localVite = $this->localViteOrigins()) {
-            $scriptSources[] = $localVite['http'];
-            $styleSources[] = $localVite['http'];
-            $connectSources[] = $localVite['http'];
-            $connectSources[] = $localVite['websocket'];
-            $imageSources[] = $localVite['http'];
-            $fontSources[] = $localVite['http'];
-        }
-
         // Interactive Exhibition tiles are requested only after opening the map dialog.
         $imageSources[] = 'https://tile.openstreetmap.org';
 
@@ -111,7 +100,7 @@ final class SecurityHeaders
             'script-src '.implode(' ', $scriptSources),
             'style-src '.implode(' ', $styleSources),
             'img-src '.implode(' ', $imageSources),
-            'font-src '.implode(' ', $fontSources),
+            "font-src 'self' data:",
             'connect-src '.implode(' ', $connectSources),
             "frame-src 'self'",
             "object-src 'none'",
@@ -119,45 +108,5 @@ final class SecurityHeaders
             'frame-ancestors '.($allowSameOriginFraming ? "'self'" : "'none'"),
             "form-action 'self'",
         ]).';';
-    }
-
-    /** @return array{http:string,websocket:string}|null */
-    private function localViteOrigins(): ?array
-    {
-        if (! app()->environment('local')) {
-            return null;
-        }
-
-        $hotFile = public_path('hot');
-        if (! is_file($hotFile) || ! is_readable($hotFile)) {
-            return null;
-        }
-
-        $contents = file_get_contents($hotFile);
-        if ($contents === false) {
-            return null;
-        }
-
-        $parts = parse_url(trim($contents));
-        if (! is_array($parts)) {
-            return null;
-        }
-
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $host = strtolower((string) ($parts['host'] ?? ''));
-        $port = isset($parts['port']) ? (int) $parts['port'] : null;
-
-        if (! in_array($scheme, ['http', 'https'], true)
-            || ! in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
-            return null;
-        }
-
-        $authorityHost = $host === '::1' ? '[::1]' : $host;
-        $authority = $authorityHost.($port !== null ? ':'.$port : '');
-
-        return [
-            'http' => $scheme.'://'.$authority,
-            'websocket' => ($scheme === 'https' ? 'wss' : 'ws').'://'.$authority,
-        ];
     }
 }
