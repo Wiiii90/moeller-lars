@@ -25,7 +25,7 @@
             @if (filled($generalSettings->public_email))
                 <div class="contact-details custom-page__contact-child" aria-label="Public email">
                     <div class="contact-details__row">
-                        <span class="contact-details__label">E-Mail</span>
+                        <span class="contact-details__label">Email</span>
                         <a
                             href="mailto:{{ $generalSettings->public_email }}"
                             data-matomo-event-category="Contact"
@@ -94,13 +94,13 @@
                         </div>
 
                         <div class="contact-form__field contact-form__field--email">
-                            <label for="contact-email">E-Mail</label>
+                            <label for="contact-email">Email</label>
                             <input id="contact-email" name="email" type="email" maxlength="320" required value="{{ old('email') }}">
                             @error('email')<p class="contact-form__error">{{ $message }}</p>@enderror
                         </div>
 
                         <div class="contact-form__field contact-form__field--message">
-                            <label for="contact-message">Nachricht</label>
+                            <label for="contact-message">Message</label>
                             <textarea id="contact-message" name="message" maxlength="5000" rows="6" required>{{ old('message') }}</textarea>
                             @error('message')<p class="contact-form__error">{{ $message }}</p>@enderror
                         </div>
@@ -110,7 +110,7 @@
                             <input id="contact-company" name="company" type="text" tabindex="-1" autocomplete="off">
                         </div>
 
-                        <button type="submit">Nachricht senden</button>
+                        <button type="submit">Send message</button>
                     </form>
                 @endif
             </div>

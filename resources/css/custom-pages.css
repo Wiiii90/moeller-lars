@@ -66,12 +66,14 @@
 .custom-page__image--wrapped {
     float: left;
     width: min(42%, var(--custom-page-image-width, 28rem));
-    margin: 0 clamp(.8rem, 3vw, 1.6rem) .8rem 0;
+    /* The Image group owns its float height; the next component gets the
+       shared sibling gap. A bottom float margin double-counted that gap. */
+    margin: 0 clamp(.8rem, 3vw, 1.6rem) 0 0;
     padding: 0;
 }
 .custom-page__image--wrapped.custom-page__image--align-right {
     float: right;
-    margin: 0 0 .8rem clamp(.8rem, 3vw, 1.6rem);
+    margin: 0 0 0 clamp(.8rem, 3vw, 1.6rem);
 }
 
 .custom-page__media img {
