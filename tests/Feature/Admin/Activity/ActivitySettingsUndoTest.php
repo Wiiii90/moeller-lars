@@ -37,7 +37,9 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
 
     $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
     expect($projected)->not->toBeNull()
-        ->and($projected['action'])->toContain('Public email')
+        ->and($projected['action_key'])->toBe('public_content_setting.updated')
+        ->and($projected['change'])->toBe('Edited website settings')
+        ->and($projected['details'])->toContain('Public email')
         ->and($projected['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
         ->and($projected['change_summary']['items'][0]['after'] ?? null)->toBe('undo-snapshot@example.test')
         ->and($projected['undo']['id'] ?? null)->toBe((int) $receipt->getKey())
@@ -58,7 +60,9 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
         ->and($undoMetadata['change_summary']['items'][0]['after'] ?? null)->toBe($beforeEmail === null ? 'None' : (string) $beforeEmail);
 
     $projectedUndo = app(AdminActivityFeed::class)->event((int) $undoEvent->getKey(), $actor);
-    expect($projectedUndo['action'] ?? null)->toContain('Public email')
+    expect($projectedUndo['action_key'] ?? null)->toBe('admin.undo_applied')
+        ->and($projectedUndo['change'] ?? null)->toBe('Restored previous values in Activity')
+        ->and($projectedUndo['details'] ?? null)->toContain('Public email')
         ->and($projectedUndo['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
         ->and($projectedUndo['change_summary']['items'][0]['before'] ?? null)->toBe('undo-snapshot@example.test')
         ->and($projectedUndo['change_summary']['items'][0]['after'] ?? null)->toBe($beforeEmail === null ? 'None' : (string) $beforeEmail);
