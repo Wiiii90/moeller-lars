@@ -51,7 +51,13 @@ trait CustomPageWorkspaceLifecycle
     {
         foreach ($this->components as $component) {
             if (! is_array($component)
-                || ! isset($component['target'], $component['content'])
+                || ! isset(
+                    $component['target'], $component['content'],
+                    $component['index'], $component['type'],
+                )
+                || ! array_key_exists('accepts_children', $component)
+                || ! array_key_exists('can_move_up', $component)
+                || ! array_key_exists('can_move_down', $component)
                 || ! is_array($component['children'] ?? null)) {
                 $this->loadComponentProjection();
                 return;
@@ -65,7 +71,10 @@ trait CustomPageWorkspaceLifecycle
                         $child['image_index'],
                         $child['position'],
                         $child['content'],
-                    )) {
+                        $child['type'],
+                    )
+                    || ! array_key_exists('can_move_up', $child)
+                    || ! array_key_exists('can_move_down', $child)) {
                     $this->loadComponentProjection();
                     return;
                 }
