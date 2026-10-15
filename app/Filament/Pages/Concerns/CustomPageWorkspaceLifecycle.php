@@ -107,7 +107,9 @@ trait CustomPageWorkspaceLifecycle
         }
 
         $this->selectedComponentTargets = collect($this->components)
-            ->pluck('target')
+            ->flatMap(static fn (array $row): array => [
+                $row['target'], ...array_column($row['children'] ?? [], 'target'),
+            ])
             ->filter(static fn (mixed $target): bool => is_string($target))
             ->values()
             ->all();

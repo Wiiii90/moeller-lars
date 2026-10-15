@@ -92,29 +92,38 @@ trait CustomPageWorkspaceComponentActions
 
     public function moveSelected(string $direction): void
     {
-        if (! $this->componentReorderEnabled()) {
-            return;
-        }
+        if (! $this->componentReorderEnabled()) return;
         if (! in_array($direction, ['up', 'down'], true)) {
-            throw ValidationException::withMessages(['component' => 'The move direction is invalid.']);
+            throw ValidationException::withMessages(['component' => 'Invalid move direction.']);
         }
-
-        $parents = $this->selectedComponentTargetData();
-        if ($parents === []) {
-            return;
-        }
-        $changed = app(CustomPageEditorialService::class)->moveSelectedBlocks($this->settings(), $parents, $direction);
-        $count = count($parents);
+        $targets = $this->selectedComponentTargetData();
+        if ($targets === []) return;
+        $parents = array_values(array_filter($targets, static fn (array $t): bool => ! isset($t['child_index'])));
+        $children = array_values(array_filter($targets, static fn (array $t): bool => isset($t['child_index'])));
+        usort($children, static fn (array $a, array $b): int => $direction === 'up'
+            ? [$a['index'], $a['child_index']] <=> [$b['index'], $b['child_index']]
+            : [$b['index'], $b['child_index']] <=> [$a['index'], $a['child_index']]);
+        $changed = DB::transaction(function () use ($parents, $children, $direction): bool {
+            $editor = app(CustomPageEditorialService::class);
+            $changed = $parents !== [] && $editor->moveSelectedBlocks($this->settings(), $parents, $direction);
+            foreach ($children as $t) {
+                $index = $t['child_index'];
+                $position = $index + ($direction === 'up' ? -1 : 1);
+                $blocks = $this->settings()->fresh()->components();
+                $siblings = $blocks[$t['index']]['children'] ?? [];
+                if ($position < 0 || $position >= count($siblings)) continue;
+                $changed = $editor->sortImageChild($this->settings(), $t['index'], $index, $position) || $changed;
+            }
+            return $changed;
+        });
+        $count = count($targets);
         $this->clearSelections();
         $this->reloadWorkspace();
-
-        if ($changed) {
-            app(AdminNotifier::class)->notification(
-                title: 'Selection moved',
-                body: $count.' selected '.($count === 1 ? 'component' : 'components').' moved.',
-                status: 'success',
-            );
-        }
+        if ($changed) app(AdminNotifier::class)->notification(
+            title: 'Selection moved',
+            body: $count.' selected '.($count === 1 ? 'component' : 'components').' moved.',
+            status: 'success',
+        );
     }
 
     public function moveSelectedComponents(string $direction): void
@@ -155,13 +164,16 @@ trait CustomPageWorkspaceComponentActions
         $changed = DB::transaction(function () use ($targets, $published): bool {
             $changed = false;
             foreach ($targets as $target) {
-                $block = $this->componentAt($target['index'], $target['type']);
-                if (\App\Models\CustomPageSetting::componentPublished($block) === $published) {
-                    continue;
-                }
+                $childIndex = $target['child_index'] ?? null;
+                $block = $childIndex === null
+                    ? $this->componentAt($target['index'], $target['type'])
+                    : $this->imageChildAt($target['index'], $childIndex, $target['type']);
+                if (\App\Models\CustomPageSetting::componentPublished($block) === $published) continue;
                 $block['published'] = $published;
-                $changed = app(CustomPageEditorialService::class)->updateBlock(
-                    $this->settings(), $target['index'], $target['type'], $block,
+                $editor = app(CustomPageEditorialService::class);
+                $changed = ($childIndex === null
+                    ? $editor->updateBlock($this->settings(), $target['index'], $target['type'], $block)
+                    : $editor->updateImageChild($this->settings(), $target['index'], $childIndex, $target['type'], $block)
                 ) || $changed;
             }
 
@@ -636,7 +648,16 @@ trait CustomPageWorkspaceComponentActions
                 if ($parents === []) {
                     return;
                 }
-                app(CustomPageEditorialService::class)->deleteBlocks($this->settings(), $parents);
+                $editor = app(CustomPageEditorialService::class);
+                $topLevel = array_values(array_filter($parents, static fn (array $t): bool => ! isset($t['child_index'])));
+                $nested = array_values(array_filter($parents, static fn (array $t): bool => isset($t['child_index'])));
+                usort($nested, static fn (array $a, array $b): int => [$b['index'], $b['child_index']] <=> [$a['index'], $a['child_index']]);
+                $selectedParentIndices = array_column($topLevel, 'index');
+                foreach ($nested as $t) {
+                    if (in_array($t['index'], $selectedParentIndices, true)) continue;
+                    $editor->deleteImageChild($this->settings(), $t['index'], $t['child_index'], $t['type']);
+                }
+                if ($topLevel !== []) $editor->deleteBlocks($this->settings(), $topLevel);
                 $count = count($parents);
                 $this->clearSelections();
                 $this->reloadWorkspace();
