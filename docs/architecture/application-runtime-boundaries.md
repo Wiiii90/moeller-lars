@@ -17,6 +17,12 @@
 
 Der [`.dockerignore`](../../.dockerignore) schließt die normale `.env`, Tests, lokale Medienoriginale und andere Build-unpassende Daten aus dem Container-Buildkontext aus. Produktive Secrets und kanonische Originale gehören in die zur Laufzeit von der Plattform bereitgestellte Konfiguration bzw. persistente Datenhaltung, nicht in den Source-/Image-Layer. Das Verzeichnis für Media-Originale ist schreibbarer Privatspeicher; Varianten sind rekonstruierbar. Die genauen Host-Mounts und Recovery-Schritte sind ausdrücklich **keine** aus dem Dockerfile ableitbaren Infrastruktur-Fakten.
 
+## Offline-Metadata-Writer ist kein Public-Runtime-Owner
+
+[`MediaIptcXmpWriter`](../../app/Domain/Media/MediaIptcXmpWriter.php) ist seit `dev@c61bc0f4` ein **unverdrahteter Offline-/Staging-Service** für Rechte-XMP auf exklusiv neuer JPG/PNG/WebP-Dateikopie. [`config/media.php`](../../config/media.php) wählt per `MEDIA_EXIFTOOL_BINARY` eine externe ExifTool-Executable; die Klasse verweigert Versionen **unter 12.67**. Das bestehende [`Dockerfile`](../../Dockerfile) verwendet Debian Bookworm/PHP 8.3, installiert jedoch **kein ExifTool**. Die beim Distribution-Paket verfügbare Version 12.57 wäre außerdem zu alt für die benötigte PLUS Data-Mining-Kontrollvokabel. **Kein** ExifTool-Build, Docker-Image, Shell-/Containerlauf oder JPEG-/PNG-/WebP-Metadaten-Check ist hier erfolgt. Das ist vor einer späteren B2-Integration eine nachweisbare **Toolchain-/Deploymentvoraussetzung**, kein aktuell kaputter PublicMedia-GET; die normalen Public-/Preview-Medienpfade rufen den Writer noch nicht auf.
+
+Vor jeder Runtime-Integration: vertrauenswürdig gepinnte Binary/Version in lokalem und Produktionsimage, unabhängiger Metadata-Readback, ICC-/Pixel-/Privacy-Test, atomare Staged-File-Cleanup- und SHA-/URL-Identität. Normative Produktsemantik/Autorschaft bleibt beim [Rights-Plan](../PUBLIC-RIGHTS-AND-PRIVACY.md#b-rights-metadata-across-storage-public-files-and-seo), Public-/Media-Berechtigung beim vorhandenen Controller/Domain-Owner.
+
 ## Zwei unterscheidbare Quell- und Vertragsabweichungen
 
 ### Release-Marker im Image vs öffentlich erwarteter Pfad
