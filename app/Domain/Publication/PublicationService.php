@@ -72,11 +72,8 @@ final class PublicationService
 
         foreach (PublicationSnapshot::TABLES as $table) {
             $remaining = $limit - count($rows);
-            if ($remaining < 1) {
-                $truncated = true;
-                break;
-            }
-
+            // When full, look for one actual further change before declaring
+            // truncation; later tables may contain no differences at all.
             $changes = DB::select(
                 "SELECT COALESCE(working.id, committed.id)::text AS row_key, CASE WHEN working.id IS NULL THEN 'removed' WHEN committed.id IS NULL THEN 'added' ELSE 'changed' END AS change_kind, to_jsonb(working)::text AS working_payload, to_jsonb(committed)::text AS committed_payload FROM public.{$table} AS working FULL OUTER JOIN committed.{$table} AS committed USING (id) WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL.' ORDER BY COALESCE(working.id, committed.id) LIMIT ?',
                 [$remaining + 1],

@@ -16,10 +16,12 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
+use App\Models\User;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -95,6 +97,13 @@ final class Activity extends Page
 
     /** @var array<int, array<string, mixed>|null> */
     private array $commitDetailsCache = [];
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
 
     public function mount(): void
     {
