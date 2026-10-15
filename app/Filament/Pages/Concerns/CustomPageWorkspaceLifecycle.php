@@ -39,6 +39,40 @@ trait CustomPageWorkspaceLifecycle
         $this->reloadWorkspace();
     }
 
+    /**
+     * Livewire public properties are restored from the browser snapshot on
+     * each update. A tab opened before the independent Image-child row
+     * refactor can therefore still carry the old four-field child summary.
+     * The Blade table now requires full component projections. Rebuild only
+     * when a hydrated snapshot has the obsolete shape, before any Action
+     * or Sortable callback operates on its positional targets.
+     */
+    public function hydrate(): void
+    {
+        foreach ($this->components as $component) {
+            if (! is_array($component)
+                || ! isset($component['target'], $component['content'])
+                || ! is_array($component['children'] ?? null)) {
+                $this->loadComponentProjection();
+                return;
+            }
+
+            foreach ($component['children'] as $child) {
+                if (! is_array($child)
+                    || ! isset(
+                        $child['target'],
+                        $child['index'],
+                        $child['image_index'],
+                        $child['position'],
+                        $child['content'],
+                    )) {
+                    $this->loadComponentProjection();
+                    return;
+                }
+            }
+        }
+    }
+
     public function getBreadcrumbs(): array
     {
         return [];
