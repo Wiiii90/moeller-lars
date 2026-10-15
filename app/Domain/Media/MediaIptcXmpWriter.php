@@ -3,6 +3,7 @@
 namespace App\Domain\Media;
 
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -164,18 +165,63 @@ final class MediaIptcXmpWriter
         string $stagedPath,
         bool $mayReserveDataMining = false,
     ): array {
+        return $this->stageSource(
+            $asset, $asset, $originalPath, $stagedPath, $mayReserveDataMining,
+        );
+    }
+
+    /**
+     * A single IPTC/XMP writer also stages the existing WebP thumbnail.
+     * Its source hash belongs to MediaVariant; its rights belong to MediaAsset.
+     *
+     * @return array{sha256:string,byte_size:int,mime_type:string}
+     */
+    public function stageVariantCopy(
+        MediaAsset $asset,
+        MediaVariant $variant,
+        string $variantPath,
+        string $stagedPath,
+        bool $mayReserveDataMining = false,
+    ): array {
+        if (! is_numeric($asset->getKey())
+            || (int) $variant->getAttribute('media_asset_id') !== (int) $asset->getKey()
+            || $variant->getAttribute('variant_kind') !== PublicMedia::THUMBNAIL_KIND
+            || $variant->getAttribute('transform_profile') !== PublicMedia::PUBLIC_TRANSFORM_PROFILE
+            || $variant->getAttribute('state') !== 'available'
+            || $variant->getAttribute('mime_type') !== 'image/webp') {
+            throw new RuntimeException('Only a matching available public-v1 WebP thumbnail may be staged.');
+        }
+
+        return $this->stageSource(
+            $asset, $variant, $variantPath, $stagedPath, $mayReserveDataMining,
+        );
+    }
+
+    /**
+     * Both original and thumbnail pass the same source-integrity,
+     * metadata-writing and readback checks.
+     *
+     * @return array{sha256:string,byte_size:int,mime_type:string}
+     */
+    private function stageSource(
+        MediaAsset $asset,
+        MediaAsset|MediaVariant $source,
+        string $originalPath,
+        string $stagedPath,
+        bool $mayReserveDataMining,
+    ): array {
         if (! is_file($originalPath) || ! is_readable($originalPath)
             || ! is_dir(dirname($stagedPath)) || ! is_writable(dirname($stagedPath))) {
             throw new RuntimeException('Media staging paths must be readable and writable.');
         }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($originalPath);
         if (! is_string($mime) || ! MediaTypePolicy::isImage($mime)
-            || $mime !== $asset->getAttribute('mime_type')) {
+            || $mime !== $source->getAttribute('mime_type')) {
             throw new RuntimeException('Image source type does not match the authoritative media record.');
         }
 
-        $expectedSize = (int) $asset->getAttribute('byte_size');
-        $expectedHash = $asset->getAttribute('sha256');
+        $expectedSize = (int) $source->getAttribute('byte_size');
+        $expectedHash = $source->getAttribute('sha256');
         $actualSize = @filesize($originalPath);
         $actualHash = @hash_file('sha256', $originalPath);
         if ($expectedSize <= 0 || ! is_int($actualSize) || $expectedSize !== $actualSize
