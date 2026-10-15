@@ -83,3 +83,40 @@ it('saves an explicit override through the canonical media editorial service', f
         ->and($asset->copyright_notice)->toBe('© Asset override')
         ->and($asset->effectiveCopyrightNotice())->toBe('© Asset override');
 });
+
+
+it('projects optional photographer and license data without claiming rights from the artwork', function (): void {
+    PublicContentSetting::general()->update(['default_media_copyright_notice' => '© General']);
+    $asset = copyrightAsset();
+
+    app(MediaAssetEditorialService::class)->updateMetadata($asset, [
+        'file_creator' => ' Photographer ',
+        'file_rights_holder' => 'Photo Agency',
+        'rights_usage_terms' => 'Permission is required',
+        'license_inquiry_url' => 'https://example.org/rights',
+    ]);
+
+    expect(app(\App\Domain\Media\MediaRightsProjection::class)->forAsset($asset->fresh()))
+        ->toMatchArray([
+            'creator' => 'Photographer',
+            'rights_holder' => 'Photo Agency',
+            'credit' => null,
+            'copyright_notice' => '© General',
+            'usage_terms' => 'Permission is required',
+            'license_inquiry_url' => 'https://example.org/rights',
+        ]);
+
+    app(MediaAssetEditorialService::class)->updateMetadata($asset, [
+        'copyright_notice_mode' => MediaAsset::COPYRIGHT_NONE,
+    ]);
+    expect(app(\App\Domain\Media\MediaRightsProjection::class)->forAsset($asset->fresh())['copyright_notice'])->toBeNull()
+        ->and($asset->fresh()->file_rights_holder)->toBe('Photo Agency');
+});
+
+it('rejects non-HTTPS media license inquiry URLs', function (): void {
+    $asset = copyrightAsset();
+    expect(fn () => app(MediaAssetEditorialService::class)->updateMetadata($asset, [
+        'license_inquiry_url' => 'http://example.org/rights',
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($asset->fresh()->license_inquiry_url)->toBeNull();
+});
