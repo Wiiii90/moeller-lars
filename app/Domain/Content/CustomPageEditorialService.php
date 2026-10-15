@@ -342,7 +342,7 @@ final class CustomPageEditorialService
                 if (! ($blocks[$parent]['image_decorative'] ?? false)
                     || ! in_array($expectedType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
                     || ($expectedType === 'list' && ($item['media_asset_id'] ?? null) !== null)) {
-                    throw ValidationException::withMessages(['component' => 'Only suitable text components can be children of a decorative Image.']);
+                    throw ValidationException::withMessages(['component' => 'Only supported components can be children of a decorative Image.']);
                 }
                 if ($expectedType === 'contact') {
                     foreach ($item['children'] ?? [] as $child) {

@@ -81,7 +81,7 @@ Two questions are deliberately separate:
 
 ### `MediaReferenceQuery`
 
-Answers whether an asset is referenced anywhere in canonical editorial data.
+**Contract:** detect every managed-asset reference in canonical editorial data. **Current source coverage is incomplete** for decorative Image children and Home Lists; an empty Working reference result is therefore not evidence of complete safety. The [source-verified coverage matrix](architecture/media-reference-and-cleanup.md#quellbasierte-medienreferenzmatrix) is the sole cross-reader inventory.
 
 This powers Storage reference/destination inspection and informs **canonical reference-aware deletion**. It does **not** uniformly block deletion: `MediaAssetEditorialService::delete()` checks whether references exist and, when they do, invokes the domain-owned removal path before marking the asset and variants deleted. A reference may belong to draft, inactive or presentation-disabled content.
 
@@ -124,7 +124,7 @@ Usage-specific overrides exist only where an explicit consumer contract supports
 
 Required public ALT is never manufactured from filenames/IDs at render time.
 
-Credit/copyright fields are editorial metadata and do not alter immutable technical identity.
+Credit/copyright and the optional `file_creator`, `file_rights_holder`, `rights_usage_terms`, `license_inquiry_url` fields are editorial metadata; they do not alter immutable technical identity or determine authorship automatically. The central `MediaRightsProjection` feeds an **unpublished** `MediaIptcXmpWriter` staging copy, but no embedded rights-bearing public file or versioned public URL follows from editing these fields. The [rights plan](PUBLIC-RIGHTS-AND-PRIVACY.md#b-rights-metadata-across-storage-public-files-and-seo) alone defines the future publishing boundary.
 
 ## Editor selection
 
@@ -145,7 +145,7 @@ Normal media deletion is conservative and reference-aware.
 
 Presentation toggles such as Exhibition Gallery/Map do not silently detach unrelated media.
 
-**Aktuelle Source-Abweichung (14.10.2026):** Home Custom/Under Construction besitzen List-Blöcke mit eigener `media_asset_id` und Rich-Text-Medien in `items[].body`. `MediaReferenceQuery::mediaIdsForHome()`, `MediaReferenceCatalog::contentReferenceRowsByMediaId()` und `MediaAssetEditorialService::removeHomeReferences()` berücksichtigen aktuell nur Home-`image` und `text` und **übersehen Home-`list`**. Damit sind Referenzfilter und autorisierte Cleanup-Transaktionen für Home-Listen nicht vollständig symmetrisch. Die [genaue Quellmatrix und das isolierte Testprotokoll](architecture/media-reference-and-cleanup.md) markieren diese **nicht runtimegetestete Produktabweichung**. Bitte nicht mit einem page-local Workaround oder ungesicherten Storage-Löschaufruf korrigieren; der Fix gehört in die kanonischen Media-Owner auf `dev`.
+**Aktuelle Quellabweichung (`dev@57eafe78`, nicht runtimegetestet):** Der Vertrag fordert symmetrische Referenz-Erkennung und Entfernung, die gegenwärtigen Reader sind jedoch noch uneinheitlich. [Die zentrale Quellmatrix](architecture/media-reference-and-cleanup.md#quellbasierte-medienreferenzmatrix) belegt genau drei wichtige Fälle: (1) Custom-Page-`image.children[]`-Rich-Text wird nicht rekursiv erkannt, bereinigt oder per PublicMedia autorisiert; (2) Home-`list.media_asset_id` und historische `items[].body` fehlen in Working-/Storage-/Removal-/Public-Lesern; (3) ein direktes Custom-Page-Top-Level-List-Medium wird im Working gezählt, aber nicht allein dadurch öffentlich freigegeben. Ein bestätigter Löschvorgang darf keine vollständige Referenzbereinigung versprechen, solange diese Lücken bestehen. LIVE-/History-Schutz und tatsächliches Dateisystem-Cleanup sind eine **andere** Entscheidung mit eigenen Retry-Grenzen. Der Produktfix gehört in die gemeinsamen Media-Owner auf `dev`, nicht als getrennte Home-/Child-Heuristik auf den Dokumentationsbranch.
 
 ### Gallery, Artwork usage and Storage deletion
 

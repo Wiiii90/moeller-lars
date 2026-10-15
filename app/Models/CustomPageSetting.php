@@ -24,8 +24,10 @@ final class CustomPageSetting extends Model
         'legal_disclaimer',
     ];
 
-    /** Only prose-capable children can wrap beside a decorative Image. */
-    public const IMAGE_CHILD_TYPES = ['text', 'list', 'contact', 'legal_disclaimer'];
+    /** One shared allowlist for Image children in persistence, editing and sorting. */
+    public const IMAGE_CHILD_TYPES = ['text', 'list', 'divider', 'contact', 'legal_disclaimer'];
+
+    public const IMAGE_ALIGNMENTS = ['left', 'right'];
 
     public const CONTACT_CHILD_TYPES = [
         'public_email',
@@ -87,6 +89,12 @@ final class CustomPageSetting extends Model
         return is_int($value) && $value >= self::MIN_IMAGE_SCALE_PERCENT && $value <= self::MAX_IMAGE_SCALE_PERCENT
             ? $value
             : self::DEFAULT_IMAGE_SCALE_PERCENT;
+    }
+
+    /** Historical images default to left without storing a redundant value. */
+    public static function imageAlignment(array $block): string
+    {
+        return ($block['image_alignment'] ?? 'left') === 'right' ? 'right' : 'left';
     }
 
     public static function componentPublished(array $block): bool
@@ -172,6 +180,7 @@ final class CustomPageSetting extends Model
                     'published' => $published,
                     'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
                     'image_decorative' => (bool) ($block['image_decorative'] ?? false),
+                    ...($this->validatedImageAlignment($block) === 'right' ? ['image_alignment' => 'right'] : []),
                     ...$this->normalizedImageScale($block),
                     ...$this->normalizedImageChildren($block),
                 ],
@@ -204,6 +213,16 @@ final class CustomPageSetting extends Model
         }
 
         return $normalized;
+    }
+
+    private function validatedImageAlignment(array $block): string
+    {
+        $alignment = $block['image_alignment'] ?? 'left';
+        if (! is_string($alignment) || ! in_array($alignment, self::IMAGE_ALIGNMENTS, true)) {
+            throw ValidationException::withMessages(['blocks' => 'Image alignment must be Left or Right.']);
+        }
+
+        return $alignment;
     }
 
     /** Normalize the optional single nesting level using the exact same
@@ -284,7 +303,7 @@ final class CustomPageSetting extends Model
                 foreach ($children as $child) {
                     $childType = is_array($child) ? ($child['type'] ?? null) : null;
                     if (! in_array($childType, self::IMAGE_CHILD_TYPES, true)) {
-                        throw ValidationException::withMessages(['blocks' => 'Images may only contain Text, List, Contact details or Legal Disclaimer.']);
+                        throw ValidationException::withMessages(['blocks' => 'Images may only contain Text, List, Divider, Contact details or Legal Disclaimer.']);
                     }
                     if ($childType === 'list' && ($child['media_asset_id'] ?? null) !== null) {
                         throw ValidationException::withMessages(['blocks' => 'Lists beside an image cannot contain another image.']);
@@ -343,6 +362,7 @@ final class CustomPageSetting extends Model
     /** @param array<string, mixed> $block */
     private function validateImageComponent(array $block, bool $requirePublicMedia): void
     {
+        $this->validatedImageAlignment($block);
         $scale = $block['image_scale_percent'] ?? self::DEFAULT_IMAGE_SCALE_PERCENT;
         if (! is_int($scale) || $scale < self::MIN_IMAGE_SCALE_PERCENT || $scale > self::MAX_IMAGE_SCALE_PERCENT) {
             throw ValidationException::withMessages(['blocks' => 'Image size must be a whole percentage between 25 and 200.']);

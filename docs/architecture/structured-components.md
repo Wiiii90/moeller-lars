@@ -14,10 +14,11 @@ flowchart TD
     Home --> Hero["artwork: Hero-Optionen"]
     Construction --> Block
     Custom --> Block
-    Block --> Image["image: media_asset_id, decorative, scale, children?"]
+    Block --> Image["image: media_asset_id, decorative, scale, alignment?, children?"]
     Image -->|"nur decorative"| ImageChildren["ordered image.children[]"]
     ImageChildren --> ProseText["text: title/body"]
     ImageChildren --> ProseList["list: items[] (ohne zweites image)"]
+    ImageChildren --> ProseDivider["divider: variant"]
     ImageChildren --> ProseContact["contact: email/social (ohne form)"]
     ImageChildren --> ProseLegal["legal_disclaimer (max einmal pro Page)"]
     Block --> Text["text: title/body"]
@@ -41,7 +42,7 @@ Die folgenden Werte entsprechen `CustomPageSetting::COMPONENT_TYPES`:
 
 | Typ | Normalisierte Felder | Wichtige Regeln |
 | --- | --- | --- |
-| `image` | `type, published, media_asset_id, image_decorative, image_scale_percent?, children?` | Optionaler Bildgrößenwert 25–200 %, 100 % ist **nicht gespeichert**; `children` nur bei dekorativen Images und nur für eine textfähige Ebene; öffentlich verfügbarer MediaAsset und ALT-Text bei nichtdekorativen Bildern |
+| `image` | `type, published, media_asset_id, image_decorative, image_scale_percent?, image_alignment?, children?` | Größe 25–200 % (100 % implizit), Ausrichtung `left|right` (`left` implizit und nicht gespeichert); unabhängig von `image_decorative`. `children` nur bei dekorativen Images als eine Ebene unterstützter Komponenten; öffentlich verfügbarer MediaAsset und ALT-Text bei nichtdekorativen Bildern |
 | `text` | `type, published, title, body` | Titel höchstens 160 Zeichen, Body über kanonische Rich-Text-Validierung |
 | `list` | `type, published, title, media_asset_id, items` | Titel höchstens 160 Zeichen; Liste geordneter Untereinträge; optionale Bildreferenz |
 | `divider` | `type, published, variant` | `thin`, `subtle`, `strong` oder `dotted`, Default `thin` (siehe [DividerVariant](../../app/Domain/Content/DividerVariant.php)) |
@@ -76,14 +77,19 @@ eine entsprechende Home-Edit-Kontrolle eingebaut wurde. Der
 prüft laut Quelltext Default, explizite 150 %, Rückkehr zum impliziten
 100-%-Zustand und No-op; dieser Test wurde hier nicht ausgeführt.
 
+### Image alignment: getrennt vom dekorativen Verhalten (seit `dev@ebbf6e1d`)
+
+[`CustomPageSetting::imageAlignment()`](../../app/Models/CustomPageSetting.php) liest `image_alignment=right` oder verwendet das historische implizite `left`. `normalizedBlocks()` und [`CustomPageWorkspaceSecondaryForms::imageAlignmentPayload()`](../../app/Filament/Pages/Concerns/CustomPageWorkspaceSecondaryForms.php) persistieren **nur Right** und validieren `left|right`; im [Image-Edit-Schema](../../app/Filament/Pages/Concerns/CustomPageWorkspaceForms.php) ist dies eine eigene Select-Einstellung, **unabhängig von Decorative Image**. [Public Blade](../../resources/views/pages/partials/component-sequence.blade.php) setzt den Alignment-Klassennamen; [`custom-pages.css`](../../resources/css/custom-pages.css) richtet Standalone-Images durch Auto-Margin rechts aus, dekorative Images mit Children hingegen durch links-/rechtsseitigen **Float**. Ein Bild ohne Children erzeugt weiterhin keinen Child-Wrapper. No-op bei historischem Left/neu gewähltem Left ist eine Persistenzregel aus dem Source, kein ausgeführter Featuretest.
+
 ### Zusätzliche geordnete Ebene: `image.children[]` (seit `dev@81c12c83`)
 
-Die öffentliche **Top-Level-Komponentenliste bleibt geordnet und flach**. Ein **dekoratives** Image kann jedoch optional die zweite geordnete JSON-Ebene `children[]` besitzen. Das ist eine echte Ownership-Beziehung, nicht eine CSS-Nachbarschaftsheuristik oder ein generischer Baum beliebiger Tiefe. [`CustomPageSetting::normalizedImageChildren()`](../../app/Models/CustomPageSetting.php) übergibt deren Werte erneut an `normalizedBlocks()`; [`validateBlocks()`](../../app/Models/CustomPageSetting.php) verbietet Kinder unter nichtdekorativen Images, unsupported Child-Typen, ineinander verschachtelte Images/Divider, List mit eigenem `media_asset_id`, aktive Contact Forms sowie die Wiederholung von Legal Disclaimer über die **gesamte** Page. Children besitzen jeweils eigenes `published`-Flag und die gewöhnlichen `text`-/`list`-/`contact`-Normalisierer. Fehlende `children`-Keys werden nicht künstlich als leere Listen persistiert; vorhandene Reihenfolgen müssen echte JSON-Listen ergeben.
+Die öffentliche **Top-Level-Komponentenliste bleibt geordnet und flach**. Ein **dekoratives** Image kann jedoch optional die zweite geordnete JSON-Ebene `children[]` besitzen. Das ist eine echte Ownership-Beziehung, nicht eine CSS-Nachbarschaftsheuristik oder ein generischer Baum beliebiger Tiefe. [`CustomPageSetting::normalizedImageChildren()`](../../app/Models/CustomPageSetting.php) übergibt deren Werte erneut an `normalizedBlocks()`; [`validateBlocks()`](../../app/Models/CustomPageSetting.php) verbietet Kinder unter nichtdekorativen Images, unsupported Child-Typen, ineinander verschachtelte Images und tiefere Children, List mit eigenem `media_asset_id`, aktive Contact Forms sowie die Wiederholung von Legal Disclaimer über die **gesamte** Page. Children besitzen jeweils eigenes `published`-Flag und die gewöhnlichen `text`-/`list`-/`divider`-/`contact`-Normalisierer. Fehlende `children`-Keys werden nicht künstlich als leere Listen persistiert; vorhandene Reihenfolgen müssen echte JSON-Listen ergeben.
 
 | Kindtyp | Vererbte Datenstruktur | Abweichender Kontext |
 | --- | --- | --- |
 | `text` | `published, title?, body?` | Überschrift/Rich-Text, einschließlich bereits vorhandener kanonischer Storage-Media-Markdownreferenzen; **kein** zweites `image`-Element |
 | `list` | `published, title?, items[]` | Liste ohne eigene Bildreferenz; Entry/Context/Published/Details bleiben erhalten, eingebettete Alt-Media-Referenzen in Details sind separat zu berücksichtigen |
+| `divider` | `published, variant` | Auch neben einem Image erlaubt; zentrale Varianten `thin`, `subtle`, `strong`, `dotted`; in der öffentlichen Darstellung mit `flow-root`, damit die Regel nicht unter einen Float läuft |
 | `contact` | `published, title?, children[]` | Erlaubt Public Email und Social Links als Details, **keine** publizierte Contact Form |
 | `legal_disclaimer` | `published` | Allgemeiner General-Legal-Text; maximal einmal über Top-Level und Image-Children |
 
@@ -91,7 +97,7 @@ Die öffentliche **Top-Level-Komponentenliste bleibt geordnet und flach**. Ein *
 
 **Eigenständige Child-Mutationen:** [`CustomPageWorkspaceComponentActions`](../../app/Filament/Pages/Concerns/CustomPageWorkspaceComponentActions.php) stellt `editImageChildAction`, `setImageChildPublished`, `moveImageChildSibling`, `deleteImageChildAction` und `changeImageChildTypeAction`. [`CustomPageEditorialService`](../../app/Domain/Content/CustomPageEditorialService.php) führt `updateImageChild`, `deleteImageChild`, `moveImageChildByDirection`, `convertImageChild` unter Row-Lock und DB-Transaktion aus; `editImageChildAction` verwendet dasselbe Component-Editor-Schema wie Top-Level und kombiniert bei Bedarf Content-Save plus Unnest/Reparent in einer **äußeren** Transaktion. Image Edit sichert beim Fehlen von `image_children` im Form-Payload die vorhandenen Children, ändert sie aber nicht direkt. Der alte `adopt_component_index`-Formzweig ist entfernt; vorhandene `updateImageAndNest`-Domainsemantik nicht automatisch als neuen UI-Weg deuten.
 
-**Noch offene Quellgrenzen:** Die `imageChildTarget`-Validierung kontrolliert `imageIndex/childIndex/type`, nicht eine dauerhafte Child-ID/Revision; gleichartige, parallel vertauschte Children bleiben Stale-Target-Risiko. Die neue Child-Row zeigt außerdem eine Checkbox mit `target = imageIndex.childIndex:type`, während [`selectedComponentTargetData()`](../../app/Filament/Pages/Concerns/CustomPageWorkspaceTargetHelpers.php) nur `ctype_digit(index)` akzeptiert und [`retainVisibleSelections()`](../../app/Filament/Pages/Concerns/CustomPageWorkspacePresentationHelpers.php) ausschließlich Parent-Targets behält. Child-Selection/Bulk-Roundtrip ist somit **quellseitig nicht geschlossen**, auch wenn die einzelnen Child-Actions angebunden sind. Reale Browser-/Livewire-/Audit-/No-op-Prüfungen wurden hier nicht ausgeführt. [UI-Detailpfad](ui-surfaces.md#custom-page-image-children-komponentenaktionen-und-selektionsgrenze).
+**Noch offene Quellgrenzen (Quellabgleich bis `dev@57eafe78`):** Die `imageChildTarget`-Validierung kontrolliert `imageIndex/childIndex/type`, nicht eine dauerhafte Child-ID/Revision; parallel vertauschte gleichartige Children bleiben Stale-Target-Risiko. **Die frühere Parent-only-Selection-Aussage ist überholt:** [`selectedComponentTargetData()`](../../app/Filament/Pages/Concerns/CustomPageWorkspaceTargetHelpers.php) parst auch `imageIndex.childIndex:type`, und `moveSelected()` verarbeitet Children vor Root-Parents. Bulk Delete besitzt eine äußere Transaktion. Die weiterhin offenen Failure-/Audit-/No-op-/Concurrency-Fälle gehören zum [einzigen UI-Detail-Owner](ui-surfaces.md#custom-page-image-children-komponentenaktionen-und-selektionsgrenze); der Quellpfad ist **nicht** browser-/DB-getestet.
 
 **Native Hierarchie-Placement (Stand `dev@a316e59b`):** `CustomPageWorkspaceComponentActions::sortComponent()/sortImageChild()` führen nun über `placeSortedComponent()` zur einzigen Domainmethode [`CustomPageEditorialService::placeComponent()`](../../app/Domain/Content/CustomPageEditorialService.php). Die ursprünglichen JS-Drop-Marker und `admin-hierarchy-drag.js` sind entfernt. `placeComponent` akzeptiert `root` oder dekorativen Imageindex als Target-Gruppe, verarbeitet root/Child-Locators unter Settings-Row-Lock und setzt JSON nach Validierung in einer Transaktion. Andere explizite Move-/Unnest-/Edit-Methoden existieren weiterhin als UI-Alternativen. [Native Sort-Trace](ui-surfaces.md#native-hierarchie-placement-pages-und-custom-pages). Der neue Domain-Guard verbietet `parent === sourceIndex` explizit; gleichartige Index/Typ-Target-Races bleiben ohne erwartete Revision offen.
 
