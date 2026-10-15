@@ -101,3 +101,22 @@ it('does not cascade a profile URL or ordering change', function (): void {
     expect($page->fresh()->components()[0]['children'][0]['social_platforms'])->toBe(['facebook'])
         ->and(AuditEvent::query()->count())->toBe($before + 1);
 });
+it('does not recreate an explicitly deleted last Instagram profile from legacy fields', function (): void {
+    $service = app(AdminSettingsService::class);
+    $general = PublicContentSetting::general();
+    $general->update(['instagram_handle' => 'historical_artist', 'social_links' => [
+        ['platform' => 'instagram', 'url' => 'https://example.invalid/instagram'],
+    ]]);
+
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Last social link', 'last-social-link');
+    $page = CustomPageSetting::query()->where('site_section_id', $section->getKey())->sole();
+    $page->update(['blocks' => [['type' => 'contact', 'children' => [[
+        'type' => 'social_links', 'published' => true, 'social_platforms' => ['instagram'],
+    ]]]]]);
+
+    $service->updatePublicContent($general, ['social_links' => []]);
+
+    expect(PublicContentSetting::general()->getAttribute('social_links'))->toBe([])
+        ->and($page->fresh()->components()[0]['children'][0]['social_platforms'])->toBe([]);
+});
+
