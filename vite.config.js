@@ -20,6 +20,9 @@ export default defineConfig({
         port: 5173,
         strictPort: true,
         origin: dockerDev ? 'http://127.0.0.1:5173' : undefined,
+        cors: dockerDev ? {
+            origin: 'http://127.0.0.1:8001',
+        } : undefined,
         hmr: dockerDev ? {
             host: '127.0.0.1',
             clientPort: 5173,
