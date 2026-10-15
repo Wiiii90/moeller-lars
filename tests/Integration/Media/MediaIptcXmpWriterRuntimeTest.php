@@ -20,7 +20,7 @@ function b2Raster(string $path, string $mime): void
     $image = imagecreatetruecolor(23, 17);
     for ($y = 0; $y < 17; $y++) {
         for ($x = 0; $x < 23; $x++) {
-            imagesetpixel($image, $x, $y, imagecolorallocate($image, $x * 9, $y * 13, ($x + $y) * 7));
+            imagesetpixel($image, $x, $y, imagecolorallocate($image, $x * 9, $y * 13, ($x + $y) * 6));
         }
     }
     match ($mime) {

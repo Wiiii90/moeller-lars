@@ -1,6 +1,6 @@
 # TESTING_SKILL.md — lebender Testing-Handoff
 
-Stand 2026-10-15. Repository: `Wiiii90/moeller-lars`. **Aktueller Arbeitsstand, kein chronologisches Protokoll.** Änderungen ersetzen veraltete Angaben; Git enthält die Historie.
+Stand 2026-10-16. Repository: `Wiiii90/moeller-lars`. **Aktueller Arbeitsstand, kein chronologisches Protokoll.** Änderungen ersetzen veraltete Angaben; Git enthält die Historie.
 
 ## Arbeitsort, Git, Zuständigkeit
 
@@ -28,7 +28,8 @@ Stand 2026-10-15. Repository: `Wiiii90/moeller-lars`. **Aktueller Arbeitsstand, 
 - Filtertest korrigiert: Activity und Storage folgen der tatsächlichen Containerbreite und behalten hier das Popover; Tests verifizieren beide Layoutzustände und erfolgreiche Filterupdates. Eine Alpine-Bereitschaftsprüfung verhindert Klicks vor dem Binding. Keine CSS-Breakpoints geändert. Beim Notification-Dismiss blieb Filament offen; nur der äußere Modal-Wrapper hatte keine Fläche. Die sichtbare Dialogüberschrift ist die korrekte Fortbestandsprüfung; kein Produktionsfehler.
 - **Login:** `app/Filament/Auth/Login.php` löscht nach erfolgreichem `LoginResponse` den korrekten App-Rate-Limiter-Key. Browserprobe: drei Fehlversuche, danach erfolgreicher Login mit Zähler 0; anschließend fünf abgewiesene Fehlversuche, der sechste wurde rate-limited. Fehlversuche bleiben geschützt.
 - Vorhandene Browser-Testannahmen ebenfalls berichtigt: Accessibility-Mixed-Zustand bei Select-all, absolute SPA-Links, tabellengenaue Pages-Fixture und aktuelle Dashboard-Settings-Beschriftung. Frühere gezielte PHP/JS-Validierungen bleiben dokumentiert, bilden keine vollständige Repository-Abnahme.
-- Offen: ExifTool-Metadaten-Readback, CSP/Nonce, Artwork-Viewer, Drag-and-drop, Medienauslieferung; außerdem parallele Transaktionen/Undo/Publikation, Dateisystemfehler, Notification-Transport, echter Geocoder/Analytics, Reverse-Proxy/X-Sendfile und versionierte Artefakte.
+- **ExifTool-Runtime:** 6/6 Tests, 75 Assertions mit PHP 8.3.35/GD und ExifTool 13.55. Echte JPEG-/PNG-/WebP-Metadaten wurden geschrieben und zurückgelesen; Quelle, Pixel, ICC, Rechte/DataMining, GPS-/Seriennummern und WebP-Thumbnail-Variante wurden geprüft. PostgreSQL 17.11 lief mit leerem Startschema auf tmpfs ohne persistente Mounts; Laravel/PDO, `DB_URL` und getrennte Storage-/Medien-/Cache-/Session-/View-/PHP-Temp-Ziele wurden vor dem Lauf positiv verifiziert. Der erste Lauf deckte ein ungültiges GD-Testpixel (>255) auf; die Fixture-Farbformel wurde korrigiert. Der erfolgreiche Wiederholungslauf hatte sechs PHPUnit-Warnungen, weil im read-only Worktree erwartungsgemäß keine `.env` liegt; keine `.env` wurde kopiert.
+- Offen: CSP/Nonce, Artwork-Viewer, Drag-and-drop, Medienauslieferung; außerdem parallele Transaktionen/Undo/Publikation, Dateisystemfehler, Notification-Transport, echter Geocoder/Analytics, Reverse-Proxy/X-Sendfile und versionierte Artefakte.
 ## Pflegepflicht
 
 Nach jeder Runde: aktuelle Matrix und offene Risiken berichtigen, erledigte Punkte entfernen, nicht appendieren. **Keine** Container-IDs, langen Git-Commitlisten, Retry-Zeitlinien oder abgeschlossenen Bug-Narrative. Ziel: unter 10.000 Zeichen, Sicherheitsregeln erhalten. Nach sicherer Validierung Commit + normaler Push auf testing; HEADs prüfen und nur tatsächlich erreichte Ergebnisse berichten.
