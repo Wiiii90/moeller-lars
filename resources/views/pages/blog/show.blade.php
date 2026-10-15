@@ -21,7 +21,7 @@
         </header>
         @if ($cover instanceof \App\Models\JournalEntryMedia)
             <div class="blog-post__cover-mount">
-                {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover blog-post__cover-media', true, includeInheritedCopyright: false, includeCopyrightNotice: false) !!}
+                {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover blog-post__cover-media', true, includeInheritedCopyright: false, includeCopyrightNotice: false, showCaption: false) !!}
             </div>
         @endif
         @if (trim((string) ($post->body ?? '')) !== '')

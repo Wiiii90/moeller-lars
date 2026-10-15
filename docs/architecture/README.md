@@ -27,7 +27,7 @@ Diese Sektion entsteht auf dem dauerhaft erlaubten Branch `docs`. Der ebenfalls 
 
 Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
 
-**[Journal-Content-Lifecycle](journal-content-lifecycle.md):** Blog Publish/Scheduled als zeitlicher **Query-Guard ohne Cron-Statuswechsel**, Exhibition Publish/Archive/Restore/Temporal/Map, gemeinsame JournalEntryMedia-Rich-Text- und Media-Delete-Nebenwirkungen, öffentliches Template/LIVE/Preview-Filtering; eigenständige No-op-/Audit-/Rollback-Prüffälle.
+**[Journal-Content-Lifecycle](journal-content-lifecycle.md):** Blog Publish/Scheduled als zeitlicher **Query-Guard ohne Cron-Statuswechsel**, Exhibition Publish/Archive/Restore/Temporal/Map, JournalEntryMedia- und Delete-Wirkung, öffentliches Template/LIVE/Preview-Filtering; [Exhibition-Title-Disclosure und JournalMediaRenderer-Captions](journal-content-lifecycle.md#aktuelle-journal-präsentation-disclosure-und-medien-captions) als reine Renderprojektion, Browserabnahme offen.
 
 **[Gallery-/Artwork-Publication-Fluss](artwork-gallery-publication.md):** Einzel-Publish/No-op, **atomare Gallery-Batch-Transaktion**, öffentliche/Preview-Eligibility, gemeinsame Viewer-Reihenfolge und abweichende Undo-Inverse mit ALT-/Video-/Thumbnail-Grenzen. Die Norm-/Testmatrix bleibt beim bestehenden [Importgrenzen-Owner](import-boundaries.md).
 

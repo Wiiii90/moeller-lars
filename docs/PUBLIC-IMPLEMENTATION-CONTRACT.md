@@ -250,8 +250,7 @@ audit/notifications, not a forced identical public layout. Blog's index is
 an editorial stream: publication date (when set), linked article title, optional
 cover, persisted excerpt (or escaped text-only extract), and an explicit
 **Read more** link. Blog detail is its own readable article with date, title,
-original image/media credits, sanitized body, ordered Gallery and a preview-safe
-return link. The Blog index is a reading sequence with fixed serif typography,
+uncropped structured media (ALT and attribution data retained without visible figure captions), sanitized body, ordered Gallery and a preview-safe return link. The Blog index is a reading sequence with fixed serif typography,
 compact original-ratio covers, bounded excerpts and explicit article links.
 Illustrated entries alternate image side by illustrated-entry order; prose
 flows beside and beneath an uncropped work. Text-only entries create no empty
@@ -266,10 +265,9 @@ Content width, disappear on narrow viewports, and never change artist-configured
 background, reading insets or media size. Only the Blog's actual artworks have
 small square-edged double-line mounts. The additional Gallery item corners have been rejected and entirely removed:
 artwork images and existing labels are separated by their natural white space.
-All extra Exhibition entry separators have been removed after browser rejection;
-the open chronological catalogue is intentionally undecorated between entries.
-Neither surface gets framed records, date-axis timelines, decorative stickers,
-repeated corner ornaments or new entry rules.
+Repeated Exhibition entry separators and decorative timeline rules were rejected.
+The revised native disclosure adds **exactly two clean lines only while an entry is open** (above and below its full contents), without permanent dividers between closed entries.
+Neither surface gets framed records, date-axis timelines, decorative stickers or repeated corner ornaments.
 No artwork is cropped or covered.
 The existing artist name and navigation retain their independent layout owners.
 
@@ -279,26 +277,13 @@ strokes may enter the configured content padding but never displace text into
 it; they alternate to the left or right with the cover composition. The
 translucent headline washes, Exhibition date marks, heading backgrounds,
 open-body corner strokes and tinted fact panels were browser-rejected and
-removed. Do not restore them by accumulating overrides. Exhibition details
-retain their existing artwork/visit/prose composition pending a separate
-design pass. Do not revive numbering, date-axis nodes, graphical stickers,
+removed. Do not restore them by accumulating overrides. Exhibition details now use one source-defined float/prose/visit composition, rather than the rejected paired/solo row variants; browser acceptance remains open. Do not revive numbering, date-axis nodes, graphical stickers,
 clipped/castle corners, rounded corners, chips, repeated bordered entries,
 fake old-paper textures, decorative bars, duplicated underlines or extra
 Admin controls. Neither Journal view renders a timeline. The presentation is
 reversible without changing Journal storage, publication or media contracts.
 
-The Blog index and full Blog article temporarily suppress all visual
-copyright **notices** on structured Cover/Gallery images (both inherited
-General notices and explicit notice overrides). Separately authored media
-credits remain attached to their figures via `JournalMediaRenderer`. This
-only changes display on Blog; persisted copyright modes, authored overrides,
-the General setting and Publication history remain intact. Exhibition index
-continues to suppress only inherited General notices, retaining explicit
-copyright overrides and credits beside its works.
-The previously removed Exhibition index footer stays absent; Exhibition gallery
-presentation is otherwise unchanged. Rich Text keeps its existing authored
-content and embedded media rules. The long-term site-wide copyright/footer
-policy remains open for a separate explicit design pass.
+Blog listing and article Cover and shared Journal Gallery figures as well as Exhibition Cover/Gallery figures now **hide all visible figure captions** via `JournalMediaRenderer::render(..., showCaption: false)` (`dev@f58db29e`). This is a **presentation-only** choice: `MediaAsset` ALT, credit, copyright mode/override, rights projection, media references and Publication history are unchanged. Rich Text remains independently authored; do not generalize this flag to all public media or remove metadata. The Exhibition copyright footer remains absent; no new global footer or site-wide policy is implied. Real browser and artist acceptance remain separate.
 
 Blog gallery presentation is now an authored per-post setting with four options:
 `sequence` (the existing uncropped, vertical image sequence, preserved as the
@@ -348,56 +333,24 @@ and no fabricated image substitutes, vertical date spine, connection nodes or
 repeated horizontal separator rules. The artist's manual exhibition order and
 the fixed typography remain authoritative.
 
-Optional material is exposed through independent native `details` disclosures
-with the plain **Open / Close** control. Entries without additional material
-render non-interactive summaries, and multiple exhibitions may stay open at
-once. Opened bodies retain the existing cover/description/visit composition,
-gallery modes, map dialog, media credits and external links. Their layout may
-stack at content-fit thresholds, but fonts do not shrink.
+Optional material uses independent native `details/summary` disclosures. For pointer interaction, **only the Exhibition title is the disclosure target**; neither the date nor venue/location triggers opening and there is **no visible Open/Close switch**. The native summary retains keyboard/focus semantics, entries without additional material are non-interactive, and multiple exhibitions may remain open. An open disclosure has **one clean rule above and one below** the complete folio, no extra internal borders or cards. These are public presentation changes, not edits to persisted dates, media or publication state.
 
 Expanded content reuses the canonical cover, rich description, ordered
 Gallery presentations (grid, mosaic or slideshow), vernissage, address and
 external link contracts. Opened Exhibition folios compose their available
 content rather than alternate images by row parity:
 
-- A cover paired with vernissage, address or map/external actions uses a
-  responsive, two-column image-and-visit composition if the actual content
-  width supports it. At narrower widths those items stack naturally.
-- An unaccompanied cover stands alone without a fabricated empty partner
-  column. Text-only entries align their information with the title column.
-- When a cover and long-form text coexist, prose starts beside the image
-  on a sufficiently wide content surface and continues underneath it. The
-  float is limited to a readable 41%-wide image rather than forcing text
-  into a very narrow parallel column. At narrow content widths the complete
-  feature stacks. In other cases description text retains a full-width
-  reading measure. The optional Map action stays with visit information
-  and opens the established on-demand dialog; only external destinations
-  carry the external-link icon.
-- Grid preserves the authored row-wise order. Mosaic uses stored source
-  width/height to distribute images across two balanced vertical lanes
-  before rendering. A modest offset and unequal column widths distinguish
-  Mosaic as a deliberate editorial arrangement. Images and captions remain
-  uncropped and are not moved by client-side JavaScript. Within each lane
-  authored order is retained, but the visual composition is not a strict
-  left-to-right reading of the global image sequence.
-- Slideshow retains the authored sequence, has compact arrow navigation and
-  the position centered above the image, consistent with the site's Artwork
-  folio controls. Displayed images have a bounded, uncropped height.
-  No large browser-default buttons, navigation row below the work, or
-  new editorial presentation settings are introduced.
-  The authored `position` values and editorial workflows remain unchanged.
+- The opened Exhibition feature uses **one flow-root composition**: a bounded, uncropped Cover floats left when its actual container is wide enough and text/visit facts naturally follow beside and below it. Narrow compositions stack. Text-only entries retain their reading measure. No arbitrary paired/solo row variants or empty columns.
+- Grid preserves the authored source sequence; Mosaic distributes images across two measured vertical lanes, preserving lane order without cropping. **Neither mode displays image description, credit or copyright as a visible figure caption.** Stored credits/rights and real ALT remain intact.
+- Slideshow uses a single bounded, uncropped image stage (one grid cell for the active image) with the **controls on a separate row underneath**, not overlaid or in a shifting caption region. Existing slideshow JS owns slide visibility/position; no new timer, Gallery setting or image cropping. The controls and stage must be checked in a real browser across portrait/landscape and narrow widths.
+- The optional `Show map` action stays within the information area and opens the existing on-demand Leaflet dialog. External destinations alone carry the external-link cue.
+
 
 No new Administration customization, Exhibition detail route or duplicate
 media source of truth is introduced.
 
-The existing MediaAsset copyright modes remain authoritative. Exhibition
-index images retain authored credits and explicit per-asset copyright overrides
-beside the corresponding work, but repeated *inherited* General copyright
-notices are suppressed. There is no generated Exhibitions-page copyright footer.
-The Blog index follows this same presentation policy. Full Blog articles and
-other unaffected surfaces keep their current credit behavior; an explicit
-No notice remains silent. No stored General or per-asset copyright data is
-removed, and source attribution is never inferred from an image filename.
+The existing `MediaAsset` copyright modes, file attribution, ALT and publication guards remain authoritative and persisted. [`JournalMediaRenderer`](../app/Domain/Content/JournalMediaRenderer.php) now accepts an optional `showCaption` flag; the public Blog listing/detail covers, Exhibition covers and shared Journal Gallery presentations pass `showCaption: false`. This suppresses **all visible figure captions** on those surfaces, including description/credit/copyright text; it does **not** erase asset metadata, silently waive rights or suppress the accessible `img alt`. `includeInheritedCopyright` / `includeCopyrightNotice` remain distinct controls in that renderer for other consumers. The prior statement that explicit copyright/credit is still printed next to Exhibition works and Blog covers is no longer current. Actual on-screen behavior and rights-visibility decisions beyond these sources require browser/editorial acceptance.
+
 
 Enabled Exhibition maps remain available for past, current and upcoming
 exhibitions. A single **Show map** action opens a native, viewport-bounded

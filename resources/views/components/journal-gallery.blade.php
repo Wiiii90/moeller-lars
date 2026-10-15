@@ -18,7 +18,7 @@
             <div class="journal-entry-gallery__column">
         @endif
         @foreach ($column as $usage)
-            <div class="journal-entry-gallery__item" @if ($presentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false, includeCopyrightNotice: $includeCopyrightNotice) !!}</div>
+            <div class="journal-entry-gallery__item" @if ($presentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false, includeCopyrightNotice: $includeCopyrightNotice, showCaption: false) !!}</div>
         @endforeach
         @if ($presentation === 'mosaic')
             </div>
