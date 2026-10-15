@@ -1,5 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
+$RunTimer = [System.Diagnostics.Stopwatch]::StartNew()
+
 Set-Location 'P:\moeller-lars'
 
 $Changes = git status --porcelain
@@ -46,3 +48,10 @@ if ($LASTEXITCODE) { throw 'Lokale Analytics-Demo konnte nicht geladen werden.' 
 Write-Host ''
 Write-Host "Git:     $($env:APP_GIT_SHA.Substring(0, 7))"
 Write-Host 'Preview: http://127.0.0.1:8001'
+
+$RunTimer.Stop()
+$RunFinishedAt = Get-Date
+$RunDuration = '{0:00}:{1:00}:{2:00}' -f [math]::Floor($RunTimer.Elapsed.TotalHours), $RunTimer.Elapsed.Minutes, $RunTimer.Elapsed.Seconds
+
+Write-Host "Dauer:   $RunDuration"
+Write-Host "Fertig:  $($RunFinishedAt.ToString('yyyy-MM-dd HH:mm:ss'))"
