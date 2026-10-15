@@ -152,6 +152,12 @@ Current application media ceilings:
 
 The canonical media policy supports validated image/video/audio content. Consumer support remains narrower where appropriate.
 
+## Release notes and Dashboard announcements
+
+The [root Changelog index](../CHANGELOG.md) links technical release-note Markdown stored once under `resources/release-notes/versions/`; artist-facing pre-release/milestone Announcements live under `resources/release-notes/announcements/`. The existing Dashboard feed reads these code-owned files using a versioned `config/dashboard-feed.php` manifest and a shared safe Markdown renderer, **not** a second database text copy. Notification/Contact rows are separate Inbox data. Exact previous-to-candidate Git ranges and accepted issues inform the editorially reviewed final shipped behavior, not every intermediate correction. Major milestone Announcements link to their Changelog; patches require version notes but do not automatically require an Announcement. Historical v0.1–v0.3 milestone *completion dates* do **not** assert Production deployments or annotated Git release tags.
+
+Before **approving** a candidate, review the release version/date/SHA, manifest entry, actual notes and artist-facing Announcement, then verify the in-Dashboard link. Current source tests for manifest/file consistency are **authored, not executed here**, and a code-owned note becoming visible on Validation is not itself a Production release. No CI/cron release-note generator is specified by this document.
+
 ## Database migrations
 
 - database: PostgreSQL;
@@ -169,6 +175,8 @@ Authoritative non-reproducible state:
 
 - PostgreSQL application data;
 - canonical private MediaAsset originals.
+
+For the initial Production cutover, the approved and frozen **artist-curated protected Validation content plus matching originals** are the intended data source. Restore/reconstruct them independently into Production after explicit environment-specific sanitation and verify. Ordinary Validation preview deployments must not reset editorial work; old Legacy remains provenance rather than a new mandatory final import. See [MIGRATION-PLAN.md](MIGRATION-PLAN.md#6-protected-validation-and-editorial-authority) and [#209](https://github.com/Wiiii90/moeller-lars/issues/209).
 
 Generated/rebuildable state:
 

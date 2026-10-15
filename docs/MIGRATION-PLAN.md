@@ -6,7 +6,7 @@ Production/Validation placement, backups, deployment and rollback are owned by [
 
 ## 1. Source boundary
 
-Migration inputs are read-only legacy evidence:
+Original legacy provenance inputs (not the final artist-edited composition) are **read-only evidence**:
 
 - legacy Artwork/category tables and ordering;
 - reviewed Vita/CV source + portrait;
@@ -29,6 +29,8 @@ Normalization:
 
 Historical persistence names are not restored as runtime compatibility aliases.
 
+After the initial Legacy import, the **artist-curated, protected Validation database and matching canonical original media** form the intended future v0.5 Production *content candidate* once explicitly approved and frozen. A repeat Legacy import is not the required final content source; it remains provenance/rehearsal evidence. See [cutover issue #209](https://github.com/Wiiii90/moeller-lars/issues/209).
+
 ## 3. Vita/CV/Exhibitions source accounting
 
 Reviewed Vita source contains 31 normalized rows:
@@ -39,7 +41,7 @@ Reviewed Vita source contains 31 normalized rows:
 - portrait/profile provenance explicit;
 - Exhibition content not duplicated in CV after normalization.
 
-Existing protected canonical data is transformed through forward migrations/reconciliation. Do not rerun source import into non-empty canonical data to apply later domain/schema changes.
+Existing protected canonical data is transformed through forward migrations/reconciliation. Do not rerun source import into non-empty canonical data to apply later domain/schema changes. The 31-row Legacy inventory is **source accounting**: artist-approved changes to Biography/Exhibition content on Validation may change final counts or presentation, but every source row and reviewed difference remains traceable.
 
 ## 4. Forward canonicalization after initial import
 
@@ -107,13 +109,16 @@ Switching Blog ↔ Exhibitions:
 
 Media reference/deletion accounting therefore includes both retained entry worlds for a Journal SiteSection even while only one template is public/active.
 
-## 6. Protected Validation data
+## 6. Protected Validation and editorial authority
 
-Reviewed protected Validation DB/media is canonical non-production application state.
+Protected Validation PostgreSQL and canonical `MediaAsset` originals are durable **authoritative pre-release editorial work** following the original import. The artist can intentionally edit Gallery ordering, content, pages, media assignments, navigation, identity and settings there. Ordinary `dev`/Validation deployments must preserve this content and evolve its schema through **forward migrations**, not reset the database from old Legacy.
 
-Validation remains isolated from Production writable state: separate PostgreSQL, authoritative media, application secrets and authenticated/non-public ingress.
+Validation remains strictly separate from Production writable infrastructure: PostgreSQL, original media, secrets, authenticated/non-public ingress and mail/analytics runtime. The **local development/test database** is not a cutover source. Read-only Matomo Reporting on Validation is a separate operational choice while browser tracking remains disabled.
 
-Validation may use restricted read-only Matomo Reporting while tracking stays disabled.
+Legacy snapshots still establish provenance; later Legacy changes must be compared as reviewed deltas, not silently applied over deliberate artist changes. A clean Legacy replay stays useful for isolated migration rehearsals but is **not** mandatory for Production's final editorial presentation.
+
+**v0.5 data gate:** freeze the precise artist-approved Validation database and matching original-media corpus as one consistent, recoverable candidate. Reconstruct a **new isolated Production database and media set**, never repurpose the running Validation database. A reviewed content-versus-runtime transfer/sanitization matrix must exclude or transform environment-specific secrets, sessions, tokens, mail settings and test-only material while preserving intended Working/LIVE, Publication history, references, asset identity/checksums and required recovery evidence. Validate the complete resulting snapshot and rollback before any traffic cutover. The application-side obligation is described here; platform restore/backup mechanics belong to [server-platform](https://github.com/Wiiii90/server-platform). Neither schema compatibility nor curator approval is a claim of performed PostgreSQL recovery.
+
 
 ## 7. Application acceptance and candidate promotion
 
@@ -180,7 +185,7 @@ Before Production traffic changes:
 - migration/media reconciliation green;
 - fresh recoverable Production backup exists;
 - restore/rollback procedure proven/current;
-- intended Production DB/media state confirmed;
+- intended Production DB/media state reconstructed and verified from the **frozen, approved Validation content plus matching originals**, after controlled environment sanitation;
 - monitoring/health checks green;
 - required mail/Matomo/DNS/TLS dependencies ready;
 - no unresolved high-severity blocker.
@@ -194,7 +199,7 @@ At application-contract level:
 1. preserve pre-change recoverable state;
 2. deploy exact approved immutable image;
 3. run required migrations once under platform gate;
-4. attach authoritative Production DB/media;
+4. attach the **independently restored and verified** Production database/media derived from the approved Validation snapshot;
 5. verify release identity + `/up`;
 6. run media/application smoke checks;
 7. switch/confirm public traffic only after checks succeed;

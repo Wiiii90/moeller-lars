@@ -52,7 +52,17 @@
     @if ($message !== '')
         <div class="admin-detail-dialog__field">
             <span>Message</span>
-            <p>{{ $message }}</p>
+            @if (in_array($entry['type'], ['announcement', 'changelog'], true))
+                <div class="admin-detail-dialog__release-notes">
+                    @php
+                        $releaseRenderer = app(\App\Domain\Content\SafeRichTextRenderer::class);
+                        $releaseRenderer->assertValid($message, allowEmbeddedMedia: false);
+                    @endphp
+                    {!! $releaseRenderer->render($message) !!}
+                </div>
+            @else
+                <p>{{ $message }}</p>
+            @endif
         </div>
     @endif
 
@@ -64,6 +74,12 @@
                 <span>Mail {{ strtolower($entry['mail_delivery_status']) }}@if ($entry['mail_delivered_at']) · {{ $entry['mail_delivered_at'] }}@endif</span>
             @endif
         </p>
+    @endif
+
+    @if (is_string($entry['related_key'] ?? null) && is_string($entry['related_label'] ?? null))
+        <button type="button" class="admin-detail-dialog__related-link" wire:click="openRelatedFeedEntry('{{ $entry['related_key'] }}')">
+            {{ $entry['related_label'] }}
+        </button>
     @endif
 
     @if ($entry['type'] !== 'contact' && $entry['link'] !== null && $entry['link_label'] !== null)
