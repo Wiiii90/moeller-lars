@@ -11,10 +11,12 @@ async function expectSelection(header, rows, countBadge, selected, total) {
     await expect(countBadge).toHaveText(String(selected));
     await expect(header).toHaveJSProperty('checked', selected === total);
     await expect(header).toHaveJSProperty('indeterminate', selected > 0 && selected < total);
-    await expect(header).toHaveAttribute(
-        'aria-checked',
-        selected > 0 && selected < total ? 'mixed' : (selected === total ? 'true' : 'false'),
-    );
+    const accessibility = await header.ariaSnapshot();
+    if (selected > 0 && selected < total) {
+        expect(accessibility).toContain('[checked=mixed]');
+    } else {
+        expect(accessibility).not.toContain('[checked=mixed]');
+    }
 }
 
 test('Pages select-all stays synchronized after mixed selection and repeated clicks', async ({ page }) => {

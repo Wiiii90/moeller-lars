@@ -32,7 +32,7 @@ test('Header dismisses one current Notification at a time and advances its queue
 
 test('Header dismiss remains clickable while the native Edit modal is open', async ({ page }) => {
     await signIn(page);
-    await page.getByRole('button', { name: 'Settings', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Dashboard settings', exact: true }).click();
 
     const modal = page.locator('.fi-modal.fi-modal-open').last();
     await expect(modal.getByRole('heading', { name: 'Dashboard settings', exact: true })).toBeVisible();
@@ -47,5 +47,5 @@ test('Header dismiss remains clickable while the native Edit modal is open', asy
     await expect(header.locator('[data-admin-header-notification-title]')).toHaveText('Dismiss through dialog');
     await header.getByRole('button', { name: 'Dismiss notification' }).click();
     await expect(header).toBeHidden();
-    await expect(modal).toBeVisible();
+    await expect(modal.getByRole('heading', { name: 'Dashboard settings', exact: true })).toBeVisible();
 });

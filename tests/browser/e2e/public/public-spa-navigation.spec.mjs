@@ -6,7 +6,7 @@ test('public links swap content without a document reload and preserve back/forw
     await page.goto('/browser-public-spa-1');
     await expect(page.locator('#content')).toContainText('Public SPA content 1');
 
-    const secondLink = page.locator('[data-site-navigation] a[href="/browser-public-spa-2"]').first();
+    const secondLink = page.locator('[data-site-navigation] a[href$="/browser-public-spa-2"]').first();
     await expect(secondLink).toBeVisible();
     await expect(secondLink).toHaveAttribute('wire:navigate', '');
 
