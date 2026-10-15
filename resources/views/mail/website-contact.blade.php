@@ -1,4 +1,4 @@
 Name: {{ $visitorName }}
-E-Mail: {{ $visitorEmail }}
+Email: {{ $visitorEmail }}
 
 {{ $messageBody }}
