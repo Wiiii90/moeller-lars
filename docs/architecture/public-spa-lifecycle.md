@@ -144,6 +144,16 @@ Der unveränderte [`public-gallery-loading.js`](../../resources/js/public-galler
 - Gallery initiales Request-Priority-Verhalten sowie DOM-/Viewer-Vollständigkeit und der dokumentierte **1-vs-2-eager**-Widerspruch.
 - Unit-/Browser-Tests unter [`tests/js/public-folio-motion.test.mjs`](../../tests/js/public-folio-motion.test.mjs) und [`tests/browser/public-folio-spa.spec.mjs`](../../tests/browser/public-folio-spa.spec.mjs) sind vorhanden und wurden für diese Arbeit **nicht ausgeführt**.
 
+## Public Head und Nonce über den Dokumentwechsel
+
+**Source `dev@11f7e101`; authored `testing@14af6804`, nicht ausgeführt.** [`SecurityHeaders`](../../app/Http/Middleware/SecurityHeaders.php) erzeugt pro Request den Nonce. [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php) nutzt ihn bei Root-Folio-`<style>`, `@stack('public-component-styles')`, `@livewireStyles` und `@livewireScripts`. Die CSP-safe [`/site-assets/livewire-csp.js`-Route](../../routes/web.php) setzt `livewire.csp_safe` für den Public-FrontendAsset-Response mit `finally` temporär zurück; kein belegtes Umschalten des Admin-Bundles.
+
+[`app.js`](../../resources/js/app.js) entsorgt auf `livewire:navigating` die alte Page, überträgt mit `onSwap(applyPublicLayoutFromMeta)` die serverseitigen Meta-Werte per CSSOM und initialisiert auf `livewire:navigated` neu. [`public-spa.js`](../../resources/js/public-spa.js) delegiert nur passende Same-Origin-Links an `Livewire.navigate()`. Auch ein vom JS akzeptierter `/preview*`-Link benötigt **erneute Backend-Admin-Autorisierung**; ein SPA-Linkfilter ist kein Working-Zugriffsschutz. Die Quelllogik beweist **nicht**, dass bei unterschiedlichen Response-Nonces alle Head-Styles/Canonical-/Robots-Metadaten nach realen Swaps korrekt reconciliert werden.
+
+**Gelesene Tests:** [`SecurityHeadersTest.php`](https://github.com/Wiiii90/moeller-lars/blob/14af6804d5f3a298feaceb70020c62546017a2dc/tests/Feature/Public/SecurityHeadersTest.php) enthält CSP-/Nonce-/Asset-Assertions; [`public-spa.test.mjs`](https://github.com/Wiiii90/moeller-lars/blob/14af6804d5f3a298feaceb70020c62546017a2dc/tests/js/public-spa.test.mjs) Linkfilter-/CSSOM-Assertions; [`public-spa-navigation.spec.mjs`](https://github.com/Wiiii90/moeller-lars/blob/14af6804d5f3a298feaceb70020c62546017a2dc/tests/browser/e2e/public/public-spa-navigation.spec.mjs) Browser-Back/Forward/DOM-Identity-Szenario. **Kein Test wurde hier ausgeführt**; insbesondere kein realer CSP-/Head-/Network-Check.
+
+**Spätere Browserabnahme:** Public Home→Custom (unterschiedliche Image-Skalen/Nonces)→Journal/Gallery→Back/Forward; pro Response CSP-Header vs Style-/Script-Nonce, Canonical/Robots, Console/`securitypolicyviolation`, Preview 404 oder autorisiert no-store, JS-Bundle/Media-Requests; Admin-/Public-Asset-Isolation. Für Media-, TDM- und Matomo-Konfigurationsgrenzen gilt die [einzige Public-Security-Matrix](public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen).
+
 ## Fachliche und technische Grenzen
 
 - Öffentliche GET/HEAD-Anfragen bleiben an `UseCommittedPublicState` und Publication-Media-Policy gebunden; SPA-Navigation darf keine Entwurfsdaten öffentlich ausliefern. Nicht-GET-Formulare wie Contact folgen ihrem normalen HTTP-Schutz.

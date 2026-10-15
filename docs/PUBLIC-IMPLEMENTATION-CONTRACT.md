@@ -407,7 +407,7 @@ See [MEDIA.md](MEDIA.md).
 
 ## Analytics boundary
 
-Public Matomo tracking is optional runtime config. Analytics failure does not block rendering/navigation/viewer/Contact.
+Public Matomo tracking is optional runtime config. Analytics network/reporting outages should not block rendering, navigation, viewer use or Contact. **An invalid enabled tracking configuration is a separate source-confirmed failure path, not an accepted availability guarantee:** `SecurityHeaders` rejects an invalid/non-HTTPS Matomo origin after the controller returns, so Contact may already have stored a message when the HTTP response fails. The actual runtime behavior is untested here; preflight, failure handling and retry semantics remain open. Never weaken the strict CSP as a workaround. [Technical owner](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen).
 
 No form content, visitor email/name, admin IDs or secret values are emitted as analytics payload. See [ANALYTICS.md](ANALYTICS.md).
 
