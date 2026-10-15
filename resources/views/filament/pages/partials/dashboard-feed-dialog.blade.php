@@ -41,6 +41,15 @@
                     <dd><a href="{{ $entry['link'] }}" @if ($linkNavigatesInAdmin) wire:navigate @endif>{{ $entry['link_label'] }}</a></dd>
                 </div>
             @endif
+        @elseif (in_array($entry['type'], ['announcement', 'changelog'], true))
+            <div>
+                <dt>Sender</dt>
+                <dd>System</dd>
+            </div>
+            <div>
+                <dt>Status</dt>
+                <dd>{{ $entry['status'] }}</dd>
+            </div>
         @elseif ($entry['link'] !== null && $entry['link_label'] !== null)
             <div>
                 <dt>Reference</dt>

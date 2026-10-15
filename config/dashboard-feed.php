@@ -23,7 +23,7 @@ return [
             'id' => 'changelog-v0.2.0',
             'type' => 'changelog',
             'date' => '2026-08-20',
-            'title' => 'v0.2.0 — Artwork presentation and curation',
+            'title' => 'v0.2.0 — Galleries, viewer and media management',
             'body_file' => 'versions/v0.2.0.md',
         ],
         [

@@ -142,7 +142,7 @@ final class Dashboard extends Page
 
     public function openRelatedFeedEntry(string $key): void
     {
-        $entry = app(DashboardFeed::class)->entry($key);
+        $entry = app(DashboardFeed::class)->openEntry($key);
         abort_unless(is_array($entry) && ($entry['type'] ?? null) === 'changelog', 404);
 
         $this->feedEntryCache[$key] = $entry;
@@ -177,20 +177,22 @@ final class Dashboard extends Page
 
     public function markFeedRead(string $key): void
     {
-        if ($this->mutableFeedEntry($key) !== null) {
+        if ($this->readableFeedEntry($key) !== null) {
             app(DashboardFeed::class)->openEntry($key);
         }
     }
 
     public function markFeedUnread(string $key): void
     {
-        $entry = $this->mutableFeedEntry($key);
+        $entry = $this->readableFeedEntry($key);
         if ($entry === null) {
             return;
         }
 
         $feed = app(DashboardFeed::class);
-        if (is_int($entry['contact_id'] ?? null)) {
+        if (in_array($entry['type'], ['announcement', 'changelog'], true)) {
+            $feed->markReleaseUnread($key);
+        } elseif (is_int($entry['contact_id'] ?? null)) {
             $feed->markContactUnread($entry['contact_id']);
         } elseif (is_int($entry['notification_id'] ?? null)) {
             $feed->markNotificationUnread($entry['notification_id']);
@@ -226,7 +228,7 @@ final class Dashboard extends Page
 
     public function bulkMarkRead(): void
     {
-        if (! $this->selectionAllMutable()) {
+        if (! $this->selectionAllReadable()) {
             return;
         }
 
@@ -239,7 +241,7 @@ final class Dashboard extends Page
 
     public function bulkMarkUnread(): void
     {
-        if (! $this->selectionAllMutable()) {
+        if (! $this->selectionAllReadable()) {
             return;
         }
 
@@ -508,7 +510,7 @@ final class Dashboard extends Page
             ->all();
     }
 
-    /** @return array{has_selection:bool,all_mutable:bool} */
+    /** @return array{has_selection:bool,all_mutable:bool,all_readable:bool} */
     private function selectionCapabilities(): array
     {
         $feed = app(DashboardFeed::class);
@@ -528,6 +530,9 @@ final class Dashboard extends Page
 
         return [
             'has_selection' => $entries !== [],
+            'all_readable' => $entries !== [] && collect($entries)->every(
+                fn (array $entry): bool => $this->isReadableFeedEntry($entry),
+            ),
             'all_mutable' => $entries !== [] && collect($entries)->every(
                 fn (array $entry): bool => $this->isMutableFeedEntry($entry),
             ),
@@ -537,6 +542,26 @@ final class Dashboard extends Page
     private function selectionAllMutable(): bool
     {
         return $this->selectionCapabilities()['all_mutable'];
+    }
+
+    private function selectionAllReadable(): bool
+    {
+        return $this->selectionCapabilities()['all_readable'];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function readableFeedEntry(string $key): ?array
+    {
+        $entry = app(DashboardFeed::class)->entry($key);
+
+        return is_array($entry) && $this->isReadableFeedEntry($entry) ? $entry : null;
+    }
+
+    /** @param array<string, mixed> $entry */
+    private function isReadableFeedEntry(array $entry): bool
+    {
+        return in_array($entry['type'] ?? null, ['announcement', 'changelog'], true)
+            || $this->isMutableFeedEntry($entry);
     }
 
     /** @return array<string, mixed>|null */
@@ -593,7 +618,7 @@ final class Dashboard extends Page
     private function feedEntryHeaderActions(array $arguments): array
     {
         $entry = $this->feedEntry($arguments);
-        if (! $this->isMutableFeedEntry($entry)) {
+        if (! $this->isReadableFeedEntry($entry)) {
             return [];
         }
 
@@ -619,12 +644,17 @@ final class Dashboard extends Page
             ->action(function () use ($isRead, $key): void {
                 if ($isRead) {
                     $this->markFeedUnread($key);
-
-                    return;
+                } else {
+                    $this->markFeedRead($key);
                 }
 
-                $this->markFeedRead($key);
+                unset($this->feedEntryCache[$key]);
+                $this->replaceMountedAction('feedEntry', ['key' => $key]);
             });
+
+        if (! $this->isMutableFeedEntry($entry)) {
+            return [$pinAction, $readAction];
+        }
 
         $deleteAction = Action::make('deleteDialogEntry')
             ->label('Delete')

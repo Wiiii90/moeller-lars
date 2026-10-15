@@ -1,7 +1,7 @@
 @php
     $position = $pinned ? ($item['pin_position'] ?? null) : ($item['feed_position'] ?? null);
     $mutable = is_int($item['contact_id'] ?? null) || is_int($item['notification_id'] ?? null);
-    $read = $mutable ? str_starts_with((string) $item['status'], 'Read') : null;
+    $read = str_starts_with((string) $item['status'], 'Read');
     $selected = in_array((string) $item['key'], $selectedFeedKeys, true);
 @endphp
 
@@ -11,7 +11,7 @@
         'admin-dashboard__feed-row',
         'is-selected' => $selected,
         'is-pinned' => $pinned,
-        'is-unread' => $mutable && ! $read,
+        'is-unread' => ! $read,
     ])
     wire:key="dashboard-feed-{{ $item['key'] }}"
     @if ($pinned) wire:sort:item="{{ $item['key'] }}" @endif
@@ -48,10 +48,8 @@
         @if ($item['type'] === 'contact')
             <strong>{{ $item['sender_name'] }}</strong>
             <small>{{ $item['sender_email'] }}</small>
-        @elseif ($item['type'] === 'notification')
-            <strong>Admin</strong>
         @else
-            <span>—</span>
+            <strong>System</strong>
         @endif
     </td>
     <td class="admin-table__actions">
@@ -71,14 +69,14 @@
                 title="{{ $pinned ? 'Unpin' : 'Pin' }}"
             />
 
-            @if ($mutable)
-                <x-admin.row-action
-                    :action="$read ? \App\Filament\Support\AdminRowAction::MarkUnread : \App\Filament\Support\AdminRowAction::MarkRead"
-                    wire:click="{{ $read ? 'markFeedUnread' : 'markFeedRead' }}('{{ $item['key'] }}')"
-                    aria-label="{{ $read ? 'Mark unread' : 'Mark read' }}"
-                    title="{{ $read ? 'Mark unread' : 'Mark read' }}"
-                />
+            <x-admin.row-action
+                :action="$read ? \App\Filament\Support\AdminRowAction::MarkUnread : \App\Filament\Support\AdminRowAction::MarkRead"
+                wire:click="{{ $read ? 'markFeedUnread' : 'markFeedRead' }}('{{ $item['key'] }}')"
+                aria-label="{{ $read ? 'Mark unread' : 'Mark read' }}"
+                title="{{ $read ? 'Mark unread' : 'Mark read' }}"
+            />
 
+            @if ($mutable)
                 @if ($deleteWithoutConfirmation)
                     <x-admin.row-action
                         :action="\App\Filament\Support\AdminRowAction::Delete"
