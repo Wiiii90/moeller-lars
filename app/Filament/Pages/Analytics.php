@@ -6,7 +6,9 @@ use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Filament\Support\AdminIcon;
+use App\Models\User;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use UnitEnum;
 
@@ -65,6 +67,13 @@ final class Analytics extends Page
 
     /** @var array<int, array{label:string,value:string,detail:string}> */
     public array $audienceHighlights = [];
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
 
     public function mount(): void
     {

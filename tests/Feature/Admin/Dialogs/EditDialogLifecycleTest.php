@@ -42,7 +42,7 @@ it('persists successive edits through Filament while keeping the dialog open', f
 
 it('closes the native edit dialog without executing its action', function (): void {
     $user = auth()->user();
-    $original = $user->getAttribute('dashboard_notification_filter');
+    $original = $user->fresh()->getAttribute('dashboard_notification_filter');
 
     Livewire::test(Dashboard::class)
         ->call('mountAction', 'dashboardSettings')
@@ -55,7 +55,7 @@ it('closes the native edit dialog without executing its action', function (): vo
 
 it('keeps an invalid edit mounted without persisting the incomplete form', function (): void {
     $user = auth()->user();
-    $original = $user->getAttribute('dashboard_notification_filter');
+    $original = $user->fresh()->getAttribute('dashboard_notification_filter');
 
     Livewire::test(Dashboard::class)
         ->call('mountAction', 'dashboardSettings')

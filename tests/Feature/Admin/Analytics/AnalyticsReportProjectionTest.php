@@ -113,3 +113,21 @@ it('projects behavior from reports already present in the Matomo bulk payload', 
         ->toContain(['Local time', '14:00–14:59', '2', '2', '20.0%'])
         ->toContain(['Day of week', 'Monday', '5', '4', '50.0%']);
 });
+
+it('rejects mounted analytics requests after logout or loss of administrative access', function (bool $guest): void {
+    $actor = \App\Models\User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+    config()->set('analytics.matomo.reporting_enabled', false);
+    \Illuminate\Support\Facades\Http::preventStrayRequests();
+    $component = \Livewire\Livewire::test(Analytics::class);
+
+    if ($guest) {
+        \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    } else {
+        $actor->forceFill(['is_admin' => false])->save();
+    }
+
+    $component->set('search', 'Private report')->assertForbidden();
+})->with(['guest' => true, 'revoked admin' => false]);
