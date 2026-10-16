@@ -120,6 +120,33 @@ it('resets paging on filters and keeps root groups intact across pagination', fu
 });
 
 
+it('rejects ordering from filtered or incomplete page views without a successful mutation', function (bool $filtered): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    $pages = app(SiteSectionEditorialService::class);
+    $target = $pages->createCustomPage('Guarded order target', 'guarded-order-target');
+    foreach (range(1, $filtered ? 1 : 26) as $index) {
+        $pages->createNavigationGroup('Guarded root '.$index);
+    }
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray();
+    $audits = \App\Models\AuditEvent::query()->count();
+    $successes = \App\Models\AdminNotification::query()->where('status', 'success')->count();
+    $editor = Livewire::test(SitePages::class);
+    if ($filtered) {
+        $editor->set('search', 'Guarded order target');
+    }
+    $editor->assertSet('reorderEnabled', false)
+        ->call('sortSection', $target->id, 1, 'root')
+        ->assertNotDispatched('refresh-sidebar')
+        ->assertNotDispatched('admin-header-notification', fn ($name, $params): bool => ($params['notification']['status'] ?? null) === 'success')
+        ->call('moveSection', $target->id, 'up')
+        ->assertNotDispatched('refresh-sidebar')
+        ->assertNotDispatched('admin-header-notification', fn ($name, $params): bool => ($params['notification']['status'] ?? null) === 'success');
+    expect(SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray())->toBe($before)
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($audits)
+        ->and(\App\Models\AdminNotification::query()->where('status', 'success')->count())->toBe($successes);
+})->with(['filtered view' => true, 'paginated view' => false]);
+
 it('selects all visible Pages from none or mixed, and clears them from all', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     app(SiteSectionEditorialService::class)->createCustomPage('Alpha Selection', 'alpha-selection');

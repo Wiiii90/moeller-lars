@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 import { signIn } from '../../support/admin.mjs';
 
 test('creating an unpublished Page persists across reload without publishing a public route', async ({ page }, testInfo) => {
   await signIn(page);
   await page.goto('/admin/pages');
-  // The database is freshly seeded per browser run; retries get a distinct, predictable slug.
-  const suffix = testInfo.repeatEachIndex + '-' + testInfo.retry;
+  // Targeted reruns may reuse the same disposable database.
+  const suffix = randomUUID() + '-' + testInfo.repeatEachIndex + '-' + testInfo.retry;
   const title = 'Browser creation ' + suffix;
   const slug = 'browser-creation-' + suffix;
 
