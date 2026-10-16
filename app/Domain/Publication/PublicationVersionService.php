@@ -74,6 +74,9 @@ final class PublicationVersionService
         $changed = DB::transaction(function () use ($checkpoint, $actor): int {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
             $this->schemaGuard->assertParity();
+            // A caller may have loaded this model before waiting for reclaim to
+            // release the publication lock. Eligibility belongs to the locked state.
+            $checkpoint->refresh();
             $this->assertRestorable($checkpoint);
             $changed = $this->pendingCountAgainstCheckpoint($checkpoint);
 
@@ -132,19 +135,19 @@ final class PublicationVersionService
     /** @return array{changed:int, checkpoint:PublicationCheckpoint, reverted:PublicationCheckpoint} */
     public function stageRevertOfCurrent(User $actor): array
     {
-        $live = $this->currentLiveCheckpoint();
-        if (! $live instanceof PublicationCheckpoint) {
-            throw ValidationException::withMessages(['publication' => 'There is no live commit to revert.']);
-        }
-
-        $parent = $live->parent()->first();
-        if (! $parent instanceof PublicationCheckpoint) {
-            throw ValidationException::withMessages(['publication' => 'The first published version has no parent to revert to.']);
-        }
-
-        $changed = DB::transaction(function () use ($live, $parent, $actor): int {
+        $result = DB::transaction(function () use ($actor): array {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
             $this->schemaGuard->assertParity();
+            $live = $this->currentLiveCheckpoint();
+            if (! $live instanceof PublicationCheckpoint) {
+                throw ValidationException::withMessages(['publication' => 'There is no live commit to revert.']);
+            }
+
+            $parent = $live->parent()->first();
+            if (! $parent instanceof PublicationCheckpoint) {
+                throw ValidationException::withMessages(['publication' => 'The first published version has no parent to revert to.']);
+            }
+
             $this->assertRestorable($parent);
             $changed = $this->pendingCountAgainstCheckpoint($parent);
 
@@ -159,16 +162,12 @@ final class PublicationVersionService
                 ['source_publication_checkpoint_id' => (int) $parent->getKey()],
             );
 
-            return $changed;
+            return ['changed' => $changed, 'checkpoint' => $parent, 'reverted' => $live];
         }, attempts: 1);
 
         $this->mediaCleanup->drain();
 
-        return [
-            'changed' => $changed,
-            'checkpoint' => $parent->refresh(),
-            'reverted' => $live->refresh(),
-        ];
+        return $result;
     }
 
     public function isRestorable(PublicationCheckpoint $checkpoint): bool
