@@ -196,7 +196,7 @@ final class JournalWorkspace extends Page
 
     public function sortPost(int|string $id, int $position): void
     {
-        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Blog) {
+        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Blog || ! $this->validSortEntryId($id)) {
             return;
         }
         $post = $this->post((int) $id);
@@ -211,7 +211,7 @@ final class JournalWorkspace extends Page
 
     public function sortExhibition(int|string $id, int $position): void
     {
-        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Exhibitions) {
+        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Exhibitions || ! $this->validSortEntryId($id)) {
             return;
         }
         $entry = $this->exhibition((int) $id);
@@ -222,6 +222,11 @@ final class JournalWorkspace extends Page
             );
         }
         $this->loadExhibitions(false);
+    }
+
+    private function validSortEntryId(int|string $id): bool
+    {
+        return (is_int($id) || ctype_digit($id)) && (int) $id > 0;
     }
 
     public function togglePostSelection(int $id): void

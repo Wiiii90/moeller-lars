@@ -7,7 +7,9 @@ use App\Domain\Publication\PublicationService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\BlogPost;
 use App\Models\ContactMessage;
+use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
@@ -146,6 +148,26 @@ final class BrowserProfilingSeeder extends Seeder
                 'artwork_id' => $artwork->id, 'media_asset_id' => $sortMedia['id'],
                 'role' => 'primary', 'position' => 10,
             ]);
+        }
+
+        // Twenty-six is the smallest sequence exceeding the 25-row browser view.
+        foreach (['blog' => BlogPost::class, 'exhibitions' => Exhibition::class] as $template => $entryClass) {
+            $section = SiteSection::query()->create([
+                'type' => SiteSection::TYPE_JOURNAL, 'template' => $template,
+                'title' => 'Browser Sort '.$template, 'navigation_label' => 'Browser Sort '.$template,
+                'slug' => 'browser-sort-'.$template, 'state' => 'published',
+                'position' => $template === 'blog' ? 1220 : 1230, 'parent_id' => null,
+            ]);
+            foreach (range(1, 26) as $position) {
+                $entryClass::query()->create([
+                    'site_section_id' => $section->id, 'slug' => 'browser-sort-'.$template.'-'.$position,
+                    'title' => 'Browser '.$template.' entry '.$position, 'state' => 'published',
+                    'position' => $position, 'published_at' => now(),
+                    ...($template === 'blog'
+                        ? ['body' => 'Synthetic Journal ordering content.']
+                        : ['starts_on' => '2020-01-01', 'ends_on' => '2020-01-02']),
+                ]);
+            }
         }
 
         if (app(PublicationService::class)->commit($admin, 'Browser public SPA and Gallery fixtures') === null) {

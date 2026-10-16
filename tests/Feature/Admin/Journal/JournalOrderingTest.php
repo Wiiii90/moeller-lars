@@ -234,3 +234,32 @@ it('restores the deleted Journal entry and every compacted position when its aud
     expect($current->pluck('id')->all())->toBe($entries->pluck('id')->all())->and($current->pluck('position')->all())->toBe([1, 2, 3])
         ->and(AuditEvent::query()->count())->toBe($before)->and(\App\Models\AdminNotification::query()->count())->toBe(0);
 })->with(['blog', 'exhibitions']);
+
+it('rejects invalid native Journal positions and malformed entry identifiers', function (string $template, string $invalid): void {
+    [$section, $entries] = journalOrderingFixture($template);
+    $method = $template === 'blog' ? 'sortPost' : 'sortExhibition';
+    $before = $entries[0]->newQuery()->where('site_section_id', $section->id)->orderBy('position')->get(['id', 'position'])->toArray();
+    $audits = AuditEvent::query()->count();
+    $id = $invalid === 'identifier' ? $entries[1]->id.'invalid' : $entries[1]->id;
+    $position = $invalid === 'negative' ? -1 : ($invalid === 'overflow' ? 3 : 0);
+    \Livewire\Livewire::test(\App\Filament\Pages\JournalWorkspace::class, ['section' => $section->id])
+        ->call($method, $id, $position)->assertNotDispatched('admin-header-notification');
+    expect($entries[0]->newQuery()->where('site_section_id', $section->id)->orderBy('position')->get(['id', 'position'])->toArray())->toBe($before)
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+})->with(['blog', 'exhibitions'])->with(['negative', 'overflow', 'identifier']);
+
+it('leaves explicit Journal boundary moves silent and protects a mounted sort after access is revoked', function (string $template): void {
+    [$section, $entries] = journalOrderingFixture($template);
+    $sort = $template === 'blog' ? 'sortPost' : 'sortExhibition';
+    $move = $template === 'blog' ? 'movePost' : 'moveExhibition';
+    $before = AuditEvent::query()->count();
+    $editor = \Livewire\Livewire::test(\App\Filament\Pages\JournalWorkspace::class, ['section' => $section->id]);
+    $editor->call($move, $entries[0]->id, 'up')->assertNotDispatched('admin-header-notification');
+    $editor->call($move, $entries[2]->id, 'down')->assertNotDispatched('admin-header-notification');
+    auth('web')->user()->forceFill(['is_admin' => false])->save();
+    $editor->call($sort, $entries[0]->id, 2)->assertForbidden();
+    expect($entries[0]->newQuery()->where('site_section_id', $section->id)->orderBy('position')->pluck('id')->all())->toBe($entries->pluck('id')->all())
+        ->and(AuditEvent::query()->count())->toBe($before)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+})->with(['blog', 'exhibitions']);

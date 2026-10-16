@@ -108,10 +108,10 @@ final class JournalEntryOrderService
             $records = $this->lockedRecords($record, $sectionId);
             $ordered = $records->values()->all();
             $from = $this->indexOf($ordered, (int) $record->getKey());
-            if ($from === null || $ordered === []) {
+            if ($from === null || $position < 0 || $position >= count($ordered)) {
                 return false;
             }
-            $to = min(max(0, $position), count($ordered) - 1);
+            $to = $position;
             if ($from === $to) {
                 return false;
             }
