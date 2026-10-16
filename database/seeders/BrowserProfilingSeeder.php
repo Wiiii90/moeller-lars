@@ -127,6 +127,27 @@ final class BrowserProfilingSeeder extends Seeder
             $media['gallery']['artworks'][] = $fixture + ['title' => $artwork->title, 'url' => route('artworks.show', $artwork->slug, false)];
         }
 
+        // Independent editorial ordering fixtures: never reorder the public viewer pair.
+        $sortGallery = ArtworkCategory::query()->create(['name' => 'Browser Sort Gallery', 'slug' => 'browser-sort-gallery']);
+        SiteSection::query()->create([
+            'type' => SiteSection::TYPE_GALLERY, 'title' => 'Browser Sort Gallery',
+            'navigation_label' => 'Browser Sort Gallery', 'slug' => 'browser-sort-gallery',
+            'state' => 'published', 'position' => 1210, 'parent_id' => null,
+            'artwork_category_id' => $sortGallery->id,
+        ]);
+        $sortMedia = $this->syntheticMedia('gallery-sort', 0);
+        foreach ([1, 2, 3] as $number) {
+            $artwork = Artwork::query()->create([
+                'artwork_category_id' => $sortGallery->id, 'slug' => 'browser-sort-artwork-'.$number,
+                'title' => 'Browser Sort Artwork '.$number, 'state' => 'published',
+                'position' => $number - 1, 'work_year' => 2026, 'published_at' => now(),
+            ]);
+            ArtworkMedia::query()->create([
+                'artwork_id' => $artwork->id, 'media_asset_id' => $sortMedia['id'],
+                'role' => 'primary', 'position' => 10,
+            ]);
+        }
+
         if (app(PublicationService::class)->commit($admin, 'Browser public SPA and Gallery fixtures') === null) {
             throw new RuntimeException('Browser SPA fixtures must be published before running public E2E tests.');
         }
