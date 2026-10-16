@@ -19,7 +19,8 @@
                     $imageAlignment = \App\Models\CustomPageSetting::imageAlignment($block);
                     $imageAlt = $asset !== null && ! $decorative ? $media->altTextForAsset($asset) : '';
                     $loading = $blockIndex === 0 ? 'eager' : 'lazy';
-                    $imageScale = \App\Models\CustomPageSetting::imageScalePercent($block) / 100;
+                    $imageScalePercent = \App\Models\CustomPageSetting::imageScalePercent($block);
+                    $imageScale = $imageScalePercent / 100;
                 @endphp
 
                 @if ($asset !== null && $variant !== null)
@@ -30,18 +31,19 @@
                     @if ($imageChildren !== [])
                         <div class="custom-page__image-group">
                     @endif
-                    {{-- Public CSP rejects style attributes; authorize the per-image
-                         CSS variables with the request's nonce instead. --}}
+                    {{-- Livewire retains head styles across navigation and history.
+                         Bind each nonce-authorized rule to its scale, not a page-local
+                         block index that can identify a different image after a swap. --}}
                     @if ($imageScale !== 1.0)
                         @push('public-component-styles')
                             <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
-                                #custom-page-image-{{ $blockIndex }} {
+                                .custom-page__image--scale-{{ $imageScalePercent }} {
                                     --custom-page-image-width: {{ 28 * $imageScale }}rem;
                                 }
                             </style>
                         @endpush
                     @endif
-                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image custom-page__image--align-{{ $imageAlignment }}{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image custom-page__image--scale-{{ $imageScalePercent }} custom-page__image--align-{{ $imageAlignment }}{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
                         <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
                     @if ($imageChildren !== [])

@@ -1,8 +1,12 @@
 <?php
 
+use App\Domain\Media\PublicMedia;
 use App\Http\Middleware\SecurityHeaders;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Symfony\Component\HttpFoundation\Response;
 
 it('uses a Pulse-specific CSP without weakening the public CSP', function (): void {
@@ -90,7 +94,8 @@ it('emits TDM rights reservation for public HTML and media without affecting adm
     }
 });
 
-it('serves the public CSP-safe Livewire script without changing the Admin runtime configuration', function (): void {
+it('serves the public CSP-safe Livewire script without changing the Admin runtime configuration', function (bool $debug): void {
+    config()->set('app.debug', $debug);
     $before = config('livewire.csp_safe', false);
 
     $response = $this->get(route('public.livewire.csp'));
@@ -98,15 +103,15 @@ it('serves the public CSP-safe Livewire script without changing the Admin runtim
     $response->assertOk();
     expect($response->headers->get('Content-Type'))->toContain('javascript')
         ->and(config('livewire.csp_safe', false))->toBe($before);
-});
+})->with([true, false]);
 
 it('renders 50 percent Custom Page image size as CSP-authorized rules in Blade', function (): void {
-    $asset = new \App\Models\MediaAsset;
+    $asset = new MediaAsset;
     $asset->setRawAttributes(['id' => 140, 'state' => 'available'], true);
-    $variant = new \App\Models\MediaVariant;
+    $variant = new MediaVariant;
     $variant->setRawAttributes(['id' => 240], true);
 
-    $media = \Mockery::mock(\App\Domain\Media\PublicMedia::class);
+    $media = Mockery::mock(PublicMedia::class);
     $media->shouldReceive('thumbnailVariantForAsset')->once()->with($asset)->andReturn($variant);
     $media->shouldReceive('variantUrl')->once()->with($variant)->andReturn('/media/variants/240');
 
@@ -123,7 +128,7 @@ it('renders 50 percent Custom Page image size as CSP-authorized rules in Blade',
     $isPreview = false;
     request()->attributes->set(SecurityHeaders::STYLE_NONCE_ATTRIBUTE, 'image-size-test-nonce');
 
-    $rendered = \Illuminate\Support\Facades\Blade::render(
+    $rendered = Blade::render(
         "@include('pages.partials.component-sequence') @stack('public-component-styles')",
         compact('blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
     );

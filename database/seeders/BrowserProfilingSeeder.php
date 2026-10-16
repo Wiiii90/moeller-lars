@@ -2,13 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Media\PublicMedia;
 use App\Domain\Publication\PublicationService;
 use App\Models\ContactMessage;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use App\Models\User;
 use App\Support\LocalPreviewDatabaseGuard;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 final class BrowserProfilingSeeder extends Seeder
@@ -40,6 +44,11 @@ final class BrowserProfilingSeeder extends Seeder
         $admin->save();
 
         // Required browser interaction fixtures: never silently skip selection tests.
+        $media = [];
+        foreach (['committed', 'unreferenced', 'workingOnly'] as $index => $name) {
+            $media[$name] = $this->syntheticMedia($name, $index);
+        }
+        $publicSettings = [];
         foreach ([1, 2] as $number) {
             $section = SiteSection::query()->create([
                 'type' => SiteSection::TYPE_CUSTOM,
@@ -77,12 +86,18 @@ final class BrowserProfilingSeeder extends Seeder
                 'parent_id' => null,
                 'artwork_category_id' => null,
             ]);
-            $section->customPageSetting()->create([
+            $publicSettings[$number] = $section->customPageSetting()->create([
                 'blocks' => [[
                     'type' => 'text',
                     'published' => true,
                     'title' => 'Public SPA content '.$number,
                     'body' => null,
+                ], [
+                    'type' => 'image',
+                    'published' => true,
+                    'media_asset_id' => $media['committed']['id'],
+                    'image_decorative' => false,
+                    'image_scale_percent' => $number === 1 ? 50 : 75,
                 ]],
             ]);
         }
@@ -90,5 +105,68 @@ final class BrowserProfilingSeeder extends Seeder
         if (app(PublicationService::class)->commit($admin, 'Browser public SPA fixtures') === null) {
             throw new RuntimeException('Browser SPA fixtures must be published before running public E2E tests.');
         }
+
+        // Deliberately diverge Working from Committed in both directions:
+        // removing a Working reference must not revoke LIVE media, while a
+        // new Working-only reference must never publish another stored file.
+        foreach ($publicSettings as $number => $settings) {
+            $blocks = [$settings->components()[0]];
+            if ($number === 2) {
+                $blocks[] = [
+                    'type' => 'image', 'published' => true,
+                    'media_asset_id' => $media['workingOnly']['id'],
+                    'image_decorative' => false,
+                ];
+            }
+            $settings->update(['blocks' => $blocks]);
+        }
+        Storage::disk('local')->put('browser-public-media.json', json_encode($media, JSON_THROW_ON_ERROR));
+    }
+
+    /** @return array<string, mixed> */
+    private function syntheticMedia(string $name, int $index): array
+    {
+        $image = imagecreatetruecolor(64, 48);
+        imagefill($image, 0, 0, imagecolorallocate($image, 50 + $index * 50, 90, 150));
+        imagefilledrectangle($image, 8, 6, 40, 30, imagecolorallocate($image, 210, 180, 80));
+        ob_start();
+        imagejpeg($image, null, 95);
+        $original = ob_get_clean();
+        $thumbnail = imagescale($image, 32, 24);
+        ob_start();
+        imagewebp($thumbnail, null, 100);
+        $thumbBytes = ob_get_clean();
+        imagedestroy($image);
+        imagedestroy($thumbnail);
+        if (! is_string($original) || ! is_string($thumbBytes) || $original === '' || $thumbBytes === '') {
+            throw new RuntimeException('Synthetic browser media encoding failed.');
+        }
+        $disk = Storage::disk(config('media.disk'));
+        $originalKey = 'browser-public-e2e/'.$name.'/original.jpg';
+        $thumbnailKey = 'browser-public-e2e/'.$name.'/thumbnail.webp';
+        if (! $disk->put($originalKey, $original) || ! $disk->put($thumbnailKey, $thumbBytes)) {
+            throw new RuntimeException('Synthetic browser media could not be stored.');
+        }
+        $asset = MediaAsset::query()->create([
+            'storage_key' => $originalKey, 'original_filename' => 'browser-'.$name.'.jpg',
+            'mime_type' => 'image/jpeg', 'byte_size' => strlen($original),
+            'sha256' => hash('sha256', $original), 'state' => 'available',
+            'alt_text' => 'Browser '.$name.' media', 'width' => 64, 'height' => 48,
+        ]);
+        $variant = MediaVariant::query()->create([
+            'media_asset_id' => $asset->id, 'variant_kind' => PublicMedia::THUMBNAIL_KIND,
+            'transform_profile' => PublicMedia::PUBLIC_TRANSFORM_PROFILE,
+            'storage_key' => $thumbnailKey, 'mime_type' => 'image/webp',
+            'byte_size' => strlen($thumbBytes), 'sha256' => hash('sha256', $thumbBytes),
+            'state' => 'available', 'width' => 32, 'height' => 24,
+        ]);
+
+        return [
+            'id' => $asset->id,
+            'original' => ['url' => route('media.original', $asset, false), 'sha256' => $asset->sha256,
+                'byteSize' => $asset->byte_size, 'mime' => $asset->mime_type, 'width' => 64, 'height' => 48],
+            'thumbnail' => ['url' => route('media.variant', $variant, false), 'sha256' => $variant->sha256,
+                'byteSize' => $variant->byte_size, 'mime' => $variant->mime_type, 'width' => 32, 'height' => 24],
+        ];
     }
 }

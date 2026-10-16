@@ -230,34 +230,29 @@ export function animatePageHeight(previousHeight, root = document) {
         if (prior) {
             activeHeightAnimations.delete(body);
             prior.animation.cancel();
-            body.style.overflow = prior.originalOverflow;
         }
         return null;
     }
-    const original = prior?.originalOverflow ?? body.style.overflow;
-    // A second Hero click may interrupt the first height reveal. Only the
-    // CURRENT animation is allowed to restore overflow after completion.
+    // Clipping belongs to the animation effect, never a serialized style
+    // attribute. Canceling/replacing the effect restores the underlying CSS.
     prior?.animation.cancel();
-    body.style.overflow = 'clip';
     try {
         const animation = body.animate([
-            { height: `${visible.from}px` },
-            { height: `${visible.to}px` },
+            { height: `${visible.from}px`, overflow: 'clip' },
+            { height: `${visible.to}px`, overflow: 'clip' },
         ], {
             duration: HEIGHT_DURATION,
             easing: 'cubic-bezier(.18, .74, .32, 1)',
         });
-        activeHeightAnimations.set(body, { animation, originalOverflow: original });
+        activeHeightAnimations.set(body, { animation });
         const restore = () => {
             if (activeHeightAnimations.get(body)?.animation !== animation) return;
             activeHeightAnimations.delete(body);
-            body.style.overflow = original;
         };
         animation.finished.then(restore, restore);
         return animation;
     } catch {
         activeHeightAnimations.delete(body);
-        body.style.overflow = original;
         return null;
     }
 }

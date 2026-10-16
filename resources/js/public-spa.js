@@ -51,6 +51,11 @@ export function initializePublicSpaLinks(root = document) {
 export function applyPublicLayoutFromMeta() {
     const config = document.querySelector('meta[data-public-layout]');
     if (!config) return;
+    // Update the nonce-authorized rule itself. Element.style becomes a style
+    // attribute in Livewire's HTML snapshots and CSP rejects it on restore.
+    const sheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
+    const rule = [...(sheet?.cssRules ?? [])].find((entry) => entry.selectorText === ':root');
+    if (!rule) return;
 
     const declarations = {
         '--public-page': config.dataset.publicLayoutBackground || '#777',
@@ -65,6 +70,6 @@ export function applyPublicLayoutFromMeta() {
         '--public-menu-right-bottom': config.dataset.folioMenuRightBottom,
     };
     for (const [name, value] of Object.entries(declarations)) {
-        if (value) document.documentElement.style.setProperty(name, value);
+        if (value) rule.style.setProperty(name, value);
     }
 }

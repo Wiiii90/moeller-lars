@@ -68,6 +68,7 @@
         "analyse": "@php vendor/bin/phpstan analyse --memory-limit=1G",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php scripts/patch-livewire-csp-history.php",
             "@php artisan package:discover --ansi",
             "@php scripts/patch-filament-scroll-lock.php",
             "@php artisan filament:upgrade"

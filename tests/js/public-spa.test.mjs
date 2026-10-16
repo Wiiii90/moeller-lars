@@ -126,7 +126,13 @@ test('public layout follows the destination metadata through CSSOM without inser
             assert.equal(selector, 'meta[data-public-layout]');
             return meta;
         },
-        documentElement: { style: { setProperty: (name, value) => values.set(name, value) } },
+        querySelectorAll: (selector) => {
+            assert.equal(selector, 'style[data-public-layout-style]');
+            return [{ sheet: { cssRules: [{ selectorText: ':root', style: {
+                setProperty: (name, value) => values.set(name, value),
+            } }] } }];
+        },
+        documentElement: { style: { setProperty: () => assert.fail('Layout must not create snapshot style attributes') } },
     };
     try {
         applyPublicLayoutFromMeta();

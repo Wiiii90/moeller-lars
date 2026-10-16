@@ -207,7 +207,8 @@ test('rapid Hero click with no remaining visible height change releases old clip
         browser(({root,animations,body})=>{
             const first=animatePageHeight(320,root);
             assert.ok(first);
-            assert.equal(body.style.overflow,'clip');
+            assert.ok(first.frames.every(frame=>frame.overflow==='clip'));
+            assert.equal(body.style.overflow,'');
             body.height=910;
             const skipped=animatePageHeight(900,root);
             assert.equal(skipped,null);
@@ -225,9 +226,9 @@ test('height animation itself uses the viewport cap, not the old gallery height'
         browser(({root,animations,body})=>{
             const animation=animatePageHeight(9000,root);
             assert.ok(animation);
-            assert.deepEqual(animation.frames,[{height:'848px'},{height:'280px'}]);
+            assert.deepEqual(animation.frames,[{height:'848px',overflow:'clip'},{height:'280px',overflow:'clip'}]);
             assert.equal(animation.options.duration,480);
-            assert.equal(body.style.overflow,'clip');
+            assert.equal(body.style.overflow,'');
             assert.equal(animations.filter(a=>a.name==='body').length,1);
         },{height:280});
     } finally {globalThis.window=previous;}
@@ -237,8 +238,8 @@ test('every public page uses the same height transition and clips ONLY the inner
     browser(({root,body,animations})=>{
         const transition=animatePageHeight(940,root);
         assert.ok(transition);
-        assert.equal(body.style.overflow,'clip');
-        assert.deepEqual(transition.frames,[{height:'940px'},{height:'440px'}]);
+        assert.equal(body.style.overflow,'');
+        assert.deepEqual(transition.frames,[{height:'940px',overflow:'clip'},{height:'440px',overflow:'clip'}]);
         assert.equal(transition.options.duration,480);
         assert.equal(animations.filter(x=>x.name==='body').length,1);
         assert.equal(animatePageHeight(444,root),null);
@@ -266,8 +267,8 @@ test('SPA swaps for any page type trigger a coordinated pulse and height build',
         assert.equal(animations.find(a=>a.name==='menu').options.iterations,Infinity);
         const reveal=animations.find(a=>a.name==='body');
         assert.ok(reveal);
-        assert.deepEqual(reveal.frames,[{height:'780px'},{height:'420px'}]);
-        assert.equal(body.style.overflow,'clip');
+        assert.deepEqual(reveal.frames,[{height:'780px',overflow:'clip'},{height:'420px',overflow:'clip'}]);
+        assert.equal(body.style.overflow,'');
         assert.equal(animations.find(a=>a.name==='content').options.duration,620);
     },{height:420});
 });
@@ -305,8 +306,8 @@ test('Home Hero in-place slide changes pulse ONLY content and reuse page-height 
         assert.equal(animations.filter(animation=>animation.name==='content').length,1);
         assert.equal(animations.filter(animation=>animation.name==='menu').length,0);
         const height=animations.find(animation=>animation.name==='body');
-        assert.deepEqual(height.frames,[{height:'540px'},{height:'840px'}]);
-        assert.equal(body.style.overflow,'clip');
+        assert.deepEqual(height.frames,[{height:'540px',overflow:'clip'},{height:'840px',overflow:'clip'}]);
+        assert.equal(body.style.overflow,'');
         assert.equal(nav.name,'menu');
     });
 });
