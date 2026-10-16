@@ -24,6 +24,11 @@ final class MediaRightsArtifactRevision
         $assetId = $asset->getKey();
         $sha = $source->getAttribute('sha256');
         $mime = $source->getAttribute('mime_type');
+        $assetMime = $asset->getAttribute('mime_type');
+        if (! is_string($assetMime) || ! MediaTypePolicy::isImage($assetMime)) {
+            throw new InvalidArgumentException('File rights artifacts require an image media asset.');
+        }
+
         if (! is_numeric($assetId) || (int) $assetId <= 0
             || ! is_string($sha) || ! preg_match('/^[a-f0-9]{64}$/D', $sha)
             || ! is_string($mime) || ! MediaTypePolicy::isImage($mime)) {

@@ -59,3 +59,21 @@ it('separates thumbnail rights revisions from full resolution and refuses anothe
     expect(fn () => $revisions->forSource($asset, $variant))
         ->toThrow(InvalidArgumentException::class);
 });
+
+it('refuses a thumbnail projection when its parent record is not an image', function (): void {
+    $revisions = new MediaRightsArtifactRevision(new MediaIptcXmpWriter(new MediaRightsProjection));
+    $asset = revisionAsset('Photographer');
+    $asset->setAttribute('mime_type', 'video/mp4');
+
+    $variant = new MediaVariant;
+    $variant->setRawAttributes([
+        'media_asset_id' => 91,
+        'sha256' => str_repeat('c', 64),
+        'mime_type' => 'image/webp',
+        'variant_kind' => PublicMedia::THUMBNAIL_KIND,
+        'transform_profile' => PublicMedia::PUBLIC_TRANSFORM_PROFILE,
+    ], true);
+
+    expect(fn () => $revisions->forSource($asset, $variant))
+        ->toThrow(InvalidArgumentException::class);
+});
