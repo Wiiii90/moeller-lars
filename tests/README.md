@@ -1,20 +1,21 @@
-# Test suite — practical orientation
+# Test suites — current dev workflow
 
-Tests protect observable behavior and durable invariants. They are not a source-history archive and must not pin CSS numbers, private method spellings, or repair-era markup.
+Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. All source changes are made on `dev`; the former `testing` branch/worktree is not part of the current workflow.
 
-## Placement
+## Layers
 
-- `Unit`: pure, deterministic rules with no application or database boot.
-- `Integration`: domain behavior requiring PostgreSQL, filesystem, mail or mocked external adapters.
-- `Feature/Admin`: Filament/Livewire user workflows, including persisted state, audit, notification and failure handling.
-- `Feature/Public`: public HTTP contracts such as visibility, redirects, contact and media access.
-- `Migration`: compatibility only while the corresponding migration is still necessary; every case needs a retirement condition.
-- `js`: production JavaScript behavior exercised with Node's test runner.
-- `browser`: actual browser behavior; distinguish component fixtures, end-to-end and profiling scenarios.
+| Layer | Location | Purpose |
+| --- | --- | --- |
+| Unit | `tests/Unit` | Pure deterministic behavior |
+| Integration | `tests/Integration` | Domain services, PostgreSQL, files/media, adapters and concurrency |
+| Feature | `tests/Feature/Admin`, `tests/Feature/Public` | Livewire/Filament and HTTP behavior, persisted outcomes |
+| Migration | `tests/Migration` | Compatibility/cutover guarantees with retirement conditions |
+| JavaScript | `tests/js` | Node-based frontend logic |
+| Browser | `tests/browser/component`, `e2e`, `profiling` | Chromium component behavior, actual flows and performance evidence |
 
-Follow module and responsibility, not a past incident. Prefer meaningful assertions about persisted outcomes, HTTP responses, events, permissions and browser interaction. A test that only checks a string in source code is not evidence that the feature works.
+PHP discovery is defined by `phpunit.xml` and `tests/Pest.php`. Playwright uses `playwright.config.mjs`. There is **no separate Architecture suite**.
 
-## Local commands
+## Commands
 
 ```sh
 composer test:unit
@@ -22,31 +23,38 @@ composer test:integration
 composer test:feature
 composer test:migration
 npm run test:js
-npm run test:browser:component   # isolated real-browser component behavior
-npm run test:browser:e2e         # disposable Laravel admin workflows
-npm run test:browser:profile     # browser profiling and evidence
-npm run test:browser             # all Playwright projects
+npm run test:browser:component
+npm run test:browser:e2e
+npm run test:browser:profile
+npm run test:browser
+composer analyse
+composer lint
 ```
 
-Only run database suites in an explicitly disposable PostgreSQL testing context. The `Tests\\TestCase` database guard must remain active. Browser tests must use a disposable application with deterministic fixtures, not the persistent local preview or production database.
+**Database safety:** Only run Integration/Feature/Migration or seeded browser tests in a positively verified disposable PostgreSQL environment with isolated application storage, cache, sessions, media and PHP temporary directories. `Tests\\TestCase` and `LocalPreviewDatabaseGuard` must not be bypassed. The persistent local preview database is never a test target; CI environment flags alone are not proof of isolation.
 
-## Short local Codex validation sessions
+Two special PostgreSQL-17/tmpfs concurrency suites need their dedicated Windows PowerShell isolation runners, from the `dev` checkout:
 
-Codex can execute PHPUnit/Pest, Node and Playwright in a **local checkout** when PHP/Composer, Node, project dependencies and browser runtimes are installed. It must not use GitHub Actions or a server environment. Keep this as a targeted handoff rather than asking Codex to re-audit the whole repository.
+```powershell
+& .\tests\Support\RunPublicationConcurrency.ps1 --compact
+& .\tests\Support\RunPublicSessionConcurrency.ps1 --compact
+```
 
-1. First inspect the local branch/working tree and read `AGENTS.md`, `TESTING_SKILL.md`, this file and `tests/TestCase.php`. Use `testing`; do not reset, force-push or overwrite newer `dev` changes.
-2. Start with `npm run test:js` (no DB). Report failing test names and traces without silently changing expected behavior. Run Playwright component tests independently if browser dependencies are installed.
-3. **Before any database test or seeded browser E2E**, independently verify that the configured `testing` PostgreSQL database is disposable, not the normal local preview or production database. Confirm the environment guard in `tests/TestCase.php`; do not bypass or weaken it. `GITHUB_ACTIONS=true` and `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` are necessary but do not by themselves prove database isolation.
-4. Run one focused PHP test at a time using the project's existing runner: start with `tests/Feature/Admin/Notifications/AdminNotificationTest.php`, `tests/Feature/Admin/Gallery/GallerySettingsTest.php` and the selected Gallery batch tests because they validate the proposed one-action/one-notification production repair. Then proceed to the remaining suite only after the isolated DB check. For E2E, use the protected `BrowserProfilingSeeder` and a disposable app. Record exact commands, pass/fail counts and underlying errors.
-5. Stop at the agreed session boundary and record the actual `testing` HEAD, changed files, runtime environment and remaining failures in `TESTING_SKILL.md`. Mark unexecuted suites honestly. Do not start CI, deploy or merge to `dev`.
+These runners are **not** executed by ordinary `composer test:integration` or the standard CI PHP suites; their prerequisites are explicit and fail closed. The Public Session runner exercises two real HTTP processes, a shared database session and Livewire navigation.
 
-## Changes and refactors
+## Coverage and CI
 
-1. Name the user-visible or domain contract.
-2. Exercise the failing condition and meaningful success/negative boundaries.
-3. Add the smallest independent test that would detect a violation.
-4. Delete superseded assertions and duplicated regression scaffolding.
-5. A required browser scenario must fail if fixture prerequisites are missing; never silently skip coverage due to missing records.
-6. No CI runs from work on the `testing` branch. Merge only after local test validation and deliberate CI approval.
+The number of passing tests or PHPUnit assertions is **not a code-coverage percentage**. For a PHP `app/` line-coverage measurement use Pest with an enabled PCOV/Xdebug coverage driver and an isolated database. The canonical `release.yml` workflow measures and reports a combined PHP line-coverage baseline on pull requests to `main` and on `main`; there is currently **no percentage threshold**. JavaScript and browser tests are not included in that PHP number.
 
-The overarching policy is `docs/TESTING.md`, maintained separately on the `docs` branch. This file intentionally documents only how to navigate and execute tests.
+In the current direct-`dev` mode, CI/Actions must not be run, inspected or monitored by development agents. Preparing workflow source on `dev` is separate from authorizing release qualification. Future promotion to `main` is a separately authorized operation.
+
+## Regression policy
+
+1. Identify the violated visible/domain invariant.
+2. Test the narrowest meaningful behavior, including failure/no-op boundaries.
+3. Verify database/HTTP/browser outcomes rather than source-string matches.
+4. Delete superseded assertions, orphaned fixtures and repair-era scaffolding.
+5. Do not silently skip required fixtures or weaken assertions to obtain green results.
+6. Distinguish source review, actual test runs, browser review and user acceptance.
+
+Canonical strategy: [docs/TESTING.md](../docs/TESTING.md).
