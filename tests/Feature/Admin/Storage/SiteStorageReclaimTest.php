@@ -224,6 +224,19 @@ it('rolls back recovery metadata when the required audit cannot be persisted', f
     $this->actingAs($actor, 'web');
     $previous = PublicationCheckpoint::query()->orderByDesc('published_at')->firstOrFail();
     reclaimCheckpoint($actor, 'rollback-live', $previous->published_at->copy()->addSecond());
+    $bytes = 'Original required by the recoverable snapshot';
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'originals/audit-rollback.jpg', 'original_filename' => 'audit-rollback.jpg',
+        'mime_type' => 'image/jpeg', 'byte_size' => strlen($bytes),
+        'sha256' => hash('sha256', $bytes), 'state' => 'deleted',
+    ]);
+    $disk = Storage::disk(config('media.disk'));
+    $disk->put($asset->storage_key, $bytes);
+    DB::table('publication_version_rows')->insert([
+        'publication_checkpoint_id' => $previous->id, 'table_name' => 'media_assets',
+        'row_key' => (string) $asset->id,
+        'payload' => json_encode([...$asset->getAttributes(), 'state' => 'available'], JSON_THROW_ON_ERROR),
+    ]);
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
     $audit = Mockery::mock(app(AdminAuditService::class));
@@ -232,6 +245,8 @@ it('rolls back recovery metadata when the required audit cannot be persisted', f
 
     expect(fn () => app(SiteStorageReclaimService::class)->reclaim())->toThrow(RuntimeException::class, 'Audit unavailable');
     expect($previous->fresh()->snapshot_available)->toBeTrue()
+        ->and($disk->exists($asset->storage_key))->toBeTrue()
+        ->and(hash_file('sha256', $disk->path($asset->storage_key)))->toBe($asset->sha256)
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
 });

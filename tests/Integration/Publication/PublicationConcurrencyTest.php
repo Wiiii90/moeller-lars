@@ -5,12 +5,15 @@ namespace Tests\Integration\Publication;
 use Illuminate\Validation\ValidationException;
 use PDO;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 /**
  * A plain PHPUnit controller deliberately does not boot Laravel/RefreshDatabase:
  * fixtures must be committed and each actor owns an independent real connection.
  */
+#[Group('integration')]
+#[Group('concurrency')]
 final class PublicationConcurrencyTest extends TestCase
 {
     private array $children = [];
@@ -169,13 +172,19 @@ final class PublicationConcurrencyTest extends TestCase
         return $index;
     }
 
-    public function test_restore_rollback_releases_waiting_commit_without_partial_state_and_allows_retry(): void
+    public static function recoveryMutations(): array
+    {
+        return ['restore' => ['restore'], 'reclaim' => ['reclaim']];
+    }
+
+    #[DataProvider('recoveryMutations')]
+    public function test_recovery_rollback_releases_waiting_commit_without_partial_state_and_allows_retry(string $operation): void
     {
         $setup = $this->start(['operation' => 'prepare', 'scenario' => 'media']);
         $fixture = $this->read($setup, 'result')['fixture'];
         $before = $this->observer->query('SELECT id, row_to_json(audit_events)::text FROM audit_events ORDER BY id')->fetchAll(PDO::FETCH_KEY_PAIR);
         $arguments = ['actor' => $fixture['actor'], 'target' => $fixture['target']];
-        $restore = $this->start(['operation' => 'restore', 'pause' => 'pg_advisory_xact_lock', 'fail_after_audit' => true, ...$arguments]);
+        $restore = $this->start(['operation' => $operation, 'pause' => 'pg_advisory_xact_lock', 'fail_after_audit' => true, ...$arguments]);
         $this->read($restore, 'started');
         $this->read($restore, 'locked');
         $commit = $this->start(['operation' => 'commit', ...$arguments]);
@@ -189,7 +198,7 @@ final class PublicationConcurrencyTest extends TestCase
         $failure = $this->read($restore, 'result');
         self::assertFalse($failure['ok']);
         self::assertSame(\RuntimeException::class, $failure['exception']);
-        self::assertStringStartsWith('Injected failure after restored rows', $failure['message']);
+        self::assertStringStartsWith('Injected failure after recovery mutation', $failure['message']);
         $committed = $this->read($commit, 'result');
         self::assertTrue($committed['ok'], json_encode($committed));
         self::assertNull($committed['value'], 'Commit sees rolled-back Working and is a no-op.');

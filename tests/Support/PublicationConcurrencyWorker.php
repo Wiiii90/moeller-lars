@@ -139,7 +139,7 @@ try {
     $paused = false;
     DB::listen(function ($query) use ($request, &$paused): void {
         if (($request['fail_after_audit'] ?? false) && str_starts_with(strtolower($query->sql), 'insert into "audit_events"')) {
-            throw new RuntimeException('Injected failure after restored rows and audit insert, before transaction commit.');
+            throw new RuntimeException('Injected failure after recovery mutation and audit insert, before transaction commit.');
         }
         if ($paused || ! isset($request['pause']) || ! str_contains(strtolower($query->sql), $request['pause'])) {
             return;

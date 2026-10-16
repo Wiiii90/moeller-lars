@@ -180,7 +180,9 @@ class PublicContentSetting extends Model
 
         $socialLinks = $setting->getAttribute('social_links');
         $legacyInstagram = $setting->getAttribute('instagram_handle');
-        if (($socialLinks === null || $socialLinks === []) && is_string($legacyInstagram) && trim($legacyInstagram) !== '') {
+        // Only absent migrated data may inherit legacy Instagram. An explicit
+        // empty list means that the admin deleted every General profile.
+        if ($socialLinks === null && is_string($legacyInstagram) && trim($legacyInstagram) !== '') {
             $socialLinks = [[
                 'platform' => 'instagram',
                 'url' => 'https://www.instagram.com/'.trim($legacyInstagram).'/',

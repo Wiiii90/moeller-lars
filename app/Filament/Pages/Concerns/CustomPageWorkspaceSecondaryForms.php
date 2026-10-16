@@ -151,8 +151,8 @@ trait CustomPageWorkspaceSecondaryForms
         $platforms = is_array($selection)
             ? [
                 ...array_keys(array_filter($selection, static fn (mixed $selected): bool => $selected === true)),
-                // A General profile temporarily removed from the available
-                // options is not silently discarded by editing Contact.
+                // General may hide a configured profile without deleting it.
+                // Deletions are cascaded centrally and are never preserved.
                 ...array_values(array_filter($previousPlatforms,
                     fn (mixed $platform): bool => is_string($platform)
                         && ! array_key_exists($platform, $this->availableSocialPlatforms))),

@@ -155,9 +155,8 @@ trait CustomPageWorkspacePresentationHelpers
     }
 
     /**
-     * New selections must be available in General. Existing supported
-     * selections may be retained when their General profile is temporarily
-     * missing; editing another Contact field must not erase that choice.
+     * New selections must be visible in General. An existing selection may
+     * remain while its General profile is hidden, but never after deletion.
      *
      * @param list<mixed> $previousPlatforms
      * @return list<string>
@@ -167,12 +166,17 @@ trait CustomPageWorkspacePresentationHelpers
         if (! is_array($platforms)) {
             return [];
         }
+
+        $configured = array_column(
+            SocialLinks::configured(PublicContentSetting::general()->getAttribute('social_links')),
+            'platform',
+        );
         $selected = [];
         foreach ($platforms as $platform) {
             if (! is_string($platform)
                 || (! array_key_exists($platform, $this->availableSocialPlatforms)
-                    && (! in_array($platform, $previousPlatforms, true) || ! SocialLinks::supports($platform)))) {
-                throw ValidationException::withMessages(['social_platforms' => 'Choose only available or previously selected social links.']);
+                    && (! in_array($platform, $previousPlatforms, true) || ! in_array($platform, $configured, true)))) {
+                throw ValidationException::withMessages(['social_platforms' => 'Choose only social links still configured in General.']);
             }
             $selected[] = $platform;
         }

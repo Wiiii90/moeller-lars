@@ -279,10 +279,32 @@ trait HomePresentationChildren
         return match ($data['child_type'] ?? null) {
             'public_email' => ['type' => 'public_email', 'published' => ($data['publication_state'] ?? 'published') === 'published'],
             'social_links' => ['type' => 'social_links', 'published' => ($data['publication_state'] ?? 'published') === 'published',
-                'social_platforms' => is_array($data['social_platforms'] ?? null) ? $data['social_platforms'] : []],
+                'social_platforms' => $this->validatedHomeSocialPlatforms($data['social_platforms'] ?? [])],
             'contact_form' => ['type' => 'contact_form', 'published' => ($data['publication_state'] ?? 'published') === 'published',
                 'form_state' => $data['form_state'] ?? 'enabled', 'status_text' => $data['status_text'] ?? null],
             default => throw ValidationException::withMessages(['component' => 'Choose a supported Contact item.']),
         };
+    }
+
+    /** @return list<string> */
+    private function validatedHomeSocialPlatforms(mixed $selected): array
+    {
+        if (! is_array($selected)) {
+            return [];
+        }
+
+        $configured = array_column(SocialLinks::configured(
+            PublicContentSetting::general()->getAttribute('social_links'),
+        ), 'platform');
+
+        foreach ($selected as $platform) {
+            if (! is_string($platform) || ! in_array($platform, $configured, true)) {
+                throw ValidationException::withMessages([
+                    'social_platforms' => 'Choose only social links still configured in General.',
+                ]);
+            }
+        }
+
+        return array_values(array_unique($selected));
     }
 }

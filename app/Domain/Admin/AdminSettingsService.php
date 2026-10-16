@@ -2,7 +2,9 @@
 
 namespace App\Domain\Admin;
 
+use App\Domain\Content\ContactSocialProfileCascade;
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\SocialLinks;
 use App\Models\JournalSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Database\Eloquent\Model;
@@ -16,16 +18,31 @@ final class AdminSettingsService
     /** @param array<string,mixed> $expected Expected original values for optimistic editor concurrency. */
     public function updatePublicContent(PublicContentSetting $setting, array $data, array $expected = []): PublicContentSetting
     {
-        /** @var PublicContentSetting $updated */
-        $updated = $this->update(
-            $setting,
-            $this->normalizePublicContent($data),
-            'public_content_setting.updated',
-            'public_content_setting',
-            $expected,
-        );
+        $normalized = $this->normalizePublicContent($data);
+        if (! array_key_exists('social_links', $normalized)) {
+            /** @var PublicContentSetting $updated */
+            $updated = $this->update($setting, $normalized, 'public_content_setting.updated', 'public_content_setting', $expected);
 
-        return $updated;
+            return $updated;
+        }
+
+        // General owns the profile identity. A removal must clear every
+        // dependent Contact selection in the same transaction as General.
+        return DB::transaction(function () use ($setting, $normalized, $expected): PublicContentSetting {
+            $before = PublicContentSetting::query()->whereKey($setting->getKey())->lockForUpdate()->firstOrFail();
+            $previous = array_column(SocialLinks::configured($before->getAttribute('social_links')), 'platform');
+
+            /** @var PublicContentSetting $updated */
+            $updated = $this->update($setting, $normalized, 'public_content_setting.updated', 'public_content_setting', $expected);
+            $current = array_column(SocialLinks::configured($updated->getAttribute('social_links')), 'platform');
+            $removed = array_values(array_diff($previous, $current));
+
+            if ($removed !== []) {
+                app(ContactSocialProfileCascade::class)->removePlatforms($removed);
+            }
+
+            return $updated;
+        });
     }
 
     public function updateJournal(JournalSetting $setting, array $data): JournalSetting
