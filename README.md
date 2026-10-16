@@ -12,7 +12,7 @@ The public site keeps the artist's established visual language and content prese
 - Filament 5 for `/admin`
 - Blade, Vite, custom CSS and targeted JavaScript for the public site
 - PostgreSQL
-- Pest, PHPStan, Pint and Node's test runner
+- Pest, Playwright, PHPStan, Pint and Node's test runner
 - self-hosted Matomo Community/Core for human analytics
 - OCI/Docker release images published to GHCR
 
@@ -43,7 +43,7 @@ docker compose exec app npm run test:js
 docker compose exec app npm run build
 ```
 
-Local Feature/Pest runs and destructive database reset/rollback commands are intentionally fail-closed before database destruction. The full Pest suite runs in the disposable GitHub Actions database context defined by [docs/RELEASE.md](docs/RELEASE.md).
+Local Feature/Pest runs and destructive database reset/rollback commands are intentionally fail-closed before database destruction. The full Pest suite may run only in a positively verified disposable database and filesystem environment (including the configured GitHub Actions environment when separately authorized). Dedicated PostgreSQL concurrency scenarios use isolated local runners; see [tests/README.md](tests/README.md).
 
 Stop the local stack without discarding its database container:
 
@@ -71,13 +71,13 @@ The artist admin is browser-reviewed as an editorial product, not accepted merel
 
 Start with:
 
-- [AGENTS.md](AGENTS.md) — branch/reconciliation/worker workflow and central technology rules
+- [AGENTS.md](AGENTS.md) — direct-`dev` workflow and central technology rules
 - [ui-skills.md](ui-skills.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
 - [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
-- [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-vs-worker browser workflow, shared Visual Stage ownership and local preview loop
+- [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-`dev` browser workflow, shared Visual Stage ownership and local preview loop
 - [followup-skill.md](followup-skill.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
 
-Small browser defects may be fixed directly on `dev` when the user explicitly chooses that mode. Larger independent source passes may use workers. The active collaboration mode is part of the review state; do not silently switch modes during a continuation handoff.
+Normal source work happens directly on `dev`, including separate chats with clearly scoped ownership. During this mode there is no CI/Actions interaction, branch-worker choreography or release without separate authorization.
 
 ## Releases
 
