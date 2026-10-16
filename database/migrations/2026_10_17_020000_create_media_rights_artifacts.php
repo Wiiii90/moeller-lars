@@ -2,15 +2,14 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        // The registry is global and immutable. References are captured in each
-        // Working/Committed media row and therefore in publication history.
+        // No publication-snapshot column additions: existing checkpoint
+        // schema hashes, payloads and historical Undo stay valid.
         Schema::create('media_rights_artifacts', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('media_asset_id');
@@ -25,39 +24,24 @@ return new class extends Migration
             $table->index(['media_asset_id', 'role']);
         });
 
-        Schema::table('media_assets', function (Blueprint $table): void {
-            $table->foreignId('rights_artifact_id')->nullable();
+        // 'working' is mutable; 'checkpoint:<id>' is append-only.
+        // The existing publication owner will select and retain these rows.
+        Schema::create('media_rights_artifact_selections', function (Blueprint $table): void {
+            $table->id();
+            $table->string('scope_key', 64);
+            $table->unsignedBigInteger('media_asset_id');
+            $table->string('role', 16);
+            $table->unsignedBigInteger('source_id');
+            $table->foreignId('media_rights_artifact_id')
+                ->constrained('media_rights_artifacts')->restrictOnDelete();
+            $table->unique(['scope_key', 'role', 'source_id'], 'media_rights_selection_unique');
+            $table->index(['media_asset_id', 'scope_key']);
         });
-        Schema::table('media_variants', function (Blueprint $table): void {
-            $table->foreignId('rights_artifact_id')->nullable();
-        });
-
-        if (DB::connection()->getDriverName() === 'pgsql') {
-            DB::statement('ALTER TABLE committed.media_assets ADD COLUMN rights_artifact_id bigint NULL');
-            DB::statement('ALTER TABLE committed.media_variants ADD COLUMN rights_artifact_id bigint NULL');
-
-            foreach (['public', 'committed'] as $schema) {
-                foreach (['media_assets', 'media_variants'] as $table) {
-                    DB::statement("ALTER TABLE {$schema}.{$table} ADD CONSTRAINT {$table}_rights_artifact_fk FOREIGN KEY (rights_artifact_id) REFERENCES public.media_rights_artifacts(id) ON DELETE RESTRICT");
-                }
-            }
-        }
     }
 
     public function down(): void
     {
-        if (DB::connection()->getDriverName() === 'pgsql') {
-            foreach (['public', 'committed'] as $schema) {
-                foreach (['media_assets', 'media_variants'] as $table) {
-                    DB::statement("ALTER TABLE {$schema}.{$table} DROP CONSTRAINT IF EXISTS {$table}_rights_artifact_fk");
-                }
-            }
-            DB::statement('ALTER TABLE committed.media_variants DROP COLUMN rights_artifact_id');
-            DB::statement('ALTER TABLE committed.media_assets DROP COLUMN rights_artifact_id');
-        }
-
-        Schema::table('media_variants', fn (Blueprint $table) => $table->dropColumn('rights_artifact_id'));
-        Schema::table('media_assets', fn (Blueprint $table) => $table->dropColumn('rights_artifact_id'));
+        Schema::dropIfExists('media_rights_artifact_selections');
         Schema::dropIfExists('media_rights_artifacts');
     }
 };

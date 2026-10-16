@@ -7,7 +7,6 @@ use App\Models\MediaRightsArtifact;
 use App\Models\MediaVariant;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
-use Throwable;
 
 /**
  * Single owner for immutable rights-bearing file artifacts.
@@ -131,11 +130,9 @@ final class MediaRightsArtifactService
             ]);
 
             return $artifact;
-        } catch (Throwable $exception) {
-            // Never delete a content-addressed target here. It may be
-            // referenced by another in-flight or historical publication.
-            throw $exception;
         } finally {
+            // Keep the content-keyed destination: historical revisions may
+            // already reference it. Only discard this unpublished temp copy.
             @unlink($stagingPath);
         }
     }
