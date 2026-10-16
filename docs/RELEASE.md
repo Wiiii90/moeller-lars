@@ -42,7 +42,7 @@ That loop is deliberately separate from release qualification:
 
 A local container being healthy means only that the candidate boots. It is not browser acceptance, Validation acceptance or release qualification.
 
-Do not trigger extra/manual canonical verification runs merely to inspect a CSS/Blade/editorial-workspace iteration unless a concrete risk warrants it. Normal pushes to `dev` already invoke the configured verification workflow.
+During the current direct-`dev` mode, agents must not run, inspect, monitor or troubleshoot CI/Actions. Development commits use `[skip ci]`; editing workflow source is not permission to invoke a run. An explicitly authorized release PR must have a suitable head commit without `[skip ci]` so required checks execute.
 
 ## Accepted candidate promotion to `main`
 
@@ -86,15 +86,16 @@ The canonical verification job covers, in order:
 - Pest Unit tests;
 - Pest Integration tests;
 - Pest Feature tests;
-- Pest Architecture tests;
 - Pest Migration tests;
 - PHPStan/Larastan static analysis;
 - Pint formatting verification;
 - JavaScript tests through Node's built-in test runner.
 
+On PRs targeting `main` and on pushes to `main`, the same verification workflow additionally measures combined PHP `app/` line coverage with PCOV and writes the percentage plus covered/total executable statements to the job summary. This deliberately has no arbitrary minimum before the first real baseline. The measured PHP suites do not include JavaScript, Chromium or dedicated multi-process PostgreSQL concurrency runners; those provide separate evidence.
+
 All verification steps are blocking. PHPStan has no `continue-on-error` escape hatch, and the project does not use a broad PHPStan baseline or ignore set to hide application debt. Test warnings and static-analysis failures are repaired at their source rather than suppressed to obtain a green workflow.
 
-The Pest layers are intentionally separate CI steps so a failure is attributed to its owning layer. The job is fail-fast: if an earlier blocking step fails, later verification steps are skipped for that run and must be observed on the next green-through-that-point run.
+The four existing Pest layers (Unit, Integration, Feature and Migration) are intentionally separate CI steps so a failure is attributed to its owning layer. The job is fail-fast: if an earlier blocking step fails, later verification steps are skipped for that run and must be observed on the next green-through-that-point run.
 
 Commands used in disposable CI (not a recipe for the persistent local browser database):
 
@@ -102,7 +103,6 @@ Commands used in disposable CI (not a recipe for the persistent local browser da
 composer test:unit
 composer test:integration
 composer test:feature
-composer test:architecture
 composer test:migration
 composer analyse
 vendor/bin/pint --test
