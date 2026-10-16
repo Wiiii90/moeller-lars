@@ -23,7 +23,7 @@ These describe the durable current application architecture and behavior. Browse
 - [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection
 - [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Ticker feedback/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
 - [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) — append-only Activity, bounded Undo recovery, shared content-addressed history payloads, Working/LIVE Commit history and reset/restore/revert semantics
-- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct/worker browser-reconciliation modes, shared Visual Stage ownership, icon semantics and local preview loop
+- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct-dev browser review, shared Visual Stage ownership, icon semantics and local preview loop
 - [RELEASE.md](RELEASE.md) — immutable image, preview, runtime, persistence and release contract
 - [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md) — application/platform ownership boundary; mutable operational implementation lives in `server-platform`
 
@@ -33,20 +33,20 @@ These documents state current durable contracts. They are not chronological PR/w
 
 Repository-root workflow documents are intentionally kept close to `AGENTS.md` because they govern coding/review behavior rather than public architecture:
 
-- [AGENTS.md](../AGENTS.md) — branch/orchestration/worker/reconciliation contract and central technology rules
+- [AGENTS.md](../AGENTS.md) — direct-dev scope/reconciliation contract and central technology rules
 - [ui-skills.md](../ui-skills.md) — admin-only UI grammar for heading/action rows, metrics, filters, selection, tables, grids, DnD, dialogs and browser acceptance
 - [followup-skill.md](../followup-skill.md) — lossless continuation-prompt contract for handing a long orchestration chat to a new chat
-- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — use when the user is doing live browser acceptance and may intentionally choose direct work on `dev` rather than worker-only orchestration
+- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — use for live browser acceptance directly on `dev`
 
-The active collaboration mode is part of the handoff state. A continuation chat should not silently replace a successful direct browser-repair loop with worker delegation, or vice versa.
+Development currently happens directly on `dev`, including independent scoped chats. Handoffs must preserve that constraint and reconcile newer shared commits.
 
 ## Live work and acceptance status
 
 GitHub Issues and the current browser/orchestration review are the source of truth for **unfinished work, browser acceptance and current blockers**.
 
-A source-reviewed or technically running reconciliation candidate is not automatically product accepted. A durable contract may be implemented on a temporary browser branch or directly on explicitly authorized `dev` before it reaches `main`; documentation should describe the intended/current contract without pretending that transient browser acceptance is complete.
+A source-reviewed or technically running reconciliation candidate is not automatically product accepted. A durable contract is implemented on `dev` before a separately authorized release; documentation must not mistake technical source review for browser acceptance.
 
-Browser feedback from the exact current candidate overrides stale acceptance wording. Once an exact `dev` candidate is browser/product accepted, stale issue history must not be treated as proof that already-resolved UI defects still exist; update/close the affected acceptance issues and promote that exact candidate through the `main`/release gates. Temporary worker branches, candidate SHAs and local container state belong in the current continuation handoff, not in timeless architecture docs.
+Browser feedback from the exact current candidate overrides stale acceptance wording. Once an exact `dev` candidate is browser/product accepted, stale issue history must not be treated as proof that already-resolved UI defects still exist; update/close the affected acceptance issues and promote that exact candidate through the `main`/release gates. Transient candidate SHAs and local container state belong in continuation handoffs, not durable architecture documents.
 
 ## Migration and cutover evidence
 
