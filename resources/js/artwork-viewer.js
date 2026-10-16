@@ -208,6 +208,13 @@ export function initializeArtworkViewer(root = document) {
         PAN_OVERSCROLL,
     );
 
+    const preserveControlFocus = () => {
+        // Controls can disable themselves at zoom and sequence boundaries.
+        // Keep keyboard input in the native dialog on an enabled control.
+        const focused = document.activeElement;
+        if ([previous, next, zoomOut, zoomIn, reset].includes(focused) && focused.disabled) close.focus();
+    };
+
     const updateTransform = () => {
         if (!currentIsImage() || image.hidden) return;
 
@@ -223,6 +230,7 @@ export function initializeArtworkViewer(root = document) {
         zoomOut.disabled = state.scale <= MIN_SCALE;
         zoomIn.disabled = state.scale >= MAX_SCALE;
         reset.disabled = state.scale === MIN_SCALE && state.x === 0 && state.y === 0;
+        preserveControlFocus();
         reset.textContent = state.scale === 1 ? '100%' : `${Math.round(state.scale * 100)}%`;
     };
 
@@ -248,10 +256,9 @@ export function initializeArtworkViewer(root = document) {
     const clearMedia = () => {
         image.removeAttribute('src');
         image.hidden = true;
-        image.style.removeProperty('width');
-        image.style.removeProperty('height');
-        image.style.removeProperty('max-width');
-        image.style.removeProperty('max-height');
+        // The viewer owns all image styles. Do not leave even an empty style
+        // attribute or the last transform in a subsequent HTML snapshot.
+        image.removeAttribute('style');
 
         video.pause();
         video.removeAttribute('src');
@@ -274,10 +281,11 @@ export function initializeArtworkViewer(root = document) {
         title.textContent = item.title;
         previous.disabled = adjacentIndex(index, -1, items.length) === null;
         next.disabled = adjacentIndex(index, 1, items.length) === null;
+        preserveControlFocus();
         pageLink.hidden = false;
         pageLink.href = item.page;
-        // The link is populated on demand, after initial SPA link discovery.
-        pageLink.setAttribute('wire:navigate', '');
+        // The existing public SPA delegation handles this on-demand href.
+        // Adding wire:navigate after Alpine initialization would not bind it.
         expectedSrc = item.src;
         clearMedia();
         missing.hidden = true;
@@ -528,7 +536,15 @@ export function initializeArtworkViewer(root = document) {
     return () => {
         lifetime.abort();
         if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
-        if (dialog.open) flushAttention();
-        video.pause();
+        if (dialog.open) {
+            flushAttention();
+            dialog.close();
+        }
+        // Disposal precedes Livewire's snapshot. Close events are asynchronous,
+        // so clear owned media and the initialization marker synchronously.
+        clearMedia();
+        expectedSrc = '';
+        pointers.clear();
+        delete dialog.dataset.viewerInitialized;
     };
 }

@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use App\Domain\Media\PublicMedia;
 use App\Domain\Publication\PublicationService;
+use App\Models\Artwork;
+use App\Models\ArtworkCategory;
+use App\Models\ArtworkMedia;
 use App\Models\ContactMessage;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -102,7 +105,29 @@ final class BrowserProfilingSeeder extends Seeder
             ]);
         }
 
-        if (app(PublicationService::class)->commit($admin, 'Browser public SPA fixtures') === null) {
+        $category = ArtworkCategory::query()->create(['name' => 'Browser Gallery', 'slug' => 'browser-gallery']);
+        SiteSection::query()->create([
+            'type' => SiteSection::TYPE_GALLERY, 'title' => 'Browser Gallery',
+            'navigation_label' => 'Browser Gallery', 'slug' => 'browser-gallery',
+            'state' => 'published', 'position' => 1200, 'parent_id' => null,
+            'artwork_category_id' => $category->id,
+        ]);
+        $media['gallery'] = ['url' => '/browser-gallery', 'artworks' => []];
+        foreach ([1, 2] as $number) {
+            $fixture = $this->syntheticMedia('viewer-'.$number, $number - 1, 1600, 1200);
+            $artwork = Artwork::query()->create([
+                'artwork_category_id' => $category->id, 'slug' => 'browser-artwork-'.$number,
+                'title' => 'Browser Artwork '.$number, 'state' => 'published',
+                'position' => $number * 10, 'work_year' => 2026, 'published_at' => now(),
+            ]);
+            ArtworkMedia::query()->create([
+                'artwork_id' => $artwork->id, 'media_asset_id' => $fixture['id'],
+                'role' => 'primary', 'position' => 10,
+            ]);
+            $media['gallery']['artworks'][] = $fixture + ['title' => $artwork->title, 'url' => route('artworks.show', $artwork->slug, false)];
+        }
+
+        if (app(PublicationService::class)->commit($admin, 'Browser public SPA and Gallery fixtures') === null) {
             throw new RuntimeException('Browser SPA fixtures must be published before running public E2E tests.');
         }
 
@@ -124,15 +149,17 @@ final class BrowserProfilingSeeder extends Seeder
     }
 
     /** @return array<string, mixed> */
-    private function syntheticMedia(string $name, int $index): array
+    private function syntheticMedia(string $name, int $index, int $width = 64, int $height = 48): array
     {
-        $image = imagecreatetruecolor(64, 48);
+        $image = imagecreatetruecolor($width, $height);
         imagefill($image, 0, 0, imagecolorallocate($image, 50 + $index * 50, 90, 150));
-        imagefilledrectangle($image, 8, 6, 40, 30, imagecolorallocate($image, 210, 180, 80));
+        imagefilledrectangle($image, (int) ($width / 8), (int) ($height / 8), (int) ($width * 5 / 8), (int) ($height * 5 / 8), imagecolorallocate($image, 210, 180, 80));
         ob_start();
         imagejpeg($image, null, 95);
         $original = ob_get_clean();
-        $thumbnail = imagescale($image, 32, 24);
+        $thumbnailWidth = min(320, (int) ($width / 2));
+        $thumbnailHeight = (int) ($height * $thumbnailWidth / $width);
+        $thumbnail = imagescale($image, $thumbnailWidth, $thumbnailHeight);
         ob_start();
         imagewebp($thumbnail, null, 100);
         $thumbBytes = ob_get_clean();
@@ -151,22 +178,22 @@ final class BrowserProfilingSeeder extends Seeder
             'storage_key' => $originalKey, 'original_filename' => 'browser-'.$name.'.jpg',
             'mime_type' => 'image/jpeg', 'byte_size' => strlen($original),
             'sha256' => hash('sha256', $original), 'state' => 'available',
-            'alt_text' => 'Browser '.$name.' media', 'width' => 64, 'height' => 48,
+            'alt_text' => 'Browser '.$name.' media', 'width' => $width, 'height' => $height,
         ]);
         $variant = MediaVariant::query()->create([
             'media_asset_id' => $asset->id, 'variant_kind' => PublicMedia::THUMBNAIL_KIND,
             'transform_profile' => PublicMedia::PUBLIC_TRANSFORM_PROFILE,
             'storage_key' => $thumbnailKey, 'mime_type' => 'image/webp',
             'byte_size' => strlen($thumbBytes), 'sha256' => hash('sha256', $thumbBytes),
-            'state' => 'available', 'width' => 32, 'height' => 24,
+            'state' => 'available', 'width' => $thumbnailWidth, 'height' => $thumbnailHeight,
         ]);
 
         return [
             'id' => $asset->id,
             'original' => ['url' => route('media.original', $asset, false), 'sha256' => $asset->sha256,
-                'byteSize' => $asset->byte_size, 'mime' => $asset->mime_type, 'width' => 64, 'height' => 48],
+                'byteSize' => $asset->byte_size, 'mime' => $asset->mime_type, 'width' => $width, 'height' => $height],
             'thumbnail' => ['url' => route('media.variant', $variant, false), 'sha256' => $variant->sha256,
-                'byteSize' => $variant->byte_size, 'mime' => $variant->mime_type, 'width' => 32, 'height' => 24],
+                'byteSize' => $variant->byte_size, 'mime' => $variant->mime_type, 'width' => $thumbnailWidth, 'height' => $thumbnailHeight],
         ];
     }
 }
