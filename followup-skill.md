@@ -1,343 +1,56 @@
 # Follow-up chat handoff skill
 
-Use this file when a long orchestration/review chat is becoming too large and the user asks for a **Folgeprompt / Folgechat / continuation handoff**.
+This file defines a compact, lossless continuation handoff for `Wiiii90/moeller-lars`. It transfers current facts and remaining work, not a history of closed chats, abandoned branches or every implementation attempt.
 
-The goal is a lossless operational handoff, not a summary for casual reading.
+## Active execution mode
 
-## Temporary PUBLIC RIGHTS handoff invariant (while active)
+- Work **directly on `dev`**, usually in `P:\moeller-lars` when locally available. Other chats may also modify `dev`; inspect the current HEAD and reconcile overlapping changes before writing. Never create development branches/worktrees, force/reset/rebase or rewrite other chats' work.
+- No CI/Actions access, logs, status inspection, manual workflow runs, release, server or deployment during ordinary development. `main` promotion and release qualification are separately authorized.
+- Keep the current shared Domain, publication, media, Rich Text and admin UI owners. Never introduce duplicate runtime paths, timers or symptom-level workarounds.
+- A test-only environment must be positively isolated from the persistent browser Preview DB, media and filesystem. Tests that were merely authored or reviewed are not "passed".
+- For current work on public media/privacy/SEO, read the active `PUBLIC_RIGHTS_WORKSTREAM.md` and current durable rights contracts before modifications. That temporary handoff is deleted only when its complete workstream ends.
 
-For any continuation within public rights/privacy/media protection/SEO, read
-root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md) first.
-It is the authoritative **living execution state** alongside the durable
-[`docs/PUBLIC-RIGHTS-AND-PRIVACY.md`](docs/PUBLIC-RIGHTS-AND-PRIVACY.md)
-product architecture. Update current slice, actual commit SHA, tests and
-runtime/browser acceptance, next action and any unresolved blockers **before**
-generating a follow-up prompt. Never describe a documented but unimplemented
-idea as completed. Avoid duplicated secondary to-do lists in follow-up chats.
-After the workstream is fully completed, remove this temporary instruction
-along with the root workstream file; retain only permanent contracts.
+## Source of truth
 
-## Current direct-`dev` continuation mode (2026-10-12)
+1. Exact current `dev` SHA and production source.
+2. Current user's browser screenshots/feedback on the same candidate.
+3. Open product issues/unfinished acceptance.
+4. Durable `AGENTS.md`, `ui-skills.md`, `docs/*` and focused test contracts.
+5. Actual checks performed with results; never infer success from a worker statement or from older commits.
 
-The former public-facing parallel chat has ended. Create **one complete
-standalone continuation prompt** for the current unified admin/public project
-unless the user expressly asks for multiple prompts. Retain the capability
-to coordinate parallel agents only if another chat starts.
+A newer accepted browser result overrides stale repair-era descriptions. Do not silently resurrect old branch modes, old test suites or abandoned implementations.
 
-- Repository `Wiiii90/moeller-lars`, **`dev` only**: no side branches,
-  worktrees, PRs, CI reads/runs/logs or deployment.
-- Refresh remote HEAD at the start and before every commit, compare any
-  concurrent changes, review overlaps, commit atomically using expected-SHA
-  fast-forward; never force/reset or overwrite another worker.
-- The Windows checkout `P:\moeller-lars` belongs to the user and may be
-  absent in a fresh ChatGPT environment. Discover available GitHub tools,
-  do not invent a local browser or successful test run.
-- Source-verified, test-authored, test-executed, browser-reviewed and
-  user-accepted are **different statuses**. Rejected current browser
-  behavior wins over stale summaries.
-- Handoff the **mandatory admin mutation feedback invariant**: trace
-  persisted change → audit → explicit `AdminNotifier` →
-  `admin-header-notification` event / durable mailbox; test no-ops,
-  failure, dialog close/reopen and non-heading editors. A notification is
-  not automatically emitted by saving or auditing.
-- Keep unreconciled issues and known risk plainly listed, not labeled done.
+## Before creating a follow-up
 
-## 1. Core requirement
+- Establish latest local and remote `dev` commit as appropriate and report uncommitted changes or stashes **without modifying them**.
+- Check which edits were source-reviewed, tested, built, browser-reviewed and user-accepted.
+- Identify concurrent chats' scope ownership, shared files and any unmerged or not-yet-verified changes.
+- Capture the concrete current preview/Validation URL and commit identity **only when actually verified**. Do not assume the browser is showing the most recent commit.
+- Name remaining errors or blockers by actual behavior and evidence, not guesswork. Avoid copying secrets, cookies, tokens or full logs.
+- Update any active scoped living handoff before transfer. Do not append obsolete historical incidents to living documents.
 
-The next chat must be able to continue the work without asking the user to reconstruct:
+## Required content of a continuation prompt
 
-- repository state;
-- exact branch/SHA;
-- accepted/rejected worker heads;
-- current browser candidate;
-- local preview/runtime details;
-- migrations already run;
-- known defects and accidental intermediate states;
-- pending browser reviews;
-- branch/reconciliation workflow;
-- testing/build restrictions;
-- architectural decisions already made.
+A single copyable prompt should cover:
 
-A good follow-up prompt tells the next orchestrator **what to do next**, not merely what happened before.
+1. **Mission and boundaries:** what the next chat owns and explicitly must not touch; direct `dev`, no CI/server/release, shared-contract rules.
+2. **Repository state:** exact latest verified `dev` SHA, local path if known, working-tree/stash precautions, other chats' concurrent scope.
+3. **Current application behavior:** relevant public/admin design, latest accepted user requirements, exact affected owner files and invariants.
+4. **Runtime/browser state:** current Preview command and URL, whether rebuilt after the latest source change, current browser acceptance and errors.
+5. **Actual verification:** exact focused checks run vs unexecuted, test database isolation, any outstanding risks.
+6. **Remaining queue:** user-prioritized defects and next actionable step; do not present completed or rejected proposals as open work.
+7. **Handoff output:** changed files, commit SHA, diff intent, checks truly performed, source-vs-browser acceptance state, remaining blockers.
 
-### Fresh-chat access rule
+Preserve the distinctions `SOURCE-REVIEWED`, `TEST-RUN`, `BROWSER-VERIFIED` and `USER-ACCEPTED`. A passing Playwright or PHP test is not proof of the user's browser presentation. One successful page does not authorize UI changes to neighboring areas.
 
-A continuation prompt must not turn one chat's local execution environment into a hard prerequisite for the next chat.
+## Implementation and review process
 
-For this repository, identify the project primarily by repository and branch:
+Work from the current symptom inward. Read only the responsible source and applicable shared contract rather than re-auditing the entire repository. Reconcile any newly advanced `dev` before committing. Verify the actual net diff against requirements and reject unrelated edits, duplicate CSS/persistence owners and untested claims.
 
-- repository: `Wiiii90/moeller-lars`;
-- integration branch: `dev`;
-- canonical local checkout, when available: `P:\moeller-lars`.
+For copy/paste prompts, put the entire actionable prompt in **one fenced block**, with source SHA, allowed scope, non-goals, exact target state, root cause when established, checks, stop conditions, and commit/push rules. Do not imply a role must operate on its own Git branch. A separate audit can remain read-only; an implementation session may change files only within its explicitly owned scope.
 
-The local Windows checkout is useful context, but a fresh chat may not have that filesystem mounted. Therefore:
+For browser tasks, use the accepted shared reference, keep a single canonical implementation, and rebuild the local Preview once per coherent batch. Browser acceptance belongs to the actual integrated candidate. If a user rejects the markup or behavior, passing tests do not make it accepted. After acceptance, remove safely proven obsolete markup, CSS, hooks and duplicated tests for that scoped change.
 
-- tell the next chat to use the available repository/GitHub connector as the primary fallback when the local checkout is unavailable;
-- never instruct it to abort merely because `P:\moeller-lars` cannot be read;
-- before claiming that repository access is unavailable, it must first check the repository tools/connectors actually available in that chat;
-- only report an access blocker when neither the required repository source nor another explicitly required environment is available;
-- do not require cloning, worktrees, sibling copies or invented local paths to compensate for an unavailable checkout;
-- distinguish source work, which can normally proceed through repository access, from local runtime/browser work, which genuinely requires the local preview environment.
+## Handoff quality
 
-When the continuation's immediate task is source-only implementation on `dev`, say so explicitly. Do not make local preview availability a prerequisite unless that task actually requires browser/runtime verification.
-
-## 2. Before writing the prompt
-
-Read/update the durable repository documentation first when the current chat discovered reusable rules.
-
-At minimum consider:
-
-- `AGENTS.md` for workflow/orchestration/technology rules;
-- `ui-skills.md` for reusable admin UI grammar;
-- architecture/media/migration/release docs for durable contract changes.
-
-Do not stuff every transient SHA into durable docs. Exact temporary state belongs in the follow-up prompt.
-
-If docs need changing, create one coherent docs-only commit where practical and give the next chat the new exact head.
-
-## 3. Required follow-up prompt sections
-
-A continuation prompt should normally contain the following sections.
-
-### Mission
-
-State exactly what the new chat is taking over and the immediate goal.
-
-Examples:
-
-- continue browser review of a combined admin candidate;
-- receive/review several worker handoffs;
-- reconcile accepted side branches;
-- perform one final local browser cycle.
-
-### Repository and exact Git state
-
-Include:
-
-- repository and branch first, because those are portable across chats;
-- exact current head SHA;
-- canonical local path only as an available local-workspace fact, not as proof that the next chat can access it;
-- protected integration/main constraints;
-- current combined branch;
-- exact current head SHA;
-- relevant base SHA;
-- side branches and their accepted/rejected status;
-- whether the working tree should be clean.
-
-Explicitly distinguish:
-
-- historical feature branches;
-- temporary worker side branches;
-- current combined browser branch;
-- integration/release branches.
-
-### Current runtime/browser state
-
-When local browser review is in progress, include exact known operational facts:
-
-- URL and port;
-- container/image names;
-- database container if relevant;
-- Dockerfile/helper path;
-- media/database mounts relevant to rebuilding/migrations;
-- migrations already applied;
-- whether the current running image differs from a newer docs-only Git head.
-
-Do not invent unknown paths. If a mount source is dynamic, show the command used to read it from the existing container.
-
-### Current product acceptance state
-
-State explicitly whether the candidate is:
-
-- source-reviewed;
-- technically running;
-- browser-reviewed;
-- product accepted;
-- release qualified.
-
-Never imply that “container is Up” means the UI is accepted.
-
-### Accepted architecture/contracts
-
-Include only the details that materially constrain future fixes, such as:
-
-- central Rich Text stack;
-- MediaAsset/reference/publication rules;
-- native DnD technology;
-- shared UI grammar;
-- non-destructive Journal template switching;
-- preview/public media distinction.
-
-Point the next chat to the durable docs instead of duplicating every stable rule verbatim.
-
-### Known dirt / incidents
-
-Do not hide mistakes that can confuse Git history or future debugging.
-
-Examples:
-
-- accidental intermediate commit later repaired;
-- side branch based on an older shared base;
-- migration run that first failed before DB mutation and later succeeded;
-- unreachable/no-op commit not referenced by a branch;
-- local cache/image known to have represented an older candidate.
-
-Explain whether the **current tree is clean despite the history** and how that was verified.
-
-### Pending review queue
-
-List the exact next user-review slices and their order.
-
-For browser-heavy work, instruct the new chat to:
-
-1. collect the user's complete feedback for one slice;
-2. not launch a worker after the first sentence unless the user says the review is complete;
-3. consolidate findings into one coherent repair scope;
-4. then create a fresh worker prompt.
-
-### Worker-role and context-budget state
-
-For a worker-based project, make the role split explicit so the next chat does not silently become the implementation worker.
-
-Include:
-
-- that the General chat remains the orchestrator/state keeper;
-- which source work is intentionally delegated to workers;
-- which completed/current workers were **Audit** versus **Implementation** workers;
-- which worker results are accepted, rejected or pending review/reconciliation;
-- which concrete worker type is needed next and why.
-
-If the General chat itself consumed substantial context by loading long source/diff series and performing implementation directly, say so explicitly in the handoff. Treat that as relevant context-budget state and instruct the next session to return to the orchestrator role, retaining only the exact Git state, confirmed findings/decisions, handoffs and acceptance state needed to continue.
-
-### Worker workflow
-
-State the branch strategy explicitly and identify the next worker as Audit, Implementation, or an explicitly bounded combined Audit+Implementation worker.
-
-For historical parallel branch workers (only when that different mode is expressly authorized):
-
-- one exact shared base;
-- one side branch each;
-- do not let all workers push to the combined branch;
-- do not mutate historical feature branches;
-- no rebase/merge/deploy unless requested.
-
-**This branch-worker workflow does not apply to the current direct shared-`dev` mode.**
-In that mode, both independent chats commit directly to `dev` after
-pre-commit HEAD reconciliation and expected-SHA fast-forward updates.
-
-For sequential workers:
-
-- base the next worker on the current accepted combined head when that is intentional.
-
-Worker prompts must be one contiguous fenced code block.
-
-### Worker review workflow
-
-For every returned worker:
-
-1. verify remote branch/head;
-2. verify parent/base;
-3. compare exact base→head;
-4. inspect actual code/diff independently;
-5. identify cross-branch/shared-file effects;
-6. accept/reject before integration;
-7. avoid broad tests unless the actual change warrants them.
-
-### Reconciliation workflow
-
-Give explicit rules:
-
-- cherry-pick/union only accepted diffs;
-- resolve shared files intentionally;
-- make cross-branch compatibility fixes in a separate small commit;
-- inspect net diff after any repair;
-- push fast-forward where possible;
-- do not rewrite public history merely to make it pretty when a safe forward repair is clearer.
-
-### Build/migration/browser workflow
-
-If the next chat will need it, include the exact command pattern currently proven to work.
-
-Prefer:
-
-- one build after the intended set of fixes is reconciled;
-- verbose migration output;
-- stop on migration failure;
-- reuse existing network/env/media mounts;
-- replace only the web container;
-- inspect status/log tail;
-- then return directly to browser review.
-
-Do not trigger dependency reinstalls or a full test suite just to look at the page.
-
-## 4. Command quality requirements
-
-Commands in the follow-up prompt should be directly copy-pasteable and defensive.
-
-PowerShell rules:
-
-- do not use `$Home`/`$HOME` as mutable variables;
-- do not use `$Args` for Docker splatting;
-- use `$HomeText`, `$RunArgs`, `$MigrationArgs`, `$EnvVars`, etc.;
-- verify expected HEAD before destructive/reconciliation operations;
-- verify clean working tree;
-- stop when a command fails;
-- show `git diff --stat`, `git diff --check`, log and status around risky manual edits.
-
-Avoid enormous scripts when a few clear commands are enough. Include a longer block only when it genuinely prevents repeated manual mistakes.
-
-## 5. Browser-review behavior in the next chat
-
-The continuation prompt should explicitly tell the new chat:
-
-- do not defend the current UI merely because it matches a worker report;
-- treat the user's browser observation as authoritative acceptance input;
-- distinguish a technically present feature from a good/consistent implementation;
-- use `ui-skills.md` when evaluating consistency;
-- collect screenshots/text feedback if provided;
-- do not repeatedly build while feedback is still being gathered;
-- do not call the candidate final before the user accepts it.
-
-## 6. What not to put in the follow-up prompt
-
-Avoid:
-
-- generic project history that does not affect the next action;
-- huge CI/test logs;
-- every commit ever made;
-- stale issue descriptions superseded by current browser feedback;
-- secrets/credentials/private data;
-- invented server topology;
-- vague instructions such as “continue where we left off” without exact state.
-
-## 7. Final delivery format
-
-When the user asks for a follow-up prompt, normally deliver:
-
-1. a short statement of any docs/state updates completed first;
-2. a local `git pull --ff-only` command only when the next chat/user actually needs the local checkout; do not make that command a prerequisite for repository-only work;
-3. the **entire follow-up prompt as one contiguous fenced code block**.
-
-When the user requests two distinct chats, deliver **two separate, complete
-one-block prompts**, each self-contained and individually copyable. Neither
-prompt may rely on the reader having seen the other prompt or the original
-conversation. Explicitly identify which scope each chat owns.
-
-The prompt should start with the mission and portable repository identity, then state how to continue if the local checkout is unavailable. Do not front-load local path assumptions before the next chat has had a chance to use its repository connector.
-
-Do not split the prompt into multiple code blocks that the user has to assemble.
-
-## 8. Reusable request shorthand
-
-If the user later says something like:
-
-> Mach mir einen Folgeprompt nach `followup-skill.md`.
-
-interpret that as a request to:
-
-- inspect the current exact state;
-- update durable docs when this chat learned reusable rules;
-- capture transient Git/runtime/browser/worker state in the prompt;
-- include known dirt and next actions;
-- make the next chat operationally self-sufficient;
-- provide one copyable continuation block.
+Keep the prompt concise enough for a new chat to act immediately, and include enough exact paths, constraints and user decisions to avoid re-asking settled questions. Do not include massive command histories, unrelated issue archives, old SHA chronologies, abandoned worktrees, obsolete testing-branch workflows, fabricated test evidence or full CI logs. Do not block a source-only task merely because the user's local Preview isn't accessible from a connected agent.
