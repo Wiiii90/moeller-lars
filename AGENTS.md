@@ -33,7 +33,7 @@ The admin dialog behavior accepted in browser review on 2026-10-11 is a
   version guard and patch, rather than silently removing this behavior.
 - **Acceptance:** Keep the long/short/nested lifecycle tests in
   `tests/js/filament-scroll-lock-patch.test.mjs` and the real browser checks in
-  `tests/browser/admin-dialog-regression.spec.mjs`. A passing source-level test
+  `tests/browser/e2e/admin/dialog-scroll-lock.spec.mjs`. A passing source-level test
   does **not** imply browser acceptance. Retain the last accepted behavior unless
   the user explicitly changes this contract.
 
@@ -139,11 +139,9 @@ Use the current artist-facing concepts:
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
 
-## Direct-`dev` collaboration (2026-10-12)
+## Direct-`dev` collaboration
 
-The previously parallel public-facing chat has ended. The current continuation
-owns the full repository across admin, public and shared Domain code, subject
-to the user's requested scope and the same direct-`dev` constraints.
+Current implementation is direct on `dev` across public, admin and shared Domain code. Multiple chats can operate on disjoint scopes but must reconcile concurrent commits and shared contracts.
 If multiple chats resume concurrently, each must establish explicit file
 ownership and reconcile shared changes. Never assume the branch remained
 unchanged between work sessions.
@@ -175,15 +173,11 @@ Hard restrictions for all direct-`dev` work:
 - No symptom hacks or parallel UI/persistence/notification systems. Follow
   the root-cause stop rule above; do not weaken tests to force passing results.
 
-`dev` remains the working integration branch; `main` remains protected. The
-older orchestration/worker/PR/CI procedures elsewhere in this document are
-historical or optional **future** modes, not permission to override this direct
-`dev`/no-CI instruction. Change execution modes only on explicit user request.
+`dev` is the normal development branch and `main` is protected. Running CI and promoting a release require separate user authorization; source edits to CI configuration do not authorize runs.
 
 ## Current orchestration model
 
-For this accepted direct browser-repair cycle, both chats act as scoped
-Audit + Implementation + Diff-Review sessions without delegated worker branches.
+Direct development uses scoped Audit + Implementation + Diff-Review sessions without delegated worker branches.
 Admin and public are parallel tasks, **not parallel implementations of a
 feature**. Reuse the existing Domain/persistence services and shared media,
 publication, routing and Rich Text contracts. A public-only change must not
@@ -195,22 +189,9 @@ When an actual release to `main` is later requested, follow the protected
 promotion contract in `docs/RELEASE.md` under a **new, explicit authorization**.
 Until then there is no branch choreography, CI handoff or deployment step.
 
-## Orchestrator and worker roles
+## Source responsibility
 
-A General-/Orchestration-/Browser-Review chat is primarily the **State Keeper, Scope Designer, Worker-Prompt Author, Diff Reviewer and Reconciliation-/Browser-Review Orchestrator**.
-
-Keep the orchestrator context focused on:
-
-- exact branches and SHAs;
-- confirmed findings and root causes;
-- user/product decisions;
-- worker handoffs and their review status;
-- reconciliation state;
-- runtime/browser acceptance state.
-
-Do not use the orchestrator as the default implementation worker for large source passes when a worker is intended for that scope. In particular, avoid loading large series of source files/diffs into the general chat and then producing many implementation commits there. Larger source work belongs in dedicated worker chats so implementation detail and diff volume do not consume the orchestration context.
-
-This is scope/context discipline, not a ban on direct changes. The orchestrator may implement when the user explicitly asks it to, or when the change is very small, clearly bounded and cheaper to perform directly than to hand off.
+The user may authorize the current chat to inspect and implement directly on dev. Scope changes to confirmed causes and current contracts; independently review the net diff. Read-only audits must not silently become implementations. A separate coding chat follows the same direct-dev rules and reconciles HEAD before any write; historical worker branches are not a current workflow.
 
 ## Routine source-inspection and remote I/O discipline
 
@@ -236,50 +217,19 @@ Do not repeatedly fetch the same file/blob/commit in one workflow when the resul
 
 If a routine fix unexpectedly appears to require a broad repository audit, large vendor/generated reads, repeated remote retries or many unrelated source files, stop and report that scope expansion before spending the time. The default is fast, local, targeted inspection — not exhaustive remote archaeology.
 
-### Audit worker
+### Scope boundary
 
-An **audit worker** is read-only.
-
-It must:
-
-- change no code;
-- identify concrete deviations from the requested/current contract;
-- provide source evidence, root cause and the affected files/components/selectors/structures;
-- report findings without repairing them “while already there”.
-
-### Implementation worker
-
-An **implementation worker** receives confirmed findings and implements only the explicitly described scope.
-
-It must not reopen a general redesign/audit while implementing, nor treat neighboring code as permission for opportunistic cleanup. If audit and implementation are intentionally combined in one worker, the prompt must say so explicitly and still define the audit boundary, implementation boundary and stop conditions.
-
-### No scope expansion
-
-When any worker discovers another bug, UI drift, architecture issue or improvement outside the explicitly allowed scope:
-
-- do **not** repair it automatically;
-- record it under `Out-of-scope findings`;
-- touch it only when the requested change is technically impossible without resolving that point;
-- in that exceptional case, prefer stopping and reporting the blocker rather than inventing a broader scope.
-
-A worker must not interpret instructions such as “polish this” as permission to polish adjacent surfaces.
+Do not repair unrelated defects, adjacent layouts or unrequested architecture found during a narrow task. Report out-of-scope findings separately. Keep canonical Domain, Public and Admin owners singular.
 
 ## Browser-review loop
 
-Visual/admin work follows this order:
+1. Inspect the actual responsible source and establish current browser behavior/root cause.
+2. Implement only the agreed scope, reusing shared contracts and canonical owners.
+3. Review the diff and reconcile newer dev changes.
+4. Build one coherent local preview candidate; avoid redundant rebuilds.
+5. Review the integrated candidate in the browser; distinguish runtime evidence from user acceptance. Validation requires separate authorization.
 
-1. get a technically running combined candidate;
-2. review it in the browser;
-3. collect the user's complete findings for the current review slice before launching a repair worker;
-4. classify findings into functional bugs, interaction defects, layout/style inconsistencies, performance, missing behavior and architecture/centralization mistakes;
-5. create a fresh narrowly scoped worker from an exact base;
-6. statically review the returned diff;
-7. reconcile accepted work;
-8. review the integrated dev candidate in one local browser cycle; Validation requires explicit authorization.
-
-Do **not** call a candidate final merely because it boots, migrations succeed or a 500 disappears. Browser/editorial acceptance is separate evidence.
-
-Do not rebuild after every comment or every worker. Prefer one combined build after all intended side diffs for that cycle are reconciled.
+A container boot, source check or disappearing HTTP 500 is not product acceptance.
 
 ## Browser acceptance authority
 
@@ -333,7 +283,7 @@ Unless a concrete risk requires more, browser-polish workers should not automati
 - CI waits;
 - Validation deployments.
 
-Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. CI verifies PRs to `dev` and `main`; `docs/RELEASE.md` owns the workflow details. Local Feature/Pest suites are forbidden against the persistent browser database. Source-string tests are scaffolding unless they protect a durable invariant.
+Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. CI workflow source may be prepared on `dev`, but CI runs and logs remain prohibited during direct development; `docs/RELEASE.md` owns separately authorized release qualification. Local Feature/Pest suites are forbidden against the persistent browser database. Source-string tests are scaffolding unless they protect a durable invariant.
 
 Tests added during browser work should encode durable product/domain behavior, not temporary orchestration states. Avoid durable test names tied to repair rounds, browser passes, branch choreography or candidate labels when a stable behavior-based name is available. Do not add a broad “acceptance” test merely to memorialize an intermediate browser candidate.
 
@@ -341,22 +291,7 @@ The user's repeated request to inspect a change quickly is not an invitation to 
 
 ## Git and remote verification
 
-Never trust a worker handoff text by itself. For every returned worker candidate:
-
-- verify the remote branch head;
-- verify the expected parent/base;
-- compare exact base→head;
-- inspect the actual changed files and critical implementation;
-- map every material prompt requirement to the actual base→head **net diff**;
-- inspect unexpected files, non-requested layout/domain changes, missing requirements, unnecessary parallel primitives and any scope expansion;
-- distinguish reported checks from checks actually evidenced;
-- reject unexpected scope before reconciliation.
-
-A worker handoff is a navigation aid, not proof of scope compliance. The orchestrator's review is requirement → diff, not merely “does this diff look plausible?”.
-
-When a side branch was intentionally created from an older shared base, review it against that base, then reconcile onto the newest combined head deliberately.
-
-Avoid force pushes during browser reconciliation. If an accidental bad commit is already public but a normal forward repair can restore the correct tree, prefer a repair commit and verify the **net tree diff** afterward.
+Before any dev write, establish HEAD; immediately before committing, re-check and reconcile newer changes. Inspect the actual net diff for unrelated files and broken shared contracts. Commit only against the latest HEAD and push with a normal expected-HEAD fast-forward lease. No force, resets, rebases, side branches or automatic promotion. Another chat's handoff is not proof: inspect its source changes and check evidence.
 
 ## PowerShell safety
 
@@ -526,12 +461,12 @@ Use native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) 
 
 ## Worker prompt delivery
 
-Whenever a worker, repair, or handoff prompt is emitted for copy/paste, the entire prompt must be inside exactly one contiguous fenced Markdown code block. Do not split it across multiple fenced blocks, use quote/indent formatting for the prompt, or place any part of the prompt outside that code block.
+Whenever an implementation, audit, repair, or handoff prompt is emitted for copy/paste, the entire prompt must be inside exactly one contiguous fenced Markdown code block. Do not split it across multiple fenced blocks, use quote/indent formatting for the prompt, or place any part of the prompt outside that code block.
 
 A worker prompt should state:
 
 - repository;
-- exact base SHA and branch strategy;
+- exact current dev HEAD and direct-dev update strategy;
 - exact allowed scope boundary;
 - explicit non-goals and forbidden neighboring areas;
 - confirmed browser findings and known root cause;
@@ -613,41 +548,6 @@ Preserve still-required compatibility and domain behavior. Audit references, cal
 
 Run authorized final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. In the current direct-`dev` mode **CI is prohibited**, including reads and dispatches; a later release qualification is a separate user-authorized workflow.
 
-## CI ownership and log handoff
+## CI and release authorization
 
-**Not applicable in the current direct-to-`dev` mode:** CI is fully forbidden, even read-only metadata/status access. This section documents optional future modes only after the user explicitly lifts that restriction.
-
-CI handling depends on branch ownership. The default assumption for `dev` is that it is shared by multiple chats/workers. Treat `dev` as exclusive only when the user explicitly says that one worker owns it for the current cycle.
-
-### Shared `dev`
-
-A worker on shared `dev` has exactly two normal choices:
-
-1. **Ignore CI for its scope.** Do not monitor, repair or comment on unrelated workflow failures.
-2. **Own only the exact canonical verification run caused by its own push.** Capture that run's concrete run ID immediately. Never substitute "latest dev run", a later run, or a run inferred from current branch state.
-
-When using exact-run ownership on shared `dev`:
-
-- compact workflow/run/job/step metadata may be read to identify the exact run and its status;
-- never call `fetch_workflow_job_logs`, download Actions logs, inspect full workflow logs, or ingest large CI reports directly into the chat;
-- once the worker has taken ownership of an exact run for the current task, stay attached to that run and keep checking it instead of handing `queued`, `pending` or `in_progress` back to the user;
-- only the literal conclusion `failure` is a red stop condition for CI troubleshooting. `queued`, `pending` and `in_progress` mean keep checking. `success` is not a stop condition: continue immediately to the next required workflow/release/Validation gate. `cancelled` is also not a completion condition: determine whether an equivalent owned run is already active or start a replacement exact run when verification is still required, then continue;
-- never end a task merely because the owned run became green or cancelled when downstream work is still required. A green verification run advances the workflow; it does not finish the user's broader task by itself;
-- when a literal `failure` occurs, stop the CI progression there and give the user a ready-to-paste PowerShell command with the concrete run ID already substituted to create the compact local `--log-failed` report. Never require the user to fill in a SHA, run ID or placeholder manually;
-- other non-success terminal conclusions must not be silently treated as `failure`; handle their actual semantics and continue the required workflow unless a real blocker exists;
-- after a red handoff, the user-provided compact report is the sole log source for that failure. Do not independently fetch the same Actions log again;
-- analyze only the failure blocks and final summary needed to repair the run. Do not read a multi-thousand-line raw report end-to-end;
-- before repairing a reported failure, re-check current `dev`. If a later worker already fixed the same root cause, do not duplicate the repair;
-- do not rerun the same SHA merely to obtain more logs. A new canonical CI run should normally follow only a source change that addresses the current failure, except for a proven infrastructure flake or explicit user request.
-
-A failure from another chat's run does not automatically become this chat's scope. Take it over only when the user explicitly hands it over or supplies its report for this chat to repair.
-
-Do not add a repository helper script solely for this chat handoff unless the user explicitly asks for one. The run-specific command is generated by the agent because the agent already knows the run ID.
-
-### Exclusive feature/fix branch
-
-A worker that alone owns a named feature/fix/chore branch may operate that branch's CI end to end, including normal log inspection and iterative repair, because another worker is not concurrently changing the same integration state. Keep those logs scoped to that branch and do not treat unrelated `dev` failures as branch failures.
-
-### Explicitly exclusive `dev`
-
-If the user explicitly appoints one worker as the sole `dev` worker for a cycle, that worker may operate `dev` CI end to end like an exclusive branch. Exclusivity must be stated; never infer it merely because no other push is visible at the moment.
+Direct-dev agents must not run, dispatch, inspect status/logs, monitor or troubleshoot GitHub Actions. The CI workflow files can be maintained as source when requested; the user separately authorizes any qualification run or promotion to main. The current PHP test structure is Unit, Integration, Feature and Migration, plus JS and browser suites. The special concurrent PostgreSQL runners have their own isolated execution contract. See `tests/README.md`, `docs/TESTING.md` and `docs/RELEASE.md`.
