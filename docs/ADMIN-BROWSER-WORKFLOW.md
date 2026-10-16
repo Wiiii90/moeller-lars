@@ -2,48 +2,11 @@
 
 This document records the durable working rules that emerged from the current admin browser-reconciliation work. It complements `AGENTS.md` and `ui-skills.md`; it does not replace either one.
 
-## Collaboration modes
+## Direct-dev browser collaboration
 
-The project supports two intentional ways of working during browser reconciliation.
+All normal source work occurs on `dev`, including work by separate scoped coding chats. Start from the exact current HEAD and inspect the confirmed browser symptom and responsible source. Fix the canonical owner rather than applying page-local patches; protect accepted adjacent pages. Reconcile concurrent `dev` advances before writing. Build once for a coherent set of changes and repeat browser review; do not infer acceptance from source review or a healthy container.
 
-### Direct interactive dev mode
-
-Use this only when the user explicitly authorizes the main chat to work directly on `dev`.
-
-In this mode the main chat may inspect, implement, commit and push small browser fixes itself. The point is to preserve context between the browser observation, the source diagnosis and the repair instead of translating each small defect through another prompt.
-
-Rules:
-
-- begin from the exact current `dev` head;
-- work from one concrete browser symptom inward;
-- inspect only the directly responsible source plus one narrow search when ownership is unclear;
-- do not stack speculative patches after a failed browser result;
-- if a first repair does not change the rebuilt browser result, identify the actual element/selector/source owner before editing again;
-- when the defect is shared, repair the shared authority instead of compensating individual pages;
-- keep neighboring accepted surfaces unchanged unless the user includes them in scope;
-- build once after a coherent fix set and return to browser review;
-- if another worker or chat advances `dev`, re-read the exact head before the next write.
-
-Direct work is not permission for a broad repository audit. A change that expands beyond the confirmed symptom should be reported before scope grows.
-
-### Worker orchestration mode
-
-Use workers for large independent source passes, parallel scopes or work whose implementation detail would consume the main review context.
-
-Worker prompts must not translate concrete browser feedback into vague design language. Every implementation prompt should carry:
-
-- the exact base SHA;
-- the exact browser symptom or confirmed defect;
-- the known source owner/root cause when established;
-- the target state in concrete structural terms;
-- neighboring surfaces that must remain unchanged;
-- shared primitives/tokens/technologies that must be reused;
-- explicit non-goals and stop conditions;
-- the checks and handoff evidence required.
-
-If the target structure is not yet known, use a bounded audit worker first. Do not ask an implementation worker to “polish”, “make consistent”, “clean up” or “use best judgment” as a substitute for a defined target.
-
-Parallel workers should not own the same shared CSS/theme files unless there is an explicit reconciliation plan.
+There is no active side-branch/worktree worker-orchestration mode, and no CI/Actions involvement during direct development. A separate coding session follows the same `dev` ownership and concurrency rules. Validation/release requires explicit authorization.
 
 ## Source of truth during browser repair
 
@@ -55,7 +18,7 @@ Use this order:
 4. unfinished issue scope;
 5. historical implementation discussion only when current source is ambiguous.
 
-A source-level hypothesis is not browser acceptance. A running container is not browser acceptance. A worker report is not browser acceptance.
+A source-level hypothesis, running container or implementation handoff is not browser acceptance.
 
 ## Shared Visual Stage contract
 
@@ -147,8 +110,4 @@ not claim either.
 
 ## Handoff rule
 
-A continuation prompt must state which collaboration mode is active: direct interactive dev, worker orchestration or mixed.
-
-Do not automatically convert a successful direct browser-repair session into a worker-only workflow. Likewise, when workers are active, preserve their exact base/head/review state rather than collapsing them into a vague summary.
-
-The handoff must include the exact current `dev` SHA, current local preview status if known, the last browser-accepted state, source changes not yet browser-reviewed, known incidents that can explain confusing history, and the next concrete review action.
+A continuation records exact current `dev` SHA, local preview status if verified, current browser/product acceptance, changes not yet browser-reviewed, parallel chats' file ownership, and the next concrete action. The current workflow is direct `dev`, no CI or release; do not reintroduce obsolete branch-worker procedures.
