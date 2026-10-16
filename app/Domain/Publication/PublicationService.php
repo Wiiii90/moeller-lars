@@ -15,6 +15,7 @@ final class PublicationService
         private readonly PublicationMediaCleanupService $mediaCleanup,
         private readonly PublicationSchemaGuard $schemaGuard,
         private readonly PublicationVersionService $versions,
+        private readonly MediaRightsPublicationSelections $rightsSelections,
     ) {}
 
     public function hasPendingChanges(): bool
@@ -220,6 +221,9 @@ final class PublicationService
                 is_string($operation) ? $operation : 'commit',
                 $source,
             );
+            // Same publication transaction and lock: immutable media choices
+            // follow exactly the committed snapshot without changing its hash.
+            $this->rightsSelections->captureCheckpoint($checkpoint);
 
             if ($stagedAuditEventIds !== []) {
                 $createdAt = now();

@@ -15,6 +15,7 @@ final class PublicationVersionService
         private readonly AdminAuditService $audit,
         private readonly PublicationMediaCleanupService $mediaCleanup,
         private readonly PublicationSchemaGuard $schemaGuard,
+        private readonly MediaRightsPublicationSelections $rightsSelections,
     ) {}
 
     public function capture(
@@ -82,6 +83,7 @@ final class PublicationVersionService
 
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromCheckpoint($checkpoint);
+            $this->rightsSelections->restoreWorking($checkpoint);
             $this->setWorkingContext('restore', (int) $checkpoint->getKey());
             $this->audit->record(
                 $actor,
@@ -105,6 +107,7 @@ final class PublicationVersionService
             $this->schemaGuard->assertParity();
             $changed = $this->pendingCount();
             if ($changed < 1) {
+                $this->rightsSelections->restoreWorking($this->currentLiveCheckpoint());
                 $this->clearWorkingContext();
 
                 return 0;
@@ -112,6 +115,7 @@ final class PublicationVersionService
 
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromSchema('committed');
+            $this->rightsSelections->restoreWorking($this->currentLiveCheckpoint());
             $this->clearWorkingContext();
 
             $live = $this->currentLiveCheckpoint();
@@ -153,6 +157,7 @@ final class PublicationVersionService
 
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromCheckpoint($parent);
+            $this->rightsSelections->restoreWorking($parent);
             $this->setWorkingContext('revert', (int) $live->getKey());
             $this->audit->record(
                 $actor,
