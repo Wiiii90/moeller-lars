@@ -48,7 +48,7 @@ jobs:
         with:
           php-version: '8.3'
           extensions: gd, intl, mbstring, pdo_pgsql, zip
-          coverage: none
+          coverage: pcov
 
       - uses: actions/setup-node@v7
         with:
@@ -99,6 +99,14 @@ jobs:
 
       - name: Run JavaScript tests
         run: npm run test:js
+
+      # An actual, measured baseline for release qualification; no arbitrary
+      # minimum percentage. Specialized isolated concurrency runners are separate.
+      - name: Measure PHP line coverage for release qualification
+        if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main')
+        run: |
+          vendor/bin/pest --coverage --only-summary-for-coverage-text --coverage-clover=coverage.xml
+          php -r '$report = simplexml_load_file("coverage.xml"); if (!$report || !isset($report->project->metrics)) { fwrite(STDERR, "Missing Clover project metrics\n"); exit(1); } $metrics = $report->project->metrics; $total = (int) $metrics["statements"]; $covered = (int) $metrics["coveredstatements"]; if ($total < 1) { fwrite(STDERR, "No coverable statements in report\n"); exit(1); } $summary = sprintf("PHP app/ line coverage: %.2f%% (%d/%d executable statements; standard PHP suites, specialized concurrency runners excluded)", $covered * 100 / $total, $covered, $total); echo $summary, PHP_EOL; file_put_contents(getenv("GITHUB_STEP_SUMMARY"), "\n### PHP coverage\n\n".$summary."\n", FILE_APPEND);'
 
   release-image:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
