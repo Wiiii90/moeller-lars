@@ -664,6 +664,10 @@ final class ListMediaAssets extends Page
                     ->orWhere('alt_text', 'ilike', '%'.$term.'%')
                     ->orWhere('credit', 'ilike', '%'.$term.'%')
                     ->orWhere('copyright_notice', 'ilike', '%'.$term.'%')
+                    ->orWhere('file_creator', 'ilike', '%'.$term.'%')
+                    ->orWhere('file_rights_holder', 'ilike', '%'.$term.'%')
+                    ->orWhere('rights_usage_terms', 'ilike', '%'.$term.'%')
+                    ->orWhere('license_inquiry_url', 'ilike', '%'.$term.'%')
                     ->orWhere('mime_type', 'ilike', '%'.$term.'%');
             });
         }
@@ -1184,6 +1188,10 @@ final class ListMediaAssets extends Page
                 'credit' => (string) ($asset->getAttribute('credit') ?? ''),
                 'copyright_notice' => (string) ($asset->effectiveCopyrightNotice() ?? ''),
                 'copyright_source' => $asset->copyrightNoticeSourceLabel(),
+                'file_creator' => (string) ($asset->getAttribute('file_creator') ?? ''),
+                'file_rights_holder' => (string) ($asset->getAttribute('file_rights_holder') ?? ''),
+                'rights_usage_terms' => (string) ($asset->getAttribute('rights_usage_terms') ?? ''),
+                'license_inquiry_url' => (string) ($asset->getAttribute('license_inquiry_url') ?? ''),
                 'dimensions' => $asset->getAttribute('width') && $asset->getAttribute('height')
                     ? $asset->getAttribute('width').'×'.$asset->getAttribute('height')
                     : '—',

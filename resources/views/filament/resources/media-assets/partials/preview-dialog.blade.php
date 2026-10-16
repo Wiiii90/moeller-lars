@@ -67,6 +67,12 @@
                 <div><dt>Credit</dt><dd>{{ $asset['credit'] !== '' ? $asset['credit'] : '—' }}</dd></div>
                 <div><dt>Copyright</dt><dd>{{ $asset['copyright_notice'] !== '' ? $asset['copyright_notice'] : '—' }}</dd></div>
                 <div><dt>Copyright source</dt><dd>{{ $asset['copyright_source'] }}</dd></div>
+                @if ($asset['kind'] === 'image')
+                    <div><dt>Photographer / file creator</dt><dd>{{ $asset['file_creator'] !== '' ? $asset['file_creator'] : '—' }}</dd></div>
+                    <div><dt>Photo rights holder</dt><dd>{{ $asset['file_rights_holder'] !== '' ? $asset['file_rights_holder'] : '—' }}</dd></div>
+                    <div><dt>Specific usage terms</dt><dd>{{ $asset['rights_usage_terms'] !== '' ? $asset['rights_usage_terms'] : '—' }}</dd></div>
+                    <div><dt>License / rights inquiry URL</dt><dd>{{ $asset['license_inquiry_url'] !== '' ? $asset['license_inquiry_url'] : '—' }}</dd></div>
+                @endif
             </dl>
         </section>
     </div>
