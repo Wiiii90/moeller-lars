@@ -1,63 +1,37 @@
-# TESTING_SKILL.md — lebender Testing-Handoff
+# TESTING_SKILL.md — current testing contract
 
-Stand 2026-10-17. Repository: `Wiiii90/moeller-lars`. **Aktueller Arbeitsstand, kein chronologisches Protokoll.** Änderungen ersetzen veraltete Angaben; Git enthält die Historie.
+Repository: `Wiiii90/moeller-lars`. **All ordinary source work is directly on `dev`.** The former dedicated `testing` worktree, testing-to-dev merges, historical HEAD handoffs and duplicate test-suite documentation are retired. Current usage is defined by `tests/README.md` and `docs/TESTING.md`.
 
-## Arbeitsort, Git, Zuständigkeit
+## Scope and execution
 
-- **Ausschließlich `testing` beschreiben** im Worktree `P:\moeller-lars\.worktrees\testing`. Working Directory, Branch und Status vor Befehlen prüfen. Der Agent-Standardpfad kann auf das Stammverzeichnis zeigen.
-- `P:\moeller-lars` gehört den unabhängigen `dev`-Workern. Dort weder Branch wechseln noch ändern, testen, bauen oder Abhängigkeiten installieren. Separaten dev-Stash niemals anwenden/löschen. Keine zusätzlichen Branches/Worktrees. Gemeinsames Git-Verzeichnis mit `git rev-parse --git-common-dir` finden. `/.worktrees/` ist lokal ignoriert; Docker und Vite schließen diesen Ordner inzwischen ebenfalls aus.
-- Vor Schreibvorgängen Live-HEADs `origin/testing` und `origin/dev` prüfen und überlappende Änderungen abgleichen. **Dev nur auf gesonderten Auftrag** als echten Zwei-Eltern-Merge von `origin/dev` nach testing übernehmen; nicht vom lokalen dev-Checkout. Neuere dev-Funktionen und bereits geprüfte Testing-Fixes erhalten; konfliktbetroffene Regressionen ausführen.
-- Nach abgeschlossener erfolgreicher Testrunde `TESTING_SKILL.md` im selben Commit aktualisieren, normal zu `origin/testing` pushen und beide HEADs abgleichen. Bei Divergenz stoppen; kein Force-Push, Reset, Rebase, unbeauftragter Merge oder Rücktransfer zu dev. Promotion nach dev braucht Benutzerfreigabe.
-- Kein CI/Actions/Workflow, Deployment, Server, Release oder Preview-System anfassen. `dev`, `docs`, `main` nicht beschreiben. Vor Aufgaben die relevanten Teile von `AGENTS.md`, `ui-skills.md`, `tests/README.md` und die tatsächlichen Produktions-Owner lesen. Allgemeine Dokumentation gehört zum Docs-Workstream.
+- Read the actual `dev` HEAD, `AGENTS.md`, responsible source and relevant tests. Recheck HEAD before writes, reconcile other chats' changes, use normal fast-forward updates, never force/reset/rebase shared history. No new branches/worktrees.
+- In direct-`dev` mode, **no CI/Actions interaction**, including status/log reads, dispatch, monitoring and retries. Editing workflow source on `dev` is permitted when requested; running CI, releases, Server, Validation or Production is separate user authorization.
+- Report `SOURCE-REVIEWED`, `TEST-RUN`, `BROWSER-VERIFIED` and `USER-ACCEPTED` distinctly. Old suite results never certify subsequent production changes.
 
-## Obligatorische DB- und Dateisicherheit
+## Single test structure
 
-- DB-Feature-/Integration-/Migrationstests **ausschließlich** in einem eigenen frischen PostgreSQL-17-Container mit `tmpfs`-Daten, eindeutiger DB/User und zufälligem `127.0.0.1`-Port, **ohne** persistente Volumes/Bind-Mounts. Docker-Konfiguration, anfangs leeres Schema und SQL-Serveridentität unabhängig positiv verifizieren.
-- **Vor jedem Testprozess** Laravel mit den tatsächlichen `phpunit.xml`-Overrides booten. Effektive Laravel/PDO-Verbindung (Host/Port/DB/User/Serveridentität) gegen Container prüfen; `DB_URL=null`, keine übernommene `.env`, kein Config-Cache. Laravel Storage/Medien (privat/öffentlich), Session/View/Package/Service-Caches und PHP-Sys-/Upload-Temp müssen eigene temporäre Ziele haben und positiv geprüft sein.
-- **Erst nach positivem Nachweis** im isolierten Prozess `GITHUB_ACTIONS=true` und `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` aktivieren; `LocalPreviewDatabaseGuard` unverändert lassen, niemals Persistent-Preview-Flag aktivieren. Exitcode 0 ist kein Isolation-Nachweis.
-- Die persistente Compose-Datenbank `moeller_lars_testing` und das Volume `moeller-lars_postgres_data` niemals als Testziel nutzen. Lokalen History-Reset und destruktive Befehle nur mit geprüfter Wegwerf-DB **und** isoliertem Dateisystem ausführen. Ausschließlich selbst erzeugte Container/Verzeichnisse entfernen.
-- Keine Workarounds, parallelen Owner oder Fake-Green-Assertions. Tests prüfen fachlich beobachtbares Verhalten statt Quelltext, CSS-Klassen, Zahlenbudgets oder zufällige Fixturewerte. Fehlerhafte Fixtures korrigieren, echte Produktionsfehler kanonisch beheben. `Working`-Redaktion von `Committed`-Öffentlichkeit trennen.
-- Invarianten: Admin-Panel-Autorisierung auch bei bereits gemounteten Anfragen/Rechteentzug; gelockte originale Editor-Snapshots; atomare Mutationen, Undo und Rollback/Retry; append-only Audit; **eine persistierte und eine unmittelbare Erfolgsmeldung je realer Aktion**, auch bei mehreren Audits; No-op/Fehler ohne neue Audits/Erfolgsmeldungen. Inbox-eigene Mutationen melden sich nicht selbst.
-- Tests vorzugsweise als ganze fachliche Suite ausführen, Einzeldateien nur bei Fehlschlägen. Keine mechanische Wiederholung unveränderter Großsuiten. Evidenz ausdrücklich `SOURCE-REVIEWED`, `TEST-AUTHORED`, `TEST-RUN` oder `BROWSER-VERIFIED` nennen; Teilmengen nie als vollständige Repository-/Browserabnahme ausgeben.
+- Pest: `Unit`, `Integration`, `Feature` (Admin/Public) and `Migration`, owned by `tests/Pest.php` and `phpunit.xml`.
+- Node: `npm run test:js`.
+- Chromium: `npm run test:browser:component`, `test:browser:e2e`, `test:browser:profile`, together via `npm run test:browser`.
+- Dedicated multi-process PostgreSQL concurrency: `tests/Support/RunPublicationConcurrency.ps1` and `tests/Support/RunPublicSessionConcurrency.ps1`, invoked from the `dev` checkout in a suitable Windows environment. These are *not* part of ordinary Pest/CI suites.
+- Static checks: `composer analyse` and `composer lint`; PHP line coverage requires PCOV/Xdebug. There is **no Architecture suite**.
 
-## Abgeschlossene gemeinsame Integration
+## Mandatory isolation
 
-Integration aus dev `78c82627` und Testing `1e1dfa6b` abgeschlossen und freigegeben nach dev zurückgeführt. Die Matrix belegt diesen damaligen Gesamtstand.
+Database, seeded browser and destructive test commands **only** in a freshly created, independently verified disposable PostgreSQL 17 instance: unique database/user/loopback port, tmpfs storage, no persistent mounts, initially empty schema. Verify the actual SQL/PDO database/user/version/cluster identity, not only Docker names or CI flags.
 
-### Gezielte dev-Korrektur — 3/3 Tests, 125 Assertions
+Before each PHP/HTTP worker enables disposable test flags or resets a database, verify its actual PHPUnit/Laravel environment: `DB_URL` cleared, no inherited config cache, exact APP_ENV/connection, and separate writable private/public media, sessions, caches, compiled views, other framework caches, PHP system/upload temp and logs. `LocalPreviewDatabaseGuard` must remain fail-closed.
 
-Public-Session-Race: paralleles HTTP mit gleicher DB-Session und X-Livewire-Navigate, vorher 200/500 (40001), danach 200/200. StartSession vor Committed-Read, Bindings danach. Session-SQL: Level 0/READ COMMITTED; Rendering/Medienbindung: Level 1/REPEATABLE READ. PG17/tmpfs und Dateipfade isoliert. Runner: `tests/Support/RunPublicSessionConcurrency.ps1 --compact`; keine Browserabnahme.
+The persistent Compose database `moeller_lars_testing` and volume `moeller-lars_postgres_data` are **never** test targets. Do not use `migrate:fresh`/`reset`/`db:wipe` on them. Preserve the user's Preview data, stashes, all unknown files and Production/Validation data. Remove only uniquely owned test resources after containment/reparse validation. An exit code of zero does not prove isolation.
 
-### Gesamtregression — tatsächlich ausgeführt
+## Regression quality
 
-| Gruppe | Bestanden | Assertions |
-| --- | ---: | ---: |
-| PHP Unit | 27 | 69 |
-| PHP Integration ohne separate Concurrency | 131 | 848 |
-| PHP Feature | 461 | 3954 |
-| PHP Migration | 7 | 19 |
-| Explizite PostgreSQL-Concurrency | 10 | 508 |
-| JavaScript | 62 | keine separate Summe |
-| Chromium-Komponenten | 15 | von Playwright nicht gezählt |
-| Chromium E2E | 26 | von Playwright nicht gezählt |
-| Chromium Profiling | 1 | von Playwright nicht gezählt |
+Protect persisted behavior, visibility in Working vs Committed, authorization after role changes, source media and checksum integrity, atomic audit/Undo/rollback semantics, exactly-one notification per real admin mutation, no-op/error feedback, route/media authorization, real HTTP and correct Session lifecycle. Tests should fail for broken behavior, not changed source spelling or UI repair-era CSS. Do not weaken assertions, silently skip fixtures or create duplicate incident test systems.
 
-**740 unterschiedliche Tests bestanden; endgültige Läufe: 0 Fehler/Skips. PHP: 636 Tests / 5398 Assertions.** Die 626 regulären PHP-Fälle liefen gemeinsam; Concurrency separat. B2 mit tatsächlichem ExifTool-13.55-Schreiben/Readback (6 Tests / 75 Assertions) ist in Integration enthalten.
+Use only targeted tests relevant to changes; avoid repeating a 700+-test suite without a reason. The normal Pest sessions are in-memory, so **Public Session races require** their separate HTTP/database-session runner. Publication concurrency uses genuine PostgreSQL blocking in its own runner.
 
-### Isolation, Build und fachliche Entscheidungen
+## Coverage and release boundary
 
-- Eigene PG17.11/tmpfs-Container mit DB/User, zufälligem Loopback-Port und ohne persistente DB-Mounts; anfänglich leere Schemas und Clusteridentität unabhängig geprüft. CLI-/HTTP-Laravel/PDO/PHPUnit und Dateiziele positiv verifiziert. PHP und Browser mit getrennten DBs, Storage/Medien, Cache/Session/Views, Framework-Caches und PHP-Temp. Eigene leere `.env.testing` nur in Runtime, `DB_URL` leer, kein Config-Cache, Guard unverändert. PHP nutzt PHPUnit-Array-Treiber, Browser eigene Dateitreiber. Eigene Testressourcen entfernt; unbekannte Storage-Dateien erhalten.
-- Vite-Produktionsbuild mit 177 Natural-Earth-Features erfolgreich; Composer-Konfiguration/Plattformanforderungen und optimiertes Autoloading ohne Scripts/Plugins erfolgreich (10137 Klassen); Syntaxprüfung 489 PHP-Dateien. Eigene PHP-8.3.35/GD-/ExifTool-13.55-/Apache-X-Sendfile-Runtime aus bestehendem Dockerfile. Testing-Frontendmanifest und alle 49 geänderten Produktionsdateien per SHA dem validierten Snapshot zugeordnet. Kein Deployment/vollständiger Release-Build.
-- Zwei Konflikte fachlich gelöst: neue atomare General-Social-Kaskade mit optimistischem Editor-Schutz verbunden; Contact-Test in bestehender Pages-Struktur zusammengeführt. Löschung kaskadiert durch Custom Pages/beide Home-Templates, versteckte konfigurierte Profile bleiben zulässig. Dev-Validierungen und explizite Instagram-Leerlistenregel erhalten. Drei Audits einer General-Aktion liefern eine Notification/ein Header-Ereignis.
-- Produktions-Netto-Diff geprüft: Autorisierung gemounteter Anfragen, originale Editor-Snapshots, Filament-Formfehler/Projektionen, atomare Home-/Pages-/Journal-Mutationen, JSONB-No-ops, Reihenfolgen, Medienlöschung/Retry und einmaliges Feedback erhalten. Undo verwendet bestehende Publikationssperre vor Receipt/Datensperren; Revert liest LIVE/Parent und Restore aktuelle Snapshot-Verfügbarkeit unter dieser Sperre.
-- **Zusätzlicher Reclaim-Integritätsfehler korrigiert:** Audit-Rollback stellte Snapshot-Verfügbarkeit wieder her, obwohl Originalbytes gelöscht waren. Jetzt erst atomare Root-Freigabe/Audit, anschließend bestehende physische Queue-Bereinigung. Byte/SHA- und echte konkurrierende Rollback-Regression erfolgreich. Keine neue Trash-/Lock-/Cleanup-Infrastruktur; nie committed Medien behalten direkte Löschsemantik ohne Undo-Beleg.
-- Bestehende Teststruktur konsolidiert; keine historischen SitePages-/Architecture-Duplikate restauriert. Redundantes RefreshDatabase/verwaister Import entfernt. Geschützte Dialog-Lock-Logiktests und Dashboard-Autosave-/Schließanimationsnachweise erhalten; heutige zugängliche Button-/Switch-Namen, gemeinsamer Login-Helper, keine aufgeweichten Assertions. Concurrency als `integration`/`concurrency` gruppiert; explizit aus testing: `& tests/Support/RunPublicationConcurrency.ps1 --compact`. Ohne Wegwerf-Umgebung begründet nicht ausführbar, kein behaupteter Nachweis.
-- Strikte Public-CSP und kanonische SPA-/History-/Viewer-Owner erhalten; SecurityHeaders entsprechen neuem dev. Fail-closed Public-Livewire-4.4.0-Patch bei Composer `--no-scripts` explizit anwenden; Admin-Bundle unverändert. Filament-5.7.6-Scroll-Lock vor Asset-Publikation erhalten. Echte Original-/Thumbnail-Bytes, SHA/Decodierung, Working/Committed, Viewer und CSP/SPA/Back/Forward im Browser geprüft. B2 bleibt ohne öffentliche Auslieferungsintegration.
+`release.yml` covers current four PHP suites, build, dependency audit, PHPStan, Pint and JS. `browser-profile.yml` covers Chromium. A combined PHP `app/` line-coverage percentage is produced on an authorized PR to `main` and on `main` pushes; it excludes JS/browser and special concurrency runners. There is no verified percentage yet and no arbitrary threshold. The exact release procedure is `docs/RELEASE.md`; nothing in this file authorizes CI or promotion.
 
-### Grenzen
-
-Chromium/synthetische Fixtures sind keine Benutzerabnahme der Homepage oder vollständige Geräte-/Browsermatrix. Touch/Pinch/Video, weitere Lock-Interleavings, externer Datei-/Backupverlust und reale Mail-/Geocoder-/Analytics-Transporte offen; UI-Konkurrenzfeedback speziell für Undo geprüft. Rechtliche Texte, Matomo-Consent und B2-Auslieferungsintegration bleiben gesondert.
-
-## Pflegepflicht
-
-Nach jeder Runde: aktuelle Matrix und offene Risiken berichtigen, erledigte Punkte entfernen, nicht appendieren. **Keine** Container-IDs, langen Git-Commitlisten, Retry-Zeitlinien oder abgeschlossenen Bug-Narrative. Ziel: unter 10.000 Zeichen, Sicherheitsregeln erhalten. Nach sicherer Validierung Commit + normaler Push auf testing; HEADs prüfen und nur tatsächlich erreichte Ergebnisse berichten.
+Keep only active workflows and open risks here. Completed incident logs, old testing-branch orchestration, historical commit matrices and retired test suites belong in Git history, not a parallel living system.
