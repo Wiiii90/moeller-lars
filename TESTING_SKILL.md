@@ -1,6 +1,6 @@
 # TESTING_SKILL.md — lebender Testing-Handoff
 
-Stand 2026-10-16. Repository: `Wiiii90/moeller-lars`. **Aktueller Arbeitsstand, kein chronologisches Protokoll.** Änderungen ersetzen veraltete Angaben; Git enthält die Historie.
+Stand 2026-10-17. Repository: `Wiiii90/moeller-lars`. **Aktueller Arbeitsstand, kein chronologisches Protokoll.** Änderungen ersetzen veraltete Angaben; Git enthält die Historie.
 
 ## Arbeitsort, Git, Zuständigkeit
 
@@ -22,7 +22,11 @@ Stand 2026-10-16. Repository: `Wiiii90/moeller-lars`. **Aktueller Arbeitsstand, 
 
 ## Abgeschlossene gemeinsame Integration
 
-Remote-dev `78c82627d4eca8a9fe1e3a1dde3ff67bfd4aba69` mit Testing `1e1dfa6b192312bc38525940e02d210f12d742a0` als echter Zwei-Eltern-Merge integriert. **Der Benutzer hat für diesen Abschluss die geprüfte reguläre Fast-Forward-Rückführung nach `origin/dev` ausdrücklich freigegeben.** Keine allgemeine Freigabe weiterer Promotionen. Hauptcheckout/Stash unverändert lassen; Abschlusscommit mit `[skip ci]`, danach Remote-HEADs abgleichen.
+Integration aus dev `78c82627` und Testing `1e1dfa6b` abgeschlossen und freigegeben nach dev zurückgeführt. Die Matrix belegt diesen damaligen Gesamtstand.
+
+### Gezielte dev-Korrektur — 3/3 Tests, 125 Assertions
+
+Public-Session-Race: paralleles HTTP mit gleicher DB-Session und X-Livewire-Navigate, vorher 200/500 (40001), danach 200/200. StartSession vor Committed-Read, Bindings danach. Session-SQL: Level 0/READ COMMITTED; Rendering/Medienbindung: Level 1/REPEATABLE READ. PG17/tmpfs und Dateipfade isoliert. Runner: `tests/Support/RunPublicSessionConcurrency.ps1 --compact`; keine Browserabnahme.
 
 ### Gesamtregression — tatsächlich ausgeführt
 
@@ -52,9 +56,8 @@ Remote-dev `78c82627d4eca8a9fe1e3a1dde3ff67bfd4aba69` mit Testing `1e1dfa6b19231
 
 ### Grenzen
 
-Chromium/synthetische Fixtures sind keine Benutzerabnahme der Homepage oder vollständige Geräte-/Browsermatrix. Touch/Pinch/Video, weitere Lock-Interleavings, externer Datei-/Backupverlust und reale Mail-/Geocoder-/Analytics-Transporte offen; UI-Konkurrenzfeedback speziell für Undo geprüft. Unvorbereiteter Dashboard-Kaltstart unter paralleler Windows-Bind-Mount-Last: 15,6 s; Views regulär vorbereitet, Zeitlimits unverändert. Rechtliche Texte, Matomo-Consent und B2-Auslieferungsintegration bleiben gesondert. Hauptcheckout vor eigener Vorschau vom Benutzer kontrolliert aktualisieren; dieser Auftrag ändert ihn nicht.
+Chromium/synthetische Fixtures sind keine Benutzerabnahme der Homepage oder vollständige Geräte-/Browsermatrix. Touch/Pinch/Video, weitere Lock-Interleavings, externer Datei-/Backupverlust und reale Mail-/Geocoder-/Analytics-Transporte offen; UI-Konkurrenzfeedback speziell für Undo geprüft. Rechtliche Texte, Matomo-Consent und B2-Auslieferungsintegration bleiben gesondert.
 
 ## Pflegepflicht
 
 Nach jeder Runde: aktuelle Matrix und offene Risiken berichtigen, erledigte Punkte entfernen, nicht appendieren. **Keine** Container-IDs, langen Git-Commitlisten, Retry-Zeitlinien oder abgeschlossenen Bug-Narrative. Ziel: unter 10.000 Zeichen, Sicherheitsregeln erhalten. Nach sicherer Validierung Commit + normaler Push auf testing; HEADs prüfen und nur tatsächlich erreichte Ergebnisse berichten.
-
