@@ -8,6 +8,7 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\AdminNotification;
+use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -43,6 +44,8 @@ it('deletes an unreferenced file through the Files delete action', function (): 
     $disk = Storage::disk(config('media.disk'));
     $disk->put($asset->storage_key, 'Original fixture');
     $disk->put($variant->storage_key, 'Variant fixture');
+    $receiptsBefore = AdminActionReceipt::query()->count();
+    expect(\Illuminate\Support\Facades\DB::table('committed.media_assets')->where('id', $asset->id)->exists())->toBeFalse();
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
 
@@ -65,6 +68,7 @@ it('deletes an unreferenced file through the Files delete action', function (): 
         ->assertNotDispatched('admin-header-notification');
 
     expect(AuditEvent::query()->count())->toBe($auditsBefore + 1)
+        ->and(AdminActionReceipt::query()->count())->toBe($receiptsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
         ->and(app(MediaAssetEditorialService::class)->delete($asset))->toBeFalse();
 });

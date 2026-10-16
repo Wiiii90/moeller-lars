@@ -186,6 +186,7 @@ it('retains failed physical cleanup for retry without reporting a successful no-
         ->mountAction('freeStorage')->callMountedAction()
         ->assertNotDispatched('admin-header-notification');
     expect($disk->exists($asset->storage_key))->toBeTrue()
+        ->and(hash_file('sha256', $disk->path($asset->storage_key)))->toBe($asset->sha256)
         ->and(DB::table('publication_media_cleanups')->where('media_asset_id', $asset->id)->count())->toBe(1)
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
