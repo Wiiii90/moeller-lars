@@ -85,12 +85,13 @@ must not unconditionally create UI messages.
    `AdminNotifier`; the audit context supplies presentation only, **not**
    dispatch. Verify the notifier reaches both mailbox and header event.
 3. Assert that a genuine change yields persisted data, expected audit and
-   the **correct number** of user messages: a simple single-Activity edit
-   normally yields one mailbox row and one immediate header event; an action
-   with multiple recorded Activity presentations may legitimately yield one
-   distinct message per consumed Activity. No-op and invalid state must not
-   create success. Check close/reopen, cross-field edits and duplicate source
-   IDs; database deduplication does not by itself deduplicate header delivery.
+   **one action-level Notification**: a single-Activity edit normally yields
+   one mailbox row and one immediate header event; one action containing
+   multiple Activity presentations yields **one** aggregated message with
+   all contributing `metadata.audit_event_ids`. No-op and invalid state
+   must not create success. Check close/reopen, cross-field edits and
+   duplicate source IDs; mailbox deduplication alone does not deduplicate
+   repeated header delivery.
 4. Test both the domain transition and the real Filament/Livewire event
    path, including dynamically shown/hidden fields and nested editors.
 5. If runtime tests or browser checks cannot be performed, mark them
@@ -127,25 +128,22 @@ Use the current artist-facing concepts:
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
 
-## Explicit long-lived branch exceptions (2026-10-13)
+## Documentation branch exception and unified dev tests
 
-The user expressly authorized two additional **permanent** branches: `docs`
-(documentation and architectural inventory) and `testing` (test-suite redesign).
-These are narrow exceptions to the normal direct-`dev` branch prohibition below,
-which remains in force for application/UI changes unless explicitly changed.
+`docs` remains the expressly authorized documentation/architecture workstream,
+not a place for runtime application changes. The former dedicated `testing`
+workstream has been merged into `dev` (integrated since `dev@25bc40144`);
+there is **one active test structure on `dev`**. Do not maintain two
+independent suites, testing worktrees or testing-to-dev handoffs.
 
-- `docs` belongs to the documentation workstream. Modify architecture inventory,
-  documentation, skills and strictly local documentation generators here; do not
-  use it for opportunistic changes to runtime application behavior.
-- `testing` belongs to its own separately coordinated workstream. The documentation
-  worker must not create, move, overwrite or commit to `testing`. Test references
-  may be inspected as evidence, never presented as successful test execution.
-- `dev` remains the application integration source. Regularly compare and **merge**
-  new `dev` commits into `docs` without rewriting either branch's history; inspect
-  changed files and resolve overlapping edits consciously. Never force push.
-- Neither `docs` nor `testing` is an invitation to create additional worktrees,
-  temporary branches or PR-based orchestration. Do not merge `docs` to `dev` or
-  `main` without a separate explicit integration decision.
+- On `docs`, read implementation **and active authored tests** from the current
+  `dev` SHA. Historic references to `testing@...` are historical evidence only,
+  never a claim of executed tests or a presently divergent branch.
+- Import coherent relevant changes from `dev` onto `docs` only with a real,
+  conflict-reviewed **two-parent merge** preserving both histories; do not
+  rewrite either branch or import each new commit by reflex.
+- Do not create additional branches/worktrees/PRs. Do not merge `docs` to
+  `dev` or `main` without a separate explicit authorization.
 - The existing prohibition on CI interaction remains absolute for this workstream.
   Source-only local checks are not CI, but never execute a checker that touches
   a persistent Preview/Production database or assumes a safe schema by filename.

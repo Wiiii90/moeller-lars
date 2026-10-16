@@ -86,15 +86,16 @@ The canonical verification job covers, in order:
 - Pest Unit tests;
 - Pest Integration tests;
 - Pest Feature tests;
-- Pest Architecture tests;
 - Pest Migration tests;
 - PHPStan/Larastan static analysis;
 - Pint formatting verification;
 - JavaScript tests through Node's built-in test runner.
 
+On authorized pull requests targeting `main` and pushes to `main`, combined PHP `app/` line coverage is measured with PCOV and reported as a percentage plus covered/coverable statements. There is no invented baseline or arbitrary threshold; this number excludes JS, Chromium and separate multi-process PostgreSQL/HTTP concurrency runs.
+
 All verification steps are blocking. PHPStan has no `continue-on-error` escape hatch, and the project does not use a broad PHPStan baseline or ignore set to hide application debt. Test warnings and static-analysis failures are repaired at their source rather than suppressed to obtain a green workflow.
 
-The Pest layers are intentionally separate CI steps so a failure is attributed to its owning layer. The job is fail-fast: if an earlier blocking step fails, later verification steps are skipped for that run and must be observed on the next green-through-that-point run.
+The **four current Pest layers** (Unit, Integration, Feature, Migration) are intentionally separate verification steps so failures are attributed to their owning layer. The job is fail-fast: if an earlier blocking step fails, later verification steps are skipped for that run and must be observed on the next green-through-that-point run.
 
 Commands used in disposable CI (not a recipe for the persistent local browser database):
 
@@ -102,7 +103,6 @@ Commands used in disposable CI (not a recipe for the persistent local browser da
 composer test:unit
 composer test:integration
 composer test:feature
-composer test:architecture
 composer test:migration
 composer analyse
 vendor/bin/pint --test

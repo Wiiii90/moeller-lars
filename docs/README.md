@@ -19,8 +19,8 @@ The [architecture completion report](architecture/completion-criteria.md#abnahme
 
 ## Documentation method
 
-- [Documentation skill](../.agents/skills/documentation/SKILL.md) — maintain architecture against `dev`, **read tests/fixtures on divergent `testing` without modifying or merging it**, classify authored-vs-executed verification and close finite documentation tasks before bundled `dev` imports.
-- [Test strategy and branch provenance](TESTING.md#branch-provenance-for-documenting-test-coverage) — compare test assertions on both `testing` and `dev`, pin their SHAs; [selected six-invariant source coverage audit](architecture/completion-criteria.md#testabdeckung-quellvergleich-testing-und-dev).
+- [Documentation skill](../.agents/skills/documentation/SKILL.md) — maintain versioned architecture against `dev`, including its **single active test structure**; distinguish authored assertions from executed verification and consolidate source evidence before safe bundled generator checks.
+- [Current test strategy](TESTING.md#layers-and-ownership) — four current Pest layers, Node JS, three Playwright projects and separate real-process PostgreSQL concurrency; [nine selected authored `dev` assertion families](architecture/completion-criteria.md#testabdeckung-eine-dev-testsuite-authored-assertions), **no claims of executed tests**.
 
 ## Living documentation work state
 
@@ -28,11 +28,11 @@ The [architecture completion report](architecture/completion-criteria.md#abnahme
 
 ## Branch ownership for documentation
 
-Two exceptional long-lived branches are authorized: `docs` for the documentation artifacts and local read-only generators, and `testing` for the independently managed test-refactor workstream. Ordinary implementation uses `dev`; `main` remains the release branch. Documentation work **reads all three branch HEADs** but writes **only `docs`**: coherent relevant `dev` changes are imported periodically as conflict-reviewed genuine two-parent merges; `testing` test-source evidence is **read-only and never merged**. This does not authorize new branches/worktrees or CI interaction. See [AGENTS.md](../AGENTS.md).
+The **`docs`** branch remains the explicitly authorized documentation-only exception to ordinary direct-`dev` work; `main` remains the release branch. The former `testing` workstream has been **integrated into `dev`** (`dev@25bc40144`), and there is **one active suite**, not two independently managed test branches. Read current `dev` source/tests, write **only `docs`**, and import coherent dev batches only with conflict-reviewed **genuine two-parent merges**. This does not authorize new branches/worktrees or CI interaction. See [AGENTS.md](../AGENTS.md).
 
 ## Normative ownership and conflict resolution
 
-Each behavior has **one normative owner**. `ARCHITECTURE.md` is the overview; `architecture/` contains versioned source evidence and test gaps, **not** replacement rules. An inspected `dev` implementation, authored `testing` assertion or old generator is not an accepted product change.
+Each behavior has **one normative owner**. `ARCHITECTURE.md` is the overview; `architecture/` contains versioned source evidence and test gaps, **not** replacement rules. An inspected `dev` implementation, authored `dev` test assertion or old generator is not an accepted product change; historically pinned `testing@...` links refer only to former source snapshots.
 
 | Responsibility | Contract owner | Scope boundary |
 | --- | --- | --- |
