@@ -40,6 +40,24 @@ use LogicException;
     'page_background_gradient_start',
     'page_background_gradient_end',
     'page_background_gradient_angle',
+    'background_gradient_stops',
+    'background_gradient_repeating',
+    'background_gradient_repeat_span',
+    'background_gradient_center_x',
+    'background_gradient_center_y',
+    'background_gradient_shape',
+    'menu_background_gradient_stops',
+    'menu_background_gradient_repeating',
+    'menu_background_gradient_repeat_span',
+    'menu_background_gradient_center_x',
+    'menu_background_gradient_center_y',
+    'menu_background_gradient_shape',
+    'page_background_gradient_stops',
+    'page_background_gradient_repeating',
+    'page_background_gradient_repeat_span',
+    'page_background_gradient_center_x',
+    'page_background_gradient_center_y',
+    'page_background_gradient_shape',
     'public_page_width',
     'public_content_padding',
     'navigation_nesting_enabled',
@@ -68,6 +86,21 @@ class PublicContentSetting extends Model
             'background_gradient_angle' => 'integer',
             'menu_background_gradient_angle' => 'integer',
             'page_background_gradient_angle' => 'integer',
+            'background_gradient_stops' => 'array',
+            'background_gradient_repeating' => 'boolean',
+            'background_gradient_repeat_span' => 'integer',
+            'background_gradient_center_x' => 'integer',
+            'background_gradient_center_y' => 'integer',
+            'menu_background_gradient_stops' => 'array',
+            'menu_background_gradient_repeating' => 'boolean',
+            'menu_background_gradient_repeat_span' => 'integer',
+            'menu_background_gradient_center_x' => 'integer',
+            'menu_background_gradient_center_y' => 'integer',
+            'page_background_gradient_stops' => 'array',
+            'page_background_gradient_repeating' => 'boolean',
+            'page_background_gradient_repeat_span' => 'integer',
+            'page_background_gradient_center_x' => 'integer',
+            'page_background_gradient_center_y' => 'integer',
             'public_page_width' => 'integer',
             'public_content_padding' => 'integer',
             'navigation_nesting_enabled' => 'boolean',
@@ -165,6 +198,17 @@ class PublicContentSetting extends Model
             }
             $angle = $surface.'_gradient_angle';
             $setting->setAttribute($angle, PublicAppearance::normalizeAngle($setting->getAttribute($angle), $angle));
+            foreach ([
+                '_gradient_stops' => 'normalizeStops',
+                '_gradient_repeating' => 'normalizeRepeating',
+                '_gradient_repeat_span' => 'normalizeRepeatSpan',
+                '_gradient_center_x' => 'normalizeCenter',
+                '_gradient_center_y' => 'normalizeCenter',
+                '_gradient_shape' => 'normalizeShape',
+            ] as $suffix => $method) {
+                $field = $surface.$suffix;
+                $setting->setAttribute($field, PublicAppearance::$method($setting->getAttribute($field), $field));
+            }
         }
         $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));
         $setting->setAttribute('public_content_padding', PublicAppearance::normalizeContentPadding($setting->getAttribute('public_content_padding')));

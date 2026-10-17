@@ -12,6 +12,10 @@ final class PublicAppearance
     public const MODE_SOLID = 'solid';
 
     public const MODE_GRADIENT = 'gradient';
+    public const MODE_RADIAL = 'radial';
+    public const MODE_CONIC = 'conic';
+    public const MAX_STOPS = 12;
+    public const DEFAULT_REPEAT_SPAN = 120;
 
     public const DEFAULT_PAGE_COLOR = '#777777';
     public const DEFAULT_SURFACE_COLOR = '#FFFFFF';
@@ -38,6 +42,8 @@ final class PublicAppearance
             self::MODE_DEFAULT => 'Default',
             self::MODE_SOLID => 'Solid color',
             self::MODE_GRADIENT => 'Linear gradient',
+            self::MODE_RADIAL => 'Radial gradient',
+            self::MODE_CONIC => 'Conic gradient',
         ];
     }
 
@@ -47,9 +53,9 @@ final class PublicAppearance
             return null;
         }
 
-        if (! is_string($value) || ! in_array($value, [self::MODE_SOLID, self::MODE_GRADIENT], true)) {
+        if (! is_string($value) || ! in_array($value, [self::MODE_SOLID, self::MODE_GRADIENT, self::MODE_RADIAL, self::MODE_CONIC], true)) {
             throw ValidationException::withMessages([
-                $field => 'Choose Default, Solid color, or Linear gradient.',
+                $field => 'Choose Solid, Linear, Radial or Conic gradient.',
             ]);
         }
 
@@ -134,6 +140,103 @@ final class PublicAppearance
      * Null preserves the existing CSS defaults. Future page overrides can
      * shadow the Page CSS custom property without modifying this record.
      */
+    public static function isGradient(?string $mode): bool
+    {
+        return in_array($mode, [self::MODE_GRADIENT, self::MODE_RADIAL, self::MODE_CONIC], true);
+    }
+
+    /** @return list<array{color:string,position:int}> */
+    public static function stops(PublicContentSetting $settings, string $surface): array
+    {
+        $current = $settings->getAttribute($surface.'_gradient_stops');
+        if (is_array($current)) {
+            return self::normalizeStops($current, $surface.'_gradient_stops');
+        }
+
+        $fallback = $surface === 'background' ? self::DEFAULT_PAGE_COLOR : self::DEFAULT_SURFACE_COLOR;
+        return [
+            ['color' => self::normalizeColor($settings->getAttribute($surface.'_gradient_start'), $surface.'_gradient_start') ?? $fallback, 'position' => 0],
+            ['color' => self::normalizeColor($settings->getAttribute($surface.'_gradient_end'), $surface.'_gradient_end') ?? $fallback, 'position' => 100],
+        ];
+    }
+
+    /**
+     * @return list<array{color:string,position:int}>|null
+     */
+    public static function normalizeStops(mixed $value, string $field): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (! is_array($value) || count($value) < 2 || count($value) > self::MAX_STOPS) {
+            throw ValidationException::withMessages([$field => 'Choose between 2 and '.self::MAX_STOPS.' color stops.']);
+        }
+
+        $result = [];
+        $last = -1;
+        foreach (array_values($value) as $stop) {
+            if (! is_array($stop) || ! array_key_exists('position', $stop)) {
+                throw ValidationException::withMessages([$field => 'Each stop needs a color and position.']);
+            }
+            $color = self::normalizeColor($stop['color'] ?? null, $field);
+            $position = filter_var($stop['position'], FILTER_VALIDATE_INT);
+            if ($color === null || $position === false || $position < 0 || $position > 100 || $position < $last) {
+                throw ValidationException::withMessages([$field => 'Stops must be ordered from 0 to 100 percent and have valid colors.']);
+            }
+            $result[] = ['color' => $color, 'position' => $position];
+            $last = $position;
+        }
+
+        if ($result[0]['position'] !== 0 || $result[count($result) - 1]['position'] !== 100) {
+            throw ValidationException::withMessages([$field => 'The first stop must be at 0% and the last at 100%.']);
+        }
+        return $result;
+    }
+
+    public static function normalizeRepeating(mixed $value, string $field): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+        if (! in_array($value, [true, false, 0, 1, '0', '1'], true)) {
+            throw ValidationException::withMessages([$field => 'Repeating must be enabled or disabled.']);
+        }
+        return (bool) $value;
+    }
+
+    public static function normalizeRepeatSpan(mixed $value, string $field): int
+    {
+        return self::normalizeInteger($value, 120, 16, 360, $field, 'Repeat span');
+    }
+
+    public static function normalizeCenter(mixed $value, string $field): int
+    {
+        return self::normalizeInteger($value, 50, 0, 100, $field, 'Center');
+    }
+
+    public static function normalizeShape(mixed $value, string $field): string
+    {
+        if ($value === null || $value === '') {
+            return 'circle';
+        }
+        if (! is_string($value) || ! in_array($value, ['circle', 'ellipse'], true)) {
+            throw ValidationException::withMessages([$field => 'Choose circle or ellipse.']);
+        }
+        return $value;
+    }
+
+    private static function normalizeInteger(mixed $value, int $default, int $min, int $max, string $field, string $label): int
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+        $number = filter_var($value, FILTER_VALIDATE_INT);
+        if ($number === false || $number < $min || $number > $max) {
+            throw ValidationException::withMessages([$field => $label.' must be between '.$min.' and '.$max.'.']);
+        }
+        return $number;
+    }
+
     public static function surfaceCss(PublicContentSetting $settings, string $surface): ?string
     {
         if (! in_array($surface, self::SURFACE_PREFIXES, true)) {
@@ -148,20 +251,38 @@ final class PublicAppearance
 
         $fallback = $surface === 'background' ? self::DEFAULT_PAGE_COLOR : self::DEFAULT_SURFACE_COLOR;
         if ($mode === self::MODE_SOLID) {
-            return self::normalizeColor($settings->getAttribute($surface.'_color'), $surface.'_color')
-                ?? $fallback;
+            return self::normalizeColor($settings->getAttribute($surface.'_color'), $surface.'_color') ?? $fallback;
         }
 
-        $start = self::normalizeColor($settings->getAttribute($surface.'_gradient_start'), $surface.'_gradient_start')
-            ?? $fallback;
-        $end = self::normalizeColor($settings->getAttribute($surface.'_gradient_end'), $surface.'_gradient_end')
-            ?? $fallback;
+        $repeating = self::normalizeRepeating($settings->getAttribute($surface.'_gradient_repeating'), $surface.'_gradient_repeating');
+        $span = self::normalizeRepeatSpan($settings->getAttribute($surface.'_gradient_repeat_span'), $surface.'_gradient_repeat_span');
         $angle = self::normalizeAngle($settings->getAttribute($surface.'_gradient_angle'), $surface.'_gradient_angle')
             ?? self::DEFAULT_GRADIENT_ANGLE;
-        $gradient = sprintf('linear-gradient(%ddeg, %s, %s)', $angle, $start, $end);
+        $centerX = self::normalizeCenter($settings->getAttribute($surface.'_gradient_center_x'), $surface.'_gradient_center_x');
+        $centerY = self::normalizeCenter($settings->getAttribute($surface.'_gradient_center_y'), $surface.'_gradient_center_y');
+        $shape = self::normalizeShape($settings->getAttribute($surface.'_gradient_shape'), $surface.'_gradient_shape');
+        $stops = self::stops($settings, $surface);
+        $parts = array_map(static function (array $stop) use ($repeating, $span, $mode): string {
+            $position = $stop['position'];
+            if ($repeating) {
+                $value = ($position * $span) / 100;
+                $unit = $mode === self::MODE_CONIC ? 'deg' : 'px';
+                $point = rtrim(rtrim(sprintf('%.2f', $value), '0'), '.').$unit;
+            } else {
+                $point = $position.'%';
+            }
+            return $stop['color'].' '.$point;
+        }, $stops);
 
-        // Only the viewport Background retains the established fixed attachment.
-        return $surface === 'background' ? $gradient.' fixed' : $gradient;
+        $prefix = $repeating ? 'repeating-' : '';
+        $css = match ($mode) {
+            self::MODE_GRADIENT => $prefix.'linear-gradient('.$angle.'deg, '.implode(', ', $parts).')',
+            self::MODE_RADIAL => $prefix.'radial-gradient('.$shape.' at '.$centerX.'% '.$centerY.'%, '.implode(', ', $parts).')',
+            self::MODE_CONIC => $prefix.'conic-gradient(from '.$angle.'deg at '.$centerX.'% '.$centerY.'%, '.implode(', ', $parts).')',
+            default => throw new \LogicException('Unexpected gradient mode.'),
+        };
+
+        return $surface === 'background' ? $css.' fixed' : $css;
     }
 
     /** @return array{shell:string,art:string,padding:string} */

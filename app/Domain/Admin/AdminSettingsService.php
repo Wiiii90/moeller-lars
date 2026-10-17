@@ -74,6 +74,19 @@ final class AdminSettingsService
             if (array_key_exists($angle, $data)) {
                 $data[$angle] = PublicAppearance::normalizeAngle($data[$angle], $angle);
             }
+            foreach ([
+                '_gradient_stops' => 'normalizeStops',
+                '_gradient_repeating' => 'normalizeRepeating',
+                '_gradient_repeat_span' => 'normalizeRepeatSpan',
+                '_gradient_center_x' => 'normalizeCenter',
+                '_gradient_center_y' => 'normalizeCenter',
+                '_gradient_shape' => 'normalizeShape',
+            ] as $suffix => $method) {
+                $field = $surface.$suffix;
+                if (array_key_exists($field, $data)) {
+                    $data[$field] = PublicAppearance::$method($data[$field], $field);
+                }
+            }
         }
         if (array_key_exists('public_page_width', $data)) {
             $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width']);
