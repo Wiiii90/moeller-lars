@@ -5,6 +5,7 @@ use App\Domain\Content\ExhibitionAddressNormalizer;
 use App\Domain\Contact\ContactMessageRetentionService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIntegrityService;
+use App\Domain\Media\MediaRightsWorkingPreparation;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
 use App\Domain\Migration\LegacyMigrationValidator;
 use App\Domain\Migration\LegacyPublicCvImporter;
@@ -201,6 +202,54 @@ Artisan::command('pulse:report {--hours=24 : Lookback window in hours (1-168)} {
 
     return 0;
 })->purpose('Export a read-only Laravel Pulse telemetry snapshot as Markdown or JSON');
+
+// Explicit, bounded local rights-file backfill. Not scheduled or reachable
+// from HTTP. Default is a read-only preview; --apply is separately gated.
+Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10 : Images per batch (1-20)} {--apply : Prepare selected Working image files}', function (MediaRightsWorkingPreparation $preparation): int {
+    if (! app()->environment(['local', 'testing'])) {
+        $this->error('Rights-file preparation is local/disposable-only.');
+        return 1;
+    }
+
+    $after = filter_var($this->option('after'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 20]]);
+    if ($after === false || $limit === false) {
+        $this->error('Use --after >= 0 and --limit from 1 to 20.');
+        return 64;
+    }
+
+    $apply = (bool) $this->option('apply');
+    if ($apply && (! config('media.rights_preparation_enabled', false) || config('media.rights_delivery_enabled', false))) {
+        $this->error('Offline preparation must be explicitly enabled while public rights delivery remains disabled.');
+        return 1;
+    }
+
+    $assets = MediaAsset::query()
+        ->where('id', '>', $after)
+        ->whereIn('mime_type', \App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES)
+        ->orderBy('id')
+        ->limit($limit)
+        ->get(['id', 'original_filename']);
+    $prepared = 0;
+    foreach ($assets as $asset) {
+        if ($apply && $preparation->prepare((int) $asset->getKey())) {
+            $prepared++;
+        }
+    }
+
+    $lastId = $assets->last()?->getKey() ?? $after;
+    $this->line(json_encode([
+        'scanned' => $assets->count(),
+        'prepared' => $prepared,
+        'next_after' => (int) $lastId,
+        'preview_only' => ! $apply,
+    ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+    if (! $apply) {
+        $this->comment('No rights files or Working selections changed. Apply is local/disposable only.');
+    }
+
+    return 0;
+})->purpose('Preview or stage a bounded batch of image rights artifacts offline');
 
 Artisan::command('media:measure-capacity', function (MediaCapacityService $capacity) {
     $capacity->forgetCachedSnapshot();
