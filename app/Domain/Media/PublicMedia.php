@@ -27,7 +27,10 @@ class PublicMedia
 
     public const PUBLIC_TRANSFORM_PROFILE = 'public-v1';
 
-    public function __construct(private readonly SitePreviewContext $preview) {}
+    public function __construct(
+        private readonly SitePreviewContext $preview,
+        private readonly \App\Domain\Publication\MediaRightsPublicationSelections $rightsSelections,
+    ) {}
 
     public function isPublicAsset(MediaAsset $asset): bool
     {
@@ -215,18 +218,32 @@ class PublicMedia
 
     public function variantUrl(MediaVariant $variant): string
     {
-        return $this->preview->active()
-            ? route('preview.media.variant', ['mediaVariant' => $variant])
-            : route('media.variant', $variant);
+        $artifact = $this->preview->active()
+            ? $this->rightsSelections->selectedForWorking($variant)
+            : $this->rightsSelections->selectedForPublic($variant);
+        $parameters = ['mediaVariant' => $variant];
+        if ($artifact !== null) {
+            $parameters['revision'] = $artifact->getAttribute('revision');
+        }
+
+        return route($this->preview->active() ? 'preview.media.variant' : 'media.variant', $parameters);
     }
 
     public function originalUrlForAsset(MediaAsset $asset): string
     {
         $this->assertAvailable($asset);
 
-        return $this->preview->active()
-            ? route('preview.media.original', ['mediaAsset' => $asset])
-            : route('media.original', $asset);
+        $parameters = ['mediaAsset' => $asset];
+        if (MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))) {
+            $artifact = $this->preview->active()
+                ? $this->rightsSelections->selectedForWorking($asset)
+                : $this->rightsSelections->selectedForPublic($asset);
+            if ($artifact !== null) {
+                $parameters['revision'] = $artifact->getAttribute('revision');
+            }
+        }
+
+        return route($this->preview->active() ? 'preview.media.original' : 'media.original', $parameters);
     }
 
     private function publishedCustomPageReferencesAsset(int $mediaAssetId): bool

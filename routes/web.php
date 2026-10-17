@@ -43,8 +43,8 @@ Route::middleware(ProtectArtistPreview::class)
     ->name('preview.')
     ->group(function (): void {
         Route::get('/', [PublicHomeController::class, 'show'])->name('home');
-        Route::get('/media/original/{mediaAsset}', [AdminMediaController::class, 'original'])->name('media.original');
-        Route::get('/media/variant/{mediaVariant}', [AdminMediaController::class, 'variant'])
+        Route::get('/media/original/{mediaAsset}/{revision?}', [AdminMediaController::class, 'original'])->where('revision', '[a-f0-9]{64}')->name('media.original');
+        Route::get('/media/variant/{mediaVariant}/{revision?}', [AdminMediaController::class, 'variant'])->where('revision', '[a-f0-9]{64}')
             ->middleware(EnsureMediaVariantFile::class)
             ->name('media.variant');
         Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
@@ -66,8 +66,8 @@ Route::get('/admin/media-download/original/{mediaAsset}', [AdminMediaController:
 Route::get('/admin/media-download/selected', [AdminMediaController::class, 'downloadSelected'])
     ->name('admin.media.download-selected');
 
-Route::get('/media/original/{mediaAsset}', [PublicMediaController::class, 'original'])->name('media.original');
-Route::get('/media/variant/{mediaVariant}', [PublicMediaController::class, 'variant'])
+Route::get('/media/original/{mediaAsset}/{revision?}', [PublicMediaController::class, 'original'])->where('revision', '[a-f0-9]{64}')->name('media.original');
+Route::get('/media/variant/{mediaVariant}/{revision?}', [PublicMediaController::class, 'variant'])->where('revision', '[a-f0-9]{64}')
     ->middleware(EnsureMediaVariantFile::class)
     ->name('media.variant');
 

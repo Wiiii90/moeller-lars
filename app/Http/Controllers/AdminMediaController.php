@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\MediaAsset;
+use App\Models\MediaRightsArtifact;
+use App\Domain\Publication\MediaRightsPublicationSelections;
 use App\Models\MediaVariant;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -17,9 +19,19 @@ use ZipArchive;
 
 final class AdminMediaController extends Controller
 {
-    public function original(MediaAsset $mediaAsset): Response
+    public function original(MediaAsset $mediaAsset, ?string $revision = null): Response
     {
         $this->authorizeAdmin();
+        if (request()->routeIs('preview.media.original')) {
+            $artifact = app(MediaRightsPublicationSelections::class)->selectedForWorking($mediaAsset);
+            abort_unless($artifact === null ? $revision === null : $revision === $artifact->getAttribute('revision'), 404);
+            if ($artifact instanceof MediaRightsArtifact) {
+                return $this->sendRightsArtifact($artifact);
+            }
+        } else {
+            abort_unless($revision === null, 404);
+        }
+
         $file = $this->originalFile($mediaAsset);
 
         return $this->sendfile(
@@ -111,9 +123,22 @@ final class AdminMediaController extends Controller
         return $this->archiveResponse($files);
     }
 
-    public function variant(MediaVariant $mediaVariant): Response
+    public function variant(MediaVariant $mediaVariant, ?string $revision = null): Response
     {
         $this->authorizeAdmin();
+        if (request()->routeIs('preview.media.variant')) {
+            $artifact = app(MediaRightsPublicationSelections::class)->selectedForWorking($mediaVariant);
+            abort_unless($artifact === null ? $revision === null : $revision === $artifact->getAttribute('revision'), 404);
+            if ($artifact instanceof MediaRightsArtifact) {
+                $asset = $mediaVariant->mediaAsset;
+                abort_unless($asset instanceof MediaAsset && $asset->getAttribute('state') === 'available'
+                    && $mediaVariant->getAttribute('state') === 'available', 404);
+
+                return $this->sendRightsArtifact($artifact);
+            }
+        } else {
+            abort_unless($revision === null, 404);
+        }
         $mediaVariant->loadMissing('mediaAsset');
 
         /** @var MediaAsset|null $asset */
@@ -137,6 +162,20 @@ final class AdminMediaController extends Controller
             (string) $mediaVariant->getAttribute('mime_type'),
             (int) $mediaVariant->getAttribute('byte_size'),
             (string) $mediaVariant->getAttribute('sha256'),
+        );
+    }
+
+    private function sendRightsArtifact(MediaRightsArtifact $artifact): Response
+    {
+        $disk = Storage::disk((string) config('media.disk'));
+        $key = (string) $artifact->getAttribute('storage_key');
+        abort_unless(str_starts_with($key, 'variants/rights/') && $disk->exists($key), 404);
+
+        return $this->sendfile(
+            $disk->path($key),
+            (string) $artifact->getAttribute('mime_type'),
+            (int) $artifact->getAttribute('byte_size'),
+            (string) $artifact->getAttribute('sha256'),
         );
     }
 

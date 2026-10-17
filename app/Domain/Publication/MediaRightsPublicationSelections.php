@@ -3,6 +3,8 @@
 namespace App\Domain\Publication;
 
 use App\Models\MediaRightsArtifact;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\PublicationCheckpoint;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -68,6 +70,54 @@ final class MediaRightsPublicationSelections
              FROM media_rights_artifact_selections WHERE scope_key = ?",
             [$this->checkpointScope($checkpoint)],
         );
+    }
+
+    public function selectedForPublic(MediaAsset|MediaVariant $source): ?MediaRightsArtifact
+    {
+        $checkpointId = PublicationCheckpoint::query()
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
+            ->value('id');
+
+        return is_numeric($checkpointId)
+            ? $this->selected('checkpoint:'.(int) $checkpointId, $source)
+            : null;
+    }
+
+    public function selectedForWorking(MediaAsset|MediaVariant $source): ?MediaRightsArtifact
+    {
+        return $this->selected('working', $source);
+    }
+
+    private function selected(string $scope, MediaAsset|MediaVariant $source): ?MediaRightsArtifact
+    {
+        $role = $source instanceof MediaVariant ? 'thumbnail' : 'original';
+        $row = DB::table(self::TABLE)
+            ->where('scope_key', $scope)
+            ->where('role', $role)
+            ->where('source_id', (int) $source->getKey())
+            ->first(['media_rights_artifact_id', 'media_asset_id']);
+
+        if ($row === null) {
+            return null;
+        }
+
+        $assetId = $source instanceof MediaVariant
+            ? (int) $source->getAttribute('media_asset_id')
+            : (int) $source->getKey();
+        if ($assetId <= 0 || (int) $row->media_asset_id !== $assetId) {
+            throw new RuntimeException('Published rights selection references a different media asset.');
+        }
+
+        $artifact = MediaRightsArtifact::query()->find($row->media_rights_artifact_id);
+        if (! $artifact instanceof MediaRightsArtifact
+            || (int) $artifact->getAttribute('media_asset_id') !== $assetId
+            || $artifact->getAttribute('role') !== $role
+            || $artifact->getAttribute('source_sha256') !== $source->getAttribute('sha256')) {
+            throw new RuntimeException('Published rights artifact does not match its authoritative source.');
+        }
+
+        return $artifact;
     }
 
     private function checkpointScope(PublicationCheckpoint $checkpoint): string
