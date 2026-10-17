@@ -1,8 +1,8 @@
 # Dedicated disposable PostgreSQL runner; never uses the persistent preview.
 $ErrorActionPreference = 'Stop'
 $repoPath = (Get-Location).Path
-if ((git branch --show-current) -ne 'dev' -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
-    throw 'Run from the dev checkout for the explicitly isolated Public HTTP regression.'
+if ((git branch --show-current) -notin @('dev', 'testing') -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
+    throw 'Run from a dev or testing checkout for the explicitly isolated Public HTTP regression.'
 }
 $token = [guid]::NewGuid().ToString('N')
 $relativeRoot = "storage/framework/testing/public-session-$token"
