@@ -22,7 +22,6 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -410,8 +409,10 @@ final class General extends Page
                 ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
                 ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
 
-            Toggle::make($surface.'_gradient_repeating')
+            Select::make($surface.'_gradient_repeating')
                 ->label('Repeating')
+                ->options(['0' => 'Off', '1' => 'On'])
+                ->native()
                 ->live()
                 ->afterStateUpdated(self::persist($surface.'_gradient_repeating'))
                 ->visible($gradient),
@@ -440,7 +441,8 @@ final class General extends Page
                 ->visible($center),
 
             Repeater::make($surface.'_gradient_stops')
-                ->label('Color stops')
+                ->label('Colors')
+                ->default(fn (): array => PublicAppearance::stops(PublicContentSetting::general(), $surface))
                 ->schema([
                     AdminColorControl::make('color', 'Color')
                         ->default($surface === 'background' ? PublicAppearance::DEFAULT_PAGE_COLOR : PublicAppearance::DEFAULT_SURFACE_COLOR)
@@ -453,8 +455,12 @@ final class General extends Page
                         ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null),
                 ])
                 ->columns(2)->minItems(2)->maxItems(PublicAppearance::MAX_STOPS)
-                ->helperText('Color stops are arranged by position (0–100%). Add up to 12 stops.')
-                ->addActionLabel('Add color stop')
+                ->addActionLabel('Add color')
+                ->addAction(fn (\Filament\Actions\Action $action): \Filament\Actions\Action => $action
+                    ->link()
+                    ->color('gray')
+                    ->icon('heroicon-m-plus')
+                    ->extraAttributes(['class' => 'admin-add-row']))
                 ->extraFieldWrapperAttributes(['class' => 'general-gradient-stops-control'])
                 ->reorderable(false)->live()
                 ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null)

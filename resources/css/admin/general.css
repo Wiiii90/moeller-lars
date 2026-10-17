@@ -601,10 +601,27 @@
 
 
 
-/* A stop list occupies the full settings pane, not one of its two fields. */
-.general-background-row > .fi-sc > :has(.general-gradient-stops-control) {
+/* Color stops are a full-width field of the shared Appearance form,
+ * not the right-hand cell of the mode/angle two-column grid. */
+.general-background-row > .fi-sc > :is(.general-gradient-stops-control, :has(.general-gradient-stops-control)) {
     grid-column: 1 / -1 !important;
+    min-width: 0;
+}
+
+/* Retain Filament's repeatable fields and actions, but not its card styling.
+ * Actions use the same add-row grammar as the other admin workspaces. */
+.general-gradient-stops-control :is(.fi-fo-repeater-item, .fi-fo-repeater-item-content) {
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 .general-gradient-stops-control .fi-fo-repeater-item {
-    min-width: 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+.general-gradient-stops-control .admin-add-row {
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
 }

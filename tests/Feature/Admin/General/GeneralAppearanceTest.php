@@ -425,3 +425,20 @@ it('keeps Working multi-stop appearance distinct from Committed until publicatio
     expect((string) $this->get(route('home'))->assertOk()->getContent())
         ->toContain('conic-gradient(');
 });
+
+it('keeps Appearance gradient actions on the shared line-based admin control contract', function (): void {
+    $component = Livewire::test(General::class);
+    $component
+        ->assertSet('data.background_gradient_stops', [
+            ['color' => '#777777', 'position' => 0],
+            ['color' => '#777777', 'position' => 100],
+        ])
+        ->set('data.menu_background_mode', 'gradient')
+        ->assertHasNoErrors()
+        ->set('data.menu_background_gradient_repeating', '1')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeTrue();
+    $component->set('data.menu_background_gradient_repeating', '0')->assertHasNoErrors();
+    expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeFalse();
+});
