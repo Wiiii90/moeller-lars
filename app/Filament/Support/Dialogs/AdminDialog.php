@@ -72,6 +72,10 @@ final class AdminDialog
             // only the child action after its domain mutation; a Delete
             // action still transfers to the confirmation/completion flow.
             ->after(static function (Action $action) use ($role): void {
+                // Nested modal actions normally partially render the action
+                // itself. The workspace behind it must reflect moves and
+                // publication changes in the same Livewire response.
+                $action->getLivewire()->forceRender();
                 if (! $role->isDangerAction()) $action->halt();
             });
     }
