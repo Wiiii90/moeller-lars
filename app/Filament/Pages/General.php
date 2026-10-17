@@ -20,6 +20,9 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -55,6 +58,24 @@ final class General extends Page
         'page_background_gradient_start',
         'page_background_gradient_end',
         'page_background_gradient_angle',
+        'background_gradient_stops',
+        'menu_background_gradient_stops',
+        'page_background_gradient_stops',
+        'background_gradient_repeating',
+        'menu_background_gradient_repeating',
+        'page_background_gradient_repeating',
+        'background_gradient_repeat_span',
+        'menu_background_gradient_repeat_span',
+        'page_background_gradient_repeat_span',
+        'background_gradient_center_x',
+        'menu_background_gradient_center_x',
+        'page_background_gradient_center_x',
+        'background_gradient_center_y',
+        'menu_background_gradient_center_y',
+        'page_background_gradient_center_y',
+        'background_gradient_shape',
+        'menu_background_gradient_shape',
+        'page_background_gradient_shape',
         'public_page_width',
         'public_content_padding',
         'public_email',
@@ -114,6 +135,10 @@ final class General extends Page
 
         $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width'] ?? null);
         $data['public_content_padding'] = PublicAppearance::normalizeContentPadding($data['public_content_padding'] ?? null);
+
+        foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+            $data[$surface.'_gradient_stops'] = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
+        }
 
         $this->data = $data;
         $this->syncAppearanceControlState();
@@ -355,61 +380,83 @@ final class General extends Page
         $this->persistChangedField('favicon_media_asset_id');
     }
 
-    /** One reused field schema for global Background, Menu and Page paint. */
+    /** Shared editor, reused for all three global surfaces. */
     private static function appearanceSurfaceControls(string $surface, string $label): Group
     {
+        $gradient = static fn (callable $get): bool => PublicAppearance::isGradient($get($surface.'_mode'));
+        $center = static fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_RADIAL, PublicAppearance::MODE_CONIC], true);
+
         return Group::make([
             Select::make($surface.'_mode')
                 ->label($label)
                 ->options([
                     PublicAppearance::MODE_SOLID => 'Solid',
                     PublicAppearance::MODE_GRADIENT => 'Linear gradient',
+                    PublicAppearance::MODE_RADIAL => 'Radial gradient',
+                    PublicAppearance::MODE_CONIC => 'Conic gradient',
                 ])
-                ->placeholder(null)
-                ->selectablePlaceholder(false)
-                ->native()
-                ->required()
-                ->live()
+                ->native()->required()->live()
                 ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                ->afterStateUpdated(function ($livewire) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistSurfaceMode($surface);
-                    }
-                }),
-            AdminColorControl::make($surface.'_primary_color', 'Primary color')
+                ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
+
+            AdminColorControl::make($surface.'_primary_color', 'Color')
+                ->lazy()
                 ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
-                ->lazy()
-                ->extraInputAttributes(self::commitOnEnterAttributes())
-                ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistSurfaceColor($surface, 'primary', $state);
-                    }
-                }),
-            TextInput::make($surface.'_gradient_angle')
+                ->afterStateUpdated(fn ($livewire, $state) => $livewire instanceof self ? $livewire->persistSurfaceColor($surface, 'primary', $state) : null)
+                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
+
+            ViewField::make($surface.'_gradient_angle')
                 ->label('Angle')
-                ->numeric()
-                ->integer()
-                ->minValue(0)
-                ->maxValue(360)
-                ->step(1)
-                ->suffix('°')
-                ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
-                ->nullable()
-                ->lazy()
-                ->extraFieldWrapperAttributes(['class' => 'general-gradient-angle-control'])
-                ->extraInputAttributes(self::commitOnEnterAttributes())
+                ->view('filament.forms.components.admin-angle-control')
+                ->live()
                 ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_GRADIENT),
-            AdminColorControl::make($surface.'_secondary_color', 'Secondary color')
-                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-secondary-color-control'])
+                ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
+
+            Toggle::make($surface.'_gradient_repeating')
+                ->label('Repeating')
+                ->live()
+                ->afterStateUpdated(self::persist($surface.'_gradient_repeating'))
+                ->visible($gradient),
+
+            Select::make($surface.'_gradient_shape')
+                ->label('Shape')
+                ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
+                ->native()->live()
+                ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
+                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
+
+            TextInput::make($surface.'_gradient_repeat_span')
+                ->label('Repeat span')->integer()->minValue(16)->maxValue(360)
+                ->suffix(fn (callable $get): string => $get($surface.'_mode') === PublicAppearance::MODE_CONIC ? '°' : 'px')
                 ->lazy()
-                ->extraInputAttributes(self::commitOnEnterAttributes())
-                ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistSurfaceColor($surface, 'secondary', $state);
-                    }
-                })
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_GRADIENT),
+                ->afterStateUpdated(self::persist($surface.'_gradient_repeat_span'))
+                ->visible(fn (callable $get): bool => $gradient($get) && (bool) $get($surface.'_gradient_repeating')),
+
+            TextInput::make($surface.'_gradient_center_x')
+                ->label('Center X')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                ->afterStateUpdated(self::persist($surface.'_gradient_center_x'))
+                ->visible($center),
+            TextInput::make($surface.'_gradient_center_y')
+                ->label('Center Y')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
+                ->visible($center),
+
+            Repeater::make($surface.'_gradient_stops')
+                ->label('Color stops')
+                ->schema([
+                    AdminColorControl::make('color', 'Color')
+                        ->required()->live(onBlur: true)
+                        ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null),
+                    TextInput::make('position')
+                        ->label('Position')->integer()->minValue(0)->maxValue(100)->suffix('%')
+                        ->required()->live(onBlur: true)
+                        ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null),
+                ])
+                ->columns(2)->minItems(2)->maxItems(PublicAppearance::MAX_STOPS)
+                ->addActionLabel('Add color stop')
+                ->reorderable(false)->live()
+                ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null)
+                ->columnSpanFull()->visible($gradient),
         ])
             ->columns(2)
             ->extraAttributes(['class' => 'general-background-row'])
@@ -454,6 +501,13 @@ final class General extends Page
         }
 
         $this->syncAppearanceControlState();
+    }
+
+    public function persistSurfaceStops(string $surface): void
+    {
+        if (in_array($surface, PublicAppearance::SURFACE_PREFIXES, true)) {
+            $this->persistChangedField($surface.'_gradient_stops');
+        }
     }
 
     public function persistSurfaceMode(string $surface): void
@@ -777,6 +831,24 @@ final class General extends Page
                 'page_background_gradient_start',
                 'page_background_gradient_end',
                 'page_background_gradient_angle',
+                'background_gradient_stops',
+                'background_gradient_repeating',
+                'background_gradient_repeat_span',
+                'background_gradient_center_x',
+                'background_gradient_center_y',
+                'background_gradient_shape',
+                'menu_background_gradient_stops',
+                'menu_background_gradient_repeating',
+                'menu_background_gradient_repeat_span',
+                'menu_background_gradient_center_x',
+                'menu_background_gradient_center_y',
+                'menu_background_gradient_shape',
+                'page_background_gradient_stops',
+                'page_background_gradient_repeating',
+                'page_background_gradient_repeat_span',
+                'page_background_gradient_center_x',
+                'page_background_gradient_center_y',
+                'page_background_gradient_shape',
                 'public_page_width',
                 'public_content_padding',
             ]) !== []) {
@@ -950,6 +1022,12 @@ final class General extends Page
             'menu_background_color', 'menu_background_gradient_start', 'menu_background_gradient_end',
             'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end' => $this->normalizeColorCandidate($value),
             'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
+            'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops' => is_array($value) ? array_values($value) : $value,
+            'background_gradient_repeating', 'menu_background_gradient_repeating', 'page_background_gradient_repeating' => (bool) $value,
+            'background_gradient_repeat_span', 'menu_background_gradient_repeat_span', 'page_background_gradient_repeat_span',
+            'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y',
+            'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
+                is_numeric($value) ? (int) $value : $value,
             'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
