@@ -26,6 +26,19 @@ test('public CSP authorizes real styles and scripts across SPA navigation and ba
     });
     const firstResponse = await page.goto('/browser-public-spa-1');
     expect(firstResponse.status()).toBe(200);
+    // Laravel/Vite emits tracked tags, but hashed filenames alone cannot
+    // invalidate a Livewire session on rebuild. The shared manifest query
+    // makes JS and CSS change atomically and works for Admin's SPA too.
+    const trackedBuild = await page.locator('[data-navigate-track]').evaluateAll(elements =>
+        elements
+            .filter(element => (element.getAttribute('src') || element.getAttribute('href') || '').includes('/build/'))
+            .map(element => ({ tag: element.tagName, url: element.src || element.href })));
+    expect(trackedBuild.length).toBeGreaterThan(0);
+    for (const asset of trackedBuild) {
+        const address = new URL(asset.url);
+        expect(address.searchParams.get('id')).toMatch(/^[a-f0-9]{32}$/);
+    }
+    expect(new Set(trackedBuild.map(asset => new URL(asset.url).searchParams.get('id'))).size).toBe(1);
     const initialNonce = await publicCspNonce(firstResponse);
     await expect(page.locator('#content')).toContainText('Public SPA content 1');
     const firstWidth = await authorizedPublicStyles(page, initialNonce);

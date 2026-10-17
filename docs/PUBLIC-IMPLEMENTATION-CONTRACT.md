@@ -48,6 +48,8 @@ editable content. See `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`.
 
 ## Site navigation
 
+**SPA asset build consistency (2026-10-17):** `AppServiceProvider` uses Laravel Vite's supported `createAssetPathsUsing` API and `manifestHash()` for the existing built JS/CSS URLs. The same `?id=<manifest hash>` query string is attached to every built Vite entry asset, preserving its hashed filename and the normal `@vite` `data-navigate-track` tags. Livewire only compares tracked query-string revisions, not changes to hashed asset filenames. A preview rebuild therefore causes a full reload on the **next internal SPA navigation**, rather than retaining outdated JS alongside newer CSS/Blade; this also applies to Vite-managed Admin assets without changing Filament's SPA implementation. Hot Vite and missing-manifest contexts are unaffected. No parallel loader, reload listener, polling or custom cache-buster is introduced. Existing public layout CSSOM handoff still needs real browser stress testing for repeated Gallery→Gallery transitions; static code review cannot prove the incident resolved.
+
 Public visits use the already installed Livewire 4 `wire:navigate` document-swap
 runtime over the existing Blade routes. The public layout loads its own
 Livewire 4 CSP-safe asset endpoint (`/site-assets/livewire-csp.js`) so that

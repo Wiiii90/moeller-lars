@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
@@ -50,6 +51,22 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Livewire's data-navigate-track detects changes in ?id=, not in the
+        // Vite hashed file basename. Give the EXISTING Laravel/Vite tags one
+        // manifest revision shared by CSS and JS so a built-image change
+        // forces a real page reload instead of mixing an old SPA module
+        // with new HTML/CSS. Hot Vite and missing manifests stay native.
+        if (! Vite::isRunningHot() && ($revision = Vite::manifestHash()) !== null) {
+            Vite::createAssetPathsUsing(static function (string $path, ?bool $secure) use ($revision): string {
+                $url = asset($path, $secure);
+
+                return str_starts_with(ltrim($path, '/'), 'build/')
+                    && (str_ends_with($path, '.js') || str_ends_with($path, '.css'))
+                        ? $url.'?id='.$revision
+                        : $url;
+            });
+        }
+
         // Keep all contact limits at the existing HTTP boundary. A shared
         // cache makes the hourly ceiling effective across independent IPs.
         // Hash valid sender addresses to avoid storing personal data in
