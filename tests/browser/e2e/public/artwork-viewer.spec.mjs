@@ -149,6 +149,19 @@ test('Artwork detail sequence uses Gallery cyclic edges and defaults other Galle
 });
 
 test('landscape Artwork detail keeps natural image pixels, centered captions and stable arrows', async ({ page }) => {
+    // Record real Web Animations API width effects during Livewire SPA swaps.
+    // This catches a layout that changes width but skips the paper reveal.
+    await page.addInitScript(() => {
+        window.__folioWidthFrames = [];
+        const animate = Element.prototype.animate;
+        Element.prototype.animate = function (keyframes, options) {
+            if (this.id === 'content' && Array.isArray(keyframes)
+                && keyframes.some(frame => Object.hasOwn(frame, 'width'))) {
+                window.__folioWidthFrames.push(keyframes.map(frame => frame.width));
+            }
+            return animate.call(this, keyframes, options);
+        };
+    });
     const gallery = galleryFixture();
     const first = gallery.artworks[0]; // fixture uses 320px thumbnail
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -158,6 +171,9 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
     await page.locator('.artwork-caption-link').first().click();
     await expect(page).toHaveURL(new RegExp(first.url + '$'));
     await expect(page.locator('#content')).toHaveClass(/site-content--landscape-artwork/);
+    await expect.poll(() => page.evaluate(() => window.__folioWidthFrames.length)).toBe(1);
+    const opening = await page.evaluate(() => window.__folioWidthFrames[0].map(parseFloat));
+    expect(opening[1]).toBeGreaterThan(opening[0]);
     await expect.poll(() => page.locator('#content').evaluate(el =>
         el.getBoundingClientRect().width)).toBeGreaterThan(800);
 
@@ -202,6 +218,9 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
     await page.goBack();
     await expect(page).toHaveURL(new RegExp(gallery.url + '$'));
     await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
+    await expect.poll(() => page.evaluate(() => window.__folioWidthFrames.length)).toBe(2);
+    const closing = await page.evaluate(() => window.__folioWidthFrames[1].map(parseFloat));
+    expect(closing[0]).toBeGreaterThan(closing[1]);
 });
 
 test('Viewer survives real SPA navigation and history without stale dialogs or duplicate interactions', async ({ page }) => {

@@ -95,15 +95,38 @@ const numeric = value => {
 test('same folio motion owner expands and contracts real page width without touching the menu', () => {
     browser(({root, paper, animations}) => {
         paper.getBoundingClientRect = () => ({height: 500, width: 800});
-        assert.equal(animatePageWidth(650, root)?.options.duration, 620);
+        assert.equal(animatePageWidth(650, root)?.options.duration, 480);
         assert.deepEqual(animations.find(a => a.name === 'content' && a.frames[0].width)?.frames,
             [{width: '650px'}, {width: '800px'}]);
+        assert.deepEqual(animations.find(a => a.name === 'body')?.frames,
+            [{overflow:'clip'}, {overflow:'clip'}]);
+        assert.equal(animations.find(a => a.name === 'body')?.options.duration, 480);
         paper.getBoundingClientRect = () => ({height: 500, width: 650});
         assert.equal(animatePageWidth(800, root)?.options.duration, 620);
         assert.equal(animations.filter(a => a.name === 'content' && a.frames[0].width).length, 2);
-        assert.equal(animations[animations.length - 2].cancelled, true);
+        assert.equal(animations[0].cancelled, true);
+        assert.equal(animations[1].cancelled, true);
         assert.equal(animations.some(a => a.name === 'menu'), false);
     });
+});
+
+test('a real SPA width change unfolds both sides with the vertical reveal under one owner', () => {
+    browser(({root, paper}) => {
+        paper.getBoundingClientRect = () => ({height: 500, width: 800});
+        capturePublicFolio(root);
+    }, {height: 500});
+    browser(({root, paper, animations, body}) => {
+        paper.getBoundingClientRect = () => ({height: 600, width: 960});
+        advancePublicFolio(root);
+        const width = animations.find(a => a.name === 'content' && a.frames[0].width);
+        assert.deepEqual(width.frames, [{width:'800px'}, {width:'960px'}]);
+        assert.equal(width.options.duration, 480);
+        const clips = animations.filter(a => a.name === 'body');
+        assert.equal(clips.length, 2);
+        assert.deepEqual(clips.map(a => a.options.duration), [480, 480]);
+        assert.ok(clips.every(a => a.frames.every(frame => frame.overflow === 'clip')));
+        assert.equal(body.style.overflow, '');
+    }, {height: 600});
 });
 
 test('width transition yields to unchanged geometry and respects reduced motion', () => {

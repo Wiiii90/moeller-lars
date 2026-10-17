@@ -259,16 +259,18 @@ export function animatePageHeight(previousHeight, root = document) {
     }
 }
 
-// The same folio owner transitions between the default and enlarged
-// exhibition sheets. Width is animated on the existing content element,
-// keeping it centered by its CSS margin; there are no ghost DOM sheets,
-// timers or serialized inline styles to survive Livewire navigation.
+// Horizontal paper opening/closing shares the SAME timing as the vertical
+// content reveal. The outer content sheet changes width around its centered
+// CSS margins; only its inner body clips while the paper unfolds. Exterior
+// border contours and shadow always remain visible. No transient inline
+// style, timer, ghost sheet or independent animation owner is introduced.
 export function animatePageWidth(previousWidth, root = document) {
     const content = root.querySelector('#content');
     if (!content || typeof content.animate !== 'function') return null;
 
     const prior = activeWidthAnimations.get(content);
-    prior?.cancel();
+    prior?.sheet.cancel();
+    prior?.reveal?.cancel();
     activeWidthAnimations.delete(content);
 
     const targetWidth = content.getBoundingClientRect().width;
@@ -280,20 +282,36 @@ export function animatePageWidth(previousWidth, root = document) {
     }
 
     try {
-        const animation = content.animate([
+        const sheet = content.animate([
             { width: `${previousWidth}px` },
             { width: `${targetWidth}px` },
         ], {
-            duration: BUILD_DURATION,
+            duration: HEIGHT_DURATION,
             easing: 'cubic-bezier(.18, .74, .32, 1)',
         });
-        activeWidthAnimations.set(content, animation);
+
+        // Clip only the inner reveal while the sheet's sides travel. The
+        // vertical height transition may clip it concurrently; both effects
+        // author the same value and end together, restoring normal CSS.
+        const body = pageBody(root);
+        let reveal = null;
+        if (body && typeof body.animate === 'function') {
+            try {
+                reveal = body.animate([
+                    { overflow: 'clip' },
+                    { overflow: 'clip' },
+                ], { duration: HEIGHT_DURATION });
+            } catch { /* Width still unfolds without a clipping animation. */ }
+        }
+
+        const state = { sheet, reveal };
+        activeWidthAnimations.set(content, state);
         const restore = () => {
-            if (activeWidthAnimations.get(content) !== animation) return;
+            if (activeWidthAnimations.get(content) !== state) return;
             activeWidthAnimations.delete(content);
         };
-        animation.finished.then(restore, restore);
-        return animation;
+        Promise.allSettled([sheet.finished, reveal?.finished].filter(Boolean)).then(restore);
+        return sheet;
     } catch {
         activeWidthAnimations.delete(content);
         return null;
