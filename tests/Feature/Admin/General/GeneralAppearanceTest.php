@@ -210,3 +210,96 @@ it('renders only committed default solid and gradient appearance through a reque
         '--public-page: linear-gradient(45deg, #112233, #AABBCC) fixed',
     );
 });
+
+
+it('preserves the original white Menu and Page until independent global paint is chosen', function (): void {
+    $settings = PublicContentSetting::general();
+
+    expect(PublicAppearance::surfaceCss($settings, 'menu_background'))->toBeNull()
+        ->and(PublicAppearance::surfaceCss($settings, 'page_background'))->toBeNull();
+
+    $before = generalSettingsAuditCount();
+    Livewire::test(General::class)
+        ->assertSet('data.menu_background_mode', 'solid')
+        ->assertSet('data.page_background_mode', 'solid')
+        ->assertSet('data.menu_background_primary_color', '#FFFFFF')
+        ->assertSet('data.page_background_primary_color', '#FFFFFF');
+
+    expect(generalSettingsAuditCount())->toBe($before)
+        ->and(PublicContentSetting::general()->getAttribute('menu_background_mode'))->toBeNull()
+        ->and(PublicContentSetting::general()->getAttribute('page_background_mode'))->toBeNull();
+
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'menu_background_mode' => 'solid',
+        'menu_background_color' => 'fefdfc',
+        'page_background_mode' => 'gradient',
+        'page_background_gradient_start' => '#a1b2c3',
+        'page_background_gradient_end' => '#ddeeff',
+        'page_background_gradient_angle' => 45,
+    ]);
+
+    $settings = PublicContentSetting::general();
+    expect(PublicAppearance::surfaceCss($settings, 'menu_background'))->toBe('#FEFDFC')
+        ->and(PublicAppearance::surfaceCss($settings, 'page_background'))->toBe('linear-gradient(45deg, #A1B2C3, #DDEEFF)')
+        ->and(PublicAppearance::backgroundCss($settings))->toBeNull();
+
+    expect(fn () => app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'page_background_gradient_angle' => 370,
+    ]))->toThrow(ValidationException::class);
+    expect(fn () => app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'menu_background_gradient_start' => 'url(javascript:alert(1))',
+    ]))->toThrow(ValidationException::class);
+});
+
+it('autosaves Menu and Page colors independently using the shared General controls', function (): void {
+    app(AdminActivityNotificationContext::class)->discard();
+    $before = generalSettingsAuditCount();
+
+    $component = Livewire::test(General::class)
+        ->call('persistSurfaceColor', 'menu_background', 'primary', '#ABCDEF')
+        ->assertHasNoErrors()
+        ->call('persistSurfaceColor', 'page_background', 'primary', '#123456')
+        ->assertHasNoErrors();
+
+    $settings = PublicContentSetting::general();
+    expect($settings->getAttribute('menu_background_mode'))->toBe('solid')
+        ->and($settings->getAttribute('menu_background_color'))->toBe('#ABCDEF')
+        ->and($settings->getAttribute('page_background_mode'))->toBe('solid')
+        ->and($settings->getAttribute('page_background_color'))->toBe('#123456')
+        ->and(generalSettingsAuditCount())->toBe($before + 2);
+
+    $component->call('persistSurfaceColor', 'menu_background', 'primary', '#ABCDEF')
+        ->assertNotDispatched('admin-header-notification');
+    expect(generalSettingsAuditCount())->toBe($before + 2);
+});
+
+it('publishes global Menu and Page paints only on Commit, with nonce-authorized CSS', function (): void {
+    $actor = User::query()->firstOrFail();
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'menu_background_mode' => 'solid',
+        'menu_background_color' => '#AABBCC',
+        'page_background_mode' => 'gradient',
+        'page_background_gradient_start' => '#112233',
+        'page_background_gradient_end' => '#445566',
+        'page_background_gradient_angle' => 90,
+    ]);
+
+    $publicBefore = (string) $this->get(route('home'))->assertOk()->getContent();
+    expect($publicBefore)->not->toContain('--public-menu-background: #AABBCC')
+        ->and($publicBefore)->not->toContain('--public-content-background: linear-gradient(90deg, #112233, #445566)');
+    $preview = (string) $this->get('/preview')->assertOk()->getContent();
+    expect($preview)->toContain('--public-menu-background: #AABBCC')
+        ->and($preview)->toContain('--public-content-background: linear-gradient(90deg, #112233, #445566)');
+
+    app(PublicationService::class)->commit($actor, 'Publish global Menu and Page colors');
+
+    $response = $this->get(route('home'))->assertOk();
+    $html = (string) $response->getContent();
+    $nonce = generalPublicStyleNonce($response);
+    expect($html)->toContain('--public-menu-background: #AABBCC')
+        ->and($html)->toContain('--public-content-background: linear-gradient(90deg, #112233, #445566)')
+        ->and((string) $response->headers->get('Content-Security-Policy'))->not->toContain("'unsafe-inline'");
+    generalAssertPublicStyleUsesNonce($html, $nonce, '--public-menu-background: #AABBCC');
+    generalAssertPublicStyleUsesNonce($html, $nonce, '--public-content-background: linear-gradient(90deg, #112233, #445566)');
+});

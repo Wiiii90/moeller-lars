@@ -30,6 +30,16 @@ use LogicException;
     'background_gradient_start',
     'background_gradient_end',
     'background_gradient_angle',
+    'menu_background_mode',
+    'menu_background_color',
+    'menu_background_gradient_start',
+    'menu_background_gradient_end',
+    'menu_background_gradient_angle',
+    'page_background_mode',
+    'page_background_color',
+    'page_background_gradient_start',
+    'page_background_gradient_end',
+    'page_background_gradient_angle',
     'public_page_width',
     'public_content_padding',
     'navigation_nesting_enabled',
@@ -56,6 +66,8 @@ class PublicContentSetting extends Model
             'show_instagram' => 'boolean',
             'social_links' => 'array',
             'background_gradient_angle' => 'integer',
+            'menu_background_gradient_angle' => 'integer',
+            'page_background_gradient_angle' => 'integer',
             'public_page_width' => 'integer',
             'public_content_padding' => 'integer',
             'navigation_nesting_enabled' => 'boolean',
@@ -144,11 +156,16 @@ class PublicContentSetting extends Model
 
     private static function validateGeneral(self $setting): void
     {
-        $setting->setAttribute('background_mode', PublicAppearance::normalizeMode($setting->getAttribute('background_mode')));
-        $setting->setAttribute('background_color', PublicAppearance::normalizeColor($setting->getAttribute('background_color'), 'background_color'));
-        $setting->setAttribute('background_gradient_start', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_start'), 'background_gradient_start'));
-        $setting->setAttribute('background_gradient_end', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_end'), 'background_gradient_end'));
-        $setting->setAttribute('background_gradient_angle', PublicAppearance::normalizeAngle($setting->getAttribute('background_gradient_angle')));
+        foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+            $mode = $surface.'_mode';
+            $setting->setAttribute($mode, PublicAppearance::normalizeMode($setting->getAttribute($mode), $mode));
+            foreach (['_color', '_gradient_start', '_gradient_end'] as $suffix) {
+                $field = $surface.$suffix;
+                $setting->setAttribute($field, PublicAppearance::normalizeColor($setting->getAttribute($field), $field));
+            }
+            $angle = $surface.'_gradient_angle';
+            $setting->setAttribute($angle, PublicAppearance::normalizeAngle($setting->getAttribute($angle), $angle));
+        }
         $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));
         $setting->setAttribute('public_content_padding', PublicAppearance::normalizeContentPadding($setting->getAttribute('public_content_padding')));
 

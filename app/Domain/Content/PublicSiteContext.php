@@ -15,7 +15,7 @@ final class PublicSiteContext
         private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string}} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string}} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::general();
@@ -32,6 +32,8 @@ final class PublicSiteContext
             'isPreview' => $this->preview->active(),
             'homeUrl' => $this->preview->homeUrl(),
             'publicBackgroundCss' => PublicAppearance::backgroundCss($settings),
+            'publicMenuBackgroundCss' => PublicAppearance::surfaceCss($settings, 'menu_background'),
+            'publicContentBackgroundCss' => PublicAppearance::surfaceCss($settings, 'page_background'),
             'publicLayoutCss' => PublicAppearance::layoutCss($settings),
         ];
     }

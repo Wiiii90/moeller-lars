@@ -59,20 +59,21 @@ final class AdminSettingsService
      */
     private function normalizePublicContent(array $data): array
     {
-        if (array_key_exists('background_mode', $data)) {
-            $data['background_mode'] = PublicAppearance::normalizeMode($data['background_mode']);
-        }
-        if (array_key_exists('background_color', $data)) {
-            $data['background_color'] = PublicAppearance::normalizeColor($data['background_color'], 'background_color');
-        }
-        if (array_key_exists('background_gradient_start', $data)) {
-            $data['background_gradient_start'] = PublicAppearance::normalizeColor($data['background_gradient_start'], 'background_gradient_start');
-        }
-        if (array_key_exists('background_gradient_end', $data)) {
-            $data['background_gradient_end'] = PublicAppearance::normalizeColor($data['background_gradient_end'], 'background_gradient_end');
-        }
-        if (array_key_exists('background_gradient_angle', $data)) {
-            $data['background_gradient_angle'] = PublicAppearance::normalizeAngle($data['background_gradient_angle']);
+        foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+            $mode = $surface.'_mode';
+            if (array_key_exists($mode, $data)) {
+                $data[$mode] = PublicAppearance::normalizeMode($data[$mode], $mode);
+            }
+            foreach (['_color', '_gradient_start', '_gradient_end'] as $suffix) {
+                $field = $surface.$suffix;
+                if (array_key_exists($field, $data)) {
+                    $data[$field] = PublicAppearance::normalizeColor($data[$field], $field);
+                }
+            }
+            $angle = $surface.'_gradient_angle';
+            if (array_key_exists($angle, $data)) {
+                $data[$angle] = PublicAppearance::normalizeAngle($data[$angle], $angle);
+            }
         }
         if (array_key_exists('public_page_width', $data)) {
             $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width']);

@@ -20,8 +20,9 @@
     /* Shared reference offset for Menu and Content backing papers. */
     --public-folio-sheet-x: -3px;
     --public-folio-sheet-y: 4px;
-    /* Neutral presentation surfaces; no tinted 'paper' treatment. */
-    --public-surface: #fff;
+    /* Independent global Menu and Page surfaces; both initially white. */
+    --public-menu-background: #fff;
+    --public-content-background: #fff;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-index-typeface: Georgia, "Times New Roman", serif;
     --public-index-ink: #444640;
@@ -87,7 +88,10 @@ body {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
     min-width: 0;
     margin-inline: auto;
-    background: var(--public-surface);
+}
+
+#content {
+    background: var(--public-content-background);
 }
 
 /* The connected Menu backing and Content shadow use the same base offsets.
@@ -107,6 +111,7 @@ body {
     order: 1;
     --public-menu-sheet-x: var(--public-folio-sheet-x);
     --public-menu-sheet-y: var(--public-folio-sheet-y);
+    background: var(--public-menu-background);
     box-shadow: inset 0 -1px 0 var(--public-index-rule);
 }
 .site-navigation::before,
@@ -149,7 +154,7 @@ body {
         minmax(0, min(calc(100% - 2 * var(--public-content-inset)), var(--public-art-max)))
         minmax(0, 1fr);
     align-items: stretch;
-    background: var(--public-surface);
+    background: var(--public-menu-background);
 }
 
 /* The main and child navigation use real 44px hit rails in overflow
@@ -554,7 +559,7 @@ body {
     position: relative;
     min-height: var(--public-short-page-min-height);
     margin-block: var(--public-shell-gap);
-    background: var(--public-surface);
+    background: var(--public-content-background);
     box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
 }
 /* The original TWO attached edge contours remain separate pseudo-element

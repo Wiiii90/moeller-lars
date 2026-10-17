@@ -45,6 +45,16 @@ final class General extends Page
         'background_gradient_start',
         'background_gradient_end',
         'background_gradient_angle',
+        'menu_background_mode',
+        'menu_background_color',
+        'menu_background_gradient_start',
+        'menu_background_gradient_end',
+        'menu_background_gradient_angle',
+        'page_background_mode',
+        'page_background_color',
+        'page_background_gradient_start',
+        'page_background_gradient_end',
+        'page_background_gradient_angle',
         'public_page_width',
         'public_content_padding',
         'public_email',
@@ -92,10 +102,14 @@ final class General extends Page
     public function mount(): void
     {
         $data = $this->generalSettingsRecord()->only(self::PERSISTED_FIELDS);
-        $mode = $data['background_mode'] ?? null;
-        if ($mode === null || $mode === '' || $mode === PublicAppearance::MODE_DEFAULT) {
-            $data['background_mode'] = PublicAppearance::MODE_SOLID;
-            $data['background_color'] = PublicAppearance::DEFAULT_PAGE_COLOR;
+        foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+            $mode = $data[$surface.'_mode'] ?? null;
+            if ($mode === null || $mode === '' || $mode === PublicAppearance::MODE_DEFAULT) {
+                $data[$surface.'_mode'] = PublicAppearance::MODE_SOLID;
+                $data[$surface.'_color'] = $surface === 'background'
+                    ? PublicAppearance::DEFAULT_PAGE_COLOR
+                    : PublicAppearance::DEFAULT_SURFACE_COLOR;
+            }
         }
 
         $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width'] ?? null);
@@ -166,64 +180,6 @@ final class General extends Page
                                 ->afterStateUpdated(self::persist('favicon_media_asset_id')),
 
                             Group::make([
-                                Select::make('background_mode')
-                                    ->label('Background')
-                                    ->options([
-                                        PublicAppearance::MODE_SOLID => 'Solid',
-                                        PublicAppearance::MODE_GRADIENT => 'Linear gradient',
-                                    ])
-                                    ->placeholder(null)
-                                    ->selectablePlaceholder(false)
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                                    ->afterStateUpdated(function ($livewire): void {
-                                        if ($livewire instanceof self) {
-                                            $livewire->persistAppearanceMode();
-                                        }
-                                    }),
-
-                                AdminColorControl::make('background_primary_color', 'Primary color')
-                                    ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
-                                    ->lazy()
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(function ($livewire, mixed $state): void {
-                                        if ($livewire instanceof self) {
-                                            $livewire->persistAppearanceColor('primary', $state);
-                                        }
-                                    }),
-                                TextInput::make('background_gradient_angle')
-                                    ->label('Angle')
-                                    ->numeric()
-                                    ->integer()
-                                    ->minValue(0)
-                                    ->maxValue(360)
-                                    ->step(1)
-                                    ->suffix('°')
-                                    ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
-                                    ->nullable()
-                                    ->lazy()
-                                    ->extraFieldWrapperAttributes(['class' => 'general-gradient-angle-control'])
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(self::persist('background_gradient_angle'))
-                                    ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
-                                AdminColorControl::make('background_secondary_color', 'Secondary color')
-                                    ->extraFieldWrapperAttributes(['class' => 'general-color-control general-secondary-color-control'])
-                                    ->lazy()
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(function ($livewire, mixed $state): void {
-                                        if ($livewire instanceof self) {
-                                            $livewire->persistAppearanceColor('secondary', $state);
-                                        }
-                                    })
-                                    ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
-                            ])
-                                ->columns(2)
-                                ->extraAttributes(['class' => 'general-background-row'])
-                                ->columnSpanFull(),
-
-                            Group::make([
                                 TextInput::make('public_page_width')
                                     ->label('Page width')
                                     ->numeric()
@@ -253,9 +209,20 @@ final class General extends Page
                                 ->extraAttributes(['class' => 'general-layout-row'])
                                 ->columnSpanFull(),
 
+
+                            self::appearanceSurfaceControls('background', 'Background'),
+                            self::appearanceSurfaceControls('menu_background', 'Menu'),
+                            self::appearanceSurfaceControls('page_background', 'Page'),
+
                             Hidden::make('background_color'),
                             Hidden::make('background_gradient_start'),
                             Hidden::make('background_gradient_end'),
+                            Hidden::make('menu_background_color'),
+                            Hidden::make('menu_background_gradient_start'),
+                            Hidden::make('menu_background_gradient_end'),
+                            Hidden::make('page_background_color'),
+                            Hidden::make('page_background_gradient_start'),
+                            Hidden::make('page_background_gradient_end'),
                         ])
                             ->columns(1)
                             ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
@@ -388,27 +355,99 @@ final class General extends Page
         $this->persistChangedField('favicon_media_asset_id');
     }
 
+    /** One reused field schema for global Background, Menu and Page paint. */
+    private static function appearanceSurfaceControls(string $surface, string $label): Group
+    {
+        return Group::make([
+            Select::make($surface.'_mode')
+                ->label($label)
+                ->options([
+                    PublicAppearance::MODE_SOLID => 'Solid',
+                    PublicAppearance::MODE_GRADIENT => 'Linear gradient',
+                ])
+                ->placeholder(null)
+                ->selectablePlaceholder(false)
+                ->native()
+                ->required()
+                ->live()
+                ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                ->afterStateUpdated(function ($livewire) use ($surface): void {
+                    if ($livewire instanceof self) {
+                        $livewire->persistSurfaceMode($surface);
+                    }
+                }),
+            AdminColorControl::make($surface.'_primary_color', 'Primary color')
+                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
+                ->lazy()
+                ->extraInputAttributes(self::commitOnEnterAttributes())
+                ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
+                    if ($livewire instanceof self) {
+                        $livewire->persistSurfaceColor($surface, 'primary', $state);
+                    }
+                }),
+            TextInput::make($surface.'_gradient_angle')
+                ->label('Angle')
+                ->numeric()
+                ->integer()
+                ->minValue(0)
+                ->maxValue(360)
+                ->step(1)
+                ->suffix('°')
+                ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
+                ->nullable()
+                ->lazy()
+                ->extraFieldWrapperAttributes(['class' => 'general-gradient-angle-control'])
+                ->extraInputAttributes(self::commitOnEnterAttributes())
+                ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
+                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_GRADIENT),
+            AdminColorControl::make($surface.'_secondary_color', 'Secondary color')
+                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-secondary-color-control'])
+                ->lazy()
+                ->extraInputAttributes(self::commitOnEnterAttributes())
+                ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
+                    if ($livewire instanceof self) {
+                        $livewire->persistSurfaceColor($surface, 'secondary', $state);
+                    }
+                })
+                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_GRADIENT),
+        ])
+            ->columns(2)
+            ->extraAttributes(['class' => 'general-background-row'])
+            ->columnSpanFull();
+    }
+
+    // Retain the established background editor method contract.
     public function persistAppearanceColor(string $slot, mixed $value): void
     {
-        if (! is_array($this->data)) {
+        $this->persistSurfaceColor('background', $slot, $value);
+    }
+
+    public function persistAppearanceMode(): void
+    {
+        $this->persistSurfaceMode('background');
+    }
+
+    public function persistSurfaceColor(string $surface, string $slot, mixed $value): void
+    {
+        if (! is_array($this->data) || ! in_array($surface, PublicAppearance::SURFACE_PREFIXES, true)) {
             return;
         }
 
-        $mode = $this->data['background_mode'] ?? PublicAppearance::MODE_SOLID;
+        $mode = $this->data[$surface.'_mode'] ?? PublicAppearance::MODE_SOLID;
         $field = match ($slot) {
-            'primary' => $mode === PublicAppearance::MODE_GRADIENT ? 'background_gradient_start' : 'background_color',
-            'secondary' => $mode === PublicAppearance::MODE_GRADIENT ? 'background_gradient_end' : null,
+            'primary' => $mode === PublicAppearance::MODE_GRADIENT ? $surface.'_gradient_start' : $surface.'_color',
+            'secondary' => $mode === PublicAppearance::MODE_GRADIENT ? $surface.'_gradient_end' : null,
             default => null,
         };
-
         if ($field === null) {
             return;
         }
 
-        $alias = $slot === 'primary' ? 'background_primary_color' : 'background_secondary_color';
+        $alias = $surface.($slot === 'primary' ? '_primary_color' : '_secondary_color');
         $this->resetErrorBag('data.'.$alias);
         $this->data[$field] = $value;
-        $this->persistChangedFields($mode === PublicAppearance::MODE_SOLID ? ['background_mode', $field] : [$field]);
+        $fields = $mode === PublicAppearance::MODE_SOLID ? [$surface.'_mode', $field] : [$field];
+        $this->persistChangedFields($fields);
 
         foreach ($this->getErrorBag()->get('data.'.$field) as $message) {
             $this->addError('data.'.$alias, $message);
@@ -417,11 +456,15 @@ final class General extends Page
         $this->syncAppearanceControlState();
     }
 
-    public function persistAppearanceMode(): void
+    public function persistSurfaceMode(string $surface): void
     {
-        $fields = ['background_mode'];
-        if (($this->data['background_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
-            $fields[] = 'background_color';
+        if (! is_array($this->data) || ! in_array($surface, PublicAppearance::SURFACE_PREFIXES, true)) {
+            return;
+        }
+
+        $fields = [$surface.'_mode'];
+        if (($this->data[$surface.'_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
+            $fields[] = $surface.'_color';
         }
         $this->persistChangedFields($fields);
         $this->syncAppearanceControlState();
@@ -433,11 +476,14 @@ final class General extends Page
             return;
         }
 
-        $mode = $this->data['background_mode'] ?? PublicAppearance::MODE_SOLID;
-        $this->data['background_primary_color'] = $mode === PublicAppearance::MODE_GRADIENT
-            ? ($this->data['background_gradient_start'] ?? null)
-            : ($this->data['background_color'] ?? PublicAppearance::DEFAULT_PAGE_COLOR);
-        $this->data['background_secondary_color'] = $this->data['background_gradient_end'] ?? null;
+        foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+            $default = $surface === 'background' ? PublicAppearance::DEFAULT_PAGE_COLOR : PublicAppearance::DEFAULT_SURFACE_COLOR;
+            $mode = $this->data[$surface.'_mode'] ?? PublicAppearance::MODE_SOLID;
+            $this->data[$surface.'_primary_color'] = $mode === PublicAppearance::MODE_GRADIENT
+                ? ($this->data[$surface.'_gradient_start'] ?? $default)
+                : ($this->data[$surface.'_color'] ?? $default);
+            $this->data[$surface.'_secondary_color'] = $this->data[$surface.'_gradient_end'] ?? null;
+        }
     }
 
     public function addSocialLinkAction(): Action
@@ -721,6 +767,16 @@ final class General extends Page
                 'background_gradient_start',
                 'background_gradient_end',
                 'background_gradient_angle',
+                'menu_background_mode',
+                'menu_background_color',
+                'menu_background_gradient_start',
+                'menu_background_gradient_end',
+                'menu_background_gradient_angle',
+                'page_background_mode',
+                'page_background_color',
+                'page_background_gradient_start',
+                'page_background_gradient_end',
+                'page_background_gradient_angle',
                 'public_page_width',
                 'public_content_padding',
             ]) !== []) {
@@ -876,6 +932,8 @@ final class General extends Page
             'background_gradient_start' => 'Background gradient start color',
             'background_gradient_end' => 'Background gradient end color',
             'background_gradient_angle' => 'Background gradient angle',
+            'menu_background_mode' => 'Menu',
+            'page_background_mode' => 'Page',
             'public_page_width' => 'Public page width',
             'public_content_padding' => 'Public content padding',
             'navigation_nesting_enabled' => 'Navigation nesting',
@@ -887,9 +945,11 @@ final class General extends Page
     {
         return match ($field) {
             'favicon_media_asset_id' => is_numeric($value) ? (int) $value : null,
-            'background_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
-            'background_color', 'background_gradient_start', 'background_gradient_end' => $this->normalizeColorCandidate($value),
-            'background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
+            'background_mode', 'menu_background_mode', 'page_background_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
+            'background_color', 'background_gradient_start', 'background_gradient_end',
+            'menu_background_color', 'menu_background_gradient_start', 'menu_background_gradient_end',
+            'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end' => $this->normalizeColorCandidate($value),
+            'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
             'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,

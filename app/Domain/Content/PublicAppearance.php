@@ -14,6 +14,8 @@ final class PublicAppearance
     public const MODE_GRADIENT = 'gradient';
 
     public const DEFAULT_PAGE_COLOR = '#777777';
+    public const DEFAULT_SURFACE_COLOR = '#FFFFFF';
+    public const SURFACE_PREFIXES = ['background', 'menu_background', 'page_background'];
 
     public const DEFAULT_GRADIENT_ANGLE = 180;
 
@@ -39,7 +41,7 @@ final class PublicAppearance
         ];
     }
 
-    public static function normalizeMode(mixed $value): ?string
+    public static function normalizeMode(mixed $value, string $field = 'background_mode'): ?string
     {
         if ($value === null || $value === '' || $value === self::MODE_DEFAULT) {
             return null;
@@ -47,7 +49,7 @@ final class PublicAppearance
 
         if (! is_string($value) || ! in_array($value, [self::MODE_SOLID, self::MODE_GRADIENT], true)) {
             throw ValidationException::withMessages([
-                'background_mode' => 'Choose Default, Solid color, or Linear gradient.',
+                $field => 'Choose Default, Solid color, or Linear gradient.',
             ]);
         }
 
@@ -76,7 +78,7 @@ final class PublicAppearance
         return $candidate;
     }
 
-    public static function normalizeAngle(mixed $value): ?int
+    public static function normalizeAngle(mixed $value, string $field = 'background_gradient_angle'): ?int
     {
         if ($value === null || $value === '') {
             return null;
@@ -84,14 +86,14 @@ final class PublicAppearance
 
         if (filter_var($value, FILTER_VALIDATE_INT) === false) {
             throw ValidationException::withMessages([
-                'background_gradient_angle' => 'Gradient angle must be a whole number from 0 to 360.',
+                $field => 'Gradient angle must be a whole number from 0 to 360.',
             ]);
         }
 
         $angle = (int) $value;
         if ($angle < 0 || $angle > 360) {
             throw ValidationException::withMessages([
-                'background_gradient_angle' => 'Gradient angle must be between 0 and 360 degrees.',
+                $field => 'Gradient angle must be between 0 and 360 degrees.',
             ]);
         }
 
@@ -124,25 +126,42 @@ final class PublicAppearance
 
     public static function backgroundCss(PublicContentSetting $settings): ?string
     {
-        $mode = self::normalizeMode($settings->getAttribute('background_mode'));
+        return self::surfaceCss($settings, 'background');
+    }
 
+    /**
+     * The same validated paint contract owns all global public surfaces.
+     * Null preserves the existing CSS defaults. Future page overrides can
+     * shadow the Page CSS custom property without modifying this record.
+     */
+    public static function surfaceCss(PublicContentSetting $settings, string $surface): ?string
+    {
+        if (! in_array($surface, self::SURFACE_PREFIXES, true)) {
+            throw new \InvalidArgumentException('Unsupported public appearance surface.');
+        }
+
+        $modeField = $surface.'_mode';
+        $mode = self::normalizeMode($settings->getAttribute($modeField), $modeField);
         if ($mode === null) {
             return null;
         }
 
+        $fallback = $surface === 'background' ? self::DEFAULT_PAGE_COLOR : self::DEFAULT_SURFACE_COLOR;
         if ($mode === self::MODE_SOLID) {
-            return self::normalizeColor($settings->getAttribute('background_color'), 'background_color')
-                ?? self::DEFAULT_PAGE_COLOR;
+            return self::normalizeColor($settings->getAttribute($surface.'_color'), $surface.'_color')
+                ?? $fallback;
         }
 
-        $start = self::normalizeColor($settings->getAttribute('background_gradient_start'), 'background_gradient_start')
-            ?? self::DEFAULT_PAGE_COLOR;
-        $end = self::normalizeColor($settings->getAttribute('background_gradient_end'), 'background_gradient_end')
-            ?? self::DEFAULT_PAGE_COLOR;
-        $angle = self::normalizeAngle($settings->getAttribute('background_gradient_angle'))
+        $start = self::normalizeColor($settings->getAttribute($surface.'_gradient_start'), $surface.'_gradient_start')
+            ?? $fallback;
+        $end = self::normalizeColor($settings->getAttribute($surface.'_gradient_end'), $surface.'_gradient_end')
+            ?? $fallback;
+        $angle = self::normalizeAngle($settings->getAttribute($surface.'_gradient_angle'), $surface.'_gradient_angle')
             ?? self::DEFAULT_GRADIENT_ANGLE;
+        $gradient = sprintf('linear-gradient(%ddeg, %s, %s)', $angle, $start, $end);
 
-        return sprintf('linear-gradient(%ddeg, %s, %s) fixed', $angle, $start, $end);
+        // Only the viewport Background retains the established fixed attachment.
+        return $surface === 'background' ? $gradient.' fixed' : $gradient;
     }
 
     /** @return array{shell:string,art:string,padding:string} */

@@ -517,3 +517,24 @@ parallel JavaScript drag engine, hover overlay, floating "Move out" button,
 nested content repeater in Image Edit, redundant child counter or special
 child-row design. Existing Image children remain independently editable
 and selected, and are shown with the canonical full six-column row.
+
+## Global public appearance surfaces
+
+General is the authoritative global editor for three distinct page paint
+surfaces: **Background** (outer viewport and header), **Menu** (both navigation
+levels) and **Page** (content backing). Each supports the same validated
+Solid/Linear Gradient model, two color values and a linear gradient angle.
+The existing Page width and Content padding remain separate layout parameters.
+
+The `PublicAppearance` domain validates and projects all three values.
+`PublicSiteContext` uses the existing committed-versus-preview content read
+context; the public layout injects only normalized CSS custom properties into
+the nonce-protected style block. Absent Menu/Page settings keep the original
+white presentation. These surfaces must not introduce a second CSS-injection
+pipeline, new UI color picker, uncommitted public state or browser timers.
+
+The shared global CSS custom property `--public-content-background` provides
+the default for every page. A future Pages editor may supply an optional
+per-page override at the page content boundary, falling back to the General
+value whenever unset; do not add those controls or per-page persistence as
+part of the global General editor. Menu remains globally owned by General.
