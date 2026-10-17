@@ -522,6 +522,9 @@ final class JournalWorkspace extends Page
                     title: 'Publication scheduled',
                     status: 'success',
                 );
+                if (($arguments['returnToEditor'] ?? false) === true) {
+                    $this->replaceMountedAction('editPost', ['post' => (int) $arguments['post']]);
+                }
             });
 
         return AdminDialog::command($action, 'Schedule publication');
@@ -685,7 +688,7 @@ final class JournalWorkspace extends Page
         )->disabled($state === 'archived');
 
         $actions[] = AdminDialog::headerAction('dialogSchedulePost', AdminRowAction::Schedule, function () use ($target): void {
-            $this->replaceMountedAction('schedulePost', $target);
+            $this->replaceMountedAction('schedulePost', [...$target, 'returnToEditor' => true]);
         })->disabled(! in_array($state, ['draft', 'unpublished'], true));
 
         $archived = $state === 'archived';
