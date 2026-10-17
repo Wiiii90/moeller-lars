@@ -12,6 +12,7 @@ const contentShadow = (x, y) => `${x}px ${y}px 0 var(--public-folio-soft)`;
 
 let snapshot = null;
 const activeHeightAnimations = new WeakMap();
+const activeWidthAnimations = new WeakMap();
 const activePaperPulses = new WeakMap();
 
 function visiblePseudo(element, pseudo) {
@@ -51,6 +52,7 @@ export function capturePublicFolio(root = document) {
         content: pairGeometry(content),
         contentShadow: content ? getComputedStyle(content).boxShadow : null,
         bodyHeight: body ? body.getBoundingClientRect().height : null,
+        contentWidth: content ? content.getBoundingClientRect().width : null,
     };
     return Boolean(snapshot.content || body);
 }
@@ -257,6 +259,47 @@ export function animatePageHeight(previousHeight, root = document) {
     }
 }
 
+// The same folio owner transitions between the default and enlarged
+// exhibition sheets. Width is animated on the existing content element,
+// keeping it centered by its CSS margin; there are no ghost DOM sheets,
+// timers or serialized inline styles to survive Livewire navigation.
+export function animatePageWidth(previousWidth, root = document) {
+    const content = root.querySelector('#content');
+    if (!content || typeof content.animate !== 'function') return null;
+
+    const prior = activeWidthAnimations.get(content);
+    prior?.cancel();
+    activeWidthAnimations.delete(content);
+
+    const targetWidth = content.getBoundingClientRect().width;
+    if (!Number.isFinite(previousWidth) || !Number.isFinite(targetWidth)
+        || previousWidth <= 0 || targetWidth <= 0
+        || Math.abs(previousWidth - targetWidth) < 4
+        || (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)) {
+        return null;
+    }
+
+    try {
+        const animation = content.animate([
+            { width: `${previousWidth}px` },
+            { width: `${targetWidth}px` },
+        ], {
+            duration: BUILD_DURATION,
+            easing: 'cubic-bezier(.18, .74, .32, 1)',
+        });
+        activeWidthAnimations.set(content, animation);
+        const restore = () => {
+            if (activeWidthAnimations.get(content) !== animation) return;
+            activeWidthAnimations.delete(content);
+        };
+        animation.finished.then(restore, restore);
+        return animation;
+    } catch {
+        activeWidthAnimations.delete(content);
+        return null;
+    }
+}
+
 // Content-only page build. The rear sheet never moves more than 0.8px.
 export function buildPageImpulse(start, end, growing) {
     const [x, y] = FOLIO_PLANE_BASE.content;
@@ -364,6 +407,7 @@ export function advancePublicFolio(root = document) {
     const growing = !Number.isFinite(nextHeight) || !Number.isFinite(previous.bodyHeight)
         || nextHeight >= previous.bodyHeight;
     animatePageHeight(previous.bodyHeight, root);
+    animatePageWidth(previous.contentWidth, root);
     if (!pulsePaper(content, corners, contentShadow, growing, root)) {
         startAmbient(content, corners, 'content');
     }

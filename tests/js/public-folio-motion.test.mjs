@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
     FOLIO_PLANE_BASE,
     buildCornerFrames, buildMenuCornerFrames, buildMenuBackingFrames, buildShadowFrames, buildCornerImpulse,
-    buildPageImpulse, animatePageHeight, visibleHeightTransition, capturePublicFolio,
+    buildPageImpulse, animatePageHeight, animatePageWidth, visibleHeightTransition, capturePublicFolio,
     advancePublicFolio, animatePublicHeroChange,
 } from '../../resources/js/public-folio-motion.js';
 
@@ -91,6 +91,39 @@ const numeric = value => {
     const numbers = [...String(value).matchAll(/(-?\d+(?:\.\d+)?)px/g)].map(m=>Number(m[1]));
     return numbers.length===2 ? numbers[0]+numbers[1] : numbers[0];
 };
+
+test('same folio motion owner expands and contracts real page width without touching the menu', () => {
+    browser(({root, paper, animations}) => {
+        paper.getBoundingClientRect = () => ({height: 500, width: 800});
+        assert.equal(animatePageWidth(650, root)?.options.duration, 620);
+        assert.deepEqual(animations.find(a => a.name === 'content' && a.frames[0].width)?.frames,
+            [{width: '650px'}, {width: '800px'}]);
+        paper.getBoundingClientRect = () => ({height: 500, width: 650});
+        assert.equal(animatePageWidth(800, root)?.options.duration, 620);
+        assert.equal(animations.filter(a => a.name === 'content' && a.frames[0].width).length, 2);
+        assert.equal(animations[animations.length - 2].cancelled, true);
+        assert.equal(animations.some(a => a.name === 'menu'), false);
+    });
+});
+
+test('width transition yields to unchanged geometry and respects reduced motion', () => {
+    browser(({root, paper}) => {
+        paper.getBoundingClientRect = () => ({height: 400, width: 650});
+        assert.equal(animatePageWidth(650, root), null);
+        assert.equal(animatePageWidth(649, root), null);
+        assert.equal(animatePageWidth(null, root), null);
+    });
+    const oldWindow = globalThis.window;
+    globalThis.window = { matchMedia: () => ({ matches: true }) };
+    try {
+        browser(({root, paper}) => {
+            paper.getBoundingClientRect = () => ({height: 400, width: 900});
+            assert.equal(animatePageWidth(650, root), null);
+        });
+    } finally {
+        globalThis.window = oldWindow;
+    }
+});
 
 test('Content and Menu share softer, closer paper baselines',()=>{
     assert.deepEqual(FOLIO_PLANE_BASE.content,[-3,4]);
