@@ -11,7 +11,7 @@
                 data-viewer-page-link
                 aria-label="Open artwork page"
                 title="Open artwork page"
-            ><x-public-icon name="external-link" /></a>
+            ><x-public-icon name="arrow-right" /></a>
             <button
                 type="button"
                 class="artwork-viewer__icon-button artwork-viewer__close"

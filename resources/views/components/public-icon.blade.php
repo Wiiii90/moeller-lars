@@ -18,12 +18,6 @@
         @case('corner-up-left')
             <path d="M9 14 4 9l5-5M20 20v-7a4 4 0 0 0-4-4H4" />
             @break
-        @case('chevrons-left')
-            <path d="m11 17-5-5 5-5m7 10-5-5 5-5" />
-            @break
-        @case('chevrons-right')
-            <path d="m6 17 5-5-5-5m7 10 5-5-5-5" />
-            @break
         @case('chevron-left')
             <path d="m15 18-6-6 6-6" />
             @break

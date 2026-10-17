@@ -48,6 +48,12 @@ test('Gallery viewer decodes public originals and supports bounded zoom, pan, na
     await trigger.click();
     const dialog = page.getByRole('dialog', { includeHidden: true });
     const image = await decodedArtwork(dialog, first);
+    // Use the shared SVG right arrow, never a platform-dependent glyph
+    // or the separate external-destination icon.
+    const artworkPageLink = dialog.getByRole('link', { name: 'Open artwork page' });
+    await expect(artworkPageLink).toHaveAttribute('href', new RegExp(`${first.url}$`));
+    await expect(artworkPageLink.locator('svg.public-icon path'))
+        .toHaveAttribute('d', 'M4 12h16m-7-7 7 7-7 7');
     await page.screenshot({ path: test.info().outputPath('artwork-viewer.png') });
     const response = await originalResponse;
     expect(response.status()).toBe(200);
