@@ -107,7 +107,13 @@ final class BrowserProfilingSeeder extends Seeder
             ]);
         }
 
-        $category = ArtworkCategory::query()->create(['name' => 'Browser Gallery', 'slug' => 'browser-gallery']);
+        $category = ArtworkCategory::query()->create([
+            'name' => 'Browser Gallery', 'slug' => 'browser-gallery',
+            // Disposable fixture opts in. Production Galleries default off.
+            'landscape_detail_enabled' => true,
+            'landscape_detail_scale' => 150,
+            'edge_navigation_mode' => 'cyclic',
+        ]);
         SiteSection::query()->create([
             'type' => SiteSection::TYPE_GALLERY, 'title' => 'Browser Gallery',
             'navigation_label' => 'Browser Gallery', 'slug' => 'browser-gallery',

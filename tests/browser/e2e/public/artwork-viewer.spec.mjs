@@ -129,6 +129,25 @@ test('Gallery viewer decodes public originals and supports bounded zoom, pan, na
     await verifyErrors();
 });
 
+test('Artwork detail sequence uses Gallery cyclic edges and defaults other Galleries to disabled edges', async ({ page }) => {
+    const gallery = galleryFixture();
+    const [first, second] = gallery.artworks;
+    await page.goto(first.url);
+    const nav = page.getByRole('navigation', { name: 'Artwork browsing' });
+    await expect(nav.getByRole('link', { name: 'Previous artwork' })).toHaveAttribute('href', new RegExp(second.url + '$'));
+    await expect(nav.getByRole('link', { name: 'Next artwork' })).toHaveAttribute('href', new RegExp(second.url + '$'));
+    await page.goto(second.url);
+    await expect(nav.getByRole('link', { name: 'Next artwork' })).toHaveAttribute('href', new RegExp(first.url + '$'));
+
+    // Browser Sort Gallery has no explicit settings: the default is not
+    // cyclic, and a missing arrow remains visible but disabled.
+    await page.goto('/artworks/browser-sort-artwork-1');
+    await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
+    const defaultNav = page.getByRole('navigation', { name: 'Artwork browsing' });
+    await expect(defaultNav.getByRole('button', { name: 'No previous artwork' })).toBeDisabled();
+    await expect(defaultNav.getByRole('link', { name: 'Next artwork' })).toBeVisible();
+});
+
 test('landscape Artwork detail widens the canvas without enlarging Gallery or overflowing phones', async ({ page }) => {
     const gallery = galleryFixture();
     const first = gallery.artworks[0]; // 1600 × 1200 fixture
