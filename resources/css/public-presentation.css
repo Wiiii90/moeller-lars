@@ -90,10 +90,6 @@ body {
     margin-inline: auto;
 }
 
-#content {
-    background: var(--public-content-background);
-}
-
 /* The connected Menu backing and Content shadow use the same base offsets.
    The L-shape allows the menu to remain top-connected without an extra plane. */
 @property --public-menu-sheet-x {
