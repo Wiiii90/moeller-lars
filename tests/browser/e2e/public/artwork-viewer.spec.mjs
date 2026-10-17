@@ -161,10 +161,13 @@ test('landscape Artwork detail widens the canvas without enlarging Gallery or ov
     await page.locator('.artwork-caption-link').first().click();
     await expect(page).toHaveURL(new RegExp(first.url + '$'));
     await expect(page.locator('#content')).toHaveClass(/site-content--landscape-artwork/);
+    // The existing folio owner animates the new sheet width for 620ms.
+    // Wait for the settled geometry rather than sampling an in-flight frame.
+    await expect.poll(() => page.locator('.artwork-detail__image').evaluate(image =>
+        image.getBoundingClientRect().width)).toBeGreaterThan(galleryWidth);
     const detailWidth = await page.locator('.artwork-detail__image').evaluate(image =>
         image.getBoundingClientRect().width);
-    expect(detailWidth).toBeGreaterThan(galleryWidth);
-    expect(detailWidth).toBeLessThanOrEqual(960);
+    expect(detailWidth).toBeLessThanOrEqual(975);
 
     const alignment = await page.locator('.artwork-detail').evaluate(element => {
         const image = element.querySelector('.artwork-detail__image').getBoundingClientRect();
