@@ -627,7 +627,9 @@ body {
    thumbnails never upscale to fill the white sheet; narrower viewports
    may shrink them to fit without clipping either image dimension. */
 .site-content--landscape-artwork .artwork-detail__media {
-    width: fit-content;
+    /* Replaced image intrinsic width determines the block, never a long
+       caption's max-content width. Text wraps inside that image width. */
+    width: min-content;
     max-width: 100%;
     margin-inline: auto;
 }
