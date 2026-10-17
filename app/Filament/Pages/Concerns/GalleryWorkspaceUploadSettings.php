@@ -5,12 +5,14 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -34,6 +36,9 @@ trait GalleryWorkspaceUploadSettings
                     'slug' => (string) $gallery->getAttribute('slug'),
                     'description' => $gallery->getAttribute('description'),
                     'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
+                    'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
+                    'landscape_detail_scale' => GalleryPresentation::scale($gallery),
+                    'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
                 ];
             })
             ->schema([
@@ -48,6 +53,33 @@ trait GalleryWorkspaceUploadSettings
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                         Textarea::make('description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
+                        Toggle::make('landscape_detail_enabled')
+                            ->label('Expand landscape Artwork pages')
+                            ->helperText('Off by default. Gallery and Home image widths are unchanged.')
+                            ->columnSpanFull(),
+                        Select::make('landscape_detail_scale')
+                            ->label('Landscape maximum width')
+                            ->options([
+                                125 => '125% of General artwork width',
+                                150 => '150% of General artwork width',
+                                175 => '175% of General artwork width',
+                                200 => '200% of General artwork width',
+                                250 => '250% of General artwork width',
+                            ])
+                            ->default(GalleryPresentation::DEFAULT_SCALE)
+                            ->required()
+                            ->helperText('Only when expanded; available screen width remains the limit.')
+                            ->columnSpanFull(),
+                        Select::make('edge_navigation_mode')
+                            ->label('Artwork navigation at sequence ends')
+                            ->options([
+                                GalleryPresentation::EDGE_DISABLED => 'Disabled arrows (default)',
+                                GalleryPresentation::EDGE_HIDDEN => 'Hide unavailable arrows',
+                                GalleryPresentation::EDGE_CYCLIC => 'Cyclic (last ↔ first)',
+                            ])
+                            ->default(GalleryPresentation::EDGE_DISABLED)
+                            ->required()
+                            ->columnSpanFull(),
                     ]),
             ])
             ->modalHeading('Gallery settings')
@@ -63,6 +95,9 @@ trait GalleryWorkspaceUploadSettings
                             'name' => $data['name'],
                             'description' => $data['description'] ?? null,
                             'show_on_home' => (bool) ($data['show_on_home'] ?? false),
+                            'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
+                            'landscape_detail_scale' => $data['landscape_detail_scale'] ?? GalleryPresentation::DEFAULT_SCALE,
+                            'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                         ]);
                         $changed = $updated->wasChanged();
 

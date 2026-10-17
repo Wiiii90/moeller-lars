@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
@@ -276,6 +277,7 @@ final class GalleryEditorialService
         $validated = [
             'name' => $name,
             'description' => $description,
+            ...GalleryPresentation::validateSettings($data),
         ];
 
         if (array_key_exists('show_on_home', $data)) {
