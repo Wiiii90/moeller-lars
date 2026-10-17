@@ -232,6 +232,7 @@ Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10
         ->get(['id', 'original_filename']);
     $prepared = 0;
     $lastId = (int) $after;
+    $candidates = $assets->pluck('id')->map(static fn ($id): int => (int) $id)->all();
     foreach ($assets as $asset) {
         $id = (int) $asset->getKey();
         if ($apply) {
@@ -247,10 +248,14 @@ Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10
             }
         }
         $lastId = $id;
+        if ($apply) {
+            $this->line('Completed media #'.$id.'; resume cursor --after='.$lastId);
+        }
     }
     $this->line(json_encode([
         'scanned' => $assets->count(),
         'prepared' => $prepared,
+        'candidate_ids' => $candidates,
         'next_after' => (int) $lastId,
         'preview_only' => ! $apply,
     ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));

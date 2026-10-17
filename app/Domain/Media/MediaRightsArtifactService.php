@@ -136,6 +136,10 @@ final class MediaRightsArtifactService
             // Keep the content-keyed destination: historical revisions may
             // already reference it. Only discard this unpublished temp copy.
             @unlink($stagingPath);
+            // Both successful writes and failed/rolled-back file staging can
+            // change physical storage. Let the existing capacity owner
+            // refresh its UI projection on the next explicit measurement.
+            $this->capacity->forgetCachedSnapshot();
         }
     }
 
