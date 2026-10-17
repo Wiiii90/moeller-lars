@@ -695,6 +695,17 @@ body {
     cursor: default;
 }
 
+/* A gated Gallery image is hidden in HTML so <noscript> can render the
+   native fallback. JS reveals it before observation; width/height reserve
+   its stable aspect ratio while the source is still deferred. */
+.artwork-card__image[hidden] {
+    display: none;
+}
+.artwork-card__image[data-gallery-image-state="deferred"],
+.artwork-card__image[data-gallery-image-state="pending"] {
+    visibility: hidden;
+}
+
 /* A tiny gallery-only light response; the unmodified Artwork Viewer, Hero
    and original assets retain their source-faithful presentation. */
 @media (hover: hover) and (pointer: fine) {

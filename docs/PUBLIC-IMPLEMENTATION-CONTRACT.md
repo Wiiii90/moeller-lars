@@ -136,23 +136,32 @@ MediaAsset reference/publication contracts.
 
 ## Gallery delivery and loading
 
-Gallery index markup keeps its complete canonical Artwork sequence (including
-viewer order), but only its first image has `loading=eager` and
-`fetchpriority=high`. Every following image uses the browser's native
-viewport-buffered lazy loading, rather than competing at high priority for
-the initial network connection. This is a targeted initial-display improvement,
-not server cursor pagination or incremental HTML rendering. A future
-unbounded-inventory design must consider cursor batches, prefetch buffers,
-SEO/indexability, Artwork Viewer ordering and SPA back/forward restoration
-together; it must not silently truncate the canonical viewer's sequence.
+Gallery index markup retains the **complete canonical Artwork and Viewer
+sequence**; images are not paginated out of the document or removed on scroll.
+The first two Artwork media images load eagerly (only the first is high
+priority). Later Gallery images preserve their original thumbnail URL in
+`data-gallery-src`, with no initial `src` request. The shared
+`public-gallery-loading.js` uses `IntersectionObserver` with a 960px lookahead
+and at most two speculative image requests. Visible images always bypass the
+prefetch queue and receive high request priority. Once loaded, their canonical
+URLs use the normal immutable browser cache; scrolling backward never reloads
+a new image object. Intrinsic thumbnail dimensions prevent layout jumps.
 
-Public thumbnail URLs are generated MediaVariant resources served through
-`EnsureMediaVariantFile` and `PublicMediaController`; deleted-but-rebuildable
-variants can be regenerated synchronously during the first request.
-A slow image therefore cannot be diagnosed from lazy-loading attributes
-alone. Confirm response timing / variant existence and sendfile delivery in
-the running preview before changing media correctness, publication access,
-regeneration, headers or transport.
+A `<noscript>` image preserves native `loading=lazy` when JavaScript is
+disabled. Without IntersectionObserver, the runtime restores real `src`
+attributes and lets the browser handle native lazy loading. Gallery ownership
+and observers are disposed with the existing Livewire SPA page lifecycle.
+No timers, detached preloader images, duplicated requests, dynamic viewer
+sequence or new media URL endpoint are introduced. Hero and Artwork detail
+retain their independent media loading/priority contracts.
+
+Public thumbnails remain the established WebP `public-v1` MediaVariant
+resources (maximum edge 960px) served by `EnsureMediaVariantFile` and
+`PublicMediaController`. Deleted-but-rebuildable variants can be regenerated
+synchronously during first request. **Slow server responses or initial
+regeneration are not fixed by scroll buffering**; before changing publication
+access, variant integrity, sendfile, storage or cache behavior, inspect real
+response timings and variant availability in the running preview.
 
 ## Gallery and Artwork ordering
 

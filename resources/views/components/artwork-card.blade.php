@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'priority' => null])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'priority' => null, 'galleryBuffered' => false])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -53,7 +53,12 @@
         @else
             <img
                 class="artwork-image artwork-card__image"
-                src="{{ $imageUrl }}"
+                @if ($galleryBuffered)
+                    data-gallery-src="{{ $imageUrl }}"
+                    hidden
+                @else
+                    src="{{ $imageUrl }}"
+                @endif
                 alt="{{ $altText }}"
                 @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)
                     width="{{ $thumbnailWidth }}"
@@ -61,8 +66,25 @@
                 @endif
                 loading="{{ $eager ? 'eager' : 'lazy' }}"
                 decoding="async"
-                fetchpriority="{{ ($priority ?? $eager) ? 'high' : 'auto' }}"
+                fetchpriority="{{ $galleryBuffered ? 'low' : (($priority ?? $eager) ? 'high' : 'auto') }}"
             >
+            @if ($galleryBuffered)
+                {{-- Browser-native fallback without JavaScript; otherwise the
+                     primary image receives its URL near the viewport. --}}
+                <noscript>
+                    <img
+                        class="artwork-image artwork-card__image"
+                        src="{{ $imageUrl }}"
+                        alt="{{ $altText }}"
+                        @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)
+                            width="{{ $thumbnailWidth }}"
+                            height="{{ $thumbnailHeight }}"
+                        @endif
+                        loading="lazy"
+                        decoding="async"
+                    >
+                </noscript>
+            @endif
         @endif
     @if ($enableViewer)
         </a>
