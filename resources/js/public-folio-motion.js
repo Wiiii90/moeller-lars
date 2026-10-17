@@ -53,6 +53,7 @@ export function capturePublicFolio(root = document) {
         contentShadow: content ? getComputedStyle(content).boxShadow : null,
         bodyHeight: body ? body.getBoundingClientRect().height : null,
         contentWidth: content ? content.getBoundingClientRect().width : null,
+        expandedArtwork: content?.classList.contains('site-content--landscape-artwork') ?? false,
     };
     return Boolean(snapshot.content || body);
 }
@@ -425,7 +426,11 @@ export function advancePublicFolio(root = document) {
     const growing = !Number.isFinite(nextHeight) || !Number.isFinite(previous.bodyHeight)
         || nextHeight >= previous.bodyHeight;
     animatePageHeight(previous.bodyHeight, root);
-    animatePageWidth(previous.contentWidth, root);
+    // A wider sheet is a special Gallery option, never an implicit public
+    // page-width override. Ordinary routes always retain General's CSS width.
+    if (previous.expandedArtwork || content?.classList.contains('site-content--landscape-artwork')) {
+        animatePageWidth(previous.contentWidth, root);
+    }
     if (!pulsePaper(content, corners, contentShadow, growing, root)) {
         startAmbient(content, corners, 'content');
     }

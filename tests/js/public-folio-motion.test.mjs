@@ -15,6 +15,7 @@ function fixture({ height = 540, menu = true, content = true } = {}) {
     const create = (name, shadow, topLeft, bottomLeft, topRight, bottomRight) => {
         const el = {
             name, style: { overflow: '' }, height,
+            classList: { contains: () => false },
             getBoundingClientRect() { return { height: this.height }; },
             getAnimations() { return []; },
             animate(frames, options) {
@@ -102,7 +103,7 @@ test('same folio motion owner expands and contracts real page width without touc
             [{overflow:'clip'}, {overflow:'clip'}]);
         assert.equal(animations.find(a => a.name === 'body')?.options.duration, 480);
         paper.getBoundingClientRect = () => ({height: 500, width: 650});
-        assert.equal(animatePageWidth(800, root)?.options.duration, 620);
+        assert.equal(animatePageWidth(800, root)?.options.duration, 480);
         assert.equal(animations.filter(a => a.name === 'content' && a.frames[0].width).length, 2);
         assert.equal(animations[0].cancelled, true);
         assert.equal(animations[1].cancelled, true);
@@ -116,6 +117,7 @@ test('a real SPA width change unfolds both sides with the vertical reveal under 
         capturePublicFolio(root);
     }, {height: 500});
     browser(({root, paper, animations, body}) => {
+        paper.classList.contains = name => name === 'site-content--landscape-artwork';
         paper.getBoundingClientRect = () => ({height: 600, width: 960});
         advancePublicFolio(root);
         const width = animations.find(a => a.name === 'content' && a.frames[0].width);
@@ -127,6 +129,33 @@ test('a real SPA width change unfolds both sides with the vertical reveal under 
         assert.ok(clips.every(a => a.frames.every(frame => frame.overflow === 'clip')));
         assert.equal(body.style.overflow, '');
     }, {height: 600});
+});
+
+test('ordinary public routes never animate shell width even when dimensions differ', () => {
+    browser(({root, paper}) => {
+        paper.getBoundingClientRect = () => ({height: 500, width: 800});
+        capturePublicFolio(root);
+    }, {height: 500});
+    browser(({root, paper, animations}) => {
+        paper.getBoundingClientRect = () => ({height: 600, width: 1000});
+        advancePublicFolio(root);
+        assert.equal(animations.filter(a => a.name === 'content' && a.frames[0]?.width).length, 0);
+        assert.equal(animations.some(a => a.name === 'body' && a.frames[0]?.overflow === 'clip'), true);
+    }, {height: 600});
+});
+
+test('leaving expanded Artwork restores General width with a closing animation', () => {
+    browser(({root, paper}) => {
+        paper.classList.contains = name => name === 'site-content--landscape-artwork';
+        paper.getBoundingClientRect = () => ({height: 600, width: 1000});
+        capturePublicFolio(root);
+    }, {height: 600});
+    browser(({root, paper, animations}) => {
+        paper.getBoundingClientRect = () => ({height: 500, width: 800});
+        advancePublicFolio(root);
+        assert.deepEqual(animations.find(a => a.name === 'content' && a.frames[0]?.width)?.frames,
+            [{width:'1000px'}, {width:'800px'}]);
+    }, {height: 500});
 });
 
 test('width transition yields to unchanged geometry and respects reduced motion', () => {
