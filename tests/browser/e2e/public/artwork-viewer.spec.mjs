@@ -129,6 +129,52 @@ test('Gallery viewer decodes public originals and supports bounded zoom, pan, na
     await verifyErrors();
 });
 
+test('landscape Artwork detail widens the canvas without enlarging Gallery or overflowing phones', async ({ page }) => {
+    const gallery = galleryFixture();
+    const first = gallery.artworks[0]; // 1600 × 1200 fixture
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(gallery.url);
+    await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
+    const galleryWidth = await page.locator('.artwork-list .artwork-card__image').first().evaluate(image =>
+        image.getBoundingClientRect().width);
+    expect(galleryWidth).toBeLessThanOrEqual(650);
+
+    await page.locator('.artwork-caption-link').first().click();
+    await expect(page).toHaveURL(new RegExp(first.url + '$'));
+    await expect(page.locator('#content')).toHaveClass(/site-content--landscape-artwork/);
+    const detailWidth = await page.locator('.artwork-detail__image').evaluate(image =>
+        image.getBoundingClientRect().width);
+    expect(detailWidth).toBeGreaterThan(galleryWidth);
+    expect(detailWidth).toBeLessThanOrEqual(960);
+
+    const alignment = await page.locator('.artwork-detail').evaluate(element => {
+        const image = element.querySelector('.artwork-detail__image').getBoundingClientRect();
+        const nav = element.querySelector('.artwork-folio').getBoundingClientRect();
+        const caption = element.querySelector('.artwork-detail__footer').getBoundingClientRect();
+        return { imageRight: image.right, navRight: nav.right, captionRight: caption.right };
+    });
+    expect(alignment.navRight).toBeCloseTo(alignment.imageRight, 0);
+    expect(alignment.captionRight).toBeCloseTo(alignment.imageRight, 0);
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    const landscapePhoneWidth = await page.locator('.artwork-detail__image').evaluate(image =>
+        image.getBoundingClientRect().width);
+    expect(landscapePhoneWidth).toBeGreaterThan(650);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const narrow = await page.evaluate(() => ({
+        image: document.querySelector('.artwork-detail__image').getBoundingClientRect().width,
+        scroll: document.documentElement.scrollWidth,
+        viewport: window.innerWidth,
+    }));
+    expect(narrow.image).toBeLessThan(390);
+    expect(narrow.scroll).toBeLessThanOrEqual(narrow.viewport + 1);
+
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(gallery.url + '$'));
+    await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
+});
+
 test('Viewer survives real SPA navigation and history without stale dialogs or duplicate interactions', async ({ page }) => {
     const gallery = galleryFixture();
     const first = gallery.artworks[0];

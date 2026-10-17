@@ -19,6 +19,10 @@
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
 @endphp
 
+{{-- Orientation comes from the authoritative public thumbnail dimensions,
+     before image decoding, without any client-side layout measurement. --}}
+@section('content_class', ! $isVideo && $thumbnailWidth > $thumbnailHeight ? 'site-content--landscape-artwork' : '')
+
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', $artwork->description ?: $artwork->title.' — Lars Möller')
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))

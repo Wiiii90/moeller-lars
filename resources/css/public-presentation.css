@@ -596,6 +596,22 @@ body {
     border: 0;
     overflow-wrap: break-word;
 }
+
+/* The individual landscape Artwork gets a wider exhibition sheet while
+   Gallery, Home Hero, portrait/square Artworks and navigation keep their
+   configured common geometry. Orientation is resolved before first paint.
+   The sheet and its gutters contract fluidly on narrow screens. */
+#content.site-content--landscape-artwork {
+    width: min(
+        calc(100% - 2 * var(--public-gutter)),
+        calc(var(--public-shell-max) + 200px)
+    );
+    padding-inline: clamp(var(--public-mobile-inset), 2.5vw, 2rem);
+}
+
+.site-content--landscape-artwork .artwork-detail {
+    width: min(100%, 960px);
+}
 /* The structural inner flow alone gets transient height/clip on navigation.
    Outer #content remains overflow-visible for its original paper contours. */
 .public-content-reveal {

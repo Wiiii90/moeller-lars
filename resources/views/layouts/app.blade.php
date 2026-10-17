@@ -158,7 +158,7 @@
                 </div>
             @endunless
         </header>
-        <main id="content" class="site-content">
+        <main id="content" class="site-content @yield('content_class')">
             {{-- One content owner for every public page. Only this inner flow
                  is clipped briefly on SPA swaps; exterior folio stays visible. --}}
             <div class="public-content-reveal">
