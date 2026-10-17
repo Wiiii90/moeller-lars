@@ -2,6 +2,7 @@
 
 namespace App\Domain\Publication;
 
+use App\Domain\Media\MediaRightsArtifactRevision;
 use App\Models\MediaRightsArtifact;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -20,6 +21,8 @@ use RuntimeException;
 final class MediaRightsPublicationSelections
 {
     private const TABLE = 'media_rights_artifact_selections';
+
+    public function __construct(private readonly MediaRightsArtifactRevision $revisions) {}
 
     /**
      * Legacy public/media requests must work before this optional migration
@@ -208,6 +211,18 @@ final class MediaRightsPublicationSelections
             || $artifact->getAttribute('role') !== $role
             || $artifact->getAttribute('source_sha256') !== $source->getAttribute('sha256')) {
             throw new RuntimeException('Published rights artifact does not match its authoritative source.');
+        }
+
+        $asset = $source instanceof MediaVariant ? $source->mediaAsset : $source;
+        if (! $asset instanceof MediaAsset
+            || ! hash_equals(
+                (string) $artifact->getAttribute('revision'),
+                $this->revisions->forSource($asset, $source),
+            )) {
+            // Rights may have been edited or the General default changed
+            // after file preparation. Never silently serve old copyright
+            // metadata under a freshly published identity.
+            throw new RuntimeException('Selected image rights metadata is out of date; prepare a new immutable revision.');
         }
 
         return $artifact;

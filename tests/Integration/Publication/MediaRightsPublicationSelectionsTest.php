@@ -116,3 +116,39 @@ it('recognizes rights-only Working changes in the canonical publication summary 
             ->where('scope_key', 'checkpoint:'.$checkpoint->getKey())
             ->value('media_rights_artifact_id'))->toBe((int) $artifact->getKey());
 });
+
+
+it('rejects a stale rights-file selection after the asset copyright facts change', function (): void {
+    config()->set('media.rights_preparation_enabled', true);
+    config()->set('media.rights_delivery_enabled', false);
+
+    $asset = new \App\Models\MediaAsset;
+    $asset->setRawAttributes([
+        'id' => 923,
+        'mime_type' => 'image/jpeg',
+        'sha256' => str_repeat('6', 64),
+        'file_creator' => 'First photographer',
+        'copyright_notice_mode' => \App\Models\MediaAsset::COPYRIGHT_OVERRIDE,
+        'copyright_notice' => '© First photographer',
+    ], true);
+
+    $revision = app(\App\Domain\Media\MediaRightsArtifactRevision::class)->forSource($asset, $asset);
+    $artifact = MediaRightsArtifact::query()->create([
+        'media_asset_id' => 923,
+        'role' => 'original',
+        'revision' => $revision,
+        'storage_key' => 'variants/rights/'.$revision.'.jpg',
+        'source_sha256' => str_repeat('6', 64),
+        'sha256' => str_repeat('7', 64),
+        'byte_size' => 100,
+        'mime_type' => 'image/jpeg',
+        'created_at' => now(),
+    ]);
+    $selections = app(MediaRightsPublicationSelections::class);
+    $selections->selectWorking($artifact, 'original', 923);
+    expect($selections->selectedForWorking($asset)?->getKey())->toBe($artifact->getKey());
+
+    $asset->setAttribute('file_creator', 'Different photographer');
+    expect(fn () => $selections->selectedForWorking($asset))
+        ->toThrow(RuntimeException::class, 'out of date');
+});
