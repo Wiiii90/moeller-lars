@@ -179,15 +179,16 @@ final class PublicationMediaCleanupService
         }
 
         $orphans = [];
-        if ($includeFiles) {
+        $orphanBudget = $limit - count($unused);
+        if ($includeFiles && $orphanBudget > 0) {
             $disk = Storage::disk((string) config('media.disk'));
-            foreach (['variants/rights', 'rights-staging'] as $prefix) {
+            foreach (['variants/rights', 'variants/rights-staging', 'rights-staging'] as $prefix) {
                 foreach ($disk->allFiles($prefix) as $key) {
                     if (! $this->isOwnedRightsFile($key) || DB::table('media_rights_artifacts')->where('storage_key', $key)->exists()) {
                         continue;
                     }
                     $orphans[] = $key;
-                    if (count($orphans) >= $limit) {
+                    if (count($orphans) >= $orphanBudget) {
                         break 2;
                     }
                 }
@@ -275,7 +276,7 @@ final class PublicationMediaCleanupService
     private function isOwnedRightsFile(string $key): bool
     {
         return preg_match('#^variants/rights/[a-f0-9]{64}\.(?:jpg|png|webp)$#D', $key) === 1
-            || preg_match('#^rights-staging/[a-f0-9]{40}\.(?:jpg|png|webp)$#D', $key) === 1;
+            || preg_match('#^(?:variants/)?rights-staging/[a-f0-9]{40}\.(?:jpg|png|webp)$#D', $key) === 1;
     }
 
     /** @param list<string> $storageKeys */

@@ -251,6 +251,47 @@ Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10
     return 0;
 })->purpose('Preview or stage a bounded batch of image rights artifacts offline');
 
+// Dedicated existing publication cleanup owner; no new scheduler/worker.
+// Dry run is the default and no ordinary HTTP request uses this operation.
+Artisan::command('media:rights:cleanup {--limit=10 : Maximum candidate count (1-20)} {--apply : Reclaim unreferenced generated rights files}', function (\App\Domain\Publication\PublicationMediaCleanupService $cleanup): int {
+    if (! app()->environment(['local', 'testing'])) {
+        $this->error('Rights artifact cleanup is restricted to local/disposable testing.');
+        return 1;
+    }
+
+    $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 20]]);
+    if ($limit === false) {
+        $this->error('Provide --limit between 1 and 20.');
+        return 64;
+    }
+
+    if (! config('media.rights_preparation_enabled', false)
+        || config('media.rights_delivery_enabled', false)) {
+        $this->error('Rights artifact inspection requires offline preparation ON and public delivery OFF.');
+        return 1;
+    }
+
+    try {
+        $candidates = $cleanup->rightsCleanupCandidates($limit);
+        $result = [
+            'unreferenced_registry' => count($candidates['unreferenced']),
+            'orphaned_files' => count($candidates['orphan_keys']),
+            'preview_only' => ! $this->option('apply'),
+        ];
+        if ($this->option('apply')) {
+            $result = [...$result, ...$cleanup->reclaimRightsArtifacts($limit, true)];
+        }
+        $this->line(json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+        if (! $this->option('apply')) {
+            $this->comment('Preview only: no generated files or rights selections changed.');
+        }
+        return 0;
+    } catch (\Throwable $exception) {
+        $this->error('Rights cleanup aborted: '.$exception->getMessage());
+        return 1;
+    }
+})->purpose('Preview or reclaim unreferenced rights copies without touching source media');
+
 Artisan::command('media:measure-capacity', function (MediaCapacityService $capacity) {
     $capacity->forgetCachedSnapshot();
     $snapshot = $capacity->cachedSnapshot();
