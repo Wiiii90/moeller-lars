@@ -139,6 +139,20 @@ final class PublicationMediaCleanupService
             $this->refreshCapacitySnapshot();
         }
 
+        // Reuse this canonical post-Commit/Undo/Reset cleanup boundary. A
+        // small bounded pass reclaims only unreferenced registry entries,
+        // leaving full orphan-directory scans to the explicit operator CLI.
+        if (config('media.rights_preparation_enabled', false) === true) {
+            try {
+                $rights = $this->reclaimRightsArtifacts(20, false);
+                $removedFiles += $rights['files_removed'];
+            } catch (Throwable $exception) {
+                // Publication is already committed; cleanup is independently
+                // retryable and must not rewrite the published result.
+                report($exception);
+            }
+        }
+
         return $removedFiles;
     }
 

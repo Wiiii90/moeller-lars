@@ -231,13 +231,23 @@ Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10
         ->limit($limit)
         ->get(['id', 'original_filename']);
     $prepared = 0;
+    $lastId = (int) $after;
     foreach ($assets as $asset) {
-        if ($apply && $preparation->prepare((int) $asset->getKey())) {
-            $prepared++;
-        }
-    }
+        $id = (int) $asset->getKey();
+        if ($apply) {
+            try {
+                if ($preparation->prepare($id)) {
+                    $prepared++;
+                }
+            } catch (\Throwable $exception) {
+                $this->error('Rights preparation stopped at media #'.$id.': '.$exception->getMessage());
+                $this->warn('Last completed cursor: --after='.$lastId.'. Re-run from that cursor after correcting the error.');
 
-    $lastId = $assets->last()?->getKey() ?? $after;
+                return 1;
+            }
+        }
+        $lastId = $id;
+    }
     $this->line(json_encode([
         'scanned' => $assets->count(),
         'prepared' => $prepared,
