@@ -443,6 +443,14 @@ final class General extends Page
             Repeater::make($surface.'_gradient_stops')
                 ->label('Colors')
                 ->default(fn (): array => PublicAppearance::stops(PublicContentSetting::general(), $surface))
+                ->afterStateHydrated(function (Repeater $component, mixed $state) use ($surface): void {
+                    if (! is_array($state) || count($state) < 2) {
+                        // Hidden/conditional Filament fields may not yet have
+                        // created item containers when their mode becomes active.
+                        // Hydration stays read-only; no autosave on page open.
+                        $component->state(PublicAppearance::stops(PublicContentSetting::general(), $surface));
+                    }
+                })
                 ->schema([
                     AdminColorControl::make('color', 'Color')
                         ->default($surface === 'background' ? PublicAppearance::DEFAULT_PAGE_COLOR : PublicAppearance::DEFAULT_SURFACE_COLOR)
