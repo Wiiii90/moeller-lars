@@ -276,6 +276,9 @@ it('persists per-Gallery landscape and edge settings through one audited action'
     expect(AuditEvent::query()->count())->toBe($auditBefore + 1)
         ->and(AdminNotification::query()->count())->toBe($notificationBefore + 1);
 
+    expect(\Illuminate\Support\Facades\DB::table('committed.artwork_categories')
+        ->where('id', $gallery->getKey())->value('edge_navigation_mode'))->toBe('disabled');
+
     expect(app(PublicationService::class)->commit(auth()->user()))->not->toBeNull();
     expect(\Illuminate\Support\Facades\DB::table('committed.artwork_categories')
         ->where('id', $gallery->getKey())->first(['landscape_detail_enabled', 'landscape_detail_scale', 'edge_navigation_mode']))

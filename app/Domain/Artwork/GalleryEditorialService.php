@@ -3,7 +3,6 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
