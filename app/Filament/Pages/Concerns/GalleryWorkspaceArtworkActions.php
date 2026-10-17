@@ -194,6 +194,12 @@ trait GalleryWorkspaceArtworkActions
                         status: 'success',
                     );
                 }
+                // A confirmation opened from the Edit header is a state
+                // mutation, not a request to close the editing session.
+                // Standalone table Unpublish still completes normally.
+                if (($arguments['returnToEditor'] ?? false) === true) {
+                    $this->replaceMountedAction('editArtwork', ['artwork' => (int) $artwork->getKey()]);
+                }
             });
 
         return AdminDialog::confirm(

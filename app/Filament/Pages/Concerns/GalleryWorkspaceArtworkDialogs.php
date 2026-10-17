@@ -142,7 +142,7 @@ trait GalleryWorkspaceArtworkDialogs
             function () use ($published, $id, $target): void {
                 if ($published) {
                     // Unpublication is confirmed by its existing domain action.
-                    $this->replaceMountedAction('unpublishArtwork', $target);
+                    $this->replaceMountedAction('unpublishArtwork', [...$target, 'returnToEditor' => true]);
 
                     return;
                 }
