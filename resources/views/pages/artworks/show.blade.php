@@ -28,7 +28,7 @@
 {{-- Orientation comes from the authoritative public thumbnail dimensions,
      before image decoding, without any client-side layout measurement. --}}
 @section('content_class', ! $isVideo && $thumbnailWidth > $thumbnailHeight && $presentation::enabled($category)
-    ? 'site-content--landscape-artwork site-content--landscape-scale-'.$presentation::scale($category)
+    ? 'site-content--landscape-artwork'
     : '')
 
 @section('title', $artwork->title.' — Lars Möller')
@@ -48,6 +48,7 @@
             :next-artwork="$nextArtwork"
             :empty-step-mode="$edgeMode"
         />
+        <div class="artwork-detail__media">
         <a
             class="artwork-detail__viewer-trigger"
             href="{{ $originalUrl }}"
@@ -89,6 +90,7 @@
 
         <div class="artwork-detail__footer">
             <x-artwork-caption :artwork="$artwork" />
+        </div>
         </div>
 
         @if ($artwork->description)

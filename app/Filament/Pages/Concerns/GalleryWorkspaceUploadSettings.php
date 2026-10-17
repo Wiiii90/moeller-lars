@@ -37,7 +37,6 @@ trait GalleryWorkspaceUploadSettings
                     'description' => $gallery->getAttribute('description'),
                     'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
-                    'landscape_detail_scale' => GalleryPresentation::scale($gallery),
                     'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
                 ];
             })
@@ -55,20 +54,6 @@ trait GalleryWorkspaceUploadSettings
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
                         Toggle::make('landscape_detail_enabled')
                             ->label('Expand landscape Artwork pages')
-                            ->helperText('Off by default. Gallery and Home image widths are unchanged.')
-                            ->columnSpanFull(),
-                        Select::make('landscape_detail_scale')
-                            ->label('Landscape maximum width')
-                            ->options([
-                                125 => '125% of General artwork width',
-                                150 => '150% of General artwork width',
-                                175 => '175% of General artwork width',
-                                200 => '200% of General artwork width',
-                                250 => '250% of General artwork width',
-                            ])
-                            ->default(GalleryPresentation::DEFAULT_SCALE)
-                            ->required()
-                            ->helperText('Only when expanded; available screen width remains the limit.')
                             ->columnSpanFull(),
                         Select::make('edge_navigation_mode')
                             ->label('Artwork navigation at sequence ends')
@@ -96,7 +81,6 @@ trait GalleryWorkspaceUploadSettings
                             'description' => $data['description'] ?? null,
                             'show_on_home' => (bool) ($data['show_on_home'] ?? false),
                             'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
-                            'landscape_detail_scale' => $data['landscape_detail_scale'] ?? GalleryPresentation::DEFAULT_SCALE,
                             'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                         ]);
                         $changed = $updated->wasChanged();

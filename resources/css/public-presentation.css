@@ -152,6 +152,17 @@ body {
     background: var(--public-surface);
 }
 
+/* The main and child navigation use real 44px hit rails in overflow
+   mode. Flexible gutters previously collapsed below the icon width on
+   phones, placing the arrow outside its reliably clickable area. */
+.site-navigation__rail.is-overflowing,
+.site-navigation__submenu.is-overflowing {
+    grid-template-columns:
+        minmax(2.75rem, 1fr)
+        minmax(0, min(calc(100% - 5.5rem), var(--public-art-max)))
+        minmax(2.75rem, 1fr);
+}
+
 /* One CSS-drawn paper on the visible rail OR submenu. The pseudo only
    paints the connected outside L, not the interior white surface. */
 .site-navigation__rail::before,
@@ -427,9 +438,9 @@ body {
     position: relative;
     z-index: 5;
     display: grid;
-    width: 2.5rem;
+    width: min(100%, 3rem);
     height: 100%;
-    min-height: 2.95rem;
+    min-height: 3rem;
     margin: 0;
     padding: 0;
     grid-row: 1;
@@ -597,32 +608,36 @@ body {
     overflow-wrap: break-word;
 }
 
-/* The individual landscape Artwork gets a wider exhibition sheet while
-   Gallery, Home Hero, portrait/square Artworks and navigation keep their
-   configured common geometry. Orientation is resolved before first paint.
-   The sheet and its gutters contract fluidly on narrow screens. */
-/* An enabled Gallery multiplies General's actual artwork width: no
-   separate pixel limit, and no untrusted inline style or JavaScript. */
-.site-content--landscape-scale-125 { --gallery-landscape-scale: 1.25; }
-.site-content--landscape-scale-150 { --gallery-landscape-scale: 1.5; }
-.site-content--landscape-scale-175 { --gallery-landscape-scale: 1.75; }
-.site-content--landscape-scale-200 { --gallery-landscape-scale: 2; }
-.site-content--landscape-scale-250 { --gallery-landscape-scale: 2.5; }
-
+/* Landscape Artwork details use the originally reviewed envelope:
+   up to 1000px paper and 960px image. General's global artwork width
+   also limits expansion; viewport geometry is always the final bound. */
 #content.site-content--landscape-artwork {
     width: min(
         calc(100% - 2 * var(--public-gutter)),
-        calc(var(--public-art-max) * var(--gallery-landscape-scale, 1.5) + 4rem)
+        max(var(--public-shell-max), min(1000px, calc(var(--public-art-max) * 1.5 + 3.5rem)))
     );
     padding-inline: clamp(var(--public-mobile-inset), 2.5vw, 2rem);
 }
 
 .site-content--landscape-artwork .artwork-detail {
-    width: min(100%, calc(var(--public-art-max) * var(--gallery-landscape-scale, 1.5)));
+    width: min(100%, max(var(--public-art-max), min(960px, calc(var(--public-art-max) * 1.5))));
 }
 
-/* Keep both arrow hit regions in their original General-width positions:
-   browsing portrait → landscape never asks the pointer to travel sideways. */
+/* Media and caption share the same intrinsic-width block. Smaller
+   thumbnails never upscale to fill the white sheet; narrower viewports
+   may shrink them to fit without clipping either image dimension. */
+.site-content--landscape-artwork .artwork-detail__media {
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+}
+.site-content--landscape-artwork .artwork-detail__image {
+    width: auto;
+    max-width: 100%;
+}
+
+/* Artwork arrows remain on the original centered General-width track,
+   independent of the landscape media's own size. */
 .artwork-detail .artwork-folio {
     width: min(100%, var(--public-art-max));
     margin-inline: auto;

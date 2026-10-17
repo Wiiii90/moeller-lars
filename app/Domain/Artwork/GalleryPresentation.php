@@ -7,13 +7,9 @@ use Illuminate\Validation\ValidationException;
 
 final class GalleryPresentation
 {
-    public const DEFAULT_SCALE = 150;
-
     public const EDGE_DISABLED = 'disabled';
     public const EDGE_HIDDEN = 'hidden';
     public const EDGE_CYCLIC = 'cyclic';
-
-    public const SCALES = [125, 150, 175, 200, 250];
 
     public const EDGE_MODES = [self::EDGE_DISABLED, self::EDGE_HIDDEN, self::EDGE_CYCLIC];
 
@@ -28,13 +24,6 @@ final class GalleryPresentation
             }
             $values['landscape_detail_enabled'] = (bool) $enabled;
         }
-        if (array_key_exists('landscape_detail_scale', $data)) {
-            $scale = $data['landscape_detail_scale'];
-            if (filter_var($scale, FILTER_VALIDATE_INT) === false || ! in_array((int) $scale, self::SCALES, true)) {
-                throw ValidationException::withMessages(['landscape_detail_scale' => 'Choose a supported maximum width.']);
-            }
-            $values['landscape_detail_scale'] = (int) $scale;
-        }
         if (array_key_exists('edge_navigation_mode', $data)) {
             if (! is_string($data['edge_navigation_mode']) || ! in_array($data['edge_navigation_mode'], self::EDGE_MODES, true)) {
                 throw ValidationException::withMessages(['edge_navigation_mode' => 'Choose Disabled, Hidden, or Cyclic.']);
@@ -47,14 +36,6 @@ final class GalleryPresentation
     public static function enabled(ArtworkCategory $gallery): bool
     {
         return (bool) $gallery->getAttribute('landscape_detail_enabled');
-    }
-
-    public static function scale(ArtworkCategory $gallery): int
-    {
-        $scale = $gallery->getAttribute('landscape_detail_scale');
-
-        return is_numeric($scale) && in_array((int) $scale, self::SCALES, true)
-            ? (int) $scale : self::DEFAULT_SCALE;
     }
 
     public static function edgeMode(ArtworkCategory $gallery): string
