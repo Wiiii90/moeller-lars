@@ -724,6 +724,16 @@ body {
     width: 100%;
 }
 
+/* Divided Galleries keep the ordinary total artwork-to-artwork rhythm,
+   splitting it symmetrically around each canonical divider. No leading or
+   trailing separator, and no doubled card margin at row boundaries. */
+.artwork-list--divided > .artwork-card {
+    margin-bottom: 0;
+}
+.artwork-list--divided > .artwork-list__divider {
+    margin-block: calc(var(--public-section-gap) / 2);
+}
+
 .artwork-card,
 .artwork-detail {
     margin-bottom: var(--public-section-gap);

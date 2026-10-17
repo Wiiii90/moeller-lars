@@ -2,6 +2,7 @@
 
 namespace App\Domain\Artwork;
 
+use App\Domain\Content\DividerVariant;
 use App\Models\ArtworkCategory;
 use Illuminate\Validation\ValidationException;
 
@@ -13,6 +14,10 @@ final class GalleryPresentation
 
     public const EDGE_MODES = [self::EDGE_DISABLED, self::EDGE_HIDDEN, self::EDGE_CYCLIC];
 
+    public const DIVIDER_NONE = 'none';
+
+    public const DIVIDER_OPTIONS = [self::DIVIDER_NONE => 'None', ...DividerVariant::LABELS];
+
     /** @return array<string, mixed> */
     public static function validateSettings(array $data): array
     {
@@ -23,6 +28,13 @@ final class GalleryPresentation
                 throw ValidationException::withMessages(['landscape_detail_enabled' => 'Choose whether landscape details can expand.']);
             }
             $values['landscape_detail_enabled'] = (bool) $enabled;
+        }
+        if (array_key_exists('artwork_divider', $data)) {
+            $variant = $data['artwork_divider'];
+            if (! is_string($variant) || ! array_key_exists($variant, self::DIVIDER_OPTIONS)) {
+                throw ValidationException::withMessages(['artwork_divider' => 'Choose a supported artwork divider.']);
+            }
+            $values['artwork_divider'] = $variant;
         }
         if (array_key_exists('edge_navigation_mode', $data)) {
             if (! is_string($data['edge_navigation_mode']) || ! in_array($data['edge_navigation_mode'], self::EDGE_MODES, true)) {
@@ -36,6 +48,14 @@ final class GalleryPresentation
     public static function enabled(ArtworkCategory $gallery): bool
     {
         return (bool) $gallery->getAttribute('landscape_detail_enabled');
+    }
+
+    public static function divider(ArtworkCategory $gallery): string
+    {
+        $variant = $gallery->getAttribute('artwork_divider');
+
+        return is_string($variant) && array_key_exists($variant, self::DIVIDER_OPTIONS)
+            ? $variant : self::DIVIDER_NONE;
     }
 
     public static function edgeMode(ArtworkCategory $gallery): string

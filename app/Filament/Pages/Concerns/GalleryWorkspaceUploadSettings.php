@@ -38,6 +38,7 @@ trait GalleryWorkspaceUploadSettings
                     'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
                     'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
+                    'artwork_divider' => GalleryPresentation::divider($gallery),
                 ];
             })
             ->schema([
@@ -54,6 +55,12 @@ trait GalleryWorkspaceUploadSettings
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
                         Toggle::make('landscape_detail_enabled')
                             ->label('Expand landscape Artwork pages')
+                            ->columnSpanFull(),
+                        Select::make('artwork_divider')
+                            ->label('Between Artworks')
+                            ->options(GalleryPresentation::DIVIDER_OPTIONS)
+                            ->default(GalleryPresentation::DIVIDER_NONE)
+                            ->required()
                             ->columnSpanFull(),
                         Select::make('edge_navigation_mode')
                             ->label('Artwork navigation at sequence ends')
@@ -82,6 +89,7 @@ trait GalleryWorkspaceUploadSettings
                             'show_on_home' => (bool) ($data['show_on_home'] ?? false),
                             'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
                             'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
+                            'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                         ]);
                         $changed = $updated->wasChanged();
 
