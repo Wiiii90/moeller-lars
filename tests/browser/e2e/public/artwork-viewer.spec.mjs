@@ -173,9 +173,18 @@ test('landscape Artwork detail widens the canvas without enlarging Gallery or ov
         const image = element.querySelector('.artwork-detail__image').getBoundingClientRect();
         const nav = element.querySelector('.artwork-folio').getBoundingClientRect();
         const caption = element.querySelector('.artwork-detail__footer').getBoundingClientRect();
-        return { imageRight: image.right, navRight: nav.right, captionRight: caption.right };
+        return {
+            imageCenter: image.left + image.width / 2,
+            navCenter: nav.left + nav.width / 2,
+            navWidth: nav.width,
+            imageRight: image.right,
+            captionRight: caption.right,
+        };
     });
-    expect(alignment.navRight).toBeCloseTo(alignment.imageRight, 0);
+    // Arrows stay on the original General artwork width, not the expanded
+    // image edges. Both are centered, while the caption follows the image.
+    expect(alignment.navCenter).toBeCloseTo(alignment.imageCenter, 0);
+    expect(alignment.navWidth).toBeLessThanOrEqual(galleryWidth + 1);
     expect(alignment.captionRight).toBeCloseTo(alignment.imageRight, 0);
 
     await page.setViewportSize({ width: 844, height: 390 });
