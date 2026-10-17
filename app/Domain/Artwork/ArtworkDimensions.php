@@ -23,12 +23,19 @@ final class ArtworkDimensions
             ];
         }
 
-        if (preg_match('/^([0-9]+(?:[.,][0-9]+)?)\s*[×xX]\s*([0-9]+(?:[.,][0-9]+)?)(?:\s*[×xX]\s*([0-9]+(?:[.,][0-9]+)?))?\s*(cm|mm|in)$/u', $value, $matches, PREG_UNMATCHED_AS_NULL) === 1) {
+        // Numeric legacy dimensions use the existing editorial default cm.
+        // Zero in the third slot meant "no depth", not a real 3D measurement.
+        // Other freeform expressions remain exactly artist-authored.
+        if (preg_match('/^([0-9]+(?:[.,][0-9]+)?)\s*[×xX]\s*([0-9]+(?:[.,][0-9]+)?)(?:\s*[×xX]\s*([0-9]+(?:[.,][0-9]+)?))?\s*(cm|mm|in)?$/u', $value, $matches, PREG_UNMATCHED_AS_NULL) === 1
+            && (float) str_replace(',', '.', $matches[1]) > 0
+            && (float) str_replace(',', '.', $matches[2]) > 0) {
+            $depth = $matches[3] !== null ? self::normalizeNumber($matches[3]) : null;
+
             return [
                 'height' => self::normalizeNumber($matches[1]),
                 'width' => self::normalizeNumber($matches[2]),
-                'depth' => $matches[3] !== null ? self::normalizeNumber($matches[3]) : null,
-                'unit' => $matches[4],
+                'depth' => $depth !== null && (float) $depth > 0 ? $depth : null,
+                'unit' => $matches[4] ?? 'cm',
                 'custom' => null,
             ];
         }
@@ -40,6 +47,24 @@ final class ArtworkDimensions
             'unit' => 'cm',
             'custom' => $value,
         ];
+    }
+
+    /** Normalize structured and numeric legacy dimensions for public display. */
+    public static function display(?string $dimensions): ?string
+    {
+        $parsed = self::split($dimensions);
+
+        if ($parsed['custom'] !== null) {
+            return $parsed['custom'];
+        }
+
+        return self::compose(
+            $parsed['height'],
+            $parsed['width'],
+            $parsed['depth'],
+            $parsed['unit'],
+            null,
+        );
     }
 
     public static function compose(

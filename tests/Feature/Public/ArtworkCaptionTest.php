@@ -36,3 +36,19 @@ it('omits absent fields and preserves custom dimension units', function (): void
 
     expect(Str::squish(strip_tags($markup)))->toBe('Unframed, Bronze 12 × 8 × 4 mm');
 });
+
+it('renders legacy two-dimensional measurements with cm and retains nonzero depth', function (): void {
+    $artwork = new Artwork([
+        'title' => 'Klaus Timm',
+        'medium' => 'drawing',
+        'work_year' => 2018,
+        'dimensions' => '33 x 24 x 0',
+    ]);
+
+    $caption = Blade::render('<x-artwork-caption :artwork="$artwork" />', ['artwork' => $artwork]);
+    expect(Str::squish(strip_tags($caption)))->toBe('Klaus Timm, drawing 2018, 33 × 24 cm');
+
+    $artwork->dimensions = '33 × 24 × 1.5 mm';
+    $caption = Blade::render('<x-artwork-caption :artwork="$artwork" />', ['artwork' => $artwork]);
+    expect(Str::squish(strip_tags($caption)))->toBe('Klaus Timm, drawing 2018, 33 × 24 × 1.5 mm');
+});

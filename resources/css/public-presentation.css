@@ -813,16 +813,17 @@ body {
 }
 
 /* The image-width folio is a three-part navigation, not a caption toolbar.
-   Equal flexible outer columns put the category at the real horizontal center.
-   No viewport-only breakpoint: long names yield to arrows and truncate, never
-   cause horizontal overflow or displace the image width. */
+   Equal flexible outer columns keep the category truly centered. Generous,
+   inset 50px arrow targets serve touch and narrow viewports without changing
+   the shared layout or letting long titles push the arrows out of view. */
 .artwork-folio {
     display: grid;
     width: 100%;
     min-width: 0;
-    min-height: 2.65rem;
-    margin-bottom: .45rem;
-    grid-template-columns: minmax(2.5rem, 1fr) minmax(0, max-content) minmax(2.5rem, 1fr);
+    min-height: 3.125rem;
+    margin-bottom: .5rem;
+    padding-inline: clamp(.4rem, 1.4vw, .7rem);
+    grid-template-columns: minmax(3.125rem, 1fr) minmax(0, max-content) minmax(3.125rem, 1fr);
     align-items: center;
     gap: 0;
     color: #55504b;
@@ -872,9 +873,9 @@ body {
 }
 .artwork-folio__step {
     display: inline-flex;
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: .55rem;
+    width: 3.125rem;
+    height: 3.125rem;
+    padding: 0;
     align-items: center;
     justify-content: center;
     appearance: none;

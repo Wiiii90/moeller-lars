@@ -3,9 +3,9 @@
 @php
     $title = trim((string) $artwork->title);
     $material = trim((string) ($artwork->medium ?? ''));
-    $size = trim((string) ($artwork->dimensions ?? ''));
-    // Structured dimensions contain their saved unit. A custom size is
-    // already artist-authored and must not receive an invented suffix.
+    $size = \App\Domain\Artwork\ArtworkDimensions::display($artwork->dimensions) ?? '';
+    // Numeric legacy H × W [× 0] uses the editorial default cm.
+    // Other artist-authored custom expressions remain unchanged.
     $details = [];
     if ($artwork->work_year !== null) {
         $details[] = (string) $artwork->work_year;

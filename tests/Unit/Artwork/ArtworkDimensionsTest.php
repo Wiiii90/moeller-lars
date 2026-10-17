@@ -7,6 +7,23 @@ it('formats height width and optional depth with centimetres by default', functi
         ->and(ArtworkDimensions::compose('12.5', '8', '2', 'cm', null))->toBe('12.5 × 8 × 2 cm');
 });
 
+it('displays numeric legacy sizes with the default unit and no absent zero-depth', function (): void {
+    expect(ArtworkDimensions::split('33 x 24 x 0'))->toBe([
+        'height' => '33',
+        'width' => '24',
+        'depth' => null,
+        'unit' => 'cm',
+        'custom' => null,
+    ])->and(ArtworkDimensions::display('33 x 24 x 0'))->toBe('33 × 24 cm')
+        ->and(ArtworkDimensions::display('33 × 24 × 0 cm'))->toBe('33 × 24 cm')
+        ->and(ArtworkDimensions::display('33 x 24'))->toBe('33 × 24 cm')
+        ->and(ArtworkDimensions::display('33 x 24 x 2'))->toBe('33 × 24 × 2 cm')
+        ->and(ArtworkDimensions::display('33 x 24 x 2 mm'))->toBe('33 × 24 × 2 mm')
+        ->and(ArtworkDimensions::display('33 × 24 × 0 in'))->toBe('33 × 24 in')
+        ->and(ArtworkDimensions::display('Ø 44 cm, variable'))->toBe('Ø 44 cm, variable')
+        ->and(ArtworkDimensions::display(''))->toBeNull();
+});
+
 it('parses structured dimensions and preserves legacy free-form dimensions as custom', function (): void {
     expect(ArtworkDimensions::split('120 × 80 × 2 cm'))->toBe([
         'height' => '120',
