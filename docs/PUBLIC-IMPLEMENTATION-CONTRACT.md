@@ -524,8 +524,12 @@ and selected, and are shown with the canonical full six-column row.
 
 General is the authoritative global editor for three distinct page paint
 surfaces: **Background** (outer viewport and header), **Menu** (both navigation
-levels) and **Page** (content backing). Each supports the same validated
-Solid/Linear Gradient model, two color values and a linear gradient angle.
+levels) and **Page** (content backing). Each uses the same validated paint contract: Solid, Linear, Radial and
+Conic gradients, each optionally repeating, with 2–12 stops (color and
+position). Linear uses the shared angle control; Conic has a start angle and
+center; Radial has a center and circle/ellipse shape. Repeating uses an
+explicit span (pixels for Linear/Radial, degrees for Conic) so repetition is
+visible. Missing JSON stop lists preserve the legacy two-color appearance.
 The existing Page width and Content padding remain separate layout parameters.
 
 The `PublicAppearance` domain validates and projects all three values.

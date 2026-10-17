@@ -303,3 +303,125 @@ it('publishes global Menu and Page paints only on Commit, with nonce-authorized 
     generalAssertPublicStyleUsesNonce($html, $nonce, '--public-menu-background: #AABBCC');
     generalAssertPublicStyleUsesNonce($html, $nonce, '--public-content-background: linear-gradient(90deg, #112233, #445566)');
 });
+
+it('builds multistop Linear, Radial and Conic global paints with optional repetition', function (): void {
+    $service = app(AdminSettingsService::class);
+    $settings = PublicContentSetting::general();
+    $stops = [
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#445566', 'position' => 40],
+        ['color' => '#778899', 'position' => 100],
+    ];
+
+    $service->updatePublicContent($settings, [
+        'background_mode' => 'gradient',
+        'background_gradient_angle' => 45,
+        'background_gradient_stops' => $stops,
+        'menu_background_mode' => 'radial',
+        'menu_background_gradient_shape' => 'ellipse',
+        'menu_background_gradient_center_x' => 25,
+        'menu_background_gradient_center_y' => 75,
+        'menu_background_gradient_repeating' => true,
+        'menu_background_gradient_repeat_span' => 80,
+        'menu_background_gradient_stops' => $stops,
+        'page_background_mode' => 'conic',
+        'page_background_gradient_angle' => 30,
+        'page_background_gradient_center_x' => 10,
+        'page_background_gradient_center_y' => 80,
+        'page_background_gradient_repeating' => true,
+        'page_background_gradient_repeat_span' => 90,
+        'page_background_gradient_stops' => $stops,
+    ]);
+
+    $settings = PublicContentSetting::general();
+    expect(PublicAppearance::backgroundCss($settings))
+        ->toBe('linear-gradient(45deg, #112233 0%, #445566 40%, #778899 100%) fixed')
+        ->and(PublicAppearance::surfaceCss($settings, 'menu_background'))
+        ->toBe('repeating-radial-gradient(ellipse at 25% 75%, #112233 0px, #445566 32px, #778899 80px)')
+        ->and(PublicAppearance::surfaceCss($settings, 'page_background'))
+        ->toBe('repeating-conic-gradient(from 30deg at 10% 80%, #112233 0deg, #445566 36deg, #778899 90deg)');
+});
+
+it('normalizes and validates variable color stops without permitting arbitrary CSS', function (): void {
+    $settings = PublicContentSetting::general();
+    $service = app(AdminSettingsService::class);
+
+    $service->updatePublicContent($settings, [
+        'menu_background_mode' => 'gradient',
+        'menu_background_gradient_stops' => [
+            ['color' => '#112233', 'position' => 0],
+            ['color' => 'abcdef', 'position' => '70'],
+            ['color' => '#445566', 'position' => '30'],
+            ['color' => '#778899', 'position' => 100],
+        ],
+    ]);
+
+    $saved = PublicContentSetting::general();
+    expect($saved->getAttribute('menu_background_gradient_stops'))->toBe([
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#445566', 'position' => 30],
+        ['color' => '#ABCDEF', 'position' => 70],
+        ['color' => '#778899', 'position' => 100],
+    ]);
+
+    foreach ([
+        [['color' => '#111111', 'position' => 0]],
+        [
+            ['color' => 'javascript:alert(1)', 'position' => 0],
+            ['color' => '#FFFFFF', 'position' => 100],
+        ],
+        [
+            ['color' => '#111111', 'position' => 25],
+            ['color' => '#FFFFFF', 'position' => 100],
+        ],
+    ] as $invalid) {
+        expect(fn () => $service->updatePublicContent(PublicContentSetting::general(), [
+            'page_background_gradient_stops' => $invalid,
+        ]))->toThrow(ValidationException::class);
+    }
+    expect(fn () => $service->updatePublicContent(PublicContentSetting::general(), [
+        'page_background_gradient_center_x' => 101,
+    ]))->toThrow(ValidationException::class);
+    expect(fn () => $service->updatePublicContent(PublicContentSetting::general(), [
+        'page_background_gradient_shape' => 'url(evil)',
+    ]))->toThrow(ValidationException::class);
+    expect(fn () => $service->updatePublicContent(PublicContentSetting::general(), [
+        'page_background_gradient_repeat_span' => 0,
+    ]))->toThrow(ValidationException::class);
+});
+
+it('leaves legacy two-color gradients unchanged until the new stops are edited', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'background_mode' => 'gradient',
+        'background_gradient_start' => '#123456',
+        'background_gradient_end' => '#AABBCC',
+        'background_gradient_angle' => 24,
+    ]);
+    expect(PublicAppearance::backgroundCss(PublicContentSetting::general()))
+        ->toBe('linear-gradient(24deg, #123456, #AABBCC) fixed');
+    Livewire::test(General::class)
+        ->assertSet('data.background_gradient_stops', [
+            ['color' => '#123456', 'position' => 0],
+            ['color' => '#AABBCC', 'position' => 100],
+        ]);
+    expect(PublicContentSetting::general()->getAttribute('background_gradient_stops'))->toBeNull();
+});
+
+it('keeps Working multi-stop appearance distinct from Committed until publication', function (): void {
+    $actor = User::query()->firstOrFail();
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'page_background_mode' => 'conic',
+        'page_background_gradient_stops' => [
+            ['color' => '#FF0000', 'position' => 0],
+            ['color' => '#00FF00', 'position' => 50],
+            ['color' => '#0000FF', 'position' => 100],
+        ],
+    ]);
+    expect((string) $this->get(route('home'))->assertOk()->getContent())
+        ->not->toContain('conic-gradient(');
+    expect((string) $this->get('/preview')->assertOk()->getContent())
+        ->toContain('conic-gradient(');
+    app(PublicationService::class)->commit($actor, 'Publish multi-stop Page appearance');
+    expect((string) $this->get(route('home'))->assertOk()->getContent())
+        ->toContain('conic-gradient(');
+});
