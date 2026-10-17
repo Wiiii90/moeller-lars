@@ -1,6 +1,6 @@
 # Test suites — current dev workflow
 
-Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. All source changes are made on `dev`; the former `testing` branch/worktree is not part of the current workflow.
+Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. Normal development is on `dev`; an explicitly authorized isolated B2 verification round uses the existing `testing` branch without introducing a second test structure.
 
 ## Layers
 
@@ -33,7 +33,7 @@ composer lint
 
 **Database safety:** Only run Integration/Feature/Migration or seeded browser tests in a positively verified disposable PostgreSQL environment with isolated application storage, cache, sessions, media and PHP temporary directories. `Tests\\TestCase` and `LocalPreviewDatabaseGuard` must not be bypassed. The persistent local preview database is never a test target; CI environment flags alone are not proof of isolation.
 
-Two special PostgreSQL-17/tmpfs concurrency suites need their dedicated Windows PowerShell isolation runners, from the `dev` checkout:
+Two special PostgreSQL-17/tmpfs concurrency suites need their dedicated Windows PowerShell isolation runners, from an authorized `dev` or `testing` checkout:
 
 ```powershell
 & .\tests\Support\RunPublicationConcurrency.ps1 --compact
