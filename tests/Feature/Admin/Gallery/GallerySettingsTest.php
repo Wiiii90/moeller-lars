@@ -280,13 +280,12 @@ it('persists per-Gallery landscape and edge settings through one audited action'
         ->where('id', $gallery->getKey())->value('edge_navigation_mode'))->toBe('disabled');
 
     expect(app(PublicationService::class)->commit(auth()->user()))->not->toBeNull();
-    expect(\Illuminate\Support\Facades\DB::table('committed.artwork_categories')
-        ->where('id', $gallery->getKey())->first(['landscape_detail_enabled', 'landscape_detail_scale', 'edge_navigation_mode']))
-        ->toMatchObject([
-            'landscape_detail_enabled' => true,
-            'landscape_detail_scale' => 200,
-            'edge_navigation_mode' => 'cyclic',
-        ]);
+    $committed = \Illuminate\Support\Facades\DB::table('committed.artwork_categories')
+        ->where('id', $gallery->getKey())
+        ->first(['landscape_detail_enabled', 'landscape_detail_scale', 'edge_navigation_mode']);
+    expect((bool) $committed->landscape_detail_enabled)->toBeTrue()
+        ->and((int) $committed->landscape_detail_scale)->toBe(200)
+        ->and($committed->edge_navigation_mode)->toBe('cyclic');
 });
 
 it('rejects unsupported Gallery detail scales and navigation modes without mutation', function (): void {
