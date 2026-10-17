@@ -133,7 +133,7 @@ final class General extends Page
                             View::make('filament.schemas.components.admin-section-heading')
                                 ->viewData([
                                     'label' => 'Appearance',
-                                    'class' => 'general-stage-kicker',
+                                    'class' => 'general-stage-kicker admin-visual-stage__heading',
                                 ])
                                 ->columnSpanFull(),
 
@@ -267,7 +267,7 @@ final class General extends Page
                     ])
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
-                            'class' => 'general-appearance-stage admin-visual-stage',
+                            'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--split',
                             'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
                             'aria-label' => 'General settings and live public preview',
                         ])

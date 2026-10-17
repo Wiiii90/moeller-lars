@@ -269,7 +269,7 @@
     x-on:blur.window="cancelSpacePan()"
 >
     <div class="general-live-preview__toolbar">
-        <h2 class="admin-section__kicker general-live-preview__title">Live preview</h2>
+        <h2 class="admin-section__kicker general-live-preview__title admin-visual-stage__heading">Live preview</h2>
 
         <div class="general-live-preview__toolbar-meta">
             <span class="general-live-preview__preset">{{ $previewLabel }}</span>

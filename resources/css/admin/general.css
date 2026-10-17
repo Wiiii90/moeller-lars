@@ -42,10 +42,12 @@
 }
 
 .general-appearance-stage[data-preview-device="desktop"] {
+    --admin-stage-divider-axis: 50%;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
 .general-appearance-stage[data-preview-device="mobile"] {
+    --admin-stage-divider-axis: 66.666667%;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) !important;
 }
 
@@ -76,27 +78,6 @@
     gap: .25rem;
     padding-left: var(--admin-stage-pane-space);
     overflow: hidden;
-}
-
-/* General changes only the divider axis with preview mode. Its vertical inset
- * is the same shared inset used by every other Visual Stage. */
-.general-appearance-stage::after {
-    position: absolute;
-    z-index: 8;
-    top: var(--admin-stage-divider-inset);
-    bottom: var(--admin-stage-divider-inset);
-    width: 1px;
-    background: var(--admin-line);
-    content: "";
-    pointer-events: none;
-}
-
-.general-appearance-stage[data-preview-device="desktop"]::after {
-    left: 50%;
-}
-
-.general-appearance-stage[data-preview-device="mobile"]::after {
-    left: 66.666667%;
 }
 
 /* Group::extraAttributes() lives on the Group wrapper; the embedded child
@@ -334,9 +315,9 @@
 .general-live-preview__toolbar {
     display: flex;
     min-width: 0;
-    min-height: 1.75rem;
+    min-height: var(--admin-stage-header-height);
     gap: .65rem;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
 }
 

@@ -6,6 +6,7 @@
 
 :root {
     --admin-stage-divider-inset: .25rem;
+    --admin-stage-header-height: 2rem;
     --admin-stage-pane-space: var(--admin-section-gap);
     --admin-stage-orbit-size: 18.5rem;
     --admin-stage-orbit-caption-reserve: 2.28125rem;
@@ -23,13 +24,21 @@
 /* Leading-edge invariant: the first visual cell starts on the workspace edge.
  * Feature panes may own right/interior breathing room, never a left indent on
  * the first stage cell. Vertical stage rhythm is intentionally unaffected. */
+/* Headings without actions use the same vertical rail as stage headings
+ * accompanied by a standard 2rem action control. */
+.admin-visual-stage__heading {
+    display: flex;
+    min-height: var(--admin-stage-header-height);
+    align-items: center;
+}
+
 .admin-visual-stage > :first-child {
     margin-left: 0 !important;
     padding-left: 0 !important;
 }
 
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage),
+    .admin-visual-stage--rail,
     .analytics-visual-stage,
     .admin-storage__visual-stage,
     .home-hero-surface
@@ -40,14 +49,15 @@
     overflow: visible;
 }
 
-/* Shared divider drawing. General intentionally owns its custom matrix divider
- * in general.css and is therefore excluded from this shared rule. */
+/* All Stage divider strokes are owned here. The split variant lets General
+ * choose its desktop/mobile metric-aligned axis without drawing a second line. */
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage),
+    .admin-visual-stage--rail,
     .analytics-visual-stage,
     .admin-storage__visual-stage,
     .home-hero-surface
 )::after,
+.admin-visual-stage--split::after,
 .admin-visual-stage--triptych::before,
 .admin-visual-stage--triptych::after,
 .activity-atlas__grid::after {
@@ -62,7 +72,7 @@
 }
 
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage),
+    .admin-visual-stage--rail,
     .analytics-visual-stage,
     .admin-storage__visual-stage,
     .home-hero-surface
@@ -76,6 +86,10 @@
     left: 33.333333%;
 }
 
+.admin-visual-stage--split::after {
+    left: var(--admin-stage-divider-axis, 50%);
+}
+
 /* Activity keeps the Calendar/Clock boundary as an invisible alignment axis. */
 .activity-atlas__grid::before {
     display: none !important;
@@ -86,7 +100,7 @@
  * not use this first-pane inset because their visuals must reach the exact 2/3
  * axis. */
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface)
+    .admin-visual-stage--rail:not(.analytics-visual-stage):not(.home-hero-surface)
 ) > :first-child {
     grid-column: 1 / span 2;
     min-width: 0;
@@ -94,7 +108,7 @@
 }
 
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface)
+    .admin-visual-stage--rail:not(.analytics-visual-stage):not(.home-hero-surface)
 ) > :last-child {
     grid-column: 3;
     min-width: 0;

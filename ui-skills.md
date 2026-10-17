@@ -121,7 +121,7 @@ For toolbars, geometry is **real content minimum + ruler subdivision**: derive t
 
 For tables, preserve canonical role order and the terminal Selection rail; supportive columns and action labels yield before Selection drifts or horizontal scrolling appears.
 
-For Visual Stages, reuse the shared stage height, pane/divider geometry and semantic Wide/Narrow/Minimal composition before adding feature-local dimensions. A page must not recreate an already-owned stage axis or breakpoint.
+For Visual Stages, reuse the shared stage height, pane/divider geometry and semantic Wide/Narrow/Minimal composition before adding feature-local dimensions. A page must not recreate an already-owned stage axis or breakpoint. General's two-pane desktop/mobile split uses the shared `admin-visual-stage--split` divider with a metric-aligned `--admin-stage-divider-axis` and the shared `admin-visual-stage__heading` vertical rail, rather than its own pseudo-divider or top-offset. Its live preview scales the complete device inside the stage viewport, so a small bottom inset is intentional.
 
 A screenshot-specific span, page-local Selection offset, page-local standard-toolbar grid or duplicate shared-stage geometry is a contract violation unless the shared primitive demonstrably cannot represent the task.
 
