@@ -170,6 +170,24 @@ final class MediaCapacityService
         }
     }
 
+    /**
+     * The generated staging file is already included in the variants/ quota
+     * measurement; validate its real size without reserving it twice.
+     */
+    public function assertWithinAllowance(): void
+    {
+        $snapshot = $this->snapshot();
+        if ($snapshot['configuration_valid'] !== true
+            || $snapshot['measurement_available'] !== true) {
+            throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified.']);
+        }
+
+        if ($snapshot['quota_bytes'] !== null
+            && $snapshot['site_used_bytes'] > $snapshot['quota_bytes']) {
+            throw ValidationException::withMessages(['media' => 'Staged media exceeds the site storage allowance.']);
+        }
+    }
+
     /** @return array{configured:bool,valid:bool,bytes:int|null} */
     private function quotaConfiguration(): array
     {
