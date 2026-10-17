@@ -75,7 +75,7 @@
         </a>
 
         <div class="artwork-detail__footer">
-            <x-artwork-label :artwork="$artwork" :show-description="false" />
+            <x-artwork-caption :artwork="$artwork" />
         </div>
 
         @if ($artwork->description)

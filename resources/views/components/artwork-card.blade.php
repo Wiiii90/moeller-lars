@@ -73,11 +73,11 @@
     @if ($showDetails)
         <div class="artwork-card__footer">
             <a
-                class="artwork-label-trigger"
+                class="artwork-caption-link"
                 href="{{ $detailUrl }}"
                 aria-label="View details for {{ $artwork->title }}"
             >
-                <x-artwork-label :artwork="$artwork" />
+                <x-artwork-caption :artwork="$artwork" />
             </a>
         </div>
     @endif

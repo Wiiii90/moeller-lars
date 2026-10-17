@@ -22,12 +22,6 @@
     --public-folio-sheet-y: 4px;
     /* Neutral presentation surfaces; no tinted 'paper' treatment. */
     --public-surface: #fff;
-    --public-plaque-surface: #fff;
-    --public-plaque-rule: rgba(88, 74, 56, .24);
-    --public-plaque-border: rgba(88, 74, 56, .19);
-    --public-label-handwriting: "Segoe Print", "Bradley Hand", "Segoe Script", cursive;
-    --public-label-ink: #28394b;
-    --public-ink-strong: #30291f;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-index-typeface: Georgia, "Times New Roman", serif;
     --public-index-ink: #444640;
@@ -737,112 +731,74 @@ body {
     box-shadow: none;
 }
 
-/* The exhibition slip is not a navigation container. */
+/* Shared unboxed caption, aligned to the artwork's right image edge.
+ * Quiet editorial type rather than a separate card or form-like label. */
 .artwork-card__footer,
 .artwork-detail__footer {
-    margin-top: .88rem;
+    margin-top: .7rem;
+    text-align: right;
 }
 
-.artwork-label-trigger,
-.artwork-detail__footer > .artwork-label {
-    width: min(100%, 15.5rem);
-    min-width: 0;
-    max-width: 15.5rem;
-    justify-self: start;
-}
-.artwork-label-trigger {
+.artwork-caption-link {
     display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
 }
 
-/* A compact, preprinted gallery slip: a ruled title and medium, followed
-   by a short shared year/size line. The irregular field rhythm belongs to
-   the artist's actual data, not a four-row CMS form. */
-.artwork-label {
-    display: grid;
-    width: 100%;
-    min-width: 0;
-    padding: .44rem .6rem .48rem;
-    gap: .11rem;
-    border: 1px solid var(--public-plaque-border);
-    border-radius: 0;
-    background: var(--public-plaque-surface);
-    color: var(--public-ink-strong);
-    font-family: var(--public-typeface);
-    line-height: 1.4;
-    transition: border-color .14s ease;
-}
-.artwork-label-trigger:hover .artwork-label,
-.artwork-label-trigger:focus-visible .artwork-label {
-    border-color: var(--public-artwork-line-hover);
-}
-.artwork-label-trigger:focus-visible {
+.artwork-caption-link:focus-visible {
     outline: 1px dotted var(--public-artwork-line-hover);
-    outline-offset: 3px;
+    outline-offset: 4px;
 }
-/* Each handwritten line starts shortly after its own printed prompt.
-   Align the first text baselines, not the top edges of two different fonts. */
-.artwork-label__field {
-    display: flex;
-    min-width: 0;
-    align-items: baseline;
-    gap: .45rem;
-}
-.artwork-label__prompt {
+
+.artwork-caption {
     display: block;
-    flex: 0 0 auto;
-    color: #746a5e;
-    font-size: .56rem;
-    font-weight: 500;
-    letter-spacing: .045em;
-    line-height: 1.27rem;
-    text-transform: uppercase;
-}
-.artwork-label__writing {
-    display: block;
-    flex: 1 1 0%;
     min-width: 0;
-    min-height: 1.27rem;
-    padding-inline: .12rem;
-    background-image: linear-gradient(
-        to bottom,
-        transparent calc(100% - 1px),
-        var(--public-plaque-rule) calc(100% - 1px)
-    );
-    background-size: 100% 1.27rem;
-    line-height: 1.27rem;
+    text-align: right;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
 }
-.artwork-label__entry {
-    color: var(--public-label-ink);
-    font-family: var(--public-label-handwriting);
-    font-size: .71rem;
+
+.artwork-caption__primary {
+    display: block;
+    color: #423b35;
+    font-family: var(--public-index-typeface);
+    font-size: .94rem;
     font-weight: 400;
-    letter-spacing: 0;
-    line-height: inherit;
-    overflow-wrap: break-word;
+    line-height: 1.35;
 }
-.artwork-label__field--title .artwork-label__entry {
-    font-size: .77rem;
+
+.artwork-caption__title {
+    font-style: italic;
 }
-.artwork-label__tail {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: .1rem .65rem;
+
+.artwork-caption__material {
+    color: #615950;
+    font-style: normal;
+    font-size: .92em;
 }
-.artwork-label__tail .artwork-label__field {
-    flex: 1 0 max-content;
-    min-width: max-content;
-}
-.artwork-label__tail .artwork-label__writing,
-.artwork-label__tail .artwork-label__entry {
-    white-space: nowrap;
-    overflow-wrap: normal;
-}
-.artwork-label__entry--numeric {
+
+.artwork-caption__secondary {
+    display: block;
+    margin-top: .12rem;
+    color: var(--public-muted);
+    font-family: var(--public-typeface);
+    font-size: .74rem;
+    font-weight: 400;
     font-variant-numeric: tabular-nums;
+    letter-spacing: .018em;
+    line-height: 1.45;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .artwork-caption-link:hover .artwork-caption__title {
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: .2em;
+    }
 }
 
 /* The image-width folio is a three-part navigation, not a caption toolbar.
