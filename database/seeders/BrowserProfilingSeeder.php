@@ -126,6 +126,9 @@ final class BrowserProfilingSeeder extends Seeder
                 'artwork_category_id' => $category->id, 'slug' => 'browser-artwork-'.$number,
                 'title' => 'Browser Artwork '.$number, 'state' => 'published',
                 'position' => $number * 10, 'work_year' => 2026, 'published_at' => now(),
+                'description' => $number === 1
+                    ? 'A long artwork description for checking the landscape gallery detail layout at different viewport widths. The narrative and its divider must use the full available artwork track without clipping or affecting other pages.'
+                    : null,
             ]);
             ArtworkMedia::query()->create([
                 'artwork_id' => $artwork->id, 'media_asset_id' => $fixture['id'],

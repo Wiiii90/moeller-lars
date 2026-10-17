@@ -985,6 +985,13 @@ body {
     line-height: 1.45;
 }
 
+/* The optional wider Artwork sheet must also provide its full text track
+   to the description divider and credits. The default editorial 36rem
+   measure stays unchanged everywhere else, including portrait details. */
+.site-content--landscape-artwork :is(.artwork-detail__narrative, .artwork-detail__credits) {
+    max-width: 100%;
+}
+
 .contact-details {
     display: grid;
     margin: 0 0 1.4rem;

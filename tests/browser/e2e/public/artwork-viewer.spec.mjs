@@ -201,6 +201,20 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
     expect(geometry.imageRight).toBeCloseTo(geometry.footerRight, 0);
     expect(geometry.navCenter).toBeCloseTo(geometry.articleCenter, 0);
 
+    // The full description rule previously stopped at 36rem (576px), even
+    // when the optional landscape content track was substantially wider.
+    const narrative = page.locator('.artwork-detail__narrative');
+    await expect(narrative).toBeVisible();
+    const textTrack = await page.locator('.artwork-detail').evaluate(article => {
+        const body = article.getBoundingClientRect();
+        const detail = article.querySelector('.artwork-detail__narrative').getBoundingClientRect();
+        return { articleLeft: body.left, articleWidth: body.width,
+            narrativeLeft: detail.left, narrativeWidth: detail.width };
+    });
+    expect(textTrack.articleWidth).toBeGreaterThan(576);
+    expect(textTrack.narrativeLeft).toBeCloseTo(textTrack.articleLeft, 0);
+    expect(textTrack.narrativeWidth).toBeCloseTo(textTrack.articleWidth, 0);
+
     await page.setViewportSize({ width: 844, height: 390 });
     const phoneLandscapeWidth = await page.locator('.artwork-detail__image').evaluate(image =>
         image.getBoundingClientRect().width);
@@ -214,6 +228,11 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
     }));
     expect(narrow.width).toBeLessThan(390);
     expect(narrow.scroll).toBeLessThanOrEqual(narrow.viewport + 1);
+    const narrowText = await page.locator('.artwork-detail').evaluate(article => ({
+        articleWidth: article.getBoundingClientRect().width,
+        narrativeWidth: article.querySelector('.artwork-detail__narrative').getBoundingClientRect().width,
+    }));
+    expect(narrowText.narrativeWidth).toBeCloseTo(narrowText.articleWidth, 0);
 
     await page.goBack();
     await expect(page).toHaveURL(new RegExp(gallery.url + '$'));
