@@ -21,21 +21,27 @@ it('captures immutable rights choices with checkpoints and restores only the wor
         'created_at' => now(),
     ]);
     $selections->selectWorking($artifact, 'original', 901);
+    expect($selections->pendingCount(null))->toBe(1)
+        ->and($selections->pendingDetails(null, 2))->toHaveCount(1);
     $checkpoint = new PublicationCheckpoint;
     $checkpoint->setRawAttributes(['id' => 409], true);
 
     $selections->captureCheckpoint($checkpoint);
+    expect($selections->pendingCount($checkpoint))->toBe(0);
     expect(DB::table('media_rights_artifact_selections')
         ->where('scope_key', 'checkpoint:409')->value('media_rights_artifact_id'))
         ->toBe($artifact->getKey());
 
     $selections->restoreWorking(null);
+    expect($selections->pendingCount($checkpoint))->toBe(1)
+        ->and((string) $selections->pendingDetails($checkpoint, 1)[0]->change_kind)->toBe('removed');
     expect(DB::table('media_rights_artifact_selections')
         ->where('scope_key', 'working')->count())->toBe(0)
         ->and(DB::table('media_rights_artifact_selections')
             ->where('scope_key', 'checkpoint:409')->count())->toBe(1);
 
     $selections->restoreWorking($checkpoint);
+    expect($selections->pendingCount($checkpoint))->toBe(0);
     expect(DB::table('media_rights_artifact_selections')
         ->where('scope_key', 'working')->value('media_rights_artifact_id'))
         ->toBe($artifact->getKey());
@@ -55,6 +61,8 @@ it('keeps legacy media selection database-free until rights-artifact delivery is
     $checkpoint->setRawAttributes(['id' => 409], true);
 
     expect($selections->enabled())->toBeFalse()
+        ->and($selections->pendingCount(null))->toBe(0)
+        ->and($selections->pendingDetails(null, 3))->toBe([])
         ->and($selections->selectedForPublic($asset))->toBeNull()
         ->and($selections->selectedForWorking($asset))->toBeNull();
     $selections->captureCheckpoint($checkpoint);
@@ -73,4 +81,38 @@ it('allows offline preparation mode without enabling public artifact selection',
     expect($selections->enabled())->toBeTrue()
         ->and($selections->deliveryEnabled())->toBeFalse()
         ->and($selections->selectedForPublic($asset))->toBeNull();
+});
+
+
+it('recognizes rights-only Working changes in the canonical publication summary and records a checkpoint', function (): void {
+    config()->set('media.rights_preparation_enabled', true);
+    config()->set('media.rights_delivery_enabled', false);
+
+    $artifact = MediaRightsArtifact::query()->create([
+        'media_asset_id' => 917,
+        'role' => 'original',
+        'revision' => str_repeat('1', 64),
+        'storage_key' => 'variants/rights/'.str_repeat('1', 64).'.jpg',
+        'source_sha256' => str_repeat('2', 64),
+        'sha256' => str_repeat('3', 64),
+        'byte_size' => 172,
+        'mime_type' => 'image/jpeg',
+        'created_at' => now(),
+    ]);
+    app(MediaRightsPublicationSelections::class)->selectWorking($artifact, 'original', 917);
+
+    $publication = app(\App\Domain\Publication\PublicationService::class);
+    $summary = $publication->pendingSummary();
+    expect(collect($summary['groups'])->firstWhere('entity', 'Image rights files')['count'] ?? null)->toBe(1)
+        ->and($publication->hasPendingChanges())->toBeTrue()
+        ->and(collect($publication->pendingDetails()['rows'])->firstWhere('table', 'media_rights_artifact_selections')['row_key'] ?? null)
+        ->toBe('original:917');
+
+    $actor = \App\Models\User::factory()->admin()->create();
+    $checkpoint = $publication->commit($actor, 'Rights files updated');
+    expect($checkpoint)->toBeInstanceOf(PublicationCheckpoint::class)
+        ->and(app(MediaRightsPublicationSelections::class)->pendingCount($checkpoint))->toBe(0)
+        ->and((int) DB::table('media_rights_artifact_selections')
+            ->where('scope_key', 'checkpoint:'.$checkpoint->getKey())
+            ->value('media_rights_artifact_id'))->toBe((int) $artifact->getKey());
 });
