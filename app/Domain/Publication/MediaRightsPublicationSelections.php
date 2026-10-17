@@ -10,8 +10,10 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\PublicationCheckpoint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 /**
  * PublicationSnapshot's single companion for immutable rights-file choices.
@@ -143,6 +145,33 @@ final class MediaRightsPublicationSelections
 
         if ($original === null || $thumbnail === null) {
             return ['state' => 'missing', 'label' => 'File rights not prepared'];
+        }
+
+        // The selection row and rights hash alone cannot prove a generated
+        // copy still exists. Check the exact immutable key and stored size
+        // without hashing large images on every Admin/Preview request.
+        $disk = Storage::disk((string) config('media.disk'));
+        foreach ([$original, $thumbnail] as $artifact) {
+            $mime = (string) $artifact->getAttribute('mime_type');
+            $revision = (string) $artifact->getAttribute('revision');
+            $extension = MediaTypePolicy::extensionFor($mime);
+            $key = (string) $artifact->getAttribute('storage_key');
+            $bytes = (int) $artifact->getAttribute('byte_size');
+            if ($extension === null
+                || ! MediaTypePolicy::isImage($mime)
+                || ! preg_match('/^[a-f0-9]{64}$/D', $revision)
+                || $key !== 'variants/rights/'.$revision.'.'.$extension
+                || $bytes <= 0) {
+                return ['state' => 'outdated', 'label' => 'File rights need preparation'];
+            }
+
+            try {
+                if (! $disk->exists($key) || (int) $disk->size($key) !== $bytes) {
+                    return ['state' => 'missing', 'label' => 'Prepared rights file missing'];
+                }
+            } catch (Throwable) {
+                return ['state' => 'missing', 'label' => 'Prepared rights file unavailable'];
+            }
         }
 
         return ['state' => 'ready', 'label' => 'File rights prepared'];
