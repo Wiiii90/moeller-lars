@@ -171,11 +171,17 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
         return {
             rendered: bounds.width, natural: image.naturalWidth,
             imageRight: bounds.right, footerRight: footer.right,
+            footerWidth: footer.width,
             navCenter: nav.left + nav.width / 2,
             articleCenter: root.left + root.width / 2,
         };
     });
+    // A previous min-content regression collapsed even a 320px thumbnail
+    // into a 10px image and forced the caption to wrap letter-by-letter.
+    expect(geometry.natural).toBeGreaterThan(0);
+    expect(geometry.rendered).toBeGreaterThan(geometry.natural * .9);
     expect(geometry.rendered).toBeLessThanOrEqual(geometry.natural + 1);
+    expect(geometry.footerWidth).toBeCloseTo(geometry.rendered, 0);
     expect(geometry.imageRight).toBeCloseTo(geometry.footerRight, 0);
     expect(geometry.navCenter).toBeCloseTo(geometry.articleCenter, 0);
 

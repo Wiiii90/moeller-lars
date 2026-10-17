@@ -623,19 +623,24 @@ body {
     width: min(100%, max(var(--public-art-max), min(960px, calc(var(--public-art-max) * 1.5))));
 }
 
-/* Media and caption share the same intrinsic-width block. Smaller
-   thumbnails never upscale to fill the white sheet; narrower viewports
-   may shrink them to fit without clipping either image dimension. */
+/* The image determines the width of the landscape media group. A block
+   with min-content collapses the responsive img to almost zero when its
+   max-width is percentage-based. fit-content preserves the image's natural
+   width (up to available space) and never enlarges a small thumbnail.
+   Excluding the caption from intrinsic sizing prevents long titles from
+   expanding that group beyond the actual image. */
 .site-content--landscape-artwork .artwork-detail__media {
-    /* Replaced image intrinsic width determines the block, never a long
-       caption's max-content width. Text wraps inside that image width. */
-    width: min-content;
+    width: fit-content;
     max-width: 100%;
     margin-inline: auto;
 }
 .site-content--landscape-artwork .artwork-detail__image {
     width: auto;
     max-width: 100%;
+}
+.site-content--landscape-artwork .artwork-detail__footer {
+    width: 0;
+    min-width: 100%;
 }
 
 /* Artwork arrows remain on the original centered General-width track,
