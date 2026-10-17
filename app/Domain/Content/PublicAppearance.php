@@ -173,19 +173,21 @@ final class PublicAppearance
         }
 
         $result = [];
-        $last = -1;
         foreach (array_values($value) as $stop) {
             if (! is_array($stop) || ! array_key_exists('position', $stop)) {
                 throw ValidationException::withMessages([$field => 'Each stop needs a color and position.']);
             }
             $color = self::normalizeColor($stop['color'] ?? null, $field);
             $position = filter_var($stop['position'], FILTER_VALIDATE_INT);
-            if ($color === null || $position === false || $position < 0 || $position > 100 || $position < $last) {
-                throw ValidationException::withMessages([$field => 'Stops must be ordered from 0 to 100 percent and have valid colors.']);
+            if ($color === null || $position === false || $position < 0 || $position > 100) {
+                throw ValidationException::withMessages([$field => 'Color stops require a color and a position between 0 and 100 percent.']);
             }
             $result[] = ['color' => $color, 'position' => $position];
-            $last = $position;
         }
+
+        // Position, rather than insertion order, defines the color sequence.
+        // Stable order for identical positions preserves deliberate hard edges.
+        usort($result, static fn (array $a, array $b): int => $a['position'] <=> $b['position']);
 
         if ($result[0]['position'] !== 0 || $result[count($result) - 1]['position'] !== 100) {
             throw ValidationException::withMessages([$field => 'The first stop must be at 0% and the last at 100%.']);
@@ -273,6 +275,12 @@ final class PublicAppearance
             }
             return $stop['color'].' '.$point;
         }, $stops);
+
+        // Keep old two-color gradients byte-identical until a stop list is
+        // edited, so existing publication checkpoints remain stable.
+        if (! $repeating && $settings->getAttribute($surface.'_gradient_stops') === null) {
+            $parts = array_column($stops, 'color');
+        }
 
         $prefix = $repeating ? 'repeating-' : '';
         $css = match ($mode) {

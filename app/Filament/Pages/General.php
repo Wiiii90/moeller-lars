@@ -443,14 +443,17 @@ final class General extends Page
                 ->label('Color stops')
                 ->schema([
                     AdminColorControl::make('color', 'Color')
+                        ->default($surface === 'background' ? PublicAppearance::DEFAULT_PAGE_COLOR : PublicAppearance::DEFAULT_SURFACE_COLOR)
                         ->required()->live(onBlur: true)
                         ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null),
                     TextInput::make('position')
+                        ->default(100)
                         ->label('Position')->integer()->minValue(0)->maxValue(100)->suffix('%')
                         ->required()->live(onBlur: true)
                         ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null),
                 ])
                 ->columns(2)->minItems(2)->maxItems(PublicAppearance::MAX_STOPS)
+                ->helperText('Color stops are arranged by position (0–100%). Add up to 12 stops.')
                 ->addActionLabel('Add color stop')
                 ->extraFieldWrapperAttributes(['class' => 'general-gradient-stops-control'])
                 ->reorderable(false)->live()
@@ -1021,7 +1024,11 @@ final class General extends Page
             'menu_background_color', 'menu_background_gradient_start', 'menu_background_gradient_end',
             'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end' => $this->normalizeColorCandidate($value),
             'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
-            'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops' => is_array($value) ? array_values($value) : $value,
+            'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops' =>
+                is_array($value) ? array_map(static fn (mixed $stop): mixed => is_array($stop)
+                    ? ['color' => is_string($stop['color'] ?? null) ? strtoupper($stop['color']) : ($stop['color'] ?? null),
+                       'position' => is_numeric($stop['position'] ?? null) ? (int) $stop['position'] : ($stop['position'] ?? null)]
+                    : $stop, array_values($value)) : $value,
             'background_gradient_repeating', 'menu_background_gradient_repeating', 'page_background_gradient_repeating' => (bool) $value,
             'background_gradient_repeat_span', 'menu_background_gradient_repeat_span', 'page_background_gradient_repeat_span',
             'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y',
