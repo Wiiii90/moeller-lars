@@ -153,7 +153,10 @@ attributes and lets the browser handle native lazy loading. Gallery ownership
 and observers are disposed with the existing Livewire SPA page lifecycle.
 No timers, detached preloader images, duplicated requests, dynamic viewer
 sequence or new media URL endpoint are introduced. Hero and Artwork detail
-retain their independent media loading/priority contracts.
+retain their independent media loading/priority contracts. Artwork detail now
+uses the same revision-aware `PublicMedia::variantUrl()` as the Gallery, so
+public and preview render the selected immutable rights revision where present
+rather than an unrevisioned URL the controller must reject.
 
 Public thumbnails remain the established WebP `public-v1` MediaVariant
 resources (maximum edge 960px) served by `EnsureMediaVariantFile` and
