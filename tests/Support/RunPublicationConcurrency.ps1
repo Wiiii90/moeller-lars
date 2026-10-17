@@ -1,8 +1,8 @@
 # Dedicated disposable PostgreSQL runner; never uses the persistent preview.
 $ErrorActionPreference = 'Stop'
 $repoPath = (Get-Location).Path
-if ((git branch --show-current) -ne 'dev' -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
-    throw 'Run from the root of the dev checkout; uses only disposable PostgreSQL and isolated runtime paths.'
+if ((git branch --show-current) -notin @('dev', 'testing') -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
+    throw 'Run from the root of the dev or testing checkout; only disposable PostgreSQL and isolated runtime paths are permitted.'
 }
 $token = [guid]::NewGuid().ToString('N')
 $relativeRoot = "storage/framework/testing/concurrency-$token"
