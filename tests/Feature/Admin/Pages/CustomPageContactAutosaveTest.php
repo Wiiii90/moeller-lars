@@ -115,3 +115,37 @@ it('persists Contact heading and preserves sibling values when only one control 
         ->and($updated['children'][1]['social_platforms'])->toBe(['instagram'])
         ->and($updated['children'][2]['form_state'])->toBe('enabled');
 });
+
+it('holds an incomplete Contact form-presentation change until status text is supplied', function (): void {
+    [$page, $settings] = customPageWorkspaceRecord('Pending form presentation', 'pending-form-presentation');
+    $settings->update(['blocks' => [[
+        'type' => 'contact', 'published' => true, 'title' => 'Contact',
+        'children' => [
+            ['type' => 'public_email', 'published' => true],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => ['instagram']],
+            ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
+        ],
+    ]]]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $page->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
+        ->assertSet('mountedActions.0.data.contact_form_state', 'enabled');
+    $audits = AuditEvent::query()->count();
+
+    $editor->set('mountedActions.0.data.contact_form_state', 'under_construction')
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertNotDispatched('admin-header-notification');
+    expect($settings->fresh()->components()[0]['children'][2]['form_state'])->toBe('enabled')
+        ->and(AuditEvent::query()->count())->toBe($audits);
+
+    $editor->set('mountedActions.0.data.contact_status_text', 'Coming soon')
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertDispatched('admin-header-notification');
+
+    $children = $settings->fresh()->components()[0]['children'];
+    expect($children[2]['form_state'])->toBe('under_construction')
+        ->and($children[2]['status_text'])->toBe('Coming soon')
+        ->and($children[1]['social_platforms'])->toBe(['instagram'])
+        ->and(AuditEvent::query()->count())->toBe($audits + 1);
+});
