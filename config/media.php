@@ -21,6 +21,9 @@ return [
 
     // New publication/rights-artifact table lookups are disabled by default.
     // Enable only after verified migration, offline preparation and delivery.
+    // Two-stage rollout: prepare Working representations offline, then
+    // independently authorize public delivery after full acceptance.
+    'rights_preparation_enabled' => env('MEDIA_RIGHTS_PREPARATION_ENABLED', false),
     'rights_delivery_enabled' => env('MEDIA_RIGHTS_DELIVERY_ENABLED', false),
 
     // Runtime/operator contract. Blank means unconfigured; a non-empty invalid

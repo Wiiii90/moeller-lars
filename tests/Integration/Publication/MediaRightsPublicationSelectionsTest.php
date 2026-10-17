@@ -6,6 +6,7 @@ use App\Models\PublicationCheckpoint;
 use Illuminate\Support\Facades\DB;
 
 it('captures immutable rights choices with checkpoints and restores only the working selection', function (): void {
+    config()->set('media.rights_preparation_enabled', true);
     config()->set('media.rights_delivery_enabled', true);
     $selections = app(MediaRightsPublicationSelections::class);
     $artifact = MediaRightsArtifact::query()->create([
@@ -45,6 +46,7 @@ it('captures immutable rights choices with checkpoints and restores only the wor
 
 
 it('keeps legacy media selection database-free until rights-artifact delivery is enabled', function (): void {
+    config()->set('media.rights_preparation_enabled', false);
     config()->set('media.rights_delivery_enabled', false);
     $selections = app(MediaRightsPublicationSelections::class);
     $asset = new \App\Models\MediaAsset;
@@ -59,4 +61,16 @@ it('keeps legacy media selection database-free until rights-artifact delivery is
     $selections->restoreWorking($checkpoint);
     expect(fn () => $selections->selectWorking(new MediaRightsArtifact, 'original', 901))
         ->toThrow(RuntimeException::class, 'not enabled');
+});
+
+
+it('allows offline preparation mode without enabling public artifact selection', function (): void {
+    config()->set('media.rights_preparation_enabled', true);
+    config()->set('media.rights_delivery_enabled', false);
+    $selections = app(MediaRightsPublicationSelections::class);
+    $asset = new \App\Models\MediaAsset;
+    $asset->setRawAttributes(['id' => 901, 'mime_type' => 'image/jpeg'], true);
+    expect($selections->enabled())->toBeTrue()
+        ->and($selections->deliveryEnabled())->toBeFalse()
+        ->and($selections->selectedForPublic($asset))->toBeNull();
 });

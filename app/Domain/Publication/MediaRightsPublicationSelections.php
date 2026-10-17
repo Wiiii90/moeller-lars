@@ -27,7 +27,12 @@ final class MediaRightsPublicationSelections
      */
     public function enabled(): bool
     {
-        return config('media.rights_delivery_enabled', false) === true;
+        return config('media.rights_preparation_enabled', false) === true;
+    }
+
+    public function deliveryEnabled(): bool
+    {
+        return $this->enabled() && config('media.rights_delivery_enabled', false) === true;
     }
 
     public function selectWorking(MediaRightsArtifact $artifact, string $role, int $sourceId): void
@@ -95,7 +100,7 @@ final class MediaRightsPublicationSelections
 
     public function selectedForPublic(MediaAsset|MediaVariant $source): ?MediaRightsArtifact
     {
-        if (! $this->enabled()) {
+        if (! $this->deliveryEnabled()) {
             return null;
         }
 
