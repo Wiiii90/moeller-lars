@@ -303,11 +303,15 @@ trait HomePresentationChildren
             'publication_state' => CustomPageSetting::contactChildPublished($child) ? 'published' : 'unpublished',
             $key => $value,
         ];
-        if (($data['form_state'] ?? null) === 'under_construction' && blank($data['status_text'] ?? null)) {
-            $path = $this->getMountedActionSchema()->getStatePath();
-            throw ValidationException::withMessages([
-                $path.'.status_text' => 'Enter status text for the under-construction form.',
-            ]);
+        if ($key === 'form_state' || $key === 'status_text') {
+            $form = $this->getMountedActionSchema()->getRawState();
+            $data['form_state'] = $key === 'form_state'
+                ? $value : ($form['form_state'] ?? $data['form_state']);
+            $data['status_text'] = $key === 'status_text'
+                ? $value : ($form['status_text'] ?? $data['status_text']);
+            // Keep the unfinished presentation in the mounted form until
+            // status text is entered; save both values in one mutation.
+            if ($data['form_state'] === 'under_construction' && blank($data['status_text'])) return;
         }
         try {
             $this->persistHomeChild($this->homeChildArgs($arguments), 'update', $this->homeContactPayload($data));

@@ -616,6 +616,19 @@ trait CustomPageWorkspaceComponentActions
             throw new \InvalidArgumentException('Unknown Contact field.');
         }
 
+        // Presentation and status text form one dependent editorial value.
+        // If no status is authored yet, retain "Under construction" in the
+        // mounted form as a draft until the text is entered. When it arrives,
+        // save both fields atomically; no partial update or false notification.
+        if ($key === 'contact_form_state' || $key === 'contact_status_text') {
+            $form = $this->getMountedActionSchema()->getRawState();
+            $state = $key === 'contact_form_state' ? $value : ($form['contact_form_state'] ?? $data['contact_form_state']);
+            $status = $key === 'contact_status_text' ? $value : ($form['contact_status_text'] ?? $data['contact_status_text']);
+            $data['contact_form_state'] = $state;
+            $data['contact_status_text'] = $status;
+            if ($state === 'under_construction' && blank($status)) return;
+        }
+
         try {
             $payload = $this->contactComponentPayload(
                 $data, CustomPageSetting::componentPublished($existing), $existing,
