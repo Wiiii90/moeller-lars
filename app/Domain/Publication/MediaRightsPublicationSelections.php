@@ -21,8 +21,21 @@ final class MediaRightsPublicationSelections
 {
     private const TABLE = 'media_rights_artifact_selections';
 
+    /**
+     * Legacy public/media requests must work before this optional migration
+     * exists. The complete versioned artifact publication flow is opt-in.
+     */
+    public function enabled(): bool
+    {
+        return config('media.rights_delivery_enabled', false) === true;
+    }
+
     public function selectWorking(MediaRightsArtifact $artifact, string $role, int $sourceId): void
     {
+        if (! $this->enabled()) {
+            throw new RuntimeException('Rights artifact publication is not enabled.');
+        }
+
         if (! in_array($role, ['original', 'thumbnail'], true)
             || $sourceId <= 0 || ! is_numeric($artifact->getKey())
             || $artifact->getAttribute('role') !== $role
@@ -43,6 +56,10 @@ final class MediaRightsPublicationSelections
 
     public function captureCheckpoint(PublicationCheckpoint $checkpoint): void
     {
+        if (! $this->enabled()) {
+            return;
+        }
+
         $scope = $this->checkpointScope($checkpoint);
         if (DB::table(self::TABLE)->where('scope_key', $scope)->exists()) {
             throw new RuntimeException('An immutable publication already has rights artifact selections.');
@@ -58,6 +75,10 @@ final class MediaRightsPublicationSelections
 
     public function restoreWorking(?PublicationCheckpoint $checkpoint): void
     {
+        if (! $this->enabled()) {
+            return;
+        }
+
         DB::table(self::TABLE)->where('scope_key', 'working')->delete();
 
         if ($checkpoint === null) {
@@ -74,6 +95,10 @@ final class MediaRightsPublicationSelections
 
     public function selectedForPublic(MediaAsset|MediaVariant $source): ?MediaRightsArtifact
     {
+        if (! $this->enabled()) {
+            return null;
+        }
+
         $checkpointId = PublicationCheckpoint::query()
             ->orderByDesc('published_at')
             ->orderByDesc('id')
@@ -86,6 +111,10 @@ final class MediaRightsPublicationSelections
 
     public function selectedForWorking(MediaAsset|MediaVariant $source): ?MediaRightsArtifact
     {
+        if (! $this->enabled()) {
+            return null;
+        }
+
         return $this->selected('working', $source);
     }
 

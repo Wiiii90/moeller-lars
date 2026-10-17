@@ -6,6 +6,7 @@ use App\Models\PublicationCheckpoint;
 use Illuminate\Support\Facades\DB;
 
 it('captures immutable rights choices with checkpoints and restores only the working selection', function (): void {
+    config()->set('media.rights_delivery_enabled', true);
     $selections = app(MediaRightsPublicationSelections::class);
     $artifact = MediaRightsArtifact::query()->create([
         'media_asset_id' => 901,
@@ -40,4 +41,22 @@ it('captures immutable rights choices with checkpoints and restores only the wor
 
     expect(fn () => $selections->captureCheckpoint($checkpoint))
         ->toThrow(RuntimeException::class);
+});
+
+
+it('keeps legacy media selection database-free until rights-artifact delivery is enabled', function (): void {
+    config()->set('media.rights_delivery_enabled', false);
+    $selections = app(MediaRightsPublicationSelections::class);
+    $asset = new \App\Models\MediaAsset;
+    $asset->setRawAttributes(['id' => 901, 'mime_type' => 'image/jpeg'], true);
+    $checkpoint = new PublicationCheckpoint;
+    $checkpoint->setRawAttributes(['id' => 409], true);
+
+    expect($selections->enabled())->toBeFalse()
+        ->and($selections->selectedForPublic($asset))->toBeNull()
+        ->and($selections->selectedForWorking($asset))->toBeNull();
+    $selections->captureCheckpoint($checkpoint);
+    $selections->restoreWorking($checkpoint);
+    expect(fn () => $selections->selectWorking(new MediaRightsArtifact, 'original', 901))
+        ->toThrow(RuntimeException::class, 'not enabled');
 });

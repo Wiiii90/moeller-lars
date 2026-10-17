@@ -19,6 +19,10 @@ return [
     // The executable must be ExifTool >=12.67; Debian Bookworm's 12.57 is too old.
     'exiftool_binary' => env('MEDIA_EXIFTOOL_BINARY', 'exiftool'),
 
+    // New publication/rights-artifact table lookups are disabled by default.
+    // Enable only after verified migration, offline preparation and delivery.
+    'rights_delivery_enabled' => env('MEDIA_RIGHTS_DELIVERY_ENABLED', false),
+
     // Runtime/operator contract. Blank means unconfigured; a non-empty invalid
     // value is handled fail-closed by MediaCapacityService.
     'quota_bytes' => env('MEDIA_STORAGE_QUOTA_BYTES'),
