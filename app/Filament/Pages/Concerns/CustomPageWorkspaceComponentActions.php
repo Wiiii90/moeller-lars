@@ -285,7 +285,19 @@ trait CustomPageWorkspaceComponentActions
      * data as their top-level counterparts. The Image owns only placement. */
     public function editImageChildAction(): Action
     {
-        $action = Action::make('editImageChild')
+        return $this->imageChildEditingAction('editImageChild', committed: true);
+    }
+
+    /** Non-List children use the same autosaving Edit lifecycle as root
+     * components. List keeps its atomic Apply changes command. */
+    public function editImageChildInstantAction(): Action
+    {
+        return $this->imageChildEditingAction('editImageChildInstant', committed: false);
+    }
+
+    private function imageChildEditingAction(string $actionName, bool $committed): Action
+    {
+        $action = Action::make($actionName)
             ->label('Edit')
             ->fillForm(function (array $arguments): array {
                 [$image, $child, $type] = $this->imageChildTarget($arguments);
@@ -304,9 +316,15 @@ trait CustomPageWorkspaceComponentActions
                         ...$arguments, 'targetType' => $state,
                     ]);
                 },
+                onContactChange: function (string $key, mixed $value) use ($arguments): void {
+                    [$image, $child, $type] = $this->imageChildTarget($arguments);
+                    if ($type === 'contact') {
+                        $this->persistContactEditorField($image, $child, $key, $value);
+                    }
+                },
             ))
             ->modalHeading('Edit component')
-            ->extraModalFooterActions(function (array $arguments): array {
+            ->extraModalFooterActions(function (array $arguments) use ($actionName): array {
                 [$image, $child, $type] = $this->imageChildTarget($arguments);
                 $blocks = $this->componentAt($image, 'image')['children'] ?? [];
                 $args = ['imageIndex' => $image, 'childIndex' => $child, 'componentType' => $type];
@@ -315,9 +333,9 @@ trait CustomPageWorkspaceComponentActions
                     $canMove = $this->componentReorderEnabled() && ($dir === 'up' ? $child > 0 : $child < count($blocks) - 1);
                     $actions[] = AdminDialog::headerAction(
                         'childMove'.ucfirst($dir), $role,
-                        function () use ($image, $child, $type, $dir): void {
+                        function () use ($image, $child, $type, $dir, $actionName): void {
                             $this->moveImageChildSibling($image, $child, $type, $dir);
-                            $this->replaceMountedAction('editImageChild', [
+                            $this->replaceMountedAction($actionName, [
                                 'imageIndex' => $image,
                                 'childIndex' => $child + ($dir === 'up' ? -1 : 1),
                                 'componentType' => $type,
@@ -328,9 +346,9 @@ trait CustomPageWorkspaceComponentActions
                 $published = \App\Models\CustomPageSetting::componentPublished($blocks[$child]);
                 $actions[] = AdminDialog::headerAction(
                     'childPublish', $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-                    function () use ($image, $child, $type, $published, $args): void {
+                    function () use ($image, $child, $type, $published, $args, $actionName): void {
                         $this->setImageChildPublished($image, $child, $type, ! $published);
-                        $this->replaceMountedAction('editImageChild', $args);
+                        $this->replaceMountedAction($actionName, $args);
                     },
                 );
                 $actions[] = AdminDialog::headerAction('childDelete', AdminRowAction::Delete,
@@ -369,7 +387,9 @@ trait CustomPageWorkspaceComponentActions
                     app(AdminNotifier::class)->notification(title: 'Component saved', status: 'success');
                 }
             });
-        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large);
+        return $committed
+            ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
+            : AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function setImageChildPublished(int $image, int $child, string $type, bool $published): void

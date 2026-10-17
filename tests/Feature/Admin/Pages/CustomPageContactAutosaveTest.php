@@ -36,6 +36,7 @@ it('autosaves each Contact toggle and form presentation without needing a modal 
         ->assertSet('mountedActions.0.name', 'editComponent');
 
     $before = AuditEvent::query()->count();
+    $notificationsBefore = AdminNotification::query()->count();
     $editor->set('mountedActions.0.data.contact_social_selected.facebook', false)
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification')
@@ -72,7 +73,7 @@ it('autosaves each Contact toggle and form presentation without needing a modal 
         ->and($children['contact_form']['form_state'])->toBe('under_construction')
         ->and($children['contact_form']['status_text'])->toBe('New status')
         ->and(AuditEvent::query()->count())->toBe($before + 7)
-        ->and(AdminNotification::query()->count())->toBe(7);
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 7);
 
     // An unchanged value or an extra generic change submission never
     // produces a duplicate receipt or overwrites earlier Contact changes.
@@ -82,7 +83,7 @@ it('autosaves each Contact toggle and form presentation without needing a modal 
         ->assertHasNoFormErrors()
         ->assertNotDispatched('admin-header-notification');
     expect(AuditEvent::query()->count())->toBe($before + 7)
-        ->and(AdminNotification::query()->count())->toBe(7);
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 7);
 
     $editor->call('unmountAction')->assertSet('mountedActions', []);
     Livewire::test(CustomPageWorkspace::class, ['section' => $page->id])
