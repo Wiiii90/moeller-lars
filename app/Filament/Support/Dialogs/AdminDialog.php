@@ -66,7 +66,14 @@ final class AdminDialog
             ->iconButton()
             ->color($role->isDangerAction() ? 'danger' : 'gray')
             ->extraAttributes(['class' => 'admin-dialog__header-action'.($role->isDangerAction() ? ' is-danger' : '')])
-            ->action($handler);
+            ->action($handler)
+            // Filament auto-unmounts completed nested actions. A regular
+            // move/publication control must retain its parent editor. Halt
+            // only the child action after its domain mutation; a Delete
+            // action still transfers to the confirmation/completion flow.
+            ->after(static function (Action $action) use ($role): void {
+                if (! $role->isDangerAction()) $action->halt();
+            });
     }
 
     public static function command(
