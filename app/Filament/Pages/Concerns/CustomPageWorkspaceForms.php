@@ -18,7 +18,7 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?string $editingType = null): array
+    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?string $editingType = null, ?Closure $onContactChange = null): array
     {
         $typeField = Select::make('type')
             ->label('Component')
@@ -45,7 +45,7 @@ trait CustomPageWorkspaceForms
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange),
+                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange, $onContactChange),
             ])
             ->key('dynamicComponentFields')
             ->columnSpanFull();
@@ -65,7 +65,7 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return list<mixed> */
-    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null): array
+    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null, ?Closure $onContactChange = null): array
     {
         return match ($type) {
             'image' => [
@@ -104,9 +104,18 @@ trait CustomPageWorkspaceForms
                 Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
             ],
             'contact' => [
-                TextInput::make('title')->label('Heading')->placeholder('Contact')->maxLength(160)->columnSpanFull(),
-                Toggle::make('contact_email_enabled')->label('Public Email')->default(true)->live(),
-                Toggle::make('contact_social_enabled')->label('Social Media Links')->default(true)->live(),
+                $this->contactEditorField(
+                    TextInput::make('title')->label('Heading')->placeholder('Contact')->maxLength(160)->columnSpanFull(),
+                    'title', $onContactChange, blur: true,
+                ),
+                $this->contactEditorField(
+                    Toggle::make('contact_email_enabled')->label('Public Email')->default(true)->live(),
+                    'contact_email_enabled', $onContactChange,
+                ),
+                $this->contactEditorField(
+                    Toggle::make('contact_social_enabled')->label('Social Media Links')->default(true)->live(),
+                    'contact_social_enabled', $onContactChange,
+                ),
                 // Every profile reuses the same Toggle control as the rest
                 // of Contact. The old native multi-select rendered chips and
                 // obscured which configured platforms were actually enabled.
@@ -114,24 +123,33 @@ trait CustomPageWorkspaceForms
                     ->columns(['md' => 2])
                     ->schema(collect($this->availableSocialPlatforms)
                         ->map(fn (string $label, string $platform): Toggle =>
-                            Toggle::make('contact_social_selected.'.$platform)
-                                ->label($label)
-                                ->default(true)
+                            $this->contactEditorField(
+                                Toggle::make('contact_social_selected.'.$platform)
+                                    ->label($label)->default(true),
+                                'contact_social_selected.'.$platform, $onContactChange,
+                            )
                         )->values()->all())
                     ->visible(fn (Get $get): bool => (bool) $get('contact_social_enabled'))
                     ->columnSpanFull(),
-                Toggle::make('contact_form_enabled')->label('Contact Form')->default(true)->live(),
-                Select::make('contact_form_state')
-                    ->label('Form presentation')
-                    ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
-                    ->default('enabled')
-                    ->live()
-                    ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled')),
-                TextInput::make('contact_status_text')
-                    ->label('Status text')
-                    ->maxLength(500)
-                    ->required(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction')
-                    ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction'),
+                $this->contactEditorField(
+                    Toggle::make('contact_form_enabled')->label('Contact Form')->default(true)->live(),
+                    'contact_form_enabled', $onContactChange,
+                ),
+                $this->contactEditorField(
+                    Select::make('contact_form_state')
+                        ->label('Form presentation')
+                        ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
+                        ->default('enabled')->live()
+                        ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled')),
+                    'contact_form_state', $onContactChange,
+                ),
+                $this->contactEditorField(
+                    TextInput::make('contact_status_text')
+                        ->label('Status text')->maxLength(500)
+                        ->required(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction')
+                        ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction'),
+                    'contact_status_text', $onContactChange, blur: true,
+                ),
             ],
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')
@@ -141,6 +159,23 @@ trait CustomPageWorkspaceForms
             ],
             default => [],
         };
+    }
+
+    /**
+     * Contact controls are Filament/Livewire state, not reliable native DOM
+     * change events on the modal window. Persist their changed value through
+     * one canonical per-field callback; create dialogs keep draft form state.
+     */
+    private function contactEditorField(mixed $field, string $key, ?Closure $save, bool $blur = false): mixed
+    {
+        if ($save === null) return $field;
+        if ($blur) {
+            $field->live(onBlur: true);
+        } else {
+            $field->live();
+        }
+
+        return $field->afterStateUpdated(static fn (mixed $state) => $save($key, $state));
     }
 
     /** Visible at the top of every eligible component edit, even for List

@@ -468,6 +468,12 @@ trait CustomPageWorkspaceComponentActions
                         'targetType' => $target,
                     ]);
                 },
+                onContactChange: function (string $key, mixed $value) use ($arguments): void {
+                    [$index, $type] = $this->actionComponentTarget($arguments);
+                    if ($type === 'contact') {
+                        $this->persistContactEditorField($index, null, $key, $value);
+                    }
+                },
                 onImageChange: function (mixed $state) use ($arguments): void {
                     [$index, $type] = $this->actionComponentTarget($arguments);
                     if ($type !== 'image') {
@@ -563,6 +569,50 @@ trait CustomPageWorkspaceComponentActions
         return $committed
             ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
             : AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * Autosave exactly one Contact field through the existing Custom Page
+     * editorial mutation. Sibling settings are rebuilt from the current
+     * persisted block, never overwritten by a stale modal snapshot.
+     */
+    private function persistContactEditorField(int $index, ?int $childIndex, string $key, mixed $value): void
+    {
+        $existing = $childIndex === null
+            ? $this->componentAt($index, 'contact')
+            : $this->imageChildAt($index, $childIndex, 'contact');
+        $data = $this->componentEditorData($existing);
+        if (str_starts_with($key, 'contact_social_selected.')) {
+            $platform = substr($key, strlen('contact_social_selected.'));
+            if (! array_key_exists($platform, $this->availableSocialPlatforms)) return;
+            $data['contact_social_selected'][$platform] = (bool) $value;
+        } elseif (in_array($key, [
+            'title', 'contact_email_enabled', 'contact_social_enabled',
+            'contact_form_enabled', 'contact_form_state', 'contact_status_text',
+        ], true)) {
+            $data[$key] = $value;
+        } else {
+            throw new \InvalidArgumentException('Unknown Contact field.');
+        }
+
+        try {
+            $payload = $this->contactComponentPayload(
+                $data, CustomPageSetting::componentPublished($existing), $existing,
+            );
+            $editor = app(CustomPageEditorialService::class);
+            $changed = $childIndex === null
+                ? $editor->updateBlock($this->settings(), $index, 'contact', $payload, $this->editingComponentOriginal)
+                : $editor->updateImageChild($this->settings(), $index, $childIndex, 'contact', $payload, $this->editingComponentOriginal);
+        } catch (ValidationException $exception) {
+            $this->throwComponentEditValidation($exception);
+        }
+        $this->editingComponentOriginal = $childIndex === null
+            ? $this->componentAt($index, 'contact')
+            : $this->imageChildAt($index, $childIndex, 'contact');
+        if (! $changed) return;
+        $this->loadComponentProjection();
+        $this->forceRender();
+        app(AdminNotifier::class)->notification(title: 'Component saved', status: 'success');
     }
 
     private function throwComponentEditValidation(ValidationException $exception): never
