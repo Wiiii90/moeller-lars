@@ -4,6 +4,7 @@
     'heroNavigation' => false,
     'previousArtwork' => null,
     'nextArtwork' => null,
+    'emptyStepMode' => 'hidden',
 ])
 
 @php
@@ -27,6 +28,10 @@
                    aria-label="Previous artwork" title="Previous artwork">
                     <x-public-icon name="arrow-left" />
                 </a>
+            @elseif (in_array($emptyStepMode, ['disabled', 'cyclic'], true))
+                <button class="artwork-folio__step" type="button" disabled aria-label="No previous artwork">
+                    <x-public-icon name="arrow-left" />
+                </button>
             @endif
         </span>
 
@@ -52,6 +57,10 @@
                    aria-label="Next artwork" title="Next artwork">
                     <x-public-icon name="arrow-right" />
                 </a>
+            @elseif (in_array($emptyStepMode, ['disabled', 'cyclic'], true))
+                <button class="artwork-folio__step" type="button" disabled aria-label="No next artwork">
+                    <x-public-icon name="arrow-right" />
+                </button>
             @endif
         </span>
     </nav>

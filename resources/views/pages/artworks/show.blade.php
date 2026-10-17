@@ -12,16 +12,24 @@
     $primaryMedia = $media->primaryMedia($artwork);
     $primaryAsset = $primaryMedia->getRelationValue('mediaAsset');
     $category = $artwork->getRelationValue('category');
+    $presentation = \App\Domain\Artwork\GalleryPresentation::class;
+    $edgeMode = $presentation::edgeMode($category);
     $sequence = $viewerArtworks->values();
     $currentIndex = $sequence->search(fn ($candidate) => $candidate->getKey() === $artwork->getKey());
     $previousArtwork = is_int($currentIndex) && $currentIndex > 0 ? $sequence->get($currentIndex - 1) : null;
     $nextArtwork = is_int($currentIndex) && $currentIndex < $sequence->count() - 1 ? $sequence->get($currentIndex + 1) : null;
+    if ($edgeMode === $presentation::EDGE_CYCLIC && $sequence->count() > 1 && is_int($currentIndex)) {
+        $previousArtwork ??= $sequence->last();
+        $nextArtwork ??= $sequence->first();
+    }
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
 @endphp
 
 {{-- Orientation comes from the authoritative public thumbnail dimensions,
      before image decoding, without any client-side layout measurement. --}}
-@section('content_class', ! $isVideo && $thumbnailWidth > $thumbnailHeight ? 'site-content--landscape-artwork' : '')
+@section('content_class', ! $isVideo && $thumbnailWidth > $thumbnailHeight && $presentation::enabled($category)
+    ? 'site-content--landscape-artwork site-content--landscape-scale-'.$presentation::scale($category)
+    : '')
 
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', $artwork->description ?: $artwork->title.' — Lars Möller')
@@ -38,6 +46,7 @@
             :show-gallery-link="true"
             :previous-artwork="$previousArtwork"
             :next-artwork="$nextArtwork"
+            :empty-step-mode="$edgeMode"
         />
         <a
             class="artwork-detail__viewer-trigger"

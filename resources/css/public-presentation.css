@@ -601,16 +601,31 @@ body {
    Gallery, Home Hero, portrait/square Artworks and navigation keep their
    configured common geometry. Orientation is resolved before first paint.
    The sheet and its gutters contract fluidly on narrow screens. */
+/* An enabled Gallery multiplies General's actual artwork width: no
+   separate pixel limit, and no untrusted inline style or JavaScript. */
+.site-content--landscape-scale-125 { --gallery-landscape-scale: 1.25; }
+.site-content--landscape-scale-150 { --gallery-landscape-scale: 1.5; }
+.site-content--landscape-scale-175 { --gallery-landscape-scale: 1.75; }
+.site-content--landscape-scale-200 { --gallery-landscape-scale: 2; }
+.site-content--landscape-scale-250 { --gallery-landscape-scale: 2.5; }
+
 #content.site-content--landscape-artwork {
     width: min(
         calc(100% - 2 * var(--public-gutter)),
-        calc(var(--public-shell-max) + 200px)
+        calc(var(--public-art-max) * var(--gallery-landscape-scale, 1.5) + 4rem)
     );
     padding-inline: clamp(var(--public-mobile-inset), 2.5vw, 2rem);
 }
 
 .site-content--landscape-artwork .artwork-detail {
-    width: min(100%, 960px);
+    width: min(100%, calc(var(--public-art-max) * var(--gallery-landscape-scale, 1.5)));
+}
+
+/* Keep both arrow hit regions in their original General-width positions:
+   browsing portrait → landscape never asks the pointer to travel sideways. */
+.artwork-detail .artwork-folio {
+    width: min(100%, var(--public-art-max));
+    margin-inline: auto;
 }
 /* The structural inner flow alone gets transient height/clip on navigation.
    Outer #content remains overflow-visible for its original paper contours. */
@@ -908,9 +923,14 @@ body {
     height: 1.2rem;
     stroke-width: 1.45;
 }
-.artwork-folio__step:hover,
+.artwork-folio__step:hover:not(:disabled),
 .artwork-folio__step:focus-visible {
     color: #191714;
+}
+.artwork-folio__step:disabled {
+    color: #b2ada8;
+    opacity: .55;
+    cursor: default;
 }
 .artwork-folio__step:focus-visible,
 .artwork-folio__gallery:focus-visible {
