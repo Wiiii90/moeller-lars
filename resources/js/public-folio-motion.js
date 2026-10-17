@@ -14,6 +14,16 @@ let snapshot = null;
 const activeHeightAnimations = new WeakMap();
 const activeWidthAnimations = new WeakMap();
 const activePaperPulses = new WeakMap();
+const ambientAnimations = new WeakMap();
+
+// A SPA swap removes the old visual sheet, but an infinite WAAPI animation
+// still belongs to the document timeline until explicitly cancelled.
+function stopAmbient(element) {
+    if (!element) return;
+    const animations = ambientAnimations.get(element);
+    ambientAnimations.delete(element);
+    animations?.forEach(animation => animation.cancel());
+}
 
 function visiblePseudo(element, pseudo) {
     if (!element) return null;
@@ -55,6 +65,10 @@ export function capturePublicFolio(root = document) {
         contentWidth: content ? content.getBoundingClientRect().width : null,
         expandedArtwork: content?.classList.contains('site-content--landscape-artwork') ?? false,
     };
+    // Capture first, then retire infinite effects on the outgoing elements.
+    // The new page owns fresh ambient animations after its normal swap.
+    stopAmbient(content);
+    stopAmbient(root.querySelector('.site-navigation'));
     return Boolean(snapshot.content || body);
 }
 
@@ -340,7 +354,10 @@ export function buildPageImpulse(start, end, growing) {
 }
 
 function startAmbient(element, states, type) {
-    if (!element || !states) return;
+    if (!element) return;
+    stopAmbient(element);
+    if (!states) return;
+    const running = [];
     const durations = type === 'content' ? CONTENT_DURATIONS : MENU_DURATIONS;
     for (let index = 0; index < 2; index += 1) {
         let frames;
@@ -349,19 +366,22 @@ function startAmbient(element, states, type) {
         } else {
             frames = buildCornerFrames(states[index]);
         }
-        nativeCorner(element, index === 0 ? '::before' : '::after',
+        const animation = nativeCorner(element, index === 0 ? '::before' : '::after',
             frames, durations[index], true);
+        if (animation) running.push(animation);
     }
-    if (typeof element.animate !== 'function') return;
-    try {
-        if (type === 'menu') {
-            element.animate(buildMenuBackingFrames(), { duration: 145000, iterations: Infinity });
-        } else {
-            element.animate(buildShadowFrames(getComputedStyle(element).boxShadow), {
-                duration: 129000, iterations: Infinity,
-            });
-        }
-    } catch { /* The authored paper remains visible without WAAPI. */ }
+    if (typeof element.animate === 'function') {
+        try {
+            if (type === 'menu') {
+                running.push(element.animate(buildMenuBackingFrames(), { duration: 145000, iterations: Infinity }));
+            } else {
+                running.push(element.animate(buildShadowFrames(getComputedStyle(element).boxShadow), {
+                    duration: 129000, iterations: Infinity,
+                }));
+            }
+        } catch { /* The authored paper remains visible without WAAPI. */ }
+    }
+    if (running.length > 0) ambientAnimations.set(element, running);
 }
 
 function pulsePaper(element, corners, oldShadow, growing, root) {
@@ -457,6 +477,7 @@ export function animatePublicHeroChange(change, root = document) {
 
     // Stop competing infinite effects on the current content surface.
     // Sample FIRST so the next impulse begins exactly at its visible pose.
+    stopAmbient(content);
     document.getAnimations().filter(animation =>
         animation.effect?.target === content
     ).forEach(animation => animation.cancel());

@@ -11,7 +11,7 @@ const CONTENT_SHADOW = 'rgba(255,255,255,.20) -3px 4px 0px 0px';
 const MENU_SHADOW = 'rgba(65,70,65,.22) 0px -1px 0px 0px inset';
 
 function fixture({ height = 540, menu = true, content = true } = {}) {
-    const effects = [], animations = [], computed = new Map();
+    const effects = [], animations = [], nativeAnimations = [], computed = new Map();
     const create = (name, shadow, topLeft, bottomLeft, topRight, bottomRight) => {
         const el = {
             name, style: { overflow: '' }, height,
@@ -43,7 +43,7 @@ function fixture({ height = 540, menu = true, content = true } = {}) {
         '#content': paper, '.site-navigation': nav,
         '#content > .public-content-reveal': body,
     })[selector] ?? null };
-    return { root, body, paper, nav, effects, animations, computed };
+    return { root, body, paper, nav, effects, animations, nativeAnimations, computed };
 }
 
 function browser(run, options = {}) {
@@ -56,8 +56,12 @@ function browser(run, options = {}) {
         constructor(el, frames, options) { Object.assign(this,{el,frames,options}); scene.effects.push(this); }
     };
     globalThis.Animation = class {
-        constructor(effect,timeline) { this.effect=effect; this.finished=Promise.resolve(); }
+        constructor(effect,timeline) {
+            this.effect=effect; this.finished=Promise.resolve();
+            scene.nativeAnimations.push(this);
+        }
         play() { this.playing=true; }
+        cancel() { this.cancelled=true; }
     };
     try { return run(scene); }
     finally { Object.entries(saved).forEach(([key,value]) => { globalThis[key]=value; }); }
@@ -338,6 +342,30 @@ test('initial document keeps slow breathing on content and menu',()=>{
         assert.ok(effects.every(e=>e.options.iterations===Infinity));
         assert.deepEqual(effects.map(e=>e.options.duration),[98000,113000,117000,133000]);
         assert.equal(animations.filter(a=>a.options.iterations===Infinity).length,2);
+    });
+});
+
+test('outgoing SPA pages retire all infinite folio animations before DOM replacement', () => {
+    browser(({root, animations, nativeAnimations}) => {
+        advancePublicFolio(root);
+        assert.equal(nativeAnimations.length, 4);
+        assert.equal(animations.filter(a => a.options.iterations === Infinity).length, 2);
+        capturePublicFolio(root);
+        assert.ok(nativeAnimations.every(a => a.cancelled));
+        assert.ok(animations.filter(a => a.options.iterations === Infinity).every(a => a.cancelled));
+    });
+});
+
+test('restarting ambient on the same element never stacks infinite animations', () => {
+    browser(({root, animations, nativeAnimations}) => {
+        advancePublicFolio(root);
+        const firstNative = [...nativeAnimations];
+        const firstWeb = animations.filter(a => a.options.iterations === Infinity);
+        advancePublicFolio(root);
+        assert.ok(firstNative.every(a => a.cancelled));
+        assert.ok(firstWeb.every(a => a.cancelled));
+        assert.equal(nativeAnimations.filter(a => !a.cancelled).length, 4);
+        assert.equal(animations.filter(a => a.options.iterations === Infinity && !a.cancelled).length, 2);
     });
 });
 
