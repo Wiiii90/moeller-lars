@@ -3,6 +3,8 @@
 namespace App\Domain\Publication;
 
 use App\Domain\Media\MediaRightsArtifactRevision;
+use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Media\PublicMedia;
 use App\Models\MediaRightsArtifact;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -99,6 +101,84 @@ final class MediaRightsPublicationSelections
              FROM media_rights_artifact_selections WHERE scope_key = ?",
             [$this->checkpointScope($checkpoint)],
         );
+    }
+
+    /**
+     * Read-only Admin state. Nothing is inferred from a rights text field:
+     * only a verified and selected original + canonical thumbnail count as
+     * ready. Disabled mode must not even query the optional registry.
+     *
+     * @return array{state:string,label:string}
+     */
+    public function workingAssetReadiness(MediaAsset $asset): array
+    {
+        if (! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))) {
+            return ['state' => 'not_applicable', 'label' => 'Not applicable'];
+        }
+        if (! $this->enabled()) {
+            return ['state' => 'disabled', 'label' => 'File rights preparation not enabled'];
+        }
+        if ($asset->getAttribute('state') !== 'available') {
+            return ['state' => 'unavailable', 'label' => 'Image unavailable'];
+        }
+
+        $variants = MediaVariant::query()
+            ->where('media_asset_id', $asset->getKey())
+            ->where('variant_kind', PublicMedia::THUMBNAIL_KIND)
+            ->where('transform_profile', PublicMedia::PUBLIC_TRANSFORM_PROFILE)
+            ->where('state', 'available')
+            ->limit(2)
+            ->get();
+
+        if ($variants->count() !== 1) {
+            return ['state' => 'missing', 'label' => 'Canonical thumbnail missing'];
+        }
+
+        try {
+            $original = $this->selectedForWorking($asset);
+            $thumbnail = $this->selectedForWorking($variants->first());
+        } catch (RuntimeException) {
+            return ['state' => 'outdated', 'label' => 'File rights need preparation'];
+        }
+
+        if ($original === null || $thumbnail === null) {
+            return ['state' => 'missing', 'label' => 'File rights not prepared'];
+        }
+
+        return ['state' => 'ready', 'label' => 'File rights prepared'];
+    }
+
+    /**
+     * Non-destructive publication gate for explicitly prepared image sets.
+     * Existing legacy images without selections continue to work until the
+     * separately authorized public-delivery backfill has been completed.
+     */
+    public function assertWorkingReady(): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        $assetIds = DB::table(self::TABLE)
+            ->where('scope_key', 'working')
+            ->distinct()
+            ->orderBy('media_asset_id')
+            ->pluck('media_asset_id');
+
+        foreach ($assetIds as $id) {
+            $asset = MediaAsset::query()->find((int) $id);
+            if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
+                // Deleted Working media are denied by PublicMedia. Older
+                // checkpoint selections remain retained for historical Undo.
+                continue;
+            }
+            $status = $this->workingAssetReadiness($asset);
+            if ($status['state'] !== 'ready') {
+                throw new RuntimeException(
+                    'Image #'.(int) $id.' cannot be published with its current file rights: '.$status['label'].'.'
+                );
+            }
+        }
     }
 
     /**

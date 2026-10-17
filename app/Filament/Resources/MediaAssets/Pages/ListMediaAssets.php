@@ -1192,6 +1192,10 @@ final class ListMediaAssets extends Page
                 'file_rights_holder' => (string) ($asset->getAttribute('file_rights_holder') ?? ''),
                 'rights_usage_terms' => (string) ($asset->getAttribute('rights_usage_terms') ?? ''),
                 'license_inquiry_url' => (string) ($asset->getAttribute('license_inquiry_url') ?? ''),
+                'rights_file_status' => MediaTypePolicy::isImage($mime)
+                    ? app(\App\Domain\Publication\MediaRightsPublicationSelections::class)
+                        ->workingAssetReadiness($asset)['label']
+                    : null,
                 'dimensions' => $asset->getAttribute('width') && $asset->getAttribute('height')
                     ? $asset->getAttribute('width').'×'.$asset->getAttribute('height')
                     : '—',

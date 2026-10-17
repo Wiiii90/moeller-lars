@@ -168,6 +168,7 @@ final class PublicationService
 
         try {
             $this->schemaGuard->assertParity();
+            $this->rightsSelections->assertWorkingReady();
         } catch (\Throwable $exception) {
             return [
                 'status' => 'blocked',
@@ -211,6 +212,10 @@ final class PublicationService
 
                 return null;
             }
+
+            // The UI preflight alone is not authoritative. Validate the
+            // selected file rights again under the existing commit lock.
+            $this->rightsSelections->assertWorkingReady();
 
             $stagedAuditEventIds = AuditEvent::query()
                 ->whereDoesntHave('publicationCheckpointEvent')

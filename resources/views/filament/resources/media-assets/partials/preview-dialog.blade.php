@@ -72,6 +72,7 @@
                     <div><dt>Photo rights holder</dt><dd>{{ $asset['file_rights_holder'] !== '' ? $asset['file_rights_holder'] : '—' }}</dd></div>
                     <div><dt>Specific usage terms</dt><dd>{{ $asset['rights_usage_terms'] !== '' ? $asset['rights_usage_terms'] : '—' }}</dd></div>
                     <div><dt>License / rights inquiry URL</dt><dd>{{ $asset['license_inquiry_url'] !== '' ? $asset['license_inquiry_url'] : '—' }}</dd></div>
+                    <div><dt>Embedded rights file</dt><dd>{{ $asset['rights_file_status'] ?? '—' }}</dd></div>
                 @endif
             </dl>
         </section>
