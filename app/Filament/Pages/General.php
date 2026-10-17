@@ -21,7 +21,6 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -241,6 +240,9 @@ final class General extends Page
                             Hidden::make('background_color'),
                             Hidden::make('background_gradient_start'),
                             Hidden::make('background_gradient_end'),
+                            Hidden::make('background_gradient_stops'),
+                            Hidden::make('menu_background_gradient_stops'),
+                            Hidden::make('page_background_gradient_stops'),
                             Hidden::make('menu_background_color'),
                             Hidden::make('menu_background_gradient_start'),
                             Hidden::make('menu_background_gradient_end'),
@@ -398,23 +400,34 @@ final class General extends Page
                 ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
                 ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
 
-            AdminColorControl::make($surface.'_primary_color', 'Color')
+            AdminColorControl::make($surface.'_primary_color', 'Primary color')
                 ->lazy()
                 ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
-                ->afterStateUpdated(fn ($livewire, $state) => $livewire instanceof self ? $livewire->persistSurfaceColor($surface, 'primary', $state) : null)
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
+                ->afterStateUpdated(fn ($livewire, $state) => $livewire instanceof self ? $livewire->persistSurfaceColor($surface, 'primary', $state) : null),
 
             AdminAngleControl::make($surface.'_gradient_angle')
                 ->live()
                 ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
                 ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
 
+            AdminColorControl::make($surface.'_secondary_color', 'Secondary color')
+                ->lazy()
+                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-secondary-color-control'])
+                ->afterStateUpdated(fn ($livewire, $state) => $livewire instanceof self ? $livewire->persistSurfaceColor($surface, 'secondary', $state) : null)
+                ->visible($gradient),
+
             Select::make($surface.'_gradient_repeating')
                 ->label('Repeating')
                 ->options(['0' => 'Off', '1' => 'On'])
+                ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
                 ->native()
                 ->live()
-                ->afterStateUpdated(self::persist($surface.'_gradient_repeating'))
+                ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
+                    if ($livewire instanceof self) {
+                        $livewire->persistChangedField($surface.'_gradient_repeating');
+                        $livewire->data[$surface.'_gradient_repeating'] = (bool) $state ? '1' : '0';
+                    }
+                })
                 ->visible($gradient),
 
             Select::make($surface.'_gradient_shape')
@@ -440,39 +453,10 @@ final class General extends Page
                 ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
                 ->visible($center),
 
-            Repeater::make($surface.'_gradient_stops')
-                ->label('Colors')
-                ->default(fn (): array => PublicAppearance::stops(PublicContentSetting::general(), $surface))
-                ->afterStateHydrated(function (Repeater $component, mixed $state) use ($surface): void {
-                    if (! is_array($state) || count($state) < 2) {
-                        // Hidden/conditional Filament fields may not yet have
-                        // created item containers when their mode becomes active.
-                        // Hydration stays read-only; no autosave on page open.
-                        $component->state(PublicAppearance::stops(PublicContentSetting::general(), $surface));
-                    }
-                })
-                ->schema([
-                    AdminColorControl::make('color', 'Color')
-                        ->default($surface === 'background' ? PublicAppearance::DEFAULT_PAGE_COLOR : PublicAppearance::DEFAULT_SURFACE_COLOR)
-                        ->required()->live(onBlur: true)
-                        ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null),
-                    TextInput::make('position')
-                        ->default(100)
-                        ->label('Position')->integer()->minValue(0)->maxValue(100)->suffix('%')
-                        ->required()->live(onBlur: true)
-                        ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null),
-                ])
-                ->columns(2)->minItems(2)->maxItems(PublicAppearance::MAX_STOPS)
-                ->addActionLabel('Add color')
-                ->addAction(fn (\Filament\Actions\Action $action): \Filament\Actions\Action => $action
-                    ->link()
-                    ->color('gray')
-                    ->icon('heroicon-m-plus')
-                    ->extraAttributes(['class' => 'admin-add-row']))
-                ->extraFieldWrapperAttributes(['class' => 'general-gradient-stops-control'])
-                ->reorderable(false)->live()
-                ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null)
-                ->columnSpanFull()->visible($gradient),
+            View::make('filament.schemas.components.general-gradient-colors')
+                ->viewData(fn ($livewire): array => ['generalPage' => $livewire, 'surface' => $surface])
+                ->columnSpanFull()
+                ->visible($gradient),
         ])
             ->columns(2)
             ->extraAttributes(['class' => 'general-background-row'])
@@ -497,33 +481,32 @@ final class General extends Page
         }
 
         $mode = $this->data[$surface.'_mode'] ?? PublicAppearance::MODE_SOLID;
-        $field = match ($slot) {
-            'primary' => $mode === PublicAppearance::MODE_GRADIENT ? $surface.'_gradient_start' : $surface.'_color',
-            'secondary' => $mode === PublicAppearance::MODE_GRADIENT ? $surface.'_gradient_end' : null,
-            default => null,
-        };
-        if ($field === null) {
+        $isGradient = PublicAppearance::isGradient($mode);
+        $alias = $surface.($slot === 'primary' ? '_primary_color' : '_secondary_color');
+        if (! in_array($slot, ['primary', 'secondary'], true) || (! $isGradient && $slot !== 'primary')) {
             return;
         }
-
-        $alias = $surface.($slot === 'primary' ? '_primary_color' : '_secondary_color');
         $this->resetErrorBag('data.'.$alias);
-        $this->data[$field] = $value;
-        $fields = $mode === PublicAppearance::MODE_SOLID ? [$surface.'_mode', $field] : [$field];
-        $this->persistChangedFields($fields);
+
+        if ($isGradient && is_array($this->generalSettingsRecord()->getAttribute($surface.'_gradient_stops'))) {
+            $stops = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
+            $index = $slot === 'primary' ? 0 : count($stops) - 1;
+            $stops[$index]['color'] = $value;
+            $this->data[$surface.'_gradient_stops'] = $stops;
+            $field = $surface.'_gradient_stops';
+            $this->persistChangedField($field);
+        } else {
+            $field = $isGradient
+                ? $surface.($slot === 'primary' ? '_gradient_start' : '_gradient_end')
+                : $surface.'_color';
+            $this->data[$field] = $value;
+            $this->persistChangedFields($isGradient ? [$field] : [$surface.'_mode', $field]);
+        }
 
         foreach ($this->getErrorBag()->get('data.'.$field) as $message) {
             $this->addError('data.'.$alias, $message);
         }
-
         $this->syncAppearanceControlState();
-    }
-
-    public function persistSurfaceStops(string $surface): void
-    {
-        if (in_array($surface, PublicAppearance::SURFACE_PREFIXES, true)) {
-            $this->persistChangedField($surface.'_gradient_stops');
-        }
     }
 
     public function persistSurfaceMode(string $surface): void
@@ -549,11 +532,120 @@ final class General extends Page
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
             $default = $surface === 'background' ? PublicAppearance::DEFAULT_PAGE_COLOR : PublicAppearance::DEFAULT_SURFACE_COLOR;
             $mode = $this->data[$surface.'_mode'] ?? PublicAppearance::MODE_SOLID;
-            $this->data[$surface.'_primary_color'] = $mode === PublicAppearance::MODE_GRADIENT
-                ? ($this->data[$surface.'_gradient_start'] ?? $default)
-                : ($this->data[$surface.'_color'] ?? $default);
-            $this->data[$surface.'_secondary_color'] = $this->data[$surface.'_gradient_end'] ?? null;
+            if (PublicAppearance::isGradient($mode)) {
+                $stops = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
+                $this->data[$surface.'_primary_color'] = $stops[0]['color'];
+                $this->data[$surface.'_secondary_color'] = $stops[count($stops) - 1]['color'];
+            } else {
+                $this->data[$surface.'_primary_color'] = $this->data[$surface.'_color'] ?? $default;
+                $this->data[$surface.'_secondary_color'] = null;
+            }
         }
+    }
+
+    /** @return list<array{color:string,position:int}> */
+    public function appearanceStops(string $surface): array
+    {
+        abort_unless(in_array($surface, PublicAppearance::SURFACE_PREFIXES, true), 404);
+
+        return PublicAppearance::stops(PublicContentSetting::general(), $surface);
+    }
+
+    public function addGradientColorAction(): Action
+    {
+        return AdminDialog::create(
+            Action::make('addGradientColor')
+                ->modalHeading('Add color')
+                ->fillForm(fn (): array => ['color' => '#FFFFFF', 'position' => 50])
+                ->schema([
+                    AdminColorControl::make('color', 'Color')->required(),
+                    TextInput::make('position')->label('Position')->integer()
+                        ->minValue(1)->maxValue(99)->suffix('%')->required(),
+                ]),
+            'Add color',
+            AdminDialogSize::Small,
+        )->action(function (array $data, array $arguments): void {
+            $surface = $this->appearanceSurfaceFromAction($arguments);
+            $stops = $this->appearanceStops($surface);
+            if (count($stops) >= PublicAppearance::MAX_STOPS) {
+                throw ValidationException::withMessages(['color' => 'Maximum number of colors reached.']);
+            }
+
+            $new = [
+                'color' => PublicAppearance::normalizeColor($data['color'] ?? null, 'color'),
+                'position' => $data['position'] ?? null,
+            ];
+            $stops[] = $new;
+            $this->saveAppearanceStops($surface, $stops);
+        });
+    }
+
+    public function editGradientColorAction(): Action
+    {
+        return AdminDialog::command(
+            Action::make('editGradientColor')
+                ->modalHeading('Edit color')
+                ->fillForm(function (array $arguments): array {
+                    $surface = $this->appearanceSurfaceFromAction($arguments);
+                    $index = (int) ($arguments['index'] ?? -1);
+                    $stops = $this->appearanceStops($surface);
+                    abort_unless($index > 0 && $index < count($stops) - 1, 404);
+                    return $stops[$index];
+                })
+                ->schema([
+                    AdminColorControl::make('color', 'Color')->required(),
+                    TextInput::make('position')->label('Position')->integer()
+                        ->minValue(1)->maxValue(99)->suffix('%')->required(),
+                ]),
+            'Save color',
+            AdminDialogSize::Small,
+        )->action(function (array $data, array $arguments): void {
+            $surface = $this->appearanceSurfaceFromAction($arguments);
+            $stops = $this->appearanceStops($surface);
+            $index = (int) ($arguments['index'] ?? -1);
+            abort_unless($index > 0 && $index < count($stops) - 1, 404);
+
+            $stops[$index] = [
+                'color' => PublicAppearance::normalizeColor($data['color'] ?? null, 'color'),
+                'position' => $data['position'] ?? null,
+            ];
+            $this->saveAppearanceStops($surface, $stops);
+        });
+    }
+
+    public function removeGradientColorAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('removeGradientColor')->action(function (array $arguments): void {
+                $surface = $this->appearanceSurfaceFromAction($arguments);
+                $stops = $this->appearanceStops($surface);
+                $index = (int) ($arguments['index'] ?? -1);
+                abort_unless($index > 0 && $index < count($stops) - 1, 404);
+                array_splice($stops, $index, 1);
+                $this->saveAppearanceStops($surface, $stops);
+            }),
+            'Remove color',
+            'Remove this additional color from the gradient?',
+            'Remove',
+        );
+    }
+
+    /** @param array<string,mixed> $arguments */
+    private function appearanceSurfaceFromAction(array $arguments): string
+    {
+        $surface = $arguments['surface'] ?? null;
+        abort_unless(is_string($surface) && in_array($surface, PublicAppearance::SURFACE_PREFIXES, true), 404);
+
+        return $surface;
+    }
+
+    /** @param list<array{color:mixed,position:mixed}> $stops */
+    private function saveAppearanceStops(string $surface, array $stops): void
+    {
+        $validated = PublicAppearance::normalizeStops($stops, $surface.'_gradient_stops');
+        $this->data[$surface.'_gradient_stops'] = $validated;
+        $this->persistChangedField($surface.'_gradient_stops');
+        $this->syncAppearanceControlState();
     }
 
     public function addSocialLinkAction(): Action

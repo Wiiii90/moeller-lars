@@ -442,3 +442,84 @@ it('keeps Appearance gradient actions on the shared line-based admin control con
     $component->set('data.menu_background_gradient_repeating', '0')->assertHasNoErrors();
     expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeFalse();
 });
+
+it('adds, edits and removes additional colors through canonical dialogs without changing endpoints', function (): void {
+    $settings = PublicContentSetting::general();
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'background_mode' => 'gradient',
+        'background_gradient_start' => '#112233',
+        'background_gradient_end' => '#AABBCC',
+        'background_gradient_angle' => 30,
+    ]);
+
+    $before = PublicAppearance::stops(PublicContentSetting::general(), 'background');
+    expect($before)->toBe([
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#AABBCC', 'position' => 100],
+    ]);
+
+    Livewire::test(General::class)
+        ->mountAction('addGradientColor', ['surface' => 'background'])
+        ->fillForm(['color' => '#778899', 'position' => 55])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $saved = PublicAppearance::stops(PublicContentSetting::general(), 'background');
+    expect($saved)->toBe([
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#778899', 'position' => 55],
+        ['color' => '#AABBCC', 'position' => 100],
+    ]);
+
+    Livewire::test(General::class)
+        ->mountAction('editGradientColor', ['surface' => 'background', 'index' => 1])
+        ->assertActionDataSet(['color' => '#778899', 'position' => 55])
+        ->fillForm(['color' => '#445566', 'position' => 60])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect(PublicAppearance::stops(PublicContentSetting::general(), 'background')[1])
+        ->toBe(['color' => '#445566', 'position' => 60]);
+
+    Livewire::test(General::class)
+        ->mountAction('removeGradientColor', ['surface' => 'background', 'index' => 1])
+        ->callMountedAction();
+
+    expect(PublicAppearance::stops(PublicContentSetting::general(), 'background'))->toBe($before);
+});
+
+it('keeps the original inline primary and secondary colors in sync with structured stops', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'menu_background_mode' => 'radial',
+        'menu_background_gradient_stops' => [
+            ['color' => '#111111', 'position' => 0],
+            ['color' => '#333333', 'position' => 50],
+            ['color' => '#999999', 'position' => 100],
+        ],
+    ]);
+
+    Livewire::test(General::class)
+        ->assertSet('data.menu_background_primary_color', '#111111')
+        ->assertSet('data.menu_background_secondary_color', '#999999')
+        ->set('data.menu_background_primary_color', '#222222')
+        ->call('persistSurfaceColor', 'menu_background', 'primary', '#222222')
+        ->assertHasNoErrors()
+        ->call('persistSurfaceColor', 'menu_background', 'secondary', '#EEEEEE')
+        ->assertHasNoErrors();
+
+    expect(PublicAppearance::stops(PublicContentSetting::general(), 'menu_background'))->toBe([
+        ['color' => '#222222', 'position' => 0],
+        ['color' => '#333333', 'position' => 50],
+        ['color' => '#EEEEEE', 'position' => 100],
+    ]);
+});
+
+it('rejects an invalid additional color without persisting changes', function (): void {
+    Livewire::test(General::class)
+        ->mountAction('addGradientColor', ['surface' => 'page_background'])
+        ->fillForm(['color' => '#DDDDDD', 'position' => 125])
+        ->callMountedAction()
+        ->assertHasFormErrors(['position']);
+
+    expect(PublicContentSetting::general()->getAttribute('page_background_gradient_stops'))->toBeNull();
+});

@@ -461,62 +461,92 @@
     opacity: 1;
 }
 
-/* Shared pointer/keyboard-accessible angle input, usable by any admin ViewField. */
+/* Global angle field: a compact numeric input with a ColorPicker-like dial popup.
+ * The picker is teleported to the root so the scrollable Stage cannot clip it. */
 .admin-angle-control {
-    display: flex;
     min-width: 0;
     min-height: var(--admin-control-height);
-    gap: .65rem;
+    display: flex;
     align-items: center;
     border-bottom: 1px solid var(--admin-line);
 }
+.admin-angle-control:focus-within { border-bottom-color: var(--admin-accent); }
+.admin-angle-control__value {
+    display: inline-flex;
+    width: 100%;
+    min-height: var(--admin-control-height);
+    align-items: center;
+    gap: .15rem;
+}
+.admin-angle-control__value input {
+    box-sizing: border-box;
+    width: 4rem;
+    min-width: 0;
+    border: 0;
+    padding: .25rem .15rem;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .78rem;
+    outline: none;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+.admin-angle-control__value input::-webkit-inner-spin-button,
+.admin-angle-control__value input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.admin-angle-control__value span { color: var(--admin-muted); font-size: .78rem; }
+.admin-angle-control__popover {
+    position: fixed;
+    z-index: 120;
+    display: grid;
+    width: 9.5rem;
+    min-height: 9.5rem;
+    padding: .65rem;
+    box-sizing: border-box;
+    place-items: center;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: .25rem;
+    background: var(--admin-surface);
+    box-shadow: 0 .4rem 1.3rem rgb(0 0 0 / 12%);
+}
 .admin-angle-control__dial {
     position: relative;
-    box-sizing: border-box;
-    display: grid;
-    width: 2rem;
-    height: 2rem;
-    flex: 0 0 2rem;
-    place-items: center;
+    width: 7rem;
+    height: 7rem;
     border: 1px solid var(--admin-line-strong);
     border-radius: 50%;
     background: transparent;
     cursor: crosshair;
     touch-action: none;
 }
-.admin-angle-control__dial:focus-visible {
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 2px;
+.admin-angle-control__dial:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 3px; }
+.admin-angle-control__dial::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: .3rem;
+    height: .3rem;
+    border-radius: 50%;
+    background: var(--admin-text);
+    content: "";
+    transform: translate(-50%, -50%);
 }
 .admin-angle-control__needle {
     position: absolute;
+    top: calc(50% - 2.65rem);
+    left: calc(50% - .5px);
     width: 1px;
-    height: 1.45rem;
-    background: var(--admin-text);
+    height: 5.3rem;
+    background: linear-gradient(to bottom, var(--admin-accent) 0 50%, transparent 50% 100%);
+    transform-origin: center;
 }
-.admin-angle-control__needle::after {
+.admin-angle-control__needle::before {
     position: absolute;
-    top: -.11rem;
-    left: -.15rem;
-    width: .3rem;
-    height: .3rem;
+    top: -.2rem;
+    left: -.22rem;
+    width: .45rem;
+    height: .45rem;
     border-radius: 50%;
     background: var(--admin-accent);
     content: "";
 }
-.admin-angle-control__input {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-}
-.admin-angle-control__input input {
-    width: 4.5rem;
-    min-width: 0;
-    padding: .2rem 0;
-    border: 0;
-    background: transparent;
-    color: var(--admin-text);
-    font: inherit;
-    font-size: .78rem;
-}
-.admin-angle-control__input span { color: var(--admin-muted); }

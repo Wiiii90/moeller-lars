@@ -526,7 +526,7 @@ General is the authoritative global editor for three distinct page paint
 surfaces: **Background** (outer viewport and header), **Menu** (both navigation
 levels) and **Page** (content backing). Each uses the same validated paint contract: Solid, Linear, Radial and
 Conic gradients, each optionally repeating, with 2–12 stops (color and
-position). Linear uses the shared angle control; Conic has a start angle and
+position). Linear uses the shared numeric/rotary popover control; Conic has a start angle and
 center; Radial has a center and circle/ellipse shape. Repeating uses an
 explicit span (pixels for Linear/Radial, degrees for Conic) so repetition is
 visible. Missing JSON stop lists preserve the legacy two-color appearance.
@@ -544,3 +544,20 @@ the default for every page. A future Pages editor may supply an optional
 per-page override at the page content boundary, falling back to the General
 value whenever unset; do not add those controls or per-page persistence as
 part of the global General editor. Menu remains globally owned by General.
+
+## Appearance editor control presentation
+
+The artist-facing General Stage retains its concise two-column appearance
+grammar: Background/Menu/Page selection beside Primary color, and Linear/Conic
+angle beside Secondary color. The shared AdminAngleControl exposes one inline
+numeric degree value and opens a rotary dial only on focus/click, analogous to
+the shared ColorPicker. Both input methods commit through the same validated
+General appearance field. The dial is teleported outside the scrollable Stage
+to avoid clipping.
+
+Extra gradient stops are never edited with an embedded Filament Repeater,
+decorative cards, chip-style buttons or red deletion icons. The existing
+primary/secondary endpoint colors remain inline, while additional interior
+stops are listed concisely and created/edited/removed via the canonical
+AdminDialog contract and common Add row/Action controls. Old two-color settings
+are never materialized into JSON merely by opening the editor.
