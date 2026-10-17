@@ -23,6 +23,7 @@ final class AdminMediaController extends Controller
     {
         $this->authorizeAdmin();
         if (request()->routeIs('preview.media.original')) {
+            abort_unless($mediaAsset->getAttribute('state') === 'available', 404);
             $artifact = app(MediaRightsPublicationSelections::class)->selectedForWorking($mediaAsset);
             abort_unless($artifact === null ? $revision === null : $revision === $artifact->getAttribute('revision'), 404);
             if ($artifact instanceof MediaRightsArtifact) {
