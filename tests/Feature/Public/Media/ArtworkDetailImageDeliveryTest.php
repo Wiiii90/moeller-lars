@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Media\MediaRightsArtifactRevision;
 use App\Domain\Publication\MediaRightsPublicationSelections;
 use App\Domain\Publication\PublicationService;
 use App\Models\Artwork;
@@ -13,6 +14,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 it('renders selected rights thumbnail URLs for public and preview artwork detail pages', function (): void {
+    config()->set('media.rights_preparation_enabled', true);
+    config()->set('media.rights_delivery_enabled', true);
+
     Storage::fake('artwork-detail-test');
     config(['media.disk' => 'artwork-detail-test']);
     $actor = User::factory()->admin()->create();
@@ -40,11 +44,8 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
     $rightsBytes = 'rights-thumbnail-bytes';
     $originalKey = 'originals/thumbnail-rights.jpg';
     $thumbnailKey = 'variants/thumbnail-rights.webp';
-    $revision = hash('sha256', 'thumbnail-rights-revision');
-    $rightsKey = 'variants/rights/'.$revision.'.webp';
     $disk->put($originalKey, $originalBytes);
     $disk->put($thumbnailKey, $thumbnailBytes);
-    $disk->put($rightsKey, $rightsBytes);
 
     $asset = MediaAsset::query()->create([
         'storage_key' => $originalKey,
@@ -69,6 +70,12 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
         'width' => 480,
         'height' => 720,
     ]);
+    // The selected immutable identity must match the real source and rights
+    // projection; a fabricated revision would be rejected as stale.
+    $revision = app(MediaRightsArtifactRevision::class)->forSource($asset, $variant);
+    $rightsKey = 'variants/rights/'.$revision.'.webp';
+    $disk->put($rightsKey, $rightsBytes);
+
     ArtworkMedia::query()->create([
         'artwork_id' => $artwork->getKey(),
         'media_asset_id' => $asset->getKey(),
