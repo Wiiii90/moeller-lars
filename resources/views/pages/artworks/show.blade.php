@@ -49,48 +49,48 @@
             :empty-step-mode="$edgeMode"
         />
         <div class="artwork-detail__media">
-        <a
-            class="artwork-detail__viewer-trigger"
-            href="{{ $originalUrl }}"
-            data-artwork-viewer-trigger
-            data-viewer-key="{{ $artwork->slug }}"
-            data-viewer-analytics-key="{{ $artwork->analytics_key }}"
-            data-viewer-kind="{{ $kind }}"
-            data-viewer-mime="{{ $mime }}"
-            data-viewer-src="{{ $originalUrl }}"
-            data-viewer-alt="{{ $media->altText($artwork) }}"
-            data-viewer-title="{{ $artwork->title }}"
-            data-viewer-page="{{ $preview->url(route('artworks.show', $artwork->slug)) }}"
-            aria-label="Open {{ $artwork->title }} in media viewer"
-        >
-            @if ($isVideo)
-                <video
-                    class="artwork-detail__video"
-                    src="{{ $originalUrl }}"
-                    aria-label="{{ $media->altText($artwork) }}"
-                    muted
-                    playsinline
-                    preload="metadata"
-                ></video>
-            @else
-                <img
-                    class="artwork-image artwork-detail__image"
-                    src="{{ $imageUrl }}"
-                    alt="{{ $media->altText($artwork) }}"
-                    @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)
-                        width="{{ $thumbnailWidth }}"
-                        height="{{ $thumbnailHeight }}"
-                    @endif
-                    loading="eager"
-                    decoding="async"
-                    fetchpriority="high"
-                >
-            @endif
-        </a>
+            <a
+                class="artwork-detail__viewer-trigger"
+                href="{{ $originalUrl }}"
+                data-artwork-viewer-trigger
+                data-viewer-key="{{ $artwork->slug }}"
+                data-viewer-analytics-key="{{ $artwork->analytics_key }}"
+                data-viewer-kind="{{ $kind }}"
+                data-viewer-mime="{{ $mime }}"
+                data-viewer-src="{{ $originalUrl }}"
+                data-viewer-alt="{{ $media->altText($artwork) }}"
+                data-viewer-title="{{ $artwork->title }}"
+                data-viewer-page="{{ $preview->url(route('artworks.show', $artwork->slug)) }}"
+                aria-label="Open {{ $artwork->title }} in media viewer"
+            >
+                @if ($isVideo)
+                    <video
+                        class="artwork-detail__video"
+                        src="{{ $originalUrl }}"
+                        aria-label="{{ $media->altText($artwork) }}"
+                        muted
+                        playsinline
+                        preload="metadata"
+                    ></video>
+                @else
+                    <img
+                        class="artwork-image artwork-detail__image"
+                        src="{{ $imageUrl }}"
+                        alt="{{ $media->altText($artwork) }}"
+                        @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)
+                            width="{{ $thumbnailWidth }}"
+                            height="{{ $thumbnailHeight }}"
+                        @endif
+                        loading="eager"
+                        decoding="async"
+                        fetchpriority="high"
+                    >
+                @endif
+            </a>
 
-        <div class="artwork-detail__footer">
-            <x-artwork-caption :artwork="$artwork" />
-        </div>
+            <div class="artwork-detail__footer">
+                <x-artwork-caption :artwork="$artwork" />
+            </div>
         </div>
 
         @if ($artwork->description)

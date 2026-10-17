@@ -111,7 +111,6 @@ final class BrowserProfilingSeeder extends Seeder
             'name' => 'Browser Gallery', 'slug' => 'browser-gallery',
             // Disposable fixture opts in. Production Galleries default off.
             'landscape_detail_enabled' => true,
-            'landscape_detail_scale' => 150,
             'edge_navigation_mode' => 'cyclic',
         ]);
         SiteSection::query()->create([
