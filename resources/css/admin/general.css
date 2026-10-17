@@ -600,3 +600,11 @@
 
 
 
+
+/* A stop list occupies the full settings pane, not one of its two fields. */
+.general-background-row > .fi-sc > :has(.general-gradient-stops-control) {
+    grid-column: 1 / -1 !important;
+}
+.general-gradient-stops-control .fi-fo-repeater-item {
+    min-width: 0;
+}

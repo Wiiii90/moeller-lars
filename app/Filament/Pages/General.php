@@ -6,6 +6,7 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Content\SocialLinks;
+use App\Filament\Support\AdminAngleControl;
 use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
@@ -22,7 +23,6 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\ViewField;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -405,9 +405,7 @@ final class General extends Page
                 ->afterStateUpdated(fn ($livewire, $state) => $livewire instanceof self ? $livewire->persistSurfaceColor($surface, 'primary', $state) : null)
                 ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
 
-            ViewField::make($surface.'_gradient_angle')
-                ->label('Angle')
-                ->view('filament.forms.components.admin-angle-control')
+            AdminAngleControl::make($surface.'_gradient_angle')
                 ->live()
                 ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
                 ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
@@ -454,6 +452,7 @@ final class General extends Page
                 ])
                 ->columns(2)->minItems(2)->maxItems(PublicAppearance::MAX_STOPS)
                 ->addActionLabel('Add color stop')
+                ->extraFieldWrapperAttributes(['class' => 'general-gradient-stops-control'])
                 ->reorderable(false)->live()
                 ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceStops($surface) : null)
                 ->columnSpanFull()->visible($gradient),

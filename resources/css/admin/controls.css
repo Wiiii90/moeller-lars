@@ -460,3 +460,63 @@
     background: var(--admin-toolbar-line-active);
     opacity: 1;
 }
+
+/* Shared pointer/keyboard-accessible angle input, usable by any admin ViewField. */
+.admin-angle-control {
+    display: flex;
+    min-width: 0;
+    min-height: var(--admin-control-height);
+    gap: .65rem;
+    align-items: center;
+    border-bottom: 1px solid var(--admin-line);
+}
+.admin-angle-control__dial {
+    position: relative;
+    box-sizing: border-box;
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 2rem;
+    place-items: center;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 50%;
+    background: transparent;
+    cursor: crosshair;
+    touch-action: none;
+}
+.admin-angle-control__dial:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+.admin-angle-control__needle {
+    position: absolute;
+    width: 1px;
+    height: 1.45rem;
+    background: var(--admin-text);
+}
+.admin-angle-control__needle::after {
+    position: absolute;
+    top: -.11rem;
+    left: -.15rem;
+    width: .3rem;
+    height: .3rem;
+    border-radius: 50%;
+    background: var(--admin-accent);
+    content: "";
+}
+.admin-angle-control__input {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+}
+.admin-angle-control__input input {
+    width: 4.5rem;
+    min-width: 0;
+    padding: .2rem 0;
+    border: 0;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .78rem;
+}
+.admin-angle-control__input span { color: var(--admin-muted); }
