@@ -355,7 +355,7 @@ final class PublicationVersionService
             $total += (int) ($row->aggregate ?? 0);
         }
 
-        return $total;
+        return $total + $this->rightsSelections->pendingCount($this->currentLiveCheckpoint());
     }
 
     private function pendingCountAgainstCheckpoint(PublicationCheckpoint $checkpoint): int
@@ -370,7 +370,7 @@ final class PublicationVersionService
             $total += (int) ($row->aggregate ?? 0);
         }
 
-        return $total;
+        return $total + $this->rightsSelections->pendingCount($checkpoint);
     }
 
     private function setWorkingContext(string $operation, int $sourceCheckpointId): void

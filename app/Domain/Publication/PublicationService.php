@@ -53,6 +53,16 @@ final class PublicationService
             $total += $count;
         }
 
+        $rightsCount = $this->rightsSelections->pendingCount($this->versions->currentLiveCheckpoint());
+        if ($rightsCount > 0) {
+            $groups[] = [
+                'area' => 'Storage',
+                'entity' => 'Image rights files',
+                'count' => $rightsCount,
+            ];
+            $total += $rightsCount;
+        }
+
         usort($groups, static fn (array $left, array $right): int => [$left['area'], $left['entity']] <=> [$right['area'], $right['entity']]);
 
         return ['total' => $total, 'groups' => $groups];
@@ -106,6 +116,30 @@ final class PublicationService
 
             if ($truncated) {
                 break;
+            }
+        }
+
+        if (! $truncated) {
+            $remaining = $limit - count($rows);
+            $changes = $this->rightsSelections->pendingDetails(
+                $this->versions->currentLiveCheckpoint(),
+                $remaining + 1,
+            );
+            if (count($changes) > $remaining) {
+                $changes = array_slice($changes, 0, $remaining);
+                $truncated = true;
+            }
+
+            foreach ($changes as $change) {
+                $rows[] = [
+                    'area' => 'Storage',
+                    'entity' => 'Image rights files',
+                    'table' => 'media_rights_artifact_selections',
+                    'row_key' => (string) $change->role.':'.(string) $change->source_id,
+                    'label' => ((string) $change->role === 'thumbnail' ? 'Thumbnail' : 'Original').' #'.$change->source_id,
+                    'change' => (string) $change->change_kind,
+                    'fields' => ['rights_artifact'],
+                ];
             }
         }
 

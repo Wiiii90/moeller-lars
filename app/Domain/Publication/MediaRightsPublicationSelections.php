@@ -98,6 +98,65 @@ final class MediaRightsPublicationSelections
         );
     }
 
+    /**
+     * Rights-file selections participate in the EXISTING publication Pending
+     * calculation; no change to PublicationSnapshot schema or hash history.
+     */
+    public function pendingCount(?PublicationCheckpoint $checkpoint): int
+    {
+        if (! $this->enabled()) {
+            return 0;
+        }
+
+        $row = DB::selectOne(
+            "WITH working AS (
+                SELECT role, source_id, media_rights_artifact_id
+                FROM media_rights_artifact_selections WHERE scope_key = 'working'
+             ), baseline AS (
+                SELECT role, source_id, media_rights_artifact_id
+                FROM media_rights_artifact_selections WHERE scope_key = ?
+             )
+             SELECT COUNT(*)::int AS aggregate
+             FROM working FULL OUTER JOIN baseline USING (role, source_id)
+             WHERE working.media_rights_artifact_id IS DISTINCT FROM baseline.media_rights_artifact_id",
+            [$this->baselineScope($checkpoint)],
+        );
+
+        return (int) ($row->aggregate ?? 0);
+    }
+
+    /** @return list<object> */
+    public function pendingDetails(?PublicationCheckpoint $checkpoint, int $limit): array
+    {
+        if (! $this->enabled() || $limit < 1) {
+            return [];
+        }
+
+        return DB::select(
+            "WITH working AS (
+                SELECT role, source_id, media_rights_artifact_id
+                FROM media_rights_artifact_selections WHERE scope_key = 'working'
+             ), baseline AS (
+                SELECT role, source_id, media_rights_artifact_id
+                FROM media_rights_artifact_selections WHERE scope_key = ?
+             )
+             SELECT COALESCE(working.role, baseline.role) AS role,
+                    COALESCE(working.source_id, baseline.source_id) AS source_id,
+                    CASE WHEN baseline.media_rights_artifact_id IS NULL THEN 'added'
+                         WHEN working.media_rights_artifact_id IS NULL THEN 'removed'
+                         ELSE 'changed' END AS change_kind
+             FROM working FULL OUTER JOIN baseline USING (role, source_id)
+             WHERE working.media_rights_artifact_id IS DISTINCT FROM baseline.media_rights_artifact_id
+             ORDER BY role, source_id LIMIT ?",
+            [$this->baselineScope($checkpoint), $limit],
+        );
+    }
+
+    private function baselineScope(?PublicationCheckpoint $checkpoint): string
+    {
+        return $checkpoint === null ? 'checkpoint:0' : $this->checkpointScope($checkpoint);
+    }
+
     public function selectedForPublic(MediaAsset|MediaVariant $source): ?MediaRightsArtifact
     {
         if (! $this->deliveryEnabled()) {
