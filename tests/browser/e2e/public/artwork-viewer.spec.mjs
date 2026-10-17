@@ -148,57 +148,49 @@ test('Artwork detail sequence uses Gallery cyclic edges and defaults other Galle
     await expect(defaultNav.getByRole('link', { name: 'Next artwork' })).toBeVisible();
 });
 
-test('landscape Artwork detail widens the canvas without enlarging Gallery or overflowing phones', async ({ page }) => {
+test('landscape Artwork detail keeps natural image pixels, centered captions and stable arrows', async ({ page }) => {
     const gallery = galleryFixture();
-    const first = gallery.artworks[0]; // 1600 × 1200 fixture
+    const first = gallery.artworks[0]; // fixture uses 320px thumbnail
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(gallery.url);
     await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
-    const galleryWidth = await page.locator('.artwork-list .artwork-card__image').first().evaluate(image =>
-        image.getBoundingClientRect().width);
-    expect(galleryWidth).toBeLessThanOrEqual(650);
 
     await page.locator('.artwork-caption-link').first().click();
     await expect(page).toHaveURL(new RegExp(first.url + '$'));
     await expect(page.locator('#content')).toHaveClass(/site-content--landscape-artwork/);
-    // The existing folio owner animates the new sheet width for 620ms.
-    // Wait for the settled geometry rather than sampling an in-flight frame.
-    await expect.poll(() => page.locator('.artwork-detail__image').evaluate(image =>
-        image.getBoundingClientRect().width)).toBeGreaterThan(galleryWidth);
-    const detailWidth = await page.locator('.artwork-detail__image').evaluate(image =>
-        image.getBoundingClientRect().width);
-    expect(detailWidth).toBeLessThanOrEqual(975);
+    await expect.poll(() => page.locator('#content').evaluate(el =>
+        el.getBoundingClientRect().width)).toBeGreaterThan(800);
 
-    const alignment = await page.locator('.artwork-detail').evaluate(element => {
-        const image = element.querySelector('.artwork-detail__image').getBoundingClientRect();
-        const nav = element.querySelector('.artwork-folio').getBoundingClientRect();
-        const caption = element.querySelector('.artwork-detail__footer').getBoundingClientRect();
+    const geometry = await page.locator('.artwork-detail').evaluate(async article => {
+        const image = article.querySelector('.artwork-detail__image');
+        await image.decode();
+        const bounds = image.getBoundingClientRect();
+        const footer = article.querySelector('.artwork-detail__footer').getBoundingClientRect();
+        const nav = article.querySelector('.artwork-folio').getBoundingClientRect();
+        const root = article.getBoundingClientRect();
         return {
-            imageCenter: image.left + image.width / 2,
+            rendered: bounds.width, natural: image.naturalWidth,
+            imageRight: bounds.right, footerRight: footer.right,
             navCenter: nav.left + nav.width / 2,
-            navWidth: nav.width,
-            imageRight: image.right,
-            captionRight: caption.right,
+            articleCenter: root.left + root.width / 2,
         };
     });
-    // Arrows stay on the original General artwork width, not the expanded
-    // image edges. Both are centered, while the caption follows the image.
-    expect(alignment.navCenter).toBeCloseTo(alignment.imageCenter, 0);
-    expect(alignment.navWidth).toBeLessThanOrEqual(galleryWidth + 1);
-    expect(alignment.captionRight).toBeCloseTo(alignment.imageRight, 0);
+    expect(geometry.rendered).toBeLessThanOrEqual(geometry.natural + 1);
+    expect(geometry.imageRight).toBeCloseTo(geometry.footerRight, 0);
+    expect(geometry.navCenter).toBeCloseTo(geometry.articleCenter, 0);
 
     await page.setViewportSize({ width: 844, height: 390 });
-    const landscapePhoneWidth = await page.locator('.artwork-detail__image').evaluate(image =>
+    const phoneLandscapeWidth = await page.locator('.artwork-detail__image').evaluate(image =>
         image.getBoundingClientRect().width);
-    expect(landscapePhoneWidth).toBeGreaterThan(650);
+    expect(phoneLandscapeWidth).toBeLessThanOrEqual(first.thumbnail.width + 1);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const narrow = await page.evaluate(() => ({
-        image: document.querySelector('.artwork-detail__image').getBoundingClientRect().width,
+        width: document.querySelector('.artwork-detail__image').getBoundingClientRect().width,
         scroll: document.documentElement.scrollWidth,
-        viewport: window.innerWidth,
+        viewport: innerWidth,
     }));
-    expect(narrow.image).toBeLessThan(390);
+    expect(narrow.width).toBeLessThan(390);
     expect(narrow.scroll).toBeLessThanOrEqual(narrow.viewport + 1);
 
     await page.goBack();

@@ -239,7 +239,6 @@ it('persists per-Gallery landscape and edge settings through one audited action'
     $notificationBefore = AdminNotification::query()->count();
 
     expect((bool) $gallery->getAttribute('landscape_detail_enabled'))->toBeFalse()
-        ->and((int) $gallery->getAttribute('landscape_detail_scale'))->toBe(150)
         ->and($gallery->getAttribute('edge_navigation_mode'))->toBe('disabled');
 
     $form = [
@@ -248,7 +247,6 @@ it('persists per-Gallery landscape and edge settings through one audited action'
         'description' => null,
         'show_on_home' => false,
         'landscape_detail_enabled' => true,
-        'landscape_detail_scale' => 200,
         'edge_navigation_mode' => 'cyclic',
     ];
 
@@ -261,7 +259,6 @@ it('persists per-Gallery landscape and edge settings through one audited action'
 
     $saved = $gallery->fresh();
     expect((bool) $saved->landscape_detail_enabled)->toBeTrue()
-        ->and($saved->landscape_detail_scale)->toBe(200)
         ->and($saved->edge_navigation_mode)->toBe('cyclic')
         ->and(AuditEvent::query()->count())->toBe($auditBefore + 1)
         ->and(AdminNotification::query()->count())->toBe($notificationBefore + 1);
@@ -282,20 +279,16 @@ it('persists per-Gallery landscape and edge settings through one audited action'
     expect(app(PublicationService::class)->commit(auth()->user()))->not->toBeNull();
     $committed = \Illuminate\Support\Facades\DB::table('committed.artwork_categories')
         ->where('id', $gallery->getKey())
-        ->first(['landscape_detail_enabled', 'landscape_detail_scale', 'edge_navigation_mode']);
+        ->first(['landscape_detail_enabled', 'edge_navigation_mode']);
     expect((bool) $committed->landscape_detail_enabled)->toBeTrue()
-        ->and((int) $committed->landscape_detail_scale)->toBe(200)
         ->and($committed->edge_navigation_mode)->toBe('cyclic');
 });
 
-it('rejects unsupported Gallery detail scales and navigation modes without mutation', function (): void {
+it('rejects unsupported Gallery navigation modes without mutation', function (): void {
     $gallery = galleryFixtureCategory();
     $service = app(\App\Domain\Artwork\GalleryEditorialService::class);
     $auditBefore = AuditEvent::query()->count();
 
-    expect(fn () => $service->update($gallery, ['name' => $gallery->name,
-        'landscape_detail_scale' => 180,
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
     expect(fn () => $service->update($gallery, ['name' => $gallery->name,
         'edge_navigation_mode' => 'wrap-automatically',
     ]))->toThrow(\Illuminate\Validation\ValidationException::class);
