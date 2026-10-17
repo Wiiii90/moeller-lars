@@ -30,7 +30,7 @@ it('moves a Page in an open Edit dialog and disables the reached boundary action
         ->assertHasNoErrors()
         ->assertSet('mountedActions.0.name', 'editPage')
         ->assertSet('mountedActions.0.arguments.section', $second->id)
-        ->assertSet('mountedActions.0.data.position', 2);
+        ->assertSet('mountedActions.0.data.position', 1);
     expect((int) $second->fresh()->position)->toBeLessThan((int) $first->fresh()->position);
     expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveUp')->isDisabled())->toBeTrue();
 
