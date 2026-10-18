@@ -26,8 +26,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
@@ -117,6 +115,8 @@ final class General extends Page
 
     public string $previewDevice = 'desktop';
 
+    public string $appearanceTab = 'global';
+
     // Edit Action identity is the unique social platform, not a mutable row index.
     // Autosaved reordering must not redirect later field edits to another profile.
     public ?string $editingSocialPlatform = null;
@@ -192,11 +192,12 @@ final class General extends Page
                                 ])
                                 ->columnSpanFull(),
 
-                            Tabs::make('Appearance')
-                                ->tabs([
-                                Tab::make('Global')
-                                    ->schema([
-                            MediaAssetSelect::make(
+                            View::make('filament.schemas.components.general-appearance-switcher')
+                                ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
+                                ->columnSpanFull(),
+
+                            Group::make([
+                                MediaAssetSelect::make(
                                 'favicon_media_asset_id',
                                 'faviconMediaAsset',
                                 'Site icon',
@@ -225,10 +226,13 @@ final class General extends Page
                                 ->afterStateUpdated(self::persist('favicon_media_asset_id')),
 
                                 self::appearanceSurfaceControls('background', 'Background'),
-                                    ]),
-                                Tab::make('Title')
-                                    ->schema([
+                            ])
+                                ->columns(1)
+                                ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'global')
+                                ->columnSpanFull(),
+
                             Group::make([
+                                Group::make([
                                 Select::make('header_name_position')
                                     ->label('Artist name')
                                     ->options(PublicAppearance::HEADER_POSITIONS)
@@ -288,10 +292,12 @@ final class General extends Page
                             ])
                                 ->columns(2)
                                 ->columnSpanFull(),
+                            ])
+                                ->columns(1)
+                                ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'title')
+                                ->columnSpanFull(),
 
-                                    ]),
-                                Tab::make('Menu')
-                                    ->schema([
+                            Group::make([
                                 Select::make('header_divider_mode')
                                     ->label('Menu to page')
                                     ->options(PublicAppearance::HEADER_DIVIDERS)
@@ -305,10 +311,13 @@ final class General extends Page
                                     ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
                                     ->afterStateUpdated(self::persist('header_divider_color')),
                                 self::appearanceSurfaceControls('menu_background', 'Menu'),
-                                    ]),
-                                Tab::make('Page')
-                                    ->schema([
+                            ])
+                                ->columns(1)
+                                ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'menu')
+                                ->columnSpanFull(),
+
                             Group::make([
+                                Group::make([
                                 TextInput::make('public_page_width')
                                     ->label('Content width')
                                     ->numeric()
@@ -339,10 +348,9 @@ final class General extends Page
                                 ->columnSpanFull(),
 
                                 self::appearanceSurfaceControls('page_background', 'Page'),
-                                    ]),
-                                ])
-                                ->contained(false)
-                                ->extraAttributes(['class' => 'general-appearance-tabs'])
+                            ])
+                                ->columns(1)
+                                ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'page')
                                 ->columnSpanFull(),
 
                             Hidden::make('background_color'),
@@ -359,7 +367,10 @@ final class General extends Page
                             Hidden::make('page_background_gradient_end'),
                         ])
                             ->columns(1)
-                            ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
+                            ->extraAttributes([
+                                'class' => 'general-appearance-stage__controls admin-form-controls',
+                                'x-data' => "{ appearanceTab: \$wire.entangle('appearanceTab').live }",
+                            ])
                             ->columnSpanFull(),
 
                         View::make('filament.schemas.components.general-live-preview')

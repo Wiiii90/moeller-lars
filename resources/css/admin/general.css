@@ -99,34 +99,6 @@
     line-height: 1.2;
 }
 
-/* One native Filament Tabs component: no hidden Group siblings,
- * accumulated grid gaps, or duplicate Alpine/Livewire tab state. */
-.general-appearance-tabs {
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-}
-.general-appearance-tabs :is(.fi-tabs, [role="tablist"]) {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: .25rem;
-    width: 100%;
-    padding: 0;
-    border-bottom: 1px solid var(--admin-line);
-}
-.general-appearance-tabs :is(.fi-tabs-tab, [role="tab"]) {
-    min-width: 0;
-    justify-content: center;
-    border-radius: 0;
-    font-size: .73rem;
-}
-.general-appearance-tabs :is(.fi-tabs-tab, [role="tab"])[aria-selected="true"] {
-    border-bottom: 2px solid var(--admin-accent);
-}
-.general-appearance-tabs :is(.fi-tabs-content, [role="tabpanel"]) {
-    padding-top: var(--admin-section-gap);
-}
-
 /* Canonical line-based General controls. */
 .admin-general .fi-input-wrp {
     box-sizing: border-box;
