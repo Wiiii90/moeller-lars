@@ -26,6 +26,28 @@ final class PublicAppearance
 
     public const HEADER_POSITIONS = ['outside' => 'Beside menu', 'inside' => 'Inside menu', 'below' => 'Below menu'];
     public const HEADER_CAPS = ['small-caps' => 'Small caps', 'normal' => 'Original case'];
+    public const HEADER_ALIGNMENT = ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'];
+    public const DEFAULT_HEADER_TEXT = 'Lars Möller';
+
+    public static function headerText(mixed $value): string
+    {
+        $value ??= self::DEFAULT_HEADER_TEXT;
+        if (! is_string($value) || trim($value) === '' || mb_strlen(trim($value)) > 100) {
+            throw ValidationException::withMessages(['header_name_text' => 'Enter a title of up to 100 characters.']);
+        }
+
+        return trim($value);
+    }
+
+    public static function headerAlignment(mixed $value, string $field = 'header_name_alignment'): string
+    {
+        $value ??= $field === 'header_name_mobile_alignment' ? 'center' : 'left';
+        if (! is_string($value) || ! array_key_exists($value, self::HEADER_ALIGNMENT)) {
+            throw ValidationException::withMessages([$field => 'Choose Left, Center or Right.']);
+        }
+
+        return $value;
+    }
     public const HEADER_DIVIDERS = [
         'fine' => 'Fine divider',
         'full' => 'Full-width divider',

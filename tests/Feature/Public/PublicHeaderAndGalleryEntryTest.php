@@ -29,6 +29,14 @@ it('validates editable name positions, lettering, colors and sizes', function ()
         ->and(PublicAppearance::normalizeMode('transparent', 'page_background_mode'))->toBe('transparent')
         ->and(PublicAppearance::normalizeColor('#ab12ff', 'header_name_color'))->toBe('#AB12FF');
 
+    expect(PublicAppearance::headerText(null))->toBe('Lars Möller')
+        ->and(PublicAppearance::headerText(' Neue Edition '))->toBe('Neue Edition')
+        ->and(PublicAppearance::headerAlignment(null))->toBe('left')
+        ->and(PublicAppearance::headerAlignment(null, 'header_name_mobile_alignment'))->toBe('center')
+        ->and(PublicAppearance::headerAlignment('right'))->toBe('right');
+    expect(fn () => PublicAppearance::headerText(''))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerText(str_repeat('X', 101)))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerAlignment('diagonal'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::headerPosition('overlap'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::normalizeMode('transparent', 'menu_background_mode'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::normalizeTitleMinSize(11))->toThrow(ValidationException::class);
@@ -55,6 +63,10 @@ it('publishes editable name presentation but never redirects a gallery parent to
 
     app(SiteSectionEditorialService::class)->updatePlacement($childSection, 'published', (int) $parentSection->getKey());
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_visible' => true,
+        'header_name_text' => 'Atelier Neue',
+        'header_name_alignment' => 'right',
+        'header_name_mobile_alignment' => 'left',
         'header_name_position' => 'outside',
         'header_name_caps' => 'normal',
         'header_name_color' => '#aabbcc',
@@ -68,6 +80,10 @@ it('publishes editable name presentation but never redirects a gallery parent to
 
     $preview = $this->get('/preview/'.$parent->slug)->assertOk()->getContent();
     expect($preview)->toContain('site-header--name-outside')
+        ->toContain('site-header--title-align-right')
+        ->toContain('site-header--mobile-title-align-left')
+        ->toContain('aria-label="Atelier Neue — Home"')
+        ->toContain('>Atelier Neue</a>')
         ->toContain('site-header--caps-normal')
         ->toContain('site-header--divider-full_gap')
         ->not->toContain('site-header--title-fluid')
@@ -81,9 +97,34 @@ it('publishes editable name presentation but never redirects a gallery parent to
     app(PublicationService::class)->commit($actor, 'Publish artist name settings and nested Gallery');
     $public = $this->get('/'.$parent->slug)->assertOk()->getContent();
     expect($public)->toContain('site-header--name-outside')
+        ->toContain('>Atelier Neue</a>')
         ->toContain('site-header--divider-full_gap')
         ->toContain('site-content--transparent')
         ->toContain('data-public-layout-title-color="#AABBCC"');
+});
+
+it('can hide the artist title without removing the public navigation', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+    $category = galleryFixtureCategory();
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_visible' => false,
+        'header_name_position' => 'inside',
+        'header_name_text' => 'Private working title',
+    ]);
+
+    $preview = $this->get('/preview/'.$category->slug)->assertOk()->getContent();
+    expect($preview)->toContain('site-header--title-hidden')
+        ->not->toContain('class="site-title"')
+        ->not->toContain('Private working title')
+        ->toContain('data-site-navigation');
+
+    app(PublicationService::class)->commit($actor, 'Hide public artist title');
+    $public = $this->get('/'.$category->slug)->assertOk()->getContent();
+    expect($public)->toContain('site-header--title-hidden')
+        ->not->toContain('class="site-title"')
+        ->toContain('data-site-navigation');
 });
 
 it('keeps navigation-only Group Nodes distinct from Galleries', function (): void {

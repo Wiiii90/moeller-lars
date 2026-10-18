@@ -476,7 +476,7 @@ body {
     position: relative;
     order: 2;
     width: 100%;
-    min-height: 4.7rem;
+    min-height: 0;
     margin: 0;
     padding: 0;
     color: var(--public-title-color, var(--public-title-default));
@@ -493,6 +493,51 @@ body {
     font-size: clamp(min(var(--public-title-min-size), var(--public-title-size)), 5.4vw, var(--public-title-size));
 }
 
+/* Below Menu keeps one content-sized title row in the same centered
+ * shell geometry as Menu/Page. No fixed 4.7rem reserve or absolute title:
+ * the full sticky header responds naturally to text size and wrapping. */
+.site-header--name-below > .site-name-heading {
+    box-sizing: border-box;
+    order: 2;
+    display: flex;
+    width: min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max));
+    min-height: 0;
+    height: auto;
+    margin-inline: auto;
+    padding-block: .42rem .48rem;
+    align-items: center;
+}
+
+.site-header--name-below > .site-name-heading > .site-title {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.site-header--name-below.site-header--title-align-left .site-title { text-align: left; }
+.site-header--name-below.site-header--title-align-center .site-title { text-align: center; }
+.site-header--name-below.site-header--title-align-right .site-title { text-align: right; }
+
+/* Only the Below Menu variant exposes an independent phone alignment.
+ * For Inside/Beside, the title remains part of the menu's existing rail. */
+@media (max-width: 40rem) {
+    .site-header--name-below.site-header--mobile-title-align-left .site-title { text-align: left; }
+    .site-header--name-below.site-header--mobile-title-align-center .site-title { text-align: center; }
+    .site-header--name-below.site-header--mobile-title-align-right .site-title { text-align: right; }
+}
+
+/* With title hidden, the menu is the only header sheet; no empty title
+ * grid column, reserved row, or detached outer outline remains. */
+.site-header.site-header--title-hidden .site-navigation {
+    display: block;
+}
+.site-header.site-header--title-hidden :is(.site-navigation__rail, .site-navigation__submenu) {
+    width: 100%;
+}
+
 .site-title {
     position: absolute;
     bottom: 1rem;
@@ -503,17 +548,6 @@ body {
     color: inherit;
     text-decoration: none;
     transition: opacity .14s ease;
-}
-
-.site-title__first,
-.site-title__last {
-    position: static;
-    color: inherit;
-}
-
-.site-title__first::after {
-    content: " ";
-    white-space: pre;
 }
 
 .site-title:hover,
@@ -1637,16 +1671,6 @@ body {
     .blog-entry--reverse::before {
         right: -.35rem;
         left: auto;
-    }
-}
-
-/* Compact: preserve the desktop composition but simplify title geometry before
- * the content shell itself needs to recompose. */
-@media (max-width: 64rem) {
-    .site-header--name-below .site-title {
-        right: 0;
-        left: 0;
-        margin: auto;
     }
 }
 

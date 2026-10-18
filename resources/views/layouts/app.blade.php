@@ -72,15 +72,15 @@
                 aria-label="Artist preview mode"
             >PREVIEW</div>
         @endif
-        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $publicHeaderDivider }} @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
-            @if ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation'))
-                <x-public.artist-name :home-url="$homeUrl" />
+        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $publicHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
+            @if ($publicHeaderVisible && ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation')))
+                <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
             @endif
             @unless ($__env->hasSection('hide_navigation'))
                 @php($selectedNavigationParent = collect($navigationItems)->first(fn ($item) => $item['active'] && $item['children'] !== []))
                 <div class="site-navigation" data-site-navigation data-hover-preview="{{ $publicNavigationHover ? 'true' : 'false' }}">
-                    @if ($publicHeaderPosition !== 'below')
-                        <x-public.artist-name :home-url="$homeUrl" />
+                    @if ($publicHeaderVisible && $publicHeaderPosition !== 'below')
+                        <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
                     @endif
                     <div class="site-navigation__rail" data-navigation-main @if ($selectedNavigationParent) hidden @endif>
                         <button class="site-navigation__control" type="button" data-direction="previous" aria-label="Previous page" hidden>

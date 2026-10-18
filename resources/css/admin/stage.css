@@ -350,6 +350,13 @@
     min-width: 0;
 }
 
+/* Same .75rem stage-switcher-to-pane rhythm as Dashboard's focused panes.
+ * The ordinary schema grid already provides .25rem; the visible pane adds
+ * only the remaining .5rem. Hidden Filament groups own no layout rows. */
+.admin-stage-panel-content {
+    padding-top: .5rem;
+}
+
 /* Minimal Stage composition is a shell + workspace state, never a narrow
  * desktop/sidebar state. This mirrors the metric Minimal gate and prevents a
  * <=38rem content column from activating focused/mobile Stage views while the

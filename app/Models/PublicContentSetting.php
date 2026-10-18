@@ -58,6 +58,10 @@ use LogicException;
     'page_background_gradient_center_x',
     'page_background_gradient_center_y',
     'page_background_gradient_shape',
+    'header_name_visible',
+    'header_name_text',
+    'header_name_alignment',
+    'header_name_mobile_alignment',
     'header_name_position',
     'header_name_caps',
     'header_name_color',
@@ -110,6 +114,7 @@ class PublicContentSetting extends Model
             'page_background_gradient_repeat_span' => 'integer',
             'page_background_gradient_center_x' => 'integer',
             'page_background_gradient_center_y' => 'integer',
+            'header_name_visible' => 'boolean',
             'header_name_size' => 'integer',
             'header_name_min_size' => 'integer',
             'header_name_auto_scale' => 'boolean',
@@ -223,6 +228,10 @@ class PublicContentSetting extends Model
                 $setting->setAttribute($field, PublicAppearance::$method($setting->getAttribute($field), $field));
             }
         }
+        $setting->setAttribute('header_name_visible', $setting->getAttribute('header_name_visible') === null ? true : (bool) $setting->getAttribute('header_name_visible'));
+        $setting->setAttribute('header_name_text', PublicAppearance::headerText($setting->getAttribute('header_name_text')));
+        $setting->setAttribute('header_name_alignment', PublicAppearance::headerAlignment($setting->getAttribute('header_name_alignment')));
+        $setting->setAttribute('header_name_mobile_alignment', PublicAppearance::headerAlignment($setting->getAttribute('header_name_mobile_alignment'), 'header_name_mobile_alignment'));
         $setting->setAttribute('header_name_position', PublicAppearance::headerPosition($setting->getAttribute('header_name_position')));
         $setting->setAttribute('header_name_caps', PublicAppearance::headerCaps($setting->getAttribute('header_name_caps')));
         $setting->setAttribute('header_name_color', PublicAppearance::normalizeColor($setting->getAttribute('header_name_color'), 'header_name_color'));

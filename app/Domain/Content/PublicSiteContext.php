@@ -15,7 +15,7 @@ final class PublicSiteContext
         private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool,publicNavigationHover:bool} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderVisible:bool,publicHeaderText:string,publicHeaderAlignment:string,publicHeaderMobileAlignment:string,publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool,publicNavigationHover:bool} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::general();
@@ -36,6 +36,10 @@ final class PublicSiteContext
             'publicContentBackgroundCss' => PublicAppearance::surfaceCss($settings, 'page_background'),
             'publicNavigationHover' => (bool) $settings->getAttribute('navigation_hover_preview'),
             'publicLayoutCss' => PublicAppearance::layoutCss($settings),
+            'publicHeaderVisible' => $settings->getAttribute('header_name_visible') === null ? true : (bool) $settings->getAttribute('header_name_visible'),
+            'publicHeaderText' => PublicAppearance::headerText($settings->getAttribute('header_name_text')),
+            'publicHeaderAlignment' => PublicAppearance::headerAlignment($settings->getAttribute('header_name_alignment')),
+            'publicHeaderMobileAlignment' => PublicAppearance::headerAlignment($settings->getAttribute('header_name_mobile_alignment'), 'header_name_mobile_alignment'),
             'publicHeaderPosition' => PublicAppearance::headerPosition($settings->getAttribute('header_name_position')),
             'publicHeaderCaps' => PublicAppearance::headerCaps($settings->getAttribute('header_name_caps')),
             'publicHeaderColor' => PublicAppearance::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color'),

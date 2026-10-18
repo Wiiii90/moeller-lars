@@ -97,6 +97,17 @@ final class AdminSettingsService
         if (array_key_exists('header_name_color', $data)) {
             $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'], 'header_name_color');
         }
+        if (array_key_exists('header_name_text', $data)) {
+            $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text']);
+        }
+        foreach (['header_name_alignment', 'header_name_mobile_alignment'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = PublicAppearance::headerAlignment($data[$field], $field);
+            }
+        }
+        if (array_key_exists('header_name_visible', $data)) {
+            $data['header_name_visible'] = (bool) $data['header_name_visible'];
+        }
         if (array_key_exists('header_name_size', $data)) {
             $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size']);
         }

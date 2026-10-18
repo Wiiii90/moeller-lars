@@ -89,16 +89,18 @@ navigation, media or publication contracts.
 
 The public visual composition remains artist-specific. Menu and Content retain independently configured surfaces and their canonical folio contours. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls accents; no extra decorative DOM/pseudo surfaces may replace them. Main and child navigation retain the same cyclic complete-item window, measured rail, keyboard behavior and selected state.
 
-General → Appearance uses one native Filament Tabs component, with the four
-tabs **Global**, **Title**, **Menu**, **Page**. The existing field instances
-and autosave methods are reused inside these native tab schemas; tab switching
-does not leave offscreen Grid wrappers or cumulatively increase spacing.
-Global owns Site icon and outer Background; Title owns position, lettering,
-base size, optional reduction and minimum size; Menu owns divider mode/color
-and the complete Menu gradient editor; Page owns Content width, Content
-padding and the Page Background editor. The temporary custom
-`general-appearance-tabs.blade.php` switcher and its separate Alpine/Livewire
-tab states were deleted.
+General → Appearance uses the established **shared admin-stage-tabs**
+and **admin-action** presentation from responsive Dashboard/Storage, via the
+existing `x-admin.stage-switcher` component's external-state variant. This is
+not a Filament Tabs/chips surface or an independent CSS button system. The
+single Livewire-selected panel has the same stage-to-controls spacing for
+all four views and no inactive Grid wrapper occupies visual space. All
+original Filament fields and their autosave methods remain singular.
+**Global** owns Site icon/Background; **Title** owns visibility (first),
+editable title text (100 characters), placement, case, color and sizes;
+**Menu** owns divider mode/color and Menu gradient; **Page** owns Content
+width, Content padding and Page Background. No parallel tab implementations
+or duplicate forms are retained.
 
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width
@@ -111,9 +113,19 @@ not available for Global or Menu backgrounds. Previously selected page
 gradients and colors remain in persistence to use again if the artist switches
 back.
 
+The artist title is globally configurable and can be entirely hidden
+without leaving an empty menu column or a blank title row. Its public anchor,
+home link and accessible label use the same edited plain-text title; the
+default is `Lars Möller`. The title is always HTML-escaped on output.
 Artist-name position is `inside`, `outside` or `below`. Inside and
 Beside use the same Menu DOM/paper on narrow layouts, preserving the menu
-background, top-left title and static perimeter. The base Title size is
+background, top-left title and static perimeter. Below Menu has one
+content-sized title row aligned to the configured shell instead of an
+absolute child in a fixed-height 4.7rem strip. For Below only, desktop
+alignment is Left/Center/Right (default Left) and narrow-screen alignment
+has an independent Left/Center/Right setting (default Center), active at
+40rem and below. This avoids unexpected extra height or misaligned divider
+positions when font size and window width change. The base Title size is
 16–64px, with optional responsive reduction and an independently editable
 minimum of 12–64px (default 18px). The reduction uses CSS
 `clamp(min(minimum, base), 5.4vw, base)`; disabling it keeps the chosen base

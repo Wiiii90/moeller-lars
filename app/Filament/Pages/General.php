@@ -74,6 +74,10 @@ final class General extends Page
         'background_gradient_shape',
         'menu_background_gradient_shape',
         'page_background_gradient_shape',
+        'header_name_visible',
+        'header_name_text',
+        'header_name_alignment',
+        'header_name_mobile_alignment',
         'header_name_position',
         'header_name_caps',
         'header_name_color',
@@ -141,6 +145,10 @@ final class General extends Page
             }
         }
 
+        $data['header_name_visible'] = $data['header_name_visible'] === null ? true : (bool) $data['header_name_visible'];
+        $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text'] ?? null);
+        $data['header_name_alignment'] = PublicAppearance::headerAlignment($data['header_name_alignment'] ?? null);
+        $data['header_name_mobile_alignment'] = PublicAppearance::headerAlignment($data['header_name_mobile_alignment'] ?? null, 'header_name_mobile_alignment');
         $data['header_name_position'] = PublicAppearance::headerPosition($data['header_name_position'] ?? null);
         $data['header_name_caps'] = PublicAppearance::headerCaps($data['header_name_caps'] ?? null);
         $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'] ?? null, 'header_name_color');
@@ -229,9 +237,26 @@ final class General extends Page
                             ])
                                 ->columns(1)
                                 ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'global')
+                                ->extraAttributes(['class' => 'admin-stage-panel-content'])
                                 ->columnSpanFull(),
 
                             Group::make([
+                                Select::make('header_name_visible')
+                                    ->label('Title')
+                                    ->options(['1' => 'Show', '0' => 'Hide'])
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
+                                    ->afterStateUpdated(self::persist('header_name_visible')),
+                                TextInput::make('header_name_text')
+                                    ->label('Title text')
+                                    ->required()
+                                    ->maxLength(100)
+                                    ->lazy()
+                                    ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('header_name_text')),
                                 Group::make([
                                 Select::make('header_name_position')
                                     ->label('Artist name')
@@ -249,6 +274,27 @@ final class General extends Page
                                     ->afterStateUpdated(self::persist('header_name_caps')),
                             ])
                                 ->columns(2)
+                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                ->columnSpanFull(),
+
+                            Group::make([
+                                Select::make('header_name_alignment')
+                                    ->label('Title alignment')
+                                    ->options(PublicAppearance::HEADER_ALIGNMENT)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('header_name_alignment')),
+                                Select::make('header_name_mobile_alignment')
+                                    ->label('Narrow-screen alignment')
+                                    ->options(PublicAppearance::HEADER_ALIGNMENT)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('header_name_mobile_alignment')),
+                            ])
+                                ->columns(2)
+                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible') && $get('header_name_position') === 'below')
                                 ->columnSpanFull(),
 
                             Group::make([
@@ -291,10 +337,12 @@ final class General extends Page
                                     ->afterStateUpdated(self::persist('header_name_min_size')),
                             ])
                                 ->columns(2)
+                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
                                 ->columnSpanFull(),
                             ])
                                 ->columns(1)
                                 ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'title')
+                                ->extraAttributes(['class' => 'admin-stage-panel-content'])
                                 ->columnSpanFull(),
 
                             Group::make([
@@ -314,6 +362,7 @@ final class General extends Page
                             ])
                                 ->columns(1)
                                 ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'menu')
+                                ->extraAttributes(['class' => 'admin-stage-panel-content'])
                                 ->columnSpanFull(),
 
                             Group::make([
@@ -351,6 +400,7 @@ final class General extends Page
                             ])
                                 ->columns(1)
                                 ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'page')
+                                ->extraAttributes(['class' => 'admin-stage-panel-content'])
                                 ->columnSpanFull(),
 
                             Hidden::make('background_color'),
@@ -1078,6 +1128,10 @@ final class General extends Page
                 'page_background_gradient_center_x',
                 'page_background_gradient_center_y',
                 'page_background_gradient_shape',
+                'header_name_visible',
+                'header_name_text',
+                'header_name_alignment',
+                'header_name_mobile_alignment',
                 'header_name_position',
                 'header_name_caps',
                 'header_name_color',
@@ -1243,6 +1297,10 @@ final class General extends Page
             'background_gradient_angle' => 'Background gradient angle',
             'menu_background_mode' => 'Menu',
             'page_background_mode' => 'Page',
+            'header_name_visible' => 'Artist title visibility',
+            'header_name_text' => 'Artist title text',
+            'header_name_alignment' => 'Title alignment',
+            'header_name_mobile_alignment' => 'Narrow-screen title alignment',
             'header_name_position' => 'Artist name position',
             'header_name_caps' => 'Artist name lettering',
             'header_name_color' => 'Artist name color',
@@ -1278,7 +1336,7 @@ final class General extends Page
             'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y',
             'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
                 is_numeric($value) ? (int) $value : $value,
-            'header_name_auto_scale' => (bool) $value,
+            'header_name_visible', 'header_name_auto_scale' => (bool) $value,
             'header_name_size', 'header_name_min_size', 'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
