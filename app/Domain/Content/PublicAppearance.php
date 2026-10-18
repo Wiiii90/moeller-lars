@@ -46,6 +46,22 @@ final class PublicAppearance
         return $value;
     }
 
+    public const DEFAULT_TITLE_SIZE = 25;
+    public const MIN_TITLE_SIZE = 16;
+    public const MAX_TITLE_SIZE = 64;
+
+    public static function normalizeTitleSize(mixed $value): int
+    {
+        return self::normalizeDimension(
+            $value,
+            self::DEFAULT_TITLE_SIZE,
+            self::MIN_TITLE_SIZE,
+            self::MAX_TITLE_SIZE,
+            'header_name_size',
+            'Artist name size',
+        );
+    }
+
     public const DEFAULT_PAGE_WIDTH = 800;
 
     public const DEFAULT_CONTENT_PADDING = 75;

@@ -47,6 +47,8 @@
             data-public-layout-shell="{{ $publicLayoutCss['shell'] }}"
             data-public-layout-art="{{ $publicLayoutCss['art'] }}"
             data-public-layout-padding="{{ $publicLayoutCss['padding'] }}"
+            data-public-layout-title-color="{{ $publicHeaderColor ?? '' }}"
+            data-public-layout-title-size="{{ $publicHeaderSize }}"
             data-folio-left-top="{{ $folioPlacement['leftTop'] }}"
             data-folio-left-bottom="{{ $folioPlacement['leftBottom'] }}"
             data-folio-right-top="{{ $folioPlacement['rightTop'] }}"
@@ -54,7 +56,7 @@
             data-folio-menu-left-bottom="{{ $folioPlacement['menuLeftBottom'] }}"
             data-folio-menu-right-bottom="{{ $folioPlacement['menuRightBottom'] }}">
         @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
-            <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
+            <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif @if ($publicHeaderColor !== null) --public-title-color: {{ $publicHeaderColor }};@endif --public-title-size: {{ $publicHeaderSize }}; --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
         @endif
         {{-- Dynamic component dimensions live in nonce-authorized CSS, never
              forbidden inline style attributes. --}}
@@ -69,14 +71,15 @@
             >PREVIEW</div>
         @endif
         <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} @if ($publicHeaderJoined) site-header--joined @endif">
-            <h1>
-                <a href="{{ $homeUrl }}" class="site-title" aria-label="Lars Möller — Home" wire:navigate>
-                    <span class="site-title__first">Lars</span><span class="site-title__last">Möller</span>
-                </a>
-            </h1>
+            @if ($publicHeaderPosition !== 'inside' || $__env->hasSection('hide_navigation'))
+                <x-public.artist-name :home-url="$homeUrl" />
+            @endif
             @unless ($__env->hasSection('hide_navigation'))
                 @php($selectedNavigationParent = collect($navigationItems)->first(fn ($item) => $item['active'] && $item['children'] !== []))
                 <div class="site-navigation" data-site-navigation data-hover-preview="{{ $publicNavigationHover ? 'true' : 'false' }}">
+                    @if ($publicHeaderPosition === 'inside')
+                        <x-public.artist-name :home-url="$homeUrl" />
+                    @endif
                     <div class="site-navigation__rail" data-navigation-main @if ($selectedNavigationParent) hidden @endif>
                         <button class="site-navigation__control" type="button" data-direction="previous" aria-label="Previous page" hidden>
                             <x-public-icon name="chevron-left" />
@@ -89,11 +92,11 @@
                                     <div class="site-navigation__primary">
                                         @if ($navigationItem['url'] !== null)
                                             <a href="{{ $navigationItem['url'] }}"
-                                                @if ($navigationItem['children'] === [] || $navigationItem['child_target'] === 'first_child') wire:navigate @endif
+                                                @if ($navigationItem['children'] === []) wire:navigate @endif
                                                 @if ($navigationItem['current']) aria-current="page" @endif
                                                 @if ($navigationItem['children'] !== [])
                                                     aria-expanded="{{ $selectedChildParent ? 'true' : 'false' }}"
-                                                    aria-controls="{{ $submenuId }}" data-navigation-parent-link data-child-target="{{ $navigationItem['child_target'] }}"
+                                                    aria-controls="{{ $submenuId }}" data-navigation-parent-link
                                                 @endif
                                             ><span class="site-navigation__label">{{ $navigationItem['label'] }}</span></a>
                                         @else

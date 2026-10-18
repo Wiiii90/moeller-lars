@@ -315,10 +315,6 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
         parentLink.addEventListener('click', (event) => {
             if (event.button !== 0 || event.ctrlKey || event.metaKey
                 || event.shiftKey || event.altKey) return;
-            if (parentLink instanceof HTMLAnchorElement && parentLink.dataset.childTarget === 'first_child') {
-                hideHover();
-                return;
-            }
             event.preventDefault();
             showChildren(entry, true);
         });

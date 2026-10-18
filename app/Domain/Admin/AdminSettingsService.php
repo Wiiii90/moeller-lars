@@ -88,6 +88,12 @@ final class AdminSettingsService
                 }
             }
         }
+        if (array_key_exists('header_name_color', $data)) {
+            $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'], 'header_name_color');
+        }
+        if (array_key_exists('header_name_size', $data)) {
+            $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size']);
+        }
         if (array_key_exists('public_page_width', $data)) {
             $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width']);
         }

@@ -49,7 +49,6 @@ trait ManagesSitePageEditDialog
                     'name' => $this->sectionLabel($section),
                     'slug' => $section->getAttribute('slug'),
                     'parent_id' => $section->getAttribute('parent_id'),
-                    'navigation_child_target' => $section->getAttribute('navigation_child_target') ?? 'gallery',
                     'position' => $this->dialogDisplayPosition($section),
                     ...SitePageHeading::formState($section),
                 ];
@@ -83,12 +82,6 @@ trait ManagesSitePageEditDialog
                         \App\Filament\Support\HierarchyParentField::make(
                             'parent_id', fn (): array => $this->parentOptions, 'Parent page',
                         )->visible(fn (): bool => $this->nestedNavigationEnabled),
-                        Select::make('navigation_child_target')
-                            ->label('When opening gallery')
-                            ->options(['gallery' => 'Show this gallery', 'first_child' => 'Open first published subpage'])
-                            ->native()
-                            ->required()
-                            ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Gallery->value && blank($get('parent_id'))),
                         TextInput::make('position')
                             ->label('Position')
                             ->numeric()
@@ -236,11 +229,6 @@ trait ManagesSitePageEditDialog
             );
         }
 
-        $childTarget = $section->nodeType() === SiteSectionType::Gallery
-            ? (string) ($data['navigation_child_target'] ?? 'gallery')
-            : 'gallery';
-        $section = $editorial->updateNavigationChildTarget($section, $childTarget);
-
         $parentId = $this->dialogParentId($data['parent_id'] ?? null);
         $section = $editorial->updatePlacement(
             $section,
@@ -279,7 +267,6 @@ trait ManagesSitePageEditDialog
             'template' => $template === null ? null : (string) $template,
             'title' => (string) $section->getAttribute('title'),
             'navigation_label' => $navigationLabel === null ? null : (string) $navigationLabel,
-            'navigation_child_target' => (string) ($section->getAttribute('navigation_child_target') ?? 'gallery'),
             'slug' => $slug === null ? null : (string) $slug,
             'parent_id' => $parentId === null ? null : (int) $parentId,
             'position' => (int) $section->getAttribute('position'),

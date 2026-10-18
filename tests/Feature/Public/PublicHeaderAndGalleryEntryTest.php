@@ -1,8 +1,10 @@
 <?php
 
+use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Publication\PublicationService;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -10,18 +12,24 @@ use Illuminate\Validation\ValidationException;
 
 require_once __DIR__.'/../Admin/Gallery/GalleryFixtures.php';
 
-it('validates the editable artist-name position and lettering', function (): void {
+it('validates editable name positions, lettering, colors and sizes', function (): void {
     expect(PublicAppearance::headerPosition(null))->toBe('inside')
         ->and(PublicAppearance::headerPosition('outside'))->toBe('outside')
         ->and(PublicAppearance::headerPosition('below'))->toBe('below')
         ->and(PublicAppearance::headerCaps(null))->toBe('small-caps')
-        ->and(PublicAppearance::headerCaps('normal'))->toBe('normal');
+        ->and(PublicAppearance::headerCaps('normal'))->toBe('normal')
+        ->and(PublicAppearance::normalizeTitleSize(null))->toBe(25)
+        ->and(PublicAppearance::normalizeTitleSize('46'))->toBe(46)
+        ->and(PublicAppearance::normalizeColor('#ab12ff', 'header_name_color'))->toBe('#AB12FF');
 
     expect(fn () => PublicAppearance::headerPosition('overlap'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::headerCaps('uppercase'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeTitleSize(65))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeTitleSize('21.5'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeColor('red', 'header_name_color'))->toThrow(ValidationException::class);
 });
 
-it('redirects a published gallery parent to its first eligible child in editorial order', function (): void {
+it('publishes editable name presentation but never redirects a gallery parent to its child', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
 
@@ -30,41 +38,36 @@ it('redirects a published gallery parent to its first eligible child in editoria
     }
 
     $parent = galleryFixtureCategory();
-    $first = galleryFixtureCategory();
-    $second = galleryFixtureCategory();
+    $child = galleryFixtureCategory();
 
     $parentSection = SiteSection::query()->where('artwork_category_id', $parent->getKey())->firstOrFail();
-    $firstSection = SiteSection::query()->where('artwork_category_id', $first->getKey())->firstOrFail();
-    $secondSection = SiteSection::query()->where('artwork_category_id', $second->getKey())->firstOrFail();
-    $service = app(SiteSectionEditorialService::class);
+    $childSection = SiteSection::query()->where('artwork_category_id', $child->getKey())->firstOrFail();
 
-    $service->updatePlacement($firstSection, 'hidden', (int) $parentSection->getKey());
-    $service->updatePlacement($secondSection, 'published', (int) $parentSection->getKey());
-    $service->updateNavigationChildTarget($parentSection, 'first_child');
+    app(SiteSectionEditorialService::class)->updatePlacement($childSection, 'published', (int) $parentSection->getKey());
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_position' => 'outside',
+        'header_name_caps' => 'normal',
+        'header_name_color' => '#aabbcc',
+        'header_name_size' => 46,
+    ]);
 
-    // The public tree must not include the unpublished first sibling.
-    app(PublicationService::class)->commit($actor, 'Publish gallery child landing');
+    $preview = $this->get('/preview/'.$parent->slug)->assertOk()->getContent();
+    expect($preview)->toContain('site-header--name-outside')
+        ->toContain('site-header--caps-normal')
+        ->toContain('data-public-layout-title-color="#AABBCC"')
+        ->toContain('data-public-layout-title-size="46px"');
 
-    $this->get('/'.$parent->slug)
-        ->assertRedirect(route('site.section', ['section' => $second->slug]));
-
-    $landing = $this->get('/'.$second->slug)->assertOk()->getContent();
-    expect($landing)->toContain('site-header--name-inside')
-        ->toContain('site-header--joined')
-        ->toContain('site-header--caps-small-caps');
-
-    // Changing the parent option restores its canonical Gallery URL.
-    $service->updateNavigationChildTarget($parentSection, 'gallery');
-    app(PublicationService::class)->commit($actor, 'Restore gallery parent landing');
-    $this->get('/'.$parent->slug)->assertOk();
+    app(PublicationService::class)->commit($actor, 'Publish artist name settings and nested Gallery');
+    $public = $this->get('/'.$parent->slug)->assertOk()->getContent();
+    expect($public)->toContain('site-header--name-outside')
+        ->toContain('data-public-layout-title-color="#AABBCC"');
 });
 
-it('rejects unsupported gallery destination settings', function (): void {
-    $actor = User::factory()->admin()->create();
-    $this->actingAs($actor, 'web');
-    $category = galleryFixtureCategory();
-    $section = SiteSection::query()->where('artwork_category_id', $category->getKey())->firstOrFail();
+it('keeps navigation-only Group Nodes distinct from Galleries', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
 
-    expect(fn () => app(SiteSectionEditorialService::class)->updateNavigationChildTarget($section, 'missing'))
-        ->toThrow(ValidationException::class);
+    $service = app(SiteSectionEditorialService::class);
+    $group = $service->createNavigationGroup('Prints');
+    expect($group->getAttribute('slug'))->toBeNull()
+        ->and($group->nodeType()->hasPublicPage())->toBeFalse();
 });

@@ -18,7 +18,6 @@ use Illuminate\Validation\ValidationException;
     'title',
     'navigation_label',
     'show_in_navigation',
-    'navigation_child_target',
     'slug',
     'state',
     'position',
@@ -77,12 +76,6 @@ final class SiteSection extends Model
                     throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
                 }
             }
-
-            $childTarget = $section->getAttribute('navigation_child_target') ?? 'gallery';
-            if (! in_array($childTarget, ['gallery', 'first_child'], true)) {
-                throw ValidationException::withMessages(['navigation_child_target' => 'Choose Gallery or First child.']);
-            }
-            $section->setAttribute('navigation_child_target', $nodeType === SiteSectionType::Gallery ? $childTarget : 'gallery');
 
             $heading = \App\Domain\Content\SitePageHeading::validated([
                 'content_heading_enabled' => (bool) $section->getAttribute('content_heading_enabled'),

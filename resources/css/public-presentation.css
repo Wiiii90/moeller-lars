@@ -26,6 +26,7 @@
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-index-typeface: Georgia, "Times New Roman", serif;
     --public-index-ink: #444640;
+    --public-title-size: 25px;
     --public-index-rule: rgba(65, 70, 65, .22);
     /* One neutral contour palette; individual surfaces vary the pressure. */
     --public-folio-light: rgba(255, 255, 255, .34);
@@ -56,30 +57,19 @@ body {
     font-size: 14px;
 }
 
-/* Header geometry only. Document scroll and sticky positioning live in app.css. */
+/* Header geometry only. Document scroll and sticky positioning live in app.css.
+ * The menu's own inset rule is the sole fine divider; no viewport-wide
+ * border-image or background paint overrides the General appearance controls. */
 .site-header {
+    position: relative;
     z-index: 40;
     display: flex;
     width: 100%;
-    max-width: none;
     min-width: 0;
     margin: 0;
     padding: 0;
     flex-direction: column;
     background: var(--public-page);
-    /* A light, asymmetrically modulated WHITE separator. No grey middle
-       pigment, hard midpoint, or new band on the artist's background. */
-    border-bottom: 2px solid transparent;
-    border-image: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, .55) 0%,
-        rgba(255, 255, 255, .79) 13%,
-        rgba(255, 255, 255, .92) 36%,
-        rgba(255, 255, 255, .64) 57%,
-        rgba(255, 255, 255, .88) 76%,
-        rgba(255, 255, 255, .73) 91%,
-        rgba(255, 255, 255, .49) 100%
-    ) 1;
 }
 
 /* Header navigation and page content share one centered shell geometry. */
@@ -487,6 +477,10 @@ body {
     flex: 0 0 auto;
 }
 
+.site-header {
+    --public-title-default: #e5e9e6;
+}
+
 .site-header h1 {
     position: relative;
     order: 2;
@@ -494,11 +488,11 @@ body {
     min-height: 4.7rem;
     margin: 0;
     padding: 0;
-    color: #fff;
+    color: var(--public-title-color, var(--public-title-default));
     font-family: var(--public-index-typeface);
-    font-size: 2.05rem;
+    font-size: min(var(--public-title-size), 10vw);
     font-weight: 400;
-    letter-spacing: .055em;
+    letter-spacing: .04em;
     line-height: 1.1;
     text-transform: none;
     white-space: nowrap;
@@ -509,6 +503,8 @@ body {
     bottom: 1rem;
     left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
     display: block;
+    width: max-content;
+    max-width: calc(100% - 2 * var(--public-gutter));
     color: inherit;
     text-decoration: none;
     transition: opacity .14s ease;
@@ -516,27 +512,14 @@ body {
 
 .site-title__first,
 .site-title__last {
-    position: absolute;
-    bottom: 0;
-    /* Etched light across each letter rather than a flat white fill.
-       The lettering and the name's established position stay intact. */
-    color: #e5e9e6;
-    background-image: linear-gradient(
-        162deg,
-        #fff 4%,
-        #f1f4f0 29%,
-        #d3d9d4 54%,
-        #fafbf8 78%,
-        #e5e9e6 100%
-    );
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 1px 0 rgba(27, 34, 29, .43));
+    position: static;
+    color: inherit;
 }
 
-.site-title__first { right: .16em; }
-.site-title__last { left: .16em; }
+.site-title__first::after {
+    content: " ";
+    white-space: pre;
+}
 
 .site-title:hover,
 .site-title:focus-visible {
@@ -1656,21 +1639,10 @@ body {
 /* Compact: preserve the desktop composition but simplify title geometry before
  * the content shell itself needs to recompose. */
 @media (max-width: 64rem) {
-    .site-title {
+    .site-header--name-below .site-title {
         right: 0;
         left: 0;
-        width: max-content;
         margin: auto;
-    }
-
-    .site-title__first,
-    .site-title__last {
-        position: static;
-    }
-
-    .site-title__first::after {
-        content: " ";
-        white-space: pre;
     }
 }
 
@@ -1763,137 +1735,119 @@ html:has(.artwork-viewer[open]) {
 
 
 
-/* Artist-editable header compositions. The navigation rail and its cyclic
-   window remain the sole menu implementation in every composition. */
+/* Artist-configurable name composition. The menu and its child navigation
+ * remain one real measured rail, with exactly one public title element. */
 .site-header--caps-small-caps .site-title {
     font-variant-caps: small-caps;
-}
-
-.site-header--joined {
-    border-bottom: 0;
 }
 
 .site-header--joined + #content {
     margin-top: 0;
 }
 
-/* Both horizontal treatments lift the name out of the former 4.7rem row.
-   The two spans return to ordinary inline text in these compositions. */
-.site-header--name-inside h1,
-.site-header--name-outside h1 {
+.site-header--name-inside {
+    --public-title-default: var(--public-index-ink);
+}
+
+.site-header--name-inside .site-navigation {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+}
+
+.site-header--name-inside .site-navigation > h1 {
+    z-index: 1;
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    width: auto;
+    min-width: 0;
+    min-height: 2.95rem;
+    height: 100%;
+    padding: 0 .85rem;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.site-header--name-inside .site-title {
+    position: static;
+    max-width: none;
+}
+
+.site-header--name-inside .site-navigation__rail,
+.site-header--name-inside .site-navigation__submenu {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+/* Only the actual outside margin may hold the title. A ResizeObserver
+ * compares that free width with the rendered name and stacks it if needed. */
+.site-header--name-outside > h1 {
     position: absolute;
     z-index: 2;
     top: 0;
     right: 0;
     left: 0;
+    order: 0;
     min-height: 0;
-    height: 2.95rem;
+    height: 100%;
     pointer-events: none;
 }
 
-.site-header--name-inside .site-title,
-.site-header--name-outside .site-title {
-    display: inline-block;
-    width: max-content;
-    bottom: auto;
-    white-space: nowrap;
-    pointer-events: auto;
-}
-
-.site-header--name-inside .site-title__first,
-.site-header--name-inside .site-title__last,
-.site-header--name-outside .site-title__first,
-.site-header--name-outside .site-title__last {
-    position: static;
-}
-
-.site-header--name-inside .site-title__first::after,
-.site-header--name-outside .site-title__first::after {
-    content: " ";
-    white-space: pre;
-}
-
-/* Name within the same white menu paper. Its reserved column is removed
-   from the real rail width, so the existing ResizeObserver/overflow applies. */
-.site-header--name-inside .site-navigation {
-    padding-left: min(12.5rem, 29%);
-}
-
-.site-header--name-inside .site-title {
-    top: 50%;
-    left: calc(max(var(--public-gutter), (100% - var(--public-shell-max)) / 2) + .85rem);
-    transform: translateY(-50%);
-    color: var(--public-index-ink);
-    font-size: 1.35rem;
-    letter-spacing: .035em;
-}
-
-.site-header--name-inside .site-title__first,
-.site-header--name-inside .site-title__last {
-    color: var(--public-index-ink);
-    background: none;
-    filter: none;
-    -webkit-text-fill-color: currentColor;
-}
-
-/* Name to the left of the separate menu sheet when exterior space allows. */
 .site-header--name-outside .site-title {
     top: 50%;
     right: auto;
+    bottom: auto;
     left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
-    margin: 0;
+    max-width: none;
     transform: translate(calc(-100% - 1.25rem), -50%);
-    font-size: 1.55rem;
-    letter-spacing: .04em;
+    pointer-events: auto;
 }
 
-/* When the centered sheet occupies the outside margin, the name receives
-   a compact row instead of overlapping the menu or reducing its art width. */
-@media (max-width: 90rem) {
-    .site-header--name-outside h1 {
-        position: relative;
-        order: 0;
-        height: 3.15rem;
-        background: var(--public-page);
-    }
-
-    .site-header--name-outside .site-title {
-        top: 50%;
-        left: var(--public-gutter);
-        margin: 0;
-        transform: translateY(-50%);
-    }
-}
-
-@media (max-width: 57rem) {
-    .site-header--name-inside h1 {
-        position: relative;
-        order: 0;
-        height: 3.15rem;
-        background: var(--public-menu-background);
-    }
-
-    .site-header--name-inside .site-navigation {
-        padding-left: 0;
-    }
-
-    .site-header--name-inside .site-title {
-        top: 50%;
-        right: auto;
-        left: 50%;
-        margin: 0;
-        transform: translate(-50%, -50%);
-    }
-}
-
-/* On pages intentionally without navigation, the name always owns real
-   document height rather than overlaying the page. */
-.site-header:not(:has(.site-navigation)).site-header--name-inside h1,
-.site-header:not(:has(.site-navigation)).site-header--name-outside h1 {
+/* Fallbacks are intrinsic, not based on the viewport's fixed 90rem/57rem
+ * cutoffs. The outside title stays on the background, the inside one
+ * stays on the menu paper, and the menu keeps the configured shell width. */
+.site-header--name-outside.is-title-stacked > h1 {
     position: relative;
-    height: 3.15rem;
+    height: auto;
+    padding: .65rem 0;
+    pointer-events: auto;
 }
 
+.site-header--name-outside.is-title-stacked .site-title {
+    position: relative;
+    top: auto;
+    left: auto;
+    max-width: calc(100% - 2 * var(--public-gutter));
+    margin-left: var(--public-gutter);
+    transform: none;
+    white-space: normal;
+}
+
+.site-header--name-inside.is-title-stacked .site-navigation {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.site-header--name-inside.is-title-stacked .site-navigation > h1 {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    padding: .7rem max(var(--public-gutter), var(--public-content-inset));
+    white-space: normal;
+}
+
+.site-header--name-inside.is-title-stacked .site-navigation__rail,
+.site-header--name-inside.is-title-stacked .site-navigation__submenu {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+/* Pages that deliberately omit navigation still have a real title row. */
+.site-header--name-inside:not(:has(.site-navigation)) {
+    --public-title-default: #e5e9e6;
+}
 
 /* The optional hover presentation reuses the existing child-level DOM and
    its links. Click, ArrowDown, Escape, and touch retain the standard rail. */

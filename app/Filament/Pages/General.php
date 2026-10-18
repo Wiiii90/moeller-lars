@@ -76,6 +76,8 @@ final class General extends Page
         'page_background_gradient_shape',
         'header_name_position',
         'header_name_caps',
+        'header_name_color',
+        'header_name_size',
         'header_content_joined',
         'public_page_width',
         'public_content_padding',
@@ -136,6 +138,8 @@ final class General extends Page
 
         $data['header_name_position'] = PublicAppearance::headerPosition($data['header_name_position'] ?? null);
         $data['header_name_caps'] = PublicAppearance::headerCaps($data['header_name_caps'] ?? null);
+        $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'] ?? null, 'header_name_color');
+        $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size'] ?? null);
         $data['header_content_joined'] = $data['header_content_joined'] === null ? true : (bool) $data['header_content_joined'];
         $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width'] ?? null);
         $data['public_content_padding'] = PublicAppearance::normalizeContentPadding($data['public_content_padding'] ?? null);
@@ -263,6 +267,28 @@ final class General extends Page
                                     ->afterStateUpdated(self::persist('header_content_joined')),
                             ])
                                 ->columns(3)
+                                ->columnSpanFull(),
+
+                            Group::make([
+                                AdminColorControl::make('header_name_color', 'Name color')
+                                    ->nullable()
+                                    ->live()
+                                    ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
+                                    ->afterStateUpdated(self::persist('header_name_color')),
+                                TextInput::make('header_name_size')
+                                    ->label('Name size')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(PublicAppearance::MIN_TITLE_SIZE)
+                                    ->maxValue(PublicAppearance::MAX_TITLE_SIZE)
+                                    ->step(1)
+                                    ->suffix('px')
+                                    ->required()
+                                    ->lazy()
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('header_name_size')),
+                            ])
+                                ->columns(2)
                                 ->columnSpanFull(),
 
                             self::appearanceSurfaceControls('background', 'Background'),
@@ -991,6 +1017,8 @@ final class General extends Page
                 'page_background_gradient_shape',
                 'header_name_position',
                 'header_name_caps',
+                'header_name_color',
+                'header_name_size',
                 'header_content_joined',
                 'public_page_width',
                 'public_content_padding',
@@ -1151,6 +1179,8 @@ final class General extends Page
             'page_background_mode' => 'Page',
             'header_name_position' => 'Artist name position',
             'header_name_caps' => 'Artist name lettering',
+            'header_name_color' => 'Artist name color',
+            'header_name_size' => 'Artist name size',
             'header_content_joined' => 'Menu and page divider',
             'public_page_width' => 'Public page width',
             'public_content_padding' => 'Public content padding',
@@ -1166,7 +1196,8 @@ final class General extends Page
             'background_mode', 'menu_background_mode', 'page_background_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
             'background_color', 'background_gradient_start', 'background_gradient_end',
             'menu_background_color', 'menu_background_gradient_start', 'menu_background_gradient_end',
-            'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end' => $this->normalizeColorCandidate($value),
+            'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end',
+            'header_name_color' => $this->normalizeColorCandidate($value),
             'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
             'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops' =>
                 is_array($value) ? array_map(static fn (mixed $stop): mixed => is_array($stop)
@@ -1179,7 +1210,7 @@ final class General extends Page
             'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
                 is_numeric($value) ? (int) $value : $value,
             'header_content_joined' => (bool) $value,
-            'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
+            'header_name_size', 'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
             'default_media_copyright_notice' => is_string($value) ? (($trimmed = trim($value)) === '' ? null : $trimmed) : $value,

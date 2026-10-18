@@ -60,6 +60,8 @@ use LogicException;
     'page_background_gradient_shape',
     'header_name_position',
     'header_name_caps',
+    'header_name_color',
+    'header_name_size',
     'header_content_joined',
     'public_page_width',
     'public_content_padding',
@@ -106,6 +108,7 @@ class PublicContentSetting extends Model
             'page_background_gradient_center_x' => 'integer',
             'page_background_gradient_center_y' => 'integer',
             'header_content_joined' => 'boolean',
+            'header_name_size' => 'integer',
             'public_page_width' => 'integer',
             'public_content_padding' => 'integer',
             'navigation_nesting_enabled' => 'boolean',
@@ -218,6 +221,8 @@ class PublicContentSetting extends Model
         }
         $setting->setAttribute('header_name_position', PublicAppearance::headerPosition($setting->getAttribute('header_name_position')));
         $setting->setAttribute('header_name_caps', PublicAppearance::headerCaps($setting->getAttribute('header_name_caps')));
+        $setting->setAttribute('header_name_color', PublicAppearance::normalizeColor($setting->getAttribute('header_name_color'), 'header_name_color'));
+        $setting->setAttribute('header_name_size', PublicAppearance::normalizeTitleSize($setting->getAttribute('header_name_size')));
         $setting->setAttribute('header_content_joined', $setting->getAttribute('header_content_joined') === null ? true : (bool) $setting->getAttribute('header_content_joined'));
         $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));
         $setting->setAttribute('public_content_padding', PublicAppearance::normalizeContentPadding($setting->getAttribute('public_content_padding')));

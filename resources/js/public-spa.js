@@ -62,6 +62,7 @@ export function applyPublicLayoutFromMeta() {
         '--public-shell-max': config.dataset.publicLayoutShell,
         '--public-art-max': config.dataset.publicLayoutArt,
         '--public-content-padding': config.dataset.publicLayoutPadding,
+        '--public-title-size': config.dataset.publicLayoutTitleSize,
         '--public-folio-left-top': config.dataset.folioLeftTop,
         '--public-folio-left-bottom': config.dataset.folioLeftBottom,
         '--public-folio-right-top': config.dataset.folioRightTop,
@@ -71,5 +72,10 @@ export function applyPublicLayoutFromMeta() {
     };
     for (const [name, value] of Object.entries(declarations)) {
         if (value) rule.style.setProperty(name, value);
+    }
+    if (config.dataset.publicLayoutTitleColor) {
+        rule.style.setProperty('--public-title-color', config.dataset.publicLayoutTitleColor);
+    } else {
+        rule.style.removeProperty('--public-title-color');
     }
 }

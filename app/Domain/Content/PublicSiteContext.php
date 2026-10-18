@@ -15,7 +15,7 @@ final class PublicSiteContext
         private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderJoined:bool,publicNavigationHover:bool} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderSize:string,publicHeaderJoined:bool,publicNavigationHover:bool} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::general();
@@ -38,6 +38,8 @@ final class PublicSiteContext
             'publicLayoutCss' => PublicAppearance::layoutCss($settings),
             'publicHeaderPosition' => PublicAppearance::headerPosition($settings->getAttribute('header_name_position')),
             'publicHeaderCaps' => PublicAppearance::headerCaps($settings->getAttribute('header_name_caps')),
+            'publicHeaderColor' => PublicAppearance::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color'),
+            'publicHeaderSize' => PublicAppearance::normalizeTitleSize($settings->getAttribute('header_name_size')).'px',
             'publicHeaderJoined' => $settings->getAttribute('header_content_joined') === null ? true : (bool) $settings->getAttribute('header_content_joined'),
         ];
     }

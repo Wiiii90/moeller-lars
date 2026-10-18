@@ -58,20 +58,6 @@ final class PublicSiteSectionController extends Controller
         }
 
         if ($siteSection->nodeType() === SiteSectionType::Gallery) {
-            if ($siteSection->getAttribute('navigation_child_target') === 'first_child') {
-                $children = SiteSection::query()
-                    ->where('parent_id', $siteSection->getKey())
-                    ->whereIn('type', [SiteSectionType::Gallery->value, SiteSectionType::Journal->value, SiteSectionType::CustomPage->value]);
-                $this->preview->constrainSectionQuery($children);
-                $child = $children->orderBy('position')->orderBy('id')->first();
-                if ($child instanceof SiteSection) {
-                    $target = $this->siteNodeRoute->url($child);
-                    if ($target !== null) {
-                        return redirect($this->preview->url($target), 302);
-                    }
-                }
-            }
-
             return $this->artworks->category($section);
         }
 
