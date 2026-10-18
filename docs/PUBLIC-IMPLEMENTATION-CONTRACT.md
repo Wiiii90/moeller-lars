@@ -107,7 +107,24 @@ Menu's upper stroke attachments remain fixed to the top, and its
 left stroke stays shorter than the right. Distinct static page
 compositions—not conspicuous perpetual motion—are the main effect.
 Native heights, viewer and history remain under their existing owners.
-The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name stays at its accepted position with neutral silver-to-white letter variation; the full-width header separator retains its position and light modulation. The artist-configurable outer solid/gradient background remains independent. These presentation changes await browser approval.
+The public visual composition remains artist-specific. Menu and Content retain their neutral-white surfaces and independent shapes. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls their accents. The menu has a left/bottom trace and a distinct upward-running right edge, both outside its measured rail. No independent corner stickers or nested menu rectangles are allowed. Main and child levels keep one face and the existing cyclic window, widths, arrows and selection mechanics. The 15px native-serif menu words use opaque, plain, readable ink without text-clipped gradients or angled baselines; the active/hover stroke is a fine horizontal underline. The artist name and the transition to content are configurable under General → Appearance: `inside` (name in the white menu), `outside` (name beside the menu where space permits, otherwise in a compact preceding row), or `below` (original layout); normal lettering or small caps; and fine divider/no grey gap or separate paper surfaces. The `inside` position and fine divider with small caps are the new defaults; the original three properties remain independently recoverable. The visual separator has one owner: compact mode removes the viewport-wide header line and the content's top margin, retaining the menu's fine inset rule. The artist-configurable outer solid/gradient background remains independent. These presentation changes require browser review.
+
+### Gallery parent navigation choices
+
+A published Gallery parent may show its own gallery (default) or redirect to
+its first **published, routable** child in persisted position/id order. Pages →
+Edit page owns the per-gallery destination, and an absent eligible child leaves
+the parent gallery reachable. The preview resolves eligible working children
+without exposing them publicly. Public direct requests to the parent URL are
+also redirected with a temporary 302 response; the redirect is not a replacement
+for canonical child routes.
+
+Pages → Settings optionally enables a desktop pointer-hover child popup.
+It is **off by default**, uses the same submenu DOM and navigation labels, and
+does not replace the existing single-row cyclic child level for click/touch,
+keyboard ArrowDown/Escape, or focus. Gallery parents configured to open the first
+child navigate on ordinary click; keyboard ArrowDown still enters the child
+level. Neither behavior invents duplicate child pages or makes drafts public.
 
 ## Home presentation
 

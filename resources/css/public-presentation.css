@@ -1760,3 +1760,195 @@ html:has(.artwork-viewer[open]) {
         inset: 3.8rem .55rem 4.25rem;
     }
 }
+
+
+
+/* Artist-editable header compositions. The navigation rail and its cyclic
+   window remain the sole menu implementation in every composition. */
+.site-header--caps-small-caps .site-title {
+    font-variant-caps: small-caps;
+}
+
+.site-header--joined {
+    border-bottom: 0;
+}
+
+.site-header--joined + #content {
+    margin-top: 0;
+}
+
+/* Both horizontal treatments lift the name out of the former 4.7rem row.
+   The two spans return to ordinary inline text in these compositions. */
+.site-header--name-inside h1,
+.site-header--name-outside h1 {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    left: 0;
+    min-height: 0;
+    height: 2.95rem;
+    pointer-events: none;
+}
+
+.site-header--name-inside .site-title,
+.site-header--name-outside .site-title {
+    display: inline-block;
+    width: max-content;
+    bottom: auto;
+    white-space: nowrap;
+    pointer-events: auto;
+}
+
+.site-header--name-inside .site-title__first,
+.site-header--name-inside .site-title__last,
+.site-header--name-outside .site-title__first,
+.site-header--name-outside .site-title__last {
+    position: static;
+}
+
+.site-header--name-inside .site-title__first::after,
+.site-header--name-outside .site-title__first::after {
+    content: " ";
+    white-space: pre;
+}
+
+/* Name within the same white menu paper. Its reserved column is removed
+   from the real rail width, so the existing ResizeObserver/overflow applies. */
+.site-header--name-inside .site-navigation {
+    padding-left: min(12.5rem, 29%);
+}
+
+.site-header--name-inside .site-title {
+    top: 50%;
+    left: calc(max(var(--public-gutter), (100% - var(--public-shell-max)) / 2) + .85rem);
+    transform: translateY(-50%);
+    color: var(--public-index-ink);
+    font-size: 1.35rem;
+    letter-spacing: .035em;
+}
+
+.site-header--name-inside .site-title__first,
+.site-header--name-inside .site-title__last {
+    color: var(--public-index-ink);
+    background: none;
+    filter: none;
+    -webkit-text-fill-color: currentColor;
+}
+
+/* Name to the left of the separate menu sheet when exterior space allows. */
+.site-header--name-outside .site-title {
+    top: 50%;
+    right: auto;
+    left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
+    margin: 0;
+    transform: translate(calc(-100% - 1.25rem), -50%);
+    font-size: 1.55rem;
+    letter-spacing: .04em;
+}
+
+/* When the centered sheet occupies the outside margin, the name receives
+   a compact row instead of overlapping the menu or reducing its art width. */
+@media (max-width: 90rem) {
+    .site-header--name-outside h1 {
+        position: relative;
+        order: 0;
+        height: 3.15rem;
+        background: var(--public-page);
+    }
+
+    .site-header--name-outside .site-title {
+        top: 50%;
+        left: var(--public-gutter);
+        margin: 0;
+        transform: translateY(-50%);
+    }
+}
+
+@media (max-width: 57rem) {
+    .site-header--name-inside h1 {
+        position: relative;
+        order: 0;
+        height: 3.15rem;
+        background: var(--public-menu-background);
+    }
+
+    .site-header--name-inside .site-navigation {
+        padding-left: 0;
+    }
+
+    .site-header--name-inside .site-title {
+        top: 50%;
+        right: auto;
+        left: 50%;
+        margin: 0;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* On pages intentionally without navigation, the name always owns real
+   document height rather than overlaying the page. */
+.site-header:not(:has(.site-navigation)).site-header--name-inside h1,
+.site-header:not(:has(.site-navigation)).site-header--name-outside h1 {
+    position: relative;
+    height: 3.15rem;
+}
+
+
+/* The optional hover presentation reuses the existing child-level DOM and
+   its links. Click, ArrowDown, Escape, and touch retain the standard rail. */
+.site-navigation__submenu.is-hover-preview {
+    position: absolute;
+    z-index: 5;
+    top: 100%;
+    left: 50%;
+    display: block;
+    width: max-content;
+    min-width: 13rem;
+    max-width: min(22rem, calc(100vw - 2 * var(--public-gutter)));
+    padding: .35rem;
+    transform: translateX(-50%);
+    background: var(--public-menu-background);
+    border: 1px solid var(--public-index-rule);
+    box-shadow: 0 5px 13px rgba(0, 0, 0, .12);
+}
+
+.site-navigation__submenu.is-hover-preview::before,
+.site-navigation__submenu.is-hover-preview > .site-navigation__control,
+.site-navigation__submenu.is-hover-preview .site-navigation__back,
+.site-navigation__submenu.is-hover-preview .site-navigation__breadcrumb-separator {
+    display: none;
+}
+
+.site-navigation__submenu.is-hover-preview .site-navigation__content,
+.site-navigation__submenu.is-hover-preview .site-navigation__content > nav {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.site-navigation__submenu.is-hover-preview .site-navigation__item {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+}
+
+.site-navigation__submenu.is-hover-preview .site-navigation__primary {
+    justify-content: flex-start;
+}
+
+.site-header .site-navigation__submenu.is-hover-preview nav a {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: .65rem .75rem;
+    justify-content: flex-start;
+    white-space: normal;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.site-header .site-navigation__submenu.is-hover-preview nav a:hover,
+.site-header .site-navigation__submenu.is-hover-preview nav a:focus-visible {
+    background: rgba(120, 120, 120, .08);
+}

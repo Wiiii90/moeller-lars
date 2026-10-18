@@ -55,6 +55,27 @@ final class SiteSectionEditorialService
     }
 
     /** Home-only public menu control; routing and publication stay independent. */
+    public function updateNavigationChildTarget(SiteSection $section, string $target): SiteSection
+    {
+        if (! in_array($target, ['gallery', 'first_child'], true)) {
+            throw ValidationException::withMessages(['navigation_child_target' => 'Choose a supported gallery destination.']);
+        }
+
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($section, $target, $actor): SiteSection {
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            $target = $fresh->nodeType() === SiteSectionType::Gallery ? $target : 'gallery';
+            $fresh->setAttribute('navigation_child_target', $target);
+            if ($fresh->isDirty('navigation_child_target')) {
+                $fresh->save();
+                $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
+            }
+
+            return $fresh;
+        });
+    }
+
     public function updateHomeNavigationVisibility(SiteSection $section, bool $visible): bool
     {
         return DB::transaction(function () use ($section, $visible): bool {

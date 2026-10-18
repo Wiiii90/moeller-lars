@@ -146,6 +146,15 @@ function initializeNavigationWindow(surface, restoredWindows) {
         // and shift an exactly restored cyclic window immediately after load.
         observedWidth = rail.getBoundingClientRect().width;
         const wasCycling = cycling;
+        if (surface.classList.contains('is-hover-preview')) {
+            cycling = false;
+            surface.classList.remove('is-overflowing');
+            previous.hidden = true;
+            next.hidden = true;
+            initialized = true;
+            render(items.map((_, index) => index));
+            return;
+        }
         cycling = needsNavigationOverflow(widths, availableWidth);
 
         surface.classList.toggle('is-overflowing', cycling);
@@ -235,6 +244,30 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
     windows.push(...entries.map((entry) => entry.window));
 
     let activeEntry = entries.find(({ controls }) => !controls.submenu.hidden) ?? null;
+    let hoverEntry = null;
+
+    const hideHover = () => {
+        if (hoverEntry === null) return;
+        const previous = hoverEntry;
+        hoverEntry = null;
+        previous.controls.submenu.classList.remove('is-hover-preview');
+        previous.controls.submenu.hidden = true;
+        previous.controls.parentLink.setAttribute('aria-expanded', 'false');
+    };
+
+    const showHover = (entry) => {
+        if (activeEntry !== null || mainSurface.hidden || container.dataset.hoverPreview !== 'true'
+            || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+        if (hoverEntry === entry) return;
+        hideHover();
+        hoverEntry = entry;
+        entry.controls.submenu.classList.add('is-hover-preview');
+        entry.controls.submenu.hidden = false;
+        entry.controls.parentLink.setAttribute('aria-expanded', 'true');
+        entry.window.refresh();
+    };
+
+    container.addEventListener('pointerleave', hideHover);
 
     const showMain = (restoreFocus = false) => {
         if (activeEntry === null) return;
@@ -257,6 +290,7 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
     };
 
     const showChildren = (entry, focusBack = false) => {
+        hideHover();
         if (activeEntry !== null && activeEntry !== entry) {
             activeEntry.controls.submenu.hidden = true;
             activeEntry.controls.parentLink.setAttribute('aria-expanded', 'false');
@@ -274,10 +308,17 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
     for (const entry of entries) {
         const { parentLink, submenu, back } = entry.controls;
         back.addEventListener('click', () => showMain(true));
+        entry.item.addEventListener('pointerenter', (event) => {
+            if (event.pointerType === 'mouse') showHover(entry);
+        });
 
         parentLink.addEventListener('click', (event) => {
             if (event.button !== 0 || event.ctrlKey || event.metaKey
                 || event.shiftKey || event.altKey) return;
+            if (parentLink instanceof HTMLAnchorElement && parentLink.dataset.childTarget === 'first_child') {
+                hideHover();
+                return;
+            }
             event.preventDefault();
             showChildren(entry, true);
         });

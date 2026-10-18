@@ -58,9 +58,13 @@ use LogicException;
     'page_background_gradient_center_x',
     'page_background_gradient_center_y',
     'page_background_gradient_shape',
+    'header_name_position',
+    'header_name_caps',
+    'header_content_joined',
     'public_page_width',
     'public_content_padding',
     'navigation_nesting_enabled',
+    'navigation_hover_preview',
     'pages_auto_publish',
     'pages_delete_without_confirmation',
 ])]
@@ -101,9 +105,11 @@ class PublicContentSetting extends Model
             'page_background_gradient_repeat_span' => 'integer',
             'page_background_gradient_center_x' => 'integer',
             'page_background_gradient_center_y' => 'integer',
+            'header_content_joined' => 'boolean',
             'public_page_width' => 'integer',
             'public_content_padding' => 'integer',
             'navigation_nesting_enabled' => 'boolean',
+            'navigation_hover_preview' => 'boolean',
             'pages_auto_publish' => 'boolean',
             'pages_delete_without_confirmation' => 'boolean',
         ];
@@ -210,6 +216,9 @@ class PublicContentSetting extends Model
                 $setting->setAttribute($field, PublicAppearance::$method($setting->getAttribute($field), $field));
             }
         }
+        $setting->setAttribute('header_name_position', PublicAppearance::headerPosition($setting->getAttribute('header_name_position')));
+        $setting->setAttribute('header_name_caps', PublicAppearance::headerCaps($setting->getAttribute('header_name_caps')));
+        $setting->setAttribute('header_content_joined', $setting->getAttribute('header_content_joined') === null ? true : (bool) $setting->getAttribute('header_content_joined'));
         $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));
         $setting->setAttribute('public_content_padding', PublicAppearance::normalizeContentPadding($setting->getAttribute('public_content_padding')));
 

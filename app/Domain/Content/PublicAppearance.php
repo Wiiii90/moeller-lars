@@ -23,6 +23,29 @@ final class PublicAppearance
 
     public const DEFAULT_GRADIENT_ANGLE = 180;
 
+    public const HEADER_POSITIONS = ['outside' => 'Beside menu', 'inside' => 'Inside menu', 'below' => 'Below menu'];
+    public const HEADER_CAPS = ['small-caps' => 'Small caps', 'normal' => 'Original case'];
+
+    public static function headerPosition(mixed $value): string
+    {
+        $value ??= 'inside';
+        if (! is_string($value) || ! array_key_exists($value, self::HEADER_POSITIONS)) {
+            throw ValidationException::withMessages(['header_name_position' => 'Choose a supported name position.']);
+        }
+
+        return $value;
+    }
+
+    public static function headerCaps(mixed $value): string
+    {
+        $value ??= 'small-caps';
+        if (! is_string($value) || ! array_key_exists($value, self::HEADER_CAPS)) {
+            throw ValidationException::withMessages(['header_name_caps' => 'Choose a supported letter style.']);
+        }
+
+        return $value;
+    }
+
     public const DEFAULT_PAGE_WIDTH = 800;
 
     public const DEFAULT_CONTENT_PADDING = 75;

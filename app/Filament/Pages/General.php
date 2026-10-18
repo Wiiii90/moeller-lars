@@ -74,6 +74,9 @@ final class General extends Page
         'background_gradient_shape',
         'menu_background_gradient_shape',
         'page_background_gradient_shape',
+        'header_name_position',
+        'header_name_caps',
+        'header_content_joined',
         'public_page_width',
         'public_content_padding',
         'public_email',
@@ -131,6 +134,9 @@ final class General extends Page
             }
         }
 
+        $data['header_name_position'] = PublicAppearance::headerPosition($data['header_name_position'] ?? null);
+        $data['header_name_caps'] = PublicAppearance::headerCaps($data['header_name_caps'] ?? null);
+        $data['header_content_joined'] = $data['header_content_joined'] === null ? true : (bool) $data['header_content_joined'];
         $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width'] ?? null);
         $data['public_content_padding'] = PublicAppearance::normalizeContentPadding($data['public_content_padding'] ?? null);
 
@@ -232,6 +238,32 @@ final class General extends Page
                                 ->extraAttributes(['class' => 'general-layout-row'])
                                 ->columnSpanFull(),
 
+                            Group::make([
+                                Select::make('header_name_position')
+                                    ->label('Artist name')
+                                    ->options(PublicAppearance::HEADER_POSITIONS)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('header_name_position')),
+                                Select::make('header_name_caps')
+                                    ->label('Name lettering')
+                                    ->options(PublicAppearance::HEADER_CAPS)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('header_name_caps')),
+                                Select::make('header_content_joined')
+                                    ->label('Menu to page')
+                                    ->options(['1' => 'Fine divider', '0' => 'Separate surfaces'])
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
+                                    ->afterStateUpdated(self::persist('header_content_joined')),
+                            ])
+                                ->columns(3)
+                                ->columnSpanFull(),
 
                             self::appearanceSurfaceControls('background', 'Background'),
                             self::appearanceSurfaceControls('menu_background', 'Menu'),
@@ -957,6 +989,9 @@ final class General extends Page
                 'page_background_gradient_center_x',
                 'page_background_gradient_center_y',
                 'page_background_gradient_shape',
+                'header_name_position',
+                'header_name_caps',
+                'header_content_joined',
                 'public_page_width',
                 'public_content_padding',
             ]) !== []) {
@@ -1114,6 +1149,9 @@ final class General extends Page
             'background_gradient_angle' => 'Background gradient angle',
             'menu_background_mode' => 'Menu',
             'page_background_mode' => 'Page',
+            'header_name_position' => 'Artist name position',
+            'header_name_caps' => 'Artist name lettering',
+            'header_content_joined' => 'Menu and page divider',
             'public_page_width' => 'Public page width',
             'public_content_padding' => 'Public content padding',
             'navigation_nesting_enabled' => 'Navigation nesting',
@@ -1140,6 +1178,7 @@ final class General extends Page
             'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y',
             'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
                 is_numeric($value) ? (int) $value : $value,
+            'header_content_joined' => (bool) $value,
             'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,

@@ -75,6 +75,9 @@ final class PublicNavigationService
                 'current' => $current,
                 'active' => $current || collect($childItems)->contains(static fn (array $item): bool => $item['current']),
                 'children' => $childItems,
+                'child_target' => $section->nodeType() === SiteSectionType::Gallery
+                    ? ($section->getAttribute('navigation_child_target') ?? 'gallery')
+                    : 'gallery',
             ];
         }
 

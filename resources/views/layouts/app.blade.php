@@ -68,7 +68,7 @@
                 aria-label="Artist preview mode"
             >PREVIEW</div>
         @endif
-        <header class="site-header">
+        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} @if ($publicHeaderJoined) site-header--joined @endif">
             <h1>
                 <a href="{{ $homeUrl }}" class="site-title" aria-label="Lars Möller — Home" wire:navigate>
                     <span class="site-title__first">Lars</span><span class="site-title__last">Möller</span>
@@ -76,7 +76,7 @@
             </h1>
             @unless ($__env->hasSection('hide_navigation'))
                 @php($selectedNavigationParent = collect($navigationItems)->first(fn ($item) => $item['active'] && $item['children'] !== []))
-                <div class="site-navigation" data-site-navigation>
+                <div class="site-navigation" data-site-navigation data-hover-preview="{{ $publicNavigationHover ? 'true' : 'false' }}">
                     <div class="site-navigation__rail" data-navigation-main @if ($selectedNavigationParent) hidden @endif>
                         <button class="site-navigation__control" type="button" data-direction="previous" aria-label="Previous page" hidden>
                             <x-public-icon name="chevron-left" />
@@ -89,11 +89,11 @@
                                     <div class="site-navigation__primary">
                                         @if ($navigationItem['url'] !== null)
                                             <a href="{{ $navigationItem['url'] }}"
-                                                @if ($navigationItem['children'] === []) wire:navigate @endif
+                                                @if ($navigationItem['children'] === [] || $navigationItem['child_target'] === 'first_child') wire:navigate @endif
                                                 @if ($navigationItem['current']) aria-current="page" @endif
                                                 @if ($navigationItem['children'] !== [])
                                                     aria-expanded="{{ $selectedChildParent ? 'true' : 'false' }}"
-                                                    aria-controls="{{ $submenuId }}" data-navigation-parent-link
+                                                    aria-controls="{{ $submenuId }}" data-navigation-parent-link data-child-target="{{ $navigationItem['child_target'] }}"
                                                 @endif
                                             ><span class="site-navigation__label">{{ $navigationItem['label'] }}</span></a>
                                         @else
