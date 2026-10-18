@@ -193,6 +193,16 @@
     justify-content: flex-start;
 }
 
+/* Reusable toolbar separator, shared by the Live Preview tools
+ * and optional tools in the canonical Stage switcher. */
+.admin-control-separator {
+    display: block;
+    width: 1px;
+    height: 1.15rem;
+    flex: 0 0 1px;
+    background: var(--admin-line-strong);
+}
+
 .admin-action {
     display: inline-flex;
     min-height: 2rem;

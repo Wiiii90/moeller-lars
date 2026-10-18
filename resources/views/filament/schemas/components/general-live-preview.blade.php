@@ -292,7 +292,7 @@
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()" />
                 </button>
             </div>
-            <span class="general-live-preview__tool-divider" aria-hidden="true"></span>
+            <span class="admin-control-separator general-live-preview__tool-divider" aria-hidden="true"></span>
             <button
                 class="general-live-preview__mode general-live-preview__tool"
                 type="button"

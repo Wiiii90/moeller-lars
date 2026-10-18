@@ -357,6 +357,34 @@
     min-width: 0;
 }
 
+/* Optional Stage-switcher tools share the row and existing .admin-action
+ * grammar; other Stage switchers retain their unchanged direct tab children. */
+.admin-stage-tabs--with-tools {
+    grid-template-columns: repeat(var(--admin-stage-tabs-columns), minmax(0, 1fr)) 1px var(--admin-control-height);
+    align-items: center;
+}
+
+.admin-stage-tabs__separator {
+    justify-self: center;
+}
+
+.admin-stage-tabs > .admin-stage-tabs__tool {
+    display: grid;
+    width: var(--admin-control-height);
+    min-width: var(--admin-control-height);
+    padding: 0;
+    place-items: center;
+}
+
+.admin-stage-tabs__tool svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.admin-stage-tabs__tool[aria-pressed="true"] svg {
+    transform: rotate(180deg);
+}
+
 /* Same .75rem stage-switcher-to-pane rhythm as Dashboard's focused panes.
  * The ordinary schema grid already provides .25rem; the visible pane adds
  * only the remaining .5rem. Hidden Filament groups own no layout rows. */

@@ -14,7 +14,7 @@
 @endphp
 
 <div
-    class="admin-stage-tabs admin-stage-switcher @if ($externalState !== null) admin-stage-tabs--inline @endif"
+    class="admin-stage-tabs admin-stage-switcher @if ($externalState !== null) admin-stage-tabs--inline @endif @isset($tools) admin-stage-tabs--with-tools @endisset"
     role="group"
     aria-label="{{ $ariaLabel }}"
     @if ($externalState === null)
@@ -59,4 +59,8 @@
             @endif
         >{{ $label }}</button>
     @endforeach
+    @isset($tools)
+        <span class="admin-control-separator admin-stage-tabs__separator" aria-hidden="true"></span>
+        {{ $tools }}
+    @endisset
 </div>

@@ -99,8 +99,7 @@ entangle a Livewire property, send a request, re-render the General page, or
 refresh the Live Preview. Each inactive Filament Group is hidden with its
 own x-show/x-cloak attributes instead of leaving an empty layout row.
 All original fields and their autosave methods remain singular.
-The small separated downward-arrow button next to the shared selector
-toggles the existing Stage between normal and **2×** its shared height.
+An optional icon-only down-arrow tool lives **inside** the shared Stage switcher, behind the canonical toolbar separator. The 'More space' text is a tooltip and accessible label, never visible button copy; in expanded state the arrow points up and the tooltip becomes 'Less space'. This tool toggles the existing Stage between normal and **2×** its shared height.
 The central Stage divider extends accordingly, while the Live Preview
 retains its original bounded viewport/zoom and stays at the top right.
 Both tab selection and More/Less space remain presentation-only state.
