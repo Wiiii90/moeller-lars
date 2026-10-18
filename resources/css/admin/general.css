@@ -54,19 +54,79 @@
 .general-appearance-stage__controls {
     grid-column: 1;
     grid-row: 1;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
     height: 100%;
+    min-height: 0;
     padding-right: var(--admin-stage-pane-space);
+    overflow: hidden;
+}
+
+/* One stable header, one scroll owner. The tabbar and optional Stage tool
+ * never leave view when the Appearance fields are scrolled. */
+.general-appearance-stage__controls > .fi-sc {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-content: stretch;
+    height: 100%;
+    min-height: 0;
+    gap: 0 !important;
+    overflow: hidden;
+}
+
+.general-appearance-stage__toolbar {
+    min-height: 0;
+    align-self: start;
+}
+
+.general-appearance-stage__scroll {
+    position: relative;
+    box-sizing: border-box;
+    min-height: 0;
+    height: 100%;
+    padding-top: var(--admin-section-gap);
     padding-bottom: .2rem;
     overflow-x: hidden;
     overflow-y: auto;
-    scrollbar-gutter: auto;
     scrollbar-width: none;
 }
 
-.general-appearance-stage__controls::-webkit-scrollbar {
+.general-appearance-stage__scroll::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
+}
+
+/* All four tabs occupy one grid cell. Inactive panels are still intrinsically
+ * measurable without rendering, stacking or shifting extra layout rows. They
+ * remain inert and hidden from accessibility through the Alpine attributes. */
+.general-appearance-stage__scroll > .fi-sc {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: max-content;
+    align-content: start;
+    min-height: 0;
+    gap: 0 !important;
+}
+
+.general-appearance-stage__panel {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+    position: absolute;
+    inset: 0 auto auto 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.general-appearance-stage__panel.is-active {
+    position: relative;
+    inset: auto;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .general-appearance-stage__preview {
@@ -86,14 +146,6 @@
 .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__preview {
     height: var(--admin-visual-stage-height);
     align-self: start;
-}
-
-/* Group::extraAttributes() lives on the Group wrapper; the embedded child
- * schema itself is the direct `.fi-sc` element in Filament 4. */
-.general-appearance-stage__controls > .fi-sc {
-    align-content: start;
-    min-height: 100%;
-    gap: .25rem !important;
 }
 
 .general-stage-kicker,

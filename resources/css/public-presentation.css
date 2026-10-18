@@ -521,8 +521,9 @@ body {
 .site-header--name-below.site-header--title-align-center .site-title { text-align: center; }
 .site-header--name-below.site-header--title-align-right .site-title { text-align: right; }
 
-/* Only the Below Menu variant exposes an independent phone alignment.
- * For Inside/Beside, the title remains part of the menu's existing rail. */
+/* Below uses the configured narrow-screen alignment on phones. The
+ * integrated variants use that same setting whenever their existing width
+ * calculation places the name in a full-width row above the navigation. */
 @media (max-width: 40rem) {
     .site-header--name-below.site-header--mobile-title-align-left .site-title { text-align: left; }
     .site-header--name-below.site-header--mobile-title-align-center .site-title { text-align: center; }
@@ -1853,6 +1854,10 @@ html:has(.artwork-viewer[open]) {
     align-items: center;
 }
 
+.site-header--name-inside:not(.is-title-stacked) .site-navigation {
+    grid-template-columns: minmax(12.5rem, max-content) minmax(0, 1fr);
+}
+
 .site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation > h1 {
     z-index: 1;
     grid-column: 1;
@@ -1877,7 +1882,9 @@ html:has(.artwork-viewer[open]) {
     grid-row: 1;
 }
 
-/* Only outside/roomy uses the exterior margin; no second background sheet. */
+/* The outside title has a real, measured flex area occupying the
+ * available margin beside the paper. Desktop left/center/right alignment
+ * therefore has meaning without shifting the navigation or its shell. */
 .site-header--name-outside:not(.is-title-stacked) .site-navigation {
     display: block;
 }
@@ -1886,13 +1893,25 @@ html:has(.artwork-viewer[open]) {
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 0;
+    left: calc(var(--public-title-outer-margin, 0px) * -1 + var(--public-gutter));
+    width: max(0px, calc(var(--public-title-outer-margin, 0px) - var(--public-gutter) - 1.25rem));
     height: 100%;
-    transform: translateX(calc(-100% - 1.25rem));
+    padding: 0;
 }
 
 .site-header--name-outside:not(.is-title-stacked) :is(.site-navigation__rail, .site-navigation__submenu) {
     width: 100%;
+}
+
+/* Desktop alignment in the reserved title area of either integrated mode. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-left .site-navigation > h1 {
+    justify-content: flex-start;
+}
+.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-center .site-navigation > h1 {
+    justify-content: center;
+}
+.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-right .site-navigation > h1 {
+    justify-content: flex-end;
 }
 
 /* Once either name no longer fits, the menu becomes a two-row sheet.
@@ -1922,6 +1941,18 @@ html:has(.artwork-viewer[open]) {
 .site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked :is(.site-navigation__rail, .site-navigation__submenu) {
     grid-column: 1;
     grid-row: 2;
+}
+
+/* Stacked mode is responsive regardless of whether its trigger was the
+ * actual title width, menu width or browser width. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-left .site-navigation > h1 {
+    justify-content: flex-start;
+}
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-center .site-navigation > h1 {
+    justify-content: center;
+}
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-right .site-navigation > h1 {
+    justify-content: flex-end;
 }
 
 /* Page without navigation still owns one independent real title row. */

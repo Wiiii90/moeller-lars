@@ -89,29 +89,46 @@ navigation, media or publication contracts.
 
 The public visual composition remains artist-specific. Menu and Content retain independently configured surfaces and their canonical folio contours. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls accents; no extra decorative DOM/pseudo surfaces may replace them. Main and child navigation retain the same cyclic complete-item window, measured rail, keyboard behavior and selected state.
 
-General → Appearance uses the established **shared admin-stage-tabs**
-and **admin-action** presentation from responsive Dashboard/Storage, via the
-existing `x-admin.stage-switcher` component's external-state variant. This is
-not a Filament Tabs/chips surface or an independent CSS button system. The
-four panels are mounted once and switched **locally** with Alpine
-state on the owning General Stage. Selecting Global/Title/Menu/Page does not
-entangle a Livewire property, send a request, re-render the General page, or
-refresh the Live Preview. Each inactive Filament Group is hidden with its
-own x-show/x-cloak attributes instead of leaving an empty layout row.
-All original fields and their autosave methods remain singular.
-An optional icon-only down-arrow tool lives **inside** the shared Stage switcher, behind the canonical toolbar separator. The 'More space' text is a tooltip and accessible label, never visible button copy; in expanded state the arrow points up and the tooltip becomes 'Less space'. This tool toggles the existing Stage between normal and **2×** its shared height.
-The central Stage divider extends accordingly, while the Live Preview
-retains its original bounded viewport/zoom and stays at the top right.
-Both tab selection and More/Less space remain presentation-only state.
-**Global** owns Site icon/Background; **Title** owns visibility (first),
-editable title text (100 characters), placement, case, color and sizes;
-**Menu** owns divider mode/color and Menu gradient; **Page** owns Content
-width, Content padding and Page Background. The iframe has one stable,
-nonce-safe direct preview URL. The existing explicit
-`general-appearance-updated` event remains the only automatic iframe
-refresh for actual persisted Appearance changes; zoom and device controls
-remain independent. No parallel tab implementations or duplicate forms
-are retained.
+General → Appearance reuses the established **admin-stage-tabs** and
+**admin-action** grammar from responsive Dashboard/Storage via the canonical
+`x-admin.stage-switcher`, never Filament Tabs/chips. Its toolbar and
+icon-only More/Less space action are a **fixed first row** above the
+**only scrolling field pane**; scrolling Appearance fields never moves the
+tabs. The General controls pane owns three explicitly sized rows: Appearance
+heading, fixed tabbar and one bounded scrolling field pane. This prevents
+the tabbar from absorbing the scrolling grid row.
+
+All four Appearance panels remain mounted as single Filament Groups, locally
+selected via Alpine (no Livewire tab writes). They occupy the same CSS grid
+cell, with inactive panels absolutely positioned, visually hidden, inert and
+aria-hidden. No inactive Group adds a row or cumulative spacing. They remain
+measurable: the Stage's one ResizeObserver reads the intrinsic heights of all
+four panels without temporary DOM copies or timers. **More space** increases
+the existing Stage to exactly the required height of the **tallest panel**,
+or preserves its normal height if that is already sufficient; it never
+simply doubles it. The divider grows with the Stage. The Live Preview remains
+at its original height, position, zoom and stable iframe URL. Expanded height
+refits when panel content or available width changes. The arrow is icon-only,
+with More/Less space in its tooltip and accessible name.
+
+**Global** owns Site icon/Background. **Title** uses paired rows for
+Title/visible Text, Position/Lettering, Alignment/Responsive alignment,
+Color/Size and Responsive size/Minimum size. **Menu** places Menu to page and
+Divider color in one row; its background selector reads **Menu background**.
+**Page** owns Content width, Content padding and **Page background**.
+No duplicate forms, special responsive tabs, or independent CSS buttons are
+introduced. All actual Appearance changes still use the existing autosave
+methods and explicit `general-appearance-updated` iframe refresh event.
+Local tab switches and Stage expansion do not reload the preview.
+
+Artist title desktop Alignment (Left/Center/Right) also applies to Inside
+and Beside, within their respective real available name areas rather than
+moving the whole Menu. In both integrated variants, Responsive alignment
+takes effect when the existing width measurement stacks the title as the
+top row **inside the Menu paper**, regardless of viewport breakpoint.
+Below Menu keeps its separately configured narrow-screen alignment at
+40rem and below. The public-header fit observer also measures and exposes
+the actual exterior margin for Beside; the menu retains its own geometry.
 
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width

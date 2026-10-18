@@ -21,12 +21,6 @@
     margin-top: var(--admin-section-space);
 }
 
-/* Editors may expand a shared Stage without changing divider geometry
- * or creating a second stage component. */
-.admin-visual-stage--expanded {
-    height: calc(2 * var(--admin-visual-stage-height));
-}
-
 
 /* Leading-edge invariant: the first visual cell starts on the workspace edge.
  * Feature panes may own right/interior breathing room, never a left indent on

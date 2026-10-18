@@ -200,8 +200,10 @@ final class General extends Page
 
                             View::make('filament.schemas.components.general-appearance-switcher')
                                 ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
+                                ->extraAttributes(['class' => 'general-appearance-stage__toolbar'])
                                 ->columnSpanFull(),
 
+                            Group::make([
                             Group::make([
                                 MediaAssetSelect::make(
                                 'favicon_media_asset_id',
@@ -235,13 +237,16 @@ final class General extends Page
                             ])
                                 ->columns(1)
                                 ->extraAttributes([
-                                    'class' => 'admin-stage-panel-content',
-                                    'x-show' => "appearanceTab === 'global'",
+                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
                                     'data-appearance-panel' => 'global',
+                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'global' }",
+                                    'x-bind:inert' => "appearanceTab !== 'global'",
+                                    'x-bind:aria-hidden' => "(appearanceTab !== 'global').toString()",
                                 ])
                                 ->columnSpanFull(),
 
                             Group::make([
+                                Group::make([
                                 Select::make('header_name_visible')
                                     ->label('Title')
                                     ->options(['1' => 'Show', '0' => 'Hide'])
@@ -251,23 +256,26 @@ final class General extends Page
                                     ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
                                     ->afterStateUpdated(self::persist('header_name_visible')),
                                 TextInput::make('header_name_text')
-                                    ->label('Title text')
+                                    ->label('Text')
                                     ->required()
                                     ->maxLength(100)
                                     ->lazy()
                                     ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
                                     ->extraInputAttributes(self::commitOnEnterAttributes())
                                     ->afterStateUpdated(self::persist('header_name_text')),
+                                ])
+                                    ->columns(2)
+                                    ->columnSpanFull(),
                                 Group::make([
                                 Select::make('header_name_position')
-                                    ->label('Artist name')
+                                    ->label('Position')
                                     ->options(PublicAppearance::HEADER_POSITIONS)
                                     ->native()
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(self::persist('header_name_position')),
                                 Select::make('header_name_caps')
-                                    ->label('Name lettering')
+                                    ->label('Lettering')
                                     ->options(PublicAppearance::HEADER_CAPS)
                                     ->native()
                                     ->required()
@@ -280,14 +288,14 @@ final class General extends Page
 
                             Group::make([
                                 Select::make('header_name_alignment')
-                                    ->label('Title alignment')
+                                    ->label('Alignment')
                                     ->options(PublicAppearance::HEADER_ALIGNMENT)
                                     ->native()
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(self::persist('header_name_alignment')),
                                 Select::make('header_name_mobile_alignment')
-                                    ->label('Narrow-screen alignment')
+                                    ->label('Responsive alignment')
                                     ->options(PublicAppearance::HEADER_ALIGNMENT)
                                     ->native()
                                     ->required()
@@ -295,17 +303,17 @@ final class General extends Page
                                     ->afterStateUpdated(self::persist('header_name_mobile_alignment')),
                             ])
                                 ->columns(2)
-                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible') && $get('header_name_position') === 'below')
+                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
                                 ->columnSpanFull(),
 
                             Group::make([
-                                AdminColorControl::make('header_name_color', 'Name color')
+                                AdminColorControl::make('header_name_color', 'Color')
                                     ->nullable()
                                     ->live()
                                     ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
                                     ->afterStateUpdated(self::persist('header_name_color')),
                                 TextInput::make('header_name_size')
-                                    ->label('Name size')
+                                    ->label('Size')
                                     ->numeric()
                                     ->integer()
                                     ->minValue(PublicAppearance::MIN_TITLE_SIZE)
@@ -317,7 +325,7 @@ final class General extends Page
                                     ->extraInputAttributes(self::commitOnEnterAttributes())
                                     ->afterStateUpdated(self::persist('header_name_size')),
                                 Select::make('header_name_auto_scale')
-                                    ->label('Responsive name size')
+                                    ->label('Responsive size')
                                     ->options(['1' => 'Allow reduction', '0' => 'Keep selected size'])
                                     ->native()
                                     ->required()
@@ -325,7 +333,7 @@ final class General extends Page
                                     ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
                                     ->afterStateUpdated(self::persist('header_name_auto_scale')),
                                 TextInput::make('header_name_min_size')
-                                    ->label('Minimum name size')
+                                    ->label('Minimum size')
                                     ->numeric()
                                     ->integer()
                                     ->minValue(PublicAppearance::MIN_RESPONSIVE_TITLE_SIZE)
@@ -343,14 +351,16 @@ final class General extends Page
                             ])
                                 ->columns(1)
                                 ->extraAttributes([
-                                    'class' => 'admin-stage-panel-content',
-                                    'x-show' => "appearanceTab === 'title'",
-                                    'x-cloak' => 'x-cloak',
+                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
                                     'data-appearance-panel' => 'title',
+                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'title' }",
+                                    'x-bind:inert' => "appearanceTab !== 'title'",
+                                    'x-bind:aria-hidden' => "(appearanceTab !== 'title').toString()",
                                 ])
                                 ->columnSpanFull(),
 
                             Group::make([
+                                Group::make([
                                 Select::make('header_divider_mode')
                                     ->label('Menu to page')
                                     ->options(PublicAppearance::HEADER_DIVIDERS)
@@ -363,14 +373,18 @@ final class General extends Page
                                     ->live()
                                     ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
                                     ->afterStateUpdated(self::persist('header_divider_color')),
-                                self::appearanceSurfaceControls('menu_background', 'Menu'),
+                                ])
+                                    ->columns(2)
+                                    ->columnSpanFull(),
+                                self::appearanceSurfaceControls('menu_background', 'Menu background'),
                             ])
                                 ->columns(1)
                                 ->extraAttributes([
-                                    'class' => 'admin-stage-panel-content',
-                                    'x-show' => "appearanceTab === 'menu'",
-                                    'x-cloak' => 'x-cloak',
+                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
                                     'data-appearance-panel' => 'menu',
+                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'menu' }",
+                                    'x-bind:inert' => "appearanceTab !== 'menu'",
+                                    'x-bind:aria-hidden' => "(appearanceTab !== 'menu').toString()",
                                 ])
                                 ->columnSpanFull(),
 
@@ -405,14 +419,15 @@ final class General extends Page
                                 ->extraAttributes(['class' => 'general-layout-row'])
                                 ->columnSpanFull(),
 
-                                self::appearanceSurfaceControls('page_background', 'Page'),
+                                self::appearanceSurfaceControls('page_background', 'Page background'),
                             ])
                                 ->columns(1)
                                 ->extraAttributes([
-                                    'class' => 'admin-stage-panel-content',
-                                    'x-show' => "appearanceTab === 'page'",
-                                    'x-cloak' => 'x-cloak',
+                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
                                     'data-appearance-panel' => 'page',
+                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'page' }",
+                                    'x-bind:inert' => "appearanceTab !== 'page'",
+                                    'x-bind:aria-hidden' => "(appearanceTab !== 'page').toString()",
                                 ])
                                 ->columnSpanFull(),
 
@@ -428,6 +443,13 @@ final class General extends Page
                             Hidden::make('page_background_color'),
                             Hidden::make('page_background_gradient_start'),
                             Hidden::make('page_background_gradient_end'),
+                            ])
+                                ->columns(1)
+                                ->extraAttributes([
+                                    'class' => 'general-appearance-stage__scroll',
+                                    'x-ref' => 'appearanceScroll',
+                                ])
+                                ->columnSpanFull(),
                         ])
                             ->columns(1)
                             ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
@@ -440,8 +462,62 @@ final class General extends Page
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
                             'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--split',
-                            'x-data' => "{ appearanceTab: 'global', moreSpace: false }",
+                            'x-data' => <<<'ALPINE'
+{
+    appearanceTab: 'global',
+    moreSpace: false,
+    expandedHeight: 0,
+    panelObserver: null,
+    init() {
+        this.$nextTick(() => {
+            this.panelObserver = new ResizeObserver(() => {
+                if (this.moreSpace) this.fitExpandedHeight()
+            })
+            this.observePanels()
+            this.panelObserver.observe(this.$refs.appearanceScroll)
+        })
+    },
+    destroy() {
+        this.panelObserver?.disconnect()
+    },
+    observePanels() {
+        this.$refs.appearanceScroll?.querySelectorAll('[data-appearance-panel]').forEach(panel => {
+            this.panelObserver?.observe(panel)
+        })
+    },
+    fitExpandedHeight() {
+        const stage = this.$el
+        const scroll = this.$refs.appearanceScroll
+        if (!scroll) return
+        this.observePanels()
+        const stageTop = stage.getBoundingClientRect().top
+        const scrollTop = scroll.getBoundingClientRect().top
+        const panels = scroll.querySelectorAll('[data-appearance-panel]')
+        let maxHeight = 0
+        panels.forEach(panel => {
+            maxHeight = Math.max(maxHeight, panel.getBoundingClientRect().height)
+        })
+        const scrollStyle = getComputedStyle(scroll)
+        const insets = (parseFloat(scrollStyle.paddingTop) || 0)
+            + (parseFloat(scrollStyle.paddingBottom) || 0)
+        const required = Math.ceil(scrollTop - stageTop + insets + maxHeight)
+        const next = Math.max(this.collapsedHeight || 0, required)
+        if (next !== this.expandedHeight) this.expandedHeight = next
+    },
+    toggleSpace() {
+        if (this.moreSpace) {
+            this.moreSpace = false
+            return
+        }
+        this.collapsedHeight = this.$el.getBoundingClientRect().height
+        this.fitExpandedHeight()
+        this.moreSpace = true
+    }
+}
+ALPINE,
                             'x-bind:class' => "{ 'admin-visual-stage--expanded': moreSpace }",
+                            'x-bind:style' => "moreSpace ? 'height: ' + expandedHeight + 'px' : ''",
+                            'x-on:general-appearance-updated.window' => "if (moreSpace) fitExpandedHeight()",
                             'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
                             'aria-label' => 'General settings and live public preview',
                         ])

@@ -2,12 +2,14 @@
  * configured menu shell. It does not infer breakpoints from viewport presets. */
 export function headerNeedsStack(mode, menuWidth, titleWidth, outsideSpace, rem = 16) {
     if (mode === 'outside') {
-        return outsideSpace < titleWidth + 1.25 * rem;
+        // Account for the paper-to-title gap and the largest configured
+        // viewport gutter so Beside never clips at the stack boundary.
+        return outsideSpace < titleWidth + (1.25 + 1.5) * rem;
     }
     if (mode === 'inside') {
         // The existing menu needs enough space for whole labels and its
         // 44px overflow controls, even when the title becomes very large.
-        return menuWidth - titleWidth - 1.7 * rem < 240;
+        return menuWidth - Math.max(titleWidth + 1.7 * rem, 12.5 * rem) < 240;
     }
     return false;
 }
@@ -47,12 +49,16 @@ export function initializePublicHeader() {
         const menuRect = menu.getBoundingClientRect();
         const headerRect = header.getBoundingClientRect();
         const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        const outsideSpace = menuRect.left - headerRect.left;
+        if (mode === 'outside') {
+            menu.style.setProperty('--public-title-outer-margin', outsideSpace + 'px');
+        }
         const titleWidth = intrinsicTitleWidth(title);
         const compact = headerNeedsStack(
             mode,
             menuRect.width,
             titleWidth,
-            menuRect.left - headerRect.left,
+            outsideSpace,
             rem,
         );
         header.classList.toggle('is-title-stacked', compact);
@@ -69,6 +75,7 @@ export function initializePublicHeader() {
     return () => {
         disposed = true;
         observer.disconnect();
+        menu.style.removeProperty('--public-title-outer-margin');
         document.fonts?.removeEventListener?.('loadingdone', update);
     };
 }
