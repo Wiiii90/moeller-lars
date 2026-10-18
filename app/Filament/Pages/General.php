@@ -462,62 +462,8 @@ final class General extends Page
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
                             'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--split',
-                            'x-data' => <<<'ALPINE'
-{
-    appearanceTab: 'global',
-    moreSpace: false,
-    expandedHeight: 0,
-    panelObserver: null,
-    init() {
-        this.$nextTick(() => {
-            this.panelObserver = new ResizeObserver(() => {
-                if (this.moreSpace) this.fitExpandedHeight()
-            })
-            this.observePanels()
-            this.panelObserver.observe(this.$refs.appearanceScroll)
-        })
-    },
-    destroy() {
-        this.panelObserver?.disconnect()
-    },
-    observePanels() {
-        this.$refs.appearanceScroll?.querySelectorAll('[data-appearance-panel]').forEach(panel => {
-            this.panelObserver?.observe(panel)
-        })
-    },
-    fitExpandedHeight() {
-        const stage = this.$el
-        const scroll = this.$refs.appearanceScroll
-        if (!scroll) return
-        this.observePanels()
-        const stageTop = stage.getBoundingClientRect().top
-        const scrollTop = scroll.getBoundingClientRect().top
-        const panels = scroll.querySelectorAll('[data-appearance-panel]')
-        let maxHeight = 0
-        panels.forEach(panel => {
-            maxHeight = Math.max(maxHeight, panel.getBoundingClientRect().height)
-        })
-        const scrollStyle = getComputedStyle(scroll)
-        const insets = (parseFloat(scrollStyle.paddingTop) || 0)
-            + (parseFloat(scrollStyle.paddingBottom) || 0)
-        const required = Math.ceil(scrollTop - stageTop + insets + maxHeight)
-        const next = Math.max(this.collapsedHeight || 0, required)
-        if (next !== this.expandedHeight) this.expandedHeight = next
-    },
-    toggleSpace() {
-        if (this.moreSpace) {
-            this.moreSpace = false
-            return
-        }
-        this.collapsedHeight = this.$el.getBoundingClientRect().height
-        this.fitExpandedHeight()
-        this.moreSpace = true
-    }
-}
-ALPINE,
+                            'x-data' => "{ appearanceTab: 'global', moreSpace: false }",
                             'x-bind:class' => "{ 'admin-visual-stage--expanded': moreSpace }",
-                            'x-bind:style' => "moreSpace ? 'height: ' + expandedHeight + 'px' : ''",
-                            'x-on:general-appearance-updated.window' => "if (moreSpace) fitExpandedHeight()",
                             'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
                             'aria-label' => 'General settings and live public preview',
                         ])

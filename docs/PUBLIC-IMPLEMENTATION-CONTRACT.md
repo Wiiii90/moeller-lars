@@ -99,16 +99,17 @@ heading, fixed tabbar and one bounded scrolling field pane. This prevents
 the tabbar from absorbing the scrolling grid row.
 
 All four Appearance panels remain mounted as single Filament Groups, locally
-selected via Alpine (no Livewire tab writes). They occupy the same CSS grid
-cell, with inactive panels absolutely positioned, visually hidden, inert and
-aria-hidden. No inactive Group adds a row or cumulative spacing. They remain
-measurable: the Stage's one ResizeObserver reads the intrinsic heights of all
-four panels without temporary DOM copies or timers. **More space** increases
-the existing Stage to exactly the required height of the **tallest panel**,
-or preserves its normal height if that is already sufficient; it never
-simply doubles it. The divider grows with the Stage. The Live Preview remains
-at its original height, position, zoom and stable iframe URL. Expanded height
-refits when panel content or available width changes. The arrow is icon-only,
+selected via Alpine (no Livewire tab writes). In the normal-height Stage,
+the active panel owns the scroll height and inactive panels are out of flow,
+visually hidden, inert and aria-hidden. **More space** switches the Stage
+to intrinsic CSS height with a minimum of the normal shared Stage height.
+All four panels then contribute to the same CSS Grid row's max-content
+height; their visibility, accessibility and selected state do not change.
+No duplicate measuring DOM, ResizeObserver, measurement loop, inline pixel
+height or timer participates in the height calculation. The height therefore
+adapts natively to field changes, font changes and available width. The
+canonical divider follows the expanded Stage while Live Preview keeps its
+original height, position, zoom and stable iframe URL. The arrow is icon-only,
 with More/Less space in its tooltip and accessible name.
 
 **Global** owns Site icon/Background. **Title** uses paired rows for

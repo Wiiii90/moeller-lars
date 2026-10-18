@@ -140,6 +140,37 @@
     overflow: hidden;
 }
 
+/* Expanded Appearance is intrinsically sized. The four panels occupy
+ * one grid cell; even hidden panels contribute to that cell's max-content
+ * height. No JS measurements, inline height or ResizeObserver feedback. */
+.general-appearance-stage.admin-visual-stage--expanded {
+    height: max-content;
+    min-height: var(--admin-visual-stage-height);
+    grid-template-rows: max-content !important;
+}
+
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls {
+    height: auto !important;
+    grid-template-rows: max-content;
+    align-self: start;
+}
+
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls > .fi-sc {
+    height: auto;
+    grid-template-rows: min-content min-content max-content;
+    align-content: start;
+}
+
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__scroll {
+    height: auto;
+    overflow: visible;
+}
+
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__panel {
+    position: relative;
+    inset: auto;
+}
+
 /* Expanding Appearance provides working room only to the editor. Preview
  * retains its original viewport and scale while the canonical Stage divider
  * automatically extends through the complete expanded height. */
