@@ -100,7 +100,10 @@ final class AdminSettingsService
         if (array_key_exists('header_name_size', $data)) {
             $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size']);
         }
-        foreach (['header_name_auto_scale', 'page_surface_full_width'] as $toggle) {
+        if (array_key_exists('header_name_min_size', $data)) {
+            $data['header_name_min_size'] = PublicAppearance::normalizeTitleMinSize($data['header_name_min_size']);
+        }
+        foreach (['header_name_auto_scale'] as $toggle) {
             if (array_key_exists($toggle, $data)) {
                 $data[$toggle] = (bool) $data[$toggle];
             }

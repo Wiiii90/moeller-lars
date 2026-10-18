@@ -27,6 +27,7 @@
     --public-index-typeface: Georgia, "Times New Roman", serif;
     --public-index-ink: #444640;
     --public-title-size: 25px;
+    --public-title-min-size: 18px;
     --public-index-rule: rgba(65, 70, 65, .22);
     /* One neutral contour palette; individual surfaces vary the pressure. */
     --public-folio-light: rgba(255, 255, 255, .34);
@@ -489,7 +490,7 @@ body {
 }
 
 .site-header--title-fluid h1 {
-    font-size: min(var(--public-title-size), 10vw);
+    font-size: clamp(min(var(--public-title-min-size), var(--public-title-size)), 5.4vw, var(--public-title-size));
 }
 
 .site-title {
@@ -531,7 +532,7 @@ body {
 #content {
     position: relative;
     min-height: var(--public-short-page-min-height);
-    margin-block: var(--public-shell-gap);
+    margin-block: 0 var(--public-shell-gap);
     background: var(--public-content-background);
     box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
 }
@@ -578,23 +579,17 @@ body {
     flex: 1 0 auto;
 }
 
-/* Full-width paper is independent of the content/menu reading measure. */
-#content.site-content--full-surface {
-    box-sizing: border-box;
-    width: 100%;
-    padding-inline: var(--public-gutter);
+/* Transparent Page keeps the original geometry without a backing sheet.
+ * The configured site Background shows through, with no artificial height. */
+#content.site-content--transparent {
+    background: transparent;
+    box-shadow: none;
+}
+#content.site-content--transparent::before,
+#content.site-content--transparent::after {
+    display: none;
 }
 
-.site-content--full-surface > .public-content-reveal {
-    width: min(100%, var(--public-art-max));
-    margin-inline: auto;
-}
-
-#content.site-content--full-surface.site-content--landscape-artwork > .public-content-reveal {
-    width: min(100%, max(var(--public-art-max), min(960px, calc(var(--public-art-max) * 1.5))));
-}
-
-/* Fine is always menu-width. Full-width modes alone paint across viewport. */
 .site-content {
     padding-block: var(--public-content-block-inset);
     padding-inline: var(--public-content-inset);
@@ -615,10 +610,6 @@ body {
 
 .site-content--landscape-artwork .artwork-detail {
     width: min(100%, max(var(--public-art-max), min(960px, calc(var(--public-art-max) * 1.5))));
-}
-
-#content.site-content--landscape-artwork.site-content--full-surface {
-    width: 100%;
 }
 
 /* The image determines the width of the landscape media group. A block
@@ -1760,17 +1751,9 @@ html:has(.artwork-viewer[open]) {
     border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
 }
 
-.site-header--divider-fine + #content {
-    margin-top: 0;
-}
-
 .site-header--divider-full,
 .site-header--divider-full_gap {
     border-bottom: 1px solid var(--public-separator-color, rgba(255, 255, 255, .68));
-}
-
-.site-header--divider-full + #content {
-    margin-top: 0;
 }
 
 /* The second full-width variant centers its one line in the real gap. */
@@ -1778,9 +1761,18 @@ html:has(.artwork-viewer[open]) {
     border-bottom: 0;
 }
 
+/* Gap belongs to sticky header so scrolling content cannot erase it. */
+.site-header--divider-separate {
+    padding-bottom: var(--public-shell-gap);
+}
+
+.site-header--divider-full_gap {
+    padding-bottom: calc(2 * var(--public-shell-gap));
+}
+
 .site-header--divider-full_gap::after {
     position: absolute;
-    top: calc(100% + var(--public-shell-gap));
+    top: calc(100% - var(--public-shell-gap));
     right: 0;
     left: 0;
     height: 1px;
@@ -1789,21 +1781,17 @@ html:has(.artwork-viewer[open]) {
     background: var(--public-separator-color, rgba(255, 255, 255, .68));
 }
 
-.site-header--divider-full_gap + #content {
-    margin-top: calc(2 * var(--public-shell-gap));
-}
-
 /* Aligned sheets use one uninterrupted vertical perimeter per side.
  * The separate mode retains the existing independent L-shaped contours. */
-.site-header--divider-fine:not(:has(+ #content:is(.site-content--landscape-artwork, .site-content--full-surface))) .site-navigation::before,
-.site-header--divider-fine:not(:has(+ #content:is(.site-content--landscape-artwork, .site-content--full-surface))) .site-navigation::after {
+.site-header--divider-fine:not(:has(+ #content:is(.site-content--landscape-artwork))) .site-navigation::before,
+.site-header--divider-fine:not(:has(+ #content:is(.site-content--landscape-artwork))) .site-navigation::after {
     top: 0;
     bottom: 0;
     border-bottom: 0;
 }
 
-.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork, .site-content--full-surface))::before,
-.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork, .site-content--full-surface))::after {
+.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork))::before,
+.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork))::after {
     top: 0;
     bottom: 0;
     width: 6px;
@@ -1812,19 +1800,19 @@ html:has(.artwork-viewer[open]) {
     border-bottom: 0;
 }
 
-.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork, .site-content--full-surface))::before {
+.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork))::before {
     left: -6px;
 }
 
-.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork, .site-content--full-surface))::after {
+.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork))::after {
     right: -6px;
 }
 
 /* Landscape content intentionally widens beyond the canonical menu shell.
  * Treat it as two coherent independent folio sheets instead of making
  * 640px menu shoulders appear glued onto an ~800px artwork page. */
-.site-header--divider-fine + #content.site-content--landscape-artwork {
-    margin-top: var(--public-shell-gap);
+.site-header--divider-fine:has(+ #content.site-content--landscape-artwork) {
+    padding-bottom: var(--public-shell-gap);
 }
 
 /* The same menu paper owns the name in both placements. Its wide,

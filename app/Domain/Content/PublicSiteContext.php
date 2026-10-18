@@ -15,7 +15,7 @@ final class PublicSiteContext
         private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderAutoScale:bool,publicPageFullWidth:bool,publicNavigationHover:bool} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool,publicNavigationHover:bool} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::general();
@@ -40,10 +40,11 @@ final class PublicSiteContext
             'publicHeaderCaps' => PublicAppearance::headerCaps($settings->getAttribute('header_name_caps')),
             'publicHeaderColor' => PublicAppearance::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color'),
             'publicHeaderSize' => PublicAppearance::normalizeTitleSize($settings->getAttribute('header_name_size')).'px',
+            'publicHeaderMinSize' => PublicAppearance::normalizeTitleMinSize($settings->getAttribute('header_name_min_size')).'px',
             'publicHeaderDivider' => PublicAppearance::headerDivider($settings->getAttribute('header_divider_mode')),
             'publicHeaderDividerColor' => PublicAppearance::normalizeColor($settings->getAttribute('header_divider_color'), 'header_divider_color'),
             'publicHeaderAutoScale' => $settings->getAttribute('header_name_auto_scale') === null ? true : (bool) $settings->getAttribute('header_name_auto_scale'),
-            'publicPageFullWidth' => (bool) $settings->getAttribute('page_surface_full_width'),
+            'publicPageTransparent' => PublicAppearance::normalizeMode($settings->getAttribute('page_background_mode'), 'page_background_mode') === PublicAppearance::MODE_TRANSPARENT,
         ];
     }
 }

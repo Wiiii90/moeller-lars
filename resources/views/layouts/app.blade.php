@@ -49,6 +49,7 @@
             data-public-layout-padding="{{ $publicLayoutCss['padding'] }}"
             data-public-layout-title-color="{{ $publicHeaderColor ?? '' }}"
             data-public-layout-title-size="{{ $publicHeaderSize }}"
+            data-public-layout-title-min-size="{{ $publicHeaderMinSize }}"
             data-public-layout-divider-color="{{ $publicHeaderDividerColor ?? '' }}"
             data-folio-left-top="{{ $folioPlacement['leftTop'] }}"
             data-folio-left-bottom="{{ $folioPlacement['leftBottom'] }}"
@@ -57,7 +58,7 @@
             data-folio-menu-left-bottom="{{ $folioPlacement['menuLeftBottom'] }}"
             data-folio-menu-right-bottom="{{ $folioPlacement['menuRightBottom'] }}">
         @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
-            <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif @if ($publicHeaderColor !== null) --public-title-color: {{ $publicHeaderColor }};@endif @if ($publicHeaderDividerColor !== null) --public-separator-color: {{ $publicHeaderDividerColor }};@endif --public-title-size: {{ $publicHeaderSize }}; --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
+            <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif @if ($publicHeaderColor !== null) --public-title-color: {{ $publicHeaderColor }};@endif @if ($publicHeaderDividerColor !== null) --public-separator-color: {{ $publicHeaderDividerColor }};@endif --public-title-size: {{ $publicHeaderSize }}; --public-title-min-size: {{ $publicHeaderMinSize }}; --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
         @endif
         {{-- Dynamic component dimensions live in nonce-authorized CSS, never
              forbidden inline style attributes. --}}
@@ -164,7 +165,7 @@
                 </div>
             @endunless
         </header>
-        <main id="content" class="site-content @if ($publicPageFullWidth) site-content--full-surface @endif @yield('content_class')">
+        <main id="content" class="site-content @if ($publicPageTransparent) site-content--transparent @endif @yield('content_class')">
             {{-- One content owner; the inner flow keeps its configured reading width. --}}
             <div class="public-content-reveal">
                 @yield('content')

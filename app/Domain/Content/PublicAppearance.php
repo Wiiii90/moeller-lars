@@ -14,6 +14,7 @@ final class PublicAppearance
     public const MODE_GRADIENT = 'gradient';
     public const MODE_RADIAL = 'radial';
     public const MODE_CONIC = 'conic';
+    public const MODE_TRANSPARENT = 'transparent';
     public const MAX_STOPS = 12;
     public const DEFAULT_REPEAT_SPAN = 120;
 
@@ -28,8 +29,8 @@ final class PublicAppearance
     public const HEADER_DIVIDERS = [
         'fine' => 'Fine divider',
         'full' => 'Full-width divider',
-        'full_gap' => 'Full-width divider · separate surfaces',
         'separate' => 'Separate surfaces',
+        'full_gap' => 'Full-width divider and separate surfaces',
     ];
 
     public static function headerDivider(mixed $value): string
@@ -63,6 +64,8 @@ final class PublicAppearance
     }
 
     public const DEFAULT_TITLE_SIZE = 25;
+    public const DEFAULT_TITLE_MIN_SIZE = 18;
+    public const MIN_RESPONSIVE_TITLE_SIZE = 12;
     public const MIN_TITLE_SIZE = 16;
     public const MAX_TITLE_SIZE = 64;
 
@@ -75,6 +78,18 @@ final class PublicAppearance
             self::MAX_TITLE_SIZE,
             'header_name_size',
             'Artist name size',
+        );
+    }
+
+    public static function normalizeTitleMinSize(mixed $value): int
+    {
+        return self::normalizeDimension(
+            $value,
+            self::DEFAULT_TITLE_MIN_SIZE,
+            self::MIN_RESPONSIVE_TITLE_SIZE,
+            self::MAX_TITLE_SIZE,
+            'header_name_min_size',
+            'Minimum artist name size',
         );
     }
 
@@ -108,7 +123,7 @@ final class PublicAppearance
             return null;
         }
 
-        if (! is_string($value) || ! in_array($value, [self::MODE_SOLID, self::MODE_GRADIENT, self::MODE_RADIAL, self::MODE_CONIC], true)) {
+        if (! is_string($value) || ! in_array($value, [self::MODE_SOLID, self::MODE_GRADIENT, self::MODE_RADIAL, self::MODE_CONIC, ...($field === 'page_background_mode' ? [self::MODE_TRANSPARENT] : [])], true)) {
             throw ValidationException::withMessages([
                 $field => 'Choose Solid, Linear, Radial or Conic gradient.',
             ]);
@@ -307,6 +322,9 @@ final class PublicAppearance
         }
 
         $fallback = $surface === 'background' ? self::DEFAULT_PAGE_COLOR : self::DEFAULT_SURFACE_COLOR;
+        if ($mode === self::MODE_TRANSPARENT) {
+            return 'transparent';
+        }
         if ($mode === self::MODE_SOLID) {
             return self::normalizeColor($settings->getAttribute($surface.'_color'), $surface.'_color') ?? $fallback;
         }

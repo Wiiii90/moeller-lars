@@ -26,6 +26,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
@@ -78,10 +80,10 @@ final class General extends Page
         'header_name_caps',
         'header_name_color',
         'header_name_size',
+        'header_name_min_size',
         'header_divider_mode',
         'header_divider_color',
         'header_name_auto_scale',
-        'page_surface_full_width',
         'public_page_width',
         'public_content_padding',
         'public_email',
@@ -115,8 +117,6 @@ final class General extends Page
 
     public string $previewDevice = 'desktop';
 
-    public string $appearanceTab = 'global';
-
     // Edit Action identity is the unique social platform, not a mutable row index.
     // Autosaved reordering must not redirect later field edits to another profile.
     public ?string $editingSocialPlatform = null;
@@ -145,10 +145,10 @@ final class General extends Page
         $data['header_name_caps'] = PublicAppearance::headerCaps($data['header_name_caps'] ?? null);
         $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'] ?? null, 'header_name_color');
         $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size'] ?? null);
+        $data['header_name_min_size'] = PublicAppearance::normalizeTitleMinSize($data['header_name_min_size'] ?? null);
         $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode'] ?? null);
         $data['header_divider_color'] = PublicAppearance::normalizeColor($data['header_divider_color'] ?? null, 'header_divider_color');
         $data['header_name_auto_scale'] = $data['header_name_auto_scale'] === null ? true : (bool) $data['header_name_auto_scale'];
-        $data['page_surface_full_width'] = (bool) $data['page_surface_full_width'];
         $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width'] ?? null);
         $data['public_content_padding'] = PublicAppearance::normalizeContentPadding($data['public_content_padding'] ?? null);
 
@@ -192,10 +192,10 @@ final class General extends Page
                                 ])
                                 ->columnSpanFull(),
 
-                            View::make('filament.schemas.components.general-appearance-tabs')
-                                ->columnSpanFull(),
-
-                            Group::make([
+                            Tabs::make('Appearance')
+                                ->tabs([
+                                Tab::make('Global')
+                                    ->schema([
                             MediaAssetSelect::make(
                                 'favicon_media_asset_id',
                                 'faviconMediaAsset',
@@ -225,19 +225,9 @@ final class General extends Page
                                 ->afterStateUpdated(self::persist('favicon_media_asset_id')),
 
                                 self::appearanceSurfaceControls('background', 'Background'),
-                            ])
-                                ->columns(1)
-                                ->extraAttributes([
-                                    'id' => 'general-appearance-global-panel',
-                                    'class' => 'general-appearance-tab-panel',
-                                    'role' => 'tabpanel',
-                                    'aria-labelledby' => 'general-appearance-global-tab',
-                                    'x-show' => "appearanceTab === 'global'",
-                                    'x-cloak' => 'x-cloak',
-                                ])
-                                ->columnSpanFull(),
-
-                            Group::make([
+                                    ]),
+                                Tab::make('Title')
+                                    ->schema([
                             Group::make([
                                 Select::make('header_name_position')
                                     ->label('Artist name')
@@ -283,23 +273,25 @@ final class General extends Page
                                     ->live()
                                     ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
                                     ->afterStateUpdated(self::persist('header_name_auto_scale')),
+                                TextInput::make('header_name_min_size')
+                                    ->label('Minimum name size')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(PublicAppearance::MIN_RESPONSIVE_TITLE_SIZE)
+                                    ->maxValue(PublicAppearance::MAX_TITLE_SIZE)
+                                    ->suffix('px')
+                                    ->required()
+                                    ->lazy()
+                                    ->visible(fn (callable $get): bool => (bool) $get('header_name_auto_scale'))
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('header_name_min_size')),
                             ])
                                 ->columns(2)
                                 ->columnSpanFull(),
 
-                            ])
-                                ->columns(1)
-                                ->extraAttributes([
-                                    'id' => 'general-appearance-title-panel',
-                                    'class' => 'general-appearance-tab-panel',
-                                    'role' => 'tabpanel',
-                                    'aria-labelledby' => 'general-appearance-title-tab',
-                                    'x-show' => "appearanceTab === 'title'",
-                                    'x-cloak' => 'x-cloak',
-                                ])
-                                ->columnSpanFull(),
-
-                            Group::make([
+                                    ]),
+                                Tab::make('Menu')
+                                    ->schema([
                                 Select::make('header_divider_mode')
                                     ->label('Menu to page')
                                     ->options(PublicAppearance::HEADER_DIVIDERS)
@@ -313,19 +305,9 @@ final class General extends Page
                                     ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
                                     ->afterStateUpdated(self::persist('header_divider_color')),
                                 self::appearanceSurfaceControls('menu_background', 'Menu'),
-                            ])
-                                ->columns(1)
-                                ->extraAttributes([
-                                    'id' => 'general-appearance-menu-panel',
-                                    'class' => 'general-appearance-tab-panel',
-                                    'role' => 'tabpanel',
-                                    'aria-labelledby' => 'general-appearance-menu-tab',
-                                    'x-show' => "appearanceTab === 'menu'",
-                                    'x-cloak' => 'x-cloak',
-                                ])
-                                ->columnSpanFull(),
-
-                            Group::make([
+                                    ]),
+                                Tab::make('Page')
+                                    ->schema([
                             Group::make([
                                 TextInput::make('public_page_width')
                                     ->label('Content width')
@@ -356,25 +338,11 @@ final class General extends Page
                                 ->extraAttributes(['class' => 'general-layout-row'])
                                 ->columnSpanFull(),
 
-                                Select::make('page_surface_full_width')
-                                    ->label('Page surface')
-                                    ->options(['0' => 'Constrained width', '1' => 'Full width'])
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
-                                    ->afterStateUpdated(self::persist('page_surface_full_width')),
                                 self::appearanceSurfaceControls('page_background', 'Page'),
-                            ])
-                                ->columns(1)
-                                ->extraAttributes([
-                                    'id' => 'general-appearance-page-panel',
-                                    'class' => 'general-appearance-tab-panel',
-                                    'role' => 'tabpanel',
-                                    'aria-labelledby' => 'general-appearance-page-tab',
-                                    'x-show' => "appearanceTab === 'page'",
-                                    'x-cloak' => 'x-cloak',
+                                    ]),
                                 ])
+                                ->contained(false)
+                                ->extraAttributes(['class' => 'general-appearance-tabs'])
                                 ->columnSpanFull(),
 
                             Hidden::make('background_color'),
@@ -391,8 +359,7 @@ final class General extends Page
                             Hidden::make('page_background_gradient_end'),
                         ])
                             ->columns(1)
-                            ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls',
-                                    'x-data' => "{ appearanceTab: \$wire.entangle('appearanceTab') }"])
+                            ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
                             ->columnSpanFull(),
 
                         View::make('filament.schemas.components.general-live-preview')
@@ -536,6 +503,7 @@ final class General extends Page
                     PublicAppearance::MODE_GRADIENT => 'Linear gradient',
                     PublicAppearance::MODE_RADIAL => 'Radial gradient',
                     PublicAppearance::MODE_CONIC => 'Conic gradient',
+                    ...($surface === 'page_background' ? [PublicAppearance::MODE_TRANSPARENT => 'Transparent'] : []),
                 ])
                 ->native()->required()->live()
                 ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
@@ -544,6 +512,7 @@ final class General extends Page
             AdminColorControl::make($surface.'_primary_color', 'Primary color')
                 ->lazy()
                 ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
+                ->visible(fn (callable $get): bool => $get($surface.'_mode') !== PublicAppearance::MODE_TRANSPARENT)
                 ->afterStateUpdated(fn ($livewire, $state) => $livewire instanceof self ? $livewire->persistSurfaceColor($surface, 'primary', $state) : null),
 
             AdminAngleControl::make($surface.'_gradient_angle')
@@ -1102,11 +1071,11 @@ final class General extends Page
                 'header_name_caps',
                 'header_name_color',
                 'header_name_size',
+                'header_name_min_size',
                 'header_divider_mode',
                 'header_divider_color',
                 'header_name_auto_scale',
-                'page_surface_full_width',
-                'public_page_width',
+                        'public_page_width',
                 'public_content_padding',
             ]) !== []) {
                 $this->dispatch('general-appearance-updated');
@@ -1267,10 +1236,10 @@ final class General extends Page
             'header_name_caps' => 'Artist name lettering',
             'header_name_color' => 'Artist name color',
             'header_name_size' => 'Artist name size',
+            'header_name_min_size' => 'Minimum responsive name size',
             'header_divider_mode' => 'Menu and page divider',
             'header_divider_color' => 'Divider color',
             'header_name_auto_scale' => 'Responsive name size',
-            'page_surface_full_width' => 'Page surface width',
             'public_page_width' => 'Public page width',
             'public_content_padding' => 'Public content padding',
             'navigation_nesting_enabled' => 'Navigation nesting',
@@ -1298,8 +1267,8 @@ final class General extends Page
             'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y',
             'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
                 is_numeric($value) ? (int) $value : $value,
-            'header_name_auto_scale', 'page_surface_full_width' => (bool) $value,
-            'header_name_size', 'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
+            'header_name_auto_scale' => (bool) $value,
+            'header_name_size', 'header_name_min_size', 'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
             'default_media_copyright_notice' => is_string($value) ? (($trimmed = trim($value)) === '' ? null : $trimmed) : $value,

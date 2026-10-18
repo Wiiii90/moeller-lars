@@ -63,6 +63,7 @@ export function applyPublicLayoutFromMeta() {
         '--public-art-max': config.dataset.publicLayoutArt,
         '--public-content-padding': config.dataset.publicLayoutPadding,
         '--public-title-size': config.dataset.publicLayoutTitleSize,
+        '--public-title-min-size': config.dataset.publicLayoutTitleMinSize,
         '--public-folio-left-top': config.dataset.folioLeftTop,
         '--public-folio-left-bottom': config.dataset.folioLeftBottom,
         '--public-folio-right-top': config.dataset.folioRightTop,

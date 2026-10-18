@@ -89,56 +89,54 @@ navigation, media or publication contracts.
 
 The public visual composition remains artist-specific. Menu and Content retain independently configured surfaces and their canonical folio contours. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls accents; no extra decorative DOM/pseudo surfaces may replace them. Main and child navigation retain the same cyclic complete-item window, measured rail, keyboard behavior and selected state.
 
-General → Appearance has one schema-backed four-tab Stage. **Global** owns
-Site icon and the outer Background editor. **Title** owns position, lettering,
-color, size and optional responsive reduction. **Menu** owns the menu-to-page
-divider mode/color and the complete Menu solid/gradient editor. **Page** owns
-Content width (the existing `public_page_width` data field, also defining the
-shared Menu shell width), Content padding, the independent **Page surface**
-Constrained/Full width switch, and the complete Page gradient editor. There is
-one canonical Filament field per setting; hiding tabs does not unmount fields,
-change their persistence path or create competing color controls. The active
-tab is a Livewire property entangled to the Alpine stage, so ordinary autosaves
-and preview updates do not reset the selection; the tabs remain visible at the
-top of the scrollable controls pane.
+General → Appearance uses one native Filament Tabs component, with the four
+tabs **Global**, **Title**, **Menu**, **Page**. The existing field instances
+and autosave methods are reused inside these native tab schemas; tab switching
+does not leave offscreen Grid wrappers or cumulatively increase spacing.
+Global owns Site icon and outer Background; Title owns position, lettering,
+base size, optional reduction and minimum size; Menu owns divider mode/color
+and the complete Menu gradient editor; Page owns Content width, Content
+padding and the Page Background editor. The temporary custom
+`general-appearance-tabs.blade.php` switcher and its separate Alpine/Livewire
+tab states were deleted.
 
-A Full-width Page surface stretches the paper to the viewport, but its inner
-`.public-content-reveal` stays constrained to General's configured reading
-measure (`--public-art-max`) and naturally uses available width on phones.
-The Menu remains at the existing shell width. The landscape-artwork template
-retains its separately approved wider image measure, even on Full-width paper.
-No second arbitrary numeric width competes with Content width.
+The old `page_surface_full_width` option is retired: a width-independent
+paper surface made short and long layouts visually inconsistent. Content width
+still sets the Menu/Page shell geometry and Content padding still sets the
+reading/art measure. **Transparent** is now a Page-only background mode alongside
+Solid/Linear/Radial/Conic. It reveals the artist-configurable Global Background
+without painting a white sheet or static contour/shadow over it. It does not
+manufacture full-viewport height or alter scroll ownership. Transparent is
+not available for Global or Menu backgrounds. Previously selected page
+gradients and colors remain in persistence to use again if the artist switches
+back.
 
-Artist-name position is `inside`, `outside` or `below`, with normal
-lettering or small caps, an optional solid hex color and a base size of
-16–64px. The **Responsive name size** option (on by default) permits that
-size to decrease as the viewport narrows. When off, the artist-selected
-size stays in effect and the compact name may wrap. Both Inside and Beside
-render the name as part of the **same Menu paper element**; Beside places it
-in the real exterior margin only when sufficient space remains. If not, both
-compose the same upper-left title row inside the menu, with the Menu background
-and one perimeter around the entire menu and title. The single
-`public-header.js` measurement owner detects this fit; it does not introduce
-a separate title sheet, timer, new navigation, route or scroll container.
-Below preserves the separate historic title placement.
+Artist-name position is `inside`, `outside` or `below`. Inside and
+Beside use the same Menu DOM/paper on narrow layouts, preserving the menu
+background, top-left title and static perimeter. The base Title size is
+16–64px, with optional responsive reduction and an independently editable
+minimum of 12–64px (default 18px). The reduction uses CSS
+`clamp(min(minimum, base), 5.4vw, base)`; disabling it keeps the chosen base
+size and allows text wrapping. The single public-header ResizeObserver
+continues to measure fit for stacked versus horizontal composition; it never
+creates a second scroll area, animation or timer. A blank artist title color
+continues to use contextual ink.
 
-**Menu to page** has four non-overlapping settings:
-- `fine`: one 1px **Menu-width** line, no top gap on equal-width pages;
-  continuous static side traces where the two sheets actually align.
-- `full`: one **viewport-width** line, no top gap.
-- `full_gap`: one viewport-width line **centered in the actual gap**
-  between separate Menu/Content surfaces.
-- `separate`: independent Menu/Content sheets with their normal gap and
-  **no** additional browser-wide line.
+**Menu to page** contains four modes: `fine` (Menu-width line, joined
+content), `full` (viewport-width line, joined content), `full_gap`
+(Full-width divider and separate surfaces), `separate` (Separate surfaces
+without an added line). The artist may set a solid Divider color. In separated
+modes, the **sticky site-header itself owns the gap**, not an ordinary
+Content top margin, so scrolling content goes behind the sticky Menu while
+the visual gap persists. The full-width separate divider is centered within
+the sticky two-gap reserve. Joined modes have no spacer below their divider.
+In the `fine` landscape-artwork exception, different Menu and Content widths
+retain their independent static contours and a corresponding sticky gap.
+The document remains the only scroll owner. No global page-width overlay,
+CSS scroll-owner duplication, or header gradient border is introduced.
 
-Divider color is an optional six-digit hex override. Its empty state uses
-the contextual default for fine/full presentation; it never repurposes
-Menu/Page/Global background gradients. Landscape content can be wider than
-the Menu; fine mode deliberately restores their separate outer contours
-and paper gap instead of showing disconnected shoulders. Each rendering
-is owned by `public-presentation.css`, with no obsolete header border-image
-gradient and no duplicate divider paint owner. The four combinations should
-be checked in both preview and the direct browser before artist acceptance.
+These variants remain subject to real-browser visual acceptance across
+regular, landscape, narrow and long-page routes.
 
 ### Navigation-only groups and hover
 

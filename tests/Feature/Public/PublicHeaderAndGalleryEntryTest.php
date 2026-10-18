@@ -24,9 +24,14 @@ it('validates editable name positions, lettering, colors and sizes', function ()
         ->and(PublicAppearance::headerDivider('separate'))->toBe('separate')
         ->and(PublicAppearance::normalizeTitleSize(null))->toBe(25)
         ->and(PublicAppearance::normalizeTitleSize('46'))->toBe(46)
+        ->and(PublicAppearance::normalizeTitleMinSize(null))->toBe(18)
+        ->and(PublicAppearance::normalizeTitleMinSize(14))->toBe(14)
+        ->and(PublicAppearance::normalizeMode('transparent', 'page_background_mode'))->toBe('transparent')
         ->and(PublicAppearance::normalizeColor('#ab12ff', 'header_name_color'))->toBe('#AB12FF');
 
     expect(fn () => PublicAppearance::headerPosition('overlap'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeMode('transparent', 'menu_background_mode'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeTitleMinSize(11))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::headerCaps('uppercase'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::headerDivider('joined'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::normalizeTitleSize(65))->toThrow(ValidationException::class);
@@ -57,7 +62,8 @@ it('publishes editable name presentation but never redirects a gallery parent to
         'header_divider_mode' => 'full_gap',
         'header_divider_color' => '#123456',
         'header_name_auto_scale' => false,
-        'page_surface_full_width' => true,
+        'header_name_min_size' => 14,
+        'page_background_mode' => PublicAppearance::MODE_TRANSPARENT,
     ]);
 
     $preview = $this->get('/preview/'.$parent->slug)->assertOk()->getContent();
@@ -65,7 +71,9 @@ it('publishes editable name presentation but never redirects a gallery parent to
         ->toContain('site-header--caps-normal')
         ->toContain('site-header--divider-full_gap')
         ->not->toContain('site-header--title-fluid')
-        ->toContain('site-content--full-surface')
+        ->toContain('site-content--transparent')
+        ->toContain('data-public-layout-title-min-size="14px"')
+        ->toContain('data-public-layout-content-background="transparent"')
         ->toContain('data-public-layout-divider-color="#123456"')
         ->toContain('data-public-layout-title-color="#AABBCC"')
         ->toContain('data-public-layout-title-size="46px"');
@@ -74,7 +82,7 @@ it('publishes editable name presentation but never redirects a gallery parent to
     $public = $this->get('/'.$parent->slug)->assertOk()->getContent();
     expect($public)->toContain('site-header--name-outside')
         ->toContain('site-header--divider-full_gap')
-        ->toContain('site-content--full-surface')
+        ->toContain('site-content--transparent')
         ->toContain('data-public-layout-title-color="#AABBCC"');
 });
 
