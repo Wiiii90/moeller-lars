@@ -25,6 +25,21 @@ final class PublicAppearance
 
     public const HEADER_POSITIONS = ['outside' => 'Beside menu', 'inside' => 'Inside menu', 'below' => 'Below menu'];
     public const HEADER_CAPS = ['small-caps' => 'Small caps', 'normal' => 'Original case'];
+    public const HEADER_DIVIDERS = [
+        'fine' => 'Fine divider',
+        'full' => 'Full-width divider',
+        'separate' => 'Separate surfaces',
+    ];
+
+    public static function headerDivider(mixed $value): string
+    {
+        $value ??= 'fine';
+        if (! is_string($value) || ! array_key_exists($value, self::HEADER_DIVIDERS)) {
+            throw ValidationException::withMessages(['header_divider_mode' => 'Choose a supported menu-to-page transition.']);
+        }
+
+        return $value;
+    }
 
     public static function headerPosition(mixed $value): string
     {

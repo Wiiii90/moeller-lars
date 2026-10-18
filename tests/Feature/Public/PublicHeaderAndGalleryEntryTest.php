@@ -18,12 +18,16 @@ it('validates editable name positions, lettering, colors and sizes', function ()
         ->and(PublicAppearance::headerPosition('below'))->toBe('below')
         ->and(PublicAppearance::headerCaps(null))->toBe('small-caps')
         ->and(PublicAppearance::headerCaps('normal'))->toBe('normal')
+        ->and(PublicAppearance::headerDivider(null))->toBe('fine')
+        ->and(PublicAppearance::headerDivider('full'))->toBe('full')
+        ->and(PublicAppearance::headerDivider('separate'))->toBe('separate')
         ->and(PublicAppearance::normalizeTitleSize(null))->toBe(25)
         ->and(PublicAppearance::normalizeTitleSize('46'))->toBe(46)
         ->and(PublicAppearance::normalizeColor('#ab12ff', 'header_name_color'))->toBe('#AB12FF');
 
     expect(fn () => PublicAppearance::headerPosition('overlap'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::headerCaps('uppercase'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerDivider('joined'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::normalizeTitleSize(65))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::normalizeTitleSize('21.5'))->toThrow(ValidationException::class);
     expect(fn () => PublicAppearance::normalizeColor('red', 'header_name_color'))->toThrow(ValidationException::class);
@@ -49,17 +53,20 @@ it('publishes editable name presentation but never redirects a gallery parent to
         'header_name_caps' => 'normal',
         'header_name_color' => '#aabbcc',
         'header_name_size' => 46,
+        'header_divider_mode' => 'full',
     ]);
 
     $preview = $this->get('/preview/'.$parent->slug)->assertOk()->getContent();
     expect($preview)->toContain('site-header--name-outside')
         ->toContain('site-header--caps-normal')
+        ->toContain('site-header--divider-full')
         ->toContain('data-public-layout-title-color="#AABBCC"')
         ->toContain('data-public-layout-title-size="46px"');
 
     app(PublicationService::class)->commit($actor, 'Publish artist name settings and nested Gallery');
     $public = $this->get('/'.$parent->slug)->assertOk()->getContent();
     expect($public)->toContain('site-header--name-outside')
+        ->toContain('site-header--divider-full')
         ->toContain('data-public-layout-title-color="#AABBCC"');
 });
 

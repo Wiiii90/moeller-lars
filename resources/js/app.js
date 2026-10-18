@@ -11,7 +11,6 @@ import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
 import { initializePublicHeader } from './public-header.js';
-import { capturePublicFolio, advancePublicFolio, animatePublicHeroChange } from './public-folio-motion.js';
 import { applyPublicLayoutFromMeta, initializePublicSpaLinks } from './public-spa.js';
 import { revealLinkedLegalSection } from './public-legal.js';
 
@@ -33,17 +32,15 @@ function initializePage() {
     const root = document.body;
     disposers.push(initializeArtworkViewer(root));
     disposers.push(initializeGalleryImageLoading(root));
-    initializeHomeHero(root, (change) => animatePublicHeroChange(change, root));
+    initializeHomeHero(root);
     disposers.push(initializeJournalPresentation());
     disposers.push(initializeMatomoTracking(root));
     disposers.push(initializePublicHeader());
     disposers.push(initializePublicNavigation());
-    advancePublicFolio();
     revealLinkedLegalSection();
 }
 
 document.addEventListener('livewire:navigating', (event) => {
-    capturePublicFolio();
     disposePage();
     event.detail.onSwap?.(applyPublicLayoutFromMeta);
 });

@@ -1,4 +1,4 @@
-/* Public shell/layout geometry and approved non-animated folio fallback. */
+/* Public shell/layout geometry and static folio contours. */
 
 :root {
     --public-shell-max: 800px;
@@ -82,16 +82,6 @@ body {
 
 /* The connected Menu backing and Content shadow use the same base offsets.
    The L-shape allows the menu to remain top-connected without an extra plane. */
-@property --public-menu-sheet-x {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: -3px;
-}
-@property --public-menu-sheet-y {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 4px;
-}
 .site-navigation {
     position: relative;
     order: 1;
@@ -541,9 +531,8 @@ body {
     background: var(--public-content-background);
     box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
 }
-/* The original TWO attached edge contours remain separate pseudo-element
-   animation targets. Each white sheet uses only ONE external backing shadow;
-   no extra layers are generated during navigation. */
+/* The original TWO attached static edge contours remain on the Content sheet.
+   Each white sheet uses only ONE external backing shadow. */
 #content::before,
 #content::after {
     position: absolute;
@@ -1741,8 +1730,54 @@ html:has(.artwork-viewer[open]) {
     font-variant-caps: small-caps;
 }
 
-.site-header--joined + #content {
+/* Three distinct paper transitions. Every variant is still available
+ * with Title below the menu. Fine uses the shell-width menu border;
+ * Full restores the former viewport-wide separator, without a gradient. */
+.site-header--divider-fine .site-navigation {
+    box-shadow: none;
+    border-bottom: 1px solid var(--public-index-rule);
+}
+
+.site-header--divider-fine + #content {
     margin-top: 0;
+}
+
+.site-header--divider-full {
+    border-bottom: 1px solid rgba(255, 255, 255, .68);
+}
+
+/* Aligned sheets use one uninterrupted vertical perimeter per side.
+ * The separate mode retains the existing independent L-shaped contours. */
+.site-header--divider-fine:not(:has(+ #content.site-content--landscape-artwork)) .site-navigation::before,
+.site-header--divider-fine:not(:has(+ #content.site-content--landscape-artwork)) .site-navigation::after {
+    top: 0;
+    bottom: 0;
+    border-bottom: 0;
+}
+
+.site-header--divider-fine + #content:not(.site-content--landscape-artwork)::before,
+.site-header--divider-fine + #content:not(.site-content--landscape-artwork)::after {
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    transform: none;
+    border-top: 0;
+    border-bottom: 0;
+}
+
+.site-header--divider-fine + #content:not(.site-content--landscape-artwork)::before {
+    left: -6px;
+}
+
+.site-header--divider-fine + #content:not(.site-content--landscape-artwork)::after {
+    right: -6px;
+}
+
+/* Landscape content intentionally widens beyond the canonical menu shell.
+ * Treat it as two coherent independent folio sheets instead of making
+ * 640px menu shoulders appear glued onto an ~800px artwork page. */
+.site-header--divider-fine + #content.site-content--landscape-artwork {
+    margin-top: var(--public-shell-gap);
 }
 
 .site-header--name-inside {

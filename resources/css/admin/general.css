@@ -98,6 +98,64 @@
     line-height: 1.2;
 }
 
+/* Dashboard-style stage tabs. The four panels own the original single
+ * Filament fields, kept mounted while hidden so autosave/state survives switching. */
+.general-appearance-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .25rem;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: .15rem 0 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.general-appearance-tabs__tab {
+    display: flex;
+    min-width: 0;
+    min-height: var(--admin-control-height);
+    padding: .45rem .25rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--admin-muted);
+    font-size: .73rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.general-appearance-tabs__tab:hover,
+.general-appearance-tabs__tab:focus-visible {
+    color: var(--admin-text);
+}
+
+.general-appearance-tabs__tab.is-active {
+    border-bottom-color: var(--admin-accent);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+.general-appearance-tabs__tab:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+
+.general-appearance-tab-panel {
+    min-width: 0;
+}
+
+.general-appearance-tab-panel[x-cloak] {
+    display: none !important;
+}
+
+.general-appearance-tab-panel > .fi-sc {
+    align-content: start;
+    gap: var(--admin-section-gap) !important;
+}
+
 /* Canonical line-based General controls. */
 .admin-general .fi-input-wrp {
     box-sizing: border-box;

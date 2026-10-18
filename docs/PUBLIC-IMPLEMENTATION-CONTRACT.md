@@ -70,46 +70,46 @@ preloads. The Admin Vite entrypoints and Filament bundle stay unchanged.
 General
 layout CSS variables are reapplied from server-rendered metadata at the swap
 boundary, so new nonces cannot invalidate the artist's configured background
-or widths. This SPA transport is independent of future contour animation.
+or widths. The static contour presentation is independent of the SPA transport.
 
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The public paper animation has ONE canonical owner:
-`resources/js/public-folio-motion.js`. Existing Menu/Content contour
-pseudos and their single backings remain the only visual primitives;
-there are no timers, new DOM planes or secondary animation systems.
+The Public paper outline is **static**. Menu and Content retain the existing
+edge pseudo-elements and their single backing layer with the accepted 3px
+left / 4px down geometry. Each route still receives its six deterministic
+corner endpoints in the nonce-authorized initial style and SPA layout metadata,
+but there is no ambient animation, pulse, animated height/width change,
+temporary clipping, per-frame timer, or motion engine. The former
+`public-folio-motion.js` animation and its obsolete tests were removed.
+Content height and landscape width respond natively to the page and viewport;
+Home Hero selection changes content immediately without changing the other
+navigation, media or publication contracts.
 
-Menu and Content share the reduced baseline of 3px left and 4px down
-(and a matching 3px right gap). Menu's existing connected L-shaped
-backing remains flush with its upper edge. The white outlines sit
-closer to both white surfaces, and all pale lines and backings use
-lower opacity. General's configured widths remain authoritative.
-
-Each page gets six distinct, stable corner connection points. They
-are generated deterministically from the server-side route path in
-`layouts/app.blade.php`, rendered in the CSP-nonced initial style, and
-carried through the existing `data-public-layout` metadata across
-Livewire SPA swaps. Reopening the same URL recreates the same visual
-pose without client randomness, timers, history state or hydration flash.
-
-Page swaps share a viewport-bounded 480ms height transition and a
-620ms Content-only build. Its contour ends contract no more than 6px
-top and 8px bottom; the exterior backing moves less than 1px per
-axis. All excursions end at the new page's canonical static pose,
-even on rapid repeat navigation. Home Hero arrows reuse the same
-Content-only animation. Menu never performs a page-build impulse.
-
-Ambient corners move only 1–2px, and backing motion is under .5px
-on slow 98–145-second loops with extensive stationary periods.
-Menu's upper stroke attachments remain fixed to the top, and its
-left stroke stays shorter than the right. Distinct static page
-compositions—not conspicuous perpetual motion—are the main effect.
-Native heights, viewer and history remain under their existing owners.
 The public visual composition remains artist-specific. Menu and Content retain independently configured surfaces and their canonical folio contours. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls accents; no extra decorative DOM/pseudo surfaces may replace them. Main and child navigation retain the same cyclic complete-item window, measured rail, keyboard behavior and selected state.
 
-General → Appearance owns the global artist-name position (`inside`, `outside`, `below`), small caps/normal lettering, optional six-digit solid name color and numeric title size (16–64px; default 25px). An empty title color selects contextual ink: dark inside the menu, light on the outer background. Only the artist-name ink is configurable here; Background/Menu/Page solid and gradient editors retain independent ownership. The name uses solid currentColor without the obsolete silver-to-white text gradient or letter shadow. The menu's own 1px inset bottom rule is the fine separator when Menu to page = Fine divider, with no grey middle strip and no viewport-wide header border-image. Separate surfaces retain their original content margin without adding an extra header line.
+General → Appearance presents four compact stage tabs: **Global**
+(site icon, page width, content padding, outer background), **Title**
+(position, case, color, size), **Menu** (menu-to-page transition and the
+full menu surface gradient editor), **Page** (full content surface gradient
+editor). The tabs switch visibility only; all original Filament controls remain
+single owned/persisted fields and are not recreated by the tab view.
+
+Global artist-name position is `inside`, `outside` or `below`, with
+normal lettering/small caps, an optional six-digit solid name color and numeric
+size of 16–64px (default 25px). An empty color uses contextual ink. Menu to
+page is one enum: **Fine divider** (visible 1px menu-width line, no gap
+between matching portrait sheets, continuous static side outlines);
+**Full-width divider** (1px browser-wide header line with independent
+Content margin, including the title-below mode); or **Separate surfaces**
+(the original independent spacing and contour pattern). When an Artwork
+page expands in landscape beyond the menu width, Fine divider keeps the
+natural independent sheet gap and original edges rather than creating
+disconnected 640px-to-1000px shoulders. Older `header_content_joined`
+data is migrated to the new single `header_divider_mode` setting.
+No decorative title gradient or browser-wide gradient border remains;
+Global/Menu/Page background gradients are independent and unchanged.
 
 `Inside menu` renders a single real title column followed by the existing navigation rail, not additional padding outside the configured page width. `Beside menu` keeps the centered Menu aligned with Content and positions the title in its real left exterior margin. The public header's single ResizeObserver owner (`public-header.js`) measures menu bounds and the rendered text width and stacks the title only when it cannot fit with the minimal usable cyclic rail; it does not use fixed 90rem/57rem breakpoints, timers, or an extra scroll container. Small viewports cap the name's effective font size to 10vw so even a large artist-selected title remains responsive. The measured state is disposed on public SPA navigation and initialized synchronously; subsequent font/width changes refit. `Below menu` retains the legacy separate name row. These compositions still require browser acceptance with real portrait artwork, the 640–1440px configured page width range, and narrow viewport sizes.
 

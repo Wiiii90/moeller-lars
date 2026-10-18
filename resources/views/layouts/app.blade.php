@@ -70,7 +70,7 @@
                 aria-label="Artist preview mode"
             >PREVIEW</div>
         @endif
-        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} @if ($publicHeaderJoined) site-header--joined @endif">
+        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $publicHeaderDivider }}">
             @if ($publicHeaderPosition !== 'inside' || $__env->hasSection('hide_navigation'))
                 <x-public.artist-name :home-url="$homeUrl" />
             @endif
