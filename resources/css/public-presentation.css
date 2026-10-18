@@ -480,12 +480,16 @@ body {
     padding: 0;
     color: var(--public-title-color, var(--public-title-default));
     font-family: var(--public-index-typeface);
-    font-size: min(var(--public-title-size), 10vw);
+    font-size: var(--public-title-size);
     font-weight: 400;
     letter-spacing: .04em;
     line-height: 1.1;
     text-transform: none;
     white-space: nowrap;
+}
+
+.site-header--title-fluid h1 {
+    font-size: min(var(--public-title-size), 10vw);
 }
 
 .site-title {
@@ -574,6 +578,23 @@ body {
     flex: 1 0 auto;
 }
 
+/* Full-width paper is independent of the content/menu reading measure. */
+#content.site-content--full-surface {
+    box-sizing: border-box;
+    width: 100%;
+    padding-inline: var(--public-gutter);
+}
+
+.site-content--full-surface > .public-content-reveal {
+    width: min(100%, var(--public-art-max));
+    margin-inline: auto;
+}
+
+#content.site-content--full-surface.site-content--landscape-artwork > .public-content-reveal {
+    width: min(100%, max(var(--public-art-max), min(960px, calc(var(--public-art-max) * 1.5))));
+}
+
+/* Fine is always menu-width. Full-width modes alone paint across viewport. */
 .site-content {
     padding-block: var(--public-content-block-inset);
     padding-inline: var(--public-content-inset);
@@ -594,6 +615,10 @@ body {
 
 .site-content--landscape-artwork .artwork-detail {
     width: min(100%, max(var(--public-art-max), min(960px, calc(var(--public-art-max) * 1.5))));
+}
+
+#content.site-content--landscape-artwork.site-content--full-surface {
+    width: 100%;
 }
 
 /* The image determines the width of the landscape media group. A block
@@ -622,8 +647,7 @@ body {
     width: min(100%, var(--public-art-max));
     margin-inline: auto;
 }
-/* The structural inner flow alone gets transient height/clip on navigation.
-   Outer #content remains overflow-visible for its original paper contours. */
+/* The structural inner flow owns content width while #content keeps its static paper contours. */
 .public-content-reveal {
     display: flow-root;
     min-width: 0;
@@ -1730,33 +1754,56 @@ html:has(.artwork-viewer[open]) {
     font-variant-caps: small-caps;
 }
 
-/* Three distinct paper transitions. Every variant is still available
- * with Title below the menu. Fine uses the shell-width menu border;
- * Full restores the former viewport-wide separator, without a gradient. */
+/* Dividers have distinct line widths and independently configurable color. */
 .site-header--divider-fine .site-navigation {
     box-shadow: none;
-    border-bottom: 1px solid var(--public-index-rule);
+    border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
 }
 
 .site-header--divider-fine + #content {
     margin-top: 0;
 }
 
-.site-header--divider-full {
-    border-bottom: 1px solid rgba(255, 255, 255, .68);
+.site-header--divider-full,
+.site-header--divider-full_gap {
+    border-bottom: 1px solid var(--public-separator-color, rgba(255, 255, 255, .68));
+}
+
+.site-header--divider-full + #content {
+    margin-top: 0;
+}
+
+/* The second full-width variant centers its one line in the real gap. */
+.site-header--divider-full_gap {
+    border-bottom: 0;
+}
+
+.site-header--divider-full_gap::after {
+    position: absolute;
+    top: calc(100% + var(--public-shell-gap));
+    right: 0;
+    left: 0;
+    height: 1px;
+    content: "";
+    pointer-events: none;
+    background: var(--public-separator-color, rgba(255, 255, 255, .68));
+}
+
+.site-header--divider-full_gap + #content {
+    margin-top: calc(2 * var(--public-shell-gap));
 }
 
 /* Aligned sheets use one uninterrupted vertical perimeter per side.
  * The separate mode retains the existing independent L-shaped contours. */
-.site-header--divider-fine:not(:has(+ #content.site-content--landscape-artwork)) .site-navigation::before,
-.site-header--divider-fine:not(:has(+ #content.site-content--landscape-artwork)) .site-navigation::after {
+.site-header--divider-fine:not(:has(+ #content:is(.site-content--landscape-artwork, .site-content--full-surface))) .site-navigation::before,
+.site-header--divider-fine:not(:has(+ #content:is(.site-content--landscape-artwork, .site-content--full-surface))) .site-navigation::after {
     top: 0;
     bottom: 0;
     border-bottom: 0;
 }
 
-.site-header--divider-fine + #content:not(.site-content--landscape-artwork)::before,
-.site-header--divider-fine + #content:not(.site-content--landscape-artwork)::after {
+.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork, .site-content--full-surface))::before,
+.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork, .site-content--full-surface))::after {
     top: 0;
     bottom: 0;
     width: 6px;
@@ -1765,11 +1812,11 @@ html:has(.artwork-viewer[open]) {
     border-bottom: 0;
 }
 
-.site-header--divider-fine + #content:not(.site-content--landscape-artwork)::before {
+.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork, .site-content--full-surface))::before {
     left: -6px;
 }
 
-.site-header--divider-fine + #content:not(.site-content--landscape-artwork)::after {
+.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork, .site-content--full-surface))::after {
     right: -6px;
 }
 
@@ -1780,17 +1827,21 @@ html:has(.artwork-viewer[open]) {
     margin-top: var(--public-shell-gap);
 }
 
-.site-header--name-inside {
+/* The same menu paper owns the name in both placements. Its wide,
+ * outside composition places the name beside the paper without changing
+ * its measured menu width; the narrow fallback moves it into the paper. */
+.site-header--name-inside,
+.site-header--name-outside.is-title-stacked {
     --public-title-default: var(--public-index-ink);
 }
 
-.site-header--name-inside .site-navigation {
+.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation {
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
     align-items: center;
 }
 
-.site-header--name-inside .site-navigation > h1 {
+.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation > h1 {
     z-index: 1;
     grid-column: 1;
     grid-row: 1;
@@ -1804,83 +1855,65 @@ html:has(.artwork-viewer[open]) {
     justify-content: flex-start;
 }
 
-.site-header--name-inside .site-title {
+.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-title {
     position: static;
     max-width: none;
 }
 
-.site-header--name-inside .site-navigation__rail,
-.site-header--name-inside .site-navigation__submenu {
+.site-header:is(.site-header--name-inside, .site-header--name-outside) :is(.site-navigation__rail, .site-navigation__submenu) {
     grid-column: 2;
     grid-row: 1;
 }
 
-/* Only the actual outside margin may hold the title. A ResizeObserver
- * compares that free width with the rendered name and stacks it if needed. */
-.site-header--name-outside > h1 {
+/* Only outside/roomy uses the exterior margin; no second background sheet. */
+.site-header--name-outside:not(.is-title-stacked) .site-navigation {
+    display: block;
+}
+
+.site-header--name-outside:not(.is-title-stacked) .site-navigation > h1 {
     position: absolute;
-    z-index: 2;
     top: 0;
-    right: 0;
+    bottom: 0;
     left: 0;
-    order: 0;
-    min-height: 0;
     height: 100%;
-    pointer-events: none;
+    transform: translateX(calc(-100% - 1.25rem));
 }
 
-.site-header--name-outside .site-title {
-    top: 50%;
-    right: auto;
-    bottom: auto;
-    left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
-    max-width: none;
-    transform: translate(calc(-100% - 1.25rem), -50%);
-    pointer-events: auto;
+.site-header--name-outside:not(.is-title-stacked) :is(.site-navigation__rail, .site-navigation__submenu) {
+    width: 100%;
 }
 
-/* Fallbacks are intrinsic, not based on the viewport's fixed 90rem/57rem
- * cutoffs. The outside title stays on the background, the inside one
- * stays on the menu paper, and the menu keeps the configured shell width. */
-.site-header--name-outside.is-title-stacked > h1 {
-    position: relative;
-    height: auto;
-    padding: .65rem 0;
-    pointer-events: auto;
-}
-
-.site-header--name-outside.is-title-stacked .site-title {
-    position: relative;
-    top: auto;
-    left: auto;
-    max-width: calc(100% - 2 * var(--public-gutter));
-    margin-left: var(--public-gutter);
-    transform: none;
-    white-space: normal;
-}
-
-.site-header--name-inside.is-title-stacked .site-navigation {
+/* Once either name no longer fits, the menu becomes a two-row sheet.
+ * Both the artist name and the navigation inherit the same Menu background
+ * and share exactly the same static outer frame. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-navigation {
     grid-template-columns: minmax(0, 1fr);
 }
 
-.site-header--name-inside.is-title-stacked .site-navigation > h1 {
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-navigation > h1 {
+    position: relative;
     grid-column: 1;
     grid-row: 1;
     width: 100%;
     min-height: 0;
     height: auto;
-    padding: .7rem max(var(--public-gutter), var(--public-content-inset));
-    white-space: normal;
+    padding: .45rem max(var(--public-gutter), var(--public-mobile-inset));
 }
 
-.site-header--name-inside.is-title-stacked .site-navigation__rail,
-.site-header--name-inside.is-title-stacked .site-navigation__submenu {
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-title {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked :is(.site-navigation__rail, .site-navigation__submenu) {
     grid-column: 1;
     grid-row: 2;
 }
 
-/* Pages that deliberately omit navigation still have a real title row. */
-.site-header--name-inside:not(:has(.site-navigation)) {
+/* Page without navigation still owns one independent real title row. */
+.site-header:not(:has(.site-navigation)) {
     --public-title-default: #e5e9e6;
 }
 

@@ -73,6 +73,11 @@ export function applyPublicLayoutFromMeta() {
     for (const [name, value] of Object.entries(declarations)) {
         if (value) rule.style.setProperty(name, value);
     }
+    if (config.dataset.publicLayoutDividerColor) {
+        rule.style.setProperty('--public-separator-color', config.dataset.publicLayoutDividerColor);
+    } else {
+        rule.style.removeProperty('--public-separator-color');
+    }
     if (config.dataset.publicLayoutTitleColor) {
         rule.style.setProperty('--public-title-color', config.dataset.publicLayoutTitleColor);
     } else {

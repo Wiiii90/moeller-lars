@@ -20,6 +20,7 @@ it('validates editable name positions, lettering, colors and sizes', function ()
         ->and(PublicAppearance::headerCaps('normal'))->toBe('normal')
         ->and(PublicAppearance::headerDivider(null))->toBe('fine')
         ->and(PublicAppearance::headerDivider('full'))->toBe('full')
+        ->and(PublicAppearance::headerDivider('full_gap'))->toBe('full_gap')
         ->and(PublicAppearance::headerDivider('separate'))->toBe('separate')
         ->and(PublicAppearance::normalizeTitleSize(null))->toBe(25)
         ->and(PublicAppearance::normalizeTitleSize('46'))->toBe(46)
@@ -53,20 +54,27 @@ it('publishes editable name presentation but never redirects a gallery parent to
         'header_name_caps' => 'normal',
         'header_name_color' => '#aabbcc',
         'header_name_size' => 46,
-        'header_divider_mode' => 'full',
+        'header_divider_mode' => 'full_gap',
+        'header_divider_color' => '#123456',
+        'header_name_auto_scale' => false,
+        'page_surface_full_width' => true,
     ]);
 
     $preview = $this->get('/preview/'.$parent->slug)->assertOk()->getContent();
     expect($preview)->toContain('site-header--name-outside')
         ->toContain('site-header--caps-normal')
-        ->toContain('site-header--divider-full')
+        ->toContain('site-header--divider-full_gap')
+        ->not->toContain('site-header--title-fluid')
+        ->toContain('site-content--full-surface')
+        ->toContain('data-public-layout-divider-color="#123456"')
         ->toContain('data-public-layout-title-color="#AABBCC"')
         ->toContain('data-public-layout-title-size="46px"');
 
     app(PublicationService::class)->commit($actor, 'Publish artist name settings and nested Gallery');
     $public = $this->get('/'.$parent->slug)->assertOk()->getContent();
     expect($public)->toContain('site-header--name-outside')
-        ->toContain('site-header--divider-full')
+        ->toContain('site-header--divider-full_gap')
+        ->toContain('site-content--full-surface')
         ->toContain('data-public-layout-title-color="#AABBCC"');
 });
 

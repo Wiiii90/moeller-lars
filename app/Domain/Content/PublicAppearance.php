@@ -28,6 +28,7 @@ final class PublicAppearance
     public const HEADER_DIVIDERS = [
         'fine' => 'Fine divider',
         'full' => 'Full-width divider',
+        'full_gap' => 'Full-width divider · separate surfaces',
         'separate' => 'Separate surfaces',
     ];
 

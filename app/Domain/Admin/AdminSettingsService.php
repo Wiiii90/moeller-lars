@@ -91,11 +91,19 @@ final class AdminSettingsService
         if (array_key_exists('header_divider_mode', $data)) {
             $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode']);
         }
+        if (array_key_exists('header_divider_color', $data)) {
+            $data['header_divider_color'] = PublicAppearance::normalizeColor($data['header_divider_color'], 'header_divider_color');
+        }
         if (array_key_exists('header_name_color', $data)) {
             $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'], 'header_name_color');
         }
         if (array_key_exists('header_name_size', $data)) {
             $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size']);
+        }
+        foreach (['header_name_auto_scale', 'page_surface_full_width'] as $toggle) {
+            if (array_key_exists($toggle, $data)) {
+                $data[$toggle] = (bool) $data[$toggle];
+            }
         }
         if (array_key_exists('public_page_width', $data)) {
             $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width']);

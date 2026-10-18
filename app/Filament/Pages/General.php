@@ -79,6 +79,9 @@ final class General extends Page
         'header_name_color',
         'header_name_size',
         'header_divider_mode',
+        'header_divider_color',
+        'header_name_auto_scale',
+        'page_surface_full_width',
         'public_page_width',
         'public_content_padding',
         'public_email',
@@ -112,6 +115,8 @@ final class General extends Page
 
     public string $previewDevice = 'desktop';
 
+    public string $appearanceTab = 'global';
+
     // Edit Action identity is the unique social platform, not a mutable row index.
     // Autosaved reordering must not redirect later field edits to another profile.
     public ?string $editingSocialPlatform = null;
@@ -141,6 +146,9 @@ final class General extends Page
         $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'] ?? null, 'header_name_color');
         $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size'] ?? null);
         $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode'] ?? null);
+        $data['header_divider_color'] = PublicAppearance::normalizeColor($data['header_divider_color'] ?? null, 'header_divider_color');
+        $data['header_name_auto_scale'] = $data['header_name_auto_scale'] === null ? true : (bool) $data['header_name_auto_scale'];
+        $data['page_surface_full_width'] = (bool) $data['page_surface_full_width'];
         $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width'] ?? null);
         $data['public_content_padding'] = PublicAppearance::normalizeContentPadding($data['public_content_padding'] ?? null);
 
@@ -216,36 +224,6 @@ final class General extends Page
                                 )
                                 ->afterStateUpdated(self::persist('favicon_media_asset_id')),
 
-                            Group::make([
-                                TextInput::make('public_page_width')
-                                    ->label('Page width')
-                                    ->numeric()
-                                    ->integer()
-                                    ->minValue(PublicAppearance::MIN_PAGE_WIDTH)
-                                    ->maxValue(PublicAppearance::MAX_PAGE_WIDTH)
-                                    ->step(1)
-                                    ->suffix('px')
-                                    ->required()
-                                    ->lazy()
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(self::persist('public_page_width')),
-                                TextInput::make('public_content_padding')
-                                    ->label('Content padding')
-                                    ->numeric()
-                                    ->integer()
-                                    ->minValue(PublicAppearance::MIN_CONTENT_PADDING)
-                                    ->maxValue(PublicAppearance::MAX_CONTENT_PADDING)
-                                    ->step(1)
-                                    ->suffix('px')
-                                    ->required()
-                                    ->lazy()
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(self::persist('public_content_padding')),
-                            ])
-                                ->columns(2)
-                                ->extraAttributes(['class' => 'general-layout-row'])
-                                ->columnSpanFull(),
-
                                 self::appearanceSurfaceControls('background', 'Background'),
                             ])
                                 ->columns(1)
@@ -297,6 +275,14 @@ final class General extends Page
                                     ->lazy()
                                     ->extraInputAttributes(self::commitOnEnterAttributes())
                                     ->afterStateUpdated(self::persist('header_name_size')),
+                                Select::make('header_name_auto_scale')
+                                    ->label('Responsive name size')
+                                    ->options(['1' => 'Allow reduction', '0' => 'Keep selected size'])
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
+                                    ->afterStateUpdated(self::persist('header_name_auto_scale')),
                             ])
                                 ->columns(2)
                                 ->columnSpanFull(),
@@ -321,6 +307,11 @@ final class General extends Page
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(self::persist('header_divider_mode')),
+                                AdminColorControl::make('header_divider_color', 'Divider color')
+                                    ->nullable()
+                                    ->live()
+                                    ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
+                                    ->afterStateUpdated(self::persist('header_divider_color')),
                                 self::appearanceSurfaceControls('menu_background', 'Menu'),
                             ])
                                 ->columns(1)
@@ -335,6 +326,44 @@ final class General extends Page
                                 ->columnSpanFull(),
 
                             Group::make([
+                            Group::make([
+                                TextInput::make('public_page_width')
+                                    ->label('Content width')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(PublicAppearance::MIN_PAGE_WIDTH)
+                                    ->maxValue(PublicAppearance::MAX_PAGE_WIDTH)
+                                    ->step(1)
+                                    ->suffix('px')
+                                    ->required()
+                                    ->lazy()
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('public_page_width')),
+                                TextInput::make('public_content_padding')
+                                    ->label('Content padding')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(PublicAppearance::MIN_CONTENT_PADDING)
+                                    ->maxValue(PublicAppearance::MAX_CONTENT_PADDING)
+                                    ->step(1)
+                                    ->suffix('px')
+                                    ->required()
+                                    ->lazy()
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('public_content_padding')),
+                            ])
+                                ->columns(2)
+                                ->extraAttributes(['class' => 'general-layout-row'])
+                                ->columnSpanFull(),
+
+                                Select::make('page_surface_full_width')
+                                    ->label('Page surface')
+                                    ->options(['0' => 'Constrained width', '1' => 'Full width'])
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
+                                    ->afterStateUpdated(self::persist('page_surface_full_width')),
                                 self::appearanceSurfaceControls('page_background', 'Page'),
                             ])
                                 ->columns(1)
@@ -363,7 +392,7 @@ final class General extends Page
                         ])
                             ->columns(1)
                             ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls',
-                                    'x-data' => "{ appearanceTab: 'global' }"])
+                                    'x-data' => "{ appearanceTab: \$wire.entangle('appearanceTab') }"])
                             ->columnSpanFull(),
 
                         View::make('filament.schemas.components.general-live-preview')
@@ -1074,6 +1103,9 @@ final class General extends Page
                 'header_name_color',
                 'header_name_size',
                 'header_divider_mode',
+                'header_divider_color',
+                'header_name_auto_scale',
+                'page_surface_full_width',
                 'public_page_width',
                 'public_content_padding',
             ]) !== []) {
@@ -1236,6 +1268,9 @@ final class General extends Page
             'header_name_color' => 'Artist name color',
             'header_name_size' => 'Artist name size',
             'header_divider_mode' => 'Menu and page divider',
+            'header_divider_color' => 'Divider color',
+            'header_name_auto_scale' => 'Responsive name size',
+            'page_surface_full_width' => 'Page surface width',
             'public_page_width' => 'Public page width',
             'public_content_padding' => 'Public content padding',
             'navigation_nesting_enabled' => 'Navigation nesting',
@@ -1251,7 +1286,7 @@ final class General extends Page
             'background_color', 'background_gradient_start', 'background_gradient_end',
             'menu_background_color', 'menu_background_gradient_start', 'menu_background_gradient_end',
             'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end',
-            'header_name_color' => $this->normalizeColorCandidate($value),
+            'header_name_color', 'header_divider_color' => $this->normalizeColorCandidate($value),
             'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
             'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops' =>
                 is_array($value) ? array_map(static fn (mixed $stop): mixed => is_array($stop)
@@ -1263,6 +1298,7 @@ final class General extends Page
             'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y',
             'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
                 is_numeric($value) ? (int) $value : $value,
+            'header_name_auto_scale', 'page_surface_full_width' => (bool) $value,
             'header_name_size', 'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,

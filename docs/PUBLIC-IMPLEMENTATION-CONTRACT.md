@@ -89,29 +89,56 @@ navigation, media or publication contracts.
 
 The public visual composition remains artist-specific. Menu and Content retain independently configured surfaces and their canonical folio contours. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls accents; no extra decorative DOM/pseudo surfaces may replace them. Main and child navigation retain the same cyclic complete-item window, measured rail, keyboard behavior and selected state.
 
-General → Appearance presents four compact stage tabs: **Global**
-(site icon, page width, content padding, outer background), **Title**
-(position, case, color, size), **Menu** (menu-to-page transition and the
-full menu surface gradient editor), **Page** (full content surface gradient
-editor). The tabs switch visibility only; all original Filament controls remain
-single owned/persisted fields and are not recreated by the tab view.
+General → Appearance has one schema-backed four-tab Stage. **Global** owns
+Site icon and the outer Background editor. **Title** owns position, lettering,
+color, size and optional responsive reduction. **Menu** owns the menu-to-page
+divider mode/color and the complete Menu solid/gradient editor. **Page** owns
+Content width (the existing `public_page_width` data field, also defining the
+shared Menu shell width), Content padding, the independent **Page surface**
+Constrained/Full width switch, and the complete Page gradient editor. There is
+one canonical Filament field per setting; hiding tabs does not unmount fields,
+change their persistence path or create competing color controls. The active
+tab is a Livewire property entangled to the Alpine stage, so ordinary autosaves
+and preview updates do not reset the selection; the tabs remain visible at the
+top of the scrollable controls pane.
 
-Global artist-name position is `inside`, `outside` or `below`, with
-normal lettering/small caps, an optional six-digit solid name color and numeric
-size of 16–64px (default 25px). An empty color uses contextual ink. Menu to
-page is one enum: **Fine divider** (visible 1px menu-width line, no gap
-between matching portrait sheets, continuous static side outlines);
-**Full-width divider** (1px browser-wide header line with independent
-Content margin, including the title-below mode); or **Separate surfaces**
-(the original independent spacing and contour pattern). When an Artwork
-page expands in landscape beyond the menu width, Fine divider keeps the
-natural independent sheet gap and original edges rather than creating
-disconnected 640px-to-1000px shoulders. Older `header_content_joined`
-data is migrated to the new single `header_divider_mode` setting.
-No decorative title gradient or browser-wide gradient border remains;
-Global/Menu/Page background gradients are independent and unchanged.
+A Full-width Page surface stretches the paper to the viewport, but its inner
+`.public-content-reveal` stays constrained to General's configured reading
+measure (`--public-art-max`) and naturally uses available width on phones.
+The Menu remains at the existing shell width. The landscape-artwork template
+retains its separately approved wider image measure, even on Full-width paper.
+No second arbitrary numeric width competes with Content width.
 
-`Inside menu` renders a single real title column followed by the existing navigation rail, not additional padding outside the configured page width. `Beside menu` keeps the centered Menu aligned with Content and positions the title in its real left exterior margin. The public header's single ResizeObserver owner (`public-header.js`) measures menu bounds and the rendered text width and stacks the title only when it cannot fit with the minimal usable cyclic rail; it does not use fixed 90rem/57rem breakpoints, timers, or an extra scroll container. Small viewports cap the name's effective font size to 10vw so even a large artist-selected title remains responsive. The measured state is disposed on public SPA navigation and initialized synchronously; subsequent font/width changes refit. `Below menu` retains the legacy separate name row. These compositions still require browser acceptance with real portrait artwork, the 640–1440px configured page width range, and narrow viewport sizes.
+Artist-name position is `inside`, `outside` or `below`, with normal
+lettering or small caps, an optional solid hex color and a base size of
+16–64px. The **Responsive name size** option (on by default) permits that
+size to decrease as the viewport narrows. When off, the artist-selected
+size stays in effect and the compact name may wrap. Both Inside and Beside
+render the name as part of the **same Menu paper element**; Beside places it
+in the real exterior margin only when sufficient space remains. If not, both
+compose the same upper-left title row inside the menu, with the Menu background
+and one perimeter around the entire menu and title. The single
+`public-header.js` measurement owner detects this fit; it does not introduce
+a separate title sheet, timer, new navigation, route or scroll container.
+Below preserves the separate historic title placement.
+
+**Menu to page** has four non-overlapping settings:
+- `fine`: one 1px **Menu-width** line, no top gap on equal-width pages;
+  continuous static side traces where the two sheets actually align.
+- `full`: one **viewport-width** line, no top gap.
+- `full_gap`: one viewport-width line **centered in the actual gap**
+  between separate Menu/Content surfaces.
+- `separate`: independent Menu/Content sheets with their normal gap and
+  **no** additional browser-wide line.
+
+Divider color is an optional six-digit hex override. Its empty state uses
+the contextual default for fine/full presentation; it never repurposes
+Menu/Page/Global background gradients. Landscape content can be wider than
+the Menu; fine mode deliberately restores their separate outer contours
+and paper gap instead of showing disconnected shoulders. Each rendering
+is owned by `public-presentation.css`, with no obsolete header border-image
+gradient and no duplicate divider paint owner. The four combinations should
+be checked in both preview and the direct browser before artist acceptance.
 
 ### Navigation-only groups and hover
 

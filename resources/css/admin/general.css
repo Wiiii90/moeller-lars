@@ -84,7 +84,8 @@
  * schema itself is the direct `.fi-sc` element in Filament 4. */
 .general-appearance-stage__controls > .fi-sc {
     align-content: start;
-    gap: var(--admin-section-gap) !important;
+    min-height: 100%;
+    gap: .25rem !important;
 }
 
 .general-stage-kicker,
@@ -101,6 +102,10 @@
 /* Dashboard-style stage tabs. The four panels own the original single
  * Filament fields, kept mounted while hidden so autosave/state survives switching. */
 .general-appearance-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--admin-bg, var(--admin-surface, #fff));
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: .25rem;
@@ -145,6 +150,7 @@
 
 .general-appearance-tab-panel {
     min-width: 0;
+    padding-top: var(--admin-section-gap);
 }
 
 .general-appearance-tab-panel[x-cloak] {
