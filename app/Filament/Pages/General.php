@@ -119,8 +119,6 @@ final class General extends Page
 
     public string $previewDevice = 'desktop';
 
-    public string $appearanceTab = 'global';
-
     // Edit Action identity is the unique social platform, not a mutable row index.
     // Autosaved reordering must not redirect later field edits to another profile.
     public ?string $editingSocialPlatform = null;
@@ -236,8 +234,11 @@ final class General extends Page
                                 self::appearanceSurfaceControls('background', 'Background'),
                             ])
                                 ->columns(1)
-                                ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'global')
-                                ->extraAttributes(['class' => 'admin-stage-panel-content'])
+                                ->extraAttributes([
+                                    'class' => 'admin-stage-panel-content',
+                                    'x-show' => "appearanceTab === 'global'",
+                                    'data-appearance-panel' => 'global',
+                                ])
                                 ->columnSpanFull(),
 
                             Group::make([
@@ -341,8 +342,12 @@ final class General extends Page
                                 ->columnSpanFull(),
                             ])
                                 ->columns(1)
-                                ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'title')
-                                ->extraAttributes(['class' => 'admin-stage-panel-content'])
+                                ->extraAttributes([
+                                    'class' => 'admin-stage-panel-content',
+                                    'x-show' => "appearanceTab === 'title'",
+                                    'x-cloak' => 'x-cloak',
+                                    'data-appearance-panel' => 'title',
+                                ])
                                 ->columnSpanFull(),
 
                             Group::make([
@@ -361,8 +366,12 @@ final class General extends Page
                                 self::appearanceSurfaceControls('menu_background', 'Menu'),
                             ])
                                 ->columns(1)
-                                ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'menu')
-                                ->extraAttributes(['class' => 'admin-stage-panel-content'])
+                                ->extraAttributes([
+                                    'class' => 'admin-stage-panel-content',
+                                    'x-show' => "appearanceTab === 'menu'",
+                                    'x-cloak' => 'x-cloak',
+                                    'data-appearance-panel' => 'menu',
+                                ])
                                 ->columnSpanFull(),
 
                             Group::make([
@@ -399,8 +408,12 @@ final class General extends Page
                                 self::appearanceSurfaceControls('page_background', 'Page'),
                             ])
                                 ->columns(1)
-                                ->visible(fn (self $livewire): bool => $livewire->appearanceTab === 'page')
-                                ->extraAttributes(['class' => 'admin-stage-panel-content'])
+                                ->extraAttributes([
+                                    'class' => 'admin-stage-panel-content',
+                                    'x-show' => "appearanceTab === 'page'",
+                                    'x-cloak' => 'x-cloak',
+                                    'data-appearance-panel' => 'page',
+                                ])
                                 ->columnSpanFull(),
 
                             Hidden::make('background_color'),
@@ -417,10 +430,7 @@ final class General extends Page
                             Hidden::make('page_background_gradient_end'),
                         ])
                             ->columns(1)
-                            ->extraAttributes([
-                                'class' => 'general-appearance-stage__controls admin-form-controls',
-                                'x-data' => "{ appearanceTab: \$wire.entangle('appearanceTab').live }",
-                            ])
+                            ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
                             ->columnSpanFull(),
 
                         View::make('filament.schemas.components.general-live-preview')
@@ -430,6 +440,8 @@ final class General extends Page
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
                             'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--split',
+                            'x-data' => "{ appearanceTab: 'global', moreSpace: false }",
+                            'x-bind:class' => "{ 'admin-visual-stage--expanded': moreSpace }",
                             'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
                             'aria-label' => 'General settings and live public preview',
                         ])

@@ -80,6 +80,46 @@
     overflow: hidden;
 }
 
+/* Expanding Appearance provides working room only to the editor. Preview
+ * retains its original viewport and scale while the canonical Stage divider
+ * automatically extends through the complete expanded height. */
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__preview {
+    height: var(--admin-visual-stage-height);
+    align-self: start;
+}
+
+/* Appearance borrows the shared Dashboard/Storage stage selector. Only its
+ * one extra tool rail (divider + expand control) is feature-specific. */
+.general-appearance-switcher {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 1px 2rem;
+    align-items: center;
+    column-gap: .45rem;
+    min-width: 0;
+}
+
+.general-appearance-switcher > .admin-stage-tabs {
+    align-self: stretch;
+}
+
+.general-appearance-switcher__divider {
+    display: block;
+    width: 1px;
+    height: 1.15rem;
+    background: var(--admin-line-strong);
+}
+
+.general-appearance-switcher__expand {
+    width: 2rem;
+    min-width: 2rem;
+    padding: 0;
+}
+
+.general-appearance-switcher__expand > span {
+    display: grid;
+    place-items: center;
+}
+
 /* Group::extraAttributes() lives on the Group wrapper; the embedded child
  * schema itself is the direct `.fi-sc` element in Filament 4. */
 .general-appearance-stage__controls > .fi-sc {

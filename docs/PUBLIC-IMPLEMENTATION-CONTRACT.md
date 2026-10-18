@@ -93,14 +93,26 @@ General → Appearance uses the established **shared admin-stage-tabs**
 and **admin-action** presentation from responsive Dashboard/Storage, via the
 existing `x-admin.stage-switcher` component's external-state variant. This is
 not a Filament Tabs/chips surface or an independent CSS button system. The
-single Livewire-selected panel has the same stage-to-controls spacing for
-all four views and no inactive Grid wrapper occupies visual space. All
-original Filament fields and their autosave methods remain singular.
+four panels are mounted once and switched **locally** with Alpine
+state on the owning General Stage. Selecting Global/Title/Menu/Page does not
+entangle a Livewire property, send a request, re-render the General page, or
+refresh the Live Preview. Each inactive Filament Group is hidden with its
+own x-show/x-cloak attributes instead of leaving an empty layout row.
+All original fields and their autosave methods remain singular.
+The small separated downward-arrow button next to the shared selector
+toggles the existing Stage between normal and **2×** its shared height.
+The central Stage divider extends accordingly, while the Live Preview
+retains its original bounded viewport/zoom and stays at the top right.
+Both tab selection and More/Less space remain presentation-only state.
 **Global** owns Site icon/Background; **Title** owns visibility (first),
 editable title text (100 characters), placement, case, color and sizes;
 **Menu** owns divider mode/color and Menu gradient; **Page** owns Content
-width, Content padding and Page Background. No parallel tab implementations
-or duplicate forms are retained.
+width, Content padding and Page Background. The iframe has one stable,
+nonce-safe direct preview URL. The existing explicit
+`general-appearance-updated` event remains the only automatic iframe
+refresh for actual persisted Appearance changes; zoom and device controls
+remain independent. No parallel tab implementations or duplicate forms
+are retained.
 
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width

@@ -14,7 +14,6 @@
             && $variant->getAttribute('state') === 'available';
     });
     $directPreviewUrl = route('preview.home');
-    $previewUrl = route('preview.home', ['appearance' => now()->timestamp]);
     $previewHost = parse_url($directPreviewUrl, PHP_URL_HOST) ?: 'preview';
     $previewPath = parse_url($directPreviewUrl, PHP_URL_PATH) ?: '/preview';
     $device = isset($generalPage) && $generalPage instanceof \App\Filament\Pages\General
@@ -383,7 +382,8 @@
             >
                 <iframe
                     x-ref="frame"
-                    src="{{ $previewUrl }}"
+                    wire:ignore
+                    src="{{ $directPreviewUrl }}"
                     title="Interactive live preview of the public homepage"
                     loading="eager"
                     tabindex="0"
