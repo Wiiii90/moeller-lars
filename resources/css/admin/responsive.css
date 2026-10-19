@@ -447,6 +447,17 @@
     .general-appearance-stage__preview{
         display: none !important;
     }
+
+    /* Expanded mode remains intrinsically sized after the preview is
+     * removed; the normal responsive 100% control height cannot override
+     * max-content sizing for the single overlapping-panel grid. */
+    .general-appearance-stage.admin-visual-stage--expanded{
+        grid-template-rows: max-content !important;
+    }
+
+    .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls{
+        height: auto !important;
+    }
 }
 
 @media (max-width: 63.99rem){

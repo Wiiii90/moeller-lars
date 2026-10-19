@@ -98,19 +98,26 @@ tabs. The General controls pane owns three explicitly sized rows: Appearance
 heading, fixed tabbar and one bounded scrolling field pane. This prevents
 the tabbar from absorbing the scrolling grid row.
 
-All four Appearance panels remain mounted as single Filament Groups, locally
-selected via Alpine (no Livewire tab writes). In the normal-height Stage,
-the active panel owns the scroll height and inactive panels are out of flow,
-visually hidden, inert and aria-hidden. **More space** switches the Stage
-to intrinsic CSS height with a minimum of the normal shared Stage height.
-All four panels then contribute to the same CSS Grid row's max-content
-height; their visibility, accessibility and selected state do not change.
-No duplicate measuring DOM, ResizeObserver, measurement loop, inline pixel
-height or timer participates in the height calculation. The height therefore
-adapts natively to field changes, font changes and available width. The
-canonical divider follows the expanded Stage while Live Preview keeps its
-original height, position, zoom and stable iframe URL. The arrow is icon-only,
-with More/Less space in its tooltip and accessible name.
+All four Appearance panels remain mounted as single Filament Groups and
+are selected locally via Alpine (no Livewire tab writes). The **Appearance
+scroll container itself** is the one CSS Grid owner. Because Filament inserts
+nested Group wrappers, only the wrapper ancestors of these panels are flattened
+with a scoped `:has(.general-appearance-stage__panel)` rule. The real panels
+therefore occupy the **same grid-area: 1 / 1**, instead of four sequential
+rows. In normal mode inactive panels are out of flow; in expanded mode all
+four contribute to that **single track's maximum height**, while remaining
+visually hidden, inert and aria-hidden. This gives precisely the height of
+the tallest tab plus the single fixed header/toolbar/insets, not the sum.
+The responsive General rule preserves this max-content sizing in narrow mode.
+No duplicated measurement DOM, ResizeObserver, JavaScript pixel height,
+animation, or timer is involved.
+
+The existing Stage divider follows the expanded Stage. Live Preview may
+stretch within that new space with a viewport-relative upper bound and its
+existing frame-fit/aspect-ratio logic; it is never remounted or given a new
+iframe URL for this purely local More/Less space action. The iframe refresh
+remains owned only by persisted Appearance-change events. The arrow is
+icon-only, with More/Less space in its tooltip and accessible name.
 
 **Global** owns Site icon/Background. **Title** uses paired rows for
 Title/visible Text, Position/Lettering, Alignment/Responsive alignment,

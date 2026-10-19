@@ -80,13 +80,21 @@
     align-self: start;
 }
 
+/* The Appearance field area itself is the ONE layout/scroll owner.
+ * Filament Group wrappers between this area and the four panels are
+ * flattened below; only real field descendants retain their native grids. */
 .general-appearance-stage__scroll {
+    display: grid;
     position: relative;
     box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: max-content;
+    align-content: start;
+    gap: 0;
+    min-width: 0;
     min-height: 0;
     height: 100%;
-    padding-top: var(--admin-section-gap);
-    padding-bottom: .2rem;
+    padding-block: var(--admin-section-gap) .2rem;
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: none;
@@ -98,26 +106,23 @@
     height: 0;
 }
 
-/* All four tabs occupy one grid cell. Inactive panels are still intrinsically
- * measurable without rendering, stacking or shifting extra layout rows. They
- * remain inert and hidden from accessibility through the Alpine attributes. */
-.general-appearance-stage__scroll > .fi-sc {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: max-content;
-    align-content: start;
-    min-height: 0;
-    gap: 0 !important;
+/* Filament inserts one or more wrappers around Group children. They are
+ * NOT grid items: flatten precisely those ancestors carrying the four
+ * appearance panels, leaving each panel's own field schema untouched. */
+.general-appearance-stage__scroll :not(.general-appearance-stage__panel):has(.general-appearance-stage__panel) {
+    display: contents !important;
 }
 
+/* All four panels occupy cell 1 / 1. In normal mode, inactive panels
+ * are outside the track. In expanded mode they contribute to its
+ * MAX-content size without occupying additional rows. */
 .general-appearance-stage__panel {
-    grid-column: 1;
-    grid-row: 1;
-    width: 100%;
-    min-width: 0;
+    grid-area: 1 / 1;
     position: absolute;
     inset: 0 auto auto 0;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
     visibility: hidden;
     pointer-events: none;
 }
@@ -140,9 +145,8 @@
     overflow: hidden;
 }
 
-/* Expanded Appearance is intrinsically sized. The four panels occupy
- * one grid cell; even hidden panels contribute to that cell's max-content
- * height. No JS measurements, inline height or ResizeObserver feedback. */
+/* The expanded Stage still has ONE grid track, measured by the tallest
+ * of the four overlapping panels. Never turn panels into sequential rows. */
 .general-appearance-stage.admin-visual-stage--expanded {
     height: max-content;
     min-height: var(--admin-visual-stage-height);
@@ -151,13 +155,13 @@
 
 .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls {
     height: auto !important;
-    grid-template-rows: max-content;
     align-self: start;
+    grid-template-rows: max-content;
 }
 
 .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls > .fi-sc {
     height: auto;
-    grid-template-rows: min-content min-content max-content;
+    grid-template-rows: auto auto max-content;
     align-content: start;
 }
 
@@ -171,12 +175,13 @@
     inset: auto;
 }
 
-/* Expanding Appearance provides working room only to the editor. Preview
- * retains its original viewport and scale while the canonical Stage divider
- * automatically extends through the complete expanded height. */
+/* Preview may grow with the available Stage height but must retain the
+ * original starting height, its edge spacing, and the fitted device aspect.
+ * Existing fitPreview() handles the new viewport size; no iframe reload. */
 .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__preview {
-    height: var(--admin-visual-stage-height);
-    align-self: start;
+    height: 100%;
+    max-height: max(var(--admin-visual-stage-height), 75vh);
+    align-self: stretch;
 }
 
 .general-stage-kicker,
