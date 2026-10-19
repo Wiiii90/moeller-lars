@@ -34,6 +34,7 @@ final class JournalMediaRenderer
         }
 
         $isVideo = MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'));
+        $posterUrl = $isVideo ? $this->media->posterUrlForAsset($asset) : null;
         $variant = $isVideo ? null : $this->media->thumbnailVariantForAsset($asset);
         $alt = $this->media->altTextForAsset($asset);
         $width = (int) ($variant?->getAttribute('width') ?? 0);
@@ -54,6 +55,7 @@ final class JournalMediaRenderer
         $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';
         $element = $isVideo
             ? '<video src="'.e($this->media->originalUrlForAsset($asset)).'" aria-label="'.e($alt).'"'
+                .($posterUrl !== null ? ' poster="'.e($posterUrl).'"' : '')
                 .' controls muted loop playsinline preload="metadata" data-public-loop-video></video>'
             : '<img src="'.e($this->media->variantUrl($variant)).'" alt="'.e($alt).'"'.$dimensions
                 .' loading="'.($priority ? 'eager' : 'lazy').'" decoding="async" fetchpriority="'.($priority ? 'high' : 'auto').'">';
