@@ -156,11 +156,11 @@ Die [Schema-Evolution](schema-evolution.md) erfasst nachgeprüfte Migrations-Eta
 
 ## Vollständige Anwendungs-PHP-Klassen und Imports
 
-Der [Quellenkatalog](php-source-audit.md) erfasst auf festem Git-Ref alle **248 PHP-Dateien** unter `app/` mit **214 Klassen**, **27 Traits**, **7 Enums** und **900** intern auflösbaren Importdeklarationen. Das [Moduldiagramm](generated/app-module-imports.mmd) zählt ausschließlich deklarative Imports, nicht Laufzeitaufrufe. Der native PHP-Generatorlauf bleibt ausstehend.
+Der [Quellenkatalog](php-source-audit.md) trennt nun das native Ergebnis auf `docs@8c9bd0a0` (**249 Typen: 218 Klassen, 24 Traits, 7 Enums; 896 interne Imports; 675 statische Beziehungen**) vom historischen 248/900-Importaudit. Die [Symbole](generated/php-symbols.json), [Beziehungen](generated/php-relationships.json) und [Modulbeziehungen](generated/module-relationships.mmd) sind nativ erzeugt und geprüft; der alte [Importmodulgraph](generated/app-module-imports.mmd) bleibt historische Referenz.
 
 ## 7. Nacharbeit, ohne Scheingenauigkeit
 
-- Vollständiger deterministischer PHP-Symbol- und Verwendungsgraph mit Quellpositionen.
+- Der native Symbol-/Strukturgraph ist erzeugt und geprüft; vollständige dynamische Verwendungsauflösung bleibt außerhalb seiner dokumentierten Syntaxgrenzen.
 - Tatsächliches DB-Schema aus einer isoliert migrierten PostgreSQL-Datenbank, einschließlich `public`/`committed`, Constraints und SQL-Views.
 - Eloquent-Relationen, Polymorphie, JSON-Strukturen, Domain-Enums und sämtliche Zustandsübergänge.
 - Filament-Resource-/Action-Register, Livewire-Events, Blade-/JS-Komponentengraph und externe Aufrufe.

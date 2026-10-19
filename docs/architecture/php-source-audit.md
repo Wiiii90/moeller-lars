@@ -1,4 +1,22 @@
-# Vollständige PHP-Quellenaufnahme: Anwendungs-Typen und Modulimporte
+# PHP-Quellenaufnahme: native Inventare und historische Modulimporte
+
+## Nativer Checkout-Abschluss (19.10.2026)
+
+**Quellenbasis:** `docs@8c9bd0a0f0fca46b1aa5637049372726d6970c4c`, PHP 8.3.33, vollständiger Worktree `P:\moeller-lars-docs`; keine neueren `dev`-Commits importiert. Inventory und Relations wurden nativ mit `--self-test`, `--write` und anschließend `--check` ausgeführt. [Prüfmatrix und Artefaktentscheidung](completion-criteria.md#technischer-source-only-abschluss-19102026) sind der Ergebnis-Owner.
+
+| Native Messung | Ergebnis |
+| --- | ---: |
+| App-PHP-Dateien / deklarierte Typen | 249 / 249 |
+| Klassen / Traits / Enums / Interfaces | 218 / 24 / 7 / 0 |
+| Modeldateien / Migrationsdateien | 26 / 76 |
+| Interne Dateiimportdeklarationen (Imports mit Präfix `App\`) | 896 |
+| Statische interne Beziehungen / übersprungene Dateien | 675 / 0 |
+
+[php-symbols.json](generated/php-symbols.json) enthält Deklarationen und Dateiimports; [php-relationships.json](generated/php-relationships.json) die Quellenpositionen expliziter Strukturbeziehungen. [module-relationships.mmd](generated/module-relationships.mmd) zeigt deren aggregierte Modulreferenzen. Die 675 Kanten verteilen sich auf **171 constructor_type, 48 eloquent_relation, 7 extends, 423 service_locator und 26 trait_use**. Die interne Importzahl ist aus den vom nativen Tokenizer gelieferten Dateiimports gezählt, keine Runtime-Aufrufzahl und keine neue Cross-Module-Zählung des alten Audits.
+
+Diese Inventare ersetzen das bisher fehlende native Extraktionsergebnis. Sie ersetzen **nicht** den unabhängigen historischen Regex-Audit: Der Relationsgraph enthält andere Kantentypen als ein Importgraph. Gleiches Modell-/Dateizählen beweist weder Framework-Discovery noch dynamische Aufrufkanten, DB-FKs oder vollständige Syntaxabdeckung. Es wurde kein Laravel-/DB-/Browserlauf ausgeführt.
+
+## Historischer vollständiger Importaudit
 
 **Git-Quellstand:** `ca162bcd5e5bbaf50bc6bdb9c6bc01640269d027` auf `docs`. [Maschinenlesbarer Quellkatalog](generated/app-source-audit.json), [Mermaid-Modulgraph](generated/app-module-imports.mmd).
 
@@ -46,7 +64,7 @@ Ein nachfolgender `dev`-Commit `2cd299354e42f565144b4b13752f6ec8e3192fe1` änder
 
 Die vier übrigen geänderten PHP-Dateien behalten ihre projektinternen Imports unverändert. Daher hat die aktuelle Quelle gegenüber dem bisher eingecheckten JSON **netto +1 Importdeklaration**: rechnerisch **901 interne Imports statt 900**, davon **718 modulübergreifende statt 717**. Die Anzahl der benannten Typen und PHP-Dateien bleibt unverändert, soweit diese geänderten Dateien und der verifizierte Change-Set reichen.
 
-**Wichtige Generationgrenze:** [`generated/app-source-audit.json`](generated/app-source-audit.json), [Modulimportgraph](generated/app-module-imports.mmd) und [20 Klassendiagramme](class-import-diagrams.md) haben weiterhin **900/717** aus ihrer ursprünglichen `source_ref` und sind auf diesem neuen Stand **für Importkanten nicht mehr vollständig aktuell**. Sie wurden bewusst nicht manuell auf eine angeblich nativ regenerierte Version umetikettiert. Der Delta ist ein überprüfbarer Ergänzungsbeleg; ein echter vollständiger Generator-/Diagrammlauf bleibt offen.
+**Wichtige Generationgrenze:** [`generated/app-source-audit.json`](generated/app-source-audit.json), [Modulimportgraph](generated/app-module-imports.mmd) und [20 Klassendiagramme](class-import-diagrams.md) haben weiterhin **900/717** aus ihrer ursprünglichen `source_ref` und sind auf diesem neuen Stand **für Importkanten nicht mehr vollständig aktuell**. Sie wurden bewusst nicht manuell auf eine angeblich nativ regenerierte Version umetikettiert. Der Delta ist ein überprüfbarer Ergänzungsbeleg; die spätere native Extraktion ist oben separat ausgewiesen und ersetzt diesen historischen Importstand nicht.
 
 ## Neuerer Git-Tree-Abgleich: Custom-Page-Child-Cleanup
 
@@ -58,7 +76,7 @@ Die vier übrigen geänderten PHP-Dateien behalten ihre projektinternen Imports 
 
 `CustomPageWorkspace` bindet aktuell **sieben** interne eigene Traits direkt ein, nicht mehr zehn. `app/Filament/Pages/Concerns/` enthält insgesamt **23** PHP-Dateien statt 26. Das ist ein reproduzierbarer **Pfadzähl-/Source-Delta** gegen den eingecheckten Git-Tree; die drei gelöschten Dateien waren Traits im vorherigen Inventar. Bei sonst gleichbleibenden benannten Typen ergibt sich damit rechnerisch ein Typbestand von **214 Klassen / 24 Traits / 7 Enums** — ausdrücklich **keine erneute unabhängige Vollinventarisierung aller 245 Deklarationen**.
 
-Die früheren **900/717** Importzahlen des generierten Originalkatalogs und der oben ausgewiesene Zwischenstand **901/718** gelten nur für ihre jeweils geprüften historischen Source-Refs. Durch die spätere umfangreiche Filament-/Custom-Page-Refaktorierung wurden ganze Trait-Dateien und Importdeklarationen entfernt sowie weitere PHP-Dateien verändert. Die **aktuelle Gesamtsumme der Imports ist hier nicht neu gezählt**. Insbesondere darf weder der 900er Graph noch die frühere Rechnung 901/718 als aktuelle Quelle ausgegeben werden. Nötig bleibt der vollständige native `--write`-/`--check`-Generatorlauf auf einem aktuellen vollständigen Checkout; bis dahin dienen die ursprünglichen JSON-/Mermaid-Dateien ausschließlich als **eingefrorener Vergleichsstand**.
+Die früheren **900/717** Importzahlen des generierten Originalkatalogs und der oben ausgewiesene Zwischenstand **901/718** gelten nur für ihre jeweils geprüften historischen Source-Refs. Durch die spätere umfangreiche Filament-/Custom-Page-Refaktorierung wurden ganze Trait-Dateien und Importdeklarationen entfernt sowie weitere PHP-Dateien verändert. Für diesen historischen Delta wurde die **damalige Gesamtsumme nicht neu gezählt**; die native Messung oben ist ein eigener Beleg. Insbesondere darf weder der 900er Graph noch die frühere Rechnung 901/718 als aktuelle Quelle ausgegeben werden. Der oben belegte native Lauf schließt die Extraktionslücke für `docs@8c9bd0a0`. Die ursprünglichen JSON-/Mermaid-Importdateien bleiben unabhängig davon **eingefrorener Vergleichsstand**; ihre historische Cross-Module-Summe wird nicht auf die neue Quelle übertragen.
 
 ## Modulübergreifende Imports
 
@@ -92,6 +110,6 @@ Die [Importgrenzen-Analyse](import-boundaries.md) beschreibt die stark zusammenh
 
 ## Abgrenzung und weitere Verifikation
 
-Die lokale Containerumgebung hat PHP 8.4, kann das private GitHub-Repository aber mangels GitHub-DNS/Netzwerkzugriff nicht direkt klonen. Ein **vollständiger nativer Durchlauf** von `generate-architecture-inventory.php` und `generate-architecture-relations.php` wurde **nicht durchgeführt**; deren PHP-Tokenizer-Semantik kann von der hier verwendeten unabhängigen Regex-Quellenaufnahme abweichen. Auch `::class`-Hinweise werden deshalb lediglich roh gesammelt und **nicht** als bewiesene Kanten interpretiert. Framework-/Vendor-Typen, JSON-Medienreferenzen, Livewire-Events und PostgreSQL-FKs werden in ihren eigenen Katalogen behandelt.
+Die nativen Generatoren wurden jetzt auf dem vollständigen Windows-Checkout mit PHP 8.3.33 ausgeführt. Tokenizer und unabhängiger historischer Regex-Audit bleiben unterschiedliche Extraktionsmodelle; rohe `::class`-Hinweise aus dem historischen JSON sind keine bewiesenen Kanten. Framework-/Vendor-Typen, JSON-Medienreferenzen, Livewire-Events und PostgreSQL-FKs gehören in ihre eigenen Kataloge.
 
-**Nächste Arbeit:** Differenz- und Randfallprüfung des PHP-Tokenizers, Abdeckung veränderter `dev`-Dateien, kanonische Service- und Provider-Aufrufstellen. Danach das echte physische Datenbankschema ausschließlich auf einer migrierten Wegwerf-Datenbank prüfen.
+**Verbleibende Grenze:** gezielte Source-Triage bei relevanten neuen Änderungen; dynamische Service-/Provider-Auflösung und physisches Schema nur in einer separat autorisierten sicheren Runtime-/Wegwerf-DB-Prüfung.

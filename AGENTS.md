@@ -142,8 +142,11 @@ independent suites, testing worktrees or testing-to-dev handoffs.
 - Import coherent relevant changes from `dev` onto `docs` only with a real,
   conflict-reviewed **two-parent merge** preserving both histories; do not
   rewrite either branch or import each new commit by reflex.
-- Do not create additional branches/worktrees/PRs. Do not merge `docs` to
-  `dev` or `main` without a separate explicit authorization.
+- The user authorized one local documentation worktree at
+  `P:\moeller-lars-docs` on the existing `docs` branch for the source-only
+  documentation closeout. Reuse it; leave `P:\moeller-lars` and the existing
+  testing checkout untouched. No other branches/worktrees/PRs are authorized.
+  Do not merge `docs` to `dev` or `main` without separate authorization.
 - The existing prohibition on CI interaction remains absolute for this workstream.
   Source-only local checks are not CI, but never execute a checker that touches
   a persistent Preview/Production database or assumes a safe schema by filename.
@@ -152,7 +155,7 @@ independent suites, testing worktrees or testing-to-dev handoffs.
   dynamic edges.
 
 The following direct-`dev` instructions govern **direct application development
-on `dev`**, not these two explicitly approved special workstreams.
+on `dev`**, not the expressly approved documentation workstream.
 
 ## Direct-`dev` collaboration (2026-10-12)
 
@@ -196,7 +199,7 @@ historical or optional **future** modes, not permission to override this direct
 
 ## Current collaboration model
 
-Application and artist-facing interface work follows the user's **direct-`dev`** permissions, with file ownership and HEAD reconciliation across simultaneous chats. Admin and Public share existing Domain, Media, Publication, Routing and Rich Text services; one surface must not create a second service implementation to bypass the other. `docs` and `testing` are the two explicit long-lived branch exceptions and have separate owners. Browser acceptance comes from the user's actual candidate review, not from source checks.
+Application and artist-facing interface work follows the user's **direct-`dev`** permissions, with file ownership and HEAD reconciliation across simultaneous chats. Admin and Public share existing Domain, Media, Publication, Routing and Rich Text services; one surface must not create a second service implementation to bypass the other. `docs` is the explicit long-lived documentation exception; the former testing workstream is integrated into `dev`. Browser acceptance comes from the user's actual candidate review, not from source checks.
 
 Publishing to `main`, launching CI or deployment are **not** part of this workflow. Any later release requires an explicit separate authorization under [RELEASE.md](docs/RELEASE.md).
 

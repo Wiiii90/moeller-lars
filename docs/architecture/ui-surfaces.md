@@ -1,6 +1,6 @@
 # Filament- und Livewire-Komposition
 
-**Eingefrorener Generator-Quellstand:** `dev@337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`, damals 9 Filament Pages, 26 Concern-Dateien und 2 Livewire-Komponenten. **Separater aktueller Git-Tree-Abgleich:** `docs@597559f93bc0f5031273291d6a0f12bf644a75e4` hat weiterhin 9 Pages und 2 Komponenten, aber nur noch **23 Concern-Dateien**, nachdem drei veraltete Custom-Page-Child-Owner entfernt wurden. Diese aktuellen Zahlen sind ein gezielter Pfad-/Trait-Use-Delta, **keine neu generierte vollständige Action-Inventur** und kein Nachweis dynamisch registrierter Routen.
+**Nativer Generator-Quellstand:** `docs@8c9bd0a0f0fca46b1aa5637049372726d6970c4c`, ausgeführt am 19.10.2026 mit PHP 8.3.33: **9 Pages, 23 Concerns, 2 Livewire-Komponenten**, insgesamt 34 Einheiten. `--write` und `--check` bestätigen 23 interne Trait-Kanten und 73 literale Actions; dynamische Registrierungen bleiben außerhalb der Extraktion. Später auf `dev` gelesene fachliche Traces behalten ihre separat angegebenen SHAs.
 
 ## Pages und tatsächliche Slug-Deklarationen
 
@@ -11,7 +11,7 @@
 | [SitePages](../../app/Filament/Pages/SitePages.php) | `pages` | besitzt Trait `ManagesSitePageDialogs` |
 | [HomePresentation](../../app/Filament/Pages/HomePresentation.php) | `pages/home` | nutzt `HomePresentationChildren`, zusätzlich `WithFileUploads` von Livewire |
 | [GalleryWorkspace](../../app/Filament/Pages/GalleryWorkspace.php) | `pages/gallery/{gallery}` | nutzt zehn interne `GalleryWorkspace*`-Concerns |
-| [CustomPageWorkspace](../../app/Filament/Pages/CustomPageWorkspace.php) | `pages/custom/{section}` | nutzt aktuell **sieben** interne `CustomPageWorkspace*`-Concerns (eingefrorener Katalog: zehn) |
+| [CustomPageWorkspace](../../app/Filament/Pages/CustomPageWorkspace.php) | `pages/custom/{section}` | nutzt aktuell **sieben** interne `CustomPageWorkspace*`-Concerns (historischer Vorgängerkatalog: zehn) |
 | [JournalWorkspace](../../app/Filament/Pages/JournalWorkspace.php) | `pages/journal/{section}` | `getView()` wählt View dynamisch anhand des Journal-Templates |
 | [Activity](../../app/Filament/Pages/Activity.php) | kein explizites `$slug` | Undo, Restore und Revert im Workspace |
 | [Analytics](../../app/Filament/Pages/Analytics.php) | kein explizites `$slug` | eigene Reporting- und Filterlogik |
@@ -35,24 +35,13 @@ flowchart TD
     Livewire --> Storage["SiteStorageReclaimControl"]
 ```
 
-Der **eingefrorene generierte** Graph weist 22 direkte Page-zu-Concern-Kanten und vier Concern-zu-Concern-Kanten aus. Der **aktuelle** Custom-Page-Quelltext nutzt drei Traits weniger (sieben statt zehn); damit ergeben sich gegenüber dem alten Graph **19 direkte Page-zu-Concern-Kanten**, sofern die übrigen damals erfassten 12 nicht veränderten Page-Trait-Uses gleich bleiben. Dies ist ein quellengeprüfter begrenzter Delta, **kein vollständiger nativer Regenerierungslauf**. Letztere kommen von `ManagesSitePageDialogs`, das die vier weiteren `ManagesSitePage*`-Traits nutzt. Trait-Use ist eine belegte PHP-Strukturbeziehung, noch kein Runtime-Aufruf. Fachliche Methode ≠ Filament-Action ≠ HTML-/Livewire-Event.
+Der nativ regenerierte Graph enthält **19 direkte Page-zu-Concern- und vier Concern-zu-Concern-Kanten**. Die vier Concern-Kanten stammen von `ManagesSitePageDialogs`. Trait-Use ist eine PHP-Strukturbeziehung, kein Runtime-Aufruf. Fachliche Methode ≠ Filament-Action ≠ HTML-/Livewire-Event.
 
 ### Entfallene Custom-Page-Child-Owner
 
 `CustomPageWorkspaceChildOrdering.php`,
 `CustomPageWorkspaceChildProjection.php` und
-`CustomPageWorkspaceListContactActions.php` wurden im aktuellen
-`dev`-Quellpfad **gelöscht**, ebenso ihre Trait-Nutzung und die
-separaten Child-Selection-/Action-Routen. Die **Custom-Page-Tabelle**
-stellt nur noch Elternkomponenten dar; die List-Einträge und Contact-
-Kindoptionen werden über deren bestehende Parent-Edit-Actions
-konfiguriert. Home zeigt weiterhin eine eigene Contact-Child-
-Präsentation. Der archivierte
-[JSON-UI-Katalog](generated/ui-surfaces.json) und sein
-[Mermaid-Graph](generated/ui-composition.mmd) enthalten
-**absichtlich noch den historischen Stand** und sind als Generator-
-Outputs bei der nächsten vollständigen `--write/--check`-Ausführung
-mit dem aktuellen Tree neu zu erstellen, nicht von Hand zu patchen.
+`CustomPageWorkspaceListContactActions.php` wurden beim früheren Child-Cleanup gelöscht, ebenso ihre Trait-Nutzung und die damaligen separaten Child-Selection-/Action-Routen. Die damalige Parent-only-Tabelle und List-/Contact-Child-Konfiguration sind historische Refactor-Provenienz, keine Beschreibung des später wieder erweiterten dekorativen Image-Child-Modells. Dessen aktuelle, separat versionierte Pfade stehen weiter unten. Der [JSON-UI-Katalog](generated/ui-surfaces.json) und [Mermaid-Graph](generated/ui-composition.mmd) wurden nun nativ regeneriert; die drei entfernten Traits sind darin nicht mehr enthalten. Die spätere dekorative Image-Child-Fachentwicklung wird in den folgenden getrennt versionierten Source-Traces beschrieben.
 
 ## Eigenständige Livewire-Komponenten
 
@@ -70,10 +59,7 @@ php scripts/generate-architecture-ui-surfaces.php --check
 
 Ergebnis: `generated/ui-surfaces.json` mit Klassen, direktem Trait-Use, deklarierten öffentlichen Methoden, statisch benannten `Action::make('...')`-Actions sowie Quellzeilen; `generated/ui-composition.mmd` zeigt Page-zu-Concern-Traits. Der Extraktor ist **bewusst syntaktisch**, erkennt keine berechneten Action-Namen, vererbten Methoden, Dialog-Closures oder JavaScript-Interaktionen vollständig.
 
-**Eingecheckte Ergebnisse:** [JSON-Gesamtkatalog](generated/ui-surfaces.json) mit **37 Einheiten**, **26** internen Trait-Kanten und **72** statisch benannten `Action::make('...')`-Fundstellen; [Mermaid-Kompositionsgraph](generated/ui-composition.mmd). Beide wurden aus den 37 GitHub-Quelldateien mit den angegebenen Extraktionsregeln zusammengestellt, einschließlich Originalpfaden und Zeilen. **Versionierungsgrenze:** Diese 72/26/37-Zahlen beschreiben ausschließlich den ausdrücklich oben ausgewiesenen **eingefrorenen Quellstand `dev@337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7`**. Die inzwischen auf `docs` aufgenommenen späteren Gallery-/Journal-Edit-Header-Actions (u. a. `AdminDialog::headerAction()`), Shared-Artwork-Felder und Dialog-Refactors werden durch die alte `literal_actions`-Zählung **nicht aktuell nachgezählt**; dynamisch zusammengesetzte Header-Rollen wurden vom Extraktor ohnehin nicht vollständig erfasst. Der neue Katalog wird erst durch einen ausdrücklich vollständig ausgeführten `generate-architecture-ui-surfaces.php --write`/`--check`-Lauf auf dem realen Checkout verifiziert, nicht durch bloßes Umetikettieren der bestehenden JSON-/Mermaid-Dateien.
-
-**Verifizierung und Einschränkung:** PHP 8.4-Syntax, `--write`, `--check` und ein absichtlich veralteter Action-Katalog wurden in einem isolierten Fixture tatsächlich geprüft. Zusätzlich wurde der Typkörper-Parser gegen `::class` in einem Trait und verschachtelte Trait-Nutzung geprüft und repariert. **Ein nativer Lauf des PHP-Generators auf einem vollständigen Checkout aller 37 Originaldateien steht noch aus.** Der eingecheckte Gesamtkatalog ist daher ein remote extrahiertes Quelleninventar, nicht ein bereits erfolgreich ausgeführter Laravel-/PHP-Full-Repo-Check.
-
+**Eingecheckte Ergebnisse:** [JSON](generated/ui-surfaces.json) und [Mermaid](generated/ui-composition.mmd) sind auf dem oben genannten Checkout nativ regeneriert und geprüft: **34 Einheiten, 23 interne Trait-Kanten und 73 literale Actions**. Die obsolete 37/26/72-Version wurde ersetzt. Geprüfter Diff: drei entfernte Traits, veränderte Methoden-/Action-Fundstellen und Quellzeilen. Berechnete Header-Actions, vererbte Methoden, Eventpfade und Laufzeitverhalten werden dadurch weiterhin nicht vollständig erfasst. Kein Laravel-/Livewire-/Browserlauf.
 
 ## Pages → Edit: Titel, Navigation Label und No-op (statischer Negativpfad)
 
@@ -300,4 +286,3 @@ unabhängigen lokalen Sonderlösungen.
 4. **General-Social-Concurrency auf aktuellem `dev`:** zwei Editor-Sessions mit unterschiedlichen `social_links`-Vorversionen; die erwartete Liste muss beim Service-`lockForUpdate` abgeglichen werden. Der dritte `expected`-Parameter ist im **aktuellen** `AdminSettingsService` vorhanden. Nicht den früheren Legacy-Quellstand als aktuelle fehlende Funktion dokumentieren.
 
 **Source-Einordnung:** Diese neun Familien besitzen jetzt benannte Eintritte, Persistenz-Owner, Success-/No-op-Guards, domänenabhängige Transaktionsgrenzen und benannte spätere Negativfälle. Der **fachliche Breiten-Audit ist abgeschlossen**, keine neuen Backend-/CI-/Playwright-/DB-Läufe. Ein vollständiger dynamisch aufgelöster Filament-/Livewire-Action- und Callgraph mit allen möglichen Framework-Callback-Registrierungen ist **nicht** durch die neun Quell-Ausschnitte bewiesen und gehört, falls weiterhin gewünscht, in die spätere sichere Generator-/Runtime-Prüfung. Die ursprünglich auf getrennten Branches geschriebenen Tests sind jetzt **eine** aktuelle `dev`-Teststruktur; die selektive [Assertion-Matrix](completion-criteria.md#testabdeckung-eine-dev-testsuite-authored-assertions) hält die offenen Runtime-/Concurrency-Fälle ohne paralleles Testsuite-System fest.
-

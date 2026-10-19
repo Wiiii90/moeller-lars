@@ -270,7 +270,7 @@
             "kind": "belongsTo",
             "target": "SiteSection",
             "path": "app/Models/CustomPageSetting.php",
-            "line": 51
+            "line": 62
         },
         {
             "model": "CvEntry",
@@ -398,7 +398,7 @@
             "kind": "belongsTo",
             "target": "MediaAsset",
             "path": "app/Models/PublicContentSetting.php",
-            "line": 111
+            "line": 114
         },
         {
             "model": "PublicationCheckpoint",
@@ -454,7 +454,7 @@
             "kind": "belongsTo",
             "target": "ArtworkCategory",
             "path": "app/Models/SiteSection.php",
-            "line": 206
+            "line": 209
         },
         {
             "model": "SiteSection",
@@ -462,7 +462,7 @@
             "kind": "hasMany",
             "target": "SiteSection",
             "path": "app/Models/SiteSection.php",
-            "line": 201
+            "line": 204
         },
         {
             "model": "SiteSection",
@@ -470,7 +470,7 @@
             "kind": "hasOne",
             "target": "CustomPageSetting",
             "path": "app/Models/SiteSection.php",
-            "line": 211
+            "line": 214
         },
         {
             "model": "SiteSection",
@@ -478,7 +478,7 @@
             "kind": "hasOne",
             "target": "JournalSetting",
             "path": "app/Models/SiteSection.php",
-            "line": 216
+            "line": 219
         },
         {
             "model": "SiteSection",
@@ -486,7 +486,7 @@
             "kind": "belongsTo",
             "target": "SiteSection",
             "path": "app/Models/SiteSection.php",
-            "line": 196
+            "line": 199
         },
         {
             "model": "User",

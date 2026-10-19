@@ -2,9 +2,9 @@
 
 The documents in this directory are split by purpose so current application contracts are not mixed with legacy investigation notes or unfinished-work diaries.
 
-## Architecture inventory (in progress)
+## Architecture inventory
 
-- [Architecture source inventory and models](architecture/README.md) — evidence-backed, source-versioned inventory with concrete Publication and Exhibition Map flows; coverage gaps are explicit. This is a staged replacement, not a second normative source of contracts.
+- [Architecture source inventory and models](architecture/README.md) — source-versioned architecture with native source-only checks and generators technically closed out on 19 October 2026; historical inventories and remaining product/runtime/DB checks are explicit. Contracts retain their canonical owners.
 
 ## Task-specific UI entrypoints
 
@@ -15,7 +15,7 @@ The documents in this directory are split by purpose so current application cont
 
 Run `php scripts/check-documentation-links.php --check` from the repository root to check relative Markdown file links and heading fragments without Laravel, a database, CI or network access. `--summary` reports counts without failing and `--self-test` runs isolated parser fixtures. The scanner covers simple inline Markdown links and reference definitions, ignoring fenced/inline code and non-local URI schemes; HTML anchors, dynamic MDX, multiline destinations and arbitrary complex CommonMark are **outside its contract**.
 
-The [architecture completion report](architecture/completion-criteria.md#abnahmekriterien-für-das-ende-der-inhaltlichen-arbeit) records the newer **GitHub-tree source audit on `docs@8b3bc15b`**: **77 Markdown files, 1,008 local relative destinations and 107 heading references (52 distinct target/fragment pairs)**. No relative target was missing; two obsolete media heading fragments were corrected on `docs@9d5233a4`. This independent source inspection is **not** a native execution of the PHP link checker or a full CommonMark/HTML/external-link audit. The earlier PHP 8.4 isolated fixture checks remain prior evidence, not an equivalent current full checkout run.
+The [technical completion report](architecture/completion-criteria.md#technischer-source-only-abschluss-19102026) records the actual PHP 8.3.33 checkout run on `docs@8c9bd0a0`: the initial native scan found 77 Markdown files, 1,183 local destinations, 198 heading references and two obsolete anchors. Those links were corrected; the final native `--check` passes on the updated documentation. Earlier GitHub-tree counts remain historical evidence, not current measurements. External URLs, HTML/MDX and unsupported CommonMark forms remain outside this checker.
 
 ## Documentation method
 
@@ -28,7 +28,7 @@ The [architecture completion report](architecture/completion-criteria.md#abnahme
 
 ## Branch ownership for documentation
 
-The **`docs`** branch remains the explicitly authorized documentation-only exception to ordinary direct-`dev` work; `main` remains the release branch. The former `testing` workstream has been **integrated into `dev`** (`dev@25bc40144`), and there is **one active suite**, not two independently managed test branches. Read current `dev` source/tests, write **only `docs`**, and import coherent dev batches only with conflict-reviewed **genuine two-parent merges**. This does not authorize new branches/worktrees or CI interaction. See [AGENTS.md](../AGENTS.md).
+The **`docs`** branch remains the explicitly authorized documentation-only exception to ordinary direct-`dev` work; `main` remains the release branch. The former `testing` workstream has been **integrated into `dev`** (`dev@25bc40144`), and there is **one active suite**, not two independently managed test branches. Read current `dev` source/tests, write **only `docs`**, and import coherent dev batches only with conflict-reviewed **genuine two-parent merges**. The user specifically authorized the existing-branch worktree `P:\moeller-lars-docs` for this source-only closeout; reuse it. No other branches/worktrees, automatic dev import or CI interaction are authorized. See [AGENTS.md](../AGENTS.md).
 
 ## Normative ownership and conflict resolution
 

@@ -1,35 +1,32 @@
 %% Direct Page/Concern -> Concern trait use; not HTTP or runtime call paths.
 flowchart LR
     U1["CustomPageWorkspace"]
-    U2["CustomPageWorkspaceChildOrdering"]
-    U3["CustomPageWorkspaceChildProjection"]
-    U4["CustomPageWorkspaceComponentActions"]
-    U5["CustomPageWorkspaceForms"]
-    U6["CustomPageWorkspaceLifecycle"]
-    U7["CustomPageWorkspaceListContactActions"]
-    U8["CustomPageWorkspacePresentationHelpers"]
-    U9["CustomPageWorkspaceProjectionState"]
-    U10["CustomPageWorkspaceSecondaryForms"]
-    U11["CustomPageWorkspaceTargetHelpers"]
-    U12["GalleryWorkspace"]
-    U13["GalleryWorkspaceArtworkActions"]
-    U14["GalleryWorkspaceArtworkDialogs"]
-    U15["GalleryWorkspaceBatchActions"]
-    U16["GalleryWorkspaceDataProjection"]
-    U17["GalleryWorkspaceDirectUpload"]
-    U18["GalleryWorkspaceFormSupport"]
-    U19["GalleryWorkspaceMoveActions"]
-    U20["GalleryWorkspaceReadinessSupport"]
-    U21["GalleryWorkspaceSelectionSupport"]
-    U22["GalleryWorkspaceUploadSettings"]
-    U23["HomePresentation"]
-    U24["HomePresentationChildren"]
-    U25["ManagesHomePagePresentation"]
-    U26["ManagesSitePageCreateDialog"]
-    U27["ManagesSitePageDialogs"]
-    U28["ManagesSitePageEditDialog"]
-    U29["ManagesSitePagesSettings"]
-    U30["SitePages"]
+    U2["CustomPageWorkspaceComponentActions"]
+    U3["CustomPageWorkspaceForms"]
+    U4["CustomPageWorkspaceLifecycle"]
+    U5["CustomPageWorkspacePresentationHelpers"]
+    U6["CustomPageWorkspaceProjectionState"]
+    U7["CustomPageWorkspaceSecondaryForms"]
+    U8["CustomPageWorkspaceTargetHelpers"]
+    U9["GalleryWorkspace"]
+    U10["GalleryWorkspaceArtworkActions"]
+    U11["GalleryWorkspaceArtworkDialogs"]
+    U12["GalleryWorkspaceBatchActions"]
+    U13["GalleryWorkspaceDataProjection"]
+    U14["GalleryWorkspaceDirectUpload"]
+    U15["GalleryWorkspaceFormSupport"]
+    U16["GalleryWorkspaceMoveActions"]
+    U17["GalleryWorkspaceReadinessSupport"]
+    U18["GalleryWorkspaceSelectionSupport"]
+    U19["GalleryWorkspaceUploadSettings"]
+    U20["HomePresentation"]
+    U21["HomePresentationChildren"]
+    U22["ManagesHomePagePresentation"]
+    U23["ManagesSitePageCreateDialog"]
+    U24["ManagesSitePageDialogs"]
+    U25["ManagesSitePageEditDialog"]
+    U26["ManagesSitePagesSettings"]
+    U27["SitePages"]
     U1 -->|trait| U2
     U1 -->|trait| U3
     U1 -->|trait| U4
@@ -37,22 +34,19 @@ flowchart LR
     U1 -->|trait| U6
     U1 -->|trait| U7
     U1 -->|trait| U8
-    U1 -->|trait| U9
-    U1 -->|trait| U10
-    U1 -->|trait| U11
-    U12 -->|trait| U13
-    U12 -->|trait| U14
-    U12 -->|trait| U15
-    U12 -->|trait| U16
-    U12 -->|trait| U17
-    U12 -->|trait| U18
-    U12 -->|trait| U19
-    U12 -->|trait| U20
-    U12 -->|trait| U21
-    U12 -->|trait| U22
-    U23 -->|trait| U24
-    U27 -->|trait| U25
-    U27 -->|trait| U26
-    U27 -->|trait| U28
-    U27 -->|trait| U29
-    U30 -->|trait| U27
+    U9 -->|trait| U10
+    U9 -->|trait| U11
+    U9 -->|trait| U12
+    U9 -->|trait| U13
+    U9 -->|trait| U14
+    U9 -->|trait| U15
+    U9 -->|trait| U16
+    U9 -->|trait| U17
+    U9 -->|trait| U18
+    U9 -->|trait| U19
+    U20 -->|trait| U21
+    U24 -->|trait| U22
+    U24 -->|trait| U23
+    U24 -->|trait| U25
+    U24 -->|trait| U26
+    U27 -->|trait| U24

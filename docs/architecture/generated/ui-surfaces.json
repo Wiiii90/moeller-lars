@@ -3,10 +3,10 @@
     "limitations": "Source-only declarations; no dynamically registered routes or actions, inherited methods, runtime listeners, view composition, JavaScript events or executing code.",
     "counts": {
         "pages": 9,
-        "concerns": 26,
+        "concerns": 23,
         "livewire": 2,
-        "trait_uses": 26,
-        "literal_actions": 72
+        "trait_uses": 23,
+        "literal_actions": 73
     },
     "units": [
         {
@@ -256,50 +256,38 @@
             "view": "filament.pages.custom-page-workspace",
             "traits": [
                 {
-                    "name": "CustomPageWorkspaceChildOrdering",
-                    "line": 20
-                },
-                {
-                    "name": "CustomPageWorkspaceChildProjection",
-                    "line": 21
-                },
-                {
                     "name": "CustomPageWorkspaceComponentActions",
-                    "line": 22
+                    "line": 17
                 },
                 {
                     "name": "CustomPageWorkspaceForms",
-                    "line": 23
+                    "line": 18
                 },
                 {
                     "name": "CustomPageWorkspaceLifecycle",
-                    "line": 24
-                },
-                {
-                    "name": "CustomPageWorkspaceListContactActions",
-                    "line": 25
+                    "line": 19
                 },
                 {
                     "name": "CustomPageWorkspacePresentationHelpers",
-                    "line": 26
+                    "line": 20
                 },
                 {
                     "name": "CustomPageWorkspaceProjectionState",
-                    "line": 27
+                    "line": 21
                 },
                 {
                     "name": "CustomPageWorkspaceSecondaryForms",
-                    "line": 28
+                    "line": 22
                 },
                 {
                     "name": "CustomPageWorkspaceTargetHelpers",
-                    "line": 29
+                    "line": 23
                 }
             ],
             "public_methods": [
                 {
                     "name": "getTitle",
-                    "line": 111
+                    "line": 102
                 }
             ],
             "literal_actions": []
@@ -349,102 +337,106 @@
                     "line": 134
                 },
                 {
-                    "name": "toggleFeedPin",
+                    "name": "openRelatedFeedEntry",
                     "line": 143
                 },
                 {
-                    "name": "reorderPinnedFeed",
-                    "line": 148
+                    "name": "toggleFeedPin",
+                    "line": 152
                 },
                 {
-                    "name": "bulkPin",
+                    "name": "reorderPinnedFeed",
                     "line": 157
                 },
                 {
+                    "name": "bulkPin",
+                    "line": 166
+                },
+                {
                     "name": "bulkUnpin",
-                    "line": 163
+                    "line": 172
                 },
                 {
                     "name": "markFeedRead",
-                    "line": 169
+                    "line": 178
                 },
                 {
                     "name": "markFeedUnread",
-                    "line": 176
+                    "line": 185
                 },
                 {
                     "name": "deleteFeedEntry",
-                    "line": 191
+                    "line": 200
                 },
                 {
                     "name": "toggleSelectAll",
-                    "line": 203
+                    "line": 212
                 },
                 {
                     "name": "bulkMarkRead",
-                    "line": 218
+                    "line": 227
                 },
                 {
                     "name": "bulkMarkUnread",
-                    "line": 231
+                    "line": 240
                 },
                 {
                     "name": "bulkDelete",
-                    "line": 244
+                    "line": 253
                 },
                 {
                     "name": "markContactUnread",
-                    "line": 261
+                    "line": 270
                 },
                 {
                     "name": "deleteContactMessage",
-                    "line": 271
+                    "line": 280
                 },
                 {
                     "name": "markNotificationUnread",
-                    "line": 284
+                    "line": 293
                 },
                 {
                     "name": "deleteNotification",
-                    "line": 289
+                    "line": 298
                 },
                 {
                     "name": "dashboardSettingsAction",
-                    "line": 296
+                    "line": 305
                 },
                 {
                     "name": "deleteFeedEntryAction",
-                    "line": 365
+                    "line": 374
                 },
                 {
                     "name": "deleteSelectedAction",
-                    "line": 378
+                    "line": 387
                 },
                 {
                     "name": "feedEntryAction",
-                    "line": 391
+                    "line": 400
                 }
             ],
             "literal_actions": [
                 {
                     "name": "dashboardSettings",
-                    "line": 329
+                    "line": 338
                 },
                 {
                     "name": "deleteFeedEntry",
-                    "line": 368
+                    "line": 377
                 },
                 {
                     "name": "deleteSelected",
-                    "line": 381
+                    "line": 390
                 },
                 {
                     "name": "feedEntry",
-                    "line": 394
+                    "line": 403
                 },
                 {
                     "name": "deleteDialogEntry",
-                    "line": 620
+                    "line": 629
                 }
             ]
         },
@@ -542,81 +534,81 @@
             "public_methods": [
                 {
                     "name": "mount",
-                    "line": 79
+                    "line": 83
                 },
                 {
                     "name": "getBreadcrumbs",
-                    "line": 96
+                    "line": 100
                 },
                 {
                     "name": "setPreviewDevice",
-                    "line": 101
+                    "line": 105
                 },
                 {
                     "name": "form",
-                    "line": 110
+                    "line": 114
                 },
                 {
                     "name": "removeFavicon",
-                    "line": 349
+                    "line": 376
                 },
                 {
                     "name": "persistAppearanceColor",
-                    "line": 359
+                    "line": 386
                 },
                 {
                     "name": "syncAppearanceControlState",
-                    "line": 392
+                    "line": 419
                 },
                 {
                     "name": "addSocialLinkAction",
-                    "line": 405
+                    "line": 432
                 },
                 {
                     "name": "editSocialLinkAction",
-                    "line": 464
+                    "line": 491
                 },
                 {
                     "name": "addSocialLink",
-                    "line": 575
+                    "line": 602
                 },
                 {
                     "name": "updateSocialLink",
-                    "line": 586
+                    "line": 613
                 },
                 {
                     "name": "moveSocialLink",
-                    "line": 596
+                    "line": 623
                 },
                 {
                     "name": "sortSocialLink",
-                    "line": 610
+                    "line": 637
                 },
                 {
                     "name": "deleteSocialLink",
-                    "line": 629
+                    "line": 656
                 },
                 {
                     "name": "persistChangedField",
-                    "line": 641
+                    "line": 668
                 },
                 {
                     "name": "socialRows",
-                    "line": 703
+                    "line": 730
                 }
             ],
             "literal_actions": [
                 {
                     "name": "removeFavicon",
-                    "line": 140
+                    "line": 144
                 },
                 {
                     "name": "addSocialLink",
-                    "line": 408
+                    "line": 435
                 },
                 {
                     "name": "editSocialLink",
-                    "line": 467
+                    "line": 494
                 }
             ]
         },
@@ -723,51 +715,51 @@
                 },
                 {
                     "name": "setComponentPublished",
-                    "line": 664
+                    "line": 669
                 },
                 {
                     "name": "changeComponentTypeAction",
-                    "line": 678
+                    "line": 683
                 },
                 {
                     "name": "removeComponentAction",
-                    "line": 724
+                    "line": 729
                 },
                 {
                     "name": "deleteSelectedComponentsAction",
-                    "line": 745
+                    "line": 750
                 },
                 {
                     "name": "publishSelectedHomeItems",
-                    "line": 771
+                    "line": 776
                 },
                 {
                     "name": "moveComponent",
-                    "line": 790
+                    "line": 795
                 },
                 {
                     "name": "sortComponent",
-                    "line": 807
+                    "line": 812
                 },
                 {
                     "name": "moveSelectedComponents",
-                    "line": 834
+                    "line": 839
                 },
                 {
                     "name": "toggleGalleryEligibility",
-                    "line": 857
+                    "line": 862
                 },
                 {
                     "name": "toggleVisibleSourceSelection",
-                    "line": 874
+                    "line": 879
                 },
                 {
                     "name": "setSelectedGalleryEligibility",
-                    "line": 889
+                    "line": 894
                 },
                 {
                     "name": "sourceRows",
-                    "line": 922
+                    "line": 927
                 }
             ],
             "literal_actions": [
@@ -785,15 +777,15 @@
                 },
                 {
                     "name": "changeComponentType",
-                    "line": 694
+                    "line": 699
                 },
                 {
                     "name": "removeComponent",
-                    "line": 727
+                    "line": 732
                 },
                 {
                     "name": "deleteSelectedComponents",
-                    "line": 748
+                    "line": 753
                 }
             ]
         },
@@ -807,193 +799,193 @@
             "public_methods": [
                 {
                     "name": "mount",
-                    "line": 92
+                    "line": 93
                 },
                 {
                     "name": "getView",
-                    "line": 103
+                    "line": 104
                 },
                 {
                     "name": "getTitle",
-                    "line": 111
+                    "line": 112
                 },
                 {
                     "name": "updatedSearch",
-                    "line": 118
+                    "line": 119
                 },
                 {
                     "name": "updatedStatusFilter",
-                    "line": 123
+                    "line": 124
                 },
                 {
                     "name": "updatedTimingFilter",
-                    "line": 134
+                    "line": 135
                 },
                 {
                     "name": "updatedPageSize",
-                    "line": 142
+                    "line": 143
                 },
                 {
                     "name": "resetFilters",
-                    "line": 148
+                    "line": 149
                 },
                 {
                     "name": "previousPage",
-                    "line": 156
+                    "line": 157
                 },
                 {
                     "name": "nextPage",
-                    "line": 164
+                    "line": 165
                 },
                 {
                     "name": "canDragSort",
-                    "line": 172
+                    "line": 173
                 },
                 {
                     "name": "sortPost",
-                    "line": 181
+                    "line": 182
                 },
                 {
                     "name": "sortExhibition",
-                    "line": 196
+                    "line": 197
                 },
                 {
                     "name": "togglePostSelection",
-                    "line": 211
+                    "line": 212
                 },
                 {
                     "name": "toggleExhibitionSelection",
-                    "line": 216
+                    "line": 217
                 },
                 {
                     "name": "toggleVisibleSelection",
-                    "line": 221
+                    "line": 222
                 },
                 {
                     "name": "movePost",
-                    "line": 233
+                    "line": 234
                 },
                 {
                     "name": "moveExhibition",
-                    "line": 244
+                    "line": 245
                 },
                 {
                     "name": "publishPost",
-                    "line": 255
+                    "line": 256
                 },
                 {
                     "name": "unpublishPost",
-                    "line": 261
+                    "line": 262
                 },
                 {
                     "name": "archivePost",
-                    "line": 267
+                    "line": 268
                 },
                 {
                     "name": "restorePostDraft",
-                    "line": 273
+                    "line": 274
                 },
                 {
                     "name": "publishExhibition",
-                    "line": 279
+                    "line": 280
                 },
                 {
                     "name": "unpublishExhibition",
-                    "line": 285
+                    "line": 286
                 },
                 {
                     "name": "moveSelectedEntries",
-                    "line": 291
+                    "line": 292
                 },
                 {
                     "name": "publishSelectedPosts",
-                    "line": 316
+                    "line": 317
                 },
                 {
                     "name": "archiveSelectedPosts",
-                    "line": 328
+                    "line": 329
                 },
                 {
                     "name": "unpublishSelectedPosts",
-                    "line": 340
+                    "line": 341
                 },
                 {
                     "name": "restoreSelectedPosts",
-                    "line": 352
+                    "line": 353
                 },
                 {
                     "name": "journalSettingsAction",
-                    "line": 364
+                    "line": 365
                 },
                 {
                     "name": "addPostAction",
-                    "line": 412
+                    "line": 418
                 },
                 {
                     "name": "editPostAction",
-                    "line": 437
+                    "line": 443
                 },
                 {
                     "name": "schedulePostAction",
-                    "line": 472
+                    "line": 479
                 },
                 {
                     "name": "addExhibitionAction",
-                    "line": 496
+                    "line": 503
                 },
                 {
                     "name": "editExhibitionAction",
-                    "line": 521
+                    "line": 528
                 },
                 {
                     "name": "deletePostAction",
-                    "line": 574
+                    "line": 685
                 },
                 {
                     "name": "deleteExhibitionAction",
-                    "line": 579
+                    "line": 690
                 },
                 {
                     "name": "deleteSelectedPostsAction",
-                    "line": 620
+                    "line": 731
                 },
                 {
                     "name": "deleteSelectedExhibitionsAction",
-                    "line": 639
+                    "line": 750
                 }
             ],
             "literal_actions": [
                 {
                     "name": "journalSettings",
-                    "line": 366
+                    "line": 367
                 },
                 {
                     "name": "addPost",
-                    "line": 414
+                    "line": 420
                 },
                 {
                     "name": "editPost",
-                    "line": 439
+                    "line": 445
                 },
                 {
                     "name": "schedulePost",
-                    "line": 474
+                    "line": 481
                 },
                 {
                     "name": "addExhibition",
-                    "line": 498
+                    "line": 505
                 },
                 {
                     "name": "editExhibition",
-                    "line": 523
+                    "line": 530
                 },
                 {
                     "name": "deleteSelectedPosts",
-                    "line": 622
+                    "line": 733
                 },
                 {
                     "name": "deleteSelectedExhibitions",
-                    "line": 641
+                    "line": 752
                 }
             ]
         },
@@ -1060,43 +1052,43 @@
                 },
                 {
                     "name": "toggleSectionState",
-                    "line": 318
+                    "line": 314
                 },
                 {
                     "name": "deletePageAction",
-                    "line": 330
+                    "line": 326
                 },
                 {
                     "name": "deleteSelectedPagesAction",
-                    "line": 346
+                    "line": 342
                 },
                 {
                     "name": "bulkPublish",
-                    "line": 389
+                    "line": 385
                 },
                 {
                     "name": "bulkUnpublish",
-                    "line": 394
+                    "line": 390
                 },
                 {
                     "name": "convertSectionType",
-                    "line": 426
+                    "line": 422
                 },
                 {
                     "name": "changeJournalTemplate",
-                    "line": 447
+                    "line": 443
                 },
                 {
                     "name": "startAddingPage",
-                    "line": 468
+                    "line": 464
                 },
                 {
                     "name": "cancelAddingPage",
-                    "line": 476
+                    "line": 472
                 },
                 {
                     "name": "createPage",
-                    "line": 484
+                    "line": 480
                 }
             ],
             "literal_actions": [
@@ -1106,50 +1098,13 @@
                 },
                 {
                     "name": "deletePage",
-                    "line": 333
+                    "line": 329
                 },
                 {
                     "name": "deleteSelectedPages",
-                    "line": 349
+                    "line": 345
                 }
             ]
-        },
-        {
-            "name": "CustomPageWorkspaceChildOrdering",
-            "kind": "concern",
-            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceChildOrdering.php",
-            "slug": null,
-            "view": null,
-            "traits": [],
-            "public_methods": [
-                {
-                    "name": "sortChild",
-                    "line": 14
-                },
-                {
-                    "name": "publishSelectedChildren",
-                    "line": 42
-                },
-                {
-                    "name": "unpublishSelectedChildren",
-                    "line": 47
-                },
-                {
-                    "name": "deleteSelectedChildrenAction",
-                    "line": 52
-                }
-            ],
-            "literal_actions": []
-        },
-        {
-            "name": "CustomPageWorkspaceChildProjection",
-            "kind": "concern",
-            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceChildProjection.php",
-            "slug": null,
-            "view": null,
-            "traits": [],
-            "public_methods": [],
-            "literal_actions": []
         },
         {
             "name": "CustomPageWorkspaceComponentActions",
@@ -1169,11 +1124,11 @@
                 },
                 {
                     "name": "sortComponent",
-                    "line": 68
+                    "line": 83
                 },
                 {
                     "name": "moveSelected",
-                    "line": 93
+                    "line": 88
                 },
                 {
                     "name": "moveSelectedComponents",
@@ -1193,49 +1148,97 @@
                 },
                 {
                     "name": "addComponentAction",
-                    "line": 158
+                    "line": 192
+                },
+                {
+                    "name": "nestComponent",
+                    "line": 221
+                },
+                {
+                    "name": "moveImageChild",
+                    "line": 240
+                },
+                {
+                    "name": "unnestImageChild",
+                    "line": 264
+                },
+                {
+                    "name": "sortImageChild",
+                    "line": 276
+                },
+                {
+                    "name": "editImageChildAction",
+                    "line": 283
+                },
+                {
+                    "name": "setImageChildPublished",
+                    "line": 367
+                },
+                {
+                    "name": "moveImageChildSibling",
+                    "line": 382
+                },
+                {
+                    "name": "deleteImageChildAction",
+                    "line": 393
+                },
+                {
+                    "name": "changeImageChildTypeAction",
+                    "line": 410
                 },
                 {
                     "name": "editComponentAction",
-                    "line": 185
+                    "line": 431
                 },
                 {
                     "name": "editListComponentAction",
-                    "line": 190
+                    "line": 436
                 },
                 {
                     "name": "changeComponentTypeAction",
-                    "line": 280
+                    "line": 577
                 },
                 {
                     "name": "deleteComponentAction",
-                    "line": 317
+                    "line": 614
                 },
                 {
                     "name": "deleteSelectedAction",
-                    "line": 336
+                    "line": 633
                 },
                 {
                     "name": "deleteSelectedComponentsAction",
-                    "line": 368
+                    "line": 668
                 }
             ],
             "literal_actions": [
                 {
                     "name": "addComponent",
-                    "line": 160
+                    "line": 194
+                },
+                {
+                    "name": "editImageChild",
+                    "line": 285
+                },
+                {
+                    "name": "deleteImageChild",
+                    "line": 395
+                },
+                {
+                    "name": "changeImageChildType",
+                    "line": 412
                 },
                 {
                     "name": "changeComponentType",
-                    "line": 291
+                    "line": 588
                 },
                 {
                     "name": "deleteComponent",
-                    "line": 319
+                    "line": 616
                 },
                 {
                     "name": "deleteSelected",
-                    "line": 338
+                    "line": 635
                 }
             ]
         },
@@ -1259,97 +1262,57 @@
             "public_methods": [
                 {
                     "name": "mount",
-                    "line": 21
+                    "line": 22
+                },
+                {
+                    "name": "hydrate",
+                    "line": 50
                 },
                 {
                     "name": "getBreadcrumbs",
-                    "line": 41
+                    "line": 85
                 },
                 {
                     "name": "getHeading",
-                    "line": 46
+                    "line": 90
                 },
                 {
                     "name": "updatedComponentSearch",
-                    "line": 51
+                    "line": 95
                 },
                 {
                     "name": "updatedComponentType",
-                    "line": 56
-                },
-                {
-                    "name": "updatedPageSize",
-                    "line": 65
-                },
-                {
-                    "name": "resetComponentFilters",
-                    "line": 71
-                },
-                {
-                    "name": "previousPage",
-                    "line": 78
-                },
-                {
-                    "name": "nextPage",
-                    "line": 89
-                },
-                {
-                    "name": "selectAllVisible",
                     "line": 100
                 },
                 {
+                    "name": "updatedPageSize",
+                    "line": 109
+                },
+                {
+                    "name": "resetComponentFilters",
+                    "line": 115
+                },
+                {
+                    "name": "previousPage",
+                    "line": 122
+                },
+                {
+                    "name": "nextPage",
+                    "line": 133
+                },
+                {
+                    "name": "selectAllVisible",
+                    "line": 144
+                },
+                {
                     "name": "pageSettingsAction",
-                    "line": 121
+                    "line": 161
                 }
             ],
             "literal_actions": [
                 {
                     "name": "pageSettings",
-                    "line": 123
-                }
-            ]
-        },
-        {
-            "name": "CustomPageWorkspaceListContactActions",
-            "kind": "concern",
-            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceListContactActions.php",
-            "slug": null,
-            "view": null,
-            "traits": [],
-            "public_methods": [
-                {
-                    "name": "addContactChildAction",
-                    "line": 16
-                },
-                {
-                    "name": "editContactChildAction",
-                    "line": 48
-                },
-                {
-                    "name": "setContactChildPublished",
-                    "line": 125
-                },
-                {
-                    "name": "moveContactChild",
-                    "line": 143
-                },
-                {
-                    "name": "deleteContactChildAction",
-                    "line": 162
-                }
-            ],
-            "literal_actions": [
-                {
-                    "name": "addContactChild",
-                    "line": 18
-                },
-                {
-                    "name": "editContactChild",
-                    "line": 50
-                },
-                {
-                    "name": "deleteContactChild",
-                    "line": 164
+                    "line": 163
                 }
             ]
         },
@@ -1419,7 +1382,7 @@
                 },
                 {
                     "name": "unpublishArtworkAction",
-                    "line": 172
+                    "line": 180
                 }
             ],
             "literal_actions": [
@@ -1441,23 +1404,23 @@
                 },
                 {
                     "name": "unpublishArtwork",
-                    "line": 174
+                    "line": 182
                 },
                 {
                     "name": "previewViewPublic",
-                    "line": 277
+                    "line": 285
                 },
                 {
                     "name": "previewEditArtwork",
-                    "line": 287
+                    "line": 295
                 },
                 {
                     "name": "previewLifecycle",
-                    "line": 298
+                    "line": 306
                 },
                 {
                     "name": "previewDeletePrimaryMedia",
-                    "line": 312
+                    "line": 320
                 }
             ]
         },
@@ -1471,21 +1434,25 @@
             "public_methods": [
                 {
                     "name": "addArtworkAction",
-                    "line": 22
+                    "line": 24
                 },
                 {
                     "name": "editArtworkAction",
-                    "line": 91
+                    "line": 93
                 }
             ],
             "literal_actions": [
                 {
                     "name": "addArtwork",
-                    "line": 24
+                    "line": 26
                 },
                 {
                     "name": "editArtwork",
-                    "line": 94
+                    "line": 96
+                },
+                {
+                    "name": "dialogRemoveArtwork",
+                    "line": 157
                 }
             ]
         },
@@ -1651,7 +1618,7 @@
                 },
                 {
                     "name": "materialPresetsAction",
-                    "line": 91
+                    "line": 90
                 }
             ],
             "literal_actions": [
@@ -1661,7 +1628,7 @@
                 },
                 {
                     "name": "materialPresets",
-                    "line": 93
+                    "line": 92
                 }
             ]
         },
@@ -1746,13 +1713,13 @@
             "public_methods": [
                 {
                     "name": "addPageAction",
-                    "line": 27
+                    "line": 29
                 }
             ],
             "literal_actions": [
                 {
                     "name": "addPage",
-                    "line": 29
+                    "line": 31
                 }
             ]
         },
@@ -1797,7 +1764,7 @@
                 },
                 {
                     "name": "editHomeAction",
-                    "line": 119
+                    "line": 115
                 }
             ],
             "literal_actions": [
@@ -1807,7 +1774,7 @@
                 },
                 {
                     "name": "editHome",
-                    "line": 122
+                    "line": 118
                 }
             ]
         },
@@ -1887,63 +1854,45 @@
     "trait_composition_edges": [
         {
             "from": "CustomPageWorkspace",
-            "to": "CustomPageWorkspaceChildOrdering",
-            "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 20
-        },
-        {
-            "from": "CustomPageWorkspace",
-            "to": "CustomPageWorkspaceChildProjection",
-            "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 21
-        },
-        {
-            "from": "CustomPageWorkspace",
             "to": "CustomPageWorkspaceComponentActions",
             "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 22
+            "line": 17
         },
         {
             "from": "CustomPageWorkspace",
             "to": "CustomPageWorkspaceForms",
             "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 23
+            "line": 18
         },
         {
             "from": "CustomPageWorkspace",
             "to": "CustomPageWorkspaceLifecycle",
             "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 24
-        },
-        {
-            "from": "CustomPageWorkspace",
-            "to": "CustomPageWorkspaceListContactActions",
-            "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 25
+            "line": 19
         },
         {
             "from": "CustomPageWorkspace",
             "to": "CustomPageWorkspacePresentationHelpers",
             "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 26
+            "line": 20
         },
         {
             "from": "CustomPageWorkspace",
             "to": "CustomPageWorkspaceProjectionState",
             "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 27
+            "line": 21
         },
         {
             "from": "CustomPageWorkspace",
             "to": "CustomPageWorkspaceSecondaryForms",
             "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 28
+            "line": 22
         },
         {
             "from": "CustomPageWorkspace",
             "to": "CustomPageWorkspaceTargetHelpers",
             "path": "app/Filament/Pages/CustomPageWorkspace.php",
-            "line": 29
+            "line": 23
         },
         {
             "from": "GalleryWorkspace",
