@@ -25,12 +25,16 @@ RUN apt-get update \
         libpng-dev \
         libpq-dev \
         libwebp-dev \
+        libvips-tools \
+        ffmpeg \
         libzip-dev \
         perl \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" gd intl opcache pdo_pgsql zip \
     && a2enmod rewrite headers xsendfile \
+    && command -v vipsthumbnail \
+    && command -v ffmpeg \
     && sed -ri 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && rm -rf /var/lib/apt/lists/*
 

@@ -14,7 +14,13 @@ use Throwable;
 
 class MediaIngestService
 {
-    public const MAX_PIXELS = 16_000_000;
+    // An original is never fully decoded into PHP memory above the GD limit.
+    // libvips handles large-image thumbnails in a bounded external process.
+    public const MAX_PIXELS = 120_000_000;
+    public const LEGACY_MAX_PIXELS = 16_000_000;
+    public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
+    public const VIDEO_POSTER_KIND = 'poster';
+    public const VIDEO_POSTER_PROFILE = 'video-poster-v1';
 
     public const THUMBNAIL_MAX_EDGE = 960;
 
@@ -131,9 +137,16 @@ class MediaIngestService
         $disk = Storage::disk(config('media.disk'));
         $uuid = (string) Str::uuid();
         $originalKey = 'originals/'.$uuid.'.'.$extension;
+        $isVideo = MediaTypePolicy::isVideo($prepared['mime']);
+        $variantKind = $isVideo ? self::VIDEO_POSTER_KIND : self::THUMBNAIL_KIND;
+        $transformProfile = $isVideo
+            ? self::VIDEO_POSTER_PROFILE
+            : (($prepared['width'] ?? 0) * ($prepared['height'] ?? 0) > self::LEGACY_MAX_PIXELS
+                ? self::LARGE_IMAGE_TRANSFORM_PROFILE
+                : self::TRANSFORM_PROFILE);
         $thumbnailKey = $prepared['thumbnail_bytes'] === null
             ? null
-            : 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
+            : 'variants/'.$uuid.'-'.$variantKind.'.webp';
         $storageKeys = [$originalKey];
         if ($thumbnailKey !== null) {
             $storageKeys[] = $thumbnailKey;
@@ -163,7 +176,7 @@ class MediaIngestService
                 throw new RuntimeException('Unable to write media thumbnail.');
             }
 
-            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey): MediaAsset {
+            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey, $variantKind, $transformProfile): MediaAsset {
                 $asset = new MediaAsset;
                 $asset->fill([
                     'storage_key' => $originalKey,
@@ -180,12 +193,12 @@ class MediaIngestService
 
                 if ($thumbnailKey !== null && $prepared['thumbnail_bytes'] !== null) {
                     $asset->variants()->create([
-                        'variant_kind' => self::THUMBNAIL_KIND,
+                        'variant_kind' => $variantKind,
                         'storage_key' => $thumbnailKey,
                         'mime_type' => 'image/webp',
                         'byte_size' => strlen($prepared['thumbnail_bytes']),
                         'sha256' => hash('sha256', $prepared['thumbnail_bytes']),
-                        'transform_profile' => self::TRANSFORM_PROFILE,
+                        'transform_profile' => $transformProfile,
                         'state' => 'available',
                         'width' => $prepared['thumbnail_width'],
                         'height' => $prepared['thumbnail_height'],
@@ -258,8 +271,14 @@ class MediaIngestService
 
         if (MediaTypePolicy::isVideo($mime)) {
             $this->validateVideoContainer($path, $mime, $size);
+            $poster = app(MediaDerivativeGenerator::class)->videoPoster($path);
 
-            return $this->nonImagePrepared($mime, $path, $size, $sha256);
+            return [
+                ...$this->nonImagePrepared($mime, $path, $size, $sha256),
+                'thumbnail_bytes' => $poster['bytes'],
+                'thumbnail_width' => $poster['width'],
+                'thumbnail_height' => $poster['height'],
+            ];
         }
 
         if (MediaTypePolicy::isAudio($mime)) {
@@ -279,17 +298,26 @@ class MediaIngestService
             throw $this->validationFailure('The uploaded image dimensions are not allowed.');
         }
 
-        $originalImage = $this->decode($path, $mime);
-        $thumbnailImage = null;
+        if ($width * $height > self::LEGACY_MAX_PIXELS) {
+            $preview = app(MediaDerivativeGenerator::class)->largeImageThumbnail($path);
+            $thumbnailBytes = $preview['bytes'];
+            $thumbnailWidth = $preview['width'];
+            $thumbnailHeight = $preview['height'];
+        } else {
+            // Keep public-v1 bytes bit-for-bit compatible with existing
+            // immutable hashes and the legacy regeneration path.
+            $originalImage = $this->decode($path, $mime);
+            $thumbnailImage = null;
 
-        try {
-            $thumbnailImage = $this->makeThumbnail($originalImage, $width, $height);
-            $thumbnailWidth = imagesx($thumbnailImage);
-            $thumbnailHeight = imagesy($thumbnailImage);
-            $thumbnailBytes = $this->encode($thumbnailImage, 'image/webp', 85);
-        } finally {
-            $this->destroyImage($thumbnailImage);
-            $this->destroyImage($originalImage);
+            try {
+                $thumbnailImage = $this->makeThumbnail($originalImage, $width, $height);
+                $thumbnailWidth = imagesx($thumbnailImage);
+                $thumbnailHeight = imagesy($thumbnailImage);
+                $thumbnailBytes = $this->encode($thumbnailImage, 'image/webp', 85);
+            } finally {
+                $this->destroyImage($thumbnailImage);
+                $this->destroyImage($originalImage);
+            }
         }
 
         return [
