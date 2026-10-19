@@ -467,7 +467,7 @@ final class HomePresentation extends Page
                         ->required(fn (callable $get): bool => $get('kind') === 'heading')
                         ->visible(fn (callable $get): bool => $get('kind') === 'heading'),
                     ...$this->homeRichTextFields('kind', 'rich_text', required: true),
-                    MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
+                    MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES])
                         ->required(fn (callable $get): bool => $get('kind') === 'image')
                         ->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Toggle::make('image_decorative')->label('Decorative image')
@@ -577,7 +577,7 @@ final class HomePresentation extends Page
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
                 ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
+                MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES])
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'image')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Toggle::make('image_decorative')->label('Decorative image')

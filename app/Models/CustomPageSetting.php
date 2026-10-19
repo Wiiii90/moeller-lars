@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Content\SafeLinkPolicy;
 use App\Domain\Content\SafeRichTextRenderer;
+use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -371,20 +372,22 @@ final class CustomPageSetting extends Model
         $mediaId = $block['media_asset_id'] ?? null;
         if ($mediaId === null) {
             if ($requirePublicMedia) {
-                throw ValidationException::withMessages(['blocks' => 'Published image components must reference an image from Media.']);
+                throw ValidationException::withMessages(['blocks' => 'Published media components must reference an image or video from Storage.']);
             }
 
             return;
         }
 
         if (filter_var($mediaId, FILTER_VALIDATE_INT) === false) {
-            throw ValidationException::withMessages(['blocks' => 'Image components must reference an image from Media.']);
+            throw ValidationException::withMessages(['blocks' => 'Media components must reference an image or video from Storage.']);
         }
 
         /** @var MediaAsset|null $asset */
         $asset = MediaAsset::query()->find((int) $mediaId);
-        if (! $asset instanceof MediaAsset || ! str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')) {
-            throw ValidationException::withMessages(['blocks' => 'Image components must reference an image from Media.']);
+        if (! $asset instanceof MediaAsset
+            || (! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))
+                && ! MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type')))) {
+            throw ValidationException::withMessages(['blocks' => 'Media components must reference an image or video from Storage.']);
         }
         if (! is_bool($block['image_decorative'] ?? false)) {
             throw ValidationException::withMessages(['blocks' => 'Image presentation settings must be boolean.']);
@@ -396,10 +399,10 @@ final class CustomPageSetting extends Model
         $decorative = (bool) ($block['image_decorative'] ?? false);
         $alt = $asset->getAttribute('alt_text');
         if ((string) $asset->getAttribute('state') !== 'available') {
-            throw ValidationException::withMessages(['blocks' => 'Published custom-page images must be available.']);
+            throw ValidationException::withMessages(['blocks' => 'Published custom-page media must be available.']);
         }
         if (! $decorative && (! is_string($alt) || trim($alt) === '')) {
-            throw ValidationException::withMessages(['blocks' => 'Published non-decorative images must have canonical ALT text in Media.']);
+            throw ValidationException::withMessages(['blocks' => 'Published non-decorative media must have canonical ALT text in Storage.']);
         }
     }
 

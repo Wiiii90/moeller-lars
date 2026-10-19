@@ -63,8 +63,8 @@ Structured consumers include:
 - Artwork primary/additional media;
 - Blog/Exhibition Cover and Gallery through `JournalEntryMedia` (Gallery accepts images or videos; Blog cover selection remains image-only);
 - CV direct image;
-- Custom Page Image components;
-- Home Image components;
+- Custom Page Image components (image or video, without a duplicate persisted media component);
+- Home Image components (same canonical image/video renderer);
 - site identity/favicon.
 
 Rich Text consumers reference media through canonical Markdown:

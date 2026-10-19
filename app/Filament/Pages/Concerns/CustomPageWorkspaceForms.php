@@ -6,6 +6,7 @@ use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\MediaAssetSelect;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\PublicContentSetting;
 use Closure;
 use Filament\Forms\Components\Placeholder;
@@ -71,7 +72,7 @@ trait CustomPageWorkspaceForms
             'image' => [
                 $this->imageSelectField($onImageChange),
                 TextInput::make('image_scale_percent')
-                    ->label('Image size')
+                    ->label('Media size')
                     ->numeric()
                     ->rules(['integer'])
                     ->minValue(\App\Models\CustomPageSetting::MIN_IMAGE_SCALE_PERCENT)
@@ -210,7 +211,7 @@ trait CustomPageWorkspaceForms
 
     private function imageSelectField(?Closure $onImageChange): Select
     {
-        $field = MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', imagesOnly: true)
+        $field = MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
             ->required();
 
         // Searchable Filament selects update their Livewire state without a
