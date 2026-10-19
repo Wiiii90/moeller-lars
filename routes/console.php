@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
 // Offline and opt-in pre-release consolidation. Never invoked by HTTP or deploy.
-Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails to libvips} {--rebaseline-checkpoints : Recompute pre-release checkpoint hashes while preserving their rows}', function (MediaThumbnailCutoverService $cutover): int {
+Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails to libvips} {--rebaseline-checkpoints : Recompute pre-release checkpoint hashes while preserving their rows} {--invalidate-thumbnail-rights : Explicitly invalidate obsolete generated thumbnail rights selections}', function (MediaThumbnailCutoverService $cutover): int {
     if (! app()->environment(['local', 'testing'])) {
         $this->error('Thumbnail consolidation is only available on a local pre-release database.');
         return 1;
@@ -42,7 +42,7 @@ Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails 
     }
 
     try {
-        $result = $cutover->apply((bool) $this->option('rebaseline-checkpoints'));
+        $result = $cutover->apply((bool) $this->option('rebaseline-checkpoints'), (bool) $this->option('invalidate-thumbnail-rights'));
         $this->info("Converted {$result['converted']} thumbnails. Rebaselined {$result['rebased']} checkpoints; invalidated {$result['invalidated_rights']} thumbnail rights selections for offline re-preparation; reclaimed {$result['reclaimed']} unreferenced old derivative files.");
         return 0;
     } catch (\Throwable $exception) {

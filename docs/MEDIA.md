@@ -48,9 +48,11 @@ All new image uploads use libvips. Existing development/imported image thumbnail
 ```sh
 php artisan media:thumbnails:consolidate
 php artisan media:thumbnails:consolidate --apply --rebaseline-checkpoints
+# Only if existing thumbnail rights selections need invalidation:
+php artisan media:thumbnails:consolidate --apply --rebaseline-checkpoints --invalidate-thumbnail-rights
 ```
 
-The first invocation is read-only. The second stages new immutable previews and updates the same MediaVariant IDs across Working, Committed and restorable Publication version rows. Checkpoint hashes necessarily change when content hashes change, so the separate `--rebaseline-checkpoints` flag is required to preserve the Undo history while rebaselining its hash chain. Public rights delivery must be disabled; thumbnail rights selections are invalidated for explicit offline re-preparation. Originals remain unchanged; the old thumbnail files are not overwritten in place. The command reclaims only unreferenced old thumbnail files after the database commit. Re-running --apply retries an interrupted post-commit cleanup. Failures roll back registry updates. This command is restricted to local pre-release data and is never scheduled or invoked on deploy.
+The first invocation is read-only. The second stages new immutable previews and updates the same MediaVariant IDs across Working, Committed and restorable Publication version rows. Checkpoint hashes necessarily change when content hashes change, so the separate `--rebaseline-checkpoints` flag is required to preserve the Undo history while rebaselining its hash chain. Public rights delivery must be disabled. If thumbnail rights selections exist, a third explicit --invalidate-thumbnail-rights flag is required; the affected selections then require offline re-preparation. Originals remain unchanged; the old thumbnail files are not overwritten in place. The command reclaims only unreferenced old thumbnail files after the database commit. Re-running --apply retries an interrupted post-commit cleanup. Failures roll back registry updates. This command is restricted to local pre-release data and is never scheduled or invoked on deploy.
 
 Remove the remaining historical GD regeneration code only after the local cutover has completed and the remaining legacy variants have been checked. The code cannot safely assume a separate database has already undergone cutover.
 ## Canonical original and variants

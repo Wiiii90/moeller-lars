@@ -45,10 +45,11 @@ final class MediaThumbnailCutoverService
     /**
      * @return array{converted:int,rebased:int,invalidated_rights:int,reclaimed:int}
      */
-    public function apply(bool $rebaselineCheckpoints = false): array
+    public function apply(bool $rebaselineCheckpoints = false, bool $invalidateThumbnailRights = false): array
     {
-        if (! app()->environment(['local', 'testing'])) {
-            throw new RuntimeException('Thumbnail cutover is restricted to a local pre-release environment.');
+        if (! app()->environment(['local', 'testing'])
+            || DB::connection()->getDriverName() !== 'pgsql') {
+            throw new RuntimeException('Thumbnail cutover requires a local pre-release PostgreSQL database.');
         }
 
         $lock = Cache::lock('media-ingest', 1800);
@@ -81,6 +82,17 @@ final class MediaThumbnailCutoverService
                 }
                 if (app(MediaRightsPublicationSelections::class)->deliveryEnabled()) {
                     throw new RuntimeException('Disable rights artifact delivery before the thumbnail cutover.');
+                }
+                $rightsCount = Schema::hasTable('media_rights_artifact_selections')
+                    ? (int) DB::table('media_rights_artifact_selections')
+                        ->where('role', 'thumbnail')
+                        ->whereIn('source_id', array_keys($items))
+                        ->count() : 0;
+                if ($rightsCount > 0 && ! $invalidateThumbnailRights) {
+                    throw new RuntimeException(
+                        'Existing thumbnail rights selections require explicit --invalidate-thumbnail-rights '
+                        .'and a subsequent offline rights preparation before publication.',
+                    );
                 }
 
                 $prepared = [];
