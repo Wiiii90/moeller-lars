@@ -88,19 +88,18 @@ landscape-width artwork is not a common paper plane. For separated sheets,
 the existing Menu and Content primitives own their own backing and outlines.
 The common shell and paper edge outset are shared tokens.
 
-The static white contour returns inward just before the final visible
-content item (the last Artwork, Journal entry, Exhibition, Home/Custom
-component, or Artwork detail). A single `public-paper-frame.js` owner
-resolves the last rendered content edge within the existing Content flow
-and sets `--public-paper-content-end`. A scoped ResizeObserver follows
-native content reflow (including later-loaded artwork and opened entries);
-a MutationObserver handles visibility changes. Both observers disconnect
-through the existing Public SPA lifecycle. The CSS return inset is shared
-between left/right strokes, while the gray backing continues to the natural
-Content paper bottom independently. The pre-initialization fallback uses
-Content block inset only until real layout geometry is available. No
-intervals, extra scroll container, per-template geometry offsets, or
-animation are introduced.
+**Emergency safety contract (2026-10-19):** The measured contour endpoint
+was disabled after browser-reported severe layout feedback and resource
+exhaustion. The removed `public-paper-frame.js` must NOT be recreated or
+reinitialized as a DOM measurement-to-layout loop. The contour currently
+returns at a *static CSS inset from the content paper's bottom*, not at
+the actual final artwork or journal entry. The gray backing and contour
+are independent, and the shared paper wrapper remains. Exact placement
+at the final rendered item is still an **open visual requirement**, not an
+implemented or browser-accepted feature. It needs a fundamentally static,
+non-feedback design before it may be reintroduced. No content-height
+ResizeObserver, MutationObserver, per-frame writes, timer, or animation
+may be used for that purpose.
 The canonical folio palette (`--public-folio-light`,
 `--public-folio-soft`) and 3px-left/4px-down backing remain authoritative.
 Existing six route-deterministic corner endpoints remain in the
@@ -173,8 +172,10 @@ title into the Menu paper on their content-fit fallback and apply
 Responsive alignment (Left/Center/Right). Above and Below support the three
 desktop alignments; the 40rem narrow mode applies the configured responsive
 alignment. Below is still its own content-sized row outside Menu.
-The single public-header ResizeObserver observes actual visible Menu rail
-geometry for Beside rather than the now viewport-wide title-layout wrapper.
+Public-header title fitting uses an initial synchronous calculation and
+viewport `resize` / font-loading events, not a ResizeObserver observing
+elements whose own dimensions are changed by the stacked-title class.
+This is intentional: it prevents the previous self-triggering layout feedback.
 
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width
@@ -201,9 +202,9 @@ Title size is
 16–64px, with optional responsive reduction and an independently editable
 minimum of 12–64px (default 18px). The reduction uses CSS
 `clamp(min(minimum, base), 5.4vw, base)`; disabling it keeps the chosen base
-size and allows text wrapping. The single public-header ResizeObserver
-continues to measure fit for stacked versus horizontal composition; it never
-creates a second scroll area, animation or timer. A blank artist title color
+size and allows text wrapping. Title-fit recalculation is limited to initial rendering, window resize
+and completed font loading, without a header element observer, animation,
+timer or secondary scroll owner. A blank artist title color
 continues to use contextual ink.
 
 **Menu to page** supports five validated storage keys and the
