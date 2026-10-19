@@ -26,7 +26,9 @@
         @if ($faviconVariant !== null)
             <link rel="icon" href="{{ app(\App\Domain\Media\PublicMedia::class)->variantUrl($faviconVariant) }}" type="{{ $faviconVariant->mime_type }}">
         @endif
-        @php($matomoTracking = $isPreview ? null : app(\App\Domain\Analytics\MatomoConfiguration::class)->browserTracking())
+        @php
+            $matomoTracking = $isPreview ? null : app(\App\Domain\Analytics\MatomoConfiguration::class)->browserTracking();
+        @endphp
         @if ($matomoTracking !== null)
             <meta
                 data-matomo-tracking
@@ -88,7 +90,9 @@
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
             @endif
             @unless ($__env->hasSection('hide_navigation'))
-                @php($selectedNavigationParent = collect($navigationItems)->first(fn ($item) => $item['active'] && $item['children'] !== []))
+                @php
+                    $selectedNavigationParent = collect($navigationItems)->first(fn ($item) => $item['active'] && $item['children'] !== []);
+                @endphp
                 <div class="site-navigation" data-site-navigation data-hover-preview="{{ $publicNavigationHover ? 'true' : 'false' }}">
                     @if ($publicHeaderVisible && $publicHeaderPosition !== 'below')
                         <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
@@ -99,8 +103,12 @@
                         </button>
                         <nav aria-label="Main navigation" data-navigation-window-scroll>
                             @foreach ($navigationItems as $navigationItem)
-                                @php($submenuId = 'site-navigation-submenu-'.$navigationItem['tie_breaker'])
-                                @php($selectedChildParent = $navigationItem['active'] && $navigationItem['children'] !== [])
+                                @php
+                                    $submenuId = 'site-navigation-submenu-'.$navigationItem['tie_breaker'];
+                                @endphp
+                                @php
+                                    $selectedChildParent = $navigationItem['active'] && $navigationItem['children'] !== [];
+                                @endphp
                                 <div class="site-navigation__item @if ($navigationItem['active']) is-active @endif" data-navigation-item data-navigation-key="{{ $navigationItem['tie_breaker'] }}:{{ $navigationItem['label'] }}">
                                     <div class="site-navigation__primary">
                                         @if ($navigationItem['url'] !== null)
@@ -131,8 +139,12 @@
                     </div>
                     @foreach ($navigationItems as $navigationItem)
                         @if ($navigationItem['children'] !== [])
-                            @php($submenuId = 'site-navigation-submenu-'.$navigationItem['tie_breaker'])
-                            @php($selectedChildParent = $navigationItem['active'])
+                            @php
+                                $submenuId = 'site-navigation-submenu-'.$navigationItem['tie_breaker'];
+                            @endphp
+                            @php
+                                $selectedChildParent = $navigationItem['active'];
+                            @endphp
                             <div id="{{ $submenuId }}" class="site-navigation__submenu" data-navigation-submenu
                                 @unless ($selectedChildParent) hidden @endunless>
                                 <button class="site-navigation__control" type="button" data-direction="previous" aria-label="Previous subpage" hidden>
