@@ -15,6 +15,8 @@ it('renders both stage tool rows without preview preset text', function (): void
     Livewire::test(General::class)
         ->assertSeeHtml('admin-stage-tabs--with-tools')
         ->assertSeeHtml('admin-control-separator admin-stage-tabs__separator')
+        ->assertSeeHtml('x-on:click="moreSpace = ! moreSpace"')
+        ->assertDontSeeHtml('x-on:click="toggleSpace()"')
         ->assertSeeHtml('aria-label="Live preview controls"')
         ->assertSeeHtml('aria-label="Preview device"')
         ->assertSeeHtml('aria-label="Preview zoom"')

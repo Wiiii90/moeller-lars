@@ -11,7 +11,7 @@
             type="button"
             title="More space"
             aria-label="More space"
-            x-on:click="toggleSpace()"
+            x-on:click="moreSpace = ! moreSpace"
             x-bind:title="moreSpace ? 'Less space' : 'More space'"
             x-bind:aria-label="moreSpace ? 'Less space' : 'More space'"
             x-bind:aria-pressed="moreSpace.toString()"
