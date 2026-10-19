@@ -290,6 +290,31 @@ it('persists per-Gallery landscape and edge settings through one audited action'
         ->and($committed->artwork_divider)->toBe('dotted');
 });
 
+it('validates authored Gallery rights and Artwork caption display using the central settings policy', function (): void {
+    $gallery = galleryFixtureCategory();
+    $service = app(\App\Domain\Artwork\GalleryEditorialService::class);
+
+    expect(\App\Domain\Artwork\GalleryPresentation::showArtworkInformation($gallery))->toBeTrue()
+        ->and(\App\Domain\Artwork\GalleryPresentation::showMediaCredits($gallery))->toBeFalse()
+        ->and(\App\Domain\Artwork\GalleryPresentation::showMediaCopyright($gallery))->toBeFalse();
+
+    $service->update($gallery, [
+        'name' => $gallery->name,
+        'show_artwork_information' => false,
+        'show_media_credits' => true,
+        'show_media_copyright' => true,
+        'caption_layout' => 'rights_right',
+    ]);
+    $saved = $gallery->fresh();
+    expect(\App\Domain\Artwork\GalleryPresentation::showArtworkInformation($saved))->toBeFalse()
+        ->and(\App\Domain\Artwork\GalleryPresentation::showMediaCredits($saved))->toBeTrue()
+        ->and(\App\Domain\Artwork\GalleryPresentation::showMediaCopyright($saved))->toBeTrue()
+        ->and(\App\Domain\Artwork\GalleryPresentation::captionLayout($saved))->toBe('rights_right');
+
+    expect(fn () => $service->update($saved, ['name' => $saved->name, 'caption_layout' => 'unknown']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 it('rejects unsupported Gallery navigation and divider modes without mutation', function (): void {
     $gallery = galleryFixtureCategory();
     $service = app(\App\Domain\Artwork\GalleryEditorialService::class);

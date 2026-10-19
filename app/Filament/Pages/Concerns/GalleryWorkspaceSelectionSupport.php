@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
@@ -73,10 +74,10 @@ trait GalleryWorkspaceSelectionSupport
     /** @return list<int> */
     private function orderedArtworkIds(): array
     {
-        return Artwork::query()
-            ->where('artwork_category_id', (int) $this->galleryContext['id'])
-            ->orderBy('position')
-            ->orderBy('id')
+        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+
+        return GalleryPresentation::orderArtworks(Artwork::query()
+            ->where('artwork_category_id', (int) $this->galleryContext['id']), $gallery)
             ->pluck('id')
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
@@ -107,7 +108,9 @@ trait GalleryWorkspaceSelectionSupport
             'name' => (string) $gallery->getAttribute('name'),
             'slug' => (string) $gallery->getAttribute('slug'),
             'state' => (string) $section->getAttribute('state'),
+            'sort_mode' => GalleryPresentation::sortMode($gallery),
             'path' => '/'.ltrim((string) $gallery->getAttribute('slug'), '/'),
+            'preview_url' => app(\App\Domain\Content\SitePreviewContext::class)->previewUrlFor($section),
             'public_url' => $section->getAttribute('state') === 'published'
                 ? route('site.section', ['section' => $gallery->getAttribute('slug')])
                 : null,

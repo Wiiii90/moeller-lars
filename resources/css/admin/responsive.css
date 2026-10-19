@@ -433,7 +433,7 @@
     }
 
     .general-appearance-stage__controls{
-        display: block !important;
+        display: grid !important;
         grid-column: 1 / -1 !important;
         grid-row: 1 !important;
         width: 100% !important;
@@ -441,14 +441,22 @@
         margin: 0 !important;
         padding-right: 0 !important;
         padding-left: 0 !important;
-        overflow-x: hidden;
-        overflow-y: auto;
-        scrollbar-gutter: auto;
-        scrollbar-width: none;
+        overflow: hidden !important;
     }
 
     .general-appearance-stage__preview{
         display: none !important;
+    }
+
+    /* Expanded mode remains intrinsically sized after the preview is
+     * removed; the normal responsive 100% control height cannot override
+     * max-content sizing for the single overlapping-panel grid. */
+    .general-appearance-stage.admin-visual-stage--expanded{
+        grid-template-rows: max-content !important;
+    }
+
+    .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls{
+        height: auto !important;
     }
 }
 

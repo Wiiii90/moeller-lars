@@ -125,21 +125,13 @@
                 progress: 0,
                 fileCount: 0,
                 result: '',
-                resultTimer: null,
                 showResult(message) {
-                    window.clearTimeout(this.resultTimer)
                     this.result = message
                     this.phase = 'result'
-                    this.resultTimer = window.setTimeout(() => {
-                        this.phase = 'idle'
-                        this.progress = 0
-                        this.fileCount = 0
-                        this.result = ''
-                    }, 3800)
                 },
             }"
             x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-            x-on:livewire-upload-start="window.clearTimeout(resultTimer); phase = 'uploading'; progress = 0; result = ''"
+            x-on:livewire-upload-start="phase = 'uploading'; progress = 0; result = ''"
             x-on:livewire-upload-progress="progress = $event.detail.progress"
             x-on:livewire-upload-finish="
                 progress = 100
@@ -173,7 +165,7 @@
                                     : 'Drop files here or choose from your device'
                     "
                 >Drop files here or choose from your device</strong>
-                <span x-show="phase === 'idle'">JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV.</span>
+                <span x-show="phase === 'idle'">JPEG, PNG, WebP · {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB / {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB; MP3, M4A/AAC, Ogg, WAV · {{ number_format(\App\Domain\Media\MediaTypePolicy::audioMaxBytes() / 1048576, 0) }} MiB.</span>
             </div>
             <div
                 class="media-workspace__upload-progress"

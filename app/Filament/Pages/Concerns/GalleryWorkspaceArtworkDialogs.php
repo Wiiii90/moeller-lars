@@ -12,8 +12,11 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -56,9 +59,16 @@ trait GalleryWorkspaceArtworkDialogs
                 // remain valid, reusable files if Artwork validation fails.
                 // Artwork creation, primary linkage and its ALT override are
                 // one canonical DB mutation, preventing orphan Gallery drafts.
-                $asset = $upload instanceof TemporaryUploadedFile
-                    ? app(MediaIngestService::class)->ingest($upload)
-                    : ($assetId > 0 ? MediaAsset::query()->findOrFail($assetId) : null);
+                try {
+                    $asset = $upload instanceof TemporaryUploadedFile
+                        ? app(MediaIngestService::class)->ingest($upload)
+                        : ($assetId > 0 ? MediaAsset::query()->findOrFail($assetId) : null);
+                } catch (ValidationException $exception) {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => collect($exception->errors())->flatten()->first()
+                            ?? 'The selected image or video could not be processed.',
+                    ]);
+                }
                 $payload = $this->normalizeArtworkFormData($data);
 
                 DB::transaction(function () use ($payload, $asset, $data, $upload): void {
@@ -97,7 +107,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->label('Edit')
             ->modalHeading('Edit artwork')
             ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)))
-            ->schema($dialog->schema())
+            ->schema($dialog->schema(autosave: true))
             ->extraModalFooterActions(fn (array $arguments): array => $this->artworkEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments) use ($dialog): void {
                 $changed = $dialog->save($this->actionArtwork($arguments), $data);
@@ -112,6 +122,94 @@ trait GalleryWorkspaceArtworkDialogs
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * Uploads have a committed mutation boundary, independent of the
+     * text/select Edit dialog's wire:change autosave lifecycle.
+     */
+    public function uploadArtworkPrimaryMediaAction(): Action
+    {
+        $action = Action::make('uploadArtworkPrimaryMedia')
+            ->label('Upload primary media')
+            ->modalHeading('Upload primary media')
+            ->schema([
+                FileUpload::make('primary_upload')
+                    ->label('New image or video')
+                    ->storeFiles(false)
+                    ->acceptedFileTypes([...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
+                    ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
+                    ->required()
+                    ->helperText('Replaces the draft artwork’s primary media. The previous file remains in Storage.'),
+                Textarea::make('primary_alt_text')
+                    ->label('ALT text')
+                    ->maxLength(500)
+                    ->nullable()
+                    ->helperText('Describe this media for screen readers, or inherit its Storage ALT.'),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $artwork = $this->actionArtwork($arguments)->fresh();
+                if ((string) $artwork->getAttribute('state') === 'published') {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => 'Unpublish the artwork before replacing primary media.',
+                    ]);
+                }
+
+                $upload = $data['primary_upload'] ?? null;
+                if (! $upload instanceof TemporaryUploadedFile) {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => 'Select an image or video before saving.',
+                    ]);
+                }
+                $this->assertUploadIsPrimaryMedia($upload);
+
+                // A pure media mutation must not submit and validate the
+                // entire autosaving Artwork form. The existing ingest and
+                // primary linkage services are the authoritative owners.
+                // Ingest commits independently so a later editorial error
+                // cannot leave an unregistered file in Storage.
+                try {
+                    $ingested = app(MediaIngestService::class)->ingestUnique($upload);
+                } catch (ValidationException $exception) {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => collect($exception->errors())->flatten()->first()
+                            ?? 'The selected image or video could not be processed.',
+                    ]);
+                }
+                $asset = $ingested['asset'];
+                $current = $artwork->artworkMedia()
+                    ->where('role', 'primary')->first();
+                $oldId = $current === null ? null : (int) $current->getAttribute('media_asset_id');
+                $newAlt = filled($data['primary_alt_text'] ?? null)
+                    ? (string) $data['primary_alt_text'] : null;
+                $oldAlt = $current?->getAttribute('alt_text_override');
+
+                if ($oldId === (int) $asset->getKey() && $oldAlt === $newAlt) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'Primary media unchanged',
+                        status: 'info',
+                    );
+                    return;
+                }
+
+                DB::transaction(function () use ($artwork, $asset, $ingested, $newAlt, $current): void {
+                    $primary = app(ArtworkPrimaryMediaService::class);
+                    if ($current === null) {
+                        $primary->attachAsset($artwork, $asset, recordIngest: ! $ingested['duplicate']);
+                    } else {
+                        $primary->replaceAsset($artwork, $asset, recordIngest: ! $ingested['duplicate']);
+                    }
+                    app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $newAlt);
+                });
+
+                $this->refreshWorkspaceAfterMutation();
+                app(AdminNotifier::class)->notification(
+                    title: 'Primary media updated',
+                    status: 'success',
+                );
+            });
+
+        return AdminDialog::command($action, 'Use media', AdminDialogSize::Default);
     }
 
     /** @param array<string, mixed> $arguments
@@ -136,13 +234,24 @@ trait GalleryWorkspaceArtworkDialogs
         }
 
         $published = (string) $artwork->getAttribute('state') === 'published';
+        $actions[] = Action::make('dialogUploadPrimaryMedia')
+            ->label('Upload primary media')
+            ->icon(AdminIcon::Upload->value)
+            ->iconButton()
+            ->color('gray')
+            ->disabled($published)
+            ->extraAttributes(['class' => 'admin-dialog__header-action'])
+            ->action(function () use ($target): void {
+                $this->replaceMountedAction('uploadArtworkPrimaryMedia', $target);
+            });
+
         $actions[] = AdminDialog::headerAction(
             'dialogArtworkPublication',
             $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
             function () use ($published, $id, $target): void {
                 if ($published) {
                     // Unpublication is confirmed by its existing domain action.
-                    $this->replaceMountedAction('unpublishArtwork', $target);
+                    $this->replaceMountedAction('unpublishArtwork', [...$target, 'returnToEditor' => true]);
 
                     return;
                 }

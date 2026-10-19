@@ -25,6 +25,88 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/GalleryFixtures.php';
 
+it('deletes an empty draft Gallery slot without requiring primary media', function (): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery, ['position' => 0]);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $draft->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect(Artwork::query()->whereKey($draft->getKey())->exists())->toBeFalse()
+        ->and(AuditEvent::query()->where('action', 'artwork.deleted')->where('entity_id', $draft->getKey())->count())->toBe(1)
+        ->and(AdminNotification::query()->where('title', 'Artwork deleted')->count())->toBe(1);
+});
+
+it('rejects direct deletion of a published Gallery artwork without destroying its media', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $asset = galleryFixtureAsset('video/mp4');
+    galleryFixturePrimary($artwork, $asset);
+    app(ArtworkPublicationService::class)->publish($artwork);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $artwork->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect(Artwork::query()->whereKey($artwork->getKey())->exists())->toBeTrue()
+        ->and(MediaAsset::query()->whereKey($asset->getKey())->exists())->toBeTrue()
+        ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
+});
+
+it('rolls back optional file deletion and Artwork removal together on a failed audit', function (): void {
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $artwork = galleryFixtureArtwork($gallery);
+    galleryFixturePrimary($artwork, $asset);
+    galleryFixtureUnavailableAnalytics();
+
+    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $audit = Mockery::mock($realAudit);
+    $audit->shouldReceive('record')->andReturnUsing(function (...$arguments) use ($realAudit): mixed {
+        if (($arguments[1] ?? '') === 'artwork.deleted') {
+            throw new RuntimeException('Artwork deletion audit failed');
+        }
+
+        return $realAudit->record(...$arguments);
+    });
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $artwork->getKey()])
+        ->fillForm(['delete_media_file' => true]);
+
+    expect(fn () => $editor->callMountedAction())->toThrow(RuntimeException::class, 'Artwork deletion audit failed');
+    expect(Artwork::query()->whereKey($artwork->getKey())->exists())->toBeTrue()
+        ->and(ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('media_asset_id', $asset->getKey())->exists())->toBeTrue()
+        ->and((string) $asset->fresh()->getAttribute('state'))->toBe('available');
+});
+
+it('deletes an Artwork slot but preserves its shared Storage file unless opted in', function (): void {
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $one = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $two = galleryFixtureArtwork($gallery, ['position' => 1]);
+    galleryFixturePrimary($one, $asset);
+    galleryFixturePrimary($two, $asset);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $one->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect(Artwork::query()->whereKey($one->getKey())->exists())->toBeFalse()
+        ->and($asset->fresh()->getAttribute('state'))->toBe('available')
+        ->and($two->fresh()->getAttribute('artwork_category_id'))->toBe($gallery->getKey())
+        ->and((int) $two->fresh()->getAttribute('position'))->toBe(0);
+});
+
 it('detaches a draft from its Gallery without deleting artwork media or shared MediaAssets', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset();
@@ -95,7 +177,7 @@ it('accepts existing image and video MediaAssets as primary and rejects audio', 
 });
 
 
-it('detaches Gallery artworks after their shared primary Media File is deleted from the Gallery workspace', function (): void {
+it('deletes the selected Artwork and detaches other Galleries when its shared primary file is explicitly deleted', function (): void {
     $source = galleryFixtureCategory();
     $otherGallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset();
@@ -110,11 +192,11 @@ it('detaches Gallery artworks after their shared primary Media File is deleted f
     expect($disk->exists($asset->storage_key))->toBeTrue();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
-        ->mountAction('deletePrimaryMedia', ['artwork' => $deletedFromSource->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $deletedFromSource->getKey()])
+        ->fillForm(['delete_media_file' => true])
         ->callMountedAction();
 
-    expect(Artwork::query()->whereKey($deletedFromSource->getKey())->exists())->toBeTrue()
-        ->and($deletedFromSource->fresh()->getAttribute('artwork_category_id'))->toBeNull()
+    expect(Artwork::query()->whereKey($deletedFromSource->getKey())->exists())->toBeFalse()
         ->and($alsoAffected->fresh()->getAttribute('artwork_category_id'))->toBeNull()
         ->and((int) $remainingInSource->fresh()->position)->toBe(0)
         ->and(ArtworkMedia::query()->where('media_asset_id', $asset->getKey())->exists())->toBeFalse()

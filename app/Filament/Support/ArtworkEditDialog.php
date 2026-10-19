@@ -18,7 +18,6 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -47,12 +46,11 @@ final class ArtworkEditDialog
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
             'work_year' => $artwork->getAttribute('work_year'),
             'work_date' => $artwork->getAttribute('work_date'),
-            'featured_on_home' => (bool) $artwork->getAttribute('featured_on_home'),
         ];
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -87,6 +85,7 @@ final class ArtworkEditDialog
                     ] : []),
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
+                    DatePicker::make('work_date')->label('Exact date')->nullable(),
                 ])->columns(['md' => 2]),
             AdminForm::section('Dimensions')->schema([
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
@@ -119,9 +118,11 @@ final class ArtworkEditDialog
                             // ALT belongs to the chosen Media File, not the previous primary.
                             $set('primary_alt_text', null);
                         })
-                        ->helperText('Images and videos only.')
+                        ->helperText($autosave
+                            ? 'Use Upload primary media in the Edit dialog actions to upload a new file.'
+                            : 'Images and videos only.')
                         ->columnSpanFull(),
-                    FileUpload::make('primary_upload')
+                    ...(! $autosave ? [FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
                         ->storeFiles(false)
                         ->acceptedFileTypes(self::primaryMimeTypes())
@@ -133,17 +134,13 @@ final class ArtworkEditDialog
                             }
                         })
                         ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
-                        ->columnSpanFull(),
+                        ->columnSpanFull()] : []),
                     Textarea::make('primary_alt_text')
                         ->label('Primary media ALT text')
                         ->maxLength(500)
                         ->nullable()
                         ->helperText('Description for screen readers. Leave blank to inherit the Storage Media File ALT text.')
                         ->columnSpanFull(),
-                ])->columns(['md' => 2]),
-            AdminForm::section('Presentation')->schema([
-                    DatePicker::make('work_date')->label('Exact date')->nullable(),
-                    Toggle::make('featured_on_home')->label('Feature on home when newest year is shared')->default(false),
                 ])->columns(['md' => 2]),
         ];
     }
@@ -183,9 +180,16 @@ final class ArtworkEditDialog
         // before the Artwork database transaction so a later editorial failure
         // cannot roll back the MediaAsset while leaving its files on disk.
         // The successfully ingested file remains reusable in Storage.
-        $uploadedAsset = $upload instanceof TemporaryUploadedFile
-            ? app(MediaIngestService::class)->ingest($upload)
-            : null;
+        try {
+            $uploadedAsset = $upload instanceof TemporaryUploadedFile
+                ? app(MediaIngestService::class)->ingest($upload)
+                : null;
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages([
+                'primary_upload' => collect($exception->errors())->flatten()->first()
+                    ?? 'The selected image or video could not be processed.',
+            ]);
+        }
 
         DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentAssetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment): void {
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
@@ -215,6 +219,12 @@ final class ArtworkEditDialog
                 $currentPrimary === null
                     ? $primaryMedia->attachAsset($artwork, $asset)
                     : $primaryMedia->replaceAsset($artwork, $asset);
+            } elseif (array_key_exists('primary_media_asset_id', $data)
+                && $assetId === 0
+                && $currentPrimary !== null) {
+                // Clearing the existing Media File is an explicit detach.
+                // It must never delete the independent Storage original.
+                $primaryMedia->detachPrimary($artwork);
             }
 
             $primary = $artwork->artworkMedia()->where('role', 'primary')->first();

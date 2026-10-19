@@ -443,15 +443,18 @@
 }
 
 .admin-help__popover {
-    position: absolute;
-    z-index: 1000;
-    top: calc(100% + .35rem);
-    right: 0;
-    width: min(18rem, 72vw);
+    /* The single shared help component positions its portal in the viewport,
+       clear of modal scroll clipping and all four screen edges. */
+    position: fixed;
+    z-index: 100000;
+    width: min(18rem, calc(100dvw - 24px));
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overflow-wrap: anywhere;
     padding: .55rem .65rem;
-    border: 1px solid var(--admin-line-strong);
-    background: var(--admin-control-popover-surface, var(--admin-surface));
-    color: var(--admin-text);
+    border: 1px solid var(--admin-line-strong, #999);
+    background: var(--admin-control-popover-surface, var(--admin-surface, #fff));
+    color: var(--admin-text, #222);
     box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
     font-size: .72rem;
     font-weight: 450;

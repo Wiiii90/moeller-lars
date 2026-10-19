@@ -37,7 +37,7 @@ final class CustomPageWorkspace extends Page
 
     /** @var array<string, string> */
     private const COMPONENT_LABELS = [
-        'image' => 'Image',
+        'image' => 'Image / Video',
         'text' => 'Rich Text',
         'list' => 'List',
         'divider' => 'Divider',

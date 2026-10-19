@@ -259,3 +259,30 @@ it('rolls back a batch publication when one selected artwork is not publishable'
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
         ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 });
+
+it('retains the Gallery Artwork editor after a confirmed Unpublish launched from its header', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    galleryFixturePrimary($artwork, galleryFixtureAsset('video/mp4'));
+    app(ArtworkPublicationService::class)->publish($artwork);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->assertSet('mountedActions.0.name', 'editArtwork')
+        ->mountAction('dialogArtworkPublication')
+        ->assertSet('mountedActions.0.name', 'unpublishArtwork')
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editArtwork')
+        ->assertSet('mountedActions.0.arguments.artwork', $artwork->getKey())
+        ->assertDispatched('admin-header-notification');
+
+    expect($artwork->fresh()->state)->toBe('draft');
+
+    // The standalone Unpublish row command is deliberately not an editor.
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('unpublishArtwork', ['artwork' => $artwork->getKey()])
+        ->callMountedAction()
+        ->assertSet('mountedActions', []);
+});

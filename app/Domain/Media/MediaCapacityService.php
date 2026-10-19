@@ -133,9 +133,9 @@ final class MediaCapacityService
         return (int) round(self::WARNING_RATIO * 100);
     }
 
-    public function assertCanStoreOriginal(int $bytes): void
+    public function assertCanStoreOriginal(int $bytes, int $generatedBytes = 0): void
     {
-        if ($bytes <= 0) {
+        if ($bytes <= 0 || $generatedBytes < 0) {
             throw ValidationException::withMessages(['media' => 'The uploaded media has an invalid size.']);
         }
 
@@ -165,8 +165,31 @@ final class MediaCapacityService
             + $generatedBytes
             + max(0, (int) ($database['logical_bytes'] ?? 0));
 
-        if ($siteUsedBytes >= $quota || $bytes > ($quota - $siteUsedBytes)) {
+        // The preview bytes have already been generated but not written to
+        // Storage. Reserve them together with the immutable original before
+        // either file is persisted; the existing ingest lock serializes this.
+        if ($siteUsedBytes >= $quota
+            || $bytes > ($quota - $siteUsedBytes)
+            || $generatedBytes > ($quota - $siteUsedBytes - $bytes)) {
             throw ValidationException::withMessages(['media' => 'The site storage allowance is full. Remove reclaimable storage or ask the operator to increase the allowance before uploading.']);
+        }
+    }
+
+    /**
+     * The generated staging file is already included in the variants/ quota
+     * measurement; validate its real size without reserving it twice.
+     */
+    public function assertWithinAllowance(): void
+    {
+        $snapshot = $this->snapshot();
+        if ($snapshot['configuration_valid'] !== true
+            || $snapshot['measurement_available'] !== true) {
+            throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified.']);
+        }
+
+        if ($snapshot['quota_bytes'] !== null
+            && $snapshot['site_used_bytes'] > $snapshot['quota_bytes']) {
+            throw ValidationException::withMessages(['media' => 'Staged media exceeds the site storage allowance.']);
         }
     }
 

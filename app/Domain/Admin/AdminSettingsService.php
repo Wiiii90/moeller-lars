@@ -74,6 +74,53 @@ final class AdminSettingsService
             if (array_key_exists($angle, $data)) {
                 $data[$angle] = PublicAppearance::normalizeAngle($data[$angle], $angle);
             }
+            foreach ([
+                '_gradient_stops' => 'normalizeStops',
+                '_gradient_repeating' => 'normalizeRepeating',
+                '_gradient_repeat_span' => 'normalizeRepeatSpan',
+                '_gradient_center_x' => 'normalizeCenter',
+                '_gradient_center_y' => 'normalizeCenter',
+                '_gradient_shape' => 'normalizeShape',
+            ] as $suffix => $method) {
+                $field = $surface.$suffix;
+                if (array_key_exists($field, $data)) {
+                    $data[$field] = PublicAppearance::$method($data[$field], $field);
+                }
+            }
+        }
+        if (array_key_exists('frame_style', $data)) {
+            $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style']);
+        }
+        if (array_key_exists('header_divider_mode', $data)) {
+            $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode']);
+        }
+        if (array_key_exists('header_divider_color', $data)) {
+            $data['header_divider_color'] = PublicAppearance::normalizeColor($data['header_divider_color'], 'header_divider_color');
+        }
+        if (array_key_exists('header_name_color', $data)) {
+            $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'], 'header_name_color');
+        }
+        if (array_key_exists('header_name_text', $data)) {
+            $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text']);
+        }
+        foreach (['header_name_alignment', 'header_name_mobile_alignment'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = PublicAppearance::headerAlignment($data[$field], $field);
+            }
+        }
+        if (array_key_exists('header_name_visible', $data)) {
+            $data['header_name_visible'] = (bool) $data['header_name_visible'];
+        }
+        if (array_key_exists('header_name_size', $data)) {
+            $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size']);
+        }
+        if (array_key_exists('header_name_min_size', $data)) {
+            $data['header_name_min_size'] = PublicAppearance::normalizeTitleMinSize($data['header_name_min_size']);
+        }
+        foreach (['header_name_auto_scale'] as $toggle) {
+            if (array_key_exists($toggle, $data)) {
+                $data[$toggle] = (bool) $data[$toggle];
+            }
         }
         if (array_key_exists('public_page_width', $data)) {
             $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width']);

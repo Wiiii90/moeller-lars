@@ -9,6 +9,7 @@ use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -602,11 +603,7 @@ final class ListMediaAssets extends Page
 
         $this->assets = $records->map(function (MediaAsset $asset) use ($catalog): array {
             /** @var MediaVariant|null $thumbnail */
-            $thumbnail = $asset->getRelationValue('variants')->first(static function (MediaVariant $variant): bool {
-                return $variant->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-                    && $variant->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                    && $variant->getAttribute('state') === 'available';
-            });
+            $thumbnail = \App\Domain\Media\MediaPreviewVariant::preview($asset);
             $references = $catalog->references($asset);
             $mime = (string) $asset->getAttribute('mime_type');
             $createdAt = $asset->getAttribute('created_at');
@@ -867,10 +864,12 @@ final class ListMediaAssets extends Page
                 ->schema([
                     TextInput::make('alt_text')
                         ->label('Default ALT text')
+                        ->hint(AdminHelp::make('ALT text help', 'A description for screen readers. It describes the actual photograph or video, not copyright.'))
                         ->helperText('Describe the image content and function. Usage-specific ALT may override it.')
                         ->maxLength(500)
                         ->nullable(),
                     TextInput::make('credit')
+                        ->hint(AdminHelp::make('Credit help', 'Visible attribution to the photographer or another contributor, for example: Photo: Jane Example. This is not the legal copyright notice.'))
                         ->maxLength(240)
                         ->nullable(),
                 ])
@@ -879,6 +878,7 @@ final class ListMediaAssets extends Page
                 ->schema([
                     Select::make('copyright_notice_mode')
                         ->label('Copyright notice')
+                        ->hint(AdminHelp::make('Copyright help', 'Legal notice about rights in this media file. Inherit the General default, enter an asset-specific notice, or intentionally display none.'))
                         ->options([
                             MediaAsset::COPYRIGHT_INHERIT => 'Inherit General default',
                             MediaAsset::COPYRIGHT_OVERRIDE => 'Use asset override',
@@ -895,22 +895,26 @@ final class ListMediaAssets extends Page
                 ->schema([
                     TextInput::make('file_creator')
                         ->label('Photographer / file creator')
+                        ->hint(AdminHelp::make('File creator help', 'Who made this particular photograph or video? They may be different from the artist who made the depicted artwork.'))
                         ->helperText('Enter the photographer only if known; the artwork creator may differ.')
                         ->maxLength(240)
                         ->nullable(),
                     TextInput::make('file_rights_holder')
                         ->label('Photo rights holder')
+                        ->hint(AdminHelp::make('Photo rights holder help', 'The person or organization entitled to license the photograph. This is not necessarily the photographer or artist.'))
                         ->helperText('Who holds rights in this particular image, if known.')
                         ->maxLength(240)
                         ->nullable(),
                     Textarea::make('rights_usage_terms')
                         ->label('Specific usage terms')
+                        ->hint(AdminHelp::make('Usage terms help', 'Record permission details or restrictions agreed for this media file. Leave empty if none are specified.'))
                         ->helperText('Optional asset-specific permissions and restrictions.')
                         ->maxLength(2000)
                         ->rows(3)
                         ->nullable(),
                     TextInput::make('license_inquiry_url')
                         ->label('License / rights inquiry URL')
+                        ->hint(AdminHelp::make('License URL help', 'An optional HTTPS address where visitors can request rights information. It does not grant a license automatically.'))
                         ->helperText('Optional HTTPS contact or license-information URL; not a grant of an open license.')
                         ->url()
                         ->maxLength(2048)
@@ -1192,6 +1196,10 @@ final class ListMediaAssets extends Page
                 'file_rights_holder' => (string) ($asset->getAttribute('file_rights_holder') ?? ''),
                 'rights_usage_terms' => (string) ($asset->getAttribute('rights_usage_terms') ?? ''),
                 'license_inquiry_url' => (string) ($asset->getAttribute('license_inquiry_url') ?? ''),
+                'rights_file_status' => MediaTypePolicy::isImage($mime)
+                    ? app(\App\Domain\Publication\MediaRightsPublicationSelections::class)
+                        ->workingAssetReadiness($asset)['label']
+                    : null,
                 'dimensions' => $asset->getAttribute('width') && $asset->getAttribute('height')
                     ? $asset->getAttribute('width').'×'.$asset->getAttribute('height')
                     : '—',

@@ -39,6 +39,12 @@ trait GalleryWorkspaceUploadSettings
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
                     'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
                     'artwork_divider' => GalleryPresentation::divider($gallery),
+                    'sort_mode' => GalleryPresentation::sortMode($gallery),
+                    'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
+                    'show_artwork_information' => GalleryPresentation::showArtworkInformation($gallery),
+                    'show_media_credits' => GalleryPresentation::showMediaCredits($gallery),
+                    'show_media_copyright' => GalleryPresentation::showMediaCopyright($gallery),
+                    'caption_layout' => GalleryPresentation::captionLayout($gallery),
                 ];
             })
             ->schema([
@@ -53,6 +59,29 @@ trait GalleryWorkspaceUploadSettings
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                         Textarea::make('description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
+                        Select::make('sort_mode')
+                            ->label('Artwork order')
+                            ->options(GalleryPresentation::SORT_OPTIONS)
+                            ->default(GalleryPresentation::SORT_MANUAL)
+                            ->required()
+                            ->columnSpanFull(),
+                        Toggle::make('show_artwork_information')
+                            ->label('Show Artwork information below each work')
+                            ->columnSpanFull(),
+                        Toggle::make('show_media_credits')
+                            ->label('Show authored Media File credits')
+                            ->columnSpanFull(),
+                        Toggle::make('show_media_copyright')
+                            ->label('Show configured copyright notices')
+                            ->columnSpanFull(),
+                        Select::make('caption_layout')
+                            ->label('Caption arrangement')
+                            ->options(GalleryPresentation::CAPTION_LAYOUTS)
+                            ->required()
+                            ->columnSpanFull(),
+                        Toggle::make('video_sound_enabled')
+                            ->label('Allow visitors to unmute looping Gallery videos')
+                            ->columnSpanFull(),
                         Toggle::make('landscape_detail_enabled')
                             ->label('Expand landscape Artwork pages')
                             ->columnSpanFull(),
@@ -90,6 +119,12 @@ trait GalleryWorkspaceUploadSettings
                             'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
                             'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                             'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
+                            'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,
+                            'video_sound_enabled' => $data['video_sound_enabled'] ?? false,
+                            'show_artwork_information' => $data['show_artwork_information'] ?? true,
+                            'show_media_credits' => $data['show_media_credits'] ?? false,
+                            'show_media_copyright' => $data['show_media_copyright'] ?? false,
+                            'caption_layout' => $data['caption_layout'] ?? GalleryPresentation::CAPTION_RIGHTS_LEFT,
                         ]);
                         $changed = $updated->wasChanged();
 

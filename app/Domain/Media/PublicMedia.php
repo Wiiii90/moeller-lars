@@ -197,18 +197,28 @@ class PublicMedia
     public function thumbnailVariantForAsset(MediaAsset $asset): MediaVariant
     {
         $this->assertAvailable($asset);
-        $asset->loadMissing('variants');
-        $matching = $asset->getRelationValue('variants')->filter(
-            fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === self::THUMBNAIL_KIND
-                && $variant->getAttribute('transform_profile') === self::PUBLIC_TRANSFORM_PROFILE
-                && $variant->getAttribute('state') === 'available',
-        )->values();
-
-        if ($matching->count() !== 1) {
+        $variant = MediaPreviewVariant::imageThumbnail($asset);
+        if (! $variant instanceof MediaVariant) {
             throw new LogicException('Public media requires exactly one available public thumbnail.');
         }
 
-        return $matching->first();
+        return $variant;
+    }
+
+    /**
+     * A missing poster is normal for legacy video assets. Never synthesize
+     * a thumbnail from the original at request time or mutate the registry.
+     */
+    public function posterUrlForAsset(MediaAsset $asset): ?string
+    {
+        if (! MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'))) {
+            return null;
+        }
+
+        $this->assertAvailable($asset);
+        $poster = MediaPreviewVariant::videoPoster($asset);
+
+        return $poster instanceof MediaVariant ? $this->variantUrl($poster) : null;
     }
 
     public function thumbnailUrlForAsset(MediaAsset $asset): string

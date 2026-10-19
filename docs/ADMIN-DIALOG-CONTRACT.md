@@ -69,10 +69,23 @@ Action; the List command must not mutate on close/cancel.
 **Custom Page Contact:** All three Contact options and the optional Contact heading
 are edited in the owning Contact component; there are no Contact child rows or
 independent child Actions in Custom Page. The three visibility toggles default
-on at creation. These simple fields use the existing native-change Edit autosave,
-not the List Repeater Command. The public Contact heading can be overridden.
-Contact and Legal Disclaimer admin Content each have exactly a heading and a
-single ellipsized summary line. The Home Contact editor remains separate.
+on at creation. The Contact platform switches, social/form visibility
+switches, Form presentation selector, optional status text and heading are
+Filament/Livewire-owned controls: each Edit field uses `live()` plus its own
+`afterStateUpdated` callback (text on blur), never the modal window's native
+`wire:change` event as sole persistence. Every changed field rebuilds from
+fresh persisted siblings and saves through `CustomPageEditorialService`,
+including nested Contact inside Image, and sends one audited notification
+only on a genuine mutation. An incomplete Under-construction form setting
+remains in the mounted editor until its required status text is authored;
+then both values commit atomically. Contact Create still collects a draft,
+not premature writes. List entries continue to use the existing Command
+Apply workflow. The public Contact heading can be overridden. Contact
+and Legal Disclaimer admin Content each have a heading and a single
+ellipsized summary line. Home Contact child editors use the same per-field
+Livewire persistence for social selection, Form presentation and status,
+using `HomePresentationEditorialService`; they do not clone the Custom
+Page service.
 
 ### Create
 
@@ -190,6 +203,22 @@ its existing action/link field rather than becoming a fifth fact cell.
 ## Chrome and actions
 
 The native Filament close control is always the final top-right control. Filament continues to own modal state, focus trapping and Escape behavior.
+
+Non-destructive Edit header actions (Move up/down, Publish/Unpublish,
+Archive/Restore and equivalent state changes) must never dismiss the parent
+Edit dialog. The shared `AdminDialog::headerAction` owns their Filament
+`after()` Halt lifecycle and forces a complete background workspace render;
+feature code persists through the same row domain action, then refreshes
+the mounted editor by its current stable target. The previous position,
+state and disabled edge controls must update immediately; move buttons
+disable at the first/last sibling, and repeated boundary clicks do not
+produce audit records or success feedback. Switching to an explicit
+confirmation/command may temporarily replace the editor, but successful
+Gallery Unpublish and Journal scheduling launched from an Edit header
+return to the updated editor. Standalone row actions retain their usual
+completion semantics. Actual Delete and native X close as before.
+No global modal event hijack, extra timer, duplicate action executor or
+independent page-local dialog lifecycle may implement these rules.
 
 Contextual actions are native Filament Actions lifted into the shared header rail. The shared adapter explicitly keeps modal and footer-action alignment at `Start`. Confirmation dialogs deliberately remain normal Filament modals so Filament cannot introduce a second confirmation-specific width, alignment, warning-icon, alert-role or footer-layout branch underneath the shared adapter.
 

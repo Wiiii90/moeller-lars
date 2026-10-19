@@ -81,7 +81,10 @@ final class MediaRightsArtifactService
             throw new RuntimeException('Canonical source media is unavailable.');
         }
 
-        $stagingDirectory = 'rights-staging';
+        // Reserve the source-size floor before writing temporary bytes.
+        // The staged copy belongs under generated storage for quota accounting.
+        $this->capacity->assertCanStoreOriginal((int) $source->getAttribute('byte_size'));
+        $stagingDirectory = 'variants/rights-staging';
         if (! $disk->makeDirectory($stagingDirectory) && ! $disk->exists($stagingDirectory)) {
             throw new RuntimeException('Cannot create private rights staging directory.');
         }
@@ -99,11 +102,10 @@ final class MediaRightsArtifactService
                 ? $this->writer->stageVariantCopy($asset, $source, $sourcePath, $stagingPath, $mayReserveDataMining)
                 : $this->writer->stageCopy($asset, $sourcePath, $stagingPath, $mayReserveDataMining);
 
-            // Both staging copies and final artifacts count against physical
-            // disk. Before installing a new immutable artifact, enforce the
-            // existing authoritative capacity measurement.
+            // Staging already counts toward the generated-storage quota.
+            // A hard link installs the final name without duplicating bytes.
+            $this->capacity->assertWithinAllowance();
             if (! is_file($destinationPath)) {
-                $this->capacity->assertCanStoreOriginal($metadata['byte_size']);
                 if (! @link($stagingPath, $destinationPath) && ! is_file($destinationPath)) {
                     throw new RuntimeException('Cannot atomically install immutable rights artifact.');
                 }
@@ -134,6 +136,10 @@ final class MediaRightsArtifactService
             // Keep the content-keyed destination: historical revisions may
             // already reference it. Only discard this unpublished temp copy.
             @unlink($stagingPath);
+            // Both successful writes and failed/rolled-back file staging can
+            // change physical storage. Let the existing capacity owner
+            // refresh its UI projection on the next explicit measurement.
+            $this->capacity->forgetCachedSnapshot();
         }
     }
 

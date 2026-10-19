@@ -19,6 +19,12 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/GalleryFixtures.php';
 
+it('keeps Livewire temporary upload admission aligned to the canonical media policy', function (): void {
+    expect(config('livewire.temporary_file_upload.rules'))
+        ->toBe('file|max:'.(int) ceil(\App\Domain\Media\MediaTypePolicy::maxUploadBytes() / 1024))
+        ->and(config('livewire.temporary_file_upload.max_upload_time'))->toBe(10);
+});
+
 it('ingests a real image through Add artwork and publishes its primary ALT description', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = galleryFixtureCategory();
@@ -60,7 +66,18 @@ it('ingests a real image through Add artwork and publishes its primary ALT descr
 });
 
 
-it('replaces primary media through Edit without deleting the old Storage file or carrying over its ALT', function (): void {
+// The replacement command must be independently accessible from a Gallery
+// card, not only through the autosaving Edit modal's nested action stack.
+it('offers the primary upload as an independent Gallery action', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->assertSee('Replace primary image or video');
+});
+
+it('replaces primary media through a committed Gallery command instead of Edit autosave', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
@@ -71,9 +88,8 @@ it('replaces primary media through Edit without deleting the old Storage file or
     galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->mountAction('uploadArtworkPrimaryMedia', ['artwork' => $artwork->getKey()])
         ->fillForm([
-            ...app(ArtworkEditDialog::class)->fill($artwork),
             'primary_upload' => UploadedFile::fake()->image('replacement-artwork.jpg', 40, 48),
             'primary_alt_text' => 'A new painting with a yellow circular motif',
         ])
@@ -88,13 +104,30 @@ it('replaces primary media through Edit without deleting the old Storage file or
         ->and($usage->alt_text_override)->toBe('A new painting with a yellow circular motif')
         ->and($oldAsset->fresh()->state)->toBe('available')
         ->and($newAsset->state)->toBe('available')
-        ->and($thumbnail->state)->toBe('available');
+        ->and($thumbnail->state)->toBe('available')
+        ->and(AdminNotification::query()->where('title', 'Primary media updated')->count())->toBe(1);
 
     Storage::disk(config('media.disk'))->assertExists([$newAsset->storage_key, $thumbnail->storage_key]);
 
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
 
+
+it('reuses a byte-identical original from Storage and still opens Add artwork', function (): void {
+    Storage::fake(config('media.disk'));
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
+    $upload = UploadedFile::fake()->image('already-stored-artwork.jpg', 60, 40);
+    $original = app(MediaIngestService::class)->ingest($upload);
+
+    $component = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('directPrimaryMedia', [$upload])
+        ->call('processDirectPrimaryMedia')
+        ->assertHasNoErrors();
+
+    expect($component->get('pendingPrimaryMediaAssetId'))->toBe((int) $original->getKey())
+        ->and(\App\Models\MediaAsset::query()->where('sha256', $original->sha256)->count())->toBe(1);
+});
 
 it('turns a real direct Gallery upload into an editable and publishable artwork draft', function (): void {
     Storage::fake(config('media.disk'));

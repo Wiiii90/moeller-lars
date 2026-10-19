@@ -15,7 +15,7 @@ final class PublicSiteContext
         private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string}} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicFrameStyle:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderVisible:bool,publicHeaderText:string,publicHeaderAlignment:string,publicHeaderMobileAlignment:string,publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderGradientCss:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool,publicNavigationHover:bool} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::general();
@@ -31,10 +31,26 @@ final class PublicSiteContext
             'faviconVariant' => $faviconVariant,
             'isPreview' => $this->preview->active(),
             'homeUrl' => $this->preview->homeUrl(),
+            'publicFrameStyle' => PublicAppearance::frameStyle($settings->getAttribute('frame_style')),
             'publicBackgroundCss' => PublicAppearance::backgroundCss($settings),
             'publicMenuBackgroundCss' => PublicAppearance::surfaceCss($settings, 'menu_background'),
             'publicContentBackgroundCss' => PublicAppearance::surfaceCss($settings, 'page_background'),
+            'publicNavigationHover' => (bool) $settings->getAttribute('navigation_hover_preview'),
             'publicLayoutCss' => PublicAppearance::layoutCss($settings),
+            'publicHeaderVisible' => $settings->getAttribute('header_name_visible') === null ? true : (bool) $settings->getAttribute('header_name_visible'),
+            'publicHeaderText' => PublicAppearance::headerText($settings->getAttribute('header_name_text')),
+            'publicHeaderAlignment' => PublicAppearance::presentedHeaderAlignment($settings->getAttribute('header_name_alignment'), $settings->getAttribute('header_name_position')),
+            'publicHeaderMobileAlignment' => PublicAppearance::headerAlignment($settings->getAttribute('header_name_mobile_alignment'), 'header_name_mobile_alignment'),
+            'publicHeaderPosition' => PublicAppearance::headerPosition($settings->getAttribute('header_name_position')),
+            'publicHeaderCaps' => PublicAppearance::headerCaps($settings->getAttribute('header_name_caps')),
+            'publicHeaderColor' => PublicAppearance::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color'),
+            'publicHeaderGradientCss' => PublicAppearance::titleGradientCss($settings),
+            'publicHeaderSize' => PublicAppearance::normalizeTitleSize($settings->getAttribute('header_name_size')).'px',
+            'publicHeaderMinSize' => PublicAppearance::normalizeTitleMinSize($settings->getAttribute('header_name_min_size')).'px',
+            'publicHeaderDivider' => PublicAppearance::headerDivider($settings->getAttribute('header_divider_mode')),
+            'publicHeaderDividerColor' => PublicAppearance::normalizeColor($settings->getAttribute('header_divider_color'), 'header_divider_color'),
+            'publicHeaderAutoScale' => $settings->getAttribute('header_name_auto_scale') === null ? true : (bool) $settings->getAttribute('header_name_auto_scale'),
+            'publicPageTransparent' => PublicAppearance::normalizeMode($settings->getAttribute('page_background_mode'), 'page_background_mode') === PublicAppearance::MODE_TRANSPARENT,
         ];
     }
 }

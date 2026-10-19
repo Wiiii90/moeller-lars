@@ -100,6 +100,22 @@ it('publishes only an artwork with a published gallery and one available primary
         ->and($published->published_at)->not->toBeNull();
 });
 
+it('retains public Gallery visibility when the only image preview is the new public-v2 profile', function (): void {
+    $category = editorialCategory();
+    $artwork = editorialArtwork($category);
+    $asset = editorialAsset();
+    attachEditorialPrimary($artwork, $asset);
+    editorialVariant($asset)->forceFill([
+        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
+    ])->save();
+
+    app(ArtworkEditorialService::class)->publish($artwork);
+    $public = app(\App\Domain\Artwork\PublicArtworkQuery::class)->publishedBySlug((string) $artwork->getAttribute('slug'));
+
+    expect($public)->not->toBeNull()
+        ->and($public?->getKey())->toBe($artwork->getKey());
+});
+
 it('keeps an existing publication timestamp stable', function (): void {
     $artwork = editorialArtwork(editorialCategory(), ['published_at' => now()->subDay()]);
     $asset = editorialAsset();

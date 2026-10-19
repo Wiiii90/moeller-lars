@@ -3,6 +3,7 @@
     'defaultPane',
     'panes',
     'ariaLabel' => 'Stage view',
+    'externalState' => null,
 ])
 
 @php
@@ -13,9 +14,10 @@
 @endphp
 
 <div
-    class="admin-stage-tabs admin-stage-switcher"
+    class="admin-stage-tabs admin-stage-switcher @if ($externalState !== null) admin-stage-tabs--inline @endif @isset($tools) admin-stage-tabs--with-tools @endisset"
     role="group"
     aria-label="{{ $ariaLabel }}"
+    @if ($externalState === null)
     x-data="{
         activePane: @js($defaultPane),
         allowedPanes: @js($paneKeys),
@@ -38,6 +40,7 @@
 
         },
     }"
+    @endif
 >
     @foreach ($normalizedPanes as $value => $label)
         <button
@@ -45,9 +48,19 @@
             type="button"
             data-admin-stage-slot="{{ $loop->iteration }}"
             aria-pressed="{{ $value === $defaultPane ? 'true' : 'false' }}"
-            x-on:click="selectPane(@js($value))"
-            x-bind:class="{ 'is-primary': activePane === @js($value) }"
-            x-bind:aria-pressed="(activePane === @js($value)).toString()"
+            @if ($externalState === null)
+                x-on:click="selectPane(@js($value))"
+                x-bind:class="{ 'is-primary': activePane === @js($value) }"
+                x-bind:aria-pressed="(activePane === @js($value)).toString()"
+            @else
+                x-on:click="{{ $externalState }} = @js($value)"
+                x-bind:class="{ 'is-primary': {{ $externalState }} === @js($value) }"
+                x-bind:aria-pressed="({{ $externalState }} === @js($value)).toString()"
+            @endif
         >{{ $label }}</button>
     @endforeach
+    @isset($tools)
+        <span class="admin-control-separator admin-stage-tabs__separator" aria-hidden="true"></span>
+        {{ $tools }}
+    @endisset
 </div>

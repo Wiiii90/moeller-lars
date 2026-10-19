@@ -26,6 +26,19 @@ test('public CSP authorizes real styles and scripts across SPA navigation and ba
     });
     const firstResponse = await page.goto('/browser-public-spa-1');
     expect(firstResponse.status()).toBe(200);
+    // Laravel/Vite emits tracked tags, but hashed filenames alone cannot
+    // invalidate a Livewire session on rebuild. The shared manifest query
+    // makes JS and CSS change atomically and works for Admin's SPA too.
+    const trackedBuild = await page.locator('[data-navigate-track]').evaluateAll(elements =>
+        elements
+            .filter(element => (element.getAttribute('src') || element.getAttribute('href') || '').includes('/build/'))
+            .map(element => ({ tag: element.tagName, url: element.src || element.href })));
+    expect(trackedBuild.length).toBeGreaterThan(0);
+    for (const asset of trackedBuild) {
+        const address = new URL(asset.url);
+        expect(address.searchParams.get('id')).toMatch(/^[a-f0-9]{32}$/);
+    }
+    expect(new Set(trackedBuild.map(asset => new URL(asset.url).searchParams.get('id'))).size).toBe(1);
     const initialNonce = await publicCspNonce(firstResponse);
     await expect(page.locator('#content')).toContainText('Public SPA content 1');
     const firstWidth = await authorizedPublicStyles(page, initialNonce);
@@ -146,3 +159,73 @@ async function authorizedPublicStyles(page, nonce) {
         return element.closest('figure').getBoundingClientRect().width;
     });
 }
+
+test('Gallery SPA history keeps General width after repeated normal and wide-page visits', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/browser-gallery');
+    await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
+    const original = await page.evaluate(() => {
+        const computed = getComputedStyle(document.documentElement);
+        return {
+            shell: computed.getPropertyValue('--public-shell-max').trim(),
+            art: computed.getPropertyValue('--public-art-max').trim(),
+            padding: computed.getPropertyValue('--public-content-padding').trim(),
+        };
+    });
+    expect(original.shell).toMatch(/^\d+px$/);
+    const shellWidth = Number.parseFloat(original.shell);
+    await page.evaluate(() => { window.__galleryDocumentIdentity = 'retained'; });
+
+    const visit = async (path, wide = false) => {
+        await page.evaluate(target => window.Livewire.navigate(target), path);
+        await expect(page).toHaveURL(new RegExp(path + '$'));
+        if (wide) {
+            await expect(page.locator('#content')).toHaveClass(/site-content--landscape-artwork/);
+        } else {
+            await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
+        }
+        await expect.poll(() => page.evaluate(() => {
+            const root = getComputedStyle(document.documentElement);
+            const meta = document.querySelector('meta[data-public-layout]');
+            return {
+                shell: root.getPropertyValue('--public-shell-max').trim(),
+                art: root.getPropertyValue('--public-art-max').trim(),
+                padding: root.getPropertyValue('--public-content-padding').trim(),
+                metadata: [meta.dataset.publicLayoutShell, meta.dataset.publicLayoutArt, meta.dataset.publicLayoutPadding],
+            };
+        })).toEqual({
+            ...original,
+            metadata: [original.shell, original.art, original.padding],
+        });
+        if (!wide) {
+            await expect.poll(() => page.locator('#content').evaluate(
+                element => Math.round(element.getBoundingClientRect().width),
+            )).toBe(Math.round(shellWidth));
+            expect(await page.locator('.site-navigation').evaluate(
+                element => Math.round(element.getBoundingClientRect().width),
+            )).toBe(Math.round(shellWidth));
+        }
+        expect(await page.evaluate(() => window.__galleryDocumentIdentity)).toBe('retained');
+    };
+
+    // The reported Drawings -> Paintings pattern: normal Gallery -> normal Gallery.
+    for (let i = 0; i < 3; i += 1) {
+        await visit('/browser-sort-gallery');
+        await visit('/browser-gallery');
+    }
+
+    // Also test the accepted optional wider detail and the next ordinary page.
+    await visit('/artworks/browser-artwork-1', true);
+    await visit('/browser-gallery');
+    await visit('/browser-sort-gallery');
+    await page.goBack();
+    await expect(page).toHaveURL(/\/browser-gallery$/);
+    await expect.poll(() => page.locator('#content').evaluate(
+        element => Math.round(element.getBoundingClientRect().width),
+    )).toBe(Math.round(shellWidth));
+    await page.goForward();
+    await expect(page).toHaveURL(/\/browser-sort-gallery$/);
+    await expect.poll(() => page.locator('#content').evaluate(
+        element => Math.round(element.getBoundingClientRect().width),
+    )).toBe(Math.round(shellWidth));
+});

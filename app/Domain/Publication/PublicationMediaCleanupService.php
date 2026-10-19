@@ -3,8 +3,10 @@
 namespace App\Domain\Publication;
 
 use App\Domain\Media\MediaCapacityService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Models\MediaAsset;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +37,24 @@ final class PublicationMediaCleanupService
         if ($rows !== []) {
             DB::table('publication_media_cleanups')->insertOrIgnore($rows);
         }
+    }
+
+    /**
+     * Acknowledge only physically completed files. If deletion failed,
+     * retain the same outbox rows so drain() can retry idempotently.
+     *
+     * @param list<string> $storageKeys
+     */
+    public function acknowledgeRemoved(int $mediaAssetId, array $storageKeys): void
+    {
+        if ($mediaAssetId < 1 || $storageKeys === []) {
+            return;
+        }
+
+        DB::table('publication_media_cleanups')
+            ->where('media_asset_id', $mediaAssetId)
+            ->whereIn('storage_key', $storageKeys)
+            ->delete();
     }
 
     public function queueAbandonedWorkingMedia(): void
@@ -72,14 +92,18 @@ final class PublicationMediaCleanupService
         }
     }
 
-    /** @param list<string> $storageKeys */
-    public function deleteNow(array $storageKeys): void
+    /**
+     * @param list<string> $storageKeys
+     * @return bool True only if physical cleanup completed; false if a
+     *              committed or historical Publication owner requires deferral.
+     */
+    public function deleteNow(array $storageKeys): bool
     {
         $mediaAssetId = $this->resolveMediaAssetId($storageKeys);
         if ($mediaAssetId !== null && ! $this->canDeletePhysicalMedia($mediaAssetId)) {
             $this->queue($mediaAssetId, $storageKeys);
 
-            return;
+            return false;
         }
 
         $failed = [];
@@ -106,6 +130,8 @@ final class PublicationMediaCleanupService
         if ($failed !== []) {
             throw new RuntimeException('Media storage cleanup failed for: '.implode(', ', $failed));
         }
+
+        return true;
     }
 
     public function drain(): int
@@ -137,7 +163,158 @@ final class PublicationMediaCleanupService
             $this->refreshCapacitySnapshot();
         }
 
+        // Reuse this canonical post-Commit/Undo/Reset cleanup boundary. A
+        // small bounded pass reclaims only unreferenced registry entries,
+        // leaving full orphan-directory scans to the explicit operator CLI.
+        if (config('media.rights_preparation_enabled', false) === true) {
+            try {
+                $rights = $this->reclaimRightsArtifacts(20, false);
+                $removedFiles += $rights['files_removed'];
+            } catch (Throwable $exception) {
+                // Publication is already committed; cleanup is independently
+                // retryable and must not rewrite the published result.
+                report($exception);
+            }
+        }
+
         return $removedFiles;
+    }
+
+
+    /**
+     * Generated rights files have a different retention rule from originals:
+     * every Working or historic checkpoint selection is a permanent owner.
+     * Inspect only generated keys in our dedicated namespace.
+     *
+     * @return array{unreferenced:list<array{id:int,key:string}>,orphan_keys:list<string>}
+     */
+    public function rightsCleanupCandidates(int $limit = 20, bool $includeFiles = true): array
+    {
+        if ($limit < 1 || $limit > 20) {
+            throw new \InvalidArgumentException('Rights cleanup is limited to 1-20 items.');
+        }
+        if (config('media.rights_preparation_enabled', false) !== true) {
+            throw new RuntimeException('Rights cleanup requires the migrated offline rights-artifact registry.');
+        }
+
+        $rows = DB::table('media_rights_artifacts as artifact')
+            ->whereNotExists(static function (Builder $query): void {
+                $query->selectRaw('1')
+                    ->from('media_rights_artifact_selections as selection')
+                    ->whereColumn('selection.media_rights_artifact_id', 'artifact.id');
+            })
+            ->orderBy('artifact.id')
+            ->limit($limit)
+            ->get(['artifact.id', 'artifact.storage_key', 'artifact.revision', 'artifact.mime_type']);
+
+        $unused = [];
+        foreach ($rows as $row) {
+            $key = (string) $row->storage_key;
+            if (! $this->validRightsKey($key, (string) $row->revision, (string) $row->mime_type)) {
+                throw new RuntimeException('Rights registry contains an unexpected storage key.');
+            }
+            $unused[] = ['id' => (int) $row->id, 'key' => $key];
+        }
+
+        $orphans = [];
+        $orphanBudget = $limit - count($unused);
+        if ($includeFiles && $orphanBudget > 0) {
+            $disk = Storage::disk((string) config('media.disk'));
+            foreach (['variants/rights', 'variants/rights-staging', 'rights-staging'] as $prefix) {
+                foreach ($disk->allFiles($prefix) as $key) {
+                    if (! $this->isOwnedRightsFile($key) || DB::table('media_rights_artifacts')->where('storage_key', $key)->exists()) {
+                        continue;
+                    }
+                    $orphans[] = $key;
+                    if (count($orphans) >= $orphanBudget) {
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        return ['unreferenced' => $unused, 'orphan_keys' => $orphans];
+    }
+
+    /**
+     * Execute a small reclamation inside the SAME advisory lock used by
+     * media preparation, Commit, Undo and reset. Never remove a registry
+     * artifact while any scope (including old checkpoints) retains it.
+     *
+     * @return array{registry_removed:int,files_removed:int}
+     */
+    public function reclaimRightsArtifacts(int $limit = 20, bool $includeFiles = false): array
+    {
+        if ($limit < 1 || $limit > 20) {
+            throw new \InvalidArgumentException('Rights cleanup is limited to 1-20 items.');
+        }
+
+        $result = DB::transaction(function () use ($limit, $includeFiles): array {
+            DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
+            $candidates = $this->rightsCleanupCandidates($limit, $includeFiles);
+            $disk = Storage::disk((string) config('media.disk'));
+            $removedRegistry = 0;
+            $removedFiles = 0;
+
+            foreach ($candidates['unreferenced'] as $candidate) {
+                $row = DB::table('media_rights_artifacts')
+                    ->where('id', $candidate['id'])
+                    ->lockForUpdate()
+                    ->first(['id', 'storage_key', 'revision', 'mime_type']);
+                if ($row === null || DB::table('media_rights_artifact_selections')
+                    ->where('media_rights_artifact_id', $row->id)->exists()) {
+                    continue;
+                }
+                $key = (string) $row->storage_key;
+                if ($key !== $candidate['key'] || ! $this->validRightsKey($key, (string) $row->revision, (string) $row->mime_type)) {
+                    throw new RuntimeException('Rights file identity changed during cleanup.');
+                }
+                if ($disk->exists($key)) {
+                    if (! $disk->delete($key) || $disk->exists($key)) {
+                        throw new RuntimeException('Unable to reclaim an unreferenced rights file.');
+                    }
+                    $removedFiles++;
+                }
+                DB::table('media_rights_artifacts')->where('id', $row->id)->delete();
+                $removedRegistry++;
+            }
+
+            foreach ($candidates['orphan_keys'] as $key) {
+                if (! $this->isOwnedRightsFile($key)
+                    || DB::table('media_rights_artifacts')->where('storage_key', $key)->exists()) {
+                    continue;
+                }
+                if ($disk->exists($key)) {
+                    if (! $disk->delete($key) || $disk->exists($key)) {
+                        throw new RuntimeException('Unable to reclaim an orphaned rights file.');
+                    }
+                    $removedFiles++;
+                }
+            }
+
+            return ['registry_removed' => $removedRegistry, 'files_removed' => $removedFiles];
+        }, attempts: 1);
+
+        if ($result['files_removed'] > 0) {
+            $this->refreshCapacitySnapshot();
+        }
+
+        return $result;
+    }
+
+    private function validRightsKey(string $key, string $revision, string $mime): bool
+    {
+        $ext = MediaTypePolicy::extensionFor($mime);
+
+        return $ext !== null && MediaTypePolicy::isImage($mime)
+            && preg_match('/^[a-f0-9]{64}$/D', $revision) === 1
+            && $key === 'variants/rights/'.$revision.'.'.$ext;
+    }
+
+    private function isOwnedRightsFile(string $key): bool
+    {
+        return preg_match('#^variants/rights/[a-f0-9]{64}\.(?:jpg|png|webp)$#D', $key) === 1
+            || preg_match('#^(?:variants/)?rights-staging/[a-f0-9]{40}\.(?:jpg|png|webp)$#D', $key) === 1;
     }
 
     /** @param list<string> $storageKeys */

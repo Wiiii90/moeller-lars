@@ -25,6 +25,7 @@ final class PagesSettingsDialog
     {
         return [
             'navigation_nesting_enabled' => PublicContentSetting::navigationNestingEnabled(),
+            'navigation_hover_preview' => (bool) PublicContentSetting::general()->getAttribute('navigation_hover_preview'),
             ...$this->homeRouting->fill(),
             'pages_auto_publish' => PublicContentSetting::pagesAutoPublish(),
             'pages_delete_without_confirmation' => PublicContentSetting::pagesDeleteWithoutConfirmation(),
@@ -42,6 +43,7 @@ final class PagesSettingsDialog
             : static function (Get $get) use ($persistOnToggle): void {
                 $persistOnToggle([
                     'navigation_nesting_enabled' => $get('navigation_nesting_enabled'),
+                    'navigation_hover_preview' => $get('navigation_hover_preview'),
                     'skip_home' => $get('skip_home'),
                     'skip_target_section_id' => $get('skip_target_section_id'),
                     'pages_auto_publish' => $get('pages_auto_publish'),
@@ -52,6 +54,11 @@ final class PagesSettingsDialog
         $nesting = AdminControl::toggle('navigation_nesting_enabled', 'Allow nested pages')->live();
         if ($onToggleUpdated !== null) {
             $nesting->afterStateUpdated($onToggleUpdated);
+        }
+
+        $hoverPreview = AdminControl::toggle('navigation_hover_preview', 'Show child pages on hover')->live();
+        if ($onToggleUpdated !== null) {
+            $hoverPreview->afterStateUpdated($onToggleUpdated);
         }
 
         $autoPublish = AdminControl::toggle('pages_auto_publish', 'Auto-publish new pages')->live();
@@ -66,6 +73,7 @@ final class PagesSettingsDialog
                 ->columns(['md' => 2])
                 ->schema([
                     $nesting,
+                    $hoverPreview,
                     Group::make($this->homeRouting->schema($onToggleUpdated)),
                     $autoPublish,
                     $deleteWithoutConfirmation,
@@ -89,11 +97,12 @@ final class PagesSettingsDialog
 
             $updated = $this->settings->updatePublicContent($settings, [
                 'navigation_nesting_enabled' => $enabled,
+                'navigation_hover_preview' => (bool) ($data['navigation_hover_preview'] ?? $settings->getAttribute('navigation_hover_preview')),
                 'pages_auto_publish' => (bool) ($data['pages_auto_publish'] ?? $settings->getAttribute('pages_auto_publish')),
                 'pages_delete_without_confirmation' => (bool) ($data['pages_delete_without_confirmation'] ?? $settings->getAttribute('pages_delete_without_confirmation')),
             ]);
 
-            return $updated->wasChanged(['navigation_nesting_enabled', 'pages_auto_publish', 'pages_delete_without_confirmation']) || $changed;
+            return $updated->wasChanged(['navigation_nesting_enabled', 'navigation_hover_preview', 'pages_auto_publish', 'pages_delete_without_confirmation']) || $changed;
         });
     }
 }

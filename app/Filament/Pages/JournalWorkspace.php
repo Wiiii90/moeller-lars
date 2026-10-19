@@ -10,6 +10,7 @@ use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
+use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -76,6 +77,8 @@ final class JournalWorkspace extends Page
     public string $journalTitle = 'Journal';
 
     public ?string $journalPublicUrl = null;
+
+    public ?string $journalPreviewUrl = null;
 
     public string $journalSlug = '';
 
@@ -522,6 +525,9 @@ final class JournalWorkspace extends Page
                     title: 'Publication scheduled',
                     status: 'success',
                 );
+                if (($arguments['returnToEditor'] ?? false) === true) {
+                    $this->replaceMountedAction('editPost', ['post' => (int) $arguments['post']]);
+                }
             });
 
         return AdminDialog::command($action, 'Schedule publication');
@@ -685,7 +691,7 @@ final class JournalWorkspace extends Page
         )->disabled($state === 'archived');
 
         $actions[] = AdminDialog::headerAction('dialogSchedulePost', AdminRowAction::Schedule, function () use ($target): void {
-            $this->replaceMountedAction('schedulePost', $target);
+            $this->replaceMountedAction('schedulePost', [...$target, 'returnToEditor' => true]);
         })->disabled(! in_array($state, ['draft', 'unpublished'], true));
 
         $archived = $state === 'archived';
@@ -805,6 +811,7 @@ final class JournalWorkspace extends Page
         $this->journalTitle = (string) $section->getAttribute('title');
         $this->journalSlug = (string) $section->getAttribute('slug');
         $this->journalPublicUrl = $section->getAttribute('state') === 'published' ? app(SiteNodeRoute::class)->url($section) : null;
+        $this->journalPreviewUrl = app(SitePreviewContext::class)->previewUrlFor($section);
     }
 
     private function loadPosts(bool $refreshMetrics = true): void
@@ -1037,7 +1044,7 @@ final class JournalWorkspace extends Page
         if (! $asset instanceof MediaAsset) {
             return null;
         }
-        $variant = $asset->getRelationValue('variants')->first(fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === PublicMedia::THUMBNAIL_KIND && $candidate->getAttribute('transform_profile') === PublicMedia::PUBLIC_TRANSFORM_PROFILE && $candidate->getAttribute('state') === 'available');
+        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
 
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
     }

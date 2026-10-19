@@ -153,7 +153,7 @@ final class HomePresentation extends Page
 
     /** @var array<string,string> */
     public array $componentTypeOptions = [
-        'image' => 'Image',
+        'image' => 'Image / Video',
         'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
@@ -164,7 +164,7 @@ final class HomePresentation extends Page
 
     /** @var array<string,string> */
     public array $newComponentOptions = [
-        'image' => 'Image',
+        'image' => 'Image / Video',
         'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
@@ -345,7 +345,7 @@ final class HomePresentation extends Page
 
     private function persistHeroDisplayToggle(string $field, bool $value): void
     {
-        if (! in_array($field, ['show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer'], true)) {
+        if (! in_array($field, ['show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer', 'video_sound_enabled'], true)) {
             throw new \InvalidArgumentException('Unsupported Hero display setting.');
         }
 
@@ -467,7 +467,7 @@ final class HomePresentation extends Page
                         ->required(fn (callable $get): bool => $get('kind') === 'heading')
                         ->visible(fn (callable $get): bool => $get('kind') === 'heading'),
                     ...$this->homeRichTextFields('kind', 'rich_text', required: true),
-                    MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
+                    MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES])
                         ->required(fn (callable $get): bool => $get('kind') === 'image')
                         ->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Toggle::make('image_decorative')->label('Decorative image')
@@ -577,7 +577,7 @@ final class HomePresentation extends Page
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
                 ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
+                MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES])
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'image')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Toggle::make('image_decorative')->label('Decorative image')

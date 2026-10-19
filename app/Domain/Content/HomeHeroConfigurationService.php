@@ -47,6 +47,7 @@ final class HomeHeroConfigurationService
      *     show_details:bool,
      *     show_gallery_link:bool,
      *     show_navigation:bool,
+     *     video_sound_enabled:bool,
      *     enable_viewer:bool
      * }
      */
@@ -100,6 +101,7 @@ final class HomeHeroConfigurationService
             'show_details' => (bool) ($artwork['show_details'] ?? true),
             'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? false),
             'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
+            'video_sound_enabled' => (bool) ($artwork['video_sound_enabled'] ?? false),
             'enable_viewer' => (bool) ($artwork['enable_viewer'] ?? true),
         ];
     }
@@ -149,6 +151,7 @@ final class HomeHeroConfigurationService
             $showDetails = (bool) ($input['show_details'] ?? $current['show_details']);
             $showGalleryLink = (bool) ($input['show_gallery_link'] ?? $current['show_gallery_link']);
             $showNavigation = (bool) ($input['show_navigation'] ?? $current['show_navigation']);
+            $videoSoundEnabled = (bool) ($input['video_sound_enabled'] ?? $current['video_sound_enabled']);
             $enableViewer = (bool) ($input['enable_viewer'] ?? $current['enable_viewer']);
             $manualSequenceChanged = $this->manualGroupIds($manualGroup) !== $this->manualGroupIds($current['manual_group']);
             $intervalChanged = $rotationInterval !== $current['rotation_interval'];
@@ -188,6 +191,7 @@ final class HomeHeroConfigurationService
                 && $showDetails === $current['show_details']
                 && $showGalleryLink === $current['show_gallery_link']
                 && $showNavigation === $current['show_navigation']
+                && $videoSoundEnabled === $current['video_sound_enabled']
                 && $enableViewer === $current['enable_viewer']
             ) {
                 return false;
@@ -201,6 +205,7 @@ final class HomeHeroConfigurationService
             $artwork['show_details'] = $showDetails;
             $artwork['show_gallery_link'] = $showGalleryLink;
             $artwork['show_navigation'] = $showNavigation;
+            $artwork['video_sound_enabled'] = $videoSoundEnabled;
             $artwork['enable_viewer'] = $enableViewer;
             $artwork['group_source'] = $groupSource;
             $artwork['display_strategy'] = $displayStrategy;

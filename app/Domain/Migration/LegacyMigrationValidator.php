@@ -3,7 +3,7 @@
 namespace App\Domain\Migration;
 
 use App\Domain\Artwork\PublicArtworkQuery;
-use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaIntegrityService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -285,13 +285,8 @@ final class LegacyMigrationValidator
             $errors[] = "Media integrity failure for {$source}#{$legacyId}: {$issue}.";
         }
 
-        $publicThumbnailCount = $asset->variants()
-            ->where('state', 'available')
-            ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-            ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
-            ->count();
-        if ($publicThumbnailCount !== 1) {
-            $errors[] = "Media for {$source}#{$legacyId} does not have exactly one available public-v1 thumbnail.";
+        if (MediaPreviewVariant::imageThumbnail($asset) === null) {
+            $errors[] = "Media for {$source}#{$legacyId} does not have exactly one available public thumbnail.";
         }
     }
 

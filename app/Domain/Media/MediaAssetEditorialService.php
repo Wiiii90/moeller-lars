@@ -5,6 +5,7 @@ namespace App\Domain\Media;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
+use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
@@ -30,6 +31,7 @@ class MediaAssetEditorialService
         private readonly AdminUndoContext $undoContext,
         private readonly MediaReferenceQuery $referenceQuery,
         private readonly ArtworkGalleryAssignmentService $galleryAssignments,
+        private readonly ArtworkDraftService $artworkDrafts,
         private readonly JournalEntryMediaService $journalMedia,
         private readonly CustomPageEditorialService $customPages,
         private readonly HomePresentationEditorialService $homePresentation,
@@ -145,14 +147,19 @@ class MediaAssetEditorialService
         });
     }
 
-    public function delete(MediaAsset $asset): bool
+    /**
+     * Optional draft removal is part of the same reference-deletion database
+     * transaction. This protects the Gallery's "delete file too" action from
+     * deleting its Artwork before Storage-reference cleanup can succeed.
+     */
+    public function delete(MediaAsset $asset, ?Artwork $deleteDraftArtwork = null): bool
     {
         $actor = $this->adminAuditService->requireActor();
         $assetId = (int) $asset->getKey();
         $keys = [];
         $deferCleanup = false;
 
-        $changed = DB::transaction(function () use ($assetId, $actor, &$keys, &$deferCleanup): bool {
+        $changed = DB::transaction(function () use ($assetId, $actor, $deleteDraftArtwork, &$keys, &$deferCleanup): bool {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
             $deferCleanup = DB::table('committed.media_assets')
                 ->where('id', $assetId)
@@ -170,12 +177,38 @@ class MediaAssetEditorialService
 
             $keys = $this->storageKeys($locked);
             if ($locked->getAttribute('state') === 'deleted') {
+                if ($deleteDraftArtwork instanceof Artwork) {
+                    throw ValidationException::withMessages(['media' => 'The original file has already been deleted. Reopen the Artwork editor.']);
+                }
+
                 return false;
             }
 
-            $this->undoContext->withoutReceipts(function () use ($locked, $actor): void {
+            $draftToDelete = null;
+            if ($deleteDraftArtwork instanceof Artwork) {
+                $draftToDelete = Artwork::query()
+                    ->whereKey($deleteDraftArtwork->getKey())
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                if ((string) $draftToDelete->getAttribute('state') !== 'draft'
+                    || ! ArtworkMedia::query()
+                        ->where('artwork_id', $draftToDelete->getKey())
+                        ->where('role', 'primary')
+                        ->where('media_asset_id', $assetId)
+                        ->exists()) {
+                    throw ValidationException::withMessages([
+                        'artwork' => 'The draft or its primary file changed. Reopen Delete before removing it.',
+                    ]);
+                }
+            }
+
+            $this->undoContext->withoutReceipts(function () use ($locked, $actor, $draftToDelete): void {
                 if ($this->referenceQuery->isReferenced($locked)) {
                     $this->removeCanonicalReferences($locked, $actor);
+                }
+
+                if ($draftToDelete instanceof Artwork) {
+                    $this->artworkDrafts->delete($draftToDelete);
                 }
 
                 $locked->variants()->update(['state' => 'deleted']);
@@ -184,15 +217,22 @@ class MediaAssetEditorialService
                 $this->adminAuditService->record($actor, 'media.deleted', 'media_asset', $locked->getKey());
             });
 
-            if ($deferCleanup) {
-                $this->publicationMediaCleanup->queue($assetId, $keys);
-            }
+            // Durable outbox inside the same transaction as the logical
+            // deletion: a crash after commit cannot strand physical files.
+            // Committed/history-owned files remain queued until safe.
+            $this->publicationMediaCleanup->queue($assetId, $keys);
 
             return true;
         });
 
-        if (! $deferCleanup) {
-            $this->publicationMediaCleanup->deleteNow($keys);
+        if ($changed && ! $deferCleanup) {
+            // Opportunistic immediate cleanup, with the durable outbox as
+            // recovery if deletion fails or the process is interrupted.
+            if ($this->publicationMediaCleanup->deleteNow($keys)) {
+                // A retained historical checkpoint can postpone cleanup
+                // even when the current Committed asset is deleted.
+                $this->publicationMediaCleanup->acknowledgeRemoved($assetId, $keys);
+            }
         }
 
         return $changed;

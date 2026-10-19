@@ -193,6 +193,17 @@
     justify-content: flex-start;
 }
 
+/* Shared full-height separator for Stage tabs and tool rows. The parent
+ * owns the baseline; the separator stretches to that bottom border. */
+.admin-control-separator {
+    display: block;
+    width: 1px;
+    height: auto;
+    flex: 0 0 1px;
+    align-self: stretch;
+    background: var(--admin-line);
+}
+
 .admin-action {
     display: inline-flex;
     min-height: 2rem;

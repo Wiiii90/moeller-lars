@@ -25,21 +25,13 @@
                     progress: 0,
                     fileCount: 0,
                     result: '',
-                    resultTimer: null,
                     showResult(message) {
-                        window.clearTimeout(this.resultTimer)
                         this.result = message
                         this.phase = 'result'
-                        this.resultTimer = window.setTimeout(() => {
-                            this.phase = 'idle'
-                            this.progress = 0
-                            this.fileCount = 0
-                            this.result = ''
-                        }, 3800)
                     },
                 }"
                 x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-                x-on:livewire-upload-start="window.clearTimeout(resultTimer); phase = 'uploading'; progress = 0; result = ''"
+                x-on:livewire-upload-start="phase = 'uploading'; progress = 0; result = ''"
                 x-on:livewire-upload-progress="progress = $event.detail.progress"
                 x-on:livewire-upload-finish="
                     progress = 100
@@ -56,7 +48,7 @@
                     wire:model="directPrimaryMedia"
                     x-on:change="fileCount = $event.target.files.length"
                     x-bind:disabled="phase === 'uploading' || phase === 'processing'"
-                    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+                    accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
                     aria-label="Upload primary images or videos for new artworks"
                     multiple
                 >
@@ -72,7 +64,7 @@
                                         : 'Drop images or videos here or choose from your device'
                         "
                     >Drop images or videos here or choose from your device</strong>
-                    <span x-show="phase === 'idle'">JPEG, PNG, WebP, MP4 or WebM.</span>
+                    <span x-show="phase === 'idle'">JPEG, PNG, WebP · max {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB · {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · max {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB.</span>
                 </div>
                 <div
                     class="admin-gallery-upload__progress"
@@ -91,7 +83,7 @@
             </div>
         </div>
 
-        @php($reorderEnabled = trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
+        @php($reorderEnabled = ($galleryContext['sort_mode'] ?? 'manual') === 'manual' && trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
 
         <div class="gallery-workspace__result-surface">
             <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
@@ -145,13 +137,13 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Materials->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Materials</span>
                             </button>
-                            @if ($galleryContext['public_url'])
-                                <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
+                            @if ($galleryContext['preview_url'])
+                                <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['preview_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Preview</span>
                                 </a>
                             @else
-                                <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish the Gallery to open its public URL" aria-label="Preview Gallery">
+                                <button class="admin-action admin-action--with-icon" type="button" disabled title="A preview URL is unavailable for this Gallery" aria-label="Preview Gallery">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Preview</span>
                                 </button>
@@ -335,8 +327,8 @@
                                     </div>
                                     <span>
                                         @if ($artwork['year']){{ $artwork['year'] }}@endif
-                                        @if ($artwork['medium']){{ $artwork['year'] ? ' · ' : '' }}{{ $artwork['medium'] }}@endif
-                                        @if ($artwork['dimensions']){{ ($artwork['year'] || $artwork['medium']) ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
+                                        @if ($artwork['dimensions']){{ $artwork['year'] ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
+                                        @if ($artwork['medium']){{ ($artwork['year'] || $artwork['dimensions']) ? ' · ' : '' }}{{ $artwork['medium'] }}@endif
                                     </span>
                                     <small class="admin-gallery-grid__analytics">
                                         @if ($artwork['analytics']['available'])
@@ -373,6 +365,17 @@
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
                                     </button>
+                                    @if ($artwork['state'] === 'draft')
+                                        <button
+                                            class="gallery-workspace__icon-action"
+                                            type="button"
+                                            wire:click="mountAction('uploadArtworkPrimaryMedia', { artwork: {{ $artwork['id'] }} })"
+                                            title="Replace primary image or video"
+                                            aria-label="Replace primary media for {{ $artwork['title'] }}"
+                                        >
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Upload->mini()" />
+                                        </button>
+                                    @endif
                                     <button
                                         class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
@@ -404,10 +407,10 @@
                                     <button
                                         class="gallery-workspace__icon-action"
                                         type="button"
-                                        wire:click="mountAction('deletePrimaryMedia', { artwork: {{ $artwork['id'] }} })"
-                                        @disabled(! $artwork['primary_original_url'])
-                                        title="{{ $artwork['primary_original_url'] ? 'Delete media file' : 'No primary media file to delete' }}"
-                                        aria-label="{{ $artwork['primary_original_url'] ? 'Delete primary Media File for '.$artwork['title'] : 'No primary Media File to delete for '.$artwork['title'] }}"
+                                        wire:click="mountAction('deleteArtwork', { artwork: {{ $artwork['id'] }} })"
+                                        @disabled($artwork['state'] !== 'draft')
+                                        title="{{ $artwork['state'] === 'draft' ? 'Delete artwork' : 'Unpublish artwork before deleting' }}"
+                                        aria-label="Delete artwork {{ $artwork['title'] }}"
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
                                     </button>

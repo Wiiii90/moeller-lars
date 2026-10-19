@@ -3,9 +3,11 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Analytics\ArtistReportingService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -17,17 +19,15 @@ trait GalleryWorkspaceDataProjection
 
     private function loadGalleryDataset(): void
     {
+        /** @var ArtworkCategory $gallery */
+        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
         /** @var EloquentCollection<int, Artwork> $records */
-        $records = Artwork::query()
+        $records = GalleryPresentation::orderArtworks(Artwork::query()
             ->where('artwork_category_id', $this->galleryContext['id'])
             ->with([
                 'artworkMedia' => static fn ($query) => $query->where('role', 'primary')->orderBy('position'),
-                'artworkMedia.mediaAsset.variants' => static fn ($query) => $query
-                    ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-                    ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE),
-            ])
-            ->orderBy('position')
-            ->orderBy('id')
+                'artworkMedia.mediaAsset.variants',
+            ]), $gallery)
             ->get();
 
         $this->unfilteredArtworkCount = $records->count();
@@ -44,9 +44,7 @@ trait GalleryWorkspaceDataProjection
             $primaryAsset = $primary?->getRelationValue('mediaAsset');
             /** @var MediaVariant|null $thumbnail */
             $thumbnail = $primaryAsset instanceof MediaAsset
-                ? $primaryAsset->getRelation('variants')->first(static fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-                    && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                    && $candidate->getAttribute('state') === 'available')
+                ? \App\Domain\Media\MediaPreviewVariant::preview($primaryAsset)
                 : null;
             $mime = $primaryAsset instanceof MediaAsset ? (string) $primaryAsset->getAttribute('mime_type') : '';
             $kind = MediaTypePolicy::isVideo($mime) ? 'video' : (MediaTypePolicy::isImage($mime) ? 'image' : 'none');

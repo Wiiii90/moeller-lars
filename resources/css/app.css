@@ -39,6 +39,18 @@ img {
     max-width: 100%;
 }
 
+/* The Public paper follows the intrinsic height of Header + Content.
+ * Only the body fills the viewport with the configured background. Letting
+ * this frame grow to 100dvh extended the outer paper contours and backing
+ * far below the last artwork on short pages. Sticky remains document-owned. */
+body.public-site .public-paper-frame {
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    min-width: 0;
+    flex-direction: column;
+}
+
 body.public-site .site-header {
     position: sticky;
     top: 0;
@@ -65,11 +77,19 @@ body.public-site .site-header {
     max-width: 100%;
     height: auto;
     margin: 0;
-    aspect-ratio: 16 / 9;
+    /* HTML width/height preserve the generated poster's real aspect ratio;
+       no forbidden inline style is needed under the public CSP. */
+    aspect-ratio: auto;
     object-fit: contain;
     outline: 1px solid rgba(50, 47, 44, .14);
     outline-offset: -1px;
     background: #111;
+}
+
+/* Historical videos have no stored poster dimensions. */
+.artwork-card__video:not([width]),
+.artwork-detail__video:not([width]) {
+    aspect-ratio: 16 / 9;
 }
 
 .artwork-viewer {
@@ -128,7 +148,6 @@ body.public-site .site-header {
     cursor: pointer;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    transition: border-color .14s ease, background-color .14s ease, opacity .14s ease;
 }
 
 .artwork-viewer__icon-button:hover,
@@ -183,7 +202,6 @@ body.public-site .site-header {
     max-height: 100%;
     object-fit: contain;
     transform-origin: center center;
-    will-change: transform;
     user-select: none;
     -webkit-user-drag: none;
 }
@@ -280,8 +298,3 @@ body.public-site .site-header {
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .artwork-viewer * {
-        transition: none !important;
-    }
-}

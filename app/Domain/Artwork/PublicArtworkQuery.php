@@ -6,6 +6,7 @@ use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -19,15 +20,20 @@ class PublicArtworkQuery
     /** @return Collection<int, Artwork> */
     public function category(string $slug): Collection
     {
+        /** @var ArtworkCategory|null $gallery */
+        $gallery = ArtworkCategory::query()->where('slug', $slug)->first();
+        if (! $gallery instanceof ArtworkCategory) {
+            return new Collection;
+        }
+
         /** @var Collection<int, Artwork> $artworks */
-        $artworks = $this->publicQuery()
+        $artworks = GalleryPresentation::orderArtworks($this->publicQuery()
             ->whereHas('category.siteSection', function (Builder $query) use ($slug): void {
                 $query->where('slug', $slug);
                 if (! $this->preview->active()) {
                     $query->where('state', 'published');
                 }
-            })
-            ->orderBy('position')
+            }), $gallery)
             ->get();
 
         $positions = $artworks
@@ -492,7 +498,11 @@ class PublicArtworkQuery
                                         $images->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)
                                             ->whereHas('variants', fn (Builder $variants) => $variants
                                                 ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-                                                ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
+                                                ->whereIn('transform_profile', [
+                                                    MediaIngestService::TRANSFORM_PROFILE,
+                                                    MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
+                                                ])
+                                                ->where('mime_type', 'image/webp')
                                                 ->where('state', 'available'), '=', 1);
                                     });
                             });

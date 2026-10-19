@@ -6,6 +6,10 @@
     $isVideo = $kind === 'video';
     $thumbnail = $isVideo ? null : $media->thumbnailVariant($artwork);
     $imageUrl = $thumbnail ? $media->variantUrl($thumbnail) : null;
+    $posterVariant = $isVideo
+        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($media->primaryAsset($artwork))
+        : null;
+    $posterUrl = $posterVariant ? $media->variantUrl($posterVariant) : null;
     $originalUrl = $media->originalUrl($artwork);
     $thumbnailWidth = (int) ($thumbnail?->getAttribute('width') ?? 0);
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
@@ -67,9 +71,16 @@
                     <video
                         class="artwork-detail__video"
                         src="{{ $originalUrl }}"
+                        @if ($posterUrl) poster="{{ $posterUrl }}" @endif
+                        @if ($posterVariant)
+                            width="{{ $posterVariant->getAttribute('width') }}"
+                            height="{{ $posterVariant->getAttribute('height') }}"
+                        @endif
                         aria-label="{{ $media->altText($artwork) }}"
                         muted
+                        loop
                         playsinline
+                        data-public-loop-video
                         preload="metadata"
                     ></video>
                 @else
@@ -87,6 +98,15 @@
                     >
                 @endif
             </a>
+
+            @if ($isVideo && $presentation::allowVideoSound($category))
+                <div class="public-video__controls">
+            <button type="button" class="public-video__sound" data-public-video-sound-toggle aria-label="Enable video sound" aria-pressed="false" title="Enable video sound">
+                <span data-public-video-icon-muted><x-public-icon name="volume-muted" /></span>
+                <span data-public-video-icon-playing hidden><x-public-icon name="volume-on" /></span>
+            </button>
+        </div>
+            @endif
 
             <div class="artwork-detail__footer">
                 <x-artwork-caption :artwork="$artwork" />

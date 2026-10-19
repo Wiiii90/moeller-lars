@@ -29,9 +29,11 @@ Upload aliases are normalized through the ingest policy; persisted canonical MIM
 
 Format/safety ceilings are configured in bytes:
 
-- `MEDIA_IMAGE_MAX_BYTES` — default 20 MiB
-- `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB
+- `MEDIA_IMAGE_MAX_BYTES` — default 64 MiB
+- `MEDIA_VIDEO_MAX_BYTES` — default 150 MiB
 - `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB
+
+Logical MediaAsset deletion and canonical reference detach remain one PostgreSQL transaction. Every file-deletion request also writes a durable PublicationMediaCleanup outbox entry in that transaction; immediate cleanup acknowledges the entry only after physical deletion succeeds, and failed/interrupted cleanup is retryable through the existing drain without resurrecting any Artwork. The authoritative whole-site quota preflight reserves the canonical original and its freshly generated thumbnail/poster together, under the single existing ingest lock. Livewire temporary upload validation uses `MediaTypePolicy::maxUploadBytes()` as a shared ingress ceiling, while ingest enforces the distinct media-type limits. The production Docker PHP configuration allows up to 160 MiB per multipart file (176 MiB POST body) and a ten-minute Livewire upload window; a reverse proxy or older deployed container can still impose lower limits. Image pixel count is capped at 120 megapixels. All newly ingested images use the same isolated libvips public-v2 WebP thumbnail processor, regardless of their resolution. Historical GD public-v1 derivatives remain readable and byte-for-byte regenerable only in the legacy regeneration path (960 px max edge, 120-second processor deadline, serialized via the existing ingest lock). PHP memory remains 128 MiB. New MP4/WebM files receive a separately versioned FFmpeg-generated WebP poster; old videos without posters remain valid and show native video metadata loading. The release and local-preview images install both processors. The original file bytes and existing publication hashes are never rewritten.
 
 `MEDIA_STORAGE_QUOTA_BYTES` is the operator/platform-injected **whole-site** admission ceiling. Quota usage includes canonical media originals, generated variants and logical persistent application/database data. Logical database usage includes live editorial data, append-only Activity, bounded Undo receipts, retained Publication restore data/shared history payloads and other persistent application rows. PostgreSQL's physical database-file footprint is operational overhead and is not the quota value. Cached display values are not authoritative for upload admission.
 
@@ -39,6 +41,20 @@ The artist-facing Storage workspace deliberately separates normal navigation fro
 
 The dedicated local-preview image supplies a 5,000,000,000-byte allowance so capacity behavior can be evaluated locally without creating a production/application default. Production remains operator-controlled.
 
+## Pre-release thumbnail consolidation
+
+All new image uploads use libvips. Existing development/imported image thumbnails can be converted from immutable originals through one local-only explicit command:
+
+```sh
+php artisan media:thumbnails:consolidate
+php artisan media:thumbnails:consolidate --apply --rebaseline-checkpoints
+# Only if existing thumbnail rights selections need invalidation:
+php artisan media:thumbnails:consolidate --apply --rebaseline-checkpoints --invalidate-thumbnail-rights
+```
+
+The first invocation is read-only. The second stages new immutable previews and updates the same MediaVariant IDs across Working, Committed and restorable Publication version rows. Checkpoint hashes necessarily change when content hashes change, so the separate `--rebaseline-checkpoints` flag is required to preserve the Undo history while rebaselining its hash chain. Public rights delivery must be disabled. If thumbnail rights selections exist, a third explicit --invalidate-thumbnail-rights flag is required; the affected selections then require offline re-preparation. Originals remain unchanged; the old thumbnail files are not overwritten in place. The command reclaims only unreferenced old thumbnail files after the database commit. Re-running --apply retries an interrupted post-commit cleanup. Failures roll back registry updates. This command is restricted to local pre-release data and is never scheduled or invoked on deploy.
+
+Remove the remaining historical GD regeneration code only after the local cutover has completed and the remaining legacy variants have been checked. The code cannot safely assume a separate database has already undergone cutover.
 ## Canonical original and variants
 
 For every `MediaAsset`, authoritative technical identity includes generated storage key, content-derived MIME, byte size and SHA-256.
@@ -48,9 +64,10 @@ For every `MediaAsset`, authoritative technical identity includes generated stor
 - uploads are untrusted until validation succeeds;
 - storage keys are application-generated;
 - `MediaVariant` is rebuildable and has independent storage/checksum/state;
-- missing required variants are integrity/readiness failures, not permission to expose the original as an arbitrary fallback.
+- missing required image thumbnail variants are integrity/readiness failures, not permission to expose the original as an arbitrary fallback. Video poster variants are optional for historical videos, but are generated for new uploads.
+- `public-v1` (GD) and `public-v2` (libvips) thumbnails plus `video-poster-v1` (FFmpeg) posters have immutable SHA-256 and profile-specific regeneration. Regeneration verifies the exact expected bytes and dimensions before serving or reclaiming a variant; changed tool output fails closed rather than rewriting history.
 
-Video/audio ingest does not imply transcoding/poster/waveform generation.
+Video ingest generates an immutable WebP poster (`poster`, `video-poster-v1`) without transcoding the canonical original; audio has neither poster nor waveform generation. The shared Public Artwork video controller plays muted inline loops only while visible and pauses hidden slides, background tabs and SPA departures. A Gallery/Home opt-in allows the visitor to unmute; autoplay never starts with sound. New video posters are attached as immutable variants; legacy videos with no poster simply use native video metadata display.
 
 ## Canonical reference architecture
 
@@ -59,10 +76,10 @@ Consumers reference existing `MediaAsset` IDs rather than copying files.
 Structured consumers include:
 
 - Artwork primary/additional media;
-- Blog/Exhibition Cover and Gallery through `JournalEntryMedia`;
+- Blog/Exhibition Cover and Gallery through `JournalEntryMedia` (Exhibition covers and galleries accept images or videos; Blog covers remain image-only). Exhibition covers and galleries show explicitly authored File credits and copyright overrides under their media; inherited General notices stay suppressed there. Blog caption visibility remains unchanged;
 - CV direct image;
-- Custom Page Image components;
-- Home Image components;
+- Custom Page Image components (image or video, without a duplicate persisted media component);
+- Home Image components (same canonical image/video renderer);
 - site identity/favicon.
 
 Rich Text consumers reference media through canonical Markdown:

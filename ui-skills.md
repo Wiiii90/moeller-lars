@@ -125,6 +125,24 @@ For Visual Stages, reuse the shared stage height, pane/divider geometry and sema
 
 A screenshot-specific span, page-local Selection offset, page-local standard-toolbar grid or duplicate shared-stage geometry is a contract violation unless the shared primitive demonstrably cannot represent the task.
 
+### General Appearance: compact controls, dialogs for additions
+
+The global Background/Menu/Page and Title controls retain a concise two-column
+line-based grammar with the shared ColorPicker and numeric field. Do not
+surface a Filament Repeater's card chrome, default rounded Add button,
+red per-row trash icons or explanatory helper paragraphs inside the Stage.
+All colors are directly editable in the **actual shared** x-admin.table,
+not Filament's independently styled table repeater. The shared
+AdminTableRepeater adapts Filament's field/action lifecycle to that canonical
+table; Solid has one Color row and gradients have 2–12 Color/Position rows.
+Use the existing AdminColorControl in the cells and x-admin.add-row below.
+Never recreate the table with local radius/border/row chrome, native browser
+color inputs, card repeaters, edit dialogs, helper prose or red trash actions.
+The global angle control has an inline editable degree value and opens
+the shared rotary picker on interaction; it does not show a persistent
+dial beside the number. Do not duplicate this component within General.
+
+
 
 Examples of useful facts:
 
@@ -652,7 +670,9 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - Analytics/Storage/Activity burger/sidebar collapse is monotonic as well: it must not reintroduce Geography, the Storage triptych, Activity Clock, wider table columns or denser Storage cards.
 - General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand the single Appearance controls pane across the full stage. Page width and Content padding are ordinary General Appearance fields in that same parent form/persistence path; they must not live in a nested Livewire bridge or a detached pseudo-footer. The bounded Appearance pane scrolls when necessary but keeps its scrollbar chrome hidden. General has one container-owned Narrow composition (up to 64rem workspace) rather than a second viewport/Burger copy; the preview therefore cannot reappear or partially revert when the sidebar collapses. Live Preview fitting responds immediately to its ResizeObserver and must not animate width/height between observer ticks.
 - General status metrics and the Appearance Stage share the same schema-backed stage block so only the canonical stage margin separates them; Filament schema gaps must not add a second vertical offset.
+- General Appearance's four small tabs reuse `x-admin.stage-switcher` / shared `admin-stage-tabs` without Filament chips. Tab selection is Alpine-only and must not issue Livewire requests or refresh the iframe. The icon-only More space / Less space action is an optional tool slot inside the shared stage switcher, separated from tabs by the same canonical toolbar separator used by Live Preview. Its label is a tooltip/accessible name only. The down-arrow icon rotates up when expanded. The tabbar is the fixed first row above the sole scrolling field pane. The single scroll container owns the four-tab CSS Grid, with scoped display:contents only on intervening Filament wrappers so all four panels occupy grid-area 1/1. Inactive panels are out of flow when collapsed; when expanded they remain hidden and inert but share one Grid track whose intrinsic height is the maximum of all four panels. This prevents cumulative rows or hidden-panel gaps. The action uses CSS max-content sizing with the shared normal Stage height as minimum; no ResizeObserver, JavaScript pixel heights or timer. The Preview may expand into the newly available space subject to a viewport-relative cap and its existing fit/aspect logic, but the iframe URL and DOM lifecycle stay unchanged by More space. Direct preview frame URLs remain stable across ordinary General component renders; persisted Appearance changes own explicit refresh. The left Stage tabs and the right Live Preview icons use one shared control grammar: the full-height, container-stretched `admin-control-separator` reaching the common lower border, `admin-action` icon surfaces and the same shared line-color token. Never shorten the separator by reserving padding beneath the toolbar's content row. The Live Preview heading is a separate row above `x-admin.stage-tool-row`; that row contains only right-aligned device, zoom and action icons. The zoom percentage remains a specialised inline control between its Zoom Out/In icons; no device-dimensions label appears in the tool row. Do not duplicate General-only toolbar CSS or place icons alongside the heading.
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
+- General → Appearance → Global owns one Frame style selector: Layered paper, Layered paper · continuous contours, Contours only, Backing only and Plain. The common `public-paper-frame` decorative child owns joined Menu+Content paper lines as one physical element; independent sheets retain their own backing/contours. There is no page-specific fake line-matching CSS. Both left and right horizontal outsets share the one Public folio-edge token. The Menu divider options are No divider, Menu divider, Full-width divider, Separate surfaces, and Full-width divider and separate surfaces; gaps are sticky-header-owned. The joint frame is **intrinsically sized by its Header and Content** (`flex: 0 0 auto` on the frame); the body alone fills the viewport background. The contour return is anchored to the real Content-sheet end via existing padding and one shared CSS return inset, never to empty viewport space. Do not introduce DOM-measurement-to-layout feedback, Public CSS transitions, a secondary scroll owner or ambient animation. Header placement observes window resizing/font completion only, not its own mutated layout.
 - Analytics preserves its desktop Map (2 cells) + Geography (1 cell) composition through Narrow. Only Minimal removes Geography and lets Map occupy the full shared stage.
 - Storage preserves Upload + Capacity + Distribution as three equal stage cells through Narrow. Only Minimal becomes the compact full-width Upload + Used/Remaining/Allowance + Refresh/Reclaim composition; donut and Distribution disappear there.
 - Activity preserves Calendar + Clock + Next Publication as three stage cells through Narrow. Only Minimal becomes publication-first: Next Publication owns the full shared stage while Calendar + Clock yield; Pending/Preflight/current-live context and Review/Reset/Commit remain visible/reachable.

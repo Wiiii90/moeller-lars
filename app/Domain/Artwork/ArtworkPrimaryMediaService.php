@@ -63,6 +63,53 @@ final class ArtworkPrimaryMediaService
         });
     }
 
+    /**
+     * Clearing Existing Media File detaches only this draft's primary usage;
+     * the canonical MediaAsset remains available in Storage and to other
+     * consumers. Published artwork cannot lose its primary media in place.
+     */
+    public function detachPrimary(Artwork $artwork): bool
+    {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($artwork, $actor): bool {
+            /** @var Artwork $lockedArtwork */
+            $lockedArtwork = Artwork::query()
+                ->whereKey($artwork->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((string) $lockedArtwork->getAttribute('state') !== 'draft') {
+                throw ValidationException::withMessages([
+                    'primary_media_asset_id' => 'Unpublish the artwork before clearing its primary media.',
+                ]);
+            }
+
+            /** @var ArtworkMedia|null $primary */
+            $primary = ArtworkMedia::query()
+                ->where('artwork_id', $lockedArtwork->getKey())
+                ->where('role', 'primary')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $primary instanceof ArtworkMedia) {
+                return false;
+            }
+
+            $mediaAssetId = (int) $primary->getAttribute('media_asset_id');
+            $primary->delete();
+            $this->audit->record(
+                $actor,
+                'artwork.primary_media_detached',
+                'artwork',
+                $lockedArtwork->getKey(),
+                ['media_asset_id' => $mediaAssetId],
+            );
+
+            return true;
+        });
+    }
+
     public function replaceUpload(Artwork $artwork, UploadedFile $upload): Artwork
     {
         $asset = $this->ingest->ingest($upload);

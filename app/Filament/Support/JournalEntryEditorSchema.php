@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Content\ExhibitionMapAddress;
 use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\Exhibition;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -67,10 +68,16 @@ final class JournalEntryEditorSchema
             $schema[] = Textarea::make('excerpt')->label('Excerpt')->maxLength(1000)->nullable()->columnSpanFull();
         }
 
-        $schema[] = MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
-            ->placeholder('No cover image')
-            ->nullable()
-            ->columnSpanFull();
+        $cover = $template === JournalTemplate::Exhibitions
+            ? MediaAssetSelect::makeId(
+                'cover_media_asset_id',
+                'Cover image or video',
+                allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
+            )->placeholder('No cover media')
+            : MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
+                ->placeholder('No cover image');
+
+        $schema[] = $cover->nullable()->columnSpanFull();
 
         return AdminForm::section('Basics')->schema($schema)->columns(['md' => 2]);
     }
@@ -106,7 +113,7 @@ final class JournalEntryEditorSchema
                 Select::make('gallery_presentation')
                     ->label('Gallery presentation')
                     ->options([
-                        'sequence' => 'Image sequence',
+                        'sequence' => 'Media sequence',
                         'grid' => 'Grid',
                         'mosaic' => 'Mosaic',
                         'slideshow' => 'Slideshow',
@@ -201,11 +208,15 @@ final class JournalEntryEditorSchema
     private static function galleryImages(): Repeater
     {
         return Repeater::make('gallery_images')
-            ->label('Gallery images')
+            ->label('Gallery media')
             ->schema([
-                MediaAssetSelect::makeId('media_asset_id', 'Image', imagesOnly: true)->required(),
+                MediaAssetSelect::makeId(
+                    'media_asset_id',
+                    'Image or video',
+                    allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
+                )->required(),
             ])
-            ->addActionLabel('Add image')
+            ->addActionLabel('Add media')
             ->reorderableWithButtons()
             ->reorderableWithDragAndDrop(false)
             ->columnSpanFull();

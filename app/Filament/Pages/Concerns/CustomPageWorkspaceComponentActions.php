@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Models\CustomPageSetting;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use Filament\Actions\Action;
@@ -284,7 +285,19 @@ trait CustomPageWorkspaceComponentActions
      * data as their top-level counterparts. The Image owns only placement. */
     public function editImageChildAction(): Action
     {
-        $action = Action::make('editImageChild')
+        return $this->imageChildEditingAction('editImageChild', committed: true);
+    }
+
+    /** Non-List children use the same autosaving Edit lifecycle as root
+     * components. List keeps its atomic Apply changes command. */
+    public function editImageChildInstantAction(): Action
+    {
+        return $this->imageChildEditingAction('editImageChildInstant', committed: false);
+    }
+
+    private function imageChildEditingAction(string $actionName, bool $committed): Action
+    {
+        $action = Action::make($actionName)
             ->label('Edit')
             ->fillForm(function (array $arguments): array {
                 [$image, $child, $type] = $this->imageChildTarget($arguments);
@@ -303,9 +316,15 @@ trait CustomPageWorkspaceComponentActions
                         ...$arguments, 'targetType' => $state,
                     ]);
                 },
+                onContactChange: function (string $key, mixed $value) use ($arguments): void {
+                    [$image, $child, $type] = $this->imageChildTarget($arguments);
+                    if ($type === 'contact') {
+                        $this->persistContactEditorField($image, $child, $key, $value);
+                    }
+                },
             ))
             ->modalHeading('Edit component')
-            ->extraModalFooterActions(function (array $arguments): array {
+            ->extraModalFooterActions(function (array $arguments) use ($actionName): array {
                 [$image, $child, $type] = $this->imageChildTarget($arguments);
                 $blocks = $this->componentAt($image, 'image')['children'] ?? [];
                 $args = ['imageIndex' => $image, 'childIndex' => $child, 'componentType' => $type];
@@ -314,9 +333,9 @@ trait CustomPageWorkspaceComponentActions
                     $canMove = $this->componentReorderEnabled() && ($dir === 'up' ? $child > 0 : $child < count($blocks) - 1);
                     $actions[] = AdminDialog::headerAction(
                         'childMove'.ucfirst($dir), $role,
-                        function () use ($image, $child, $type, $dir): void {
+                        function () use ($image, $child, $type, $dir, $actionName): void {
                             $this->moveImageChildSibling($image, $child, $type, $dir);
-                            $this->replaceMountedAction('editImageChild', [
+                            $this->replaceMountedAction($actionName, [
                                 'imageIndex' => $image,
                                 'childIndex' => $child + ($dir === 'up' ? -1 : 1),
                                 'componentType' => $type,
@@ -327,9 +346,9 @@ trait CustomPageWorkspaceComponentActions
                 $published = \App\Models\CustomPageSetting::componentPublished($blocks[$child]);
                 $actions[] = AdminDialog::headerAction(
                     'childPublish', $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-                    function () use ($image, $child, $type, $published, $args): void {
+                    function () use ($image, $child, $type, $published, $args, $actionName): void {
                         $this->setImageChildPublished($image, $child, $type, ! $published);
-                        $this->replaceMountedAction('editImageChild', $args);
+                        $this->replaceMountedAction($actionName, $args);
                     },
                 );
                 $actions[] = AdminDialog::headerAction('childDelete', AdminRowAction::Delete,
@@ -368,7 +387,9 @@ trait CustomPageWorkspaceComponentActions
                     app(AdminNotifier::class)->notification(title: 'Component saved', status: 'success');
                 }
             });
-        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large);
+        return $committed
+            ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
+            : AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function setImageChildPublished(int $image, int $child, string $type, bool $published): void
@@ -468,6 +489,12 @@ trait CustomPageWorkspaceComponentActions
                         'targetType' => $target,
                     ]);
                 },
+                onContactChange: function (string $key, mixed $value) use ($arguments): void {
+                    [$index, $type] = $this->actionComponentTarget($arguments);
+                    if ($type === 'contact') {
+                        $this->persistContactEditorField($index, null, $key, $value);
+                    }
+                },
                 onImageChange: function (mixed $state) use ($arguments): void {
                     [$index, $type] = $this->actionComponentTarget($arguments);
                     if ($type !== 'image') {
@@ -563,6 +590,63 @@ trait CustomPageWorkspaceComponentActions
         return $committed
             ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
             : AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * Autosave exactly one Contact field through the existing Custom Page
+     * editorial mutation. Sibling settings are rebuilt from the current
+     * persisted block, never overwritten by a stale modal snapshot.
+     */
+    private function persistContactEditorField(int $index, ?int $childIndex, string $key, mixed $value): void
+    {
+        $existing = $childIndex === null
+            ? $this->componentAt($index, 'contact')
+            : $this->imageChildAt($index, $childIndex, 'contact');
+        $data = $this->componentEditorData($existing);
+        if (str_starts_with($key, 'contact_social_selected.')) {
+            $platform = substr($key, strlen('contact_social_selected.'));
+            if (! array_key_exists($platform, $this->availableSocialPlatforms)) return;
+            $data['contact_social_selected'][$platform] = (bool) $value;
+        } elseif (in_array($key, [
+            'title', 'contact_email_enabled', 'contact_social_enabled',
+            'contact_form_enabled', 'contact_form_state', 'contact_status_text',
+        ], true)) {
+            $data[$key] = $value;
+        } else {
+            throw new \InvalidArgumentException('Unknown Contact field.');
+        }
+
+        // Presentation and status text form one dependent editorial value.
+        // If no status is authored yet, retain "Under construction" in the
+        // mounted form as a draft until the text is entered. When it arrives,
+        // save both fields atomically; no partial update or false notification.
+        if ($key === 'contact_form_state' || $key === 'contact_status_text') {
+            $form = $this->getMountedActionSchema()->getRawState();
+            $state = $key === 'contact_form_state' ? $value : ($form['contact_form_state'] ?? $data['contact_form_state']);
+            $status = $key === 'contact_status_text' ? $value : ($form['contact_status_text'] ?? $data['contact_status_text']);
+            $data['contact_form_state'] = $state;
+            $data['contact_status_text'] = $status;
+            if ($state === 'under_construction' && blank($status)) return;
+        }
+
+        try {
+            $payload = $this->contactComponentPayload(
+                $data, CustomPageSetting::componentPublished($existing), $existing,
+            );
+            $editor = app(CustomPageEditorialService::class);
+            $changed = $childIndex === null
+                ? $editor->updateBlock($this->settings(), $index, 'contact', $payload, $this->editingComponentOriginal)
+                : $editor->updateImageChild($this->settings(), $index, $childIndex, 'contact', $payload, $this->editingComponentOriginal);
+        } catch (ValidationException $exception) {
+            $this->throwComponentEditValidation($exception);
+        }
+        $this->editingComponentOriginal = $childIndex === null
+            ? $this->componentAt($index, 'contact')
+            : $this->imageChildAt($index, $childIndex, 'contact');
+        if (! $changed) return;
+        $this->loadComponentProjection();
+        $this->forceRender();
+        app(AdminNotifier::class)->notification(title: 'Component saved', status: 'success');
     }
 
     private function throwComponentEditValidation(ValidationException $exception): never

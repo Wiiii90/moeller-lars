@@ -9,7 +9,7 @@
 .journal-entry-gallery--sequence .journal-entry-gallery__item {
     min-width: 0;
 }
-.journal-entry-gallery--sequence .journal-entry-media img {
+.journal-entry-gallery--sequence .journal-entry-media :is(img, video) {
     width: auto;
     max-width: 100%;
     max-height: 34rem;
@@ -371,4 +371,28 @@
         gap: .45rem;
         padding: .45rem .6rem;
     }
+}
+
+
+/* Existing Journal figures retain their own layout; common Public video
+ * playback is initialized by the Public app entrypoint. */
+.journal-entry-media video {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    max-height: 34rem;
+    height: auto;
+    object-fit: contain;
+}
+
+
+/* Explicitly authored photographer credits and copyright overrides can be
+ * shown under Exhibition images/videos without adding a duplicate renderer. */
+.journal-entry-media figcaption {
+    margin-top: .45rem;
+    color: var(--public-muted);
+    font-family: var(--public-typeface);
+    font-size: .74rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
 }

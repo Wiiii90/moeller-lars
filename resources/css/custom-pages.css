@@ -76,7 +76,7 @@
     margin: 0 0 0 clamp(.8rem, 3vw, 1.6rem);
 }
 
-.custom-page__media img {
+.custom-page__media :is(img, video) {
     display: block;
     width: 100%;
     height: auto;
@@ -292,7 +292,6 @@
     font: inherit;
     line-height: 1.4;
     box-shadow: none;
-    transition: border-color .14s ease;
 }
 
 .custom-page__contact .contact-form textarea {
@@ -388,4 +387,9 @@
     .custom-page__list-media {
         width: min(100%, 12rem);
     }
+}
+
+.custom-page__media video {
+    max-height: 34rem;
+    object-fit: contain;
 }

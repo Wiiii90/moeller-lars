@@ -183,11 +183,7 @@ class GalleryImagesRelationManager extends RelationManager
         }
 
         /** @var MediaVariant|null $variant */
-        $variant = $asset->getRelationValue('variants')->first(
-            fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
-                && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                && $candidate->getAttribute('state') === 'available',
-        );
+        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
 
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
     }

@@ -21,6 +21,7 @@
     margin-top: var(--admin-section-space);
 }
 
+
 /* Leading-edge invariant: the first visual cell starts on the workspace edge.
  * Feature panes may own right/interior breathing room, never a left indent on
  * the first stage cell. Vertical stage rhythm is intentionally unaffected. */
@@ -307,6 +308,122 @@
 
 .admin-stage-tabs {
     box-sizing: border-box;
+    --admin-stage-tabs-columns: 3;
+    grid-template-columns: repeat(var(--admin-stage-tabs-columns), minmax(0, 1fr));
+    gap: .25rem;
+    padding: 0 0 .35rem;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+/* The same accepted stage grammar serves responsive Dashboard/Storage
+ * and the always-visible General Appearance stage, without a second skin. */
+.admin-stage-tabs > .admin-action {
+    box-sizing: border-box;
+    display: inline-flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 2rem;
+    padding: .38rem .5rem;
+    align-items: center;
+    justify-content: center !important;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-text);
+    white-space: nowrap;
+}
+
+.admin-stage-tabs > .admin-action:is(.is-primary, [aria-pressed="true"]) {
+    border-color: var(--admin-accent);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+.admin-stage-tabs > .admin-action:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.admin-stage-tabs--inline {
+    --admin-stage-tabs-columns: 4;
+    display: grid;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Stage tool rows and optional tab tools share the same separator baseline
+ * and .admin-action grammar; ordinary Dashboard/Storage tabs are unchanged. */
+.admin-stage-tool-row {
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: calc(var(--admin-control-height) + .35rem);
+    padding: 0;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .25rem;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-stage-tool-group {
+    display: flex;
+    flex: 0 0 auto;
+    min-width: 0;
+    gap: .2rem;
+    align-items: center;
+}
+
+.admin-stage-tool-icon {
+    box-sizing: border-box;
+    display: grid;
+    width: var(--admin-header-control-size);
+    height: var(--admin-header-control-size);
+    min-width: var(--admin-header-control-size);
+    min-height: var(--admin-header-control-size);
+    flex: 0 0 var(--admin-header-control-size);
+    padding: 0;
+    place-items: center;
+}
+
+.admin-stage-tool-icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.admin-stage-tabs--with-tools {
+    min-height: calc(var(--admin-control-height) + .35rem);
+    padding-bottom: 0;
+    grid-template-columns: repeat(var(--admin-stage-tabs-columns), minmax(0, 1fr)) 1px var(--admin-control-height);
+    align-items: center;
+}
+
+.admin-stage-tabs__separator {
+    justify-self: center;
+}
+
+.admin-stage-tabs > .admin-stage-tabs__tool {
+    display: grid;
+    width: var(--admin-control-height);
+    min-width: var(--admin-control-height);
+    padding: 0;
+    place-items: center;
+}
+
+.admin-stage-tabs__tool svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.admin-stage-tabs__tool[aria-pressed="true"] svg {
+    transform: rotate(180deg);
+}
+
+/* Same .75rem stage-switcher-to-pane rhythm as Dashboard's focused panes.
+ * The ordinary schema grid already provides .25rem; the visible pane adds
+ * only the remaining .5rem. Hidden Filament groups own no layout rows. */
+.admin-stage-panel-content {
+    padding-top: .5rem;
 }
 
 /* Minimal Stage composition is a shell + workspace state, never a narrow
@@ -336,7 +453,7 @@
             content: none !important;
         }
     
-        .admin-stage-tabs {
+        .admin-stage-tabs:not(.admin-stage-tabs--inline) {
             position: relative;
             z-index: 12;
             display: grid !important;
@@ -344,36 +461,10 @@
             min-width: 0;
             grid-column: 1 / -1 !important;
             grid-row: 1;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: .25rem;
-            padding: 0 0 .35rem;
             justify-self: stretch;
-            border-bottom: 1px solid var(--admin-line);
             transform: none !important;
         }
-    
-        .admin-stage-tabs > .admin-action {
-            box-sizing: border-box;
-            display: inline-flex;
-            width: 100%;
-            min-width: 0;
-            min-height: 2rem;
-            padding: .38rem .5rem;
-            align-items: center;
-            justify-content: center !important;
-            border: 1px solid transparent;
-            border-radius: .2rem;
-            background: transparent;
-            color: var(--admin-text);
-            white-space: nowrap;
-        }
-    
-        .admin-stage-tabs > .admin-action:is(.is-primary, [aria-pressed="true"]) {
-            border-color: var(--admin-accent);
-            background: var(--admin-subtle);
-            color: var(--admin-text);
-        }
-    
+
         .admin-focus-stage [data-admin-stage-pane] {
             display: none !important;
             box-sizing: border-box;

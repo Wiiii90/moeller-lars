@@ -189,9 +189,7 @@ final class ArtworkAttentionReport
         /** @var EloquentCollection<int, MediaVariant> $variants */
         $variants = $asset->getRelation('variants');
         /** @var MediaVariant|null $variant */
-        $variant = $variants->first(static fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
-            && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-            && $candidate->getAttribute('state') === 'available');
+        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
 
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
     }

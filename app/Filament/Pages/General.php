@@ -6,10 +6,12 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Content\SocialLinks;
+use App\Filament\Support\AdminAngleControl;
 use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
+use App\Filament\Support\AdminTableRepeater;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaAssetSelect;
@@ -20,6 +22,7 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -40,6 +43,7 @@ final class General extends Page
 
     private const PERSISTED_FIELDS = [
         'favicon_media_asset_id',
+        'frame_style',
         'background_mode',
         'background_color',
         'background_gradient_start',
@@ -55,6 +59,46 @@ final class General extends Page
         'page_background_gradient_start',
         'page_background_gradient_end',
         'page_background_gradient_angle',
+        'background_gradient_stops',
+        'menu_background_gradient_stops',
+        'page_background_gradient_stops',
+        'background_gradient_repeating',
+        'menu_background_gradient_repeating',
+        'page_background_gradient_repeating',
+        'background_gradient_repeat_span',
+        'menu_background_gradient_repeat_span',
+        'page_background_gradient_repeat_span',
+        'background_gradient_center_x',
+        'menu_background_gradient_center_x',
+        'page_background_gradient_center_x',
+        'background_gradient_center_y',
+        'menu_background_gradient_center_y',
+        'page_background_gradient_center_y',
+        'background_gradient_shape',
+        'menu_background_gradient_shape',
+        'page_background_gradient_shape',
+        'header_name_visible',
+        'header_name_text',
+        'header_name_alignment',
+        'header_name_mobile_alignment',
+        'header_name_position',
+        'header_name_caps',
+        'header_name_color',
+        'header_name_mode',
+        'header_name_gradient_start',
+        'header_name_gradient_end',
+        'header_name_gradient_angle',
+        'header_name_gradient_stops',
+        'header_name_gradient_repeating',
+        'header_name_gradient_repeat_span',
+        'header_name_gradient_center_x',
+        'header_name_gradient_center_y',
+        'header_name_gradient_shape',
+        'header_name_size',
+        'header_name_min_size',
+        'header_divider_mode',
+        'header_divider_color',
+        'header_name_auto_scale',
         'public_page_width',
         'public_content_padding',
         'public_email',
@@ -106,14 +150,42 @@ final class General extends Page
             $mode = $data[$surface.'_mode'] ?? null;
             if ($mode === null || $mode === '' || $mode === PublicAppearance::MODE_DEFAULT) {
                 $data[$surface.'_mode'] = PublicAppearance::MODE_SOLID;
-                $data[$surface.'_color'] = $surface === 'background'
-                    ? PublicAppearance::DEFAULT_PAGE_COLOR
-                    : PublicAppearance::DEFAULT_SURFACE_COLOR;
+                if ($surface !== 'header_name') {
+                    $data[$surface.'_color'] = $surface === 'background'
+                        ? PublicAppearance::DEFAULT_PAGE_COLOR
+                        : PublicAppearance::DEFAULT_SURFACE_COLOR;
+                }
             }
         }
 
+        $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style'] ?? null);
+        $data['header_name_visible'] = $data['header_name_visible'] === null ? true : (bool) $data['header_name_visible'];
+        $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text'] ?? null);
+        $data['header_name_alignment'] = PublicAppearance::presentedHeaderAlignment($data['header_name_alignment'] ?? null, $data['header_name_position'] ?? null);
+        $data['header_name_mobile_alignment'] = PublicAppearance::headerAlignment($data['header_name_mobile_alignment'] ?? null, 'header_name_mobile_alignment');
+        $data['header_name_position'] = PublicAppearance::headerPosition($data['header_name_position'] ?? null);
+        $data['header_name_caps'] = PublicAppearance::headerCaps($data['header_name_caps'] ?? null);
+        $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'] ?? null, 'header_name_color');
+        $data['header_name_mode'] ??= PublicAppearance::MODE_SOLID;
+        $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size'] ?? null);
+        $data['header_name_min_size'] = PublicAppearance::normalizeTitleMinSize($data['header_name_min_size'] ?? null);
+        $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode'] ?? null);
+        $data['header_divider_color'] = PublicAppearance::normalizeColor($data['header_divider_color'] ?? null, 'header_divider_color');
+        $data['header_name_auto_scale'] = $data['header_name_auto_scale'] === null ? true : (bool) $data['header_name_auto_scale'];
         $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width'] ?? null);
         $data['public_content_padding'] = PublicAppearance::normalizeContentPadding($data['public_content_padding'] ?? null);
+
+        foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+            $data[$surface.'_gradient_stops'] = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
+            $fallback = $surface === 'background'
+                ? PublicAppearance::DEFAULT_PAGE_COLOR
+                : ($surface === 'header_name'
+                    ? ($data['header_name_color'] ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR)
+                    : PublicAppearance::DEFAULT_SURFACE_COLOR);
+            $data[$surface.'_solid_colors'] = [[
+                'color' => $data[$surface.'_color'] ?? $fallback,
+            ]];
+        }
 
         $this->data = $data;
         $this->syncAppearanceControlState();
@@ -151,7 +223,14 @@ final class General extends Page
                                 ])
                                 ->columnSpanFull(),
 
-                            MediaAssetSelect::make(
+                            View::make('filament.schemas.components.general-appearance-switcher')
+                                ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
+                                ->extraAttributes(['class' => 'general-appearance-stage__toolbar'])
+                                ->columnSpanFull(),
+
+                            Group::make([
+                            Group::make([
+                                MediaAssetSelect::make(
                                 'favicon_media_asset_id',
                                 'faviconMediaAsset',
                                 'Site icon',
@@ -179,9 +258,200 @@ final class General extends Page
                                 )
                                 ->afterStateUpdated(self::persist('favicon_media_asset_id')),
 
+                                Select::make('frame_style')
+                                    ->label('Frame style')
+                                    ->options(PublicAppearance::FRAME_STYLES)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('frame_style')),
+                                self::appearanceSurfaceControls('background', 'Background'),
+                            ])
+                                ->columns(1)
+                                ->extraAttributes([
+                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
+                                    'data-appearance-panel' => 'global',
+                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'global' }",
+                                    'x-bind:inert' => "appearanceTab !== 'global'",
+                                    'x-bind:aria-hidden' => "(appearanceTab !== 'global').toString()",
+                                ])
+                                ->columnSpanFull(),
+
                             Group::make([
+                                Group::make([
+                                Select::make('header_name_visible')
+                                    ->label('Title')
+                                    ->options(['1' => 'Show', '0' => 'Hide'])
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
+                                    ->afterStateUpdated(self::persist('header_name_visible')),
+                                TextInput::make('header_name_text')
+                                    ->label('Text')
+                                    ->required()
+                                    ->maxLength(100)
+                                    ->lazy()
+                                    ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('header_name_text')),
+                                ])
+                                    ->columns(2)
+                                    ->columnSpanFull(),
+                                Group::make([
+                                Select::make('header_name_position')
+                                    ->label('Position')
+                                    ->options(PublicAppearance::HEADER_POSITIONS)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(function ($livewire): void {
+                                        if (! $livewire instanceof self) {
+                                            return;
+                                        }
+
+                                        // Inside Menu has no center slot. Normalize an existing
+                                        // centered selection along with Position in one save.
+                                        if (($livewire->data['header_name_position'] ?? null) === 'inside'
+                                            && ($livewire->data['header_name_alignment'] ?? null) === 'center') {
+                                            $livewire->data['header_name_alignment'] = 'left';
+                                            $livewire->persistChangedFields(['header_name_position', 'header_name_alignment']);
+
+                                            return;
+                                        }
+
+                                        $livewire->persistChangedField('header_name_position');
+                                    }),
+                                Select::make('header_name_caps')
+                                    ->label('Lettering')
+                                    ->options(PublicAppearance::HEADER_CAPS)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('header_name_caps')),
+                            ])
+                                ->columns(2)
+                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                ->columnSpanFull(),
+
+                            Group::make([
+                                Select::make('header_name_alignment')
+                                    ->label('Alignment')
+                                    ->options(fn (callable $get): array => PublicAppearance::headerAlignmentOptions((string) $get('header_name_position')))
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('header_name_alignment')),
+                                Select::make('header_name_mobile_alignment')
+                                    ->label('Responsive alignment')
+                                    ->options(PublicAppearance::HEADER_ALIGNMENT)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('header_name_mobile_alignment')),
+                            ])
+                                ->columns(2)
+                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                ->columnSpanFull(),
+
+                            Group::make([
+                                Select::make('header_name_mode')
+                                    ->label('Title color')
+                                    ->options([
+                                        PublicAppearance::MODE_SOLID => 'Solid',
+                                        PublicAppearance::MODE_GRADIENT => 'Linear gradient',
+                                        PublicAppearance::MODE_RADIAL => 'Radial gradient',
+                                        PublicAppearance::MODE_CONIC => 'Conic gradient',
+                                    ])
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(fn ($livewire) => $livewire instanceof self
+                                        ? $livewire->persistSurfaceMode('header_name')
+                                        : null),
+                                TextInput::make('header_name_size')
+                                    ->label('Size')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(PublicAppearance::MIN_TITLE_SIZE)
+                                    ->maxValue(PublicAppearance::MAX_TITLE_SIZE)
+                                    ->step(1)
+                                    ->suffix('px')
+                                    ->required()
+                                    ->lazy()
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('header_name_size')),
+                                Select::make('header_name_auto_scale')
+                                    ->label('Responsive size')
+                                    ->options(['1' => 'Allow reduction', '0' => 'Keep selected size'])
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
+                                    ->afterStateUpdated(self::persist('header_name_auto_scale')),
+                                TextInput::make('header_name_min_size')
+                                    ->label('Minimum size')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(PublicAppearance::MIN_RESPONSIVE_TITLE_SIZE)
+                                    ->maxValue(PublicAppearance::MAX_TITLE_SIZE)
+                                    ->suffix('px')
+                                    ->required()
+                                    ->lazy()
+                                    ->visible(fn (callable $get): bool => (bool) $get('header_name_auto_scale'))
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('header_name_min_size')),
+                            ])
+                                ->columns(2)
+                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                ->columnSpanFull(),
+                            self::appearanceSurfaceControls('header_name', 'Title color')
+                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible')),
+
+                            ])
+                                ->columns(1)
+                                ->extraAttributes([
+                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
+                                    'data-appearance-panel' => 'title',
+                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'title' }",
+                                    'x-bind:inert' => "appearanceTab !== 'title'",
+                                    'x-bind:aria-hidden' => "(appearanceTab !== 'title').toString()",
+                                ])
+                                ->columnSpanFull(),
+
+                            Group::make([
+                                Group::make([
+                                Select::make('header_divider_mode')
+                                    ->label('Menu to page')
+                                    ->options(PublicAppearance::HEADER_DIVIDERS)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('header_divider_mode')),
+                                AdminColorControl::make('header_divider_color', 'Divider color')
+                                    ->nullable()
+                                    ->live()
+                                    ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
+                                    ->afterStateUpdated(self::persist('header_divider_color')),
+                                ])
+                                    ->columns(2)
+                                    ->columnSpanFull(),
+                                self::appearanceSurfaceControls('menu_background', 'Menu background'),
+                            ])
+                                ->columns(1)
+                                ->extraAttributes([
+                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
+                                    'data-appearance-panel' => 'menu',
+                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'menu' }",
+                                    'x-bind:inert' => "appearanceTab !== 'menu'",
+                                    'x-bind:aria-hidden' => "(appearanceTab !== 'menu').toString()",
+                                ])
+                                ->columnSpanFull(),
+
+                            Group::make([
+                                Group::make([
                                 TextInput::make('public_page_width')
-                                    ->label('Page width')
+                                    ->label('Content width')
                                     ->numeric()
                                     ->integer()
                                     ->minValue(PublicAppearance::MIN_PAGE_WIDTH)
@@ -209,10 +479,17 @@ final class General extends Page
                                 ->extraAttributes(['class' => 'general-layout-row'])
                                 ->columnSpanFull(),
 
-
-                            self::appearanceSurfaceControls('background', 'Background'),
-                            self::appearanceSurfaceControls('menu_background', 'Menu'),
-                            self::appearanceSurfaceControls('page_background', 'Page'),
+                                self::appearanceSurfaceControls('page_background', 'Page background'),
+                            ])
+                                ->columns(1)
+                                ->extraAttributes([
+                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
+                                    'data-appearance-panel' => 'page',
+                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'page' }",
+                                    'x-bind:inert' => "appearanceTab !== 'page'",
+                                    'x-bind:aria-hidden' => "(appearanceTab !== 'page').toString()",
+                                ])
+                                ->columnSpanFull(),
 
                             Hidden::make('background_color'),
                             Hidden::make('background_gradient_start'),
@@ -223,6 +500,13 @@ final class General extends Page
                             Hidden::make('page_background_color'),
                             Hidden::make('page_background_gradient_start'),
                             Hidden::make('page_background_gradient_end'),
+                            ])
+                                ->columns(1)
+                                ->extraAttributes([
+                                    'class' => 'general-appearance-stage__scroll',
+                                    'x-ref' => 'appearanceScroll',
+                                ])
+                                ->columnSpanFull(),
                         ])
                             ->columns(1)
                             ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
@@ -235,6 +519,8 @@ final class General extends Page
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
                             'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--split',
+                            'x-data' => "{ appearanceTab: 'global', moreSpace: false }",
+                            'x-bind:class' => "{ 'admin-visual-stage--expanded': moreSpace }",
                             'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
                             'aria-label' => 'General settings and live public preview',
                         ])
@@ -355,65 +641,164 @@ final class General extends Page
         $this->persistChangedField('favicon_media_asset_id');
     }
 
-    /** One reused field schema for global Background, Menu and Page paint. */
+    /** Shared editor for the three backgrounds and the artist title text. */
     private static function appearanceSurfaceControls(string $surface, string $label): Group
     {
+        $gradient = static fn (callable $get): bool => PublicAppearance::isGradient($get($surface.'_mode'));
+        $center = static fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_RADIAL, PublicAppearance::MODE_CONIC], true);
+
         return Group::make([
             Select::make($surface.'_mode')
                 ->label($label)
+                ->visible(fn (): bool => $surface !== 'header_name')
                 ->options([
                     PublicAppearance::MODE_SOLID => 'Solid',
                     PublicAppearance::MODE_GRADIENT => 'Linear gradient',
+                    PublicAppearance::MODE_RADIAL => 'Radial gradient',
+                    PublicAppearance::MODE_CONIC => 'Conic gradient',
+                    ...($surface === 'page_background' ? [PublicAppearance::MODE_TRANSPARENT => 'Transparent'] : []),
                 ])
-                ->placeholder(null)
-                ->selectablePlaceholder(false)
-                ->native()
-                ->required()
-                ->live()
+                ->native()->required()->live()
                 ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                ->afterStateUpdated(function ($livewire) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistSurfaceMode($surface);
-                    }
-                }),
-            AdminColorControl::make($surface.'_primary_color', 'Primary color')
-                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
-                ->lazy()
-                ->extraInputAttributes(self::commitOnEnterAttributes())
-                ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistSurfaceColor($surface, 'primary', $state);
-                    }
-                }),
-            TextInput::make($surface.'_gradient_angle')
-                ->label('Angle')
-                ->numeric()
-                ->integer()
-                ->minValue(0)
-                ->maxValue(360)
-                ->step(1)
-                ->suffix('°')
-                ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
-                ->nullable()
-                ->lazy()
-                ->extraFieldWrapperAttributes(['class' => 'general-gradient-angle-control'])
-                ->extraInputAttributes(self::commitOnEnterAttributes())
+                ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
+
+            AdminAngleControl::make($surface.'_gradient_angle')
+                ->live()
                 ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_GRADIENT),
-            AdminColorControl::make($surface.'_secondary_color', 'Secondary color')
-                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-secondary-color-control'])
-                ->lazy()
-                ->extraInputAttributes(self::commitOnEnterAttributes())
+                ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
+
+            Select::make($surface.'_gradient_repeating')
+                ->label('Repeating')
+                ->options(['0' => 'Off', '1' => 'On'])
+                ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
+                ->native()
+                ->live()
                 ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
                     if ($livewire instanceof self) {
-                        $livewire->persistSurfaceColor($surface, 'secondary', $state);
+                        $livewire->persistChangedField($surface.'_gradient_repeating');
+                        $livewire->data[$surface.'_gradient_repeating'] = (bool) $state ? '1' : '0';
                     }
                 })
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_GRADIENT),
+                ->visible($gradient),
+
+            Select::make($surface.'_gradient_shape')
+                ->label('Shape')
+                ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
+                ->native()->live()
+                ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
+                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
+
+            TextInput::make($surface.'_gradient_repeat_span')
+                ->label('Repeat span')->integer()->minValue(16)->maxValue(360)
+                ->suffix(fn (callable $get): string => $get($surface.'_mode') === PublicAppearance::MODE_CONIC ? '°' : 'px')
+                ->lazy()
+                ->afterStateUpdated(self::persist($surface.'_gradient_repeat_span'))
+                ->visible(fn (callable $get): bool => $gradient($get) && (bool) $get($surface.'_gradient_repeating')),
+
+            TextInput::make($surface.'_gradient_center_x')
+                ->label('Center X')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                ->afterStateUpdated(self::persist($surface.'_gradient_center_x'))
+                ->visible($center),
+            TextInput::make($surface.'_gradient_center_y')
+                ->label('Center Y')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
+                ->visible($center),
+
+            self::appearanceColorsTable($surface, true)
+                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
+
+            self::appearanceColorsTable($surface, false)
+                ->visible($gradient),
         ])
             ->columns(2)
             ->extraAttributes(['class' => 'general-background-row'])
             ->columnSpanFull();
+    }
+
+    /** One compact, native table schema for every global paint surface. */
+    private static function appearanceColorsTable(string $surface, bool $solid): AdminTableRepeater
+    {
+        $name = $surface.($solid ? '_solid_colors' : '_gradient_stops');
+        $columns = [TableColumn::make('Color')];
+        $fields = [
+            AdminColorControl::make('color', 'Color')
+                ->hiddenLabel()
+                ->default($surface === 'background'
+                    ? PublicAppearance::DEFAULT_PAGE_COLOR
+                    : PublicAppearance::DEFAULT_SURFACE_COLOR)
+                ->required()
+                ->live(onBlur: true),
+        ];
+
+        if (! $solid) {
+            $columns[] = TableColumn::make('Position');
+            $fields[] = TextInput::make('position')
+                ->label('Position')
+                ->hiddenLabel()
+                ->integer()
+                ->minValue(0)
+                ->maxValue(100)
+                ->default(50)
+                ->suffix('%')
+                ->required()
+                ->live(onBlur: true);
+        }
+
+        $table = AdminTableRepeater::make($name)
+            ->label('Colors')
+            ->hiddenLabel()
+            ->table($columns)
+            ->compact()
+            ->schema($fields)
+            ->minItems($solid ? 1 : 2)
+            ->maxItems($solid ? 1 : PublicAppearance::MAX_STOPS)
+            ->defaultItems($solid ? 1 : 2)
+            ->reorderable(false)
+            ->cloneable(false)
+            ->collapsible(false)
+            ->addable(! $solid)
+            ->deletable(! $solid)
+            ->live()
+            ->afterStateUpdated(function ($livewire) use ($surface, $solid): void {
+                if ($livewire instanceof self) {
+                    $livewire->persistAppearanceTable($surface, $solid);
+                }
+            })
+            ->extraFieldWrapperAttributes(['class' => 'general-color-table'])
+            ->columnSpanFull();
+
+        if (! $solid) {
+            $table->addActionLabel('Add color');
+        }
+
+        return $table;
+    }
+
+    public function persistAppearanceTable(string $surface, bool $solid): void
+    {
+        if (! is_array($this->data) || ! in_array($surface, PublicAppearance::SURFACE_PREFIXES, true)) {
+            return;
+        }
+
+        if ($solid) {
+            $entries = $this->data[$surface.'_solid_colors'] ?? null;
+            if (! is_array($entries) || count($entries) !== 1) {
+                return;
+            }
+
+            $first = reset($entries);
+            $this->data[$surface.'_color'] = is_array($first) ? ($first['color'] ?? null) : null;
+            $this->persistChangedFields([$surface.'_mode', $surface.'_color']);
+        } else {
+            $entries = $this->data[$surface.'_gradient_stops'] ?? null;
+            if (! is_array($entries)) {
+                return;
+            }
+
+            $this->saveAppearanceStops($surface, array_values($entries));
+        }
+
+        $this->syncAppearanceControlState();
     }
 
     // Retain the established background editor method contract.
@@ -434,25 +819,31 @@ final class General extends Page
         }
 
         $mode = $this->data[$surface.'_mode'] ?? PublicAppearance::MODE_SOLID;
-        $field = match ($slot) {
-            'primary' => $mode === PublicAppearance::MODE_GRADIENT ? $surface.'_gradient_start' : $surface.'_color',
-            'secondary' => $mode === PublicAppearance::MODE_GRADIENT ? $surface.'_gradient_end' : null,
-            default => null,
-        };
-        if ($field === null) {
+        $isGradient = PublicAppearance::isGradient($mode);
+        $alias = $surface.($slot === 'primary' ? '_primary_color' : '_secondary_color');
+        if (! in_array($slot, ['primary', 'secondary'], true) || (! $isGradient && $slot !== 'primary')) {
             return;
         }
-
-        $alias = $surface.($slot === 'primary' ? '_primary_color' : '_secondary_color');
         $this->resetErrorBag('data.'.$alias);
-        $this->data[$field] = $value;
-        $fields = $mode === PublicAppearance::MODE_SOLID ? [$surface.'_mode', $field] : [$field];
-        $this->persistChangedFields($fields);
+
+        if ($isGradient && is_array($this->generalSettingsRecord()->getAttribute($surface.'_gradient_stops'))) {
+            $stops = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
+            $index = $slot === 'primary' ? 0 : count($stops) - 1;
+            $stops[$index]['color'] = $value;
+            $this->data[$surface.'_gradient_stops'] = $stops;
+            $field = $surface.'_gradient_stops';
+            $this->persistChangedField($field);
+        } else {
+            $field = $isGradient
+                ? $surface.($slot === 'primary' ? '_gradient_start' : '_gradient_end')
+                : $surface.'_color';
+            $this->data[$field] = $value;
+            $this->persistChangedFields($isGradient ? [$field] : [$surface.'_mode', $field]);
+        }
 
         foreach ($this->getErrorBag()->get('data.'.$field) as $message) {
             $this->addError('data.'.$alias, $message);
         }
-
         $this->syncAppearanceControlState();
     }
 
@@ -477,13 +868,38 @@ final class General extends Page
         }
 
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
-            $default = $surface === 'background' ? PublicAppearance::DEFAULT_PAGE_COLOR : PublicAppearance::DEFAULT_SURFACE_COLOR;
+            $default = match ($surface) {
+                'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
+                'header_name' => $this->data['header_name_color'] ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+                default => PublicAppearance::DEFAULT_SURFACE_COLOR,
+            };
             $mode = $this->data[$surface.'_mode'] ?? PublicAppearance::MODE_SOLID;
-            $this->data[$surface.'_primary_color'] = $mode === PublicAppearance::MODE_GRADIENT
-                ? ($this->data[$surface.'_gradient_start'] ?? $default)
-                : ($this->data[$surface.'_color'] ?? $default);
-            $this->data[$surface.'_secondary_color'] = $this->data[$surface.'_gradient_end'] ?? null;
+            if (PublicAppearance::isGradient($mode)) {
+                $stops = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
+                $this->data[$surface.'_primary_color'] = $stops[0]['color'];
+                $this->data[$surface.'_secondary_color'] = $stops[count($stops) - 1]['color'];
+            } else {
+                $this->data[$surface.'_primary_color'] = $this->data[$surface.'_color'] ?? $default;
+                $this->data[$surface.'_secondary_color'] = null;
+            }
         }
+    }
+
+    /** @return list<array{color:string,position:int}> */
+    public function appearanceStops(string $surface): array
+    {
+        abort_unless(in_array($surface, PublicAppearance::SURFACE_PREFIXES, true), 404);
+
+        return PublicAppearance::stops(PublicContentSetting::general(), $surface);
+    }
+
+    /** @param list<array{color:mixed,position:mixed}> $stops */
+    private function saveAppearanceStops(string $surface, array $stops): void
+    {
+        $validated = PublicAppearance::normalizeStops($stops, $surface.'_gradient_stops');
+        $this->data[$surface.'_gradient_stops'] = $validated;
+        $this->persistChangedField($surface.'_gradient_stops');
+        $this->syncAppearanceControlState();
     }
 
     public function addSocialLinkAction(): Action
@@ -762,6 +1178,7 @@ final class General extends Page
             }
             if (array_intersect(array_keys($changes), [
                 'favicon_media_asset_id',
+                'frame_style',
                 'background_mode',
                 'background_color',
                 'background_gradient_start',
@@ -777,7 +1194,47 @@ final class General extends Page
                 'page_background_gradient_start',
                 'page_background_gradient_end',
                 'page_background_gradient_angle',
-                'public_page_width',
+                'background_gradient_stops',
+                'background_gradient_repeating',
+                'background_gradient_repeat_span',
+                'background_gradient_center_x',
+                'background_gradient_center_y',
+                'background_gradient_shape',
+                'menu_background_gradient_stops',
+                'menu_background_gradient_repeating',
+                'menu_background_gradient_repeat_span',
+                'menu_background_gradient_center_x',
+                'menu_background_gradient_center_y',
+                'menu_background_gradient_shape',
+                'page_background_gradient_stops',
+                'page_background_gradient_repeating',
+                'page_background_gradient_repeat_span',
+                'page_background_gradient_center_x',
+                'page_background_gradient_center_y',
+                'page_background_gradient_shape',
+                'header_name_mode',
+                'header_name_gradient_start',
+                'header_name_gradient_end',
+                'header_name_gradient_angle',
+                'header_name_gradient_stops',
+                'header_name_gradient_repeating',
+                'header_name_gradient_repeat_span',
+                'header_name_gradient_center_x',
+                'header_name_gradient_center_y',
+                'header_name_gradient_shape',
+                'header_name_visible',
+                'header_name_text',
+                'header_name_alignment',
+                'header_name_mobile_alignment',
+                'header_name_position',
+                'header_name_caps',
+                'header_name_color',
+                'header_name_size',
+                'header_name_min_size',
+                'header_divider_mode',
+                'header_divider_color',
+                'header_name_auto_scale',
+                        'public_page_width',
                 'public_content_padding',
             ]) !== []) {
                 $this->dispatch('general-appearance-updated');
@@ -918,6 +1375,7 @@ final class General extends Page
     {
         return match ($field) {
             'favicon_media_asset_id' => 'Site icon',
+            'frame_style' => 'Frame style',
             'contact_recipient_email' => 'Contact form recipient',
             'public_email' => 'Public email',
             'show_public_email' => 'Public email visibility',
@@ -934,6 +1392,19 @@ final class General extends Page
             'background_gradient_angle' => 'Background gradient angle',
             'menu_background_mode' => 'Menu',
             'page_background_mode' => 'Page',
+            'header_name_visible' => 'Artist title visibility',
+            'header_name_text' => 'Artist title text',
+            'header_name_alignment' => 'Title alignment',
+            'header_name_mobile_alignment' => 'Narrow-screen title alignment',
+            'header_name_position' => 'Artist name position',
+            'header_name_caps' => 'Artist name lettering',
+            'header_name_color' => 'Artist name color',
+            'header_name_mode' => 'Artist title paint',
+            'header_name_size' => 'Artist name size',
+            'header_name_min_size' => 'Minimum responsive name size',
+            'header_divider_mode' => 'Menu and page divider',
+            'header_divider_color' => 'Divider color',
+            'header_name_auto_scale' => 'Responsive name size',
             'public_page_width' => 'Public page width',
             'public_content_padding' => 'Public content padding',
             'navigation_nesting_enabled' => 'Navigation nesting',
@@ -945,12 +1416,24 @@ final class General extends Page
     {
         return match ($field) {
             'favicon_media_asset_id' => is_numeric($value) ? (int) $value : null,
-            'background_mode', 'menu_background_mode', 'page_background_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
+            'background_mode', 'menu_background_mode', 'page_background_mode', 'header_name_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
             'background_color', 'background_gradient_start', 'background_gradient_end',
             'menu_background_color', 'menu_background_gradient_start', 'menu_background_gradient_end',
-            'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end' => $this->normalizeColorCandidate($value),
-            'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
-            'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
+            'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end',
+            'header_name_color', 'header_name_gradient_start', 'header_name_gradient_end', 'header_divider_color' => $this->normalizeColorCandidate($value),
+            'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle', 'header_name_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
+            'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops', 'header_name_gradient_stops' =>
+                is_array($value) ? array_map(static fn (mixed $stop): mixed => is_array($stop)
+                    ? ['color' => is_string($stop['color'] ?? null) ? strtoupper($stop['color']) : ($stop['color'] ?? null),
+                       'position' => is_numeric($stop['position'] ?? null) ? (int) $stop['position'] : ($stop['position'] ?? null)]
+                    : $stop, array_values($value)) : $value,
+            'background_gradient_repeating', 'menu_background_gradient_repeating', 'page_background_gradient_repeating', 'header_name_gradient_repeating' => (bool) $value,
+            'background_gradient_repeat_span', 'menu_background_gradient_repeat_span', 'page_background_gradient_repeat_span', 'header_name_gradient_repeat_span',
+            'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y', 'header_name_gradient_center_x', 'header_name_gradient_center_y',
+            'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
+                is_numeric($value) ? (int) $value : $value,
+            'header_name_visible', 'header_name_auto_scale' => (bool) $value,
+            'header_name_size', 'header_name_min_size', 'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
             'default_media_copyright_notice' => is_string($value) ? (($trimmed = trim($value)) === '' ? null : $trimmed) : $value,

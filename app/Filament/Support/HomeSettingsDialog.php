@@ -48,6 +48,7 @@ final class HomeSettingsDialog
             'show_details' => $hero['show_details'],
             'show_gallery_link' => $hero['show_gallery_link'],
             'show_navigation' => $hero['show_navigation'],
+            'video_sound_enabled' => $hero['video_sound_enabled'],
             'enable_viewer' => $hero['enable_viewer'],
             'group_source' => $hero['group_source'],
             'display_strategy' => $hero['display_strategy'],
@@ -143,6 +144,7 @@ final class HomeSettingsDialog
                     $this->heroDisplayToggle('show_details', 'Show artwork information', $persistHeroToggle),
                     $this->heroDisplayToggle('show_gallery_link', 'Show Gallery link for single Hero', $persistHeroToggle),
                     $this->heroDisplayToggle('show_navigation', 'Navigate Hero group', $persistHeroToggle),
+                    $this->heroDisplayToggle('video_sound_enabled', 'Allow visitors to unmute looping Home videos', $persistHeroToggle),
                     $this->heroDisplayToggle('enable_viewer', 'Open artwork viewer', $persistHeroToggle),
                     Toggle::make('public_site_gate')
                         ->label('Temporarily gate the public site')
@@ -180,6 +182,7 @@ final class HomeSettingsDialog
                 'show_details' => $data['show_details'] ?? $current['show_details'],
                 'show_gallery_link' => $data['show_gallery_link'] ?? $current['show_gallery_link'],
                 'show_navigation' => $data['show_navigation'] ?? $current['show_navigation'],
+                'video_sound_enabled' => $data['video_sound_enabled'] ?? $current['video_sound_enabled'],
                 'enable_viewer' => $data['enable_viewer'] ?? $current['enable_viewer'],
                 'group_source' => $groupSource,
                 'display_strategy' => $data['display_strategy'] ?? $current['display_strategy'],

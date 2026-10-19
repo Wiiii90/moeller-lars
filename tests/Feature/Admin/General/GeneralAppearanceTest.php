@@ -303,3 +303,303 @@ it('publishes global Menu and Page paints only on Commit, with nonce-authorized 
     generalAssertPublicStyleUsesNonce($html, $nonce, '--public-menu-background: #AABBCC');
     generalAssertPublicStyleUsesNonce($html, $nonce, '--public-content-background: linear-gradient(90deg, #112233, #445566)');
 });
+
+it('builds multistop Linear, Radial and Conic global paints with optional repetition', function (): void {
+    $service = app(AdminSettingsService::class);
+    $settings = PublicContentSetting::general();
+    $stops = [
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#445566', 'position' => 40],
+        ['color' => '#778899', 'position' => 100],
+    ];
+
+    $service->updatePublicContent($settings, [
+        'background_mode' => 'gradient',
+        'background_gradient_angle' => 45,
+        'background_gradient_stops' => $stops,
+        'menu_background_mode' => 'radial',
+        'menu_background_gradient_shape' => 'ellipse',
+        'menu_background_gradient_center_x' => 25,
+        'menu_background_gradient_center_y' => 75,
+        'menu_background_gradient_repeating' => true,
+        'menu_background_gradient_repeat_span' => 80,
+        'menu_background_gradient_stops' => $stops,
+        'page_background_mode' => 'conic',
+        'page_background_gradient_angle' => 30,
+        'page_background_gradient_center_x' => 10,
+        'page_background_gradient_center_y' => 80,
+        'page_background_gradient_repeating' => true,
+        'page_background_gradient_repeat_span' => 90,
+        'page_background_gradient_stops' => $stops,
+    ]);
+
+    $settings = PublicContentSetting::general();
+    expect(PublicAppearance::backgroundCss($settings))
+        ->toBe('linear-gradient(45deg, #112233 0%, #445566 40%, #778899 100%) fixed')
+        ->and(PublicAppearance::surfaceCss($settings, 'menu_background'))
+        ->toBe('repeating-radial-gradient(ellipse at 25% 75%, #112233 0px, #445566 32px, #778899 80px)')
+        ->and(PublicAppearance::surfaceCss($settings, 'page_background'))
+        ->toBe('repeating-conic-gradient(from 30deg at 10% 80%, #112233 0deg, #445566 36deg, #778899 90deg)');
+});
+
+it('normalizes and validates variable color stops without permitting arbitrary CSS', function (): void {
+    $settings = PublicContentSetting::general();
+    $service = app(AdminSettingsService::class);
+
+    $service->updatePublicContent($settings, [
+        'menu_background_mode' => 'gradient',
+        'menu_background_gradient_stops' => [
+            ['color' => '#112233', 'position' => 0],
+            ['color' => 'abcdef', 'position' => '70'],
+            ['color' => '#445566', 'position' => '30'],
+            ['color' => '#778899', 'position' => 100],
+        ],
+    ]);
+
+    $saved = PublicContentSetting::general();
+    expect($saved->getAttribute('menu_background_gradient_stops'))->toBe([
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#445566', 'position' => 30],
+        ['color' => '#ABCDEF', 'position' => 70],
+        ['color' => '#778899', 'position' => 100],
+    ]);
+
+    foreach ([
+        [['color' => '#111111', 'position' => 0]],
+        [
+            ['color' => 'javascript:alert(1)', 'position' => 0],
+            ['color' => '#FFFFFF', 'position' => 100],
+        ],
+        [
+            ['color' => '#111111', 'position' => -1],
+            ['color' => '#FFFFFF', 'position' => 100],
+        ],
+    ] as $invalid) {
+        expect(fn () => $service->updatePublicContent(PublicContentSetting::general(), [
+            'page_background_gradient_stops' => $invalid,
+        ]))->toThrow(ValidationException::class);
+    }
+    expect(fn () => $service->updatePublicContent(PublicContentSetting::general(), [
+        'page_background_gradient_center_x' => 101,
+    ]))->toThrow(ValidationException::class);
+    expect(fn () => $service->updatePublicContent(PublicContentSetting::general(), [
+        'page_background_gradient_shape' => 'url(evil)',
+    ]))->toThrow(ValidationException::class);
+    expect(fn () => $service->updatePublicContent(PublicContentSetting::general(), [
+        'page_background_gradient_repeat_span' => 0,
+    ]))->toThrow(ValidationException::class);
+});
+
+it('leaves legacy two-color gradients unchanged until the new stops are edited', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'background_mode' => 'gradient',
+        'background_gradient_start' => '#123456',
+        'background_gradient_end' => '#AABBCC',
+        'background_gradient_angle' => 24,
+    ]);
+    expect(PublicAppearance::backgroundCss(PublicContentSetting::general()))
+        ->toBe('linear-gradient(24deg, #123456, #AABBCC) fixed');
+    Livewire::test(General::class)
+        ->assertSet('data.background_gradient_stops', [
+            ['color' => '#123456', 'position' => 0],
+            ['color' => '#AABBCC', 'position' => 100],
+        ]);
+    expect(PublicContentSetting::general()->getAttribute('background_gradient_stops'))->toBeNull();
+});
+
+it('keeps Working multi-stop appearance distinct from Committed until publication', function (): void {
+    $actor = User::query()->firstOrFail();
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'page_background_mode' => 'conic',
+        'page_background_gradient_stops' => [
+            ['color' => '#FF0000', 'position' => 0],
+            ['color' => '#00FF00', 'position' => 50],
+            ['color' => '#0000FF', 'position' => 100],
+        ],
+    ]);
+    expect((string) $this->get(route('home'))->assertOk()->getContent())
+        ->not->toContain('conic-gradient(');
+    expect((string) $this->get('/preview')->assertOk()->getContent())
+        ->toContain('conic-gradient(');
+    app(PublicationService::class)->commit($actor, 'Publish multi-stop Page appearance');
+    expect((string) $this->get(route('home'))->assertOk()->getContent())
+        ->toContain('conic-gradient(');
+});
+
+it('keeps Appearance gradient actions on the shared line-based admin control contract', function (): void {
+    $component = Livewire::test(General::class);
+    $component
+        ->assertSet('data.background_gradient_stops', [
+            ['color' => '#777777', 'position' => 0],
+            ['color' => '#777777', 'position' => 100],
+        ])
+        ->set('data.menu_background_mode', 'gradient')
+        ->assertHasNoErrors()
+        ->set('data.menu_background_gradient_repeating', '1')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeTrue();
+    $component->set('data.menu_background_gradient_repeating', '0')->assertHasNoErrors();
+    expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeFalse();
+});
+
+it('populates a solid color row for each global paint surface', function (): void {
+    $component = Livewire::test(General::class);
+    foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+        $color = $surface === 'background' ? '#777777' : '#FFFFFF';
+        $component->assertSet('data.'.$surface.'_solid_colors', [['color' => $color]]);
+    }
+});
+
+it('saves an inline solid row independently of gradient stops', function (): void {
+    Livewire::test(General::class)
+        ->set('data.menu_background_solid_colors', [['color' => '#ABCDEF']])
+        ->call('persistAppearanceTable', 'menu_background', true)
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->getAttribute('menu_background_color'))->toBe('#ABCDEF')
+        ->and(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBeNull();
+});
+
+it('saves color table rows sorted by the chosen numeric position', function (): void {
+    Livewire::test(General::class)
+        ->set('data.page_background_mode', 'gradient')
+        ->set('data.page_background_gradient_stops', [
+            ['color' => '#112233', 'position' => 10],
+            ['color' => '#778899', 'position' => 75],
+            ['color' => '#445566', 'position' => 50],
+        ])
+        ->call('persistAppearanceTable', 'page_background', false)
+        ->assertHasNoErrors();
+
+    expect(PublicAppearance::stops(PublicContentSetting::general(), 'page_background'))->toBe([
+        ['color' => '#112233', 'position' => 10],
+        ['color' => '#445566', 'position' => 50],
+        ['color' => '#778899', 'position' => 75],
+    ]);
+});
+
+
+it('renders the General color editor through the canonical admin table, not Filament table chrome', function (): void {
+    $solidHtml = Livewire::test(General::class)->html();
+
+    expect($solidHtml)
+        ->toContain('general-color-table__table')
+        ->toContain('admin-table--data')
+        ->not->toContain('fi-fo-table-repeater');
+
+    $gradientHtml = Livewire::test(General::class)
+        ->set('data.background_mode', 'gradient')
+        ->html();
+
+    expect($gradientHtml)
+        ->toContain('general-color-table__table')
+        ->toContain('Add color')
+        ->toContain('admin-add-row')
+        ->not->toContain('fi-fo-table-repeater');
+});
+
+it('has exactly one visible header row without repeating Color, Position or Colors in every field', function (): void {
+    // The canonical table provides visible column names. Filament field labels
+    // remain screen-reader accessible but must not occupy separate row lines.
+    $markup = Livewire::test(General::class)
+        ->set('data.background_mode', 'radial')
+        ->html();
+
+    expect($markup)
+        ->toContain('general-color-table__table')
+        ->not->toContain('fi-fo-table-repeater');
+
+    // Scope assertions to this actual table, not unrelated General fields.
+    expect(preg_match('/general-color-table__table.*?<\\/table>/s', $markup, $match))->toBe(1);
+    $table = $match[0];
+    expect($table)->toContain('fi-fo-field-label fi-sr-only')
+        ->not->toContain('fi-fo-field-label-col')
+        ->toContain('<th scope="col">Color</th>')
+        ->toContain('<th scope="col">Position</th>');
+});
+
+it('uses registered schema action handlers for adding and removing gradient colors', function (): void {
+    $html = Livewire::test(General::class)
+        ->set('data.background_mode', 'gradient')
+        ->html();
+
+    expect($html)->toContain('general-color-table__table')
+        ->toContain('Add color')
+        ->toContain('wire:click=')
+        ->toContain('schemaComponent')
+        ->not->toContain('x-on:click="$wire.mountAction');
+});
+
+it('preserves the inherited title color until the artist explicitly sets a title paint', function (): void {
+    $settings = PublicContentSetting::general();
+    $originalColor = $settings->getAttribute('header_name_color');
+    expect($settings->getAttribute('header_name_mode'))->toBeNull()
+        ->and(PublicAppearance::titleGradientCss($settings))->toBeNull();
+
+    Livewire::test(General::class)
+        ->assertSet('data.header_name_mode', 'solid')
+        ->assertSet('data.header_name_solid_colors', [
+            ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR],
+        ])
+        ->assertSet('data.header_name_gradient_stops', [
+            ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 0],
+            ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 100],
+        ]);
+    expect(PublicContentSetting::general()->getAttribute('header_name_mode'))->toBeNull()
+        ->and(PublicContentSetting::general()->getAttribute('header_name_color'))->toBe($originalColor);
+
+    $public = (string) $this->get(route('home'))->assertOk()->getContent();
+    expect($public)->not->toContain('site-header--gradient-title')
+        ->not->toContain('--public-title-paint:');
+});
+
+it('publishes a multistop title gradient through the existing Working and Committed pipeline', function (): void {
+    $actor = User::query()->firstOrFail();
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_mode' => 'conic',
+        'header_name_gradient_angle' => 45,
+        'header_name_gradient_center_x' => 35,
+        'header_name_gradient_center_y' => 65,
+        'header_name_gradient_stops' => [
+            ['color' => '#112233', 'position' => 0],
+            ['color' => '#445566', 'position' => 60],
+            ['color' => '#778899', 'position' => 100],
+        ],
+    ]);
+
+    $css = 'conic-gradient(from 45deg at 35% 65%, #112233 0%, #445566 60%, #778899 100%)';
+    expect(PublicAppearance::titleGradientCss(PublicContentSetting::general()))->toBe($css);
+    expect((string) $this->get(route('home'))->assertOk()->getContent())
+        ->not->toContain('--public-title-paint: '.$css);
+
+    $preview = $this->get('/preview')->assertOk();
+    $previewHtml = (string) $preview->getContent();
+    expect($previewHtml)->toContain('--public-title-paint: '.$css)
+        ->toContain('site-header--gradient-title');
+    generalAssertPublicStyleUsesNonce($previewHtml, generalPublicStyleNonce($preview), '--public-title-paint: '.$css);
+
+    app(PublicationService::class)->commit($actor, 'Publish artist title gradient');
+    $public = $this->get(route('home'))->assertOk();
+    expect((string) $public->getContent())->toContain('--public-title-paint: '.$css)
+        ->toContain('site-header--gradient-title');
+    generalAssertPublicStyleUsesNonce((string) $public->getContent(), generalPublicStyleNonce($public), '--public-title-paint: '.$css);
+});
+
+it('reuses the same title color-table persistence as Background, Menu and Page', function (): void {
+    Livewire::test(General::class)
+        ->set('data.header_name_mode', 'gradient')
+        ->set('data.header_name_gradient_stops', [
+            ['color' => '#AABBCC', 'position' => 0],
+            ['color' => '#DDEEFF', 'position' => 50],
+            ['color' => '#001122', 'position' => 100],
+        ])
+        ->call('persistAppearanceTable', 'header_name', false)
+        ->assertHasNoErrors();
+
+    expect(PublicAppearance::stops(PublicContentSetting::general(), 'header_name'))->toBe([
+        ['color' => '#AABBCC', 'position' => 0],
+        ['color' => '#DDEEFF', 'position' => 50],
+        ['color' => '#001122', 'position' => 100],
+    ]);
+});

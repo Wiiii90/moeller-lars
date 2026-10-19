@@ -51,6 +51,14 @@ export function initializePublicSpaLinks(root = document) {
 export function applyPublicLayoutFromMeta() {
     const config = document.querySelector('meta[data-public-layout]');
     if (!config) return;
+    // Exactly one current frame variant after Livewire navigation. The
+    // rendering owner remains server-side; this merely replays meta state.
+    const frameStyles = ['layered', 'continuous', 'contours', 'backing', 'plain'];
+    const frameStyle = frameStyles.includes(config.dataset.publicLayoutFrameStyle)
+        ? config.dataset.publicLayoutFrameStyle : 'layered';
+    for (const candidate of frameStyles) {
+        document.body.classList.toggle('public-site--frame-' + candidate, candidate === frameStyle);
+    }
     // Update the nonce-authorized rule itself. Element.style becomes a style
     // attribute in Livewire's HTML snapshots and CSP rejects it on restore.
     const sheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
@@ -62,6 +70,8 @@ export function applyPublicLayoutFromMeta() {
         '--public-shell-max': config.dataset.publicLayoutShell,
         '--public-art-max': config.dataset.publicLayoutArt,
         '--public-content-padding': config.dataset.publicLayoutPadding,
+        '--public-title-size': config.dataset.publicLayoutTitleSize,
+        '--public-title-min-size': config.dataset.publicLayoutTitleMinSize,
         '--public-folio-left-top': config.dataset.folioLeftTop,
         '--public-folio-left-bottom': config.dataset.folioLeftBottom,
         '--public-folio-right-top': config.dataset.folioRightTop,
@@ -71,5 +81,15 @@ export function applyPublicLayoutFromMeta() {
     };
     for (const [name, value] of Object.entries(declarations)) {
         if (value) rule.style.setProperty(name, value);
+    }
+    if (config.dataset.publicLayoutDividerColor) {
+        rule.style.setProperty('--public-separator-color', config.dataset.publicLayoutDividerColor);
+    } else {
+        rule.style.removeProperty('--public-separator-color');
+    }
+    if (config.dataset.publicLayoutTitleColor) {
+        rule.style.setProperty('--public-title-color', config.dataset.publicLayoutTitleColor);
+    } else {
+        rule.style.removeProperty('--public-title-color');
     }
 }

@@ -6,6 +6,7 @@ use App\Database\PublicationPostgresGrammar;
 use App\Domain\Admin\AdminMutationSnapshotBuffer;
 use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Content\PublicSiteContext;
+use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Publication\PublicationReadContext;
 use App\Models\User;
 use App\Support\AdminPasswordPolicy;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
@@ -50,6 +52,32 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Livewire's temporary upload validator defaults to 12 MiB. Keep the
+        // ingress size tied to the one canonical MediaTypePolicy; individual
+        // consumers and MediaIngestService still enforce their own type limits.
+        config()->set(
+            'livewire.temporary_file_upload.rules',
+            'file|max:'.(int) ceil(MediaTypePolicy::maxUploadBytes() / 1024),
+        );
+        // The transfer timeout is not a client polling timer.
+        config()->set('livewire.temporary_file_upload.max_upload_time', 10);
+
+        // Livewire's data-navigate-track detects changes in ?id=, not in the
+        // Vite hashed file basename. Give the EXISTING Laravel/Vite tags one
+        // manifest revision shared by CSS and JS so a built-image change
+        // forces a real page reload instead of mixing an old SPA module
+        // with new HTML/CSS. Hot Vite and missing manifests stay native.
+        if (! Vite::isRunningHot() && ($revision = Vite::manifestHash()) !== null) {
+            Vite::createAssetPathsUsing(static function (string $path, ?bool $secure) use ($revision): string {
+                $url = asset($path, $secure);
+
+                return str_starts_with(ltrim($path, '/'), 'build/')
+                    && (str_ends_with($path, '.js') || str_ends_with($path, '.css'))
+                        ? $url.'?id='.$revision
+                        : $url;
+            });
+        }
+
         // Keep all contact limits at the existing HTTP boundary. A shared
         // cache makes the hourly ceiling effective across independent IPs.
         // Hash valid sender addresses to avoid storing personal data in
