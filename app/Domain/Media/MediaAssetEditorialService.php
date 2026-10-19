@@ -228,8 +228,11 @@ class MediaAssetEditorialService
         if ($changed && ! $deferCleanup) {
             // Opportunistic immediate cleanup, with the durable outbox as
             // recovery if deletion fails or the process is interrupted.
-            $this->publicationMediaCleanup->deleteNow($keys);
-            $this->publicationMediaCleanup->acknowledgeRemoved($assetId, $keys);
+            if ($this->publicationMediaCleanup->deleteNow($keys)) {
+                // A retained historical checkpoint can postpone cleanup
+                // even when the current Committed asset is deleted.
+                $this->publicationMediaCleanup->acknowledgeRemoved($assetId, $keys);
+            }
         }
 
         return $changed;

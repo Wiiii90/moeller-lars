@@ -92,14 +92,18 @@ final class PublicationMediaCleanupService
         }
     }
 
-    /** @param list<string> $storageKeys */
-    public function deleteNow(array $storageKeys): void
+    /**
+     * @param list<string> $storageKeys
+     * @return bool True only if physical cleanup completed; false if a
+     *              committed or historical Publication owner requires deferral.
+     */
+    public function deleteNow(array $storageKeys): bool
     {
         $mediaAssetId = $this->resolveMediaAssetId($storageKeys);
         if ($mediaAssetId !== null && ! $this->canDeletePhysicalMedia($mediaAssetId)) {
             $this->queue($mediaAssetId, $storageKeys);
 
-            return;
+            return false;
         }
 
         $failed = [];
@@ -126,6 +130,8 @@ final class PublicationMediaCleanupService
         if ($failed !== []) {
             throw new RuntimeException('Media storage cleanup failed for: '.implode(', ', $failed));
         }
+
+        return true;
     }
 
     public function drain(): int
