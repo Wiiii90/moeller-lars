@@ -640,9 +640,9 @@
     min-width: 0;
     table-layout: fixed;
 }
-.general-color-table__color-col { width: 55%; }
-.general-color-table__position-col { width: 26%; }
-.general-color-table__action-col { width: 19%; }
+.general-color-table__table th:first-child { width: 55%; }
+.general-color-table__table th:nth-child(2):not(:last-child) { width: 26%; }
+.general-color-table__table th.admin-table__actions { width: 19%; }
 .general-color-table__table td {
     min-width: 0;
     overflow: visible;

@@ -479,3 +479,22 @@ it('saves color table rows sorted by the chosen numeric position', function (): 
     ]);
 });
 
+
+it('renders the General color editor through the canonical admin table, not Filament table chrome', function (): void {
+    $solidHtml = Livewire::test(General::class)->html();
+
+    expect($solidHtml)
+        ->toContain('general-color-table__table')
+        ->toContain('admin-table--data')
+        ->not->toContain('fi-fo-table-repeater');
+
+    $gradientHtml = Livewire::test(General::class)
+        ->set('data.background_mode', 'gradient')
+        ->html();
+
+    expect($gradientHtml)
+        ->toContain('general-color-table__table')
+        ->toContain('Add color')
+        ->toContain('admin-add-row')
+        ->not->toContain('fi-fo-table-repeater');
+});

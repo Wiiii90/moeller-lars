@@ -1,29 +1,25 @@
 @php
     /** @var \App\Filament\Support\AdminTableRepeater $repeater */
     $items = $repeater->getItems();
-    $isSolid = str_ends_with($repeater->getName(), '_solid_colors');
+    $columns = $repeater->getTableColumns() ?? [];
     $isAddable = $repeater->isAddable();
-    $isDeletable = $repeater->isDeletable() && count($items) > 2;
+    $hasActions = $repeater->isDeletable();
+    $canDelete = $hasActions && count($items) > ($repeater->getMinItems() ?? 0);
     $componentKey = $repeater->getKey();
 @endphp
 
-<div class="general-color-table" role="group" aria-label="Colors">
-    <x-admin.table class="admin-table--data general-color-table__table" aria-label="Colors">
+<div class="general-color-table" role="group" aria-label="{{ $repeater->getLabel() }}">
+    <x-admin.table class="admin-table--data general-color-table__table" aria-label="{{ $repeater->getLabel() }}">
         <table>
-            <colgroup>
-                <col class="general-color-table__color-col">
-                @unless ($isSolid)
-                    <col class="general-color-table__position-col">
-                    <col class="general-color-table__action-col">
-                @endunless
-            </colgroup>
+
             <thead>
                 <tr>
-                    <th scope="col">Color</th>
-                    @unless ($isSolid)
-                        <th scope="col">Position</th>
+                    @foreach ($columns as $column)
+                        <th scope="col">{{ $column->getLabel() }}</th>
+                    @endforeach
+                    @if ($hasActions)
                         <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
-                    @endunless
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -36,9 +32,9 @@
                                 <td>{!! $component->toSchemaHtml() !!}</td>
                             @endif
                         @endforeach
-                        @unless ($isSolid)
+                        @if ($hasActions)
                             <td class="admin-table__actions">
-                                @if ($isDeletable)
+                                @if ($canDelete)
                                     <button
                                         type="button"
                                         class="admin-action admin-action--with-icon"
@@ -51,7 +47,7 @@
                                     </button>
                                 @endif
                             </td>
-                        @endunless
+                        @endif
                     </tr>
                 @endforeach
             </tbody>
@@ -59,6 +55,6 @@
     </x-admin.table>
 
     @if ($isAddable)
-        <x-admin.add-row x-on:click="$wire.mountAction('add', {}, { schemaComponent: @js($componentKey) })">Add color</x-admin.add-row>
+        <x-admin.add-row x-on:click="$wire.mountAction('add', {}, { schemaComponent: @js($componentKey) })">{{ $repeater->getAddActionLabel() }}</x-admin.add-row>
     @endif
 </div>
