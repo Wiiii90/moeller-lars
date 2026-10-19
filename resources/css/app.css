@@ -76,13 +76,19 @@ body.public-site .site-header {
     max-width: 100%;
     height: auto;
     margin: 0;
-    /* The generated poster reserves portrait or landscape video dimensions.
-       Legacy videos without posters retain the previous 16:9 fallback. */
-    aspect-ratio: var(--public-video-ratio, 16 / 9);
+    /* HTML width/height preserve the generated poster's real aspect ratio;
+       no forbidden inline style is needed under the public CSP. */
+    aspect-ratio: auto;
     object-fit: contain;
     outline: 1px solid rgba(50, 47, 44, .14);
     outline-offset: -1px;
     background: #111;
+}
+
+/* Historical videos have no stored poster dimensions. */
+.artwork-card__video:not([width]),
+.artwork-detail__video:not([width]) {
+    aspect-ratio: 16 / 9;
 }
 
 .artwork-viewer {

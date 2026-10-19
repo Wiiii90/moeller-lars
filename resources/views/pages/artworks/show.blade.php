@@ -75,7 +75,6 @@
                         @if ($posterVariant)
                             width="{{ $posterVariant->getAttribute('width') }}"
                             height="{{ $posterVariant->getAttribute('height') }}"
-                            style="--public-video-ratio: {{ $posterVariant->getAttribute('width') }} / {{ $posterVariant->getAttribute('height') }}"
                         @endif
                         aria-label="{{ $media->altText($artwork) }}"
                         muted
