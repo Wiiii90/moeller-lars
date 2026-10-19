@@ -498,3 +498,21 @@ it('renders the General color editor through the canonical admin table, not Fila
         ->toContain('admin-add-row')
         ->not->toContain('fi-fo-table-repeater');
 });
+
+it('has exactly one visible header row without repeating Color, Position or Colors in every field', function (): void {
+    // The canonical table provides visible column names. Filament field labels
+    // remain screen-reader accessible but must not occupy separate row lines.
+    $markup = Livewire::test(General::class)
+        ->set('data.background_mode', 'radial')
+        ->html();
+
+    expect($markup)
+        ->toContain('general-color-table__table')
+        ->toContain('fi-fo-field-label fi-sr-only')
+        ->not->toContain('fi-fo-table-repeater')
+        ->not->toContain('fi-fo-field-label-col');
+
+    $section = substr($markup, strpos($markup, 'general-color-table__table'));
+    expect($section)->toContain('<th scope="col">Color</th>')
+        ->toContain('<th scope="col">Position</th>');
+});

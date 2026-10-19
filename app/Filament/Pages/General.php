@@ -694,6 +694,7 @@ final class General extends Page
         $columns = [TableColumn::make('Color')];
         $fields = [
             AdminColorControl::make('color', 'Color')
+                ->hiddenLabel()
                 ->default($surface === 'background'
                     ? PublicAppearance::DEFAULT_PAGE_COLOR
                     : PublicAppearance::DEFAULT_SURFACE_COLOR)
@@ -705,6 +706,7 @@ final class General extends Page
             $columns[] = TableColumn::make('Position');
             $fields[] = TextInput::make('position')
                 ->label('Position')
+                ->hiddenLabel()
                 ->integer()
                 ->minValue(0)
                 ->maxValue(100)
@@ -716,6 +718,7 @@ final class General extends Page
 
         $table = AdminTableRepeater::make($name)
             ->label('Colors')
+            ->hiddenLabel()
             ->table($columns)
             ->compact()
             ->schema($fields)

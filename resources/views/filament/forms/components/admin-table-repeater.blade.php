@@ -11,7 +11,6 @@
 <div class="general-color-table" role="group" aria-label="{{ $repeater->getLabel() }}">
     <x-admin.table class="admin-table--data general-color-table__table" aria-label="{{ $repeater->getLabel() }}">
         <table>
-
             <thead>
                 <tr>
                     @foreach ($columns as $column)
