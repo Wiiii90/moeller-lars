@@ -145,9 +145,12 @@ uses narrow static checks and browser review instead.
 
 Current application media ceilings:
 
-- `MEDIA_IMAGE_MAX_BYTES` — default 20 MiB;
-- `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB;
+- `MEDIA_IMAGE_MAX_BYTES` — default 64 MiB;
+- `MEDIA_VIDEO_MAX_BYTES` — default 150 MiB;
 - `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB;
+- media originals up to 120 megapixels use bounded libvips thumbnail generation above the legacy 16 MP GD threshold; existing `public-v1` derivatives are never re-encoded;
+- new videos receive a versioned WebP poster via FFmpeg, with matching canonical regeneration and immutable SHA-256;
+- runtime requires `vipsthumbnail` and `ffmpeg` in both release and local-preview images; PHP processing max is 180 seconds and Apache timeout 210 seconds.
 - `MEDIA_STORAGE_QUOTA_BYTES` — operator/platform-injected whole-site logical allowance when configured; admission accounts for canonical originals, generated variants and logical persistent application/database data rather than raw PostgreSQL physical-file size.
 
 The canonical media policy supports validated image/video/audio content. Consumer support remains narrower where appropriate.

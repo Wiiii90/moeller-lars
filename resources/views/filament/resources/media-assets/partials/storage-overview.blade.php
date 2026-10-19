@@ -173,7 +173,7 @@
                                     : 'Drop files here or choose from your device'
                     "
                 >Drop files here or choose from your device</strong>
-                <span x-show="phase === 'idle'">JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV.</span>
+                <span x-show="phase === 'idle'">JPEG, PNG, WebP · {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB / {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB; MP3, M4A/AAC, Ogg, WAV · {{ number_format(\App\Domain\Media\MediaTypePolicy::audioMaxBytes() / 1048576, 0) }} MiB.</span>
             </div>
             <div
                 class="media-workspace__upload-progress"

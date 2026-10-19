@@ -72,7 +72,7 @@
                                         : 'Drop images or videos here or choose from your device'
                         "
                     >Drop images or videos here or choose from your device</strong>
-                    <span x-show="phase === 'idle'">JPEG, PNG, WebP · max {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB · 16 MP; MP4, WebM · max {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB.</span>
+                    <span x-show="phase === 'idle'">JPEG, PNG, WebP · max {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB · {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · max {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB.</span>
                 </div>
                 <div
                     class="admin-gallery-upload__progress"
@@ -91,7 +91,7 @@
             </div>
         </div>
 
-        @php($reorderEnabled = trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
+        @php($reorderEnabled = ($galleryContext['sort_mode'] ?? 'manual') === 'manual' && trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
 
         <div class="gallery-workspace__result-surface">
             <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
