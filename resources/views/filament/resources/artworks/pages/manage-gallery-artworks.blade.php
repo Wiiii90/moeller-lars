@@ -404,10 +404,10 @@
                                     <button
                                         class="gallery-workspace__icon-action"
                                         type="button"
-                                        wire:click="mountAction('deletePrimaryMedia', { artwork: {{ $artwork['id'] }} })"
-                                        @disabled(! $artwork['primary_original_url'])
-                                        title="{{ $artwork['primary_original_url'] ? 'Delete media file' : 'No primary media file to delete' }}"
-                                        aria-label="{{ $artwork['primary_original_url'] ? 'Delete primary Media File for '.$artwork['title'] : 'No primary Media File to delete for '.$artwork['title'] }}"
+                                        wire:click="mountAction('deleteArtwork', { artwork: {{ $artwork['id'] }} })"
+                                        @disabled($artwork['state'] !== 'draft')
+                                        title="{{ $artwork['state'] === 'draft' ? 'Delete artwork' : 'Unpublish artwork before deleting' }}"
+                                        aria-label="Delete artwork {{ $artwork['title'] }}"
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
                                     </button>

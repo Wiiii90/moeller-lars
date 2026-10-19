@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -24,6 +25,36 @@ trait GalleryWorkspaceArtworkActions
 {
     /** @var array<int, array<string, mixed>> */
     private array $artworkPreviewDialogDataCache = [];
+
+    public function deleteArtworkAction(): Action
+    {
+        $action = Action::make('deleteArtwork')
+            ->label('Delete artwork')
+            ->color('danger')
+            ->action(function (array $arguments): void {
+                try {
+                    app(ArtworkDraftService::class)->delete($this->actionArtwork($arguments));
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Artwork was not deleted', $exception);
+
+                    return;
+                }
+
+                $this->refreshWorkspaceAfterMutation();
+                app(AdminNotifier::class)->notification(
+                    title: 'Artwork deleted',
+                    status: 'success',
+                );
+            });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete artwork?',
+            'The draft artwork and its Gallery slot are deleted. Shared Media Files remain in Storage.',
+            'Delete artwork',
+            danger: true,
+        );
+    }
 
     public function removeArtworkAction(): Action
     {
@@ -202,12 +233,8 @@ trait GalleryWorkspaceArtworkActions
                 }
             });
 
-        return AdminDialog::confirm(
-            $action,
-            'Unpublish artwork?',
-            submitLabel: 'Unpublish',
-            icon: AdminIcon::Unpublish,
-        );
+        // Unpublish is a reversible editorial state change, performed in one click.
+        return $action;
     }
 
     /** @return array<string, mixed> */

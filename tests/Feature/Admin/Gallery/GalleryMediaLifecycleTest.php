@@ -25,6 +25,40 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/GalleryFixtures.php';
 
+it('deletes an empty draft Gallery slot without requiring primary media', function (): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery, ['position' => 0]);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $draft->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect(Artwork::query()->whereKey($draft->getKey())->exists())->toBeFalse()
+        ->and(AuditEvent::query()->where('action', 'artwork.deleted')->where('entity_id', $draft->getKey())->count())->toBe(1)
+        ->and(AdminNotification::query()->where('title', 'Artwork deleted')->count())->toBe(1);
+});
+
+it('rejects direct deletion of a published Gallery artwork without destroying its media', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $asset = galleryFixtureAsset('video/mp4');
+    galleryFixturePrimary($artwork, $asset);
+    app(ArtworkPublicationService::class)->publish($artwork);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $artwork->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect(Artwork::query()->whereKey($artwork->getKey())->exists())->toBeTrue()
+        ->and(MediaAsset::query()->whereKey($asset->getKey())->exists())->toBeTrue()
+        ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
+});
+
 it('detaches a draft from its Gallery without deleting artwork media or shared MediaAssets', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset();
