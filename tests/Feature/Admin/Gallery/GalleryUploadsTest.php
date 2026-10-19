@@ -113,6 +113,22 @@ it('replaces primary media through a committed Gallery command instead of Edit a
 });
 
 
+it('reuses a byte-identical original from Storage and still opens Add artwork', function (): void {
+    Storage::fake(config('media.disk'));
+    $gallery = galleryFixtureCategory();
+    galleryFixtureUnavailableAnalytics();
+    $upload = UploadedFile::fake()->image('already-stored-artwork.jpg', 60, 40);
+    $original = app(MediaIngestService::class)->ingest($upload);
+
+    $component = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('directPrimaryMedia', [$upload])
+        ->call('processDirectPrimaryMedia')
+        ->assertHasNoErrors();
+
+    expect($component->get('pendingPrimaryMediaAssetId'))->toBe((int) $original->getKey())
+        ->and(\App\Models\MediaAsset::query()->where('sha256', $original->sha256)->count())->toBe(1);
+});
+
 it('turns a real direct Gallery upload into an editable and publishable artwork draft', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = galleryFixtureCategory();
