@@ -68,10 +68,16 @@ final class JournalEntryEditorSchema
             $schema[] = Textarea::make('excerpt')->label('Excerpt')->maxLength(1000)->nullable()->columnSpanFull();
         }
 
-        $schema[] = MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
-            ->placeholder('No cover image')
-            ->nullable()
-            ->columnSpanFull();
+        $cover = $template === JournalTemplate::Exhibitions
+            ? MediaAssetSelect::makeId(
+                'cover_media_asset_id',
+                'Cover image or video',
+                allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
+            )->placeholder('No cover media')
+            : MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
+                ->placeholder('No cover image');
+
+        $schema[] = $cover->nullable()->columnSpanFull();
 
         return AdminForm::section('Basics')->schema($schema)->columns(['md' => 2]);
     }
