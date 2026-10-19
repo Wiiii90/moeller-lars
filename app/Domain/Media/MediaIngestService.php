@@ -28,7 +28,7 @@ class MediaIngestService
 
     public const TRANSFORM_PROFILE = 'public-v1';
 
-    private const INGEST_LOCK_SECONDS = 120;
+    private const INGEST_LOCK_SECONDS = 240;
 
     private const MEDIA_PROBE_BYTES = 1024 * 1024;
 
@@ -122,7 +122,10 @@ class MediaIngestService
     private function storePreparedLocked(UploadedFile $upload, array $prepared): MediaAsset
     {
         try {
-            app(MediaCapacityService::class)->assertCanStoreOriginal($prepared['size']);
+            app(MediaCapacityService::class)->assertCanStoreOriginal(
+                $prepared['size'],
+                $prepared['thumbnail_bytes'] !== null ? strlen($prepared['thumbnail_bytes']) : 0,
+            );
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {

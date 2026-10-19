@@ -136,7 +136,8 @@ it('ingests an image above the legacy GD cap through bounded libvips and regener
             ->and($variant->variant_kind)->toBe('thumbnail')
             ->and($variant->transform_profile)->toBe(MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
             ->and(max((int) $variant->width, (int) $variant->height))->toBeLessThanOrEqual(960)
-            ->and(app(PublicMedia::class)->thumbnailVariantForAsset($asset)->getKey())->toBe($variant->getKey());
+            ->and(app(PublicMedia::class)->thumbnailVariantForAsset($asset)->getKey())->toBe($variant->getKey())
+            ->and(app(\App\Domain\Artwork\ArtworkPublicationService::class)->mediaReady($asset, 'Large artwork preview'))->toBeTrue();
 
         $bytesBefore = $disk->get($variant->storage_key);
         $disk->delete($variant->storage_key);

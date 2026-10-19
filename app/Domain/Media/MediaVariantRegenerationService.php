@@ -11,7 +11,8 @@ use Throwable;
 
 final class MediaVariantRegenerationService
 {
-    private const LOCK_SECONDS = 60;
+    // An external libvips/FFmpeg derivative can take up to 120 seconds.
+    private const LOCK_SECONDS = 180;
 
     /**
      * Ensure the physical file for a rebuildable generated variant exists.

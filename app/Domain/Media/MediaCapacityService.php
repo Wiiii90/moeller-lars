@@ -133,9 +133,9 @@ final class MediaCapacityService
         return (int) round(self::WARNING_RATIO * 100);
     }
 
-    public function assertCanStoreOriginal(int $bytes): void
+    public function assertCanStoreOriginal(int $bytes, int $generatedBytes = 0): void
     {
-        if ($bytes <= 0) {
+        if ($bytes <= 0 || $generatedBytes < 0) {
             throw ValidationException::withMessages(['media' => 'The uploaded media has an invalid size.']);
         }
 
@@ -165,7 +165,12 @@ final class MediaCapacityService
             + $generatedBytes
             + max(0, (int) ($database['logical_bytes'] ?? 0));
 
-        if ($siteUsedBytes >= $quota || $bytes > ($quota - $siteUsedBytes)) {
+        // The preview bytes have already been generated but not written to
+        // Storage. Reserve them together with the immutable original before
+        // either file is persisted; the existing ingest lock serializes this.
+        if ($siteUsedBytes >= $quota
+            || $bytes > ($quota - $siteUsedBytes)
+            || $generatedBytes > ($quota - $siteUsedBytes - $bytes)) {
             throw ValidationException::withMessages(['media' => 'The site storage allowance is full. Remove reclaimable storage or ask the operator to increase the allowance before uploading.']);
         }
     }
