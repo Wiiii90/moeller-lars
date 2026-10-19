@@ -48,6 +48,7 @@ trait GalleryWorkspaceDirectUpload
 
         $ingest = app(MediaIngestService::class);
         $addedAssets = [];
+        $queuedAssetIds = [];
         $duplicates = 0;
         $failures = [];
 
@@ -72,12 +73,17 @@ trait GalleryWorkspaceDirectUpload
                 }
 
                 if ($duplicate) {
+                    // A file already in Storage is still a valid Artwork
+                    // primary. Reuse its canonical ID instead of leaving
+                    // the user with a successful upload and no Artwork form.
                     $duplicates++;
-
-                    continue;
                 }
 
-                $addedAssets[] = $asset;
+                $assetId = (int) $asset->getKey();
+                if (! in_array($assetId, $queuedAssetIds, true)) {
+                    $addedAssets[] = $asset;
+                    $queuedAssetIds[] = $assetId;
+                }
             } catch (ValidationException $exception) {
                 $failures[] = [
                     'filename' => $this->directUploadFilename($upload),
@@ -334,7 +340,7 @@ trait GalleryWorkspaceDirectUpload
 
         if ($added > 0) {
             app(AdminNotifier::class)->notification(
-                title: $added === 1 ? 'File uploaded' : 'Files uploaded',
+                title: $added === 1 ? 'Media ready for Artwork' : 'Media ready for Artworks',
                 body: $summary,
                 status: 'success',
             );
@@ -351,28 +357,25 @@ trait GalleryWorkspaceDirectUpload
         }
     }
 
-    private function directUploadSummary(int $total, int $added, int $duplicates, int $failed): string
+    private function directUploadSummary(int $total, int $ready, int $reused, int $failed): string
     {
-        if ($added > 0 && $duplicates === 0 && $failed === 0) {
-            return $added.' '.($added === 1 ? 'file' : 'files').' added to Storage';
+        if ($ready === 0) {
+            return $failed > 0
+                ? ($total === 1 ? 'Upload failed' : 'Uploads failed')
+                : 'No new Artwork media selected';
         }
 
-        if ($added === 0 && $duplicates > 0 && $failed === 0) {
-            return $duplicates.' '.($duplicates === 1 ? 'file is' : 'files are').' already in Storage';
-        }
-
-        $parts = [];
-        if ($added > 0) {
-            $parts[] = $added.' '.($added === 1 ? 'file added' : 'files added');
-        }
-        if ($duplicates > 0) {
-            $parts[] = $duplicates.' already in Storage';
+        $parts = [
+            $ready.' '.($ready === 1 ? 'Media File is' : 'Media Files are').' ready for Artwork creation',
+        ];
+        if ($reused > 0) {
+            $parts[] = $reused.' '.($reused === 1 ? 'existing original reused' : 'existing originals reused');
         }
         if ($failed > 0) {
             $parts[] = $failed.' failed';
         }
 
-        return $parts === [] ? ($total === 1 ? 'Upload failed' : 'Uploads failed') : implode(' · ', $parts);
+        return implode(' · ', $parts);
     }
 
     private function directUploadFilename(TemporaryUploadedFile $upload): string
