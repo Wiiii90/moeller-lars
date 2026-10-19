@@ -2,7 +2,7 @@
 
 namespace App\Domain\Migration;
 
-use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaIntegrityService;
 use App\Models\CvEntry;
 use App\Models\MediaAsset;
@@ -95,13 +95,8 @@ final class LegacyPublicProfileMediaValidator
             $errors[] = "Legacy portrait media integrity failure: {$issue}.";
         }
 
-        $publicThumbnailCount = $asset->variants()
-            ->where('state', 'available')
-            ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-            ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
-            ->count();
-        if ($publicThumbnailCount !== 1) {
-            $errors[] = 'Legacy portrait does not have exactly one available public-v1 thumbnail.';
+        if (MediaPreviewVariant::imageThumbnail($asset) === null) {
+            $errors[] = 'Legacy portrait does not have exactly one available public thumbnail.';
         }
 
         return [
