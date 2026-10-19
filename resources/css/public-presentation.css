@@ -2088,3 +2088,42 @@ body.public-site--frame-plain #content {
 .public-video__sound [hidden] {
     display: none;
 }
+
+
+/* One Artwork caption rail; the existing caption remains authoritative.
+ * Rights come from the canonical Storage MediaAsset and never synthesize a
+ * new copyright owner or force a notice onto Artwork detail. */
+.artwork-card__footer--with-rights {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    flex-wrap: wrap;
+    gap: .35rem 1.2rem;
+}
+.artwork-card__rights {
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 12rem;
+    color: var(--public-muted);
+    font-family: var(--public-typeface);
+    font-size: .74rem;
+    font-weight: 400;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+.artwork-card__footer--with-rights .artwork-caption-link {
+    min-width: 0;
+    flex: 0 1 auto;
+}
+.artwork-card__footer--rights-right .artwork-card__rights {
+    order: 2;
+    text-align: right;
+}
+.artwork-card__footer--rights-right .artwork-caption-link {
+    margin-right: auto;
+    margin-left: 0;
+}
+.artwork-card__footer--rights-right .artwork-caption {
+    text-align: left;
+}

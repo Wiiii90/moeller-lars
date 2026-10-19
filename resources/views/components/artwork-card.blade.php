@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => false, 'showMediaCopyright' => false, 'captionLayout' => 'rights_left'])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -13,6 +13,11 @@
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
     $detailUrl = $preview->url(route('artworks.show', $artwork->slug));
+    $asset = ($showMediaCredits || $showMediaCopyright) ? $media->primaryAsset($artwork) : null;
+    $credit = $showMediaCredits && $asset !== null ? trim((string) ($asset->getAttribute('credit') ?? '')) : '';
+    $copyright = $showMediaCopyright && $asset !== null ? trim((string) ($asset->effectiveCopyrightNotice() ?? '')) : '';
+    $mediaRights = implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== ''));
+    $rightsRight = $captionLayout === 'rights_right';
 @endphp
 
 <article class="artwork-card">
@@ -103,8 +108,12 @@
         </div>
     @endif
 
-    @if ($showDetails)
-        <div class="artwork-card__footer">
+    @if ($showDetails || $mediaRights !== '')
+        <div class="artwork-card__footer{{ $mediaRights !== '' ? ' artwork-card__footer--with-rights' : '' }}{{ $rightsRight ? ' artwork-card__footer--rights-right' : '' }}">
+            @if ($mediaRights !== '')
+                <span class="artwork-card__rights">{{ $mediaRights }}</span>
+            @endif
+            @if ($showDetails)
             <a
                 class="artwork-caption-link"
                 href="{{ $detailUrl }}"
@@ -112,6 +121,7 @@
             >
                 <x-artwork-caption :artwork="$artwork" />
             </a>
+            @endif
         </div>
     @endif
 </article>

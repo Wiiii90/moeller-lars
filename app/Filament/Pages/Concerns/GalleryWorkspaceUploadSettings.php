@@ -41,6 +41,10 @@ trait GalleryWorkspaceUploadSettings
                     'artwork_divider' => GalleryPresentation::divider($gallery),
                     'sort_mode' => GalleryPresentation::sortMode($gallery),
                     'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
+                    'show_artwork_information' => GalleryPresentation::showArtworkInformation($gallery),
+                    'show_media_credits' => GalleryPresentation::showMediaCredits($gallery),
+                    'show_media_copyright' => GalleryPresentation::showMediaCopyright($gallery),
+                    'caption_layout' => GalleryPresentation::captionLayout($gallery),
                 ];
             })
             ->schema([
@@ -59,6 +63,20 @@ trait GalleryWorkspaceUploadSettings
                             ->label('Artwork order')
                             ->options(GalleryPresentation::SORT_OPTIONS)
                             ->default(GalleryPresentation::SORT_MANUAL)
+                            ->required()
+                            ->columnSpanFull(),
+                        Toggle::make('show_artwork_information')
+                            ->label('Show Artwork information below each work')
+                            ->columnSpanFull(),
+                        Toggle::make('show_media_credits')
+                            ->label('Show authored Media File credits')
+                            ->columnSpanFull(),
+                        Toggle::make('show_media_copyright')
+                            ->label('Show configured copyright notices')
+                            ->columnSpanFull(),
+                        Select::make('caption_layout')
+                            ->label('Caption arrangement')
+                            ->options(GalleryPresentation::CAPTION_LAYOUTS)
                             ->required()
                             ->columnSpanFull(),
                         Toggle::make('video_sound_enabled')
@@ -103,6 +121,10 @@ trait GalleryWorkspaceUploadSettings
                             'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                             'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,
                             'video_sound_enabled' => $data['video_sound_enabled'] ?? false,
+                            'show_artwork_information' => $data['show_artwork_information'] ?? true,
+                            'show_media_credits' => $data['show_media_credits'] ?? false,
+                            'show_media_copyright' => $data['show_media_copyright'] ?? false,
+                            'caption_layout' => $data['caption_layout'] ?? GalleryPresentation::CAPTION_RIGHTS_LEFT,
                         ]);
                         $changed = $updated->wasChanged();
 
