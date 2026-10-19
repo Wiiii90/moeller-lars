@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkSelectionOrder;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -244,7 +245,8 @@ trait GalleryWorkspaceMoveActions
 
     private function artworkReorderingAvailable(): bool
     {
-        return trim($this->search) === ''
+        return ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) === GalleryPresentation::SORT_MANUAL
+            && trim($this->search) === ''
             && $this->statusFilter === 'any'
             && $this->readinessFilter === 'any';
     }

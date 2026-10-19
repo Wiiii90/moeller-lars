@@ -55,7 +55,23 @@ final class ArtworkDraftService
 
             $this->audit->record($actor, 'artwork.created', 'artwork', $artwork->getKey());
 
-            return $artwork;
+            if (GalleryPresentation::sortMode($gallery) === GalleryPresentation::SORT_MANUAL && $maxPosition !== null) {
+                // Use the existing audited Gallery ordering owner; avoid a
+                // competing position-shift algorithm for newly created slots.
+                $ids = $gallery->artworks()
+                    ->whereKeyNot($artwork->getKey())
+                    ->orderBy('position')
+                    ->orderBy('id')
+                    ->pluck('id')
+                    ->map(static fn (mixed $id): int => (int) $id)
+                    ->all();
+                app(GalleryEditorialService::class)->reorderArtworks(
+                    $gallery,
+                    [(int) $artwork->getKey(), ...$ids],
+                );
+            }
+
+            return $artwork->fresh();
         });
     }
 

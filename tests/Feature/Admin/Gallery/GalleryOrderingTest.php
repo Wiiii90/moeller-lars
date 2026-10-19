@@ -26,6 +26,38 @@ function galleryOrderState(): array
     return Artwork::query()->orderBy('id')->get(['id', 'artwork_category_id', 'position'])->toArray();
 }
 
+it('orders newly created Manual Gallery Artworks first and leaves older records in relative order', function (): void {
+    $gallery = galleryFixtureCategory();
+    $first = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $second = galleryFixtureArtwork($gallery, ['position' => 1]);
+
+    $created = app(\App\Domain\Artwork\ArtworkDraftService::class)->create([
+        'artwork_category_id' => $gallery->getKey(),
+        'title' => 'Newest Gallery addition',
+        'slug' => 'newest-gallery-addition',
+        'work_date' => null,
+    ]);
+
+    expect(Artwork::query()->where('artwork_category_id', $gallery->getKey())
+        ->orderBy('position')->pluck('id')->all())
+        ->toBe([$created->getKey(), $first->getKey(), $second->getKey()]);
+});
+
+it('applies date sorting consistently without overwriting manual positions', function (): void {
+    $gallery = galleryFixtureCategory();
+    $older = galleryFixtureArtwork($gallery, ['position' => 0, 'work_year' => 2023, 'work_date' => '2023-01-01']);
+    $newer = galleryFixtureArtwork($gallery, ['position' => 1, 'work_year' => 2026, 'work_date' => '2026-10-02']);
+    $gallery->forceFill(['sort_mode' => 'newest'])->save();
+
+    $ids = \App\Domain\Artwork\GalleryPresentation::orderArtworks(
+        Artwork::query()->where('artwork_category_id', $gallery->getKey()),
+        $gallery->fresh(),
+    )->pluck('id')->all();
+
+    expect($ids)->toBe([$newer->getKey(), $older->getKey()])
+        ->and((int) $older->fresh()->getAttribute('position'))->toBe(0);
+});
+
 it('persists native sort once while leaving Committed order unchanged and repeated or boundary actions silent', function (): void {
     $gallery = galleryFixtureCategory();
     $artworks = collect(range(0, 2))->map(fn ($position) => galleryFixtureArtwork($gallery, ['position' => $position]));

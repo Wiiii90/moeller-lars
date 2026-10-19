@@ -39,6 +39,7 @@ trait GalleryWorkspaceUploadSettings
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
                     'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
                     'artwork_divider' => GalleryPresentation::divider($gallery),
+                    'sort_mode' => GalleryPresentation::sortMode($gallery),
                 ];
             })
             ->schema([
@@ -53,6 +54,12 @@ trait GalleryWorkspaceUploadSettings
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                         Textarea::make('description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
+                        Select::make('sort_mode')
+                            ->label('Artwork order')
+                            ->options(GalleryPresentation::SORT_OPTIONS)
+                            ->default(GalleryPresentation::SORT_MANUAL)
+                            ->required()
+                            ->columnSpanFull(),
                         Toggle::make('landscape_detail_enabled')
                             ->label('Expand landscape Artwork pages')
                             ->columnSpanFull(),
@@ -90,6 +97,7 @@ trait GalleryWorkspaceUploadSettings
                             'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
                             'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                             'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
+                            'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,
                         ]);
                         $changed = $updated->wasChanged();
 

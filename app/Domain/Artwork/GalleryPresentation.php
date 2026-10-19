@@ -4,10 +4,46 @@ namespace App\Domain\Artwork;
 
 use App\Domain\Content\DividerVariant;
 use App\Models\ArtworkCategory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
 final class GalleryPresentation
 {
+    public const SORT_MANUAL = 'manual';
+    public const SORT_NEWEST = 'newest';
+
+    public const SORT_OPTIONS = [
+        self::SORT_MANUAL => 'Manual (new Artworks first)',
+        self::SORT_NEWEST => 'Artwork date (newest first)',
+    ];
+
+    public static function sortMode(ArtworkCategory $gallery): string
+    {
+        $value = $gallery->getAttribute('sort_mode');
+
+        return is_string($value) && array_key_exists($value, self::SORT_OPTIONS)
+            ? $value : self::SORT_MANUAL;
+    }
+
+    /** @template TModel of \Illuminate\Database\Eloquent\Model
+     * @param Builder<TModel> $query
+     * @return Builder<TModel>
+     */
+    public static function orderArtworks(Builder $query, ArtworkCategory $gallery): Builder
+    {
+        if (self::sortMode($gallery) === self::SORT_NEWEST) {
+            return $query
+                ->orderByRaw('CASE WHEN work_year IS NULL THEN 1 ELSE 0 END')
+                ->orderByDesc('work_year')
+                ->orderByRaw('CASE WHEN work_date IS NULL THEN 1 ELSE 0 END')
+                ->orderByDesc('work_date')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id');
+        }
+
+        return $query->orderBy('position')->orderBy('id');
+    }
+
     public const EDGE_DISABLED = 'disabled';
     public const EDGE_HIDDEN = 'hidden';
     public const EDGE_CYCLIC = 'cyclic';
@@ -22,6 +58,12 @@ final class GalleryPresentation
     public static function validateSettings(array $data): array
     {
         $values = [];
+        if (array_key_exists('sort_mode', $data)) {
+            if (! is_string($data['sort_mode']) || ! array_key_exists($data['sort_mode'], self::SORT_OPTIONS)) {
+                throw ValidationException::withMessages(['sort_mode' => 'Choose a supported Gallery order.']);
+            }
+            $values['sort_mode'] = $data['sort_mode'];
+        }
         if (array_key_exists('landscape_detail_enabled', $data)) {
             $enabled = $data['landscape_detail_enabled'];
             if (! is_bool($enabled) && ! in_array($enabled, [0, 1, '0', '1'], true)) {
