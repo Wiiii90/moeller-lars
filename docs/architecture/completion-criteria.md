@@ -149,6 +149,8 @@ Zusätzlich tatsächlich ausgeführt: JSON-Parsing aller zehn Inventare, read-on
 | [Admin UI](ui-surfaces.md) / [Notifications](../ADMIN-NOTIFICATION-CONTRACT.md) | gemeinsame Appearance-Stage/Color-Stops/Angle-Control, Header-Dialog-Lifecycle, Dashboard-Release-Read/Pin-State | neuer vollumfänglicher Neun-Workspace-Test-/Browserlauf |
 | [Schema](schema-evolution.md) / [Release](../RELEASE.md) | Forward-Migrationen für Rechteartefakte, Gallery- und Public-Appearance-Einstellungen | keine Migration auf der geschützten artist-kuratierten Validation; Cutover gesondert autorisieren |
 
+**Eng begrenzter General-Nachtrag:** Vier weitere `dev`-Commits bis `dev@0a7952e12b49` vereinheitlichen den inline Gradient-Stops-Table und entfernen obsolete Dialog-View/Hidden-Stop-Felder. `GeneralAppearanceTest.php` enthält eine neue authored Position-/Endpoint-Assertion, **nicht hier ausgeführt**; das ist keine neue Full-Suite- oder Browserabnahme.
+
 Die bisherigen 43 A–D-Artefaktentscheidungen und die tatsächlichen nativen Exitcodes von `docs@317d255e` gelten **nur für den damaligen ausgecheckten `docs`-Code**. Keine der alten Quell-/Diagramm-SHAs wird durch eine neue Dokumentationsbehauptung auf das aktuelle `dev` umetikettiert. Für die vollständige Synchronisierung generierter Inventare ist später ein geprüfter **echter dev→docs-Quellimport und nativer Generatorlauf** nötig, ohne die geschützten Umgebungen zu berühren. Produkt-/DB-/Browser-Risiken bleiben separater Backlog; dieser Quellenachtrag stellt keinen zweiten technischen Gesamtabschluss dar.
 
 ## Bekannte bereits belegte Lücken sind keine leeren Diagrammkästen

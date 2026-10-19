@@ -49,6 +49,8 @@ Die [Abschlussmatrix](docs/architecture/completion-criteria.md) ist **alleiniger
 
 ## Abschluss und nächste Schritte
 
+**Zusätzlicher General-Control-Abgleich:** Vier nach dem zunächst gesichteten `dev@434975e1bd09` entstandene Commits wurden bis `dev@0a7952e12b49` quellenbasiert geprüft: kompakte inline Color/Position-Tabelle, Entfernung der separaten Gradient-Dialog-View und Hidden-Stop-Felder; der neue Feature-Test für Position/Endpunkte wurde **nur gelesen**, nicht ausgeführt. Andere Fachtraces bleiben auf ihrem einzeln genannten SHA.
+
 **Synchronisationsgrenze am 19.10.2026:** Aktuelles `dev@434975e1bd09` wurde *ausgewählt quellenbasiert* geprüft; zwischen dem zuletzt integrierten `dev@e72976af` und diesem Stand liegen 329 Commits. Das ist kein claim, sämtliche geänderten Methoden/Tests der 329 Commits neu auditiert zu haben. Der unverändert vollständige native Prüfnachweis bezieht sich auf den Quellstand des letzten `docs`-Checkouts vor dem neuen Dokumentationsnachtrag (`317d255e`). Für einen neuen nativen Gesamt-Generatorcheck gegen aktualisierten `dev`-App-Code ist erst ein **separat kontrollierter, echter Quellimport** in den `docs`-Worktree erforderlich. Validation ist artist-kuratiert und darf nicht als Wegwerf-Datenbank gelten.
 
 1. **Quellbasierter Dokumentations-Workstream technisch abgeschlossen.** Fachlicher Source-/Normabschluss und neun Workspace-Audits bleiben die vorherigen versionierten Belege; das fehlende native Checkout-Prüfpaket ist jetzt ausgeführt. Architekturindex, Detail-Owner, A–D-Matrix und Dokuindex entsprechen den tatsächlichen Resultaten. Native Inventare sind auf `docs@8c9bd0a0f0fca46b1aa5637049372726d6970c4c` gebunden; ältere und separat auf neuerem `dev` gelesene Quellen nicht umetikettieren.
