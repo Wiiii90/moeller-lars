@@ -39,6 +39,24 @@ final class PublicationMediaCleanupService
         }
     }
 
+    /**
+     * Acknowledge only physically completed files. If deletion failed,
+     * retain the same outbox rows so drain() can retry idempotently.
+     *
+     * @param list<string> $storageKeys
+     */
+    public function acknowledgeRemoved(int $mediaAssetId, array $storageKeys): void
+    {
+        if ($mediaAssetId < 1 || $storageKeys === []) {
+            return;
+        }
+
+        DB::table('publication_media_cleanups')
+            ->where('media_asset_id', $mediaAssetId)
+            ->whereIn('storage_key', $storageKeys)
+            ->delete();
+    }
+
     public function queueAbandonedWorkingMedia(): void
     {
         $keysByAsset = [];

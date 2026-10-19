@@ -217,15 +217,19 @@ class MediaAssetEditorialService
                 $this->adminAuditService->record($actor, 'media.deleted', 'media_asset', $locked->getKey());
             });
 
-            if ($deferCleanup) {
-                $this->publicationMediaCleanup->queue($assetId, $keys);
-            }
+            // Durable outbox inside the same transaction as the logical
+            // deletion: a crash after commit cannot strand physical files.
+            // Committed/history-owned files remain queued until safe.
+            $this->publicationMediaCleanup->queue($assetId, $keys);
 
             return true;
         });
 
-        if (! $deferCleanup) {
+        if ($changed && ! $deferCleanup) {
+            // Opportunistic immediate cleanup, with the durable outbox as
+            // recovery if deletion fails or the process is interrupted.
             $this->publicationMediaCleanup->deleteNow($keys);
+            $this->publicationMediaCleanup->acknowledgeRemoved($assetId, $keys);
         }
 
         return $changed;
