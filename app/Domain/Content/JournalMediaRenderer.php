@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use Illuminate\Support\HtmlString;
@@ -32,10 +33,11 @@ final class JournalMediaRenderer
             throw new LogicException('Journal media usage requires a media asset.');
         }
 
-        $variant = $this->media->thumbnailVariantForAsset($asset);
+        $isVideo = MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'));
+        $variant = $isVideo ? null : $this->media->thumbnailVariantForAsset($asset);
         $alt = $this->media->altTextForAsset($asset);
-        $width = (int) ($variant->getAttribute('width') ?? 0);
-        $height = (int) ($variant->getAttribute('height') ?? 0);
+        $width = (int) ($variant?->getAttribute('width') ?? 0);
+        $height = (int) ($variant?->getAttribute('height') ?? 0);
         $credit = trim((string) ($asset->getAttribute('credit') ?? ''));
         // Blog presentation can hide all visual copyright notices while
         // preserving separately authored credits and the stored copyright data.
@@ -50,9 +52,13 @@ final class JournalMediaRenderer
         $caption = trim(implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== '')));
 
         $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';
+        $element = $isVideo
+            ? '<video src="'.e($this->media->originalUrlForAsset($asset)).'" aria-label="'.e($alt).'"'
+                .' controls muted loop playsinline preload="metadata" data-public-loop-video></video>'
+            : '<img src="'.e($this->media->variantUrl($variant)).'" alt="'.e($alt).'"'.$dimensions
+                .' loading="'.($priority ? 'eager' : 'lazy').'" decoding="async" fetchpriority="'.($priority ? 'high' : 'auto').'">';
         $figure = '<figure class="'.e($class).'">'
-            .'<img src="'.e($this->media->variantUrl($variant)).'" alt="'.e($alt).'"'.$dimensions
-            .' loading="'.($priority ? 'eager' : 'lazy').'" decoding="async" fetchpriority="'.($priority ? 'high' : 'auto').'">'
+            .$element
             .($showCaption && $caption !== '' ? '<figcaption>'.e($caption).'</figcaption>' : '')
             .'</figure>';
 

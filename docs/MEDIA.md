@@ -61,7 +61,7 @@ Consumers reference existing `MediaAsset` IDs rather than copying files.
 Structured consumers include:
 
 - Artwork primary/additional media;
-- Blog/Exhibition Cover and Gallery through `JournalEntryMedia`;
+- Blog/Exhibition Cover and Gallery through `JournalEntryMedia` (Gallery accepts images or videos; Blog cover selection remains image-only);
 - CV direct image;
 - Custom Page Image components;
 - Home Image components;

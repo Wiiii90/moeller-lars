@@ -8,9 +8,9 @@
 <div class="journal-entry-gallery journal-entry-gallery--{{ $presentation }} @if ($presentation === 'mosaic' && $gallery->count() === 1) journal-entry-gallery--single @endif" aria-label="{{ $label }}" @if ($presentation === 'slideshow') data-journal-slideshow @endif>
     @if ($presentation === 'slideshow' && $gallery->count() > 1)
         <nav class="journal-entry-gallery__controls" aria-label="{{ $label }} navigation">
-            <button type="button" data-journal-slide-prev aria-label="Previous image"><x-public-icon name="arrow-left" /></button>
+            <button type="button" data-journal-slide-prev aria-label="Previous media"><x-public-icon name="arrow-left" /></button>
             <span data-journal-slide-status aria-live="polite" aria-atomic="true">1 / {{ $gallery->count() }}</span>
-            <button type="button" data-journal-slide-next aria-label="Next image"><x-public-icon name="arrow-right" /></button>
+            <button type="button" data-journal-slide-next aria-label="Next media"><x-public-icon name="arrow-right" /></button>
         </nav>
     @endif
     @foreach ($galleryGroups as $column)
