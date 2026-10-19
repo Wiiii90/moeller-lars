@@ -13,6 +13,7 @@
         min(var(--public-content-padding), calc((100% - var(--public-art-max)) / 2))
     );
     --public-content-block-inset: 2rem;
+    --public-paper-return-inset: .75rem;
     --public-shell-gap: .75rem;
     --public-short-page-min-height: 15rem;
     --public-section-gap: 3.55rem;
@@ -1849,14 +1850,20 @@ html:has(.artwork-viewer[open]) {
     pointer-events: none;
 }
 
-/* One white stroke per side. Each turns back into the paper at the height
- * of the final content inset rather than running to the paper's bottom. */
+/* Both contours share the actual bottom edge of the last visible
+ * artwork, entry, or page component. The one public-paper frame owner
+ * supplies that position, and the CSS token returns slightly before it.
+ * A content-inset fallback applies before initialization only. */
 .public-paper-decoration::before,
 .public-paper-decoration::after {
     position: absolute;
     top: 0;
-    /* Only the white strokes return inward before the final content inset. */
-    bottom: var(--public-content-block-inset);
+    bottom: auto;
+    height: max(0px, calc(
+        var(--public-paper-content-end, calc(100% - var(--public-content-block-inset)))
+        - var(--public-paper-return-inset)
+    ));
+    max-height: 100%;
     box-sizing: border-box;
     width: calc(var(--public-folio-edge-outset) + 1.35rem);
     content: "";

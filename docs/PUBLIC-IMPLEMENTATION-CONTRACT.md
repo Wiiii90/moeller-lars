@@ -88,9 +88,19 @@ landscape-width artwork is not a common paper plane. For separated sheets,
 the existing Menu and Content primitives own their own backing and outlines.
 The common shell and paper edge outset are shared tokens.
 
-The static white contour returns inward before the bottom of Content,
-using the existing Content block inset rather than measuring individual
-artworks. It never runs to the end of the paper as a full-height line.
+The static white contour returns inward just before the final visible
+content item (the last Artwork, Journal entry, Exhibition, Home/Custom
+component, or Artwork detail). A single `public-paper-frame.js` owner
+resolves the last rendered content edge within the existing Content flow
+and sets `--public-paper-content-end`. A scoped ResizeObserver follows
+native content reflow (including later-loaded artwork and opened entries);
+a MutationObserver handles visibility changes. Both observers disconnect
+through the existing Public SPA lifecycle. The CSS return inset is shared
+between left/right strokes, while the gray backing continues to the natural
+Content paper bottom independently. The pre-initialization fallback uses
+Content block inset only until real layout geometry is available. No
+intervals, extra scroll container, per-template geometry offsets, or
+animation are introduced.
 The canonical folio palette (`--public-folio-light`,
 `--public-folio-soft`) and 3px-left/4px-down backing remain authoritative.
 Existing six route-deterministic corner endpoints remain in the
