@@ -1310,7 +1310,7 @@ final class HomePresentation extends Page
     /** @return array<string,mixed> */
     private function artworkRow(Artwork $artwork): array
     {
-        return [...$this->candidateRow($artwork), 'featured' => (bool) $artwork->getAttribute('featured_on_home'), 'preview_url' => route('preview.artworks.show', ['slug' => $artwork->getAttribute('slug')])];
+        return [...$this->candidateRow($artwork), 'preview_url' => route('preview.artworks.show', ['slug' => $artwork->getAttribute('slug')])];
     }
 
     /** @return array<string,mixed> */
