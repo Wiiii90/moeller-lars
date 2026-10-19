@@ -12,7 +12,6 @@ trait CustomPageWorkspaceSecondaryForms
     {
         $data = [
             ...$block,
-            'publication_state' => CustomPageSetting::componentPublished($block) ? 'published' : 'unpublished',
         ];
         if (($block['type'] ?? null) === 'image') {
             $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
@@ -58,7 +57,9 @@ trait CustomPageWorkspaceSecondaryForms
         if (! is_string($type) || ! array_key_exists($type, self::COMPONENT_LABELS)) {
             throw ValidationException::withMessages(['type' => 'Choose a supported component type.']);
         }
-        $published = ($data['publication_state'] ?? 'published') === 'published';
+        $published = $existing !== null
+            ? CustomPageSetting::componentPublished($existing)
+            : ($data['publication_state'] ?? 'published') === 'published';
 
         return match ($type) {
             'image' => [

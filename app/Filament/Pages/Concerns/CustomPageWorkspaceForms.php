@@ -40,8 +40,8 @@ trait CustomPageWorkspaceForms
             ->default('published')
             ->required();
 
-        // Type and Status share the first row in both Create and Edit.
-        // Edit type changes use the canonical conversion Action, never a
+        // Publication state is set at creation or by the table action, not
+        // in an Edit dialog. Edit type changes use the canonical conversion
         // second implicit mutation in the field state callback.
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
@@ -56,7 +56,7 @@ trait CustomPageWorkspaceForms
                 ->columns(['md' => 2])
                 ->schema([
                     $typeField,
-                    $statusField,
+                    ...($onTypeChange === null ? [$statusField] : []),
                     ...($onTypeChange !== null && in_array($editingType, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
                         ? [$this->componentParentField($editingType)]
                         : []),

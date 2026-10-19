@@ -343,14 +343,6 @@ trait CustomPageWorkspaceComponentActions
                         },
                     )->disabled(! $canMove);
                 }
-                $published = \App\Models\CustomPageSetting::componentPublished($blocks[$child]);
-                $actions[] = AdminDialog::headerAction(
-                    'childPublish', $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-                    function () use ($image, $child, $type, $published, $args, $actionName): void {
-                        $this->setImageChildPublished($image, $child, $type, ! $published);
-                        $this->replaceMountedAction($actionName, $args);
-                    },
-                );
                 $actions[] = AdminDialog::headerAction('childDelete', AdminRowAction::Delete,
                     fn () => $this->replaceMountedAction('deleteImageChild', $args));
                 return $actions;
@@ -679,15 +671,6 @@ trait CustomPageWorkspaceComponentActions
             })->disabled(! $canMove);
         }
 
-        $published = \App\Models\CustomPageSetting::componentPublished($block);
-        $actions[] = AdminDialog::headerAction(
-            'dialogTogglePublication',
-            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-            function () use ($index, $type, $published, $target, $actionName): void {
-                $this->setComponentPublished($index, $type, ! $published);
-                $this->replaceMountedAction($actionName, $target);
-            },
-        );
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($target): void {
             $this->replaceMountedAction('deleteComponent', $target);
         });

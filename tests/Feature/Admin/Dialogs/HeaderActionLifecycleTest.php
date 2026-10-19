@@ -44,7 +44,7 @@ it('moves a Page in an open Edit dialog and disables the reached boundary action
     expect($second->fresh()->state)->toBe('published');
 });
 
-it('keeps the Custom Page component editor mounted through reorder and publication actions', function (): void {
+it('keeps Custom Page component edits mounted through reorder without duplicating table publication actions', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Dialog reorder', 'dialog-reorder');
     $settings->update(['blocks' => [
         ['type' => 'text', 'published' => true, 'title' => 'First', 'body' => 'One'],
@@ -60,14 +60,14 @@ it('keeps the Custom Page component editor mounted through reorder and publicati
     expect(array_column($settings->fresh()->components(), 'title'))->toBe(['Second', 'First']);
     expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveUp')->isDisabled())->toBeTrue();
 
-    $dialog->mountAction('dialogTogglePublication')
-        ->assertSet('mountedActions.0.name', 'editComponent')
-        ->assertSet('mountedActions.0.arguments.componentIndex', 0);
-    expect($settings->fresh()->components()[0]['published'])->toBeFalse();
+    expect($dialog->instance()->getMountedAction()->getModalAction('dialogTogglePublication'))->toBeNull();
 
     $dialog->mountAction('dialogMoveDown')
         ->assertSet('mountedActions.0.name', 'editComponent')
         ->assertSet('mountedActions.0.arguments.componentIndex', 1);
     expect(array_column($settings->fresh()->components(), 'title'))->toBe(['First', 'Second']);
     expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveDown')->isDisabled())->toBeTrue();
+
+    $dialog->call('unmountAction')->call('setComponentPublished', 1, 'text', false)->assertHasNoErrors();
+    expect($settings->fresh()->components()[1]['published'])->toBeFalse();
 });
