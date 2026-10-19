@@ -162,7 +162,11 @@ trait GalleryWorkspaceArtworkDialogs
                     );
                 }
 
-                $this->replaceMountedAction('editArtwork', ['artwork' => (int) $artwork->getKey()]);
+                // Complete the committed upload as its own action. Replacing
+                // the mounted Action stack during execution could discard
+                // FileUpload state and success feedback before Filament
+                // finishes its lifecycle. The refreshed Gallery owns the
+                // next Edit action.
             });
 
         return AdminDialog::command($action, 'Use media', AdminDialogSize::Default);

@@ -373,6 +373,17 @@
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
                                     </button>
+                                    @if ($artwork['state'] === 'draft')
+                                        <button
+                                            class="gallery-workspace__icon-action"
+                                            type="button"
+                                            wire:click="mountAction('uploadArtworkPrimaryMedia', { artwork: {{ $artwork['id'] }} })"
+                                            title="Replace primary image or video"
+                                            aria-label="Replace primary media for {{ $artwork['title'] }}"
+                                        >
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Upload->mini()" />
+                                        </button>
+                                    @endif
                                     <button
                                         class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"

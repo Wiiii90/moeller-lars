@@ -66,6 +66,17 @@ it('ingests a real image through Add artwork and publishes its primary ALT descr
 });
 
 
+// The replacement command must be independently accessible from a Gallery
+// card, not only through the autosaving Edit modal's nested action stack.
+it('offers the primary upload as an independent Gallery action', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->assertSee('Replace primary image or video');
+});
+
 it('replaces primary media through a committed Gallery command instead of Edit autosave', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = galleryFixtureCategory();
