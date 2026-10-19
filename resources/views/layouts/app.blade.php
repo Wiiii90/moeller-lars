@@ -1,7 +1,6 @@
 <!doctype html>
-@php($publicStyleNonce = request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE))
-<?php
-    // Native PHP avoids a Blade compiler parse ambiguity after inline @php(...).
+@php
+    $publicStyleNonce = request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE);
     // URL-keyed corner positions are available before the first render.
     $folioSeed = hexdec(substr(hash('sha256', '/'.ltrim(request()->path(), '/')), 0, 8));
     $folioPlacement = [
@@ -12,7 +11,7 @@
         'menuLeftBottom' => (37 + (($folioSeed >> 17) % 10)).'%',
         'menuRightBottom' => (6 + (($folioSeed >> 21) % 8)).'%',
     ];
-?>
+@endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
