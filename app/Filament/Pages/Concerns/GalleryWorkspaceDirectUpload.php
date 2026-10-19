@@ -275,9 +275,7 @@ trait GalleryWorkspaceDirectUpload
         $mime = (string) $asset->getAttribute('mime_type');
         $filename = e((string) $asset->getAttribute('original_filename'));
         if (MediaTypePolicy::isImage($mime)) {
-            $variant = $asset->getRelation('variants')->first(static fn ($candidate): bool => $candidate->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-                && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                && $candidate->getAttribute('state') === 'available');
+            $variant = \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset);
             $url = $variant === null
                 ? route('admin.media.original', $asset)
                 : route('admin.media.variant', $variant);
@@ -287,8 +285,12 @@ trait GalleryWorkspaceDirectUpload
 
         if (MediaTypePolicy::isVideo($mime)) {
             $url = route('admin.media.original', $asset);
+            $poster = \App\Domain\Media\MediaPreviewVariant::videoPoster($asset);
+            $posterAttribute = $poster !== null
+                ? ' poster="'.e(route('admin.media.variant', $poster)).'"'
+                : '';
 
-            return new HtmlString('<div class="admin-component-image-preview"><video src="'.e($url).'" width="176" height="132" preload="metadata" muted playsinline aria-label="Video preview for '.$filename.'"></video><span>'.$filename.'</span></div>');
+            return new HtmlString('<div class="admin-component-image-preview"><video src="'.e($url).'"'.$posterAttribute.' width="176" height="132" preload="metadata" muted playsinline aria-label="Video preview for '.$filename.'"></video><span>'.$filename.'</span></div>');
         }
 
         return 'Unsupported Media File';

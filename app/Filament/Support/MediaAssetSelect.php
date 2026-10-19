@@ -199,12 +199,7 @@ final class MediaAssetSelect
         $filename = e((string) $asset->getAttribute('original_filename'));
 
         /** @var Collection<int, MediaVariant> $variants */
-        $variants = $asset->getRelation('variants');
-        $variant = $variants->first(
-            fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
-                && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                && $candidate->getAttribute('state') === 'available',
-        );
+        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
 
         $preview = $variant instanceof MediaVariant
             ? '<img src="'.e(route('admin.media.variant', $variant)).'" alt="" width="44" height="44" loading="lazy" decoding="async">'

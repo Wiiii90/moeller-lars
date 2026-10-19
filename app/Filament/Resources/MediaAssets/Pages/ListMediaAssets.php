@@ -603,11 +603,7 @@ final class ListMediaAssets extends Page
 
         $this->assets = $records->map(function (MediaAsset $asset) use ($catalog): array {
             /** @var MediaVariant|null $thumbnail */
-            $thumbnail = $asset->getRelationValue('variants')->first(static function (MediaVariant $variant): bool {
-                return $variant->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-                    && $variant->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                    && $variant->getAttribute('state') === 'available';
-            });
+            $thumbnail = \App\Domain\Media\MediaPreviewVariant::preview($asset);
             $references = $catalog->references($asset);
             $mime = (string) $asset->getAttribute('mime_type');
             $createdAt = $asset->getAttribute('created_at');

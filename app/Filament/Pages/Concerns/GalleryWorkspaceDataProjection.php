@@ -26,9 +26,7 @@ trait GalleryWorkspaceDataProjection
             ->where('artwork_category_id', $this->galleryContext['id'])
             ->with([
                 'artworkMedia' => static fn ($query) => $query->where('role', 'primary')->orderBy('position'),
-                'artworkMedia.mediaAsset.variants' => static fn ($query) => $query
-                    ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-                    ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE),
+                'artworkMedia.mediaAsset.variants',
             ]), $gallery)
             ->get();
 
@@ -46,9 +44,7 @@ trait GalleryWorkspaceDataProjection
             $primaryAsset = $primary?->getRelationValue('mediaAsset');
             /** @var MediaVariant|null $thumbnail */
             $thumbnail = $primaryAsset instanceof MediaAsset
-                ? $primaryAsset->getRelation('variants')->first(static fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-                    && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                    && $candidate->getAttribute('state') === 'available')
+                ? \App\Domain\Media\MediaPreviewVariant::preview($primaryAsset)
                 : null;
             $mime = $primaryAsset instanceof MediaAsset ? (string) $primaryAsset->getAttribute('mime_type') : '';
             $kind = MediaTypePolicy::isVideo($mime) ? 'video' : (MediaTypePolicy::isImage($mime) ? 'image' : 'none');
