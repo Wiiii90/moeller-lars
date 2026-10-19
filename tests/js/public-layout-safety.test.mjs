@@ -49,6 +49,21 @@ test('public paper follows real content height rather than unused viewport heigh
     assert.doesNotMatch(presentation, /--public-paper-content-end/);
 });
 
+test('paper minimum is reserved for genuinely empty editorial sheets', () => {
+    const presentation = source('resources/css/public-presentation.css');
+    const content = presentation.match(/^#content\s*\{\s*position:\s*relative;([^}]*)\}/m)?.[1];
+    assert.ok(content, 'shared content sheet must exist');
+    assert.match(content, /min-height:\s*0;/);
+    assert.doesNotMatch(content, /--public-short-page-min-height/);
+
+    // The existing rendered-element selector is the sole exception.
+    const emptySheet = presentation.match(/^#content:not\(:has\(> \.public-content-reveal > \.public-page-heading\)\):has\(([\s\S]*?)\)\s*\{([^}]*)\}/m);
+    assert.ok(emptySheet, 'empty section pages retain their existing single CSS owner');
+    assert.match(emptySheet[1], /\.artwork-list:not\(:has\(> \*\)\)/);
+    assert.match(emptySheet[2], /min-height:\s*var\(--public-short-page-min-height\)/);
+    assert.match(emptySheet[2], /flex:\s*1 0 auto;/);
+});
+
 test('public Menu has no implicit title-only divider fragment', () => {
     const presentation = source('resources/css/public-presentation.css');
     const baseMenu = presentation.match(/^\.site-navigation\s*\{([^}]*)\}/m)?.[1];

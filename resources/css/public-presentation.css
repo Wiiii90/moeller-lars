@@ -571,7 +571,8 @@ body {
    its content type or whether it currently contains journal entries. */
 #content {
     position: relative;
-    min-height: var(--public-short-page-min-height);
+    /* Populated sheets follow their rendered content, not a mandatory minimum. */
+    min-height: 0;
     margin-block: 0 var(--public-shell-gap);
     background: var(--public-content-background);
     box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
@@ -616,6 +617,7 @@ body {
     > .public-content-reveal > .blog-page:not(:has(> *)),
     > .public-content-reveal > .custom-page:not(.home-components):not(:has(> *))
 ) {
+    min-height: var(--public-short-page-min-height);
     flex: 1 0 auto;
 }
 
