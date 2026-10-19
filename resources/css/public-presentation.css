@@ -1976,9 +1976,13 @@ body.public-site--frame-plain #content {
 
 .site-header--name-outside:not(.is-title-stacked) .site-navigation > h1 {
     position: relative;
+    box-sizing: border-box;
     grid-column: 1;
     grid-row: 1;
-    width: 100%;
+    /* Reserve a title rail immediately beside the centered Menu paper.
+     * At wide viewports it must not start at the browser's far-left edge. */
+    justify-self: end;
+    width: min(100%, calc(var(--public-shell-max) * .5));
     height: 100%;
     min-width: 0;
     padding-inline: var(--public-gutter);

@@ -174,9 +174,19 @@ Responsive alignment (Left/Center/Right). Above and Below support the three
 desktop alignments; the 40rem narrow mode applies the configured responsive
 alignment. Below is still its own content-sized row outside Menu.
 Public-header title fitting uses an initial synchronous calculation and
-viewport `resize` / font-loading events, not a ResizeObserver observing
-elements whose own dimensions are changed by the stacked-title class.
-This is intentional: it prevents the previous self-triggering layout feedback.
+viewport `resize` / font-loading events. The stacked decision is derived
+only from stable `window.innerWidth`, General's `--public-shell-max`,
+the canonical shell-gutter clamp and intrinsic font glyph width. It never
+reads the rendered width or origin of a Menu rail that changes when
+`is-title-stacked` toggles. Inside requires both that the actual title
+column (15rem minimum, 32% share) fits the title and that the remaining
+navigation gets 15rem; this prevents names overflowing the column without
+triggering the stack. Beside uses a real exterior title area capped at half
+the configured shell, anchored adjacent to the Menu rather than the far
+left of a wide viewport. Both variants retain their Admin alignment choices.
+There is no title-owned ResizeObserver, feedback loop, per-frame geometry
+write, timer or transition. The SPA lifecycle owns one resize listener and
+removes it at navigation teardown.
 
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width

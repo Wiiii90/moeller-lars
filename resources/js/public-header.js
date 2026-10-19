@@ -1,74 +1,80 @@
-/* Public artist-name placement uses the actual rendered title and the
- * configured menu shell. It does not infer breakpoints from viewport presets. */
+/* Artist-title stacking is decided from stable browser/configuration
+ * geometry, never from a rail whose size changes with is-title-stacked.
+ * This is a one-way calculation on initial render, browser resize, and
+ * font completion. No element observer, timer or layout feedback. */
+const INSIDE_MIN_TITLE_RAIL_REM = 15;
+const INSIDE_TITLE_PADDING_REM = 1.7;
+const INSIDE_MIN_NAV_RAIL_REM = 15;
+const INSIDE_TITLE_SHARE = 0.32;
+const OUTSIDE_MAX_TITLE_SHELL_SHARE = 0.5;
+
+export function headerShellGeometry(viewportWidth, shellMax, rem = 16) {
+    // Mirrors the public shell's single CSS gutter clamp. Unlike a
+    // getBoundingClientRect() read on the active navigation, this geometry
+    // is unaffected by the stacked-title class or page scrollbars.
+    const gutter = Math.min(1.5 * rem, Math.max(.65 * rem, viewportWidth * .02));
+    const menuWidth = Math.max(0, Math.min(shellMax, viewportWidth - 2 * gutter));
+    const outsideSpace = Math.max(0, (viewportWidth - menuWidth) / 2);
+    return { gutter, menuWidth, outsideSpace };
+}
+
 export function headerNeedsStack(mode, menuWidth, titleWidth, outsideSpace, rem = 16) {
     if (mode === 'outside') {
-        // Account for the paper-to-title gap and the largest configured
-        // viewport gutter so Beside never clips at the stack boundary.
-        return outsideSpace < titleWidth + (1.25 + 1.5) * rem;
+        // Beside's content-aligned title slot uses at most half of the
+        // configured shell width. Reserve both gutters at its sides.
+        return outsideSpace < titleWidth + 3 * rem;
     }
     if (mode === 'inside') {
-        // The existing menu needs enough space for whole labels and its
-        // 44px overflow controls, even when the title becomes very large.
-        return menuWidth - Math.max(titleWidth + 1.7 * rem, 15 * rem) < 240;
+        // The real title rail is minmax(15rem, 32%) in the unstacked menu.
+        // The name must fit INSIDE it, and navigation retains its own rail.
+        const nameRail = Math.max(INSIDE_MIN_TITLE_RAIL_REM * rem, menuWidth * INSIDE_TITLE_SHARE);
+        return titleWidth + INSIDE_TITLE_PADDING_REM * rem > nameRail
+            || menuWidth - nameRail < INSIDE_MIN_NAV_RAIL_REM * rem;
     }
     return false;
 }
 
-/* Text remains measurable after it wraps in the compact menu header.
- * Measuring the rendered link's box here would make the breakpoint flip
- * between stacked and unstacked states on every ResizeObserver cycle. */
-function intrinsicTitleWidth(title) {
+/* A wrapped link has a different rendered width from its real text width.
+ * Canvas reads font glyph metrics without depending on the layout state. */
+function intrinsicTitleWidth(title, context) {
     const style = getComputedStyle(title);
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
     if (!context) return title.scrollWidth;
     context.font = [style.fontStyle, style.fontVariant, style.fontWeight, style.fontSize, style.fontFamily].join(' ');
-    const text = title.textContent.replace(/\s+/g, ' ').trim();
+    const value = title.textContent.replace(/\s+/g, ' ').trim();
     const tracking = Number.parseFloat(style.letterSpacing);
-    return Math.ceil(context.measureText(text).width
-        + (Number.isFinite(tracking) ? Math.max(0, text.length - 1) * tracking : 0)
+    return Math.ceil(context.measureText(value).width
+        + (Number.isFinite(tracking) ? Math.max(0, value.length - 1) * tracking : 0)
         + 4);
 }
 
 export function initializePublicHeader() {
     const header = document.querySelector('.site-header');
-    const menu = header?.querySelector('.site-navigation');
     const title = header?.querySelector('.site-title');
-    if (!(header instanceof HTMLElement)
-        || !(menu instanceof HTMLElement)
-        || !(title instanceof HTMLElement)) return () => {};
+    if (!(header instanceof HTMLElement) || !(title instanceof HTMLElement)) return () => {};
 
     const mode = header.classList.contains('site-header--name-outside')
         ? 'outside'
-        : (header.classList.contains('site-header--name-inside') ? 'inside' : 'below');
-    if (mode !== 'inside' && mode !== 'outside') return () => {};
+        : (header.classList.contains('site-header--name-inside') ? 'inside' : 'other');
+    if (mode === 'other') return () => {};
 
     let disposed = false;
+    // Reuse one offscreen canvas context throughout this route's lifetime.
+    const measurementContext = document.createElement('canvas').getContext('2d');
     const update = () => {
         if (disposed) return;
-        const menuRect = menu.getBoundingClientRect();
-        const headerRect = header.getBoundingClientRect();
-        // Beside uses the real centered rail, not the full-width outer grid
-        // and not a pixel-positioned fake title rail.
-        const activeRail = menu.querySelector('[data-navigation-main]:not([hidden]), [data-navigation-submenu]:not([hidden])');
-        const railRect = activeRail?.getBoundingClientRect() ?? menuRect;
-        const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-        const outsideSpace = railRect.left - headerRect.left;
-        const titleWidth = intrinsicTitleWidth(title);
-        const compact = headerNeedsStack(
-            mode,
-            railRect.width,
-            titleWidth,
-            outsideSpace,
-            rem,
-        );
-        header.classList.toggle('is-title-stacked', compact);
+        const root = getComputedStyle(document.documentElement);
+        const rem = Number.parseFloat(root.fontSize) || 16;
+        const configuredShellMax = Number.parseFloat(root.getPropertyValue('--public-shell-max')) || 800;
+        const { menuWidth, outsideSpace } = headerShellGeometry(window.innerWidth, configuredShellMax, rem);
+        const titleWidth = intrinsicTitleWidth(title, measurementContext);
+        const besideRail = Math.min(outsideSpace, configuredShellMax * OUTSIDE_MAX_TITLE_SHELL_SHARE);
+        const stacked = headerNeedsStack(mode, menuWidth, titleWidth, besideRail, rem);
+        if (header.classList.contains('is-title-stacked') !== stacked) {
+            header.classList.toggle('is-title-stacked', stacked);
+        }
     };
 
-    // Synchronous first fit prevents a fixed-breakpoint intermediate state.
     update();
-    // Observe only real viewport changes, not elements whose dimensions
-    // are changed by the is-title-stacked class itself.
     window.addEventListener('resize', update, { passive: true });
     document.fonts?.addEventListener?.('loadingdone', update);
 
