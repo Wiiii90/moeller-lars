@@ -48,7 +48,7 @@
                     wire:model="directPrimaryMedia"
                     x-on:change="fileCount = $event.target.files.length"
                     x-bind:disabled="phase === 'uploading' || phase === 'processing'"
-                    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+                    accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
                     aria-label="Upload primary images or videos for new artworks"
                     multiple
                 >
