@@ -50,7 +50,8 @@ For every `MediaAsset`, authoritative technical identity includes generated stor
 - uploads are untrusted until validation succeeds;
 - storage keys are application-generated;
 - `MediaVariant` is rebuildable and has independent storage/checksum/state;
-- missing required variants are integrity/readiness failures, not permission to expose the original as an arbitrary fallback.
+- missing required image thumbnail variants are integrity/readiness failures, not permission to expose the original as an arbitrary fallback. Video poster variants are optional for historical videos, but are generated for new uploads.
+- `public-v1` (GD) and `public-v2` (libvips) thumbnails plus `video-poster-v1` (FFmpeg) posters have immutable SHA-256 and profile-specific regeneration. Regeneration verifies the exact expected bytes and dimensions before serving or reclaiming a variant; changed tool output fails closed rather than rewriting history.
 
 Video ingest generates an immutable WebP poster (`poster`, `video-poster-v1`) without transcoding the canonical original; audio has neither poster nor waveform generation. The shared Public Artwork video controller plays muted inline loops only while visible and pauses hidden slides, background tabs and SPA departures. A Gallery/Home opt-in allows the visitor to unmute; autoplay never starts with sound. Video poster generation is still pending and has not been simulated by an image fallback.
 

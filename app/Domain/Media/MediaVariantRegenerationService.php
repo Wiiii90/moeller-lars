@@ -74,8 +74,12 @@ final class MediaVariantRegenerationService
         MediaVariant::query()
             ->with('mediaAsset')
             ->where('state', 'available')
-            ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-            ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
+            ->whereIn('variant_kind', [MediaIngestService::THUMBNAIL_KIND, MediaIngestService::VIDEO_POSTER_KIND])
+            ->whereIn('transform_profile', [
+                MediaIngestService::TRANSFORM_PROFILE,
+                MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
+                MediaIngestService::VIDEO_POSTER_PROFILE,
+            ])
             ->whereHas('mediaAsset', fn ($query) => $query->where('state', 'available'))
             ->orderBy('id')
             ->chunkById(100, function ($variants) use ($disk, &$reclaimedFiles, &$reclaimedBytes): void {
@@ -128,21 +132,27 @@ final class MediaVariantRegenerationService
 
     private function isRebuildable(MediaVariant $variant): bool
     {
-        if (
-            $variant->getAttribute('state') !== 'available'
-            || $variant->getAttribute('variant_kind') !== MediaIngestService::THUMBNAIL_KIND
-            || $variant->getAttribute('transform_profile') !== MediaIngestService::TRANSFORM_PROFILE
-            || $variant->getAttribute('mime_type') !== 'image/webp'
-        ) {
+        if ($variant->getAttribute('state') !== 'available'
+            || $variant->getAttribute('mime_type') !== 'image/webp') {
             return false;
         }
 
         /** @var MediaAsset|null $asset */
         $asset = $variant->getRelationValue('mediaAsset');
+        if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
+            return false;
+        }
 
-        return $asset instanceof MediaAsset
-            && $asset->getAttribute('state') === 'available'
-            && MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'));
+        $kind = (string) $variant->getAttribute('variant_kind');
+        $profile = (string) $variant->getAttribute('transform_profile');
+        $mime = (string) $asset->getAttribute('mime_type');
+
+        return ($kind === MediaIngestService::THUMBNAIL_KIND
+                && MediaTypePolicy::isImage($mime)
+                && in_array($profile, [MediaIngestService::TRANSFORM_PROFILE, MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE], true))
+            || ($kind === MediaIngestService::VIDEO_POSTER_KIND
+                && $profile === MediaIngestService::VIDEO_POSTER_PROFILE
+                && MediaTypePolicy::isVideo($mime));
     }
 
     private function renderExpectedBytes(MediaVariant $variant): ?string
@@ -164,28 +174,48 @@ final class MediaVariantRegenerationService
             return null;
         }
 
-        $dimensions = @getimagesize($path);
-        if ($dimensions === false) {
-            return null;
-        }
+        $profile = (string) $variant->getAttribute('transform_profile');
 
-        $width = (int) $dimensions[0];
-        $height = (int) $dimensions[1];
-        if ($width < 1 || $height < 1 || ($width * $height) > MediaIngestService::MAX_PIXELS) {
-            return null;
-        }
+        if ($profile === MediaIngestService::VIDEO_POSTER_PROFILE) {
+            $preview = app(MediaDerivativeGenerator::class)->videoPoster($path);
+            $bytes = $preview['bytes'];
+            $thumbnailWidth = $preview['width'];
+            $thumbnailHeight = $preview['height'];
+        } elseif ($profile === MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE) {
+            $dimensions = @getimagesize($path);
+            if ($dimensions === false || (int) $dimensions[0] < 1 || (int) $dimensions[1] < 1
+                || (int) $dimensions[0] * (int) $dimensions[1] > MediaIngestService::MAX_PIXELS) {
+                return null;
+            }
+            $preview = app(MediaDerivativeGenerator::class)->largeImageThumbnail($path);
+            $bytes = $preview['bytes'];
+            $thumbnailWidth = $preview['width'];
+            $thumbnailHeight = $preview['height'];
+        } else {
+            // Legacy public-v1 bytes must not change after a decoder upgrade.
+            $dimensions = @getimagesize($path);
+            if ($dimensions === false) {
+                return null;
+            }
 
-        $original = $this->decode($path, (string) $asset->getAttribute('mime_type'));
-        $thumbnail = null;
+            $width = (int) $dimensions[0];
+            $height = (int) $dimensions[1];
+            if ($width < 1 || $height < 1
+                || $width * $height > MediaIngestService::LEGACY_MAX_PIXELS) {
+                return null;
+            }
 
-        try {
-            $thumbnail = $this->makeThumbnail($original, $width, $height);
-            $thumbnailWidth = imagesx($thumbnail);
-            $thumbnailHeight = imagesy($thumbnail);
-            $bytes = $this->encodeWebp($thumbnail);
-        } finally {
-            $this->destroyImage($thumbnail);
-            $this->destroyImage($original);
+            $original = $this->decode($path, (string) $asset->getAttribute('mime_type'));
+            $thumbnail = null;
+            try {
+                $thumbnail = $this->makeThumbnail($original, $width, $height);
+                $thumbnailWidth = imagesx($thumbnail);
+                $thumbnailHeight = imagesy($thumbnail);
+                $bytes = $this->encodeWebp($thumbnail);
+            } finally {
+                $this->destroyImage($thumbnail);
+                $this->destroyImage($original);
+            }
         }
 
         if (
