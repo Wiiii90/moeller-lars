@@ -59,6 +59,25 @@ it('rejects direct deletion of a published Gallery artwork without destroying it
         ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 });
 
+it('deletes an Artwork slot but preserves its shared Storage file unless opted in', function (): void {
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $one = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $two = galleryFixtureArtwork($gallery, ['position' => 1]);
+    galleryFixturePrimary($one, $asset);
+    galleryFixturePrimary($two, $asset);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $one->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect(Artwork::query()->whereKey($one->getKey())->exists())->toBeFalse()
+        ->and($asset->fresh()->getAttribute('state'))->toBe('available')
+        ->and($two->fresh()->getAttribute('artwork_category_id'))->toBe($gallery->getKey());
+});
+
 it('detaches a draft from its Gallery without deleting artwork media or shared MediaAssets', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset();
@@ -144,11 +163,11 @@ it('detaches Gallery artworks after their shared primary Media File is deleted f
     expect($disk->exists($asset->storage_key))->toBeTrue();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
-        ->mountAction('deletePrimaryMedia', ['artwork' => $deletedFromSource->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $deletedFromSource->getKey()])
+        ->fillForm(['delete_media_file' => true])
         ->callMountedAction();
 
-    expect(Artwork::query()->whereKey($deletedFromSource->getKey())->exists())->toBeTrue()
-        ->and($deletedFromSource->fresh()->getAttribute('artwork_category_id'))->toBeNull()
+    expect(Artwork::query()->whereKey($deletedFromSource->getKey())->exists())->toBeFalse()
         ->and($alsoAffected->fresh()->getAttribute('artwork_category_id'))->toBeNull()
         ->and((int) $remainingInSource->fresh()->position)->toBe(0)
         ->and(ArtworkMedia::query()->where('media_asset_id', $asset->getKey())->exists())->toBeFalse()
