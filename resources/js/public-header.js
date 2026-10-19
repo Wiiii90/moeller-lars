@@ -9,7 +9,7 @@ export function headerNeedsStack(mode, menuWidth, titleWidth, outsideSpace, rem 
     if (mode === 'inside') {
         // The existing menu needs enough space for whole labels and its
         // 44px overflow controls, even when the title becomes very large.
-        return menuWidth - Math.max(titleWidth + 1.7 * rem, 12.5 * rem) < 240;
+        return menuWidth - Math.max(titleWidth + 1.7 * rem, 15 * rem) < 240;
     }
     return false;
 }
@@ -41,22 +41,23 @@ export function initializePublicHeader() {
     const mode = header.classList.contains('site-header--name-outside')
         ? 'outside'
         : (header.classList.contains('site-header--name-inside') ? 'inside' : 'below');
-    if (mode === 'below') return () => {};
+    if (mode !== 'inside' && mode !== 'outside') return () => {};
 
     let disposed = false;
     const update = () => {
         if (disposed) return;
         const menuRect = menu.getBoundingClientRect();
         const headerRect = header.getBoundingClientRect();
+        // Beside uses the real centered rail, not the full-width outer grid
+        // and not a pixel-positioned fake title rail.
+        const activeRail = menu.querySelector('[data-navigation-main]:not([hidden]), [data-navigation-submenu]:not([hidden])');
+        const railRect = activeRail?.getBoundingClientRect() ?? menuRect;
         const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-        const outsideSpace = menuRect.left - headerRect.left;
-        if (mode === 'outside') {
-            menu.style.setProperty('--public-title-outer-margin', outsideSpace + 'px');
-        }
+        const outsideSpace = railRect.left - headerRect.left;
         const titleWidth = intrinsicTitleWidth(title);
         const compact = headerNeedsStack(
             mode,
-            menuRect.width,
+            railRect.width,
             titleWidth,
             outsideSpace,
             rem,
@@ -75,7 +76,6 @@ export function initializePublicHeader() {
     return () => {
         disposed = true;
         observer.disconnect();
-        menu.style.removeProperty('--public-title-outer-margin');
         document.fonts?.removeEventListener?.('loadingdone', update);
     };
 }

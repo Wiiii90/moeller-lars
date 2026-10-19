@@ -24,9 +24,28 @@ final class PublicAppearance
 
     public const DEFAULT_GRADIENT_ANGLE = 180;
 
-    public const HEADER_POSITIONS = ['outside' => 'Beside menu', 'inside' => 'Inside menu', 'below' => 'Below menu'];
+    public const HEADER_POSITIONS = ['outside' => 'Beside menu', 'inside' => 'Inside menu', 'above' => 'Above menu', 'below' => 'Below menu'];
     public const HEADER_CAPS = ['small-caps' => 'Small caps', 'normal' => 'Original case'];
     public const HEADER_ALIGNMENT = ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'];
+
+    public static function headerAlignmentOptions(string $position): array
+    {
+        return $position === 'inside'
+            ? ['left' => 'Left', 'right' => 'Right']
+            : self::HEADER_ALIGNMENT;
+    }
+
+    public static function presentedHeaderAlignment(mixed $value, mixed $position): string
+    {
+        $alignment = self::headerAlignment($value);
+
+        // Historic Inside/Center selections were formerly allowed but cannot
+        // be meaningfully positioned in the narrow title rail. Show Left
+        // until the artist selects an explicit Left or Right in the editor.
+        return self::headerPosition($position) === 'inside' && $alignment === 'center'
+            ? 'left'
+            : $alignment;
+    }
     public const DEFAULT_HEADER_TEXT = 'Lars Möller';
 
     public static function headerText(mixed $value): string
@@ -50,6 +69,9 @@ final class PublicAppearance
     }
     public const FRAME_STYLES = [
         'layered' => 'Layered paper',
+        'continuous' => 'Layered paper · continuous contours',
+        'contours' => 'Contours only',
+        'backing' => 'Backing only',
         'plain' => 'Plain',
     ];
 
@@ -65,6 +87,7 @@ final class PublicAppearance
 
     public const HEADER_DIVIDERS = [
         'fine' => 'No divider',
+        'menu' => 'Menu divider',
         'full' => 'Full-width divider',
         'separate' => 'Separate surfaces',
         'full_gap' => 'Full-width divider and separate surfaces',

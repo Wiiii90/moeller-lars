@@ -51,10 +51,14 @@ export function initializePublicSpaLinks(root = document) {
 export function applyPublicLayoutFromMeta() {
     const config = document.querySelector('meta[data-public-layout]');
     if (!config) return;
-    // One canonical server-rendered frame variant, also re-applied after
-    // Livewire navigation. Never accumulate variant classes on the body.
-    document.body.classList.toggle('public-site--frame-plain', config.dataset.publicLayoutFrameStyle === 'plain');
-    document.body.classList.toggle('public-site--frame-layered', config.dataset.publicLayoutFrameStyle !== 'plain');
+    // Exactly one current frame variant after Livewire navigation. The
+    // rendering owner remains server-side; this merely replays meta state.
+    const frameStyles = ['layered', 'continuous', 'contours', 'backing', 'plain'];
+    const frameStyle = frameStyles.includes(config.dataset.publicLayoutFrameStyle)
+        ? config.dataset.publicLayoutFrameStyle : 'layered';
+    for (const candidate of frameStyles) {
+        document.body.classList.toggle('public-site--frame-' + candidate, candidate === frameStyle);
+    }
     // Update the nonce-authorized rule itself. Element.style becomes a style
     // attribute in Livewire's HTML snapshots and CSP rejects it on restore.
     const sheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;

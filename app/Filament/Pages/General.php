@@ -147,7 +147,7 @@ final class General extends Page
         $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style'] ?? null);
         $data['header_name_visible'] = $data['header_name_visible'] === null ? true : (bool) $data['header_name_visible'];
         $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text'] ?? null);
-        $data['header_name_alignment'] = PublicAppearance::headerAlignment($data['header_name_alignment'] ?? null);
+        $data['header_name_alignment'] = PublicAppearance::presentedHeaderAlignment($data['header_name_alignment'] ?? null, $data['header_name_position'] ?? null);
         $data['header_name_mobile_alignment'] = PublicAppearance::headerAlignment($data['header_name_mobile_alignment'] ?? null, 'header_name_mobile_alignment');
         $data['header_name_position'] = PublicAppearance::headerPosition($data['header_name_position'] ?? null);
         $data['header_name_caps'] = PublicAppearance::headerCaps($data['header_name_caps'] ?? null);
@@ -282,7 +282,23 @@ final class General extends Page
                                     ->native()
                                     ->required()
                                     ->live()
-                                    ->afterStateUpdated(self::persist('header_name_position')),
+                                    ->afterStateUpdated(function ($livewire): void {
+                                        if (! $livewire instanceof self) {
+                                            return;
+                                        }
+
+                                        // Inside Menu has no center slot. Normalize an existing
+                                        // centered selection along with Position in one save.
+                                        if (($livewire->data['header_name_position'] ?? null) === 'inside'
+                                            && ($livewire->data['header_name_alignment'] ?? null) === 'center') {
+                                            $livewire->data['header_name_alignment'] = 'left';
+                                            $livewire->persistChangedFields(['header_name_position', 'header_name_alignment']);
+
+                                            return;
+                                        }
+
+                                        $livewire->persistChangedField('header_name_position');
+                                    }),
                                 Select::make('header_name_caps')
                                     ->label('Lettering')
                                     ->options(PublicAppearance::HEADER_CAPS)
@@ -298,7 +314,7 @@ final class General extends Page
                             Group::make([
                                 Select::make('header_name_alignment')
                                     ->label('Alignment')
-                                    ->options(PublicAppearance::HEADER_ALIGNMENT)
+                                    ->options(fn (callable $get): array => PublicAppearance::headerAlignmentOptions((string) $get('header_name_position')))
                                     ->native()
                                     ->required()
                                     ->live()

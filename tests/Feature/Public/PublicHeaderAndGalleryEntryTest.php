@@ -16,10 +16,12 @@ it('validates editable name positions, lettering, colors and sizes', function ()
     expect(PublicAppearance::headerPosition(null))->toBe('inside')
         ->and(PublicAppearance::headerPosition('outside'))->toBe('outside')
         ->and(PublicAppearance::headerPosition('below'))->toBe('below')
+        ->and(PublicAppearance::headerPosition('above'))->toBe('above')
         ->and(PublicAppearance::headerCaps(null))->toBe('small-caps')
         ->and(PublicAppearance::headerCaps('normal'))->toBe('normal')
         ->and(PublicAppearance::headerDivider(null))->toBe('fine')
         ->and(PublicAppearance::headerDivider('full'))->toBe('full')
+        ->and(PublicAppearance::headerDivider('menu'))->toBe('menu')
         ->and(PublicAppearance::headerDivider('full_gap'))->toBe('full_gap')
         ->and(PublicAppearance::headerDivider('separate'))->toBe('separate')
         ->and(PublicAppearance::normalizeTitleSize(null))->toBe(25)
@@ -30,7 +32,14 @@ it('validates editable name positions, lettering, colors and sizes', function ()
         ->and(PublicAppearance::normalizeColor('#ab12ff', 'header_name_color'))->toBe('#AB12FF');
 
     expect(PublicAppearance::frameStyle(null))->toBe('layered')
-        ->and(PublicAppearance::frameStyle('plain'))->toBe('plain');
+        ->and(PublicAppearance::frameStyle('plain'))->toBe('plain')
+        ->and(PublicAppearance::frameStyle('continuous'))->toBe('continuous')
+        ->and(PublicAppearance::frameStyle('contours'))->toBe('contours')
+        ->and(PublicAppearance::frameStyle('backing'))->toBe('backing')
+        ->and(PublicAppearance::presentedHeaderAlignment('center', 'inside'))->toBe('left')
+        ->and(PublicAppearance::presentedHeaderAlignment('center', 'above'))->toBe('center')
+        ->and(array_keys(PublicAppearance::headerAlignmentOptions('inside')))->toBe(['left', 'right'])
+        ->and(array_keys(PublicAppearance::headerAlignmentOptions('above')))->toBe(['left', 'center', 'right']);
     expect(fn () => PublicAppearance::frameStyle('faux-paper'))->toThrow(ValidationException::class);
     expect(PublicAppearance::headerText(null))->toBe('Lars Möller')
         ->and(PublicAppearance::headerText(' Neue Edition '))->toBe('Neue Edition')
@@ -108,6 +117,42 @@ it('publishes editable name presentation but never redirects a gallery parent to
         ->toContain('site-header--divider-full_gap')
         ->toContain('site-content--transparent')
         ->toContain('data-public-layout-title-color="#AABBCC"');
+});
+
+it('keeps one connected paper frame for the above-menu title without a divider', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+    $category = galleryFixtureCategory();
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'frame_style' => 'layered',
+        'header_name_visible' => true,
+        'header_name_position' => 'above',
+        'header_name_alignment' => 'right',
+        'header_divider_mode' => 'fine',
+    ]);
+
+    $preview = $this->get('/preview/'.$category->slug)->assertOk()->getContent();
+    expect($preview)->toContain('site-header--name-above')
+        ->toContain('site-header--title-align-right')
+        ->toContain('public-paper-frame--connected')
+        ->toContain('public-paper-decoration')
+        ->toContain('site-header--divider-fine');
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'frame_style' => 'continuous',
+        'header_divider_mode' => 'menu',
+    ]);
+    $separate = $this->get('/preview/'.$category->slug)->assertOk()->getContent();
+    expect($separate)->toContain('public-site--frame-continuous')
+        ->toContain('public-paper-frame--compatible')
+        ->not->toContain('public-paper-frame--connected')
+        ->toContain('site-header--divider-menu');
+
+    app(PublicationService::class)->commit($actor, 'Publish paper and divider settings');
+    $public = $this->get('/'.$category->slug)->assertOk()->getContent();
+    expect($public)->toContain('public-site--frame-continuous')
+        ->toContain('site-header--divider-menu');
 });
 
 it('can hide the artist title without removing the public navigation', function (): void {

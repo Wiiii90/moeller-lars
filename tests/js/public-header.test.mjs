@@ -15,6 +15,10 @@ test('inside artist name preserves minimum real navigation rail', () => {
     assert.equal(headerNeedsStack('inside', 360, 130, 0), true);
     assert.equal(headerNeedsStack('inside', 420, 70, 0), true);
     assert.equal(headerNeedsStack('inside', 640, 320, 0), false);
+    // Right alignment needs a real 15rem title rail; smaller navs stack.
+    assert.equal(headerNeedsStack('inside', 470, 100, 0), true);
+    assert.equal(headerNeedsStack('inside', 540, 100, 0), false);
     assert.equal(headerNeedsStack('inside', 560, 320, 0), true);
     assert.equal(headerNeedsStack('below', 360, 130, 0), false);
+    assert.equal(headerNeedsStack('above', 360, 130, 0), false);
 });

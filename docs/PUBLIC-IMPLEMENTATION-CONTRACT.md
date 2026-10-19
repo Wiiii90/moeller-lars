@@ -76,18 +76,29 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The Public paper outline is **static**. Menu and Content retain the existing
-edge pseudo-elements and their single backing layer with the accepted 3px
-left / 4px down geometry. Each route still receives its six deterministic
-corner endpoints in the nonce-authorized initial style and SPA layout metadata,
-but there is no ambient animation, pulse, animated height/width change,
-temporary clipping, per-frame timer, or motion engine. The former
-`public-folio-motion.js` animation and its obsolete tests were removed.
-Content height and landscape width respond natively to the page and viewport;
-Home Hero selection changes content immediately without changing the other
-navigation, media or publication contracts.
+The Public paper outline is **static**, with one explicit presentation
+owner rather than two unrelated strokes forced to meet. A single
+`public-paper-frame` wraps the sticky Header and normal Content without
+introducing another scroll container. Its sole decorative child
+`public-paper-decoration` owns the two uninterrupted exterior contour
+strokes and optional single backing for **physically connected** Menu/Page
+sheets. The frame's connected/compatible status is resolved from rendered
+page geometry once in Blade: a Below-Menu title, transparent Page, or
+landscape-width artwork is not a common paper plane. For separated sheets,
+the existing Menu and Content primitives own their own backing and outlines.
+The common shell and paper edge outset are shared tokens.
 
-The public visual composition remains artist-specific. Menu and Content retain independently configured surfaces and their canonical folio contours. The shared neutral folio-edge palette (`--public-folio-light`, `--public-folio-soft`) in `public-presentation.css` controls accents; no extra decorative DOM/pseudo surfaces may replace them. Main and child navigation retain the same cyclic complete-item window, measured rail, keyboard behavior and selected state.
+The static white contour returns inward before the bottom of Content,
+using the existing Content block inset rather than measuring individual
+artworks. It never runs to the end of the paper as a full-height line.
+The canonical folio palette (`--public-folio-light`,
+`--public-folio-soft`) and 3px-left/4px-down backing remain authoritative.
+Existing six route-deterministic corner endpoints remain in the
+nonce-authorized metadata for independent sheets; there is no ambient
+animation, polling, duplicate frame engine, content scroll owner or timer.
+The prior `public-folio-motion.js` animation remains deleted.
+Main and child navigation retain the same cyclic complete-item window,
+measured rail, keyboard behavior and selected state.
 
 General → Appearance reuses the established **admin-stage-tabs** and
 **admin-action** grammar from responsive Dashboard/Storage via the canonical
@@ -141,14 +152,19 @@ introduced. All actual Appearance changes still use the existing autosave
 methods and explicit `general-appearance-updated` iframe refresh event.
 Local tab switches and Stage expansion do not reload the preview.
 
-Artist title desktop Alignment (Left/Center/Right) also applies to Inside
-and Beside, within their respective real available name areas rather than
-moving the whole Menu. In both integrated variants, Responsive alignment
-takes effect when the existing width measurement stacks the title as the
-top row **inside the Menu paper**, regardless of viewport breakpoint.
-Below Menu keeps its separately configured narrow-screen alignment at
-40rem and below. The public-header fit observer also measures and exposes
-the actual exterior margin for Beside; the menu retains its own geometry.
+Title Position offers **Beside menu**, **Inside menu**,
+**Above menu**, and **Below menu**. Beside is a true outer title column
+on the Global Background, while the Menu paper stays centered and aligned
+to the Content paper. Inside has a real reserved title width, so Left/Right
+have different positions; its Alignment dropdown intentionally omits Center.
+Above owns a permanent top title row **inside** the Menu paper, matching the
+responsive stacked composition. Both Inside and Beside move that same
+title into the Menu paper on their content-fit fallback and apply
+Responsive alignment (Left/Center/Right). Above and Below support the three
+desktop alignments; the 40rem narrow mode applies the configured responsive
+alignment. Below is still its own content-sized row outside Menu.
+The single public-header ResizeObserver observes actual visible Menu rail
+geometry for Beside rather than the now viewport-wide title-layout wrapper.
 
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width
@@ -165,15 +181,13 @@ The artist title is globally configurable and can be entirely hidden
 without leaving an empty menu column or a blank title row. Its public anchor,
 home link and accessible label use the same edited plain-text title; the
 default is `Lars Möller`. The title is always HTML-escaped on output.
-Artist-name position is `inside`, `outside` or `below`. Inside and
-Beside use the same Menu DOM/paper on narrow layouts, preserving the menu
-background, top-left title and static perimeter. Below Menu has one
-content-sized title row aligned to the configured shell instead of an
-absolute child in a fixed-height 4.7rem strip. For Below only, desktop
-alignment is Left/Center/Right (default Left) and narrow-screen alignment
-has an independent Left/Center/Right setting (default Center), active at
-40rem and below. This avoids unexpected extra height or misaligned divider
-positions when font size and window width change. The base Title size is
+The positions `inside`, `outside`, `above` and `below` are
+distinct Menu compositions; their existing stored values are preserved.
+Outside is a true non-paper title column, Above always has its own Menu
+row, Inside reserves space for meaningful Left/Right alignment, and Below
+remains its own content-sized row. On narrow Inside/Beside layouts the
+title stacks above the navigation **inside** the Menu paper. The base
+Title size is
 16–64px, with optional responsive reduction and an independently editable
 minimum of 12–64px (default 18px). The reduction uses CSS
 `clamp(min(minimum, base), 5.4vw, base)`; disabling it keeps the chosen base
@@ -182,21 +196,29 @@ continues to measure fit for stacked versus horizontal composition; it never
 creates a second scroll area, animation or timer. A blank artist title color
 continues to use contextual ink.
 
-**Menu to page** preserves the four storage keys and independent
-Divider color while giving each mode one unambiguous presentation:
-- `fine` displays as **No divider**: no viewport or Menu-width line, joined
-  same-width Menu/Content when no separate title row intervenes. At that join
-  the Menu backing return and Content shadow disappear; static vertical
-  outline strokes continue with one shared horizontal outset, so no
-  fake paper junction can identify the boundary.
-- `full` is **Full-width divider**: a line across the viewport at the
-  bottom of the actual Menu/Title content and one persistent gap **below**
-  the line. The sticky header owns that gap; the line is painted above it
-  rather than as a bottom border of the padded header.
-- `separate` leaves separate sheets with their existing sticky gap and
-  no additional full-width separator.
-- `full_gap` retains the full-width line **centered in the larger gap**
-  between separate sheets.
+**Menu to page** supports five validated storage keys and the
+existing independent Divider color:
+- `fine`: **No divider** — no drawn line; when geometrically compatible,
+  Menu/Content use a single structural paper frame.
+- `menu`: **Menu divider** — one line across the Menu's white paper
+  width (never the whole viewport), followed by a sticky-owned gap.
+- `full`: **Full-width divider** — one line across the viewport
+  followed by a sticky-owned gap.
+- `separate`: **Separate surfaces** — individual Menu/Page backing
+  and a sticky-owned gap, without additional divider.
+- `full_gap`: **Full-width divider and separate surfaces** — a
+  viewport-width line centered between independent surfaces.
+
+Global **Frame style** controls exterior presentation independently:
+`layered` (Layered paper: white strokes plus gray backing),
+`continuous` (Layered paper · continuous contours: one shared line
+across even separated equal-width sheets; two gray backings remain),
+`contours` (Contours only), `backing` (Backing only), and `plain`
+(Plain). No second decoration implementation per option; these
+selectors enable or disable the components of the same shared owner.
+The stored `frame_style` column remains unchanged (12 characters)
+and the existing `layered` default is preserved. SPA layout metadata
+synchronizes exactly one server-defined frame style without page reload.
 
 These variants remain subject to real-browser visual acceptance across
 regular, landscape, narrow and long-page routes.

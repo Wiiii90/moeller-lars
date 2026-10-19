@@ -39,6 +39,17 @@ img {
     max-width: 100%;
 }
 
+/* The Public paper is one structural Header+Content frame. It does not
+ * create a scrolling ancestor: sticky stays document-owned and short
+ * pages may still flex to the browser's full height. */
+body.public-site .public-paper-frame {
+    position: relative;
+    display: flex;
+    flex: 1 0 auto;
+    min-width: 0;
+    flex-direction: column;
+}
+
 body.public-site .site-header {
     position: sticky;
     top: 0;

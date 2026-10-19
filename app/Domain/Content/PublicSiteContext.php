@@ -39,7 +39,7 @@ final class PublicSiteContext
             'publicLayoutCss' => PublicAppearance::layoutCss($settings),
             'publicHeaderVisible' => $settings->getAttribute('header_name_visible') === null ? true : (bool) $settings->getAttribute('header_name_visible'),
             'publicHeaderText' => PublicAppearance::headerText($settings->getAttribute('header_name_text')),
-            'publicHeaderAlignment' => PublicAppearance::headerAlignment($settings->getAttribute('header_name_alignment')),
+            'publicHeaderAlignment' => PublicAppearance::presentedHeaderAlignment($settings->getAttribute('header_name_alignment'), $settings->getAttribute('header_name_position')),
             'publicHeaderMobileAlignment' => PublicAppearance::headerAlignment($settings->getAttribute('header_name_mobile_alignment'), 'header_name_mobile_alignment'),
             'publicHeaderPosition' => PublicAppearance::headerPosition($settings->getAttribute('header_name_position')),
             'publicHeaderCaps' => PublicAppearance::headerCaps($settings->getAttribute('header_name_caps')),

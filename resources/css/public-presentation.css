@@ -114,8 +114,8 @@ body {
 .site-navigation::after {
     top: 0;
     bottom: var(--public-menu-right-bottom, 9%);
-    right: -5.5px;
-    width: 5.5px;
+    right: calc(-1 * var(--public-folio-edge-outset));
+    width: var(--public-folio-edge-outset);
     border-right: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -593,10 +593,10 @@ body {
 }
 #content::after {
     top: var(--public-folio-right-top, 55px);
-    right: -6px;
-    width: 6px;
+    right: calc(-1 * var(--public-folio-edge-outset));
+    width: var(--public-folio-edge-outset);
     bottom: var(--public-folio-right-bottom, 18px);
-    border-right: 1px solid rgba(255, 255, 255, .32);
+    border-right: 1px solid var(--public-folio-light);
     border-top: 1px solid var(--public-folio-soft);
     border-bottom: 1px solid var(--public-folio-light);
     transform: skewY(.7deg);
@@ -1800,6 +1800,17 @@ html:has(.artwork-viewer[open]) {
     background: var(--public-separator-color, rgba(255, 255, 255, .68));
 }
 
+/* Menu-width divider uses the actual white navigation sheet, not the
+ * viewport. It shares the sticky gap semantics of Full-width divider. */
+.site-header--divider-menu {
+    padding-bottom: var(--public-shell-gap);
+}
+
+.site-header--divider-menu .site-navigation {
+    box-shadow: none;
+    border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
+}
+
 /* Gap belongs to sticky header so scrolling content cannot erase it. */
 .site-header--divider-separate {
     padding-bottom: var(--public-shell-gap);
@@ -1820,46 +1831,111 @@ html:has(.artwork-viewer[open]) {
     background: var(--public-separator-color, rgba(255, 255, 255, .68));
 }
 
-/* Aligned sheets use one uninterrupted vertical perimeter per side.
- * The separate mode retains the existing independent L-shaped contours. */
-.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden):not(:has(+ #content.site-content--landscape-artwork)) .site-navigation::before,
-.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden):not(:has(+ #content.site-content--landscape-artwork)) .site-navigation::after {
+/* Connected paper is a structural layout, not two CSS strokes made to
+ * happen to meet. Header and Content share a single decoration owner in
+ * the Public frame. Independent sheets retain their own contour primitives. */
+.public-paper-decoration {
+    position: absolute;
+    /* The document-scroll line must also remain visible across the sticky
+     * header's opaque background (whose established z-index is 40). */
+    z-index: 41;
+    display: none;
     top: 0;
-    bottom: 0;
-    border-bottom: 0;
+    /* Backing continues below the contour return to the end of the sheet. */
+    bottom: var(--public-shell-gap);
+    left: 50%;
+    width: min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max));
+    transform: translateX(-50%);
+    pointer-events: none;
 }
 
-.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork)::before,
-.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork)::after {
+/* One white stroke per side. Each turns back into the paper at the height
+ * of the final content inset rather than running to the paper's bottom. */
+.public-paper-decoration::before,
+.public-paper-decoration::after {
+    position: absolute;
     top: 0;
-    bottom: 0;
-    width: var(--public-folio-edge-outset);
-    transform: none;
-    border-top: 0;
-    border-bottom: 0;
+    /* Only the white strokes return inward before the final content inset. */
+    bottom: var(--public-content-block-inset);
+    box-sizing: border-box;
+    width: calc(var(--public-folio-edge-outset) + 1.35rem);
+    content: "";
+    pointer-events: none;
+    border-bottom: 1px solid var(--public-folio-soft);
 }
 
-.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork)::before {
+.public-paper-decoration::before {
     left: calc(-1 * var(--public-folio-edge-outset));
+    border-left: 1px solid var(--public-folio-light);
 }
 
-.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork)::after {
+.public-paper-decoration::after {
     right: calc(-1 * var(--public-folio-edge-outset));
+    border-right: 1px solid var(--public-folio-light);
 }
 
-/* At the joined intersection there is no second backing-paper corner,
- * no inset line and no new outer shadow. Only the matched side contours
- * continue through Menu and Content. */
-.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden):not(:has(+ #content.site-content--landscape-artwork)) :is(.site-navigation__rail, .site-navigation__submenu)::before {
+/* Connected Menu/Page is a single physical paper. A separate page-title,
+ * transparent Page or landscape artwork is never marked compatible by Blade. */
+body:is(.public-site--frame-layered, .public-site--frame-continuous, .public-site--frame-contours, .public-site--frame-backing)
+.public-paper-frame--connected > .public-paper-decoration,
+body.public-site--frame-continuous
+.public-paper-frame--compatible > .public-paper-decoration {
+    display: block;
+}
+
+/* Remove all old component strokes when one outer frame owns them. */
+.public-paper-frame--connected .site-navigation::before,
+.public-paper-frame--connected .site-navigation::after,
+.public-paper-frame--connected .site-navigation__rail::before,
+.public-paper-frame--connected .site-navigation__submenu::before,
+.public-paper-frame--connected #content::before,
+.public-paper-frame--connected #content::after {
     display: none;
 }
 
-.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork) {
+.public-paper-frame--connected #content {
     box-shadow: none;
 }
 
-/* A Plain frame deliberately excludes just the external paper treatment.
- * Divider mode, surfaces, text and natural content height stay untouched. */
+/* A continuous outline across otherwise separate Menu/Page sheets suppresses
+ * ONLY the local white contours; each sheet keeps its own gray backing. */
+body.public-site--frame-continuous
+.public-paper-frame--compatible:not(.public-paper-frame--connected) .site-navigation::before,
+body.public-site--frame-continuous
+.public-paper-frame--compatible:not(.public-paper-frame--connected) .site-navigation::after,
+body.public-site--frame-continuous
+.public-paper-frame--compatible:not(.public-paper-frame--connected) #content::before,
+body.public-site--frame-continuous
+.public-paper-frame--compatible:not(.public-paper-frame--connected) #content::after {
+    display: none;
+}
+
+/* One gray backing plane on joined paper, independent ones when separate. */
+body:is(.public-site--frame-layered, .public-site--frame-continuous, .public-site--frame-backing)
+.public-paper-frame--connected > .public-paper-decoration {
+    box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
+}
+
+/* Frame components can be toggled without changing surface backgrounds or
+ * adding duplicate DOM decorations. */
+body.public-site--frame-contours .site-navigation__rail::before,
+body.public-site--frame-contours .site-navigation__submenu::before {
+    display: none;
+}
+
+body.public-site--frame-contours #content {
+    box-shadow: none;
+}
+
+body.public-site--frame-backing .site-navigation::before,
+body.public-site--frame-backing .site-navigation::after,
+body.public-site--frame-backing #content::before,
+body.public-site--frame-backing #content::after,
+body.public-site--frame-backing .public-paper-decoration::before,
+body.public-site--frame-backing .public-paper-decoration::after {
+    display: none;
+}
+
 body.public-site--frame-plain .site-navigation::before,
 body.public-site--frame-plain .site-navigation::after,
 body.public-site--frame-plain .site-navigation__rail::before,
@@ -1884,6 +1960,7 @@ body.public-site--frame-plain #content {
  * outside composition places the name beside the paper without changing
  * its measured menu width; the narrow fallback moves it into the paper. */
 .site-header--name-inside,
+.site-header--name-above,
 .site-header--name-outside.is-title-stacked {
     --public-title-default: var(--public-index-ink);
 }
@@ -1895,7 +1972,9 @@ body.public-site--frame-plain #content {
 }
 
 .site-header--name-inside:not(.is-title-stacked) .site-navigation {
-    grid-template-columns: minmax(12.5rem, max-content) minmax(0, 1fr);
+    /* A real alignment rail wider than the title itself: Left and Right
+     * must be visibly distinct rather than sharing a max-content column. */
+    grid-template-columns: minmax(15rem, 32%) minmax(0, 1fr);
 }
 
 .site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation > h1 {
@@ -1922,25 +2001,90 @@ body.public-site--frame-plain #content {
     grid-row: 1;
 }
 
-/* The outside title has a real, measured flex area occupying the
- * available margin beside the paper. Desktop left/center/right alignment
- * therefore has meaning without shifting the navigation or its shell. */
+/* Beside menu reserves the entire exterior gutter as a real title column.
+ * The paper remains centered at the same shell width as #content. The
+ * title lives on the background, never beneath the Menu paper surface. */
 .site-header--name-outside:not(.is-title-stacked) .site-navigation {
-    display: block;
+    display: grid;
+    width: 100%;
+    margin: 0;
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max)))
+        minmax(0, 1fr);
+    background: transparent;
+    box-shadow: none;
 }
 
 .site-header--name-outside:not(.is-title-stacked) .site-navigation > h1 {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(var(--public-title-outer-margin, 0px) * -1 + var(--public-gutter));
-    width: max(0px, calc(var(--public-title-outer-margin, 0px) - var(--public-gutter) - 1.25rem));
+    position: relative;
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
     height: 100%;
-    padding: 0;
+    min-width: 0;
+    padding-inline: var(--public-gutter);
 }
 
 .site-header--name-outside:not(.is-title-stacked) :is(.site-navigation__rail, .site-navigation__submenu) {
+    grid-column: 2;
+    grid-row: 1;
     width: 100%;
+}
+
+/* Beside's navigation is viewport-wide only for layout. Anchor its own
+ * independent white Menu edges at the centered paper, not the viewport. */
+.site-header--name-outside:not(.is-title-stacked) .site-navigation::before {
+    left: calc((100% - min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max))) / 2 - var(--public-folio-edge-outset));
+}
+
+.site-header--name-outside:not(.is-title-stacked) .site-navigation::after {
+    right: calc((100% - min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max))) / 2 - var(--public-folio-edge-outset));
+}
+
+/* Above menu is a stable two-row Menu composition. It is not the
+ * responsive fallback state of another position. */
+.site-header--name-above .site-navigation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+}
+
+.site-header--name-above .site-navigation > h1 {
+    position: relative;
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: .45rem max(var(--public-gutter), var(--public-mobile-inset));
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.site-header--name-above .site-title {
+    position: static;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.site-header--name-above :is(.site-navigation__rail, .site-navigation__submenu) {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.site-header--name-above.site-header--title-align-left .site-navigation > h1 { justify-content: flex-start; }
+.site-header--name-above.site-header--title-align-center .site-navigation > h1 { justify-content: center; }
+.site-header--name-above.site-header--title-align-right .site-navigation > h1 { justify-content: flex-end; }
+
+@media (max-width: 40rem) {
+    .site-header--name-above.site-header--mobile-title-align-left .site-navigation > h1 { justify-content: flex-start; }
+    .site-header--name-above.site-header--mobile-title-align-center .site-navigation > h1 { justify-content: center; }
+    .site-header--name-above.site-header--mobile-title-align-right .site-navigation > h1 { justify-content: flex-end; }
 }
 
 /* Desktop alignment in the reserved title area of either integrated mode. */

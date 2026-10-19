@@ -73,6 +73,17 @@
                 aria-label="Artist preview mode"
             >PREVIEW</div>
         @endif
+        {{-- One paper/frame ownership decision for every Public template.
+             Incompatible shapes (landscape, transparent or detached title)
+             keep two independent sheets, never mismatched joined outlines. --}}
+        @php
+            $paperCompatible = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
+                && ! $publicPageTransparent
+                && ! str_contains($__env->yieldContent('content_class'), 'landscape-artwork');
+            $paperConnected = $paperCompatible && $publicHeaderDivider === 'fine';
+        @endphp
+        <div class="public-paper-frame @if ($paperCompatible) public-paper-frame--compatible @endif @if ($paperConnected) public-paper-frame--connected @endif">
+            <div class="public-paper-decoration" aria-hidden="true"></div>
         <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $publicHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
             @if ($publicHeaderVisible && ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation')))
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
@@ -172,6 +183,7 @@
                 @yield('content')
             </div>
         </main>
+        </div>
         <x-artwork-viewer />
         @livewireScripts(['nonce' => $publicStyleNonce, 'url' => route('public.livewire.csp')])
     </body>
