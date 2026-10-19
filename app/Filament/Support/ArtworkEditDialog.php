@@ -52,7 +52,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -119,9 +119,11 @@ final class ArtworkEditDialog
                             // ALT belongs to the chosen Media File, not the previous primary.
                             $set('primary_alt_text', null);
                         })
-                        ->helperText('Images and videos only.')
+                        ->helperText($autosave
+                            ? 'Use Upload primary media in the Edit dialog actions to upload a new file.'
+                            : 'Images and videos only.')
                         ->columnSpanFull(),
-                    FileUpload::make('primary_upload')
+                    ...(! $autosave ? [FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
                         ->storeFiles(false)
                         ->acceptedFileTypes(self::primaryMimeTypes())
@@ -133,7 +135,7 @@ final class ArtworkEditDialog
                             }
                         })
                         ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
-                        ->columnSpanFull(),
+                        ->columnSpanFull()] : []),
                     Textarea::make('primary_alt_text')
                         ->label('Primary media ALT text')
                         ->maxLength(500)

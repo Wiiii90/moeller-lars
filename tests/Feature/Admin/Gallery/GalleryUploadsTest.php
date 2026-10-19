@@ -66,7 +66,7 @@ it('ingests a real image through Add artwork and publishes its primary ALT descr
 });
 
 
-it('replaces primary media through Edit without deleting the old Storage file or carrying over its ALT', function (): void {
+it('replaces primary media through a committed Gallery command instead of Edit autosave', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
@@ -77,9 +77,8 @@ it('replaces primary media through Edit without deleting the old Storage file or
     galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->mountAction('uploadArtworkPrimaryMedia', ['artwork' => $artwork->getKey()])
         ->fillForm([
-            ...app(ArtworkEditDialog::class)->fill($artwork),
             'primary_upload' => UploadedFile::fake()->image('replacement-artwork.jpg', 40, 48),
             'primary_alt_text' => 'A new painting with a yellow circular motif',
         ])
@@ -94,7 +93,8 @@ it('replaces primary media through Edit without deleting the old Storage file or
         ->and($usage->alt_text_override)->toBe('A new painting with a yellow circular motif')
         ->and($oldAsset->fresh()->state)->toBe('available')
         ->and($newAsset->state)->toBe('available')
-        ->and($thumbnail->state)->toBe('available');
+        ->and($thumbnail->state)->toBe('available')
+        ->and(AdminNotification::query()->where('title', 'Primary media updated')->count())->toBe(1);
 
     Storage::disk(config('media.disk'))->assertExists([$newAsset->storage_key, $thumbnail->storage_key]);
 

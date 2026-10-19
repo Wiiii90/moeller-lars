@@ -12,8 +12,11 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -97,7 +100,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->label('Edit')
             ->modalHeading('Edit artwork')
             ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)))
-            ->schema($dialog->schema())
+            ->schema($dialog->schema(autosave: true))
             ->extraModalFooterActions(fn (array $arguments): array => $this->artworkEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments) use ($dialog): void {
                 $changed = $dialog->save($this->actionArtwork($arguments), $data);
@@ -112,6 +115,57 @@ trait GalleryWorkspaceArtworkDialogs
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * Uploads have a committed mutation boundary, independent of the
+     * text/select Edit dialog's wire:change autosave lifecycle.
+     */
+    public function uploadArtworkPrimaryMediaAction(): Action
+    {
+        $action = Action::make('uploadArtworkPrimaryMedia')
+            ->label('Upload primary media')
+            ->modalHeading('Upload primary media')
+            ->schema([
+                FileUpload::make('primary_upload')
+                    ->label('New image or video')
+                    ->storeFiles(false)
+                    ->acceptedFileTypes([...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
+                    ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
+                    ->required()
+                    ->helperText('Replaces the draft artwork’s primary media. The previous file remains in Storage.'),
+                Textarea::make('primary_alt_text')
+                    ->label('ALT text')
+                    ->maxLength(500)
+                    ->nullable()
+                    ->helperText('Describe this media for screen readers, or inherit its Storage ALT.'),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $artwork = $this->actionArtwork($arguments)->fresh();
+                if ((string) $artwork->getAttribute('state') === 'published') {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => 'Unpublish the artwork before replacing primary media.',
+                    ]);
+                }
+
+                $dialog = app(ArtworkEditDialog::class);
+                $changed = $dialog->save($artwork, [
+                    ...$dialog->fill($artwork),
+                    'primary_upload' => $data['primary_upload'] ?? null,
+                    'primary_alt_text' => $data['primary_alt_text'] ?? null,
+                ]);
+                $this->refreshWorkspaceAfterMutation();
+                if ($changed) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'Primary media updated',
+                        status: 'success',
+                    );
+                }
+
+                $this->replaceMountedAction('editArtwork', ['artwork' => (int) $artwork->getKey()]);
+            });
+
+        return AdminDialog::command($action, 'Use media', AdminDialogSize::Default);
     }
 
     /** @param array<string, mixed> $arguments
@@ -136,6 +190,17 @@ trait GalleryWorkspaceArtworkDialogs
         }
 
         $published = (string) $artwork->getAttribute('state') === 'published';
+        $actions[] = Action::make('dialogUploadPrimaryMedia')
+            ->label('Upload primary media')
+            ->icon(AdminIcon::Upload->value)
+            ->iconButton()
+            ->color('gray')
+            ->disabled($published)
+            ->extraAttributes(['class' => 'admin-dialog__header-action'])
+            ->action(function () use ($target): void {
+                $this->replaceMountedAction('uploadArtworkPrimaryMedia', $target);
+            });
+
         $actions[] = AdminDialog::headerAction(
             'dialogArtworkPublication',
             $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
