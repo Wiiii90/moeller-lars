@@ -20,6 +20,7 @@
     /* Shared reference offset for Menu and Content backing papers. */
     --public-folio-sheet-x: -3px;
     --public-folio-sheet-y: 4px;
+    --public-folio-edge-outset: 6px;
     /* Independent global Menu and Page surfaces; both initially white. */
     --public-menu-background: #fff;
     --public-content-background: #fff;
@@ -103,8 +104,8 @@ body {
 .site-navigation::before {
     top: 0;
     bottom: var(--public-menu-left-bottom, 40%);
-    left: -6px;
-    width: 6px;
+    left: calc(-1 * var(--public-folio-edge-outset));
+    width: var(--public-folio-edge-outset);
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -583,8 +584,8 @@ body {
 #content::before {
     top: var(--public-folio-left-top, 20px);
     bottom: var(--public-folio-left-bottom, 55px);
-    left: -7px;
-    width: 7px;
+    left: calc(-1 * var(--public-folio-edge-outset));
+    width: var(--public-folio-edge-outset);
     border-left: 1px solid var(--public-folio-light);
     border-top: 1px solid var(--public-folio-soft);
     border-bottom: 1px solid var(--public-folio-soft);
@@ -1770,20 +1771,33 @@ html:has(.artwork-viewer[open]) {
     font-variant-caps: small-caps;
 }
 
-/* Dividers have distinct line widths and independently configurable color. */
+/* No divider: truly no line across menu or viewport. The canonical Menu
+ * outline and Content edge may be continuous when their surfaces align. */
 .site-header--divider-fine .site-navigation {
     box-shadow: none;
-    border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
-}
-
-.site-header--divider-full,
-.site-header--divider-full_gap {
-    border-bottom: 1px solid var(--public-separator-color, rgba(255, 255, 255, .68));
-}
-
-/* The second full-width variant centers its one line in the real gap. */
-.site-header--divider-full_gap {
     border-bottom: 0;
+}
+
+/* Full-width divider: a viewport-wide line at the end of the title/menu,
+ * with an actual gap below it, owned by the sticky header. Do not use a
+ * border-bottom on the padded header: that would move the line *below* gap. */
+.site-header--divider-full {
+    padding-bottom: var(--public-shell-gap);
+}
+
+.site-header--divider-full .site-navigation {
+    box-shadow: none;
+}
+
+.site-header--divider-full::after {
+    position: absolute;
+    right: 0;
+    bottom: var(--public-shell-gap);
+    left: 0;
+    height: 1px;
+    content: "";
+    pointer-events: none;
+    background: var(--public-separator-color, rgba(255, 255, 255, .68));
 }
 
 /* Gap belongs to sticky header so scrolling content cannot erase it. */
@@ -1808,29 +1822,55 @@ html:has(.artwork-viewer[open]) {
 
 /* Aligned sheets use one uninterrupted vertical perimeter per side.
  * The separate mode retains the existing independent L-shaped contours. */
-.site-header--divider-fine:not(:has(+ #content:is(.site-content--landscape-artwork))) .site-navigation::before,
-.site-header--divider-fine:not(:has(+ #content:is(.site-content--landscape-artwork))) .site-navigation::after {
+.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden):not(:has(+ #content.site-content--landscape-artwork)) .site-navigation::before,
+.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden):not(:has(+ #content.site-content--landscape-artwork)) .site-navigation::after {
     top: 0;
     bottom: 0;
     border-bottom: 0;
 }
 
-.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork))::before,
-.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork))::after {
+.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork)::before,
+.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork)::after {
     top: 0;
     bottom: 0;
-    width: 6px;
+    width: var(--public-folio-edge-outset);
     transform: none;
     border-top: 0;
     border-bottom: 0;
 }
 
-.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork))::before {
-    left: -6px;
+.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork)::before {
+    left: calc(-1 * var(--public-folio-edge-outset));
 }
 
-.site-header--divider-fine + #content:not(:is(.site-content--landscape-artwork))::after {
-    right: -6px;
+.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork)::after {
+    right: calc(-1 * var(--public-folio-edge-outset));
+}
+
+/* At the joined intersection there is no second backing-paper corner,
+ * no inset line and no new outer shadow. Only the matched side contours
+ * continue through Menu and Content. */
+.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden):not(:has(+ #content.site-content--landscape-artwork)) :is(.site-navigation__rail, .site-navigation__submenu)::before {
+    display: none;
+}
+
+.site-header--divider-fine:is(:not(.site-header--name-below), .site-header--title-hidden) + #content:not(.site-content--landscape-artwork) {
+    box-shadow: none;
+}
+
+/* A Plain frame deliberately excludes just the external paper treatment.
+ * Divider mode, surfaces, text and natural content height stay untouched. */
+body.public-site--frame-plain .site-navigation::before,
+body.public-site--frame-plain .site-navigation::after,
+body.public-site--frame-plain .site-navigation__rail::before,
+body.public-site--frame-plain .site-navigation__submenu::before,
+body.public-site--frame-plain #content::before,
+body.public-site--frame-plain #content::after {
+    display: none;
+}
+
+body.public-site--frame-plain #content {
+    box-shadow: none;
 }
 
 /* Landscape content intentionally widens beyond the canonical menu shell.

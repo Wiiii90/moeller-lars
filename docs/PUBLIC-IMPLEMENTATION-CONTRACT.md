@@ -182,18 +182,21 @@ continues to measure fit for stacked versus horizontal composition; it never
 creates a second scroll area, animation or timer. A blank artist title color
 continues to use contextual ink.
 
-**Menu to page** contains four modes: `fine` (Menu-width line, joined
-content), `full` (viewport-width line, joined content), `full_gap`
-(Full-width divider and separate surfaces), `separate` (Separate surfaces
-without an added line). The artist may set a solid Divider color. In separated
-modes, the **sticky site-header itself owns the gap**, not an ordinary
-Content top margin, so scrolling content goes behind the sticky Menu while
-the visual gap persists. The full-width separate divider is centered within
-the sticky two-gap reserve. Joined modes have no spacer below their divider.
-In the `fine` landscape-artwork exception, different Menu and Content widths
-retain their independent static contours and a corresponding sticky gap.
-The document remains the only scroll owner. No global page-width overlay,
-CSS scroll-owner duplication, or header gradient border is introduced.
+**Menu to page** preserves the four storage keys and independent
+Divider color while giving each mode one unambiguous presentation:
+- `fine` displays as **No divider**: no viewport or Menu-width line, joined
+  same-width Menu/Content when no separate title row intervenes. At that join
+  the Menu backing return and Content shadow disappear; static vertical
+  outline strokes continue with one shared horizontal outset, so no
+  fake paper junction can identify the boundary.
+- `full` is **Full-width divider**: a line across the viewport at the
+  bottom of the actual Menu/Title content and one persistent gap **below**
+  the line. The sticky header owns that gap; the line is painted above it
+  rather than as a bottom border of the padded header.
+- `separate` leaves separate sheets with their existing sticky gap and
+  no additional full-width separator.
+- `full_gap` retains the full-width line **centered in the larger gap**
+  between separate sheets.
 
 These variants remain subject to real-browser visual acceptance across
 regular, landscape, narrow and long-page routes.
@@ -636,6 +639,8 @@ center; Radial has a center and circle/ellipse shape. Repeating uses an
 explicit span (pixels for Linear/Radial, degrees for Conic) so repetition is
 visible. Missing JSON stop lists preserve the legacy two-color appearance.
 The existing Page width and Content padding remain separate layout parameters.
+Frame style is a separate validated presentation option; gradients remain
+independent of that exterior edge treatment.
 
 The `PublicAppearance` domain validates and projects all three values.
 `PublicSiteContext` uses the existing committed-versus-preview content read

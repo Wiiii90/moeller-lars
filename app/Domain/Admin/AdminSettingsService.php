@@ -88,6 +88,9 @@ final class AdminSettingsService
                 }
             }
         }
+        if (array_key_exists('frame_style', $data)) {
+            $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style']);
+        }
         if (array_key_exists('header_divider_mode', $data)) {
             $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode']);
         }

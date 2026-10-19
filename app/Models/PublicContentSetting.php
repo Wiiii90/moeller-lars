@@ -25,6 +25,7 @@ use LogicException;
     'legal_usage_rights',
     'favicon_media_asset_id',
     'default_media_copyright_notice',
+    'frame_style',
     'background_mode',
     'background_color',
     'background_gradient_start',
@@ -237,6 +238,7 @@ class PublicContentSetting extends Model
         $setting->setAttribute('header_name_color', PublicAppearance::normalizeColor($setting->getAttribute('header_name_color'), 'header_name_color'));
         $setting->setAttribute('header_name_size', PublicAppearance::normalizeTitleSize($setting->getAttribute('header_name_size')));
         $setting->setAttribute('header_name_min_size', PublicAppearance::normalizeTitleMinSize($setting->getAttribute('header_name_min_size')));
+        $setting->setAttribute('frame_style', PublicAppearance::frameStyle($setting->getAttribute('frame_style')));
         $setting->setAttribute('header_divider_mode', PublicAppearance::headerDivider($setting->getAttribute('header_divider_mode')));
         $setting->setAttribute('header_divider_color', PublicAppearance::normalizeColor($setting->getAttribute('header_divider_color'), 'header_divider_color'));
         $setting->setAttribute('header_name_auto_scale', $setting->getAttribute('header_name_auto_scale') === null ? true : (bool) $setting->getAttribute('header_name_auto_scale'));

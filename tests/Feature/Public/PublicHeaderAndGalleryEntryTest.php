@@ -29,6 +29,9 @@ it('validates editable name positions, lettering, colors and sizes', function ()
         ->and(PublicAppearance::normalizeMode('transparent', 'page_background_mode'))->toBe('transparent')
         ->and(PublicAppearance::normalizeColor('#ab12ff', 'header_name_color'))->toBe('#AB12FF');
 
+    expect(PublicAppearance::frameStyle(null))->toBe('layered')
+        ->and(PublicAppearance::frameStyle('plain'))->toBe('plain');
+    expect(fn () => PublicAppearance::frameStyle('faux-paper'))->toThrow(ValidationException::class);
     expect(PublicAppearance::headerText(null))->toBe('Lars Möller')
         ->and(PublicAppearance::headerText(' Neue Edition '))->toBe('Neue Edition')
         ->and(PublicAppearance::headerAlignment(null))->toBe('left')
@@ -63,6 +66,7 @@ it('publishes editable name presentation but never redirects a gallery parent to
 
     app(SiteSectionEditorialService::class)->updatePlacement($childSection, 'published', (int) $parentSection->getKey());
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'frame_style' => 'plain',
         'header_name_visible' => true,
         'header_name_text' => 'Atelier Neue',
         'header_name_alignment' => 'right',
@@ -79,7 +83,9 @@ it('publishes editable name presentation but never redirects a gallery parent to
     ]);
 
     $preview = $this->get('/preview/'.$parent->slug)->assertOk()->getContent();
-    expect($preview)->toContain('site-header--name-outside')
+    expect($preview)->toContain('public-site--frame-plain')
+        ->toContain('data-public-layout-frame-style="plain"')
+        ->toContain('site-header--name-outside')
         ->toContain('site-header--title-align-right')
         ->toContain('site-header--mobile-title-align-left')
         ->toContain('aria-label="Atelier Neue — Home"')
@@ -96,7 +102,8 @@ it('publishes editable name presentation but never redirects a gallery parent to
 
     app(PublicationService::class)->commit($actor, 'Publish artist name settings and nested Gallery');
     $public = $this->get('/'.$parent->slug)->assertOk()->getContent();
-    expect($public)->toContain('site-header--name-outside')
+    expect($public)->toContain('public-site--frame-plain')
+        ->toContain('site-header--name-outside')
         ->toContain('>Atelier Neue</a>')
         ->toContain('site-header--divider-full_gap')
         ->toContain('site-content--transparent')

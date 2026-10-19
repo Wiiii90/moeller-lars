@@ -41,6 +41,7 @@ final class General extends Page
 
     private const PERSISTED_FIELDS = [
         'favicon_media_asset_id',
+        'frame_style',
         'background_mode',
         'background_color',
         'background_gradient_start',
@@ -143,6 +144,7 @@ final class General extends Page
             }
         }
 
+        $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style'] ?? null);
         $data['header_name_visible'] = $data['header_name_visible'] === null ? true : (bool) $data['header_name_visible'];
         $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text'] ?? null);
         $data['header_name_alignment'] = PublicAppearance::headerAlignment($data['header_name_alignment'] ?? null);
@@ -233,6 +235,13 @@ final class General extends Page
                                 )
                                 ->afterStateUpdated(self::persist('favicon_media_asset_id')),
 
+                                Select::make('frame_style')
+                                    ->label('Frame style')
+                                    ->options(PublicAppearance::FRAME_STYLES)
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('frame_style')),
                                 self::appearanceSurfaceControls('background', 'Background'),
                             ])
                                 ->columns(1)
@@ -1129,6 +1138,7 @@ final class General extends Page
             }
             if (array_intersect(array_keys($changes), [
                 'favicon_media_asset_id',
+                'frame_style',
                 'background_mode',
                 'background_color',
                 'background_gradient_start',
@@ -1315,6 +1325,7 @@ final class General extends Page
     {
         return match ($field) {
             'favicon_media_asset_id' => 'Site icon',
+            'frame_style' => 'Frame style',
             'contact_recipient_email' => 'Contact form recipient',
             'public_email' => 'Public email',
             'show_public_email' => 'Public email visibility',

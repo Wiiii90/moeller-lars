@@ -48,8 +48,23 @@ final class PublicAppearance
 
         return $value;
     }
+    public const FRAME_STYLES = [
+        'layered' => 'Layered paper',
+        'plain' => 'Plain',
+    ];
+
+    public static function frameStyle(mixed $value): string
+    {
+        $value ??= 'layered';
+        if (! is_string($value) || ! array_key_exists($value, self::FRAME_STYLES)) {
+            throw ValidationException::withMessages(['frame_style' => 'Choose a supported frame style.']);
+        }
+
+        return $value;
+    }
+
     public const HEADER_DIVIDERS = [
-        'fine' => 'Fine divider',
+        'fine' => 'No divider',
         'full' => 'Full-width divider',
         'separate' => 'Separate surfaces',
         'full_gap' => 'Full-width divider and separate surfaces',

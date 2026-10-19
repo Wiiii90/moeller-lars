@@ -15,7 +15,7 @@ final class PublicSiteContext
         private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderVisible:bool,publicHeaderText:string,publicHeaderAlignment:string,publicHeaderMobileAlignment:string,publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool,publicNavigationHover:bool} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicFrameStyle:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderVisible:bool,publicHeaderText:string,publicHeaderAlignment:string,publicHeaderMobileAlignment:string,publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool,publicNavigationHover:bool} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::general();
@@ -31,6 +31,7 @@ final class PublicSiteContext
             'faviconVariant' => $faviconVariant,
             'isPreview' => $this->preview->active(),
             'homeUrl' => $this->preview->homeUrl(),
+            'publicFrameStyle' => PublicAppearance::frameStyle($settings->getAttribute('frame_style')),
             'publicBackgroundCss' => PublicAppearance::backgroundCss($settings),
             'publicMenuBackgroundCss' => PublicAppearance::surfaceCss($settings, 'menu_background'),
             'publicContentBackgroundCss' => PublicAppearance::surfaceCss($settings, 'page_background'),

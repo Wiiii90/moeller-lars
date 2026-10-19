@@ -51,6 +51,10 @@ export function initializePublicSpaLinks(root = document) {
 export function applyPublicLayoutFromMeta() {
     const config = document.querySelector('meta[data-public-layout]');
     if (!config) return;
+    // One canonical server-rendered frame variant, also re-applied after
+    // Livewire navigation. Never accumulate variant classes on the body.
+    document.body.classList.toggle('public-site--frame-plain', config.dataset.publicLayoutFrameStyle === 'plain');
+    document.body.classList.toggle('public-site--frame-layered', config.dataset.publicLayoutFrameStyle !== 'plain');
     // Update the nonce-authorized rule itself. Element.style becomes a style
     // attribute in Livewire's HTML snapshots and CSP rejects it on restore.
     const sheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;

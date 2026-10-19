@@ -41,6 +41,7 @@
              second router. Nonces keep the public policy strict. --}}
         @livewireStyles(['nonce' => $publicStyleNonce])
         <meta data-public-layout
+            data-public-layout-frame-style="{{ $publicFrameStyle }}"
             data-public-layout-background="{{ $publicBackgroundCss ?? '' }}"
             data-public-layout-menu-background="{{ $publicMenuBackgroundCss ?? '' }}"
             data-public-layout-content-background="{{ $publicContentBackgroundCss ?? '' }}"
@@ -64,7 +65,7 @@
              forbidden inline style attributes. --}}
         @stack('public-component-styles')
     </head>
-    <body class="public-site">
+    <body class="public-site public-site--frame-{{ $publicFrameStyle }}">
         @if ($isPreview)
             <div
                 class="public-preview-badge"
