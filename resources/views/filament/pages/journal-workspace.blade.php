@@ -99,13 +99,13 @@
                                 <x-filament::icon :icon="$isBlog ? \App\Filament\Support\AdminIcon::BlogPost->mini() : \App\Filament\Support\AdminIcon::Exhibition->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Add {{ $entryLabelSingular }}</span>
                             </button>
-                            @if ($journalPublicUrl)
-                                <a class="admin-action admin-action--with-icon" href="{{ $journalPublicUrl }}" target="_blank" rel="noopener" aria-label="Preview Journal">
+                            @if ($journalPreviewUrl)
+                                <a class="admin-action admin-action--with-icon" href="{{ $journalPreviewUrl }}" target="_blank" rel="noopener" aria-label="Preview Journal">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Preview</span>
                                 </a>
                             @else
-                                <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish this Journal in Pages before previewing it" aria-label="Preview Journal">
+                                <button class="admin-action admin-action--with-icon" type="button" disabled title="A preview URL is unavailable for this Journal" aria-label="Preview Journal">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Preview</span>
                                 </button>

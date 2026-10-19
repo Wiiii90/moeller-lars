@@ -10,6 +10,7 @@ use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
+use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -76,6 +77,8 @@ final class JournalWorkspace extends Page
     public string $journalTitle = 'Journal';
 
     public ?string $journalPublicUrl = null;
+
+    public ?string $journalPreviewUrl = null;
 
     public string $journalSlug = '';
 
@@ -808,6 +811,7 @@ final class JournalWorkspace extends Page
         $this->journalTitle = (string) $section->getAttribute('title');
         $this->journalSlug = (string) $section->getAttribute('slug');
         $this->journalPublicUrl = $section->getAttribute('state') === 'published' ? app(SiteNodeRoute::class)->url($section) : null;
+        $this->journalPreviewUrl = app(SitePreviewContext::class)->previewUrlFor($section);
     }
 
     private function loadPosts(bool $refreshMetrics = true): void

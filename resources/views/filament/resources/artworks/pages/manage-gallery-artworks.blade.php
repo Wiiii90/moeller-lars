@@ -145,13 +145,13 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Materials->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Materials</span>
                             </button>
-                            @if ($galleryContext['public_url'])
-                                <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
+                            @if ($galleryContext['preview_url'])
+                                <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['preview_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Preview</span>
                                 </a>
                             @else
-                                <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish the Gallery to open its public URL" aria-label="Preview Gallery">
+                                <button class="admin-action admin-action--with-icon" type="button" disabled title="A preview URL is unavailable for this Gallery" aria-label="Preview Gallery">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Preview</span>
                                 </button>

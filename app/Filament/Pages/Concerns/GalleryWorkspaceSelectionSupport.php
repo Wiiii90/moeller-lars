@@ -108,6 +108,7 @@ trait GalleryWorkspaceSelectionSupport
             'slug' => (string) $gallery->getAttribute('slug'),
             'state' => (string) $section->getAttribute('state'),
             'path' => '/'.ltrim((string) $gallery->getAttribute('slug'), '/'),
+            'preview_url' => app(\App\Domain\Content\SitePreviewContext::class)->previewUrlFor($section),
             'public_url' => $section->getAttribute('state') === 'published'
                 ? route('site.section', ['section' => $gallery->getAttribute('slug')])
                 : null,
