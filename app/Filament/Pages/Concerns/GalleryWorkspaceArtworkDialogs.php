@@ -148,25 +148,51 @@ trait GalleryWorkspaceArtworkDialogs
                     ]);
                 }
 
-                $dialog = app(ArtworkEditDialog::class);
-                $changed = $dialog->save($artwork, [
-                    ...$dialog->fill($artwork),
-                    'primary_upload' => $data['primary_upload'] ?? null,
-                    'primary_alt_text' => $data['primary_alt_text'] ?? null,
-                ]);
-                $this->refreshWorkspaceAfterMutation();
-                if ($changed) {
+                $upload = $data['primary_upload'] ?? null;
+                if (! $upload instanceof TemporaryUploadedFile) {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => 'Select an image or video before saving.',
+                    ]);
+                }
+                $this->assertUploadIsPrimaryMedia($upload);
+
+                // A pure media mutation must not submit and validate the
+                // entire autosaving Artwork form. The existing ingest and
+                // primary linkage services are the authoritative owners.
+                // Ingest commits independently so a later editorial error
+                // cannot leave an unregistered file in Storage.
+                $ingested = app(MediaIngestService::class)->ingestUnique($upload);
+                $asset = $ingested['asset'];
+                $current = $artwork->artworkMedia()
+                    ->where('role', 'primary')->first();
+                $oldId = $current === null ? null : (int) $current->getAttribute('media_asset_id');
+                $newAlt = filled($data['primary_alt_text'] ?? null)
+                    ? (string) $data['primary_alt_text'] : null;
+                $oldAlt = $current?->getAttribute('alt_text_override');
+
+                if ($oldId === (int) $asset->getKey() && $oldAlt === $newAlt) {
                     app(AdminNotifier::class)->notification(
-                        title: 'Primary media updated',
-                        status: 'success',
+                        title: 'Primary media unchanged',
+                        status: 'info',
                     );
+                    return;
                 }
 
-                // Complete the committed upload as its own action. Replacing
-                // the mounted Action stack during execution could discard
-                // FileUpload state and success feedback before Filament
-                // finishes its lifecycle. The refreshed Gallery owns the
-                // next Edit action.
+                DB::transaction(function () use ($artwork, $asset, $ingested, $newAlt, $current): void {
+                    $primary = app(ArtworkPrimaryMediaService::class);
+                    if ($current === null) {
+                        $primary->attachAsset($artwork, $asset, recordIngest: ! $ingested['duplicate']);
+                    } else {
+                        $primary->replaceAsset($artwork, $asset, recordIngest: ! $ingested['duplicate']);
+                    }
+                    app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $newAlt);
+                });
+
+                $this->refreshWorkspaceAfterMutation();
+                app(AdminNotifier::class)->notification(
+                    title: 'Primary media updated',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::command($action, 'Use media', AdminDialogSize::Default);
