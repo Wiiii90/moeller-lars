@@ -40,6 +40,7 @@ trait GalleryWorkspaceUploadSettings
                     'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
                     'artwork_divider' => GalleryPresentation::divider($gallery),
                     'sort_mode' => GalleryPresentation::sortMode($gallery),
+                    'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
                 ];
             })
             ->schema([
@@ -59,6 +60,9 @@ trait GalleryWorkspaceUploadSettings
                             ->options(GalleryPresentation::SORT_OPTIONS)
                             ->default(GalleryPresentation::SORT_MANUAL)
                             ->required()
+                            ->columnSpanFull(),
+                        Toggle::make('video_sound_enabled')
+                            ->label('Allow visitors to unmute looping Gallery videos')
                             ->columnSpanFull(),
                         Toggle::make('landscape_detail_enabled')
                             ->label('Expand landscape Artwork pages')
@@ -98,6 +102,7 @@ trait GalleryWorkspaceUploadSettings
                             'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                             'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                             'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,
+                            'video_sound_enabled' => $data['video_sound_enabled'] ?? false,
                         ]);
                         $changed = $updated->wasChanged();
 

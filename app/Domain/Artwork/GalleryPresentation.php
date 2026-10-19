@@ -10,6 +10,11 @@ use Illuminate\Validation\ValidationException;
 final class GalleryPresentation
 {
     public const SORT_MANUAL = 'manual';
+
+    public static function allowVideoSound(ArtworkCategory $gallery): bool
+    {
+        return (bool) $gallery->getAttribute('video_sound_enabled');
+    }
     public const SORT_NEWEST = 'newest';
 
     public const SORT_OPTIONS = [
@@ -58,6 +63,13 @@ final class GalleryPresentation
     public static function validateSettings(array $data): array
     {
         $values = [];
+        if (array_key_exists('video_sound_enabled', $data)) {
+            $value = $data['video_sound_enabled'];
+            if (! is_bool($value) && ! in_array($value, [0, 1, '0', '1'], true)) {
+                throw ValidationException::withMessages(['video_sound_enabled' => 'Choose whether visitors may enable video sound.']);
+            }
+            $values['video_sound_enabled'] = (bool) $value;
+        }
         if (array_key_exists('sort_mode', $data)) {
             if (! is_string($data['sort_mode']) || ! array_key_exists($data['sort_mode'], self::SORT_OPTIONS)) {
                 throw ValidationException::withMessages(['sort_mode' => 'Choose a supported Gallery order.']);

@@ -108,6 +108,7 @@ final class HomePresentationResolver
                 'showDetails' => $heroConfiguration['show_details'],
                 'showGalleryLink' => $heroConfiguration['show_gallery_link'],
                 'showNavigation' => $heroConfiguration['show_navigation'],
+                'allowVideoSound' => $heroConfiguration['video_sound_enabled'],
                 'enableViewer' => $heroConfiguration['enable_viewer'],
                 'heroGroup' => $heroResolution['group'],
                 'gateActive' => false,
