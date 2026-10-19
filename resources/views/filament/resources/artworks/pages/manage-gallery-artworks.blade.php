@@ -335,8 +335,8 @@
                                     </div>
                                     <span>
                                         @if ($artwork['year']){{ $artwork['year'] }}@endif
-                                        @if ($artwork['medium']){{ $artwork['year'] ? ' · ' : '' }}{{ $artwork['medium'] }}@endif
-                                        @if ($artwork['dimensions']){{ ($artwork['year'] || $artwork['medium']) ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
+                                        @if ($artwork['dimensions']){{ $artwork['year'] ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
+                                        @if ($artwork['medium']){{ ($artwork['year'] || $artwork['dimensions']) ? ' · ' : '' }}{{ $artwork['medium'] }}@endif
                                     </span>
                                     <small class="admin-gallery-grid__analytics">
                                         @if ($artwork['analytics']['available'])
