@@ -28,3 +28,9 @@ test('More space is presentation-only; its preview stays mounted while its viewp
     assert.match(preview, /x-on:general-appearance-updated\.window="refreshPreview\(\)"/);
     assert.match(preview, /<iframe\s+[^>]*wire:ignore/s);
 });
+
+test('the preview stays top-aligned and shares Appearance toolbar spacing', () => {
+    assert.match(css, /\.general-live-preview__viewport\s*\{[^}]*padding: calc\(var\(--admin-section-gap\) \+ \.5rem\) 0 \.35rem;[^}]*place-items: start center;/);
+    assert.match(css, /\.general-appearance-stage__scroll\s*\{[^}]*padding-block: var\(--admin-section-gap\) \.2rem;/);
+    assert.match(readFileSync(new URL('../../resources/css/admin/stage.css', import.meta.url), 'utf8'), /\.admin-stage-panel-content\s*\{[^}]*padding-top: \.5rem;/);
+});
