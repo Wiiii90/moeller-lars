@@ -131,8 +131,10 @@ The global Background/Menu/Page controls retain a concise two-column
 line-based grammar with the shared ColorPicker and numeric field. Do not
 surface a Filament Repeater's card chrome, default rounded Add button,
 red per-row trash icons or explanatory helper paragraphs inside the Stage.
-Primary/Secondary color stay inline; additional gradient stops use the
-canonical small Add/Edit/Remove dialogs and shared Add row/Action styles.
+All colors are directly editable in one shared compact Color/Position
+table; Solid has one color row and gradients have 2–12 rows. Reuse the
+canonical AdminColorControl rather than creating another picker. No edit
+dialogs, card repeaters, help prose or red deletion icons.
 The global angle control has an inline editable degree value and opens
 the shared rotary picker on interaction; it does not show a persistent
 dial beside the number. Do not duplicate this component within General.

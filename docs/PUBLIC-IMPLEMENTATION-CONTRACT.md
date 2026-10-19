@@ -699,9 +699,11 @@ the shared ColorPicker. Both input methods commit through the same validated
 General appearance field. The dial is teleported outside the scrollable Stage
 to avoid clipping.
 
-Extra gradient stops are never edited with an embedded Filament Repeater,
-decorative cards, chip-style buttons or red deletion icons. The existing
-primary/secondary endpoint colors remain inline, while additional interior
-stops are listed concisely and created/edited/removed via the canonical
-AdminDialog contract and common Add row/Action controls. Old two-color settings
+All global paint surfaces use the same compact native Color/Position table.
+Solid shows one directly editable color; Linear, Radial and Conic have 2–12
+stops, each edited with the canonical AdminColorControl and a numeric
+position. Color stops are ordered by position, including coincident stops
+for hard boundaries. Gray native table actions add/remove rows, without
+separate dialog editors or a second color picker. Loading legacy two-color
+settings never materializes a new JSON array by itself.
 are never materialized into JSON merely by opening the editor.
