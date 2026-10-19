@@ -59,6 +59,34 @@ it('rejects direct deletion of a published Gallery artwork without destroying it
         ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 });
 
+it('rolls back optional file deletion and Artwork removal together on a failed audit', function (): void {
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $artwork = galleryFixtureArtwork($gallery);
+    galleryFixturePrimary($artwork, $asset);
+    galleryFixtureUnavailableAnalytics();
+
+    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $audit = Mockery::mock($realAudit);
+    $audit->shouldReceive('record')->andReturnUsing(function (...$arguments) use ($realAudit): mixed {
+        if (($arguments[1] ?? '') === 'artwork.deleted') {
+            throw new RuntimeException('Artwork deletion audit failed');
+        }
+
+        return $realAudit->record(...$arguments);
+    });
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('deleteArtwork', ['artwork' => $artwork->getKey()])
+        ->fillForm(['delete_media_file' => true]);
+
+    expect(fn () => $editor->callMountedAction())->toThrow(RuntimeException::class, 'Artwork deletion audit failed');
+    expect(Artwork::query()->whereKey($artwork->getKey())->exists())->toBeTrue()
+        ->and(ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('media_asset_id', $asset->getKey())->exists())->toBeTrue()
+        ->and((string) $asset->fresh()->getAttribute('state'))->toBe('available');
+});
+
 it('deletes an Artwork slot but preserves its shared Storage file unless opted in', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset();

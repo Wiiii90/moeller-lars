@@ -62,29 +62,35 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 try {
-                    app(ArtworkDraftService::class)->delete($artwork);
+                    if ($deleteFile && $asset instanceof MediaAsset) {
+                        // One media-domain transaction owns both the optional
+                        // original deletion and the Gallery Artwork removal.
+                        app(MediaAssetEditorialService::class)->delete($asset, $artwork);
+                    } else {
+                        app(ArtworkDraftService::class)->delete($artwork);
+                    }
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Artwork was not deleted', $exception);
 
                     return;
-                }
-
-                // Remove the independent media only on explicit opt-in.
-                // Storage owns the canonical reference cascade and cleanup.
-                if ($deleteFile && $asset instanceof MediaAsset) {
-                    try {
-                        app(MediaAssetEditorialService::class)->delete($asset);
-                    } catch (\Throwable $exception) {
+                } catch (\Throwable $exception) {
+                    // Physical file cleanup can fail *after* a successful DB
+                    // commit; distinguish that from an earlier failed mutation.
+                    if ($deleteFile && $asset instanceof MediaAsset
+                        && ! Artwork::query()->whereKey($artwork->getKey())->exists()
+                        && (string) $asset->fresh()?->getAttribute('state') === 'deleted') {
                         report($exception);
                         $this->refreshWorkspaceAfterMutation();
                         app(AdminNotifier::class)->notification(
-                            title: 'Artwork deleted; file removal needs attention',
-                            body: 'The Artwork was deleted, but Storage file cleanup did not complete. Inspect the file in Storage.',
+                            title: 'Artwork deleted; file cleanup incomplete',
+                            body: 'The file is marked deleted and its references were removed, but physical Storage cleanup needs attention.',
                             status: 'danger',
                         );
 
                         return;
                     }
+
+                    throw $exception;
                 }
 
                 $this->refreshWorkspaceAfterMutation();
