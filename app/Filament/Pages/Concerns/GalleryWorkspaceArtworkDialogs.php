@@ -59,9 +59,16 @@ trait GalleryWorkspaceArtworkDialogs
                 // remain valid, reusable files if Artwork validation fails.
                 // Artwork creation, primary linkage and its ALT override are
                 // one canonical DB mutation, preventing orphan Gallery drafts.
-                $asset = $upload instanceof TemporaryUploadedFile
-                    ? app(MediaIngestService::class)->ingest($upload)
-                    : ($assetId > 0 ? MediaAsset::query()->findOrFail($assetId) : null);
+                try {
+                    $asset = $upload instanceof TemporaryUploadedFile
+                        ? app(MediaIngestService::class)->ingest($upload)
+                        : ($assetId > 0 ? MediaAsset::query()->findOrFail($assetId) : null);
+                } catch (ValidationException $exception) {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => collect($exception->errors())->flatten()->first()
+                            ?? 'The selected image or video could not be processed.',
+                    ]);
+                }
                 $payload = $this->normalizeArtworkFormData($data);
 
                 DB::transaction(function () use ($payload, $asset, $data, $upload): void {
@@ -161,7 +168,14 @@ trait GalleryWorkspaceArtworkDialogs
                 // primary linkage services are the authoritative owners.
                 // Ingest commits independently so a later editorial error
                 // cannot leave an unregistered file in Storage.
-                $ingested = app(MediaIngestService::class)->ingestUnique($upload);
+                try {
+                    $ingested = app(MediaIngestService::class)->ingestUnique($upload);
+                } catch (ValidationException $exception) {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => collect($exception->errors())->flatten()->first()
+                            ?? 'The selected image or video could not be processed.',
+                    ]);
+                }
                 $asset = $ingested['asset'];
                 $current = $artwork->artworkMedia()
                     ->where('role', 'primary')->first();

@@ -180,9 +180,16 @@ final class ArtworkEditDialog
         // before the Artwork database transaction so a later editorial failure
         // cannot roll back the MediaAsset while leaving its files on disk.
         // The successfully ingested file remains reusable in Storage.
-        $uploadedAsset = $upload instanceof TemporaryUploadedFile
-            ? app(MediaIngestService::class)->ingest($upload)
-            : null;
+        try {
+            $uploadedAsset = $upload instanceof TemporaryUploadedFile
+                ? app(MediaIngestService::class)->ingest($upload)
+                : null;
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages([
+                'primary_upload' => collect($exception->errors())->flatten()->first()
+                    ?? 'The selected image or video could not be processed.',
+            ]);
+        }
 
         DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentAssetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment): void {
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
