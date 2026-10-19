@@ -850,3 +850,29 @@ it('retargets the mounted component editor when a nested component changes Image
         ->and($blocks[1]['children'][0]['body'])->toBe('Edited under new Image')
         ->and($blocks[1]['children'][0]['published'])->toBeFalse();
 });
+
+it('offers the same Rich Text heading when creating and editing a component', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('New text heading', 'new-text-heading');
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('addComponent')
+        ->assertMountedActionModalSee('Heading')
+        ->fillForm([
+            'type' => 'text',
+            'publication_state' => 'unpublished',
+            'title' => 'Intro heading',
+            'body' => 'Intro copy',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $component = $settings->fresh()->components()[0];
+    expect($component['type'])->toBe('text')
+        ->and($component['title'])->toBe('Intro heading')
+        ->and($component['body'])->toBe('Intro copy')
+        ->and($component['published'])->toBeFalse();
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->assertMountedActionModalSee('Heading');
+});

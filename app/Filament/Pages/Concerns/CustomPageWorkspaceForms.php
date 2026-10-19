@@ -46,7 +46,7 @@ trait CustomPageWorkspaceForms
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange, $onContactChange),
+                ...$this->componentTypeFields((string) $get('type'), $onImageChange, $onContactChange),
             ])
             ->key('dynamicComponentFields')
             ->columnSpanFull();
@@ -66,7 +66,7 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return list<mixed> */
-    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null, ?Closure $onContactChange = null): array
+    private function componentTypeFields(string $type, ?Closure $onImageChange = null, ?Closure $onContactChange = null): array
     {
         return match ($type) {
             'image' => [
@@ -88,12 +88,10 @@ trait CustomPageWorkspaceForms
                     ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
             ],
-            'text' => $isNew
-                ? AdminRichText::schema('body', 'Rich Text', 20000)
-                : [
-                    TextInput::make('title')->label('Heading')->maxLength(160),
-                    ...AdminRichText::schema('body', 'Rich Text', 20000),
-                ],
+            'text' => [
+                TextInput::make('title')->label('Heading')->maxLength(160),
+                ...AdminRichText::schema('body', 'Rich Text', 20000),
+            ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
                 MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)
