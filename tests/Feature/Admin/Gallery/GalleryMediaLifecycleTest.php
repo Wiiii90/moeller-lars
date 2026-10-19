@@ -75,7 +75,8 @@ it('deletes an Artwork slot but preserves its shared Storage file unless opted i
 
     expect(Artwork::query()->whereKey($one->getKey())->exists())->toBeFalse()
         ->and($asset->fresh()->getAttribute('state'))->toBe('available')
-        ->and($two->fresh()->getAttribute('artwork_category_id'))->toBe($gallery->getKey());
+        ->and($two->fresh()->getAttribute('artwork_category_id'))->toBe($gallery->getKey())
+        ->and((int) $two->fresh()->getAttribute('position'))->toBe(0);
 });
 
 it('detaches a draft from its Gallery without deleting artwork media or shared MediaAssets', function (): void {
@@ -148,7 +149,7 @@ it('accepts existing image and video MediaAssets as primary and rejects audio', 
 });
 
 
-it('detaches Gallery artworks after their shared primary Media File is deleted from the Gallery workspace', function (): void {
+it('deletes the selected Artwork and detaches other Galleries when its shared primary file is explicitly deleted', function (): void {
     $source = galleryFixtureCategory();
     $otherGallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset();
