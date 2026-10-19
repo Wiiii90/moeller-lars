@@ -188,3 +188,10 @@ stateDiagram-v2
 | Bereits gelöschtes Asset über stale Action-ID | Keine neu behauptete fachliche Löschung oder Erfolgsmeldung ohne echte Änderung |
 
 **Verifikationsgrenze:** Die bereits in einem anderen Workstream berichteten Storage-Tests ersetzen keine hier durchgeführte Prüfung dieser konkret abgegrenzten Home-List-Fälle. Kein Test/Database-Reset/Browser-Run/CI wurde für diesen Architekturbeleg ausgeführt.
+
+## Aktueller Media-Schutzpfad (dev@434975e1bd09)
+
+Der neue Ingest erstellt Image-Thumbnails via gebundenem `vipsthumbnail` (public-v1/public-v2 je nach Quellprofil) und Video-Poster via `ffmpeg`; `MediaPreviewVariant` entscheidet zentral, welche WebP-Preview für Image oder Video zulässig ist. Für historische Dateien bleibt die Regeneration gesondert. Die erwarteten Preview-Bytes zählen zur Quotenreservierung und ihre Erstellung liegt innerhalb der Ingest-Sperre. Damit darf eine fehlende/ungültige Poster- oder Thumbnail-Variante nicht durch eine willkürliche andere Assetquelle kaschiert werden.
+
+Beim logischen Artwork-/Media-Delete gilt: DB-Transaktion und Audit sind vom physischen Storage-Cleanup getrennt; `PublicationMediaCleanupService::queue()` schreibt eine dauerhafte Outbox, `drain()` prüft weiterhin Working-/Committed-/historische Schutzwurzeln und quittiert nur wirklich erledigte Löschungen. Gesperrte historische Referenzen lassen die Outbox bestehen, statt den Auftrag stillschweigend zu verlieren. `MediaRightsArtifactService` verwendet eigenständige unveränderliche Rechte-Dateien; das referenzgeschützte Reclaim unter Publication-Advisory-Lock ist nicht identisch mit Original-Löschung. Die älteren, auf historischen Source-SHAs basierenden Reader-Symmetrie-Matrizen bleiben als versionierte Befunde erhalten; weder isolierte DB-Läufe noch Storage-Fehlerpfade wurden hier ausgeführt.
+

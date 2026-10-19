@@ -229,3 +229,8 @@ Never migrated as runtime authorities:
 - workshop/development tooling outside approved artist-site target.
 
 Secrets/private dumps/authoritative private media must not appear in Git, migration reports or screenshots.
+
+## Artist-curated Validation protection (current source boundary)
+
+The current forward migration sources for rights artifacts, Gallery settings and Global Public Appearance were reviewed at `dev@434975e1bd09`; **the migrations were not run** in this documentation update. Local synthetic data are not a substitute for the artist's curated Validation content. Validation may hold cutover-relevant originals, editorial fields and Publication history: no reset, recreation, test seed, destructive backfill or migration execution without a separately approved deployment/cutover plan and verified backups. A physical `pg_catalog` audit is to run only against a distinct freshly migrated disposable PostgreSQL database. This clarifies the existing cutover invariant; it is not a new permission to operate on Validation.
+

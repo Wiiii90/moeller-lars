@@ -4,6 +4,8 @@ The documents in this directory are split by purpose so current application cont
 
 ## Architecture inventory
 
+**Current source alignment (19 October 2026):** Targeted public, Gallery, media, rights, schema and Admin source owners were compared with `dev@434975e1bd09` after the native `docs@317d255e` closeout. Normative changes are recorded in the existing contracts and their architecture owners. This was **not** a merge of 329 intervening `dev` commits, a fresh `dev`-wide test run or a regeneration of the previously checked-in code inventories. The native results below remain the historical, reproducible `docs` checkout baseline.
+
 - [Architecture source inventory and models](architecture/README.md) — source-versioned architecture with native source-only checks and generators technically closed out on 19 October 2026; historical inventories and remaining product/runtime/DB checks are explicit. Contracts retain their canonical owners.
 
 ## Task-specific UI entrypoints
@@ -45,7 +47,7 @@ Each behavior has **one normative owner**. `ARCHITECTURE.md` is the overview; `a
 | Static Dashboard announcements/changelog and release gates | [Release](RELEASE.md) | Code-owned Markdown is not a per-user Notification record |
 | Test layers/discovery/safe isolated DB and cutover | [Testing](TESTING.md), [Migration invariants](MIGRATION-INVARIANTS.md), [Migration plan](MIGRATION-PLAN.md), [Release](RELEASE.md), [platform boundary](SERVER-OPERATIONS-BASELINE.md) | [Completion matrix](architecture/completion-criteria.md) records evidence, not a second test/release contract |
 
-**Known unresolved norm/source differences:** [Gallery first-image-eager](PUBLIC-IMPLEMENTATION-CONTRACT.md#gallery-delivery-and-loading) is the normative target; inspected `dev@11f7e101` Blade still marks *two* images eager. Editor-valid external HTTPS images may violate strict [Public CSP `img-src`](architecture/public-security-privacy-boundaries.md#4-rich-text-url-validierung-vs-csp-ladefreigabe). Invalid *enabled* Matomo URL is distinct from an analytics network outage and has a [source-identified Contact-response risk](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen). These require product/test decisions, **not** silent documentation redefinition.
+**Known unresolved norm/source differences:** The historical Gallery 1-vs-2-eager conflict is superseded by the current [Gallery contract](PUBLIC-IMPLEMENTATION-CONTRACT.md#gallery-delivery-and-loading): two images are eager, only the first high priority. That supersedes the older `dev@11f7e101` source trace. Editor-valid external HTTPS images may violate strict [Public CSP `img-src`](architecture/public-security-privacy-boundaries.md#4-rich-text-url-validierung-vs-csp-ladefreigabe). Invalid *enabled* Matomo URL is distinct from an analytics network outage and has a [source-identified Contact-response risk](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen). These require product/test decisions, **not** silent documentation redefinition.
 
 [Normative consolidation and derived-artifact classification](architecture/completion-criteria.md#normative-konsolidierung-konfliktstand-und-artefaktentscheidung) records the reconciliation, not a second normative contract.
 

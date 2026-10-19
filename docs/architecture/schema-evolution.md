@@ -99,3 +99,10 @@ Die frühe Migration vom 29.08. hält das ein. Dagegen verwendet [`2026_09_15_00
 ## Noch nicht nachgewiesen
 
 Ein erfolgreich in einer isolierten DB ausgeführtes `migrate:fresh`, sämtliche endgültigen Constraintdefinitionen, aktuelle FK-Target-Schemata, alle SQL-Funktionskörper, Trigger-Grenzen und die Korrektheit des vollständigen Restore-Laufs. [export-architecture-postgres.php](../../scripts/export-architecture-postgres.php) bereitet die **lesende** Katalogabfrage vor; ein Export wurde noch nicht ausgeführt.
+
+## Forward-only Entwicklungsnachtrag vom 17.–19. Oktober 2026 (dev@434975e1bd09)
+
+Die Migration `2026_10_17_020000_create_media_rights_artifacts.php` ergänzt die optionale Rechte-Artefaktregistrierung (`media_rights_artifacts`) und versionierte Auswahlen (`media_rights_artifact_selections`). Die nachfolgenden Gallery-Migrationen ergänzen `artwork_categories` und die Committed-Projektion unter PostgreSQL um Landscape-/Endnavigation, Artwork-Divider, Manual-/Newest-Sortierung, optionalen Video-Ton, Artwork-Information, Media-Credits, Copyright-Sichtbarkeit und Caption-Layout. Die Erscheinungsbildmigrationen ergänzen Public-/Committed-Content-Settings um globale Background/Menu/Page-Paints, wiederholbare Multistop-Gradienten, Title-/Header-Ausrichtung, Divider- und Frame-Styles sowie Breiten-/Padding-Einstellungen.
+
+Diese Änderungen sind **Migrationsquellen**, kein Nachweis angewendeter Migrationen oder einer validierten physikalischen Datenbank. Die `committed`-Spalten und reversiblen Publication-Snapshots sind gesondert zu prüfen. Die durch den Künstler für den Cutover vorbereitete **Validation-Datenbank ist geschützt**: keine `migrate:fresh`, `db:wipe`, Test-Seeds oder ungeprüften Schreiboperationen dort. Für ein echtes `pg_catalog`-Audit nur eine nachweislich isolierte, vollständig migrierte Wegwerf-PostgreSQL verwenden.
+

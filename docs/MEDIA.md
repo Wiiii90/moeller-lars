@@ -52,6 +52,14 @@ For every `MediaAsset`, authoritative technical identity includes generated stor
 
 Video/audio ingest does not imply transcoding/poster/waveform generation.
 
+## Current immutable preview and rights artifact policy (dev@434975e1bd09)
+
+The current [Media ingest owner](../app/Domain/Media/MediaIngestService.php) uses **libvips for every new image thumbnail** (bounded to 960px, with a distinct `public-v2` transform profile for eligible high-resolution originals). FFmpeg produces the immutable `video-poster-v1` WebP preview of a supported video. `MediaPreviewVariant` is the common selector for both thumbnail profiles and video poster, shared across Admin, Gallery, Publication and Public. GD is retained only for historical variant regeneration; it is not a second pipeline for new uploads. The ingest lock spans derivative preparation, and reservation considers generated preview bytes as well as the original. Unsupported, missing or corrupt required previews are failures, not permission to serve a different asset.
+
+Media rights-bearing image bytes are a **separate immutable artifact**: `MediaRightsArtifactService` prepares SHA-256/revision-addressed copies without rewriting originals or existing variants; `MediaRightsPublicationSelections` selects Working/checkpoint/LIVE versions under the Publication lock. Preparation and delivery are independently **opt-in** via `rights_preparation_enabled` and `rights_delivery_enabled`. The source contains optional preparation, revisioned serving and bounded orphan reclamation; presence of these services is not proof that Validation or Production enables them. See [Public rights and privacy](PUBLIC-RIGHTS-AND-PRIVACY.md) and the [Publication architecture](architecture/publication.md).
+
+Artwork draft deletion and optional **delete original** are not the same operation. The Artwork/relationship change and eligible MediaAsset logical deletion are transactional and audited; physical bytes must be queued through the durable `PublicationMediaCleanupService` outbox, rechecked against Working/Committed/history references, and drained/retried separately. A successful logical transaction does **not** assert that physical files were synchronously removed. No persistent Validation data may be used as a cleanup test fixture.
+
 ## Canonical reference architecture
 
 Consumers reference existing `MediaAsset` IDs rather than copying files.

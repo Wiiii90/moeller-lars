@@ -258,3 +258,10 @@ A release is identified by exact Git SHA + immutable OCI digest. CI success or a
 Tests protect durable security/data/domain contracts. Browser/product acceptance protects visual interaction quality.
 
 Do not freeze temporary CSS class names or current markup through brittle snapshots when browser acceptance is the real requirement. During reconciliation, use the narrowest evidence appropriate to the changed behavior. A later release candidate needs explicit user authorization for promotion to protected `main` and a separately authorized release-verification gate; neither CI nor a PR workflow is automatically permitted in the current branches.
+
+## Current public and media architecture (source delta dev@434975e1bd09)
+
+The Public site now uses a **static shared paper frame**, configurable artist/header/menu divider, Gallery presentation modes, optional video and global Background/Menu/Page paint surfaces. `PublicAppearance` and `GalleryPresentation` own normalized persisted settings, while `PublicSiteContext` separates committed public reads from preview working reads. Image thumbnails use bounded libvips; canonical video posters use FFmpeg; `MediaPreviewVariant` selects approved public/Admin previews. Optional immutable rights files and selections live under `MediaRightsArtifactService`/`MediaRightsPublicationSelections`. Durable file-deletion requests are owned by the `PublicationMediaCleanupService` outbox. These responsibilities are described normatively by [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md), [Media](MEDIA.md), [Rights](PUBLIC-RIGHTS-AND-PRIVACY.md) and [Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), not duplicated as new requirements here.
+
+This is a **selected source reconciliation**, not import of the complete `dev` tree into `docs`. The native documentation generator results of 19 October and old artifacts still refer to the previously checked-out `docs`-code SHA. No artist browser acceptance or protected Validation database operation was performed.
+

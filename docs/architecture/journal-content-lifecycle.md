@@ -96,3 +96,8 @@ Ein Future Scheduled Post wird nicht sichtbar, aber sobald `scheduled_at <= now(
 | Preview-/Public-/LIVE-Commit und Medienasset-URL | Preview und normales Public nicht dieselbe Auth/Read-Kontext, keine implizite Veröffentlichung |
 
 **Test-Evidenz:** Vorhandene Blog-/Exhibition-/Journal-Media-Tests und Source-Controller wurden betrachtet, aber keine Tests tatsächlich ausgeführt. Ein Quellkommentar, `scheduled_at`-Wert oder persistierter `published`-Status ist kein Beleg für erfolgreich ausgeliefertes öffentliches HTML oder Mail/Medienbytes. Diese Dokumentation erfordert keine Timer/Polling-Automation und nimmt keinen CI-Zugriff vor.
+
+## Canonical Journal-Media-Projektion (dev@434975e1bd09)
+
+`JournalMediaRenderer` verwendet bei Video dieselbe `MediaPreviewVariant::videoPoster()`-Auswahl wie die übrigen Consumer und gibt das Originalvideo mit verifiziertem Poster, intrinsischen Poster-Dimensionen und stummem, schleifenfähigem Inline-Playback aus. Für Bilder bleibt der canonical Thumbnail-Reader maßgeblich. Die Credits kommen aus `MediaAsset` samt effektivem Copyright-Modus; die sichtbare Caption ist pro aufrufender Presentation steuerbar und darf nicht mit unabhängig gepflegten Journal-Dateirechten dupliziert werden. Kein realer Video-/Browser-/Mail-/DB-Lauf erfolgte im Docs-Audit.
+

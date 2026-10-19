@@ -160,3 +160,10 @@ Der unveränderte [`public-gallery-loading.js`](../../resources/js/public-galler
 - Die bestehende zyklische ganze-Item-Navigation behält ihren eigenen `sessionStorage`-Handoff; der Document-Swap soll ihn nicht durch Pixel-Scrolling ersetzen.
 - Der Admin benutzt ebenfalls Filament/Livewire-SPA, aber mit eigener Auth-/Lifecycle-Policy. Aus dem Public-SPA-Skript ist **keine** Admin-Route ableitbar.
 - **Zu überprüfen:** tatsächliche Livewire-Head-/Nonce-Updates, Scroll-/Focus-Restoration, Back/Forward, Wechsel zwischen Parent/Child-Menüs, erneute offene Viewer/Map-Instanzen, Matomo pro echtem Seitenwechsel und Escape/Hydration-Verhalten. Ein Quell-Diagramm allein ist kein Browsertest.
+
+## Statische Papierkontur, Vite-Version und Videos (dev@434975e1bd09)
+
+Der frühere Eigentümer `resources/js/public-folio-motion.js` wurde entfernt. `resources/js/public-paper-frame.js` und ein zusammenhängender Public-Paper-Frame bilden die statischen Menü-/Content-Konturen. Ein Kontur-Ende orientiert sich am letzten tatsächlich gerenderten Artwork/Journal-Inhalt, nicht an zusätzlicher Leerseitenhöhe. Die Divider-Optionen einschließlich Menu-only-/Full-width-Varianten sind getrennte Public-Appearance-Einstellungen; sie dürfen keine konkurrierenden weißen Striche erzeugen. Bestehende Beschreibungen der animierten Folio-Kanten in älteren Abschnitten sind damit historische Präsentationsstände, nicht aktuelle Laufzeit-Invarianten.
+
+`AppServiceProvider` versieht gebaute Vite-Einträge über `createAssetPathsUsing`/`manifestHash` mit einer einheitlichen Revision, damit Livewire-Navigation einen neuen Assetbuild erkennen kann. `public-media-playback.js` besitzt den page-scoped Inline-Videolifecycle: sichtbare, erlaubte Videos starten stumm und in Schleife; außerhalb der Sichtbarkeit oder bei Inaktivität werden sie angehalten und Listener beim SPA-Swap entfernt. Viewer-Video bleibt separat, kein zweiter Scheduler/Timer. Browserprüfungen für wiederholte Navigation, Poster, Tonfreigabe, Konturende, Browser-CSP und Restyles wurden hier nicht ausgeführt.
+

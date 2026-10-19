@@ -217,3 +217,8 @@ After cutover:
 - retire legacy runtime/data only after explicit retirement acceptance and recovery requirements are satisfied.
 
 After explicit legacy retirement, true migration-only legacy evidence may be archived/removed in a dedicated cleanup once its recovery/reconciliation purpose has ended. Superseded application-owned schema such as the former `blog_settings` table is retired independently through normal forward migrations and is not gated on legacy-site retirement.
+
+## New optional source migrations pending cutover review
+
+As of source-read `dev@434975e1bd09`, new optional rights-artifact tables and forward Gallery/Appearance settings migrations exist. They are **not evidence that Validation has been migrated**. The protected artist-curated Validation content and corresponding media originals are the intended curated cutover data source only after explicit freeze, verification and approval. Check forward-migration compatibility with both Working/Committed snapshots and historical Publication checkpoints on a disposable copy. Do not reimport legacy data destructively or use Validation to trial migrations or test cleanup.
+

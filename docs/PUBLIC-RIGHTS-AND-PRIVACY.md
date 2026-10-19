@@ -135,3 +135,10 @@ Standards and implementers:
 - https://developer.matomo.org/guides/tracking-consent
 - https://exiftool.org/
 - https://spec.c2pa.org/specifications/specifications/2.1/specs/C2PA_Specification.html
+
+### Rights artifacts: source state at dev@434975e1bd09
+
+B2 is no longer merely an offline writer proposal. `MediaRightsArtifactService`, `MediaRightsArtifactRevision`, `MediaRightsWorkingPreparation`, the `media:rights:prepare` command and `MediaRightsPublicationSelections` now define immutable JPEG/PNG/WebP rights-bearing copies, a revision registry, Working/Checkpoint selections, preparation readiness and optional revision-aware public delivery. `PublicMedia` and the media controllers must respect the selected revision; a rights-text change alone must not mutate canonical originals or silently publish an unprepared revision. Rights-artifact files are subject to integrity and reference guards, with a bounded locked reclamation path separate from original cleanup.
+
+**Environment boundary:** Preparation and rights delivery are distinct configuration flags and migration prerequisites. They have **not** been validated against Validation, Production or a real deployment in this docs reconciliation. Verification of metadata/ICC/pixel integrity, revisions, HTTP response semantics and migration compatibility belongs to isolated tests and subsequent authorized acceptance, not to the completed historical source-only generator pass.
+

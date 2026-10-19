@@ -85,3 +85,8 @@ Aktueller [`AdminNotifier::notification()`](../../app/Domain/Admin/AdminNotifier
 Auf einer ausdrücklich isolierten Testdatenbank und einer echten Filament-/Livewire-Instanz: je eine Erfolgsmutation mit einem und mit mehreren Audit-Kontexten; No-op und Validation-Fehler; zurückgerollte Mutation; Wiederholung mit gleicher `source_id` und doppeltem Header-Versuch; fremder User und fehlende Session; vollständiger Retention-Pin-Grenzfall; Livewire-Navigation mit Header-Queue; Dismiss und getrennte Read-/Delete-Änderung. Erwartete Message-Anzahlen werden aus den tatsächlich erzeugten Events abgeleitet, nicht aus der bloßen Anzahl der `notification()`-Aufrufe.
 
 **Abdeckungsgrenze:** Keine Behauptung über tatsächliche Event-Zustellung, Livewire-Queue, Browser-Ankerposition, PostgreSQL-Constraints oder ausgelieferte E-Mails allein aus diesen Quellen.
+
+## Dashboard-Release-Zustand und Action-Kardinalität (dev@434975e1bd09)
+
+`DashboardFeedReleaseState` verwaltet per Benutzer Read- und automatische Pin-Ansprüche für versionierte Release-Feed-Einträge; der redaktionelle Changelog bleibt code-/dateibasiert. Diese Projektion ist von `AdminNotification`-Mailbox und Header-FIFO zu trennen. Für reale erfolgreiche Admin-Actions gilt weiterhin **ein logischer Notification-Aufruf**, der mehrere zugehörige Audit-IDs in `metadata.audit_event_ids` bündeln kann; durable Row-Idempotenz garantiert nicht automatisch genau eine Header-Darstellung. Release-Pins sind keine zweite Notification-Transport-API. Quelle gelesen, Livewire/Browser noch nicht ausgeführt.
+

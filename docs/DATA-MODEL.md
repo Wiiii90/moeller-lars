@@ -240,6 +240,12 @@ Laravel user/session/cache/job tables support authenticated administration/runti
 - deleting/pruning a notification never deletes related Activity/audit or Publication history;
 - explicit Storage reclamation may remove bounded Undo and older restore payload roots, but never Activity events or Publication checkpoint metadata.
 
+## Forward source delta (dev@434975e1bd09; not applied on Validation)
+
+The current `dev` migration set adds `media_rights_artifacts` (immutable bytes, revision, SHA-256, size, MIME, source MediaAsset) and `media_rights_artifact_selections` (scope, role, source and artifact identity). These optional rights files are not replacements for `media_assets` or `media_variants`, and their Working/Checkpoint selection is a separate Publication concern.
+
+Gallery `artwork_categories` now carries Source migrations for `landscape_detail_enabled`, `edge_navigation_mode`, `artwork_divider`, `sort_mode`, `video_sound_enabled`, `show_artwork_information`, `show_media_credits`, `show_media_copyright` and `caption_layout` (plus inert legacy `landscape_detail_scale`). Public/Committed `public_content_settings` gain global paint surfaces with multi-stop gradients, responsive header/divider controls and `frame_style`. The relevant Gallery changes also extend `committed.artwork_categories` on PostgreSQL. These are **forward code migrations**, not an observation of the artist's protected Validation schema. See the single [schema-evolution owner](architecture/schema-evolution.md).
+
 ## Migration boundary
 
 Legacy artwork/Vita/Journal/media structures are migration inputs only.

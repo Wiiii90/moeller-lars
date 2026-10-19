@@ -158,6 +158,10 @@ The [root Changelog index](../CHANGELOG.md) links technical release-note Markdow
 
 Before **approving** a candidate, review the release version/date/SHA, manifest entry, actual notes and artist-facing Announcement, then verify the in-Dashboard link. Current source tests for manifest/file consistency are **authored, not executed here**, and a code-owned note becoming visible on Validation is not itself a Production release. No CI/cron release-note generator is specified by this document.
 
+## Current media/appearance schema qualification for cutover
+
+The current `dev@434975e1bd09` sources introduce optional rights artifact registry/selections, Gallery sorting/captions/video sound and Public Appearance surface/header/frame migrations. They need explicit **forward-only compatibility review** against Working, Committed, historical checkpoints, originals, video posters and rights artifacts on an isolated restored copy before any separately approved protected Validation deployment. The artist is actively preparing cutover-relevant data on Validation; it must not be treated as disposable despite synthetic data in local development. This source-only docs update did not run migration, preview, CI, database export, application test or deployment. See [Migration invariants](MIGRATION-INVARIANTS.md) and [schema evolution](architecture/schema-evolution.md).
+
 ## Database migrations
 
 - database: PostgreSQL;

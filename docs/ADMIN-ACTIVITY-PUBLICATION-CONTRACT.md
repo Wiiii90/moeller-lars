@@ -236,6 +236,10 @@ Publication snapshots refer to canonical media rather than copying binaries; the
 
 The **single media reference, logical deletion, physical cleanup and queued-retry contract** is [MEDIA.md](MEDIA.md#deletion-and-cleanup), backed by its [one source/coverage matrix](architecture/media-reference-and-cleanup.md#fachlicher-abschluss-reader-symmetrie-zustandsfilter-und-schutzwurzeln). Publication does not define a second media walker or independent physical-file deletion policy.
 
+### Optional rights revisions and cleanup outbox (source dev@434975e1bd09)
+
+The existing Publication lock/transaction protects selection of immutable Rights artifacts for Working, checkpoints and Committed reads through `MediaRightsPublicationSelections`. Preparation and public delivery remain independently opt-in and require the associated migration; an audit of edited rights text does not imply that its file revision has already been prepared or published. Under logical media deletion the same transaction must durably enqueue physical cleanup; `PublicationMediaCleanupService` rechecks references and retains pending jobs where historical checkpoints prevent deletion. The [Media contract](MEDIA.md#deletion-and-cleanup) remains the sole file-retention and deletion policy; this paragraph defines only Publication ownership. No database/concurrency run was performed.
+
 ## Activity integration for publication controls
 
 Reset (**when there are staged changes**), Restore and Revert staging operations record normal immutable Activity events in the `Publication` area:

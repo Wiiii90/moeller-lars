@@ -178,3 +178,8 @@ The shared contract must preserve:
 - native Filament modal focus trapping and Escape handling.
 
 Do not replace framework semantics merely to match presentation.
+
+## Public Appearance controls (source 434975e1bd09)
+
+Reuse the established native shared Admin color/number controls. `AdminAngleControl` couples a text-editable degree value to an on-demand rotary popover without creating a second palette or overriding canonical dialog/keyboard interactions. `PublicAppearance` owns mode and stop validation for solid, linear, radial and conic paint, including repeating spans and up to twelve stops. General presents them through one compact Color/Position-table role; gray native Add/Remove controls remain canonical. Product/browser approval of the rotary interaction and responsive Stage presentation is independent of source presence.
+

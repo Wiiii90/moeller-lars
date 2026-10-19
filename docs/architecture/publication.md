@@ -151,3 +151,10 @@ Die komplette beschriebene Kette wurde **quellseitig** bis zum Aufruf belegt, ni
 - externe Binary-Storage-Fehler und Recovery bei fehlgeschlagenem Cleanup.
 
 Diese Punkte werden nicht durch das obige Diagramm als bereits verifiziert ausgegeben.
+
+## Rights-Revisionen und physisches Cleanup (dev@434975e1bd09)
+
+`MediaRightsPublicationSelections` bildet optional die Verbindung zwischen vorbereiteten unveränderlichen Rechte-Artefakten und Working/Checkpoint/LIVE: Auswahl und Checkpoint-Capture/Restore erfolgen unter der bestehenden Publication-Lock-/Transaktionsgrenze, nicht in öffentlichen HTTP-Reads. `rights_preparation_enabled` und `rights_delivery_enabled` sind getrennte opt-in Voraussetzungen. Ein geänderter Rechte-Text ersetzt weder Originalbytes noch setzt er eine vorbereitete Revision automatisch öffentlich live.
+
+Bei referenzabhängiger physischer Medienlöschung bleibt `PublicationMediaCleanupService` der einzige durable Queue-/Drain-Owner. Ein erfolgreicher logischer Commit/Artwork-Delete darf nicht als synchroner File-Delete ausgegeben werden; Historical-Checkpoints können physisches Entfernen verhindern, ohne den Outbox-Auftrag zu verlieren. Quellenstand verifiziert, Concurrency-/DB-/Validation-Status nicht.
+

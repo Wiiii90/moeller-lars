@@ -232,3 +232,8 @@ Shared implementation lives in:
 - shared `.admin-position`, `.admin-drag-handle`, `.admin-row-actions`, `.admin-table__selection` primitives
 
 Feature CSS may size genuinely task-specific content columns, but it must not redefine the canonical role order, typography roles, Position/Add Row axis, action order, single control-to-table boundary, trailing Selection convention or selected-count/checkbox axis.
+
+## General Appearance color-stop table
+
+General's three global public paint surfaces use the shared compact native Color/Position table. Solid shows one color; Linear/Radial/Conic validate two to twelve stops, shared native color inputs, numeric stop positions and standard gray table add/remove actions. There is no parallel bespoke red delete icon, new paint-picker framework or separate color-row rendering contract. The rotary angle popup is a shared `AdminAngleControl` beside an editable numeric degree value. This belongs to General's field presentation; other table role/selection/reorder invariants in this document remain unchanged. Source-read `dev@434975e1bd09`, no Filament/browser confirmation from the docs workstream.
+
