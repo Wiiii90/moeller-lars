@@ -2017,3 +2017,34 @@ html:has(.artwork-viewer[open]) {
 .site-header .site-navigation__submenu.is-hover-preview nav a:focus-visible {
     background: rgba(120, 120, 120, .08);
 }
+
+
+/* Artwork video transport controls follow the existing quiet folio grammar. */
+.public-video__controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: .35rem;
+}
+.public-video__sound {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    padding: .25rem;
+    border: 1px solid var(--public-artwork-line-hover);
+    border-radius: 0;
+    background: transparent;
+    color: var(--public-ink);
+    cursor: pointer;
+}
+.public-video__sound .public-icon {
+    width: 1rem;
+    height: 1rem;
+}
+.public-video__sound:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+.public-video__sound [hidden] {
+    display: none;
+}

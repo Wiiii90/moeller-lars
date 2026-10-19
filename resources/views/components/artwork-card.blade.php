@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'priority' => null, 'galleryBuffered' => false])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -47,7 +47,9 @@
                 src="{{ $originalUrl }}"
                 aria-label="{{ $altText }}"
                 muted
+                loop
                 playsinline
+                data-public-loop-video
                 preload="{{ $heroNavigation && ! $eager ? 'none' : 'metadata' }}"
             ></video>
         @else
@@ -89,6 +91,15 @@
     @if ($enableViewer)
         </a>
     @else
+        </div>
+    @endif
+
+    @if ($isVideo && $allowVideoSound)
+        <div class="public-video__controls">
+            <button type="button" class="public-video__sound" data-public-video-sound-toggle aria-label="Enable video sound" aria-pressed="false" title="Enable video sound">
+                <span data-public-video-icon-muted><x-public-icon name="volume-muted" /></span>
+                <span data-public-video-icon-playing hidden><x-public-icon name="volume-on" /></span>
+            </button>
         </div>
     @endif
 

@@ -52,7 +52,7 @@ For every `MediaAsset`, authoritative technical identity includes generated stor
 - `MediaVariant` is rebuildable and has independent storage/checksum/state;
 - missing required variants are integrity/readiness failures, not permission to expose the original as an arbitrary fallback.
 
-Video/audio ingest does not imply transcoding/poster/waveform generation.
+Video/audio ingest does not imply transcoding/poster/waveform generation. The shared Public Artwork video controller plays muted inline loops only while visible and pauses hidden slides, background tabs and SPA departures. A Gallery/Home opt-in allows the visitor to unmute; autoplay never starts with sound. Video poster generation is still pending and has not been simulated by an image fallback.
 
 ## Canonical reference architecture
 
