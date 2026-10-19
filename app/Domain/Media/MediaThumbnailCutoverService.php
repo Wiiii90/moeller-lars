@@ -227,6 +227,21 @@ final class MediaThumbnailCutoverService
             $payload = is_string($row->payload) ? json_decode($row->payload, true, 512, JSON_THROW_ON_ERROR) : (array) $row->payload;
             $this->addCandidate($items, $payload);
         }
+        // Never convert a legacy variant into a second current thumbnail
+        // for the same asset; publication requires exactly one.
+        foreach ($items as $item) {
+            foreach (['media_variants', 'committed.media_variants'] as $table) {
+                if (DB::table($table)
+                    ->where('media_asset_id', $item['media_asset_id'])
+                    ->where('id', '<>', $item['id'])
+                    ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
+                    ->where('transform_profile', MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
+                    ->where('state', 'available')
+                    ->exists()) {
+                    throw new RuntimeException('An asset already has a separate libvips thumbnail. Resolve duplicate variant IDs before cutover.');
+                }
+            }
+        }
         ksort($items, SORT_NUMERIC);
 
         return $items;
@@ -252,11 +267,23 @@ final class MediaThumbnailCutoverService
     /** @return array{storage_key:string,sha256:string} */
     private function originalFor(int $assetId): array
     {
+        $identity = null;
         foreach (['media_assets', 'committed.media_assets'] as $table) {
             $asset = DB::table($table)->where('id', $assetId)->first(['storage_key', 'sha256']);
-            if ($asset !== null) {
-                return ['storage_key' => (string) $asset->storage_key, 'sha256' => (string) $asset->sha256];
+            if ($asset === null) {
+                continue;
             }
+            $candidate = [
+                'storage_key' => (string) $asset->storage_key,
+                'sha256' => (string) $asset->sha256,
+            ];
+            if ($identity !== null && $identity !== $candidate) {
+                throw new RuntimeException("Conflicting original identity for media asset {$assetId}.");
+            }
+            $identity = $candidate;
+        }
+        if ($identity !== null) {
+            return $identity;
         }
         $row = DB::table('publication_version_rows')
             ->where('table_name', 'media_assets')
