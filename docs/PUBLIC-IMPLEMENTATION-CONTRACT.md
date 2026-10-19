@@ -117,6 +117,18 @@ Title/visible Text, Position/Lettering, Alignment/Responsive alignment,
 Color/Size and Responsive size/Minimum size. **Menu** places Menu to page and
 Divider color in one row; its background selector reads **Menu background**.
 **Page** owns Content width, Content padding and **Page background**.
+The heading of Live Preview occupies its own Stage heading row; below it,
+the `x-admin.stage-tool-row` shared primitive places all controls flush
+right with the same underlining and full-control-height separator strokes as
+the Appearance tabs and the inline unit fields. Device icons (Desktop/Phone),
+the existing special Zoom Out/percentage/Zoom In group, Pan and Open preview
+retain their original behavior, disabled/selected states, tooltips and
+accessible labels. The redundant device-dimensions text is removed from
+the toolbar, not from the preview's internal device width/height dataset.
+The old General-specific icon and separator styling has been deleted;
+`primitives.css` and `stage.css` own the common look. Preview content
+begins after the same toolbar-to-content spacing as the Appearance pane.
+
 No duplicate forms, special responsive tabs, or independent CSS buttons are
 introduced. All actual Appearance changes still use the existing autosave
 methods and explicit `general-appearance-updated` iframe refresh event.

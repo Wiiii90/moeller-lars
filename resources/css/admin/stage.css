@@ -353,6 +353,50 @@
 
 /* Optional Stage-switcher tools share the row and existing .admin-action
  * grammar; other Stage switchers retain their unchanged direct tab children. */
+/* Shared stage-control rail: the same border, separator and icon axis
+ * whether controls follow text tabs or are exclusively icon actions. */
+.admin-stage-tool-row {
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: calc(var(--admin-control-height) + .35rem);
+    padding: 0 0 .35rem;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .25rem;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-stage-tool-group {
+    display: flex;
+    flex: 0 0 auto;
+    min-width: 0;
+    gap: .2rem;
+    align-items: center;
+}
+
+.admin-stage-tool-icon {
+    box-sizing: border-box;
+    display: grid;
+    width: var(--admin-header-control-size);
+    height: var(--admin-header-control-size);
+    min-width: var(--admin-header-control-size);
+    min-height: var(--admin-header-control-size);
+    flex: 0 0 var(--admin-header-control-size);
+    padding: 0;
+    place-items: center;
+}
+
+.admin-stage-tool-icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.admin-stage-tabs--with-tools {
+    min-height: calc(var(--admin-control-height) + .35rem);
+}
+
 .admin-stage-tabs--with-tools {
     grid-template-columns: repeat(var(--admin-stage-tabs-columns), minmax(0, 1fr)) 1px var(--admin-control-height);
     align-items: center;

@@ -134,8 +134,8 @@
     grid-column: 2;
     grid-row: 1;
     height: 100%;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: .25rem;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 0;
     padding-left: var(--admin-stage-pane-space);
     overflow: hidden;
 }
@@ -403,82 +403,12 @@
     }
 }
 
-/* Preview toolbar */
-.general-live-preview__toolbar {
-    display: flex;
-    min-width: 0;
-    min-height: var(--admin-stage-header-height);
-    gap: .65rem;
-    align-items: center;
-    justify-content: space-between;
-}
-
+/* Preview header shares the exact heading and tool-row grammar with the
+ * Appearance side. Icon geometry and separator strokes live in stage.css
+ * and primitives.css, while the zoom percentage retains its specialised
+ * shared zoom-value control in general-interactions.css. */
 .general-live-preview__title {
-    flex: 0 0 auto;
-}
-
-.general-live-preview__toolbar-meta {
-    display: flex;
     min-width: 0;
-    gap: .2rem;
-    align-items: center;
-    margin-left: auto;
-}
-
-.general-live-preview__preset {
-    min-width: 0;
-    margin-right: .3rem;
-    overflow: hidden;
-    color: var(--admin-faint);
-    font-size: .62rem;
-    font-variant-numeric: tabular-nums;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.general-live-preview__modes {
-    display: flex;
-    flex: 0 0 auto;
-    gap: .2rem;
-    align-items: center;
-}
-
-.general-live-preview__tool-divider {
-    margin: 0 .2rem;
-}
-
-.general-live-preview__mode {
-    display: grid;
-    width: 2rem;
-    height: 1.75rem;
-    padding: 0;
-    place-items: center;
-    border: 1px solid transparent;
-    border-radius: .2rem;
-    background: transparent;
-    color: var(--admin-muted);
-    line-height: 1;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.general-live-preview__mode svg {
-    width: 1rem;
-    height: 1rem;
-}
-
-.general-live-preview__mode:hover,
-.general-live-preview__mode:focus-visible,
-.general-live-preview__mode.is-active {
-    border-color: var(--admin-line-strong);
-    background: var(--admin-subtle);
-    color: var(--admin-text);
-    outline: none;
-}
-
-.general-live-preview__mode:disabled {
-    opacity: .34;
-    cursor: default;
 }
 
 /* Preview frame */
@@ -487,7 +417,8 @@
     display: grid;
     min-width: 0;
     min-height: 0;
-    padding: .35rem 0;
+    /* Same toolbar-to-content rhythm as the adjacent Appearance form. */
+    padding: calc(var(--admin-section-gap) + .5rem) 0 .35rem;
     place-items: center;
     overflow: hidden;
     background: transparent;
