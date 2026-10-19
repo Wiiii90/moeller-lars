@@ -351,17 +351,15 @@
     min-width: 0;
 }
 
-/* Optional Stage-switcher tools share the row and existing .admin-action
- * grammar; other Stage switchers retain their unchanged direct tab children. */
-/* Shared stage-control rail: the same border, separator and icon axis
- * whether controls follow text tabs or are exclusively icon actions. */
+/* Stage tool rows and optional tab tools share the same separator baseline
+ * and .admin-action grammar; ordinary Dashboard/Storage tabs are unchanged. */
 .admin-stage-tool-row {
     display: flex;
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
     min-height: calc(var(--admin-control-height) + .35rem);
-    padding: 0 0 .35rem;
+    padding: 0;
     align-items: center;
     justify-content: flex-end;
     gap: .25rem;
@@ -395,9 +393,7 @@
 
 .admin-stage-tabs--with-tools {
     min-height: calc(var(--admin-control-height) + .35rem);
-}
-
-.admin-stage-tabs--with-tools {
+    padding-bottom: 0;
     grid-template-columns: repeat(var(--admin-stage-tabs-columns), minmax(0, 1fr)) 1px var(--admin-control-height);
     align-items: center;
 }

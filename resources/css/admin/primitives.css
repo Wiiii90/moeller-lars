@@ -193,15 +193,14 @@
     justify-content: flex-start;
 }
 
-/* Reusable toolbar separator, shared by the Live Preview tools
- * and optional tools in the canonical Stage switcher. */
-/* Exactly the same full-height divider used by inline unit/suffix controls.
- * Shared by Stage tabs and all Stage tool rows, not one per workspace. */
+/* Shared full-height separator for Stage tabs and tool rows. The parent
+ * owns the baseline; the separator stretches to that bottom border. */
 .admin-control-separator {
     display: block;
     width: 1px;
-    height: var(--admin-control-height);
+    height: auto;
     flex: 0 0 1px;
+    align-self: stretch;
     background: var(--admin-line);
 }
 
