@@ -1850,18 +1850,15 @@ html:has(.artwork-viewer[open]) {
     pointer-events: none;
 }
 
-/* Both contours share the actual bottom edge of the last visible
- * artwork, entry, or page component. The one public-paper frame owner
- * supplies that position, and the CSS token returns slightly before it.
- * A content-inset fallback applies before initialization only. */
+/* One static pair of contours: no observed layout measurements, no
+ * frame-by-frame inline CSS writes and no self-triggering resize loops. */
 .public-paper-decoration::before,
 .public-paper-decoration::after {
     position: absolute;
     top: 0;
     bottom: auto;
     height: max(0px, calc(
-        var(--public-paper-content-end, calc(100% - var(--public-content-block-inset)))
-        - var(--public-paper-return-inset)
+        100% - var(--public-content-block-inset) - var(--public-paper-return-inset)
     ));
     max-height: 100%;
     box-sizing: border-box;

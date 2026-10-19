@@ -12,7 +12,6 @@ import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
 import { initializePublicNavigation } from './public-navigation.js';
 import { initializePublicHeader } from './public-header.js';
-import { initializePublicPaperFrame } from './public-paper-frame.js';
 import { applyPublicLayoutFromMeta, initializePublicSpaLinks } from './public-spa.js';
 import { revealLinkedLegalSection } from './public-legal.js';
 
@@ -39,7 +38,6 @@ function initializePage() {
     disposers.push(initializeJournalPresentation());
     disposers.push(initializeMatomoTracking(root));
     disposers.push(initializePublicHeader());
-    disposers.push(initializePublicPaperFrame());
     disposers.push(initializePublicNavigation());
     revealLinkedLegalSection();
 }
