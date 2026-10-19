@@ -14,7 +14,7 @@ final class MediaDerivativeGenerator
     private const MAX_DERIVATIVE_BYTES = 8 * 1024 * 1024;
 
     /** @return array{bytes:string,width:int,height:int} */
-    public function largeImageThumbnail(string $originalPath): array
+    public function imageThumbnail(string $originalPath): array
     {
         return $this->generate(
             ['vipsthumbnail', '--size', '960x960', '--output', '{output}[Q=85]', $originalPath],

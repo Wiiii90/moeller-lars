@@ -14,8 +14,8 @@ use Throwable;
 
 class MediaIngestService
 {
-    // An original is never fully decoded into PHP memory above the GD limit.
-    // libvips handles large-image thumbnails in a bounded external process.
+    // All newly ingested images use bounded libvips. GD is retained only in
+    // MediaVariantRegenerationService for historical immutable thumbnails.
     public const MAX_PIXELS = 120_000_000;
     public const LEGACY_MAX_PIXELS = 16_000_000;
     public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
@@ -144,9 +144,7 @@ class MediaIngestService
         $variantKind = $isVideo ? self::VIDEO_POSTER_KIND : self::THUMBNAIL_KIND;
         $transformProfile = $isVideo
             ? self::VIDEO_POSTER_PROFILE
-            : (($prepared['width'] ?? 0) * ($prepared['height'] ?? 0) > self::LEGACY_MAX_PIXELS
-                ? self::LARGE_IMAGE_TRANSFORM_PROFILE
-                : self::TRANSFORM_PROFILE);
+            : self::LARGE_IMAGE_TRANSFORM_PROFILE;
         $thumbnailKey = $prepared['thumbnail_bytes'] === null
             ? null
             : 'variants/'.$uuid.'-'.$variantKind.'.webp';
@@ -301,27 +299,10 @@ class MediaIngestService
             throw $this->validationFailure('The uploaded image dimensions are not allowed.');
         }
 
-        if ($width * $height > self::LEGACY_MAX_PIXELS) {
-            $preview = app(MediaDerivativeGenerator::class)->largeImageThumbnail($path);
-            $thumbnailBytes = $preview['bytes'];
-            $thumbnailWidth = $preview['width'];
-            $thumbnailHeight = $preview['height'];
-        } else {
-            // Keep public-v1 bytes bit-for-bit compatible with existing
-            // immutable hashes and the legacy regeneration path.
-            $originalImage = $this->decode($path, $mime);
-            $thumbnailImage = null;
-
-            try {
-                $thumbnailImage = $this->makeThumbnail($originalImage, $width, $height);
-                $thumbnailWidth = imagesx($thumbnailImage);
-                $thumbnailHeight = imagesy($thumbnailImage);
-                $thumbnailBytes = $this->encode($thumbnailImage, 'image/webp', 85);
-            } finally {
-                $this->destroyImage($thumbnailImage);
-                $this->destroyImage($originalImage);
-            }
-        }
+        $preview = app(MediaDerivativeGenerator::class)->imageThumbnail($path);
+        $thumbnailBytes = $preview['bytes'];
+        $thumbnailWidth = $preview['width'];
+        $thumbnailHeight = $preview['height'];
 
         return [
             'mime' => $mime,
@@ -623,87 +604,9 @@ class MediaIngestService
         return intdiv($coefficient * $bitRate, $sampleRate) + $padding;
     }
 
-    private function decode(string $path, string $mime): \GdImage
-    {
-        $image = match ($mime) {
-            'image/jpeg' => @imagecreatefromjpeg($path),
-            'image/png' => @imagecreatefrompng($path),
-            'image/webp' => @imagecreatefromwebp($path),
-            default => false,
-        };
-
-        if (! $image instanceof \GdImage) {
-            throw $this->validationFailure('The uploaded image could not be decoded.');
-        }
-
-        return $image;
-    }
-
-    private function encode(\GdImage $image, string $mime, int $quality): string
-    {
-        $this->configureAlpha($image, $mime);
-        ob_start();
-
-        try {
-            $encoded = match ($mime) {
-                'image/jpeg' => imagejpeg($image, null, $quality),
-                'image/png' => imagepng($image, null, $quality),
-                'image/webp' => imagewebp($image, null, $quality),
-            };
-            $bytes = ob_get_clean();
-        } catch (Throwable $exception) {
-            ob_end_clean();
-            throw $exception;
-        }
-
-        if ($encoded !== true || ! is_string($bytes) || $bytes === '') {
-            throw $this->validationFailure('The uploaded image could not be encoded.');
-        }
-
-        return $bytes;
-    }
-
-    private function makeThumbnail(\GdImage $image, int $width, int $height): \GdImage
-    {
-        $scale = min(1, self::THUMBNAIL_MAX_EDGE / max($width, $height));
-        $thumbnailWidth = max(1, (int) round($width * $scale));
-        $thumbnailHeight = max(1, (int) round($height * $scale));
-        $thumbnail = imagecreatetruecolor($thumbnailWidth, $thumbnailHeight);
-        if (! $thumbnail instanceof \GdImage) {
-            throw $this->validationFailure('The thumbnail could not be created.');
-        }
-
-        $this->configureAlpha($thumbnail, 'image/webp');
-        if (! imagecopyresampled($thumbnail, $image, 0, 0, 0, 0, $thumbnailWidth, $thumbnailHeight, $width, $height)) {
-            imagedestroy($thumbnail);
-            throw $this->validationFailure('The thumbnail could not be created.');
-        }
-
-        return $thumbnail;
-    }
-
-    private function configureAlpha(\GdImage $image, string $mime): void
-    {
-        if ($mime === 'image/jpeg') {
-            return;
-        }
-
-        imagealphablending($image, false);
-        imagesavealpha($image, true);
-    }
-
     private function basename(string $filename): string
     {
         return basename(str_replace('\\', '/', $filename));
-    }
-
-    private function destroyImage(mixed &$image): void
-    {
-        if ($image instanceof \GdImage) {
-            imagedestroy($image);
-        }
-
-        $image = null;
     }
 
     private function validationFailure(string $message, ?Throwable $previous = null): ValidationException

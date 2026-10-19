@@ -188,7 +188,7 @@ final class MediaVariantRegenerationService
                 || (int) $dimensions[0] * (int) $dimensions[1] > MediaIngestService::MAX_PIXELS) {
                 return null;
             }
-            $preview = app(MediaDerivativeGenerator::class)->largeImageThumbnail($path);
+            $preview = app(MediaDerivativeGenerator::class)->imageThumbnail($path);
             $bytes = $preview['bytes'];
             $thumbnailWidth = $preview['width'];
             $thumbnailHeight = $preview['height'];

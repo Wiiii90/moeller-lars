@@ -108,7 +108,7 @@ it('ingests canonical media with durable checksums and a rebuildable public thum
         ->and($asset->mime_type)->toBe('image/jpeg')
         ->and($asset->byte_size)->toBe(strlen($originalBytes))
         ->and($asset->sha256)->toBe(hash('sha256', $originalBytes))
-        ->and($variant->transform_profile)->toBe('public-v1')
+        ->and($variant->transform_profile)->toBe(MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
         ->and($variant->state)->toBe('available')
         ->and($variant->byte_size)->toBe(strlen($thumbnailBytes))
         ->and($variant->sha256)->toBe(hash('sha256', $thumbnailBytes));
