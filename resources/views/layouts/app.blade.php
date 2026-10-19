@@ -50,6 +50,7 @@
             data-public-layout-art="{{ $publicLayoutCss['art'] }}"
             data-public-layout-padding="{{ $publicLayoutCss['padding'] }}"
             data-public-layout-title-color="{{ $publicHeaderColor ?? '' }}"
+            data-public-layout-title-gradient="{{ $publicHeaderGradientCss ?? '' }}"
             data-public-layout-title-size="{{ $publicHeaderSize }}"
             data-public-layout-title-min-size="{{ $publicHeaderMinSize }}"
             data-public-layout-divider-color="{{ $publicHeaderDividerColor ?? '' }}"
@@ -60,7 +61,7 @@
             data-folio-menu-left-bottom="{{ $folioPlacement['menuLeftBottom'] }}"
             data-folio-menu-right-bottom="{{ $folioPlacement['menuRightBottom'] }}">
         @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
-            <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif @if ($publicHeaderColor !== null) --public-title-color: {{ $publicHeaderColor }};@endif @if ($publicHeaderDividerColor !== null) --public-separator-color: {{ $publicHeaderDividerColor }};@endif --public-title-size: {{ $publicHeaderSize }}; --public-title-min-size: {{ $publicHeaderMinSize }}; --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
+            <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif @if ($publicHeaderColor !== null) --public-title-color: {{ $publicHeaderColor }};@endif @if ($publicHeaderGradientCss !== null) --public-title-paint: {{ $publicHeaderGradientCss }};@endif @if ($publicHeaderDividerColor !== null) --public-separator-color: {{ $publicHeaderDividerColor }};@endif --public-title-size: {{ $publicHeaderSize }}; --public-title-min-size: {{ $publicHeaderMinSize }}; --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
         @endif
         {{-- Dynamic component dimensions live in nonce-authorized CSS, never
              forbidden inline style attributes. --}}
@@ -85,7 +86,7 @@
         @endphp
         <div class="public-paper-frame @if ($paperCompatible) public-paper-frame--compatible @endif @if ($paperConnected) public-paper-frame--connected @endif">
             <div class="public-paper-decoration" aria-hidden="true"></div>
-        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $publicHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
+        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $publicHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
             @if ($publicHeaderVisible && ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation')))
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
             @endif

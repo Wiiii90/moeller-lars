@@ -20,7 +20,10 @@ final class PublicAppearance
 
     public const DEFAULT_PAGE_COLOR = '#777777';
     public const DEFAULT_SURFACE_COLOR = '#FFFFFF';
-    public const SURFACE_PREFIXES = ['background', 'menu_background', 'page_background'];
+    public const SURFACE_PREFIXES = ['background', 'menu_background', 'page_background', 'header_name'];
+
+    // Title is a text paint rather than a panel background.
+    public const DEFAULT_TITLE_GRADIENT_COLOR = '#E5E9E6';
 
     public const DEFAULT_GRADIENT_ANGLE = 180;
 
@@ -265,6 +268,13 @@ final class PublicAppearance
         return self::surfaceCss($settings, 'background');
     }
 
+    public static function titleGradientCss(PublicContentSetting $settings): ?string
+    {
+        $mode = self::normalizeMode($settings->getAttribute('header_name_mode'), 'header_name_mode');
+
+        return self::isGradient($mode) ? self::surfaceCss($settings, 'header_name') : null;
+    }
+
     /**
      * The same validated paint contract owns all global public surfaces.
      * Null preserves the existing CSS defaults. Future page overrides can
@@ -283,7 +293,12 @@ final class PublicAppearance
             return self::normalizeStops($current, $surface.'_gradient_stops');
         }
 
-        $fallback = $surface === 'background' ? self::DEFAULT_PAGE_COLOR : self::DEFAULT_SURFACE_COLOR;
+        $fallback = match ($surface) {
+            'background' => self::DEFAULT_PAGE_COLOR,
+            'header_name' => self::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color')
+                ?? self::DEFAULT_TITLE_GRADIENT_COLOR,
+            default => self::DEFAULT_SURFACE_COLOR,
+        };
         return [
             ['color' => self::normalizeColor($settings->getAttribute($surface.'_gradient_start'), $surface.'_gradient_start') ?? $fallback, 'position' => 0],
             ['color' => self::normalizeColor($settings->getAttribute($surface.'_gradient_end'), $surface.'_gradient_end') ?? $fallback, 'position' => 100],
@@ -378,7 +393,12 @@ final class PublicAppearance
             return null;
         }
 
-        $fallback = $surface === 'background' ? self::DEFAULT_PAGE_COLOR : self::DEFAULT_SURFACE_COLOR;
+        $fallback = match ($surface) {
+            'background' => self::DEFAULT_PAGE_COLOR,
+            'header_name' => self::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color')
+                ?? self::DEFAULT_TITLE_GRADIENT_COLOR,
+            default => self::DEFAULT_SURFACE_COLOR,
+        };
         if ($mode === self::MODE_TRANSPARENT) {
             return 'transparent';
         }

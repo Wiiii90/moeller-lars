@@ -530,3 +530,76 @@ it('uses registered schema action handlers for adding and removing gradient colo
         ->toContain('schemaComponent')
         ->not->toContain('x-on:click="$wire.mountAction');
 });
+
+it('preserves the inherited title color until the artist explicitly sets a title paint', function (): void {
+    $settings = PublicContentSetting::general();
+    $originalColor = $settings->getAttribute('header_name_color');
+    expect($settings->getAttribute('header_name_mode'))->toBeNull()
+        ->and(PublicAppearance::titleGradientCss($settings))->toBeNull();
+
+    Livewire::test(General::class)
+        ->assertSet('data.header_name_mode', 'solid')
+        ->assertSet('data.header_name_solid_colors', [
+            ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR],
+        ])
+        ->assertSet('data.header_name_gradient_stops', [
+            ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 0],
+            ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 100],
+        ]);
+    expect(PublicContentSetting::general()->getAttribute('header_name_mode'))->toBeNull()
+        ->and(PublicContentSetting::general()->getAttribute('header_name_color'))->toBe($originalColor);
+
+    $public = (string) $this->get(route('home'))->assertOk()->getContent();
+    expect($public)->not->toContain('site-header--gradient-title')
+        ->not->toContain('--public-title-paint:');
+});
+
+it('publishes a multistop title gradient through the existing Working and Committed pipeline', function (): void {
+    $actor = User::query()->firstOrFail();
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_mode' => 'conic',
+        'header_name_gradient_angle' => 45,
+        'header_name_gradient_center_x' => 35,
+        'header_name_gradient_center_y' => 65,
+        'header_name_gradient_stops' => [
+            ['color' => '#112233', 'position' => 0],
+            ['color' => '#445566', 'position' => 60],
+            ['color' => '#778899', 'position' => 100],
+        ],
+    ]);
+
+    $css = 'conic-gradient(from 45deg at 35% 65%, #112233 0%, #445566 60%, #778899 100%)';
+    expect(PublicAppearance::titleGradientCss(PublicContentSetting::general()))->toBe($css);
+    expect((string) $this->get(route('home'))->assertOk()->getContent())
+        ->not->toContain('--public-title-paint: '.$css);
+
+    $preview = $this->get('/preview')->assertOk();
+    $previewHtml = (string) $preview->getContent();
+    expect($previewHtml)->toContain('--public-title-paint: '.$css)
+        ->toContain('site-header--gradient-title');
+    generalAssertPublicStyleUsesNonce($previewHtml, generalPublicStyleNonce($preview), '--public-title-paint: '.$css);
+
+    app(PublicationService::class)->commit($actor, 'Publish artist title gradient');
+    $public = $this->get(route('home'))->assertOk();
+    expect((string) $public->getContent())->toContain('--public-title-paint: '.$css)
+        ->toContain('site-header--gradient-title');
+    generalAssertPublicStyleUsesNonce((string) $public->getContent(), generalPublicStyleNonce($public), '--public-title-paint: '.$css);
+});
+
+it('reuses the same title color-table persistence as Background, Menu and Page', function (): void {
+    Livewire::test(General::class)
+        ->set('data.header_name_mode', 'gradient')
+        ->set('data.header_name_gradient_stops', [
+            ['color' => '#AABBCC', 'position' => 0],
+            ['color' => '#DDEEFF', 'position' => 50],
+            ['color' => '#001122', 'position' => 100],
+        ])
+        ->call('persistAppearanceTable', 'header_name', false)
+        ->assertHasNoErrors();
+
+    expect(PublicAppearance::stops(PublicContentSetting::general(), 'header_name'))->toBe([
+        ['color' => '#AABBCC', 'position' => 0],
+        ['color' => '#DDEEFF', 'position' => 50],
+        ['color' => '#001122', 'position' => 100],
+    ]);
+});

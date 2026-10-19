@@ -676,9 +676,11 @@ and selected, and are shown with the canonical full six-column row.
 
 ## Global public appearance surfaces
 
-General is the authoritative global editor for three distinct page paint
-surfaces: **Background** (outer viewport and header), **Menu** (both navigation
-levels) and **Page** (content backing). Each uses the same validated paint contract: Solid, Linear, Radial and
+General is the authoritative global editor for three public background
+surfaces — **Background** (outer viewport), **Menu** (both navigation
+levels) and **Page** (content backing) — plus a fourth, independent
+**Title** text paint. All four share PublicAppearance's validated
+Solid/Linear/Radial/Conic and optional repeating-stop configuration. Each uses the same validated paint contract: Solid, Linear, Radial and
 Conic gradients, each optionally repeating, with 2–12 stops (color and
 position). Linear uses the shared numeric/rotary popover control; Conic has a start angle and
 center; Radial has a center and circle/ellipse shape. Repeating uses an
@@ -688,7 +690,7 @@ The existing Page width and Content padding remain separate layout parameters.
 Frame style is a separate validated presentation option; gradients remain
 independent of that exterior edge treatment.
 
-The `PublicAppearance` domain validates and projects all three values.
+The `PublicAppearance` domain validates and projects all four paint definitions.
 `PublicSiteContext` uses the existing committed-versus-preview content read
 context; the public layout injects only normalized CSS custom properties into
 the nonce-protected style block. Absent Menu/Page settings keep the original
@@ -720,3 +722,16 @@ as Social Media; no parallel table chrome or duplicate color picker. Numeric
 positions determine stop order, including coincident stops for hard edges.
 Opening General never writes the legacy two-color values as JSON.
 are never materialized into JSON merely by opening the editor.
+
+## Public artist title gradient
+
+Title is a **text paint**, not another panel background. Its previously
+supported `header_name_color` remains authoritative for Solid. Null mode
+continues to use the existing CSS `--public-title-default` inherited color
+in each title-placement context. Only an explicitly selected gradient emits
+`--public-title-paint` into the same nonce-protected public layout style and
+activates `site-header--gradient-title`; the artist-name anchor clips that
+validated CSS gradient to glyphs. No gradient-specific layout, polling, or
+separate editor/normalizer is permitted. Every public title placement uses the
+same shared rule, and forced-colors accessibility falls back to plain text.
+The new title settings exist in both Working and Committed schemas.

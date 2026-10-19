@@ -477,6 +477,24 @@ body {
     white-space: nowrap;
 }
 
+/* The artist-name text uses the same validated gradient configuration as
+ * global backgrounds. Only an explicit gradient enables glyph clipping. */
+.site-header--gradient-title .site-title {
+    background-image: var(--public-title-paint);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+@media (forced-colors: active) {
+    .site-header--gradient-title .site-title {
+        background-image: none;
+        color: CanvasText;
+        -webkit-text-fill-color: currentColor;
+    }
+}
+
 .site-header--title-fluid h1 {
     font-size: clamp(min(var(--public-title-min-size), var(--public-title-size)), 5.4vw, var(--public-title-size));
 }

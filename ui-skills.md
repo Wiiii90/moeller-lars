@@ -127,7 +127,7 @@ A screenshot-specific span, page-local Selection offset, page-local standard-too
 
 ### General Appearance: compact controls, dialogs for additions
 
-The global Background/Menu/Page controls retain a concise two-column
+The global Background/Menu/Page and Title controls retain a concise two-column
 line-based grammar with the shared ColorPicker and numeric field. Do not
 surface a Filament Repeater's card chrome, default rounded Add button,
 red per-row trash icons or explanatory helper paragraphs inside the Stage.
