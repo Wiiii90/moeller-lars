@@ -6,6 +6,7 @@ use App\Database\PublicationPostgresGrammar;
 use App\Domain\Admin\AdminMutationSnapshotBuffer;
 use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Content\PublicSiteContext;
+use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Publication\PublicationReadContext;
 use App\Models\User;
 use App\Support\AdminPasswordPolicy;
@@ -51,6 +52,16 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Livewire's temporary upload validator defaults to 12 MiB. Keep the
+        // ingress size tied to the one canonical MediaTypePolicy; individual
+        // consumers and MediaIngestService still enforce their own type limits.
+        config()->set(
+            'livewire.temporary_file_upload.rules',
+            'file|max:'.(int) ceil(MediaTypePolicy::maxUploadBytes() / 1024),
+        );
+        // The transfer timeout is not a client polling timer.
+        config()->set('livewire.temporary_file_upload.max_upload_time', 10);
+
         // Livewire's data-navigate-track detects changes in ?id=, not in the
         // Vite hashed file basename. Give the EXISTING Laravel/Vite tags one
         // manifest revision shared by CSS and JS so a built-image change

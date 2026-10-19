@@ -19,6 +19,12 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/GalleryFixtures.php';
 
+it('keeps Livewire temporary upload admission aligned to the canonical media policy', function (): void {
+    expect(config('livewire.temporary_file_upload.rules'))
+        ->toBe('file|max:'.(int) ceil(\App\Domain\Media\MediaTypePolicy::maxUploadBytes() / 1024))
+        ->and(config('livewire.temporary_file_upload.max_upload_time'))->toBe(10);
+});
+
 it('ingests a real image through Add artwork and publishes its primary ALT description', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = galleryFixtureCategory();

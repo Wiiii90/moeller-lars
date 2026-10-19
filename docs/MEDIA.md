@@ -29,9 +29,11 @@ Upload aliases are normalized through the ingest policy; persisted canonical MIM
 
 Format/safety ceilings are configured in bytes:
 
-- `MEDIA_IMAGE_MAX_BYTES` — default 20 MiB
-- `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB
+- `MEDIA_IMAGE_MAX_BYTES` — default 64 MiB
+- `MEDIA_VIDEO_MAX_BYTES` — default 150 MiB
 - `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB
+
+Livewire temporary upload validation uses `MediaTypePolicy::maxUploadBytes()` as a shared ingress ceiling, while ingest enforces the distinct media-type limits. The production Docker PHP configuration allows up to 160 MiB per multipart file (176 MiB POST body) and a ten-minute Livewire upload window; a reverse proxy or older deployed container can still impose lower limits. Image pixel count remains separately capped at 16 megapixels in `MediaIngestService` because its current GD thumbnail decoder runs under a 128 MiB PHP memory ceiling. Increasing this pixel limit requires an explicitly reviewed, memory-bounded thumbnail decoder rather than only changing its constant.
 
 `MEDIA_STORAGE_QUOTA_BYTES` is the operator/platform-injected **whole-site** admission ceiling. Quota usage includes canonical media originals, generated variants and logical persistent application/database data. Logical database usage includes live editorial data, append-only Activity, bounded Undo receipts, retained Publication restore data/shared history payloads and other persistent application rows. PostgreSQL's physical database-file footprint is operational overhead and is not the quota value. Cached display values are not authoritative for upload admission.
 
