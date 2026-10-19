@@ -371,7 +371,7 @@ it('normalizes and validates variable color stops without permitting arbitrary C
             ['color' => '#FFFFFF', 'position' => 100],
         ],
         [
-            ['color' => '#111111', 'position' => 25],
+            ['color' => '#111111', 'position' => -1],
             ['color' => '#FFFFFF', 'position' => 100],
         ],
     ] as $invalid) {
