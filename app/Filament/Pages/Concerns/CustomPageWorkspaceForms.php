@@ -40,13 +40,13 @@ trait CustomPageWorkspaceForms
             ->default('published')
             ->required();
 
-        // Publication state is set at creation or by the table action, not
-        // in an Edit dialog. Edit type changes use the canonical conversion
+        // Type and Status share the first row in both Create and Edit.
+        // Edit type changes use the canonical conversion Action, never a
         // second implicit mutation in the field state callback.
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $onImageChange, $onContactChange),
+                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange, $onContactChange),
             ])
             ->key('dynamicComponentFields')
             ->columnSpanFull();
@@ -56,7 +56,7 @@ trait CustomPageWorkspaceForms
                 ->columns(['md' => 2])
                 ->schema([
                     $typeField,
-                    ...($onTypeChange === null ? [$statusField] : []),
+                    $statusField,
                     ...($onTypeChange !== null && in_array($editingType, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
                         ? [$this->componentParentField($editingType)]
                         : []),
@@ -66,7 +66,7 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return list<mixed> */
-    private function componentTypeFields(string $type, ?Closure $onImageChange = null, ?Closure $onContactChange = null): array
+    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null, ?Closure $onContactChange = null): array
     {
         return match ($type) {
             'image' => [
@@ -88,10 +88,12 @@ trait CustomPageWorkspaceForms
                     ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
             ],
-            'text' => [
-                TextInput::make('title')->label('Heading')->maxLength(160),
-                ...AdminRichText::schema('body', 'Rich Text', 20000),
-            ],
+            'text' => $isNew
+                ? AdminRichText::schema('body', 'Rich Text', 20000)
+                : [
+                    TextInput::make('title')->label('Heading')->maxLength(160),
+                    ...AdminRichText::schema('body', 'Rich Text', 20000),
+                ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
                 MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)

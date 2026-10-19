@@ -343,11 +343,19 @@ trait CustomPageWorkspaceComponentActions
                         },
                     )->disabled(! $canMove);
                 }
+                $published = \App\Models\CustomPageSetting::componentPublished($blocks[$child]);
+                $actions[] = AdminDialog::headerAction(
+                    'childPublish', $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+                    function () use ($image, $child, $type, $published, $args, $actionName): void {
+                        $this->setImageChildPublished($image, $child, $type, ! $published);
+                        $this->replaceMountedAction($actionName, $args);
+                    },
+                );
                 $actions[] = AdminDialog::headerAction('childDelete', AdminRowAction::Delete,
                     fn () => $this->replaceMountedAction('deleteImageChild', $args));
                 return $actions;
             })
-            ->action(function (array $data, array $arguments) use ($actionName, $committed): void {
+            ->action(function (array $data, array $arguments): void {
                 [$image, $child, $type] = $this->imageChildTarget($arguments);
                 if (($data['type'] ?? null) !== $type) return;
                 try {
@@ -376,27 +384,6 @@ trait CustomPageWorkspaceComponentActions
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 if ($changed) {
-                    if (! $committed) {
-                        if ($newParent === null) {
-                            // Unnest inserts the component directly after its Image.
-                            $this->replaceMountedAction('editComponent', [
-                                'componentIndex' => $image + 1, 'componentType' => $type,
-                            ]);
-                        } elseif ($newParent !== $image) {
-                            // Reparent appends to the destination Image's children.
-                            $destination = $this->settings()->components()[$newParent]['children'];
-                            $this->replaceMountedAction($actionName, [
-                                'imageIndex' => $newParent,
-                                'childIndex' => count($destination) - 1,
-                                'componentType' => $type,
-                            ]);
-                        } else {
-                            // Edits within one parent keep the same mounted target;
-                            // subsequent changes must compare to the new persisted state.
-                            $this->editingComponentOriginal = $this->imageChildAt($image, $child, $type);
-                        }
-                        $this->forceRender();
-                    }
                     app(AdminNotifier::class)->notification(title: 'Component saved', status: 'success');
                 }
             });
@@ -678,6 +665,7 @@ trait CustomPageWorkspaceComponentActions
     private function componentEditHeaderActions(array $arguments, string $actionName): array
     {
         [$index, $type] = $this->actionComponentTarget($arguments);
+        $block = $this->componentAt($index, $type);
         $count = count($this->settings()->components());
         $target = ['componentIndex' => $index, 'componentType' => $type];
         $actions = [];
@@ -691,6 +679,15 @@ trait CustomPageWorkspaceComponentActions
             })->disabled(! $canMove);
         }
 
+        $published = \App\Models\CustomPageSetting::componentPublished($block);
+        $actions[] = AdminDialog::headerAction(
+            'dialogTogglePublication',
+            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+            function () use ($index, $type, $published, $target, $actionName): void {
+                $this->setComponentPublished($index, $type, ! $published);
+                $this->replaceMountedAction($actionName, $target);
+            },
+        );
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($target): void {
             $this->replaceMountedAction('deleteComponent', $target);
         });

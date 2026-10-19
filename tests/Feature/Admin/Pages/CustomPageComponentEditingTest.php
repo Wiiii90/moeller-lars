@@ -43,7 +43,7 @@ it('saves a nested component and returns it to page level when Parent is cleared
     $asset = customPageWorkspaceImage('child-parent');
     $settings->update(['blocks' => [[
         'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
-        'children' => [['type' => 'text', 'published' => false, 'title' => 'Original', 'body' => 'Original body']],
+        'children' => [['type' => 'text', 'title' => 'Original', 'body' => 'Original body']],
     ]]]);
     $audits = AuditEvent::query()->count();
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
@@ -54,7 +54,6 @@ it('saves a nested component and returns it to page level when Parent is cleared
     expect($blocks)->toHaveCount(2)
         ->and($blocks[0]['children'] ?? [])->toBeEmpty()
         ->and($blocks[1]['body'])->toBe('Edited body')
-        ->and($blocks[1]['published'])->toBeFalse()
         ->and(AuditEvent::query()->count())->toBe($audits + 2)
         ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
@@ -157,6 +156,7 @@ it('edits and reorders List entries only through the owning component dialog', f
         ->assertMountedActionModalSee('List entries')
         ->fillForm([
             'type' => 'list',
+            'publication_state' => 'published',
             'title' => 'CV',
             'items' => [
                 ['published' => true, 'title' => 'Third entry', 'context' => '2024'],
@@ -187,6 +187,7 @@ it('persists List entry details and publication through the component Edit dialo
         ->mountAction('editListComponent', ['componentIndex' => 0, 'componentType' => 'list'])
         ->fillForm([
             'type' => 'list',
+            'publication_state' => 'published',
             'title' => 'CV',
             'items' => [[
                 'published' => false, 'context' => 'Museum · 2026', 'title' => 'First entry updated',
@@ -232,7 +233,7 @@ it('persists consecutive component edits without closing the autosaving dialog',
     [$section, $settings] = customPageWorkspaceRecord('Edit component', 'edit-component');
     $settings->update(['blocks' => [[
         'type' => 'text',
-        'published' => false,
+        'published' => true,
         'title' => 'Original heading',
         'body' => 'Original content',
     ]]]);
@@ -240,6 +241,7 @@ it('persists consecutive component edits without closing the autosaving dialog',
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
         ->fillForm([
+            'publication_state' => 'unpublished',
             'title' => 'Revised heading',
             'body' => 'Revised content',
         ])
@@ -254,6 +256,7 @@ it('persists consecutive component edits without closing the autosaving dialog',
         ->and($first['body'])->toBe('Revised content');
 
     $editor->fillForm([
+        'publication_state' => 'unpublished',
         'title' => 'Revised heading',
         'body' => 'Later rich text',
     ])
@@ -262,20 +265,7 @@ it('persists consecutive component edits without closing the autosaving dialog',
         ->assertSet('mountedActions.0.name', 'editComponent')
         ->assertSee('Edit component');
 
-    expect($settings->fresh()->components()[0]['body'])->toBe('Later rich text')
-        ->and($settings->fresh()->components()[0]['published'])->toBeFalse();
-
-    $editor->call('unmountAction');
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->call('setComponentPublished', 0, 'text', true)
-        ->assertHasNoErrors();
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
-        ->fillForm(['body' => 'After publication'])
-        ->callMountedAction()
-        ->assertHasNoFormErrors();
-    expect($settings->fresh()->components()[0]['body'])->toBe('After publication')
-        ->and($settings->fresh()->components()[0]['published'])->toBeTrue();
+    expect($settings->fresh()->components()[0]['body'])->toBe('Later rich text');
 });
 
 
@@ -292,6 +282,7 @@ it('opens and saves the third Rich Text component from its absolute row target',
         ->assertMountedActionModalSee('Edit component')
         ->fillForm([
             'type' => 'text',
+            'publication_state' => 'published',
             'title' => 'Third heading',
             'body' => 'Updated third text',
         ])
@@ -328,6 +319,7 @@ it('edits the Contact heading and all Contact settings in the owning component w
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
         ->fillForm([
             'type' => 'contact',
+            'publication_state' => 'published',
             'title' => 'Get in touch',
             'contact_email_enabled' => false,
             'contact_social_enabled' => true,
@@ -439,6 +431,7 @@ it('retains disabled Contact settings for later re-enabling', function (): void 
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
         ->fillForm([
             'type' => 'contact',
+            'publication_state' => 'published',
             'title' => 'Reach us',
             'contact_email_enabled' => true,
             'contact_social_enabled' => false,
@@ -776,103 +769,4 @@ it('rejects an invalid image replacement at the mounted field without mutation o
     expect($settings->fresh()->components())->toBe($before)
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe(0);
-});
-
-it('keeps nested component Edit autosaving after successive changes without changing publication', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Nested autosave', 'nested-autosave');
-    $asset = customPageWorkspaceImage('nested-autosave');
-    $settings->update(['blocks' => [[
-        'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
-        'children' => [['type' => 'text', 'published' => false, 'title' => 'Child', 'body' => 'Original']],
-    ]]]);
-
-    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editImageChildInstant', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text'])
-        ->fillForm(['body' => 'First change'])
-        ->callMountedAction()
-        ->assertHasNoFormErrors()
-        ->assertSet('mountedActions.0.name', 'editImageChildInstant');
-
-    $editor->fillForm(['body' => 'Second change'])
-        ->callMountedAction()
-        ->assertHasNoFormErrors()
-        ->assertSet('mountedActions.0.name', 'editImageChildInstant');
-
-    $child = $settings->fresh()->components()[0]['children'][0];
-    expect($child['body'])->toBe('Second change')
-        ->and($child['published'])->toBeFalse();
-});
-
-it('retargets the mounted component editor when a nested component moves to page level', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Unnest editor', 'unnest-editor');
-    $asset = customPageWorkspaceImage('unnest-editor');
-    $settings->update(['blocks' => [[
-        'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
-        'children' => [['type' => 'text', 'published' => false, 'title' => 'Child', 'body' => 'Original']],
-    ]]]);
-
-    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editImageChildInstant', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text'])
-        ->fillForm(['parent_image_index' => null, 'body' => 'Moved to page'])
-        ->callMountedAction()
-        ->assertHasNoFormErrors()
-        ->assertSet('mountedActions.0.name', 'editComponent')
-        ->assertSet('mountedActions.0.arguments.componentIndex', 1);
-
-    $editor->fillForm(['body' => 'Edited at page level'])->callMountedAction()->assertHasNoFormErrors();
-    expect($settings->fresh()->components()[1]['body'])->toBe('Edited at page level')
-        ->and($settings->fresh()->components()[1]['published'])->toBeFalse();
-});
-
-it('retargets the mounted component editor when a nested component changes Image parents', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Transfer editor', 'transfer-editor');
-    $asset = customPageWorkspaceImage('transfer-editor');
-    $settings->update(['blocks' => [
-        [
-            'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
-            'children' => [['type' => 'text', 'published' => false, 'title' => 'Child', 'body' => 'Original']],
-        ],
-        ['type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true],
-    ]]);
-
-    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editImageChildInstant', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text'])
-        ->fillForm(['parent_image_index' => '1', 'body' => 'Moved to other Image'])
-        ->callMountedAction()
-        ->assertHasNoFormErrors()
-        ->assertSet('mountedActions.0.name', 'editImageChildInstant')
-        ->assertSet('mountedActions.0.arguments.imageIndex', 1)
-        ->assertSet('mountedActions.0.arguments.childIndex', 0);
-
-    $editor->fillForm(['body' => 'Edited under new Image'])->callMountedAction()->assertHasNoFormErrors();
-    $blocks = $settings->fresh()->components();
-    expect($blocks[0]['children'] ?? [])->toBeEmpty()
-        ->and($blocks[1]['children'][0]['body'])->toBe('Edited under new Image')
-        ->and($blocks[1]['children'][0]['published'])->toBeFalse();
-});
-
-it('offers the same Rich Text heading when creating and editing a component', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('New text heading', 'new-text-heading');
-
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('addComponent')
-        ->assertMountedActionModalSee('Heading')
-        ->fillForm([
-            'type' => 'text',
-            'publication_state' => 'unpublished',
-            'title' => 'Intro heading',
-            'body' => 'Intro copy',
-        ])
-        ->callMountedAction()
-        ->assertHasNoFormErrors();
-
-    $component = $settings->fresh()->components()[0];
-    expect($component['type'])->toBe('text')
-        ->and($component['title'])->toBe('Intro heading')
-        ->and($component['body'])->toBe('Intro copy')
-        ->and($component['published'])->toBeFalse();
-
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
-        ->assertMountedActionModalSee('Heading');
 });
