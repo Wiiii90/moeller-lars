@@ -347,7 +347,7 @@ trait CustomPageWorkspaceComponentActions
                     fn () => $this->replaceMountedAction('deleteImageChild', $args));
                 return $actions;
             })
-            ->action(function (array $data, array $arguments): void {
+            ->action(function (array $data, array $arguments) use ($actionName, $committed): void {
                 [$image, $child, $type] = $this->imageChildTarget($arguments);
                 if (($data['type'] ?? null) !== $type) return;
                 try {
@@ -376,6 +376,27 @@ trait CustomPageWorkspaceComponentActions
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 if ($changed) {
+                    if (! $committed) {
+                        if ($newParent === null) {
+                            // Unnest inserts the component directly after its Image.
+                            $this->replaceMountedAction('editComponent', [
+                                'componentIndex' => $image + 1, 'componentType' => $type,
+                            ]);
+                        } elseif ($newParent !== $image) {
+                            // Reparent appends to the destination Image's children.
+                            $destination = $this->settings()->components()[$newParent]['children'];
+                            $this->replaceMountedAction($actionName, [
+                                'imageIndex' => $newParent,
+                                'childIndex' => count($destination) - 1,
+                                'componentType' => $type,
+                            ]);
+                        } else {
+                            // Edits within one parent keep the same mounted target;
+                            // subsequent changes must compare to the new persisted state.
+                            $this->editingComponentOriginal = $this->imageChildAt($image, $child, $type);
+                        }
+                        $this->forceRender();
+                    }
                     app(AdminNotifier::class)->notification(title: 'Component saved', status: 'success');
                 }
             });
@@ -657,7 +678,6 @@ trait CustomPageWorkspaceComponentActions
     private function componentEditHeaderActions(array $arguments, string $actionName): array
     {
         [$index, $type] = $this->actionComponentTarget($arguments);
-        $block = $this->componentAt($index, $type);
         $count = count($this->settings()->components());
         $target = ['componentIndex' => $index, 'componentType' => $type];
         $actions = [];

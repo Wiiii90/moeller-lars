@@ -777,3 +777,76 @@ it('rejects an invalid image replacement at the mounted field without mutation o
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe(0);
 });
+
+it('keeps nested component Edit autosaving after successive changes without changing publication', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Nested autosave', 'nested-autosave');
+    $asset = customPageWorkspaceImage('nested-autosave');
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
+        'children' => [['type' => 'text', 'published' => false, 'title' => 'Child', 'body' => 'Original']],
+    ]]]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editImageChildInstant', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text'])
+        ->fillForm(['body' => 'First change'])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editImageChildInstant');
+
+    $editor->fillForm(['body' => 'Second change'])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editImageChildInstant');
+
+    $child = $settings->fresh()->components()[0]['children'][0];
+    expect($child['body'])->toBe('Second change')
+        ->and($child['published'])->toBeFalse();
+});
+
+it('retargets the mounted component editor when a nested component moves to page level', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Unnest editor', 'unnest-editor');
+    $asset = customPageWorkspaceImage('unnest-editor');
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
+        'children' => [['type' => 'text', 'published' => false, 'title' => 'Child', 'body' => 'Original']],
+    ]]]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editImageChildInstant', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text'])
+        ->fillForm(['parent_image_index' => null, 'body' => 'Moved to page'])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSet('mountedActions.0.arguments.componentIndex', 1);
+
+    $editor->fillForm(['body' => 'Edited at page level'])->callMountedAction()->assertHasNoFormErrors();
+    expect($settings->fresh()->components()[1]['body'])->toBe('Edited at page level')
+        ->and($settings->fresh()->components()[1]['published'])->toBeFalse();
+});
+
+it('retargets the mounted component editor when a nested component changes Image parents', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Transfer editor', 'transfer-editor');
+    $asset = customPageWorkspaceImage('transfer-editor');
+    $settings->update(['blocks' => [
+        [
+            'type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true,
+            'children' => [['type' => 'text', 'published' => false, 'title' => 'Child', 'body' => 'Original']],
+        ],
+        ['type' => 'image', 'media_asset_id' => $asset->id, 'image_decorative' => true],
+    ]]);
+
+    $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editImageChildInstant', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text'])
+        ->fillForm(['parent_image_index' => '1', 'body' => 'Moved to other Image'])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editImageChildInstant')
+        ->assertSet('mountedActions.0.arguments.imageIndex', 1)
+        ->assertSet('mountedActions.0.arguments.childIndex', 0);
+
+    $editor->fillForm(['body' => 'Edited under new Image'])->callMountedAction()->assertHasNoFormErrors();
+    $blocks = $settings->fresh()->components();
+    expect($blocks[0]['children'] ?? [])->toBeEmpty()
+        ->and($blocks[1]['children'][0]['body'])->toBe('Edited under new Image')
+        ->and($blocks[1]['children'][0]['published'])->toBeFalse();
+});
