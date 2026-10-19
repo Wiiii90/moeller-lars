@@ -212,6 +212,12 @@ final class ArtworkEditDialog
                 $currentPrimary === null
                     ? $primaryMedia->attachAsset($artwork, $asset)
                     : $primaryMedia->replaceAsset($artwork, $asset);
+            } elseif (array_key_exists('primary_media_asset_id', $data)
+                && $assetId === 0
+                && $currentPrimary !== null) {
+                // Clearing the existing Media File is an explicit detach.
+                // It must never delete the independent Storage original.
+                $primaryMedia->detachPrimary($artwork);
             }
 
             $primary = $artwork->artworkMedia()->where('role', 'primary')->first();

@@ -5,6 +5,8 @@ use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
+use App\Models\ArtworkMedia;
+use App\Models\MediaAsset;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\User;
@@ -47,6 +49,49 @@ it('offers per-artwork ALT text in the Gallery create and edit dialogs without c
 });
 
 
+
+it('clears a draft primary Media File from Edit without deleting the shared Storage original', function (): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery);
+    $shared = galleryFixtureAsset();
+    galleryFixtureThumbnail($shared);
+    galleryFixturePrimary($draft, $shared);
+    galleryFixtureUnavailableAnalytics();
+
+    $form = app(ArtworkEditDialog::class)->fill($draft);
+    $form['primary_media_asset_id'] = null;
+    $form['primary_alt_text'] = null;
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $draft->getKey()])
+        ->fillForm($form)
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeFalse()
+        ->and((string) $shared->fresh()->state)->toBe('available')
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_detached')->where('entity_id', $draft->getKey())->count())->toBe(1)
+        ->and(AdminNotification::query()->where('title', 'Artwork saved')->count())->toBe(1);
+});
+
+it('refuses to clear primary media from a published Artwork without touching the Storage original', function (): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery);
+    $shared = galleryFixtureAsset();
+    galleryFixtureThumbnail($shared);
+    galleryFixturePrimary($draft, $shared);
+    app(ArtworkPublicationService::class)->publish($draft);
+
+    $form = app(ArtworkEditDialog::class)->fill($draft);
+    $form['primary_media_asset_id'] = null;
+    $form['primary_alt_text'] = null;
+
+    expect(fn () => app(ArtworkEditDialog::class)->save($draft, $form))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeTrue()
+        ->and((string) $shared->fresh()->state)->toBe('available');
+});
 
 it('repairs an existing media-less Gallery draft using the same Edit form and then publishes it', function (): void {
     $gallery = galleryFixtureCategory();

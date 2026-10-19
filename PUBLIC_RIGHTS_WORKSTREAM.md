@@ -37,6 +37,8 @@ This is a **consolidated operational state**, not an append-only log. Durable co
 
 **Gallery rights/footer options (source-only):** Artwork information, credits and copyright notice are separately configurable per Gallery with a reversible left/right arrangement. The shared Artwork card reads existing MediaAsset credit/effectiveCopyrightNotice; notices default hidden, preserving the no-auto-© contract. Working/Committed migration and actual browser checks are outstanding.
 
+**Gallery Edit clear-primary fix (source-only):** Clearing the Existing Media File selector now invokes a real, audited `ArtworkPrimaryMediaService::detachPrimary` operation on drafts. It leaves the canonical file in Storage and forbids clearing a published Artwork. Editor+domain tests added but not executed; the async Upload primary media browser defect remains to be verified separately.
+
 **Gallery destructive transaction:** Artwork deletion with optional original-file removal is now performed within the canonical MediaAssetEditorialService reference-deletion transaction; DB failures roll back Artwork and all media-reference removals together. Physical file cleanup remains the existing separate PublicationMediaCleanup boundary and can fail after DB commit; UI distinguishes this case. Regression test authored but not executed.
 
 **Gallery delete UX:** The Gallery's single-item delete dialog offers a default-off file-delete checkbox and shows the existing canonical MediaReferenceCatalog impact list. It delegates media cleanup to `MediaAssetEditorialService`, retains Storage files by default and uses one admin mutation notification. Source changed, runtime/browser testing pending; verify shared-reference cascades before treating it as accepted.
