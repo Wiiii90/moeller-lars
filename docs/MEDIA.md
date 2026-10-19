@@ -41,6 +41,18 @@ The artist-facing Storage workspace deliberately separates normal navigation fro
 
 The dedicated local-preview image supplies a 5,000,000,000-byte allowance so capacity behavior can be evaluated locally without creating a production/application default. Production remains operator-controlled.
 
+## Pre-release thumbnail consolidation
+
+All new image uploads use libvips. Existing development/imported image thumbnails can be converted from immutable originals through one local-only explicit command:
+
+```sh
+php artisan media:thumbnails:consolidate
+php artisan media:thumbnails:consolidate --apply --rebaseline-checkpoints
+```
+
+The first invocation is read-only. The second stages new immutable previews and updates the same MediaVariant IDs across Working, Committed and restorable Publication version rows. Checkpoint hashes necessarily change when content hashes change, so the separate `--rebaseline-checkpoints` flag is required to preserve the Undo history while rebaselining its hash chain. Public rights delivery must be disabled; thumbnail rights selections are invalidated for explicit offline re-preparation. Originals remain unchanged, and the old thumbnail files are not overwritten in place. Failures roll back registry updates. This command is restricted to local pre-release data and is never scheduled or invoked on deploy.
+
+Remove the remaining historical GD regeneration code only after the local cutover has completed and the remaining legacy variants have been checked. The code cannot safely assume a separate database has already undergone cutover.
 ## Canonical original and variants
 
 For every `MediaAsset`, authoritative technical identity includes generated storage key, content-derived MIME, byte size and SHA-256.
