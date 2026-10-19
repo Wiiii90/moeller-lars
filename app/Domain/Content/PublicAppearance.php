@@ -319,9 +319,6 @@ final class PublicAppearance
         // Stable order for identical positions preserves deliberate hard edges.
         usort($result, static fn (array $a, array $b): int => $a['position'] <=> $b['position']);
 
-        if ($result[0]['position'] !== 0 || $result[count($result) - 1]['position'] !== 100) {
-            throw ValidationException::withMessages([$field => 'The first stop must be at 0% and the last at 100%.']);
-        }
         return $result;
     }
 
