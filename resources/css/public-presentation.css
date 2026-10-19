@@ -61,8 +61,8 @@ body {
 }
 
 /* Header geometry only. Document scroll and sticky positioning live in app.css.
- * The menu's own inset rule is the sole fine divider; no viewport-wide
- * border-image or background paint overrides the General appearance controls. */
+ * The base Menu has no implicit lower line: the selected Menu to page mode
+ * alone owns any divider. */
 .site-header {
     position: relative;
     z-index: 40;
@@ -91,7 +91,6 @@ body {
     --public-menu-sheet-x: var(--public-folio-sheet-x);
     --public-menu-sheet-y: var(--public-folio-sheet-y);
     background: var(--public-menu-background);
-    box-shadow: inset 0 -1px 0 var(--public-index-rule);
 }
 .site-navigation::before,
 .site-navigation::after {
@@ -1729,7 +1728,6 @@ html:has(.artwork-viewer[open]) {
 /* No divider: truly no line across menu or viewport. The canonical Menu
  * outline and Content edge may be continuous when their surfaces align. */
 .site-header--divider-fine .site-navigation {
-    box-shadow: none;
     border-bottom: 0;
 }
 
@@ -1738,10 +1736,6 @@ html:has(.artwork-viewer[open]) {
  * border-bottom on the padded header: that would move the line *below* gap. */
 .site-header--divider-full {
     padding-bottom: var(--public-shell-gap);
-}
-
-.site-header--divider-full .site-navigation {
-    box-shadow: none;
 }
 
 .site-header--divider-full::after {
@@ -1762,7 +1756,6 @@ html:has(.artwork-viewer[open]) {
 }
 
 .site-header--divider-menu .site-navigation {
-    box-shadow: none;
     border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
 }
 
@@ -1971,7 +1964,6 @@ body.public-site--frame-plain #content {
         minmax(0, min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max)))
         minmax(0, 1fr);
     background: transparent;
-    box-shadow: none;
 }
 
 .site-header--name-outside:not(.is-title-stacked) .site-navigation > h1 {

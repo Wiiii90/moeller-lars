@@ -48,3 +48,12 @@ test('public paper follows real content height rather than unused viewport heigh
     assert.match(presentation, /100% - var\(--public-content-block-inset\) - var\(--public-paper-return-inset\)/);
     assert.doesNotMatch(presentation, /--public-paper-content-end/);
 });
+
+test('public Menu has no implicit title-only divider fragment', () => {
+    const presentation = source('resources/css/public-presentation.css');
+    const baseMenu = presentation.match(/^\.site-navigation\s*\{([^}]*)\}/m)?.[1];
+    assert.ok(baseMenu, 'canonical Menu CSS must exist');
+    assert.doesNotMatch(baseMenu, /box-shadow\s*:|border-bottom\s*:/);
+    assert.match(presentation, /\.site-header--divider-menu \.site-navigation\s*\{[^}]*border-bottom:\s*1px solid var\(--public-separator-color/);
+    assert.match(presentation, /\.site-header--divider-fine \.site-navigation\s*\{[^}]*border-bottom:\s*0;/);
+});
