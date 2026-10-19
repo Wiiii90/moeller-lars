@@ -88,18 +88,19 @@ landscape-width artwork is not a common paper plane. For separated sheets,
 the existing Menu and Content primitives own their own backing and outlines.
 The common shell and paper edge outset are shared tokens.
 
-**Emergency safety contract (2026-10-19):** The measured contour endpoint
-was disabled after browser-reported severe layout feedback and resource
-exhaustion. The removed `public-paper-frame.js` must NOT be recreated or
-reinitialized as a DOM measurement-to-layout loop. The contour currently
-returns at a *static CSS inset from the content paper's bottom*, not at
-the actual final artwork or journal entry. The gray backing and contour
-are independent, and the shared paper wrapper remains. Exact placement
-at the final rendered item is still an **open visual requirement**, not an
-implemented or browser-accepted feature. It needs a fundamentally static,
-non-feedback design before it may be reintroduced. No content-height
-ResizeObserver, MutationObserver, per-frame writes, timer, or animation
-may be used for that purpose.
+**Content-driven paper frame:** The `public-paper-frame` is an intrinsic
+(non-growing) flex item. The body alone maintains the minimum viewport
+height and paints the remaining background. The frame's height therefore
+ends with the white Content sheet, not the viewport. The connected contours
+follow that same actual paper height and return inside it, above the
+trailing Content padding and the shared return inset. For a normally
+content-sized page this places their return just before the final rendered
+artwork or entry, including content whose size changes through natural
+layout. Empty or intentionally min-height sheets retain their own minimum
+height; precise per-item positioning within such a sheet has not been
+browser-accepted. No DOM position measurement, observer-triggered layout
+writes, extra scrolling ancestor, animation, or secondary paper engine
+participates in the geometry.
 The canonical folio palette (`--public-folio-light`,
 `--public-folio-soft`) and 3px-left/4px-down backing remain authoritative.
 Existing six route-deterministic corner endpoints remain in the

@@ -38,8 +38,12 @@ test('authored public CSS has no transition or animation properties', () => {
     }
 });
 
-test('public paper end remains static and independent from an observer', () => {
+test('public paper follows real content height rather than unused viewport height', () => {
+    const foundation = source('resources/css/app.css');
     const presentation = source('resources/css/public-presentation.css');
+    assert.match(foundation, /body\.public-site \.public-paper-frame\s*\{[^}]*flex:\s*0 0 auto;/);
+    assert.match(foundation, /body\.public-site\s*\{[^}]*min-height:\s*100dvh;/);
+    assert.doesNotMatch(foundation, /\.public-paper-frame\s*\{[^}]*flex:\s*1 0 auto;/);
     assert.match(presentation, /\.public-paper-decoration::before,\s*\.public-paper-decoration::after\s*\{/);
     assert.match(presentation, /100% - var\(--public-content-block-inset\) - var\(--public-paper-return-inset\)/);
     assert.doesNotMatch(presentation, /--public-paper-content-end/);
