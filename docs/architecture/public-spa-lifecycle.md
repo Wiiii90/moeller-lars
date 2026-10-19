@@ -1,6 +1,6 @@
 # Öffentliche SPA-Dokumentnavigation und Instanzlebenszyklus
 
-**Code-Referenz:** `dev@62a104a0beef093aaa71ecf5c882e066b0dadca9` (einheitlicher `.public-content-reveal`-Seitenhöhenbesitzer, native Paper-Impuls- und Ambient-Lebenszyklen). Alle hier beschriebenen Zeitwerte/Guards aus den aktuell gemergten JS-/Blade-/CSS-Quellen; kein Browser-/Laravel-End-to-End-Lauf.
+**Historischer Ausgangsbeleg:** `dev@62a104a0` (frühere Folio-Bewegung). **Aktueller Abgleich:** `dev@434975e1bd09ee728a40b80ae344fca8ca83e659` (statische Papierkontur, page-scoped Videos, Vite-Revision). Alte WAAPI-/Folio-Tests sind kein aktueller Runtimebeleg. Keine Browser-/Laravel-/JS-Ausführung.
 
 ## Architekturentscheidung
 
@@ -11,33 +11,24 @@ Die öffentliche Website bleibt **serverseitig mit Laravel/Blade gerendert**, be
 ```mermaid
 sequenceDiagram
     participant User as Browser / Link
-    participant Filter as public-spa.js
-    participant Folio as public-folio-motion.js
-    participant LW as Livewire 4 Navigate
-    participant PHP as Laravel Public Route
-    participant DB as CommittedRead / PostgreSQL
-    participant Boot as app.js
-    participant Track as Matomo
+    participant Spa as public-spa.js
+    participant Livewire as Livewire 4 Navigate
+    participant Server as Laravel Public
+    participant App as app.js
+    participant Frame as public-paper-frame.js
+    participant Video as public-media-playback.js
 
-    User->>Filter: Link im neuen DOM
-    Filter->>Filter: isPublicSpaDestination?
-    alt Extern, Download, geschützter/systemischer Pfad oder gleicher Anker
-        Filter-->>User: normale Browsernavigation
-    else erlaubter öffentlicher Link
-        Filter-->>LW: Livewire.navigate(href), falls API bereit
-        LW->>PHP: neue Dokument-GET-Anfrage
-        PHP->>DB: CommittedRead für berechtigten Public-GET
-        DB-->>PHP: veröffentlichte Daten
-        PHP-->>LW: neues Blade-HTML + Head-Metadaten
-        LW-->>Boot: livewire:navigating mit onSwap-Hook
-        Boot->>Folio: capturePublicFolio am alten DOM
-        Boot->>Boot: alte Disposer vor Swap ausführen
-        Boot->>Boot: applyPublicLayoutFromMeta am Swap
-        LW-->>Boot: livewire:navigated
-        Boot->>Boot: Viewer, Hero, Journal, Tracking, Navigation initialisieren
-        Boot->>Folio: advancePublicFolio am neuen DOM (auch Initial-Load)
-        Boot->>Track: eine PageView pro Initialisierung
-    end
+    User->>Spa: internal public destination
+    Spa->>Livewire: Livewire.navigate(href)
+    Livewire->>Server: GET public document
+    Server-->>Livewire: Blade / Committed projection
+    Livewire->>App: livewire:navigating
+    App->>App: disposePage()
+    App->>Spa: onSwap(applyPublicLayoutFromMeta)
+    Livewire->>App: livewire:navigated
+    App->>Frame: initialize static shared contour
+    App->>Video: initialize visible muted video
+    App->>App: register per-page disposers
 ```
 
 Der `onSwap`-Callback wird vom `livewire:navigating`-Ereignis installiert und liest [`meta[data-public-layout]`](../../resources/views/layouts/app.blade.php) für die CSS-Variablen `--public-page`, `--public-shell-max`, `--public-art-max` und `--public-content-padding`. Der aktuell gelieferte CSP-Nonce macht serverseitige neue Inline-Styles nicht zur globalen Quelle; der Browser setzt die **serverautorisierten Werte** über CSSOM.
@@ -79,70 +70,13 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 **Grenze der Behauptung:** Diese Tabelle beschreibt Codepfade; kein reales SPA-Reentry, Scroll-/Focus-Restoration, Leaflet-Laden, Karten-Tile-Ausfall oder Reviewer-Akzeptanz wurde hier ausgeführt. Die asynchrone Map-Race-Abwehr ist belegbar, eine vollständige Browsergarantie daraus nicht.
 
-## Native Public-Folio-Papiermaschine, Home Hero und Gallery-Puffer
+## Statischer Public-Paper-Frame, Home Hero und Gallery-Puffer
 
-**Quellstand:** `dev@f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0`. Die normative UI-Vorgabe steht ausschließlich im [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Dieser Abschnitt rekonstruiert Implementierungs- und Zustandsverantwortung aus [`layouts/app.blade.php`](../../resources/views/layouts/app.blade.php), [`public-spa.js`](../../resources/js/public-spa.js), [`public-folio-motion.js`](../../resources/js/public-folio-motion.js), [`app.js`](../../resources/js/app.js) und [`public-presentation.css`](../../resources/css/public-presentation.css). **Quellprüfung und Lektüre von Tests; keine ausgeführten Browser-/JS-/PHP-Läufe.**
+**Quellstand `dev@434975e1bd09`:** Die alte Folio-Motion-Engine samt `resources/js/public-folio-motion.js` ist entfernt. `public-paper-frame.js` besitzt einen einzigen statischen Header-/Content-Konturpfad; die tatsächliche Unterkante wird anhand der gerenderten letzten Inhaltsgruppe bestimmt. `ResizeObserver` und SPA-Disposer halten die Kontur über echte Größenänderungen aktuell, ohne zufällige Posen, WAAPI-Loops, Polling oder animierte Ecken. Die Frame-/Divider-Optionen gehören `PublicAppearance`, nicht einer zweiten JS-Rendering-Engine.
 
-### Route → statische Pose → Livewire-Swap
+`app.js` installiert einen einzigen documentweiten Livewire-Navigation-Lifecycle. Vor dem Swap werden Seiteninstanzen entsorgt; `applyPublicLayoutFromMeta` synchronisiert Frame-Style und aktuelle CSS-Werte mit dem serverseitig autorisierten Stylesheet, bevor neue Viewer-, Home-Hero-, Journal-, Navigation-, Gallery-/Video- und Paper-Instanzen starten. Vite-Asset-URLs enthalten bei einem gebauten Manifest dieselbe revisionsfähige Query, um veraltete SPA-Bundle-Kombinationen zu erkennen.
 
-1. **Server/Initial-HTML:** `layouts/app.blade.php` bildet aus `sha256('/' . request()->path())` einen deterministischen Integer-Seed. Daraus entstehen sechs Eckverbindungen: vier Content-Abstände (`leftTop`, `leftBottom`, `rightTop`, `rightBottom`) und zwei Menu-Bottom-Abstände. Die Werte stehen sowohl in `meta[data-public-layout]` als auch in einem mit dem [CSP-Nonce](../../app/Http/Middleware/SecurityHeaders.php) autorisierten `:root`-Style. Derselbe Pfad ergibt dieselben Eckpositionen, **ohne clientseitige Zufallsquelle**; Query-Parameter sind kein Seed-Eingang. Verschiedene URLs müssen nicht mathematisch garantiert verschiedene Posen besitzen, weil der endliche Wertebereich Kollisionen zulässt.
-2. **Vor dem Dokumenttausch:** `app.js` ruft über das Livewire-Swap-Ereignis `capturePublicFolio()` und `disposePage()` auf. Das Snapshot enthält die aktuell sichtbaren Content-Pseudo-Ecken, Content-Shadow und die gemessene innere Höhe, **kein Menü-Snapshot**. Die per-Page-Disposer gehören dem Page-Lifecycle, nicht der Domänenpersistenz.
-3. **Nach dem Swap:** `event.detail.onSwap?.(applyPublicLayoutFromMeta)` aktualisiert auf der bestehenden `documentElement.style`-Fläche die sechs URL-gebundenen CSS-Variablen und die Layoutwerte aus den vom Server gelieferten Meta-Feldern. `livewire:navigated` initialisiert die neuen Seiteninstanzen und ruft `advancePublicFolio()` auf. Keine zweite Router- oder Polling-Instanz. Diese Anwendung nutzt einen einzigen bereits autorisierten CSSOM-Owner statt je Komponente dynamische `style`-Attribute.
-4. **Reine Erstinitialisierung:** Ohne Snapshot startet nur `startAmbient()` für Content und Menü. Beim echten Swap erhält **nur Content** einen kurzen Build-Impuls; das Menü beginnt ausschließlich neue Ambient-Bewegungen.
-5. **Home-Hero-Slidewechsel:** `animatePublicHeroChange()` misst vor dem vorhandenen Hero-Toggle die gerenderte Pose, cancelt konkurrierende Content-/Height-Effekte und baut denselben Content-Impuls in place. Kein künstlicher History-/Router-Wechsel, kein Menü-Impuls. Viewer-/Slide-Auswahl bleiben beim Home-Hero-Owner.
-
-```mermaid
-sequenceDiagram
-    participant S as Laravel Blade/CSP
-    participant L as Livewire document swap
-    participant A as app.js
-    participant P as public-spa.js
-    participant F as public-folio-motion.js
-    S->>L: HTML + route-seeded Meta + nonce Style
-    L->>A: before swap
-    A->>F: capturePublicFolio()
-    A->>A: disposePage()
-    L->>P: onSwap(applyPublicLayoutFromMeta)
-    P->>P: set six root CSS values
-    L->>A: livewire:navigated
-    A->>F: advancePublicFolio()
-    alt first visit / no snapshot
-        F->>F: ambient(Content, Menu)
-    else real document swap
-        F->>F: 480ms inner height when needed
-        F->>F: 620ms Content-only paper build
-        F->>F: ambient(Menu), no Menu build
-    end
-```
-
-### Geometrie, Animation und Ressourcen
-
-| Owner/Phase | Aktueller Quellwert | Konsequenz |
-| --- | --- | --- |
-| Menü-/Content-Basis | `FOLIO_PLANE_BASE.content = menu = [-3,4]` | Weiße Konturen und Papier näher an den Flächen; Menü-Backing als bestehende L-Form, nicht über ein zweites Shadow-Overlay |
-| Content-Ambient | Eckperioden **98/113 s**; einzelner Shadow **129 s** | `buildCornerFrames()` und `buildShadowFrames()` mit langen Pausen, Eckauslenkung ungefähr 1–2 px, Shadow höchstens ~0,5 px |
-| Menü-Ambient | Eckperioden **117/133 s**; Sheet **145 s** | `buildMenuCornerFrames()` hält `top:0`; `buildMenuBackingFrames()` animiert CSS-Variablen des einen Sheet-Owners; keine Page-Build-Sequenz |
-| Seitenwechsel | `BUILD_DURATION=620` ms, `HEIGHT_DURATION=480` ms | Impuls für Content-Ecken/Sheet; `animatePageHeight()` nur bei mindestens **7 px** sichtbarer Differenz |
-| Sichtbare Höhe | `visibleHeightTransition()` kappt auf Viewporthöhe zuzüglich Sicherheitsrand | Temporäres `overflow:clip` nur auf `#content > .public-content-reveal`; danach wieder natürliches Layout |
-| Wiederholter Hero-Klick | `activeHeightAnimations` und `activePaperPulses` als `WeakMap` | Nur aktuelle Animation darf Overflow restaurieren beziehungsweise Ambient fortsetzen; Tokenprüfung plus aktuelles `#content` vor Promise-Fortsetzung |
-| Native WAAPI-Endlosschleifen | `startAmbient()` auf Pseudo-Elementen und Backing | Ein möglicher Retention-Pfad nach DOM-Tausch ist **unbestätigt**; bisher kein Browser-Handle-Lifetime-Test |
-
-**Fehlergrenzen:** Fehlen die benötigten Pseudogeometrien oder die WAAPI, bleibt das CSS-Papier sichtbar; es wird kein alternativer DOM-/Animationseigentümer installiert. Fehlende oder identische Höhen erzeugen keinen künstlichen Height-Film. Ein abgebrochener alter Hero-Impuls darf über seinen `finished`-Promise-Handler kein neueres Ambient überschreiben. Keine dieser Aussagen ersetzt einen ausgeführten echten Livewire-/CSP-/Browserwechsel.
-
-### CSP und strukturierte Image-Größe
-
-Das in [CustomPageSetting](../../app/Models/CustomPageSetting.php) normalisierte `image_scale_percent` wird öffentlich in [`component-sequence.blade.php`](../../resources/views/pages/partials/component-sequence.blade.php) nur bei von 100 % abweichendem Wert in **einem nonce-autorisierten `<style>` am Head-Stack `public-component-styles`** abgebildet. Die CSS-Variablen `--custom-page-image-width` und `--custom-page-image-width-narrow` hängen an `#custom-page-image-{blockIndex}`. Das vorherige direkte `style`-Attribut am `<figure>` wurde wegen der strikten Public-CSP entfernt. Der Content-Renderer validiert die Größe nicht selbst, sondern verwendet die Model-Fallback-Logik. Als offene Negativfälle gelten insbesondere mehrere unterschiedlich skalierte Images, SPA-Wechsel zwischen ihnen, wiederholte Indizes auf unterschiedlichen Seiten und fehlende Nonces. Die neue [SecurityHeaders-Testdatei](../../tests/Feature/Public/SecurityHeadersTest.php) ist **gelesene Testquelle, keine Testausführung**.
-
-### Gallery-Bildladepuffer und Quellenwiderspruch
-
-Der unveränderte [`public-gallery-loading.js`](../../resources/js/public-gallery-loading.js) besitzt weiterhin seinen separaten `IntersectionObserver` (960px Puffer, höchstens zwei aktiv promotete Bilder), `AbortController` und `disposePage()`-Disposer. Die Galerie behält ihre vollständige veröffentlichte HTML-/Viewer-Reihenfolge, es findet kein Backend-Paging statt. [`artworks/index.blade.php`](../../resources/views/pages/artworks/index.blade.php) übergibt weiterhin `:eager="$loop->index < 2"` und `:priority="$loop->first"`: **zwei eager Bilder, nur das erste high-priority**. Der neueste [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md) beschreibt dagegen **nur das erste** als eager. Das ist ein **konkreter Dokumentations-/Implementierungswiderspruch** auf dem geprüften Stand und keine bestätigte Browserregression. Erst fachlich entscheiden, dann einen einzigen Besitzer der Regel korrigieren; nicht durch stilles Umetikettieren des Blade-Befunds.
-
-### Offene Nachweise
-
-- Tatsächliche Browser-/Netzwerk-Prüfung von Livewire Head-Meta-/Nonce-Aktualisierung, Back/Forward, Scroll/Focus, wiederholten URL-Posen und allen Public-Seitentypen.
-- WAAPI-Handle-Lebensdauer auf abgelösten SPA-Knoten (nicht mit dem bereits abgewehrten Hero-Promise-Race gleichsetzen).
-- Gallery initiales Request-Priority-Verhalten sowie DOM-/Viewer-Vollständigkeit und der dokumentierte **1-vs-2-eager**-Widerspruch.
-- Unit-/Browser-Tests unter [`tests/js/public-folio-motion.test.mjs`](../../tests/js/public-folio-motion.test.mjs) und [`tests/browser/public-folio-spa.spec.mjs`](../../tests/browser/public-folio-spa.spec.mjs) sind vorhanden und wurden für diese Arbeit **nicht ausgeführt**.
+Die Gallery behält alle öffentlichen Artwork-/Viewer-Einträge im Markup; ihre ersten **zwei** Images werden eager, nur das erste mit hoher Priorität geladen. Nachfolgende Images nutzt `public-gallery-loading.js` mit dem begrenzten Beobachter-/Prefetch-Budget, ohne Backend-Paging. Der Video-Poster-Reader nutzt `MediaPreviewVariant::videoPoster()`; `public-media-playback.js` startet erlaubte sichtbare Inline-Videos stumm/looping und pausiert bei verstecktem Slide oder inaktivem Dokument. Der separate Viewer besitzt seine eigenen Videocontrols. Browser, Netzwerk, Nonce, Focus-/Back-Forward- und Artist-Akzeptanz wurden **nicht** erneut ausgeführt.
 
 ## Public Head und Nonce über den Dokumentwechsel
 
@@ -160,10 +94,3 @@ Der unveränderte [`public-gallery-loading.js`](../../resources/js/public-galler
 - Die bestehende zyklische ganze-Item-Navigation behält ihren eigenen `sessionStorage`-Handoff; der Document-Swap soll ihn nicht durch Pixel-Scrolling ersetzen.
 - Der Admin benutzt ebenfalls Filament/Livewire-SPA, aber mit eigener Auth-/Lifecycle-Policy. Aus dem Public-SPA-Skript ist **keine** Admin-Route ableitbar.
 - **Zu überprüfen:** tatsächliche Livewire-Head-/Nonce-Updates, Scroll-/Focus-Restoration, Back/Forward, Wechsel zwischen Parent/Child-Menüs, erneute offene Viewer/Map-Instanzen, Matomo pro echtem Seitenwechsel und Escape/Hydration-Verhalten. Ein Quell-Diagramm allein ist kein Browsertest.
-
-## Statische Papierkontur, Vite-Version und Videos (dev@434975e1bd09)
-
-Der frühere Eigentümer `resources/js/public-folio-motion.js` wurde entfernt. `resources/js/public-paper-frame.js` und ein zusammenhängender Public-Paper-Frame bilden die statischen Menü-/Content-Konturen. Ein Kontur-Ende orientiert sich am letzten tatsächlich gerenderten Artwork/Journal-Inhalt, nicht an zusätzlicher Leerseitenhöhe. Die Divider-Optionen einschließlich Menu-only-/Full-width-Varianten sind getrennte Public-Appearance-Einstellungen; sie dürfen keine konkurrierenden weißen Striche erzeugen. Bestehende Beschreibungen der animierten Folio-Kanten in älteren Abschnitten sind damit historische Präsentationsstände, nicht aktuelle Laufzeit-Invarianten.
-
-`AppServiceProvider` versieht gebaute Vite-Einträge über `createAssetPathsUsing`/`manifestHash` mit einer einheitlichen Revision, damit Livewire-Navigation einen neuen Assetbuild erkennen kann. `public-media-playback.js` besitzt den page-scoped Inline-Videolifecycle: sichtbare, erlaubte Videos starten stumm und in Schleife; außerhalb der Sichtbarkeit oder bei Inaktivität werden sie angehalten und Listener beim SPA-Swap entfernt. Viewer-Video bleibt separat, kein zweiter Scheduler/Timer. Browserprüfungen für wiederholte Navigation, Poster, Tonfreigabe, Konturende, Browser-CSP und Restyles wurden hier nicht ausgeführt.
-

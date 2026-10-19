@@ -90,7 +90,7 @@ Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser
 | Routes und Middleware | `routes/web.php`, `bootstrap/app.php`, Filament-Provider | Public-Routen und Read-Kontext geprüft, kompletter Runtime-Router offen |
 | Zustandsautomaten | Domain-Services und Guards | fünf aktuell untersuchte Modelle / 35 quellverankerte Kanten; weitere Zustände und indirekte Übergänge offen |
 | Ablauf-/Sequenzdiagramme | UI/Controller → Services → Persistenz/Events | Publication, Restore/Revert/Reset, Admin Notifications, Exhibition Map und Public SPA als getrennte statische Quellflüsse; **Runtime-Races/Browser nicht getestet** |
-| Browserinstanzen und -übergänge | Blade, Alpine/Livewire und `resources/js` | konkrete SPA-Disposer, Map/Viewer/Slideshow/Matomo-Pfade und native Folio-Animation quellengeprüft; **dynamische Browser-/Accessibility-Abnahme offen** |
+| Browserinstanzen und -übergänge | Blade, Alpine/Livewire und `resources/js` | konkrete SPA-Disposer, Map/Viewer/Slideshow/Matomo-Pfade und historischen Folio-Animationspfad dokumentiert; aktuelle statische Kontur auf `dev@434975e1bd09` separat quellengeprüft; **dynamische Browser-/Accessibility-Abnahme offen** |
 | Deployment und externe Systeme | [Build-/Boot-/HTTP-Trace](application-runtime-boundaries.md), [Release-Vertrag](../RELEASE.md) und [Plattformgrenze](../SERVER-OPERATIONS-BASELINE.md) | Source-Guards, Health/Smoke und Preview-vs-Production-Migration dokumentiert; Host-/Ingress-/Restore-Laufzeit, Release-Marker-URL und Matomo-Flag-Negativfälle **offen** |
 
 ### Reihenfolge der weiteren Arbeit
