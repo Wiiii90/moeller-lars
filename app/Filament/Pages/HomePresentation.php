@@ -345,7 +345,7 @@ final class HomePresentation extends Page
 
     private function persistHeroDisplayToggle(string $field, bool $value): void
     {
-        if (! in_array($field, ['show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer'], true)) {
+        if (! in_array($field, ['show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer', 'video_sound_enabled'], true)) {
             throw new \InvalidArgumentException('Unsupported Hero display setting.');
         }
 
