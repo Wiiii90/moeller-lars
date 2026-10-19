@@ -153,7 +153,7 @@ final class HomePresentation extends Page
 
     /** @var array<string,string> */
     public array $componentTypeOptions = [
-        'image' => 'Image',
+        'image' => 'Image / Video',
         'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
@@ -164,7 +164,7 @@ final class HomePresentation extends Page
 
     /** @var array<string,string> */
     public array $newComponentOptions = [
-        'image' => 'Image',
+        'image' => 'Image / Video',
         'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',

@@ -48,8 +48,8 @@
                     <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image custom-page__image--scale-{{ $imageScalePercent }} custom-page__image--align-{{ $imageAlignment }}{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
                         @if ($isVideo)
                             <video src="{{ $media->originalUrlForAsset($asset) }}"
-                                @if ($decorative) aria-hidden="true" @else aria-label="{{ $imageAlt }}" @endif
-                                muted loop playsinline controls preload="metadata" data-public-loop-video></video>
+                                @if ($decorative) aria-hidden="true" @else aria-label="{{ $imageAlt }}" controls @endif
+                                muted loop playsinline preload="metadata" data-public-loop-video></video>
                         @else
                             <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                         @endif
