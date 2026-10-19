@@ -680,9 +680,8 @@ General is the authoritative global editor for three public background
 surfaces — **Background** (outer viewport), **Menu** (both navigation
 levels) and **Page** (content backing) — plus a fourth, independent
 **Title** text paint. All four share PublicAppearance's validated
-Solid/Linear/Radial/Conic and optional repeating-stop configuration. Each uses the same validated paint contract: Solid, Linear, Radial and
-Conic gradients, each optionally repeating, with 2–12 stops (color and
-position). Linear uses the shared numeric/rotary popover control; Conic has a start angle and
+Solid/Linear/Radial/Conic configuration, each optionally repeating with
+2–12 positioned color stops. Linear uses the shared numeric/rotary popover control; Conic has a start angle and
 center; Radial has a center and circle/ellipse shape. Repeating uses an
 explicit span (pixels for Linear/Radial, degrees for Conic) so repetition is
 visible. Missing JSON stop lists preserve the legacy two-color appearance.

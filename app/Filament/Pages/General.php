@@ -868,7 +868,11 @@ final class General extends Page
         }
 
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
-            $default = $surface === 'background' ? PublicAppearance::DEFAULT_PAGE_COLOR : PublicAppearance::DEFAULT_SURFACE_COLOR;
+            $default = match ($surface) {
+                'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
+                'header_name' => $this->data['header_name_color'] ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+                default => PublicAppearance::DEFAULT_SURFACE_COLOR,
+            };
             $mode = $this->data[$surface.'_mode'] ?? PublicAppearance::MODE_SOLID;
             if (PublicAppearance::isGradient($mode)) {
                 $stops = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
@@ -1208,6 +1212,10 @@ final class General extends Page
                 'page_background_gradient_center_x',
                 'page_background_gradient_center_y',
                 'page_background_gradient_shape',
+                'header_name_mode',
+                'header_name_gradient_start',
+                'header_name_gradient_end',
+                'header_name_gradient_angle',
                 'header_name_gradient_stops',
                 'header_name_gradient_repeating',
                 'header_name_gradient_repeat_span',
