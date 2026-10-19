@@ -43,7 +43,7 @@ final class MediaThumbnailCutoverService
     }
 
     /**
-     * @return array{converted:int,rebased:int,invalidated_rights:int}
+     * @return array{converted:int,rebased:int,invalidated_rights:int,reclaimed:int}
      */
     public function apply(bool $rebaselineCheckpoints = false): array
     {
@@ -68,7 +68,7 @@ final class MediaThumbnailCutoverService
             try {
                 $items = $this->candidates();
                 if ($items === []) {
-                    return ['converted' => 0, 'rebased' => 0, 'invalidated_rights' => 0];
+                    return ['converted' => 0, 'rebased' => 0, 'invalidated_rights' => 0, 'reclaimed' => $this->reclaimUnreferencedOldThumbnails()];
                 }
 
                 $checkpoints = (int) DB::table('publication_checkpoints')
@@ -169,9 +169,10 @@ final class MediaThumbnailCutoverService
                 }, attempts: 1);
 
                 $installed = true;
+                $reclaimed = $this->reclaimUnreferencedOldThumbnails();
                 app(MediaCapacityService::class)->forgetCachedSnapshot();
 
-                return $result;
+                return [...$result, 'reclaimed' => $reclaimed];
             } finally {
                 DB::select('SELECT pg_advisory_unlock(?)', [PublicationSnapshot::LOCK_KEY]);
             }
@@ -261,6 +262,36 @@ final class MediaThumbnailCutoverService
         }
 
         throw new RuntimeException("No canonical original for media asset {$assetId}.");
+    }
+
+    /**
+     * Reclaim only generated old thumbnail keys that no longer appear in
+     * Working, Committed or any stored Publication version. This is
+     * repeatable after an interrupted post-commit filesystem cleanup.
+     */
+    private function reclaimUnreferencedOldThumbnails(): int
+    {
+        $disk = Storage::disk((string) config('media.disk'));
+        $reclaimed = 0;
+
+        foreach ($disk->allFiles('variants') as $key) {
+            if (preg_match('#^variants/[0-9a-f-]{36}-thumbnail\.webp$#D', $key) !== 1) {
+                continue;
+            }
+            if (DB::table('media_variants')->where('storage_key', $key)->exists()
+                || DB::table('committed.media_variants')->where('storage_key', $key)->exists()
+                || DB::table('publication_version_rows')
+                    ->where('table_name', 'media_variants')
+                    ->whereRaw("payload->>'storage_key' = ?", [$key])
+                    ->exists()) {
+                continue;
+            }
+            if ($disk->delete($key)) {
+                $reclaimed++;
+            }
+        }
+
+        return $reclaimed;
     }
 
     /**

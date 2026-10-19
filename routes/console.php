@@ -43,7 +43,7 @@ Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails 
 
     try {
         $result = $cutover->apply((bool) $this->option('rebaseline-checkpoints'));
-        $this->info("Converted {$result['converted']} thumbnails. Rebaselined {$result['rebased']} checkpoints; invalidated {$result['invalidated_rights']} thumbnail rights selections for offline re-preparation.");
+        $this->info("Converted {$result['converted']} thumbnails. Rebaselined {$result['rebased']} checkpoints; invalidated {$result['invalidated_rights']} thumbnail rights selections for offline re-preparation; reclaimed {$result['reclaimed']} unreferenced old derivative files.");
         return 0;
     } catch (\Throwable $exception) {
         $this->error($exception->getMessage());
