@@ -508,11 +508,13 @@ it('has exactly one visible header row without repeating Color, Position or Colo
 
     expect($markup)
         ->toContain('general-color-table__table')
-        ->toContain('fi-fo-field-label fi-sr-only')
-        ->not->toContain('fi-fo-table-repeater')
-        ->not->toContain('fi-fo-field-label-col');
+        ->not->toContain('fi-fo-table-repeater');
 
-    $section = substr($markup, strpos($markup, 'general-color-table__table'));
-    expect($section)->toContain('<th scope="col">Color</th>')
+    // Scope assertions to this actual table, not unrelated General fields.
+    expect(preg_match('/general-color-table__table.*?<\\/table>/s', $markup, $match))->toBe(1);
+    $table = $match[0];
+    expect($table)->toContain('fi-fo-field-label fi-sr-only')
+        ->not->toContain('fi-fo-field-label-col')
+        ->toContain('<th scope="col">Color</th>')
         ->toContain('<th scope="col">Position</th>');
 });
