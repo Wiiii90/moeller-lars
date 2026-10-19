@@ -52,17 +52,12 @@ class MediaIngestService
         $lock = $this->acquireIngestLock();
 
         try {
-            $prepared = $this->prepareForIngest($upload);
-            $duplicate = MediaAsset::query()
-                ->where('state', 'available')
-                ->where('sha256', $prepared['sha256'])
-                ->where('byte_size', $prepared['size'])
-                ->first();
-
+            $duplicate = $this->findReusableOriginal($upload);
             if ($duplicate instanceof MediaAsset) {
                 return ['asset' => $duplicate, 'duplicate' => true];
             }
 
+            $prepared = $this->prepareForIngest($upload);
             $asset = $this->storePreparedLocked($upload, $prepared);
             $this->refreshCapacitySnapshot();
 
@@ -75,6 +70,33 @@ class MediaIngestService
         }
     }
 
+    private function findReusableOriginal(UploadedFile $upload): ?MediaAsset
+    {
+        $path = $upload->getRealPath();
+        $size = $upload->getSize();
+        if (! $upload->isValid() || ! is_string($path) || ! is_file($path) || ! is_int($size) || $size <= 0) {
+            return null;
+        }
+        $sha = @hash_file('sha256', $path);
+        if (! is_string($sha) || strlen($sha) !== 64) {
+            return null;
+        }
+        $asset = MediaAsset::query()->with('variants')
+            ->where('state', 'available')->where('sha256', $sha)->where('byte_size', $size)->first();
+        if (! $asset instanceof MediaAsset
+            || $size > MediaTypePolicy::maxBytesFor((string) $asset->getAttribute('mime_type'))
+            || ! Storage::disk((string) config('media.disk'))->exists((string) $asset->getAttribute('storage_key'))) {
+            return null;
+        }
+        $mime = (string) $asset->getAttribute('mime_type');
+        if (MediaTypePolicy::isImage($mime) && MediaPreviewVariant::imageThumbnail($asset) === null) {
+            return null;
+        }
+        if (MediaTypePolicy::isVideo($mime) && MediaPreviewVariant::videoPoster($asset) === null) {
+            return null;
+        }
+        return $asset;
+    }
     private function acquireIngestLock(): mixed
     {
         $lock = Cache::lock('media-ingest', self::INGEST_LOCK_SECONDS);
