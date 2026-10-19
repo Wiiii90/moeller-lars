@@ -518,3 +518,15 @@ it('has exactly one visible header row without repeating Color, Position or Colo
         ->toContain('<th scope="col">Color</th>')
         ->toContain('<th scope="col">Position</th>');
 });
+
+it('uses registered schema action handlers for adding and removing gradient colors', function (): void {
+    $html = Livewire::test(General::class)
+        ->set('data.background_mode', 'gradient')
+        ->html();
+
+    expect($html)->toContain('general-color-table__table')
+        ->toContain('Add color')
+        ->toContain('wire:click=')
+        ->toContain('schemaComponent')
+        ->not->toContain('x-on:click="$wire.mountAction');
+});

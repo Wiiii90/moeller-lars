@@ -2,10 +2,15 @@
     /** @var \App\Filament\Support\AdminTableRepeater $repeater */
     $items = $repeater->getItems();
     $columns = $repeater->getTableColumns() ?? [];
-    $isAddable = $repeater->isAddable();
+
+    // Use Filament's registered schema actions and their own Livewire handlers.
+    // A manually constructed mountAction() call lacks the correct form context.
+    $addAction = $repeater->getAction($repeater->getAddActionName());
+    $deleteAction = $repeater->getAction($repeater->getDeleteActionName());
+
+    $isAddable = $repeater->isAddable() && $addAction?->isVisible();
     $hasActions = $repeater->isDeletable();
     $canDelete = $hasActions && count($items) > ($repeater->getMinItems() ?? 0);
-    $componentKey = $repeater->getKey();
 @endphp
 
 <div class="general-color-table" role="group" aria-label="{{ $repeater->getLabel() }}">
@@ -33,11 +38,11 @@
                         @endforeach
                         @if ($hasActions)
                             <td class="admin-table__actions">
-                                @if ($canDelete)
+                                @if ($canDelete && $deleteAction(['item' => $itemKey])->isVisible())
                                     <button
                                         type="button"
                                         class="admin-action admin-action--with-icon"
-                                        x-on:click="$wire.mountAction('delete', { item: @js($itemKey) }, { schemaComponent: @js($componentKey) })"
+                                        wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
                                         aria-label="Remove color {{ $loop->iteration }}"
                                         title="Remove color"
                                     >
@@ -54,6 +59,6 @@
     </x-admin.table>
 
     @if ($isAddable)
-        <x-admin.add-row x-on:click="$wire.mountAction('add', {}, { schemaComponent: @js($componentKey) })">{{ $repeater->getAddActionLabel() }}</x-admin.add-row>
+        <x-admin.add-row wire:click="{{ $addAction->getLivewireClickHandler() }}">{{ $addAction->getLabel() }}</x-admin.add-row>
     @endif
 </div>
