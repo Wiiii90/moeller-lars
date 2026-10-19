@@ -76,7 +76,9 @@ body.public-site .site-header {
     max-width: 100%;
     height: auto;
     margin: 0;
-    aspect-ratio: 16 / 9;
+    /* The generated poster reserves portrait or landscape video dimensions.
+       Legacy videos without posters retain the previous 16:9 fallback. */
+    aspect-ratio: var(--public-video-ratio, 16 / 9);
     object-fit: contain;
     outline: 1px solid rgba(50, 47, 44, .14);
     outline-offset: -1px;

@@ -6,7 +6,10 @@
     $isVideo = $kind === 'video';
     $thumbnail = $isVideo ? null : $media->thumbnailVariant($artwork);
     $imageUrl = $thumbnail ? $media->variantUrl($thumbnail) : null;
-    $posterUrl = $isVideo ? $media->posterUrlForAsset($media->primaryAsset($artwork)) : null;
+    $posterVariant = $isVideo
+        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($media->primaryAsset($artwork))
+        : null;
+    $posterUrl = $posterVariant ? $media->variantUrl($posterVariant) : null;
     $originalUrl = $media->originalUrl($artwork);
     $thumbnailWidth = (int) ($thumbnail?->getAttribute('width') ?? 0);
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
@@ -69,6 +72,11 @@
                         class="artwork-detail__video"
                         src="{{ $originalUrl }}"
                         @if ($posterUrl) poster="{{ $posterUrl }}" @endif
+                        @if ($posterVariant)
+                            width="{{ $posterVariant->getAttribute('width') }}"
+                            height="{{ $posterVariant->getAttribute('height') }}"
+                            style="--public-video-ratio: {{ $posterVariant->getAttribute('width') }} / {{ $posterVariant->getAttribute('height') }}"
+                        @endif
                         aria-label="{{ $media->altText($artwork) }}"
                         muted
                         loop

@@ -8,7 +8,10 @@
     $isVideo = $kind === 'video';
     $thumbnail = $isVideo ? null : $media->thumbnailVariant($artwork);
     $imageUrl = $thumbnail ? $media->variantUrl($thumbnail) : null;
-    $posterUrl = $isVideo ? $media->posterUrlForAsset($media->primaryAsset($artwork)) : null;
+    $posterVariant = $isVideo
+        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($media->primaryAsset($artwork))
+        : null;
+    $posterUrl = $posterVariant ? $media->variantUrl($posterVariant) : null;
     $category = $artwork->getRelationValue('category');
     $thumbnailWidth = (int) ($thumbnail?->getAttribute('width') ?? 0);
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
@@ -52,6 +55,11 @@
                 class="artwork-card__video"
                 src="{{ $originalUrl }}"
                 @if ($posterUrl) poster="{{ $posterUrl }}" @endif
+                @if ($posterVariant)
+                    width="{{ $posterVariant->getAttribute('width') }}"
+                    height="{{ $posterVariant->getAttribute('height') }}"
+                    style="--public-video-ratio: {{ $posterVariant->getAttribute('width') }} / {{ $posterVariant->getAttribute('height') }}"
+                @endif
                 aria-label="{{ $altText }}"
                 muted
                 loop

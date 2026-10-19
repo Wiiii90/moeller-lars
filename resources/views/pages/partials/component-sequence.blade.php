@@ -15,8 +15,9 @@
                     $assetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
                     $asset = $assetId !== null ? $assets->get($assetId) : null;
                     $isVideo = $asset !== null && \App\Domain\Media\MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'));
-                    $posterUrl = $isVideo && $asset->getAttribute('state') === 'available'
-                        ? $media->posterUrlForAsset($asset) : null;
+                    $posterVariant = $isVideo && $asset->getAttribute('state') === 'available'
+                        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($asset) : null;
+                    $posterUrl = $posterVariant ? $media->variantUrl($posterVariant) : null;
                     $variant = $asset !== null && $asset->getAttribute('state') === 'available' && ! $isVideo
                         ? $media->thumbnailVariantForAsset($asset) : null;
                     $decorative = (bool) ($block['image_decorative'] ?? false);
@@ -51,6 +52,10 @@
                         @if ($isVideo)
                             <video src="{{ $media->originalUrlForAsset($asset) }}"
                                 @if ($posterUrl) poster="{{ $posterUrl }}" @endif
+                                @if ($posterVariant)
+                                    width="{{ $posterVariant->getAttribute('width') }}"
+                                    height="{{ $posterVariant->getAttribute('height') }}"
+                                @endif
                                 @if ($decorative) aria-hidden="true" @else aria-label="{{ $imageAlt }}" controls @endif
                                 muted loop playsinline preload="metadata" data-public-loop-video></video>
                         @else
