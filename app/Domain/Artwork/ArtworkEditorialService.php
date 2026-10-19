@@ -36,12 +36,11 @@ class ArtworkEditorialService
         $category = $fresh->getRelationValue('category');
         $siteSection = $category?->getRelationValue('siteSection');
         $mediaAsset = $primary?->getRelation('mediaAsset');
-        $altText = $mediaAsset?->getAttribute('alt_text');
-        $publicThumbnails = $mediaAsset?->variants()
-            ->where('variant_kind', 'thumbnail')
-            ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
-            ->where('state', 'available')
-            ->get();
+        $ready = $mediaAsset instanceof MediaAsset
+            && app(ArtworkPublicationService::class)->mediaReady(
+                $mediaAsset,
+                $primary?->getAttribute('alt_text_override'),
+            );
 
         if (
             ! $category
@@ -50,9 +49,7 @@ class ArtworkEditorialService
             || ! $primary
             || ! $mediaAsset
             || $mediaAsset->getAttribute('state') !== 'available'
-            || ! is_string($altText)
-            || trim($altText) === ''
-            || $publicThumbnails?->count() !== 1
+            || ! $ready
         ) {
             throw ValidationException::withMessages(['state' => 'This artwork is not ready to publish.']);
         }

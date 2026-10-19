@@ -197,21 +197,12 @@ class PublicMedia
     public function thumbnailVariantForAsset(MediaAsset $asset): MediaVariant
     {
         $this->assertAvailable($asset);
-        $asset->loadMissing('variants');
-        $matching = $asset->getRelationValue('variants')->filter(
-            fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === self::THUMBNAIL_KIND
-                && in_array((string) $variant->getAttribute('transform_profile'), [
-                    self::PUBLIC_TRANSFORM_PROFILE,
-                    MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
-                ], true)
-                && $variant->getAttribute('state') === 'available',
-        )->values();
-
-        if ($matching->count() !== 1) {
+        $variant = MediaPreviewVariant::imageThumbnail($asset);
+        if (! $variant instanceof MediaVariant) {
             throw new LogicException('Public media requires exactly one available public thumbnail.');
         }
 
-        return $matching->first();
+        return $variant;
     }
 
     /**
@@ -225,14 +216,9 @@ class PublicMedia
         }
 
         $this->assertAvailable($asset);
-        $asset->loadMissing('variants');
-        $matching = $asset->getRelationValue('variants')->filter(
-            fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === MediaIngestService::VIDEO_POSTER_KIND
-                && $variant->getAttribute('transform_profile') === MediaIngestService::VIDEO_POSTER_PROFILE
-                && $variant->getAttribute('state') === 'available',
-        )->values();
+        $poster = MediaPreviewVariant::videoPoster($asset);
 
-        return $matching->count() === 1 ? $this->variantUrl($matching->first()) : null;
+        return $poster instanceof MediaVariant ? $this->variantUrl($poster) : null;
     }
 
     public function thumbnailUrlForAsset(MediaAsset $asset): string

@@ -127,7 +127,10 @@ final class MediaRightsPublicationSelections
         $variants = MediaVariant::query()
             ->where('media_asset_id', $asset->getKey())
             ->where('variant_kind', PublicMedia::THUMBNAIL_KIND)
-            ->where('transform_profile', PublicMedia::PUBLIC_TRANSFORM_PROFILE)
+            ->whereIn('transform_profile', [
+                \App\Domain\Media\MediaIngestService::TRANSFORM_PROFILE,
+                \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
+            ])
             ->where('state', 'available')
             ->limit(2)
             ->get();

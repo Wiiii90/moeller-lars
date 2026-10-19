@@ -91,12 +91,6 @@ final class ArtworkPublicationService
             return false;
         }
 
-        $asset->loadMissing('variants');
-
-        return $asset->getRelation('variants')->filter(
-            static fn ($variant): bool => $variant->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-                && $variant->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                && $variant->getAttribute('state') === 'available',
-        )->count() === 1;
+        return \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset) !== null;
     }
 }
