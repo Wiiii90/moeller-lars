@@ -67,15 +67,14 @@ export function initializePublicHeader() {
 
     // Synchronous first fit prevents a fixed-breakpoint intermediate state.
     update();
-    const observer = new ResizeObserver(update);
-    observer.observe(header);
-    observer.observe(menu);
-    observer.observe(title);
+    // Observe only real viewport changes, not elements whose dimensions
+    // are changed by the is-title-stacked class itself.
+    window.addEventListener('resize', update, { passive: true });
     document.fonts?.addEventListener?.('loadingdone', update);
 
     return () => {
         disposed = true;
-        observer.disconnect();
+        window.removeEventListener('resize', update);
         document.fonts?.removeEventListener?.('loadingdone', update);
     };
 }

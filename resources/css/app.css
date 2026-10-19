@@ -147,7 +147,6 @@ body.public-site .site-header {
     cursor: pointer;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    transition: border-color .14s ease, background-color .14s ease, opacity .14s ease;
 }
 
 .artwork-viewer__icon-button:hover,
@@ -202,7 +201,6 @@ body.public-site .site-header {
     max-height: 100%;
     object-fit: contain;
     transform-origin: center center;
-    will-change: transform;
     user-select: none;
     -webkit-user-drag: none;
 }
@@ -299,8 +297,3 @@ body.public-site .site-header {
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .artwork-viewer * {
-        transition: none !important;
-    }
-}

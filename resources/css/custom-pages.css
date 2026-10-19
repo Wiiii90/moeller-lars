@@ -292,7 +292,6 @@
     font: inherit;
     line-height: 1.4;
     box-shadow: none;
-    transition: border-color .14s ease;
 }
 
 .custom-page__contact .contact-form textarea {
