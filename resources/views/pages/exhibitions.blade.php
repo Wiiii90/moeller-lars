@@ -62,7 +62,7 @@
                             @if ($hasCover || $hasFacts || $hasActions || $hasDescription)
                                 <div class="exhibition-entry__feature {{ $hasCover ? 'exhibition-entry__feature--with-cover' : 'exhibition-entry__feature--text' }}">
                                     @if ($hasCover)
-                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: false) !!}
+                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: true) !!}
                                     @endif
                                     @if ($hasFacts || $hasActions)
                                         <div class="exhibition-entry__info">
@@ -109,7 +109,7 @@
                             @endif
 
                             @if ($gallery->isNotEmpty())
-                                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Exhibition images" :journal-media="$journalMedia" />
+                                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Exhibition media" :journal-media="$journalMedia" :show-captions="true" />
                             @endif
 
                             @if ($map !== null)

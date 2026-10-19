@@ -384,3 +384,15 @@
     height: auto;
     object-fit: contain;
 }
+
+
+/* Explicitly authored photographer credits and copyright overrides can be
+ * shown under Exhibition images/videos without adding a duplicate renderer. */
+.journal-entry-media figcaption {
+    margin-top: .45rem;
+    color: var(--public-muted);
+    font-family: var(--public-typeface);
+    font-size: .74rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
