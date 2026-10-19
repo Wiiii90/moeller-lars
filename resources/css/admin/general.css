@@ -626,23 +626,30 @@
 
 
 
-/* One compact native color table used by Background, Menu, and Page. */
+/* General supplies only its half-Stage column widths. Table chrome, text,
+ * cells, separators and Add-row belong to the same shared admin primitives
+ * used by Social Media immediately below the Stage. */
 .general-background-row > .fi-sc > :has(.general-color-table) {
     grid-column: 1 / -1 !important;
     min-width: 0;
 }
-.general-color-table { min-width: 0; }
-.general-color-table .fi-fo-table-repeater {
+.general-color-table,
+.general-color-table__table { min-width: 0; width: 100%; }
+.general-color-table__table > table {
     width: 100%;
     min-width: 0;
     table-layout: fixed;
 }
-.general-color-table .fi-fo-table-repeater :is(th, td) { min-width: 0; }
-.general-color-table .fi-fo-table-repeater th {
-    color: var(--admin-muted);
-    font-size: var(--admin-font-size-table-header);
-    font-weight: 650;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+.general-color-table__color-col { width: 55%; }
+.general-color-table__position-col { width: 26%; }
+.general-color-table__action-col { width: 19%; }
+.general-color-table__table td {
+    min-width: 0;
+    overflow: visible;
 }
-.general-color-table .fi-fo-table-repeater-actions button { color: var(--admin-muted); }
+.general-color-table__table td .fi-fo-field-wrp { min-width: 0; }
+.general-color-table__table td .fi-input-wrp { min-width: 0; }
+.general-color-table__table .admin-table__actions {
+    text-align: right;
+    padding-inline-end: var(--admin-table-edge-inset) !important;
+}

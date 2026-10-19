@@ -131,10 +131,13 @@ The global Background/Menu/Page controls retain a concise two-column
 line-based grammar with the shared ColorPicker and numeric field. Do not
 surface a Filament Repeater's card chrome, default rounded Add button,
 red per-row trash icons or explanatory helper paragraphs inside the Stage.
-All colors are directly editable in one shared compact Color/Position
-table; Solid has one color row and gradients have 2–12 rows. Reuse the
-canonical AdminColorControl rather than creating another picker. No edit
-dialogs, card repeaters, help prose or red deletion icons.
+All colors are directly editable in the **actual shared** x-admin.table,
+not Filament's independently styled table repeater. The shared
+AdminTableRepeater adapts Filament's field/action lifecycle to that canonical
+table; Solid has one Color row and gradients have 2–12 Color/Position rows.
+Use the existing AdminColorControl in the cells and x-admin.add-row below.
+Never recreate the table with local radius/border/row chrome, native browser
+color inputs, card repeaters, edit dialogs, helper prose or red trash actions.
 The global angle control has an inline editable degree value and opens
 the shared rotary picker on interaction; it does not show a persistent
 dial beside the number. Do not duplicate this component within General.

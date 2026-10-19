@@ -711,11 +711,12 @@ the shared ColorPicker. Both input methods commit through the same validated
 General appearance field. The dial is teleported outside the scrollable Stage
 to avoid clipping.
 
-All global paint surfaces use the same compact native Color/Position table.
-Solid shows one directly editable color; Linear, Radial and Conic have 2–12
-stops, each edited with the canonical AdminColorControl and a numeric
-position. Color stops are ordered by position, including coincident stops
-for hard boundaries. Gray native table actions add/remove rows, without
-separate dialog editors or a second color picker. Loading legacy two-color
-settings never materializes a new JSON array by itself.
+All global paint surfaces use one canonical x-admin.table. Solid has
+one Color row; Linear, Radial and Conic use 2–12 Color/Position rows. The
+central AdminTableRepeater replaces only Filament 5.7's embedded table
+presentation, retaining its item schemas, ColorPicker, validation and
+add/delete actions. The markup reuses the same table and Add-row components
+as Social Media; no parallel table chrome or duplicate color picker. Numeric
+positions determine stop order, including coincident stops for hard edges.
+Opening General never writes the legacy two-color values as JSON.
 are never materialized into JSON merely by opening the editor.

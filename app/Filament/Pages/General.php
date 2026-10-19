@@ -11,6 +11,7 @@ use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
+use App\Filament\Support\AdminTableRepeater;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaAssetSelect;
@@ -21,7 +22,6 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -688,7 +688,7 @@ final class General extends Page
     }
 
     /** One compact, native table schema for every global paint surface. */
-    private static function appearanceColorsTable(string $surface, bool $solid): Repeater
+    private static function appearanceColorsTable(string $surface, bool $solid): AdminTableRepeater
     {
         $name = $surface.($solid ? '_solid_colors' : '_gradient_stops');
         $columns = [TableColumn::make('Color')];
@@ -714,7 +714,7 @@ final class General extends Page
                 ->live(onBlur: true);
         }
 
-        $table = Repeater::make($name)
+        $table = AdminTableRepeater::make($name)
             ->label('Colors')
             ->table($columns)
             ->compact()
@@ -737,17 +737,7 @@ final class General extends Page
             ->columnSpanFull();
 
         if (! $solid) {
-            $table
-                ->addActionLabel('Add color')
-                ->addAction(fn (Action $action): Action => $action
-                    ->link()
-                    ->color('gray')
-                    ->icon(AdminIcon::Add->mini())
-                    ->extraAttributes(['class' => 'admin-add-row']))
-                ->deleteAction(fn (Action $action): Action => $action
-                    ->color('gray')
-                    ->icon(AdminIcon::Remove->mini())
-                    ->tooltip('Remove color'));
+            $table->addActionLabel('Add color');
         }
 
         return $table;
