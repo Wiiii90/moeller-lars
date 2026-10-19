@@ -42,6 +42,7 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
     $originalBytes = 'original-bytes';
     $thumbnailBytes = 'thumbnail-bytes';
     $rightsBytes = 'rights-thumbnail-bytes';
+    $originalRightsBytes = 'rights-original-bytes';
     $originalKey = 'originals/thumbnail-rights.jpg';
     $thumbnailKey = 'variants/thumbnail-rights.webp';
     $disk->put($originalKey, $originalBytes);
@@ -70,6 +71,10 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
         'width' => 480,
         'height' => 720,
     ]);
+    $originalRevision = app(MediaRightsArtifactRevision::class)->forSource($asset, $asset);
+    $originalRightsKey = 'variants/rights/'.$originalRevision.'.jpg';
+    $disk->put($originalRightsKey, $originalRightsBytes);
+
     // The selected immutable identity must match the real source and rights
     // projection; a fabricated revision would be rejected as stale.
     $revision = app(MediaRightsArtifactRevision::class)->forSource($asset, $variant);
@@ -93,7 +98,21 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
         'mime_type' => 'image/webp',
         'created_at' => now(),
     ]);
-    app(MediaRightsPublicationSelections::class)->selectWorking($artifact, 'thumbnail', (int) $variant->getKey());
+    $originalArtifact = MediaRightsArtifact::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'role' => 'original',
+        'revision' => $originalRevision,
+        'storage_key' => $originalRightsKey,
+        'source_sha256' => $asset->getAttribute('sha256'),
+        'sha256' => hash('sha256', $originalRightsBytes),
+        'byte_size' => strlen($originalRightsBytes),
+        'mime_type' => 'image/jpeg',
+        'created_at' => now(),
+    ]);
+    $selections = app(MediaRightsPublicationSelections::class);
+    $selections->selectWorking($originalArtifact, 'original', (int) $asset->getKey());
+    $selections->selectWorking($artifact, 'thumbnail', (int) $variant->getKey());
+    expect($selections->workingAssetReadiness($asset)['state'])->toBe('ready');
     expect(app(PublicationService::class)->commit($actor, 'Artwork rights URL test'))->not->toBeNull();
 
     $publicUrl = route('media.variant', ['mediaVariant' => $variant, 'revision' => $revision]);
