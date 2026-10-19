@@ -7,11 +7,9 @@
             ->with('variants')
             ->find((int) $assetId)
         : null;
-    $thumbnail = $asset?->getRelationValue('variants')->first(static function (\App\Models\MediaVariant $variant): bool {
-        return $variant->getAttribute('variant_kind') === \App\Domain\Media\MediaIngestService::THUMBNAIL_KIND
-            && $variant->getAttribute('transform_profile') === \App\Domain\Media\MediaIngestService::TRANSFORM_PROFILE
-            && $variant->getAttribute('state') === 'available';
-    });
+    $thumbnail = $asset instanceof \App\Models\MediaAsset
+        ? \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset)
+        : null;
 @endphp
 
 <div class="admin-favicon-preview" aria-live="polite">
