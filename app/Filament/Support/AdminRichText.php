@@ -38,7 +38,6 @@ final class AdminRichText
             )
             ->toolbarButtons($toolbar)
             ->linkProtocols(['http', 'https'])
-            ->stickyToolbar()
             ->nullable()
             ->columnSpanFull()
             ->extraFieldWrapperAttributes(['class' => 'admin-rich-text admin-rich-text--visual']);
