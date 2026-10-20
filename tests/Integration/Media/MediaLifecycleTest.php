@@ -184,6 +184,43 @@ it('generates a versioned immutable WebP poster for a real H.264 video and regen
     }
 });
 
+it('accepts a valid MP4 with the H.264 track metadata outside both byte windows', function (): void {
+    $ingest = lifecycleIngestService();
+    $temp = tempnam(sys_get_temp_dir(), 'mp4-moov-middle-');
+    expect($temp)->not->toBeFalse();
+    $path = $temp.'.mp4';
+
+    try {
+        $process = new Process([
+            'ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin',
+            '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1',
+            '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', $path,
+        ]);
+        $process->setTimeout(60);
+        expect($process->run())->toBe(0);
+
+        // Append structurally valid MP4 free atoms on both sides of moov
+        // without changing mdat offsets. The old head/tail sampling would
+        // miss the H.264 sample description despite valid video content.
+        $bytes = file_get_contents($path);
+        expect($bytes)->not->toBeFalse();
+        $moovTypeOffset = strrpos($bytes, 'moov');
+        expect($moovTypeOffset)->not->toBeFalse();
+        $moovOffset = $moovTypeOffset - 4;
+        $paddingBytes = 1_100_000;
+        $free = pack('N', $paddingBytes + 8).'free'.str_repeat("\0", $paddingBytes);
+        $bytes = substr($bytes, 0, $moovOffset).$free.substr($bytes, $moovOffset).$free;
+        file_put_contents($path, $bytes);
+
+        $asset = $ingest->ingest(new UploadedFile($path, 'valid-moov-middle.mp4', 'video/mp4', null, true));
+        expect($asset->mime_type)->toBe('video/mp4')
+            ->and($asset->variants()->sole()->variant_kind)->toBe(MediaIngestService::VIDEO_POSTER_KIND);
+    } finally {
+        @unlink($path);
+        @unlink($temp);
+    }
+});
+
 it('rejects invalid image bytes before database or storage writes', function (): void {
     Storage::fake(config('media.disk'));
 

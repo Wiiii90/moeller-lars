@@ -35,6 +35,7 @@ RUN apt-get update \
     && a2enmod rewrite headers xsendfile \
     && command -v vipsthumbnail \
     && command -v ffmpeg \
+    && command -v ffprobe \
     && sed -ri 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && rm -rf /var/lib/apt/lists/*
 

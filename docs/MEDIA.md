@@ -23,7 +23,7 @@ Current accepted media:
 - Ogg (`audio/ogg`)
 - WAV (`audio/wav`)
 
-Upload aliases are normalized through the ingest policy; persisted canonical MIME is content-derived. Content/container validation rejects incompatible payloads.
+Upload aliases are normalized through the ingest policy; persisted canonical MIME is content-derived. Video validation uses FFprobe to inspect the full container's first video stream and confirm a browser-native codec, not a partial-byte marker scan; poster generation uses the same packaged FFmpeg family. Content/container validation rejects incompatible payloads.
 
 ## Upload limits and capacity
 
