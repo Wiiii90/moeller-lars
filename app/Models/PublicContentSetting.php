@@ -80,6 +80,16 @@ use LogicException;
     'header_name_min_size',
     'header_divider_mode',
     'header_divider_color',
+    'header_divider_paint_mode',
+    'header_divider_paint_gradient_start',
+    'header_divider_paint_gradient_end',
+    'header_divider_paint_gradient_angle',
+    'header_divider_paint_gradient_stops',
+    'header_divider_paint_gradient_repeating',
+    'header_divider_paint_gradient_repeat_span',
+    'header_divider_paint_gradient_center_x',
+    'header_divider_paint_gradient_center_y',
+    'header_divider_paint_gradient_shape',
     'header_name_auto_scale',
     'public_page_width',
     'public_content_padding',
@@ -116,6 +126,12 @@ class PublicContentSetting extends Model
             'header_name_gradient_repeat_span' => 'integer',
             'header_name_gradient_center_x' => 'integer',
             'header_name_gradient_center_y' => 'integer',
+            'header_divider_paint_gradient_angle' => 'integer',
+            'header_divider_paint_gradient_stops' => 'array',
+            'header_divider_paint_gradient_repeating' => 'boolean',
+            'header_divider_paint_gradient_repeat_span' => 'integer',
+            'header_divider_paint_gradient_center_x' => 'integer',
+            'header_divider_paint_gradient_center_y' => 'integer',
             'background_gradient_stops' => 'array',
             'background_gradient_repeating' => 'boolean',
             'background_gradient_repeat_span' => 'integer',
@@ -227,10 +243,12 @@ class PublicContentSetting extends Model
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
             $mode = $surface.'_mode';
             $setting->setAttribute($mode, PublicAppearance::normalizeMode($setting->getAttribute($mode), $mode));
-            foreach (['_color', '_gradient_start', '_gradient_end'] as $suffix) {
+            foreach (['_gradient_start', '_gradient_end'] as $suffix) {
                 $field = $surface.$suffix;
                 $setting->setAttribute($field, PublicAppearance::normalizeColor($setting->getAttribute($field), $field));
             }
+            $colorField = PublicAppearance::solidColorField($surface);
+            $setting->setAttribute($colorField, PublicAppearance::normalizeColor($setting->getAttribute($colorField), $colorField));
             $angle = $surface.'_gradient_angle';
             $setting->setAttribute($angle, PublicAppearance::normalizeAngle($setting->getAttribute($angle), $angle));
             foreach ([

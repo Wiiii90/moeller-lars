@@ -64,11 +64,15 @@ final class AdminSettingsService
             if (array_key_exists($mode, $data)) {
                 $data[$mode] = PublicAppearance::normalizeMode($data[$mode], $mode);
             }
-            foreach (['_color', '_gradient_start', '_gradient_end'] as $suffix) {
+            foreach (['_gradient_start', '_gradient_end'] as $suffix) {
                 $field = $surface.$suffix;
                 if (array_key_exists($field, $data)) {
                     $data[$field] = PublicAppearance::normalizeColor($data[$field], $field);
                 }
+            }
+            $colorField = PublicAppearance::solidColorField($surface);
+            if (array_key_exists($colorField, $data)) {
+                $data[$colorField] = PublicAppearance::normalizeColor($data[$colorField], $colorField);
             }
             $angle = $surface.'_gradient_angle';
             if (array_key_exists($angle, $data)) {
