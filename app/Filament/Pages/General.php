@@ -669,7 +669,7 @@ final class General extends Page
                         ...($surface === 'page_background' ? [PublicAppearance::MODE_TRANSPARENT => 'Transparent'] : []),
                     ])
                     ->native()->required()->live()
-                    ->columnSpan(fn (callable $get): int => $gradient($get) ? 2 : 1)
+                    ->columnSpan(fn (callable $get): int => $get($surface.'_mode') === PublicAppearance::MODE_SOLID ? 1 : 2)
                     ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
                     ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
                 AdminColorControl::make(PublicAppearance::solidColorField($surface), 'Color')
@@ -697,33 +697,48 @@ final class General extends Page
 
             Group::make([
                 Group::make([
-                AdminAngleControl::make($surface.'_gradient_angle')
-                    ->live()
-                    ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
-                    ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
-                Select::make($surface.'_gradient_shape')
-                    ->label('Shape')
-                    ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
-                    ->native()->live()
-                    ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
-                    ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
-                Select::make($surface.'_gradient_repeating')
-                    ->label('Repeating')
-                    ->options(['0' => 'Off', '1' => 'On'])
-                    ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
-                    ->native()
-                    ->live()
-                    ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                    ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
-                        if ($livewire instanceof self) {
-                            $livewire->persistChangedField($surface.'_gradient_repeating');
-                            $livewire->data[$surface.'_gradient_repeating'] = (bool) $state ? '1' : '0';
-                        }
-                    })
-                    ->visible($gradient),
+                    AdminAngleControl::make($surface.'_gradient_angle')
+                        ->live()
+                        ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
+                        ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
+                    Select::make($surface.'_gradient_shape')
+                        ->label('Shape')
+                        ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
+                        ->native()->live()
+                        ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
+                        ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
+                    Select::make($surface.'_gradient_repeating')
+                        ->label('Repeating')
+                        ->options(['0' => 'Off', '1' => 'On'])
+                        ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
+                        ->native()
+                        ->live()
+                        ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                        ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
+                            if ($livewire instanceof self) {
+                                $livewire->persistChangedField($surface.'_gradient_repeating');
+                                $livewire->data[$surface.'_gradient_repeating'] = (bool) $state ? '1' : '0';
+                            }
+                        })
+                        ->visible($gradient),
                 ])
                     ->columns(2)
                     ->extraAttributes(['class' => 'general-appearance-parameter-row'])
+                    ->columnSpanFull(),
+
+                Group::make([
+                    TextInput::make($surface.'_gradient_center_x')
+                        ->label('Center X')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                        ->afterStateUpdated(self::persist($surface.'_gradient_center_x'))
+                        ->visible($center),
+                    TextInput::make($surface.'_gradient_center_y')
+                        ->label('Center Y')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                        ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
+                        ->visible($center),
+                ])
+                    ->columns(2)
+                    ->extraAttributes(['class' => 'general-appearance-center-row'])
+                    ->visible($center)
                     ->columnSpanFull(),
 
                 TextInput::make($surface.'_gradient_repeat_span')
@@ -732,21 +747,6 @@ final class General extends Page
                     ->lazy()
                     ->afterStateUpdated(self::persist($surface.'_gradient_repeat_span'))
                     ->visible(fn (callable $get): bool => $gradient($get) && (bool) $get($surface.'_gradient_repeating')),
-                Group::make([
-                TextInput::make($surface.'_gradient_center_x')
-                    ->label('Center X')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
-                    ->afterStateUpdated(self::persist($surface.'_gradient_center_x'))
-                    ->visible($center),
-                TextInput::make($surface.'_gradient_center_y')
-                    ->label('Center Y')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
-                    ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
-                    ->visible($center),
-                ])
-                    ->columns(2)
-                    ->extraAttributes(['class' => 'general-appearance-center-row'])
-                    ->visible($center)
-                    ->columnSpanFull(),
-
                 self::appearanceColorsTable($surface)->columnSpanFull(),
             ])
                 ->columns(1)
