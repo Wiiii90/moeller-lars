@@ -650,7 +650,7 @@ final class Activity extends Page
         return AdminDialog::viewer(
             Action::make('publicationReview')
                 ->label('Review changes')
-                ->modalHeading('Review changes')
+                ->modalHeading(__('Review changes'))
                 ->modalContent(fn (): View => view(
                     'filament.pages.partials.activity-publication-review-dialog',
                     ['publication' => $this->publicationReview()],

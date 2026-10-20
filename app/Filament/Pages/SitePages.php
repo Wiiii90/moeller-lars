@@ -271,7 +271,7 @@ final class SitePages extends Page
         return AdminDialog::edit(
             Action::make('editPlacement')
                 ->label('Edit')
-                ->modalHeading('Page placement')
+                ->modalHeading(__('Page placement'))
                 ->fillForm(function (array $arguments): array {
                     /** @var SiteSection $section */
                     $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));

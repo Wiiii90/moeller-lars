@@ -204,7 +204,7 @@ trait CustomPageWorkspaceComponentActions
                 'media_asset_id' => null,
             ])
             ->schema($this->componentEditorSchema())
-            ->modalHeading('Add component')
+            ->modalHeading(__('Add component'))
             ->action(function (array $data): void {
                 app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
 
@@ -323,7 +323,7 @@ trait CustomPageWorkspaceComponentActions
                     }
                 },
             ))
-            ->modalHeading('Edit component')
+            ->modalHeading(__('Edit component'))
             ->extraModalFooterActions(function (array $arguments) use ($actionName): array {
                 [$image, $child, $type] = $this->imageChildTarget($arguments);
                 $blocks = $this->componentAt($image, 'image')['children'] ?? [];
@@ -531,7 +531,7 @@ trait CustomPageWorkspaceComponentActions
                     );
                 },
             ))
-            ->modalHeading('Edit component')
+            ->modalHeading(__('Edit component'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->componentEditHeaderActions($arguments, $actionName))
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);

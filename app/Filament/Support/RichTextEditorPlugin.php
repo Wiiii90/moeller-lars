@@ -80,7 +80,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
     {
         return [
             Action::make('imageCaption')
-                ->modalHeading('Image caption')
+                ->modalHeading(__('Image caption'))
                 ->fillForm(fn (array $arguments): array => ['caption' => $arguments['caption'] ?? ''])
                 ->schema([
                     TextInput::make('caption')->label('Caption')->maxLength(500)->nullable(),

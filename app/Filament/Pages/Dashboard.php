@@ -351,7 +351,7 @@ final class Dashboard extends Page
         return AdminDialog::edit(
             Action::make('dashboardSettings')
                 ->label('Settings')
-                ->modalHeading('Dashboard settings')
+                ->modalHeading(__('Dashboard settings'))
                 ->fillForm(function (): array {
                     $user = auth()->user();
 

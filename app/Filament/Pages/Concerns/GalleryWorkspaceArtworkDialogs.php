@@ -34,7 +34,7 @@ trait GalleryWorkspaceArtworkDialogs
                 'work_date' => null,
             ])
             ->schema($this->artworkCreateFormSchema())
-            ->modalHeading('Add artwork')
+            ->modalHeading(__('Add artwork'))
             ->action(function (array $data): void {
                 $upload = $data['primary_upload'] ?? null;
                 $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
@@ -105,7 +105,7 @@ trait GalleryWorkspaceArtworkDialogs
         $dialog = app(ArtworkEditDialog::class);
         $action = Action::make('editArtwork')
             ->label('Edit')
-            ->modalHeading('Edit artwork')
+            ->modalHeading(__('Edit artwork'))
             ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)->fresh()))
             ->schema(fn (array $arguments): array => $dialog->schema(
                 autosave: true,
@@ -146,7 +146,7 @@ trait GalleryWorkspaceArtworkDialogs
     {
         $action = Action::make('uploadArtworkPrimaryMedia')
             ->label('Upload primary media')
-            ->modalHeading('Upload primary media')
+            ->modalHeading(__('Upload primary media'))
             ->schema([
                 FileUpload::make('primary_upload')
                     ->label('New image or video')
@@ -154,12 +154,12 @@ trait GalleryWorkspaceArtworkDialogs
                     ->acceptedFileTypes([...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
                     ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
                     ->required()
-                    ->helperText('Replaces the draft artwork’s primary media. The previous file remains in Storage.'),
+                    ->helperText(__('Replaces the draft artwork’s primary media. The previous file remains in Storage.')),
                 Textarea::make('primary_alt_text')
                     ->label('ALT text')
                     ->maxLength(500)
                     ->nullable()
-                    ->helperText('Describe this media for screen readers, or inherit its Storage ALT.'),
+                    ->helperText(__('Describe this media for screen readers, or inherit its Storage ALT.')),
             ])
             ->action(function (array $data, array $arguments): void {
                 $artwork = $this->actionArtwork($arguments)->fresh();

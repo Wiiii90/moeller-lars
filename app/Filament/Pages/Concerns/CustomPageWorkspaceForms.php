@@ -108,7 +108,7 @@ trait CustomPageWorkspaceForms
             ],
             'contact' => [
                 $this->contactEditorField(
-                    TextInput::make('title')->label('Heading')->placeholder('Contact')->maxLength(160)->columnSpanFull(),
+                    TextInput::make('title')->label('Heading')->placeholder(__('Contact'))->maxLength(160)->columnSpanFull(),
                     'title', $onContactChange, blur: true,
                 ),
                 $this->contactEditorField(

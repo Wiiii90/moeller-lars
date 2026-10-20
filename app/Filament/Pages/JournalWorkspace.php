@@ -409,7 +409,7 @@ final class JournalWorkspace extends Page
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                 ]),
             ])
-            ->modalHeading('Journal settings')
+            ->modalHeading(__('Journal settings'))
             ->action(function (Schema $schema, array $data): void {
                 $section = $this->section();
                 $before = $section->only(['template', 'title', 'navigation_label', 'slug']);
@@ -450,7 +450,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('addPost')->label('Add post')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
-            ->modalHeading('Add post')
+            ->modalHeading(__('Add post'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try {
@@ -481,7 +481,7 @@ final class JournalWorkspace extends Page
                 return [...$post->attributesToArray(), ...app(JournalEntryEditorState::class)->for($post)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
-            ->modalHeading('Edit post')
+            ->modalHeading(__('Edit post'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'post'))
             ->action(function (Action $action, array $data, array $arguments): void {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
@@ -511,7 +511,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('schedulePost')->label('Schedule publication')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema([DateTimePicker::make('scheduled_at')->label('Publish at')->seconds(false)->required()])
-            ->modalHeading('Schedule publication')
+            ->modalHeading(__('Schedule publication'))
             ->action(function (Action $action, array $data, array $arguments): void {
                 try {
                     app(BlogEditorialService::class)->schedule($this->post((int) ($arguments['post'] ?? 0)), $data['scheduled_at'] ?? null);
@@ -538,7 +538,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('addExhibition')->label('Add exhibition')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Add exhibition')
+            ->modalHeading(__('Add exhibition'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try {
@@ -569,7 +569,7 @@ final class JournalWorkspace extends Page
                 return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Edit exhibition')
+            ->modalHeading(__('Edit exhibition'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'exhibition'))
             ->action(function (Action $action, Schema $schema, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));

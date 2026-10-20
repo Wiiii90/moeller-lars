@@ -198,11 +198,11 @@ trait CustomPageWorkspaceLifecycle
                             ->label('Navigation parent')
                             ->options(fn (): array => $this->parentOptions())
                             ->nullable()
-                            ->placeholder('Top level')
+                            ->placeholder(__('Top level'))
                             ->visible(fn (): bool => PublicContentSetting::navigationNestingEnabled()),
                     ]),
             ])
-            ->modalHeading('Page settings')
+            ->modalHeading(__('Page settings'))
             ->action(function (array $data): void {
                 $before = $this->section()->only([
                     'title',

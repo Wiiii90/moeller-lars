@@ -155,7 +155,7 @@ final class MediaAssetSelect
     ): Select {
         return $select
             ->label($label)
-            ->placeholder('Choose from Storage')
+            ->placeholder(__('Choose from Storage'))
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
                 $search,
@@ -165,8 +165,8 @@ final class MediaAssetSelect
                 $modifyQueryUsing,
             ))
             ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
-            ->searchPrompt('Search Storage by filename')
-            ->noSearchResultsMessage('No matching files in Storage')
+            ->searchPrompt(__('Search Storage by filename'))
+            ->noSearchResultsMessage(__('No matching files in Storage'))
             ->allowHtml();
     }
 

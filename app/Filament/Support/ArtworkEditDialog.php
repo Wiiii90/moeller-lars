@@ -120,7 +120,7 @@ final class ArtworkEditDialog
                         'Existing Media File',
                         allowedMimeTypes: self::primaryMimeTypes(),
                     )
-                        ->placeholder('No primary media')
+                        ->placeholder(__('No primary media'))
                         ->nullable()
                         ->disabled($primaryReadOnly)
                         ->selectablePlaceholder(! $primaryReadOnly)

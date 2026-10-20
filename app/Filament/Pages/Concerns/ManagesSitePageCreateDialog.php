@@ -30,7 +30,7 @@ trait ManagesSitePageCreateDialog
     {
         $action = Action::make('addPage')
             ->label('Add page')
-            ->modalHeading('Add page')
+            ->modalHeading(__('Add page'))
             ->schema([
                 Grid::make()
                     ->columns(['md' => 2])
@@ -68,7 +68,7 @@ trait ManagesSitePageCreateDialog
                         Select::make('parent_id')
                             ->label('Parent page')
                             ->options(fn (): array => $this->parentOptions)
-                            ->placeholder('Top level')
+                            ->placeholder(__('Top level'))
                             ->native()
                             ->nullable()
                             ->visible(fn (): bool => $this->nestedNavigationEnabled),
@@ -78,7 +78,7 @@ trait ManagesSitePageCreateDialog
                             ->integer()
                             ->minValue(1)
                             ->nullable()
-                            ->placeholder('Last'),
+                            ->placeholder(__('Last')),
                     ]),
                 PageHeadingFields::schema()
                     ->visible(fn (Get $get): bool =>

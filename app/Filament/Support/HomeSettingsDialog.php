@@ -295,13 +295,13 @@ final class HomeSettingsDialog
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
             ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
-            ->searchPrompt('Search eligible Hero Artworks')
-            ->noSearchResultsMessage('No matching eligible artworks');
+            ->searchPrompt(__('Search eligible Hero Artworks'))
+            ->noSearchResultsMessage(__('No matching eligible artworks'));
 
         if ($multiple) {
             $select
                 ->multiple()
-                ->placeholder('No additional artworks')
+                ->placeholder(__('No additional artworks'))
                 ->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
         } else {
             $select->getOptionLabelUsing(fn (mixed $value): ?string => $this->heroArtworkOptionLabel($value));

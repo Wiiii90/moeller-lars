@@ -243,7 +243,7 @@ final class General extends Page
                                 imagesOnly: true,
                                 includeDimensions: false,
                             )
-                                ->placeholder('Choose from Storage')
+                                ->placeholder(__('Choose from Storage'))
                                 ->selectablePlaceholder(false)
                                 ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control general-site-icon-control'])
                                 ->nullable()
@@ -931,7 +931,7 @@ final class General extends Page
         return AdminDialog::create(
             Action::make('addSocialLink')
                 ->label('Add social link')
-                ->modalHeading('Add profile')
+                ->modalHeading(__('Add profile'))
                 ->fillForm(fn (): array => [
                     'platform' => '',
                     'url' => '',
@@ -990,7 +990,7 @@ final class General extends Page
         return AdminDialog::edit(
             Action::make('editSocialLink')
                 ->label('Edit')
-                ->modalHeading('Edit profile')
+                ->modalHeading(__('Edit profile'))
                 ->extraModalFooterActions(fn (array $arguments): array => $this->socialEditHeaderActions($arguments))
                 ->fillForm(function (array $arguments): array {
                     $index = $this->socialLinkIndexForAction($arguments);
