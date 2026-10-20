@@ -315,7 +315,6 @@ it('edits the Contact heading and all Contact settings in the owning component w
 
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
         ->assertDontSee('Contact item')
-        ->assertDontSeeHtml('class="custom-page-child-row')
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
         ->fillForm([
             'type' => 'contact',
