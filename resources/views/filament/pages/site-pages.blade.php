@@ -165,15 +165,17 @@
                                     ])
 
                                     @if ($section['children'] !== [] || ($reorderEnabled && $nestedNavigationEnabled))
-                                        <div class="admin-hierarchy__children">
+                                        <div class="admin-hierarchy__children{{ $section['children'] === [] && $reorderEnabled && $nestedNavigationEnabled ? ' admin-pages__empty-child-parent' : '' }}">
                                             <div
-                                                class="admin-hierarchy__children-rows"
+                                                class="admin-hierarchy__children-rows{{ $section['children'] === [] && $reorderEnabled && $nestedNavigationEnabled ? ' admin-pages__empty-child-rows' : '' }}"
                                                 role="rowgroup"
                                                 aria-label="Child pages under {{ $section['title'] }}"
                                                 @if ($reorderEnabled && $nestedNavigationEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
-
+                                                    @if ($section['children'] === [])
+                                                        wire:sort:config="{ emptyInsertThreshold: 0 }"
+                                                    @endif
                                                     wire:sort:group="site-pages"
                                                      wire:sort:group-id="{{ $section['id'] }}"
                                                 @endif
