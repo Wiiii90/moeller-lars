@@ -41,6 +41,17 @@ final class AdminRichText
                 is_string($state) ? RichTextDocument::forEditor($state) : $state
             )
             ->toolbarButtons($toolbar)
+            ->floatingToolbars($allowEmbeddedMedia ? [
+                'image' => [
+                    'imageInline', 'imageLeft', 'imageCenter', 'imageRight',
+                    'imageFloatleft', 'imageFloatright', 'imageCaption',
+                ],
+                'table' => [
+                    'tableAddColumnBefore', 'tableAddColumnAfter', 'tableDeleteColumn',
+                    'tableAddRowBefore', 'tableAddRowAfter', 'tableDeleteRow',
+                    'tableMergeCells', 'tableSplitCell', 'tableDelete',
+                ],
+            ] : null)
             ->linkProtocols(['http', 'https'])
             ->nullable()
             ->columnSpanFull()

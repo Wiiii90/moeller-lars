@@ -63,15 +63,15 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                             'float-right' => 'heroicon-o-bars-arrow-up',
                         })
                         ->disabledWhenNotActive()
-                        ->activeJsExpression("\$getEditor()?.isActive('image')")
-                        ->jsHandler("\$getEditor()?.chain().focus().updateAttributes('image', { artistPlacement: '{$placement}' }).run()"),
+                        ->activeJsExpression("window.ArtistRichImage?.hasSelection(\$getEditor()) ?? false")
+                        ->jsHandler("window.ArtistRichImage?.setPlacement(\$getEditor(), '{$placement}')"),
                 ArtistImageLayout::PLACEMENTS,
             ),
             RichEditorTool::make('imageCaption')
                 ->label('Image caption')
                 ->icon(AdminIcon::Details->value)
                 ->disabledWhenNotActive()
-                ->activeJsExpression("\$getEditor()?.isActive('image')")
+                ->activeJsExpression("window.ArtistRichImage?.hasSelection(\$getEditor()) ?? false")
                 ->action(arguments: "{ caption: \$getEditor()?.getAttributes('image').artistCaption ?? '' }"),
 
         ];

@@ -49,3 +49,12 @@ poetry and list boundaries require human review. There is no PDF file importer.
 All editorial saves continue through the existing owning action, append-only
 audit, notification and Publication paths. No timers and no auto-save per
 keystroke. Tests and actual browser acceptance remain outstanding.
+
+## Image selection
+
+The artist image layout toolbar must not rely on a text cursor remaining
+on the image after a toolbar click. The bundled Tiptap extension records
+selected image nodes, uses ProseMirror NodeSelection and applies whitelisted
+attributes through a normal document transaction. This preserves Undo/Redo
+and enables an image-specific floating toolbar. Image Caption is an optional
+caption displayed immediately beneath the image, not its ALT text.
