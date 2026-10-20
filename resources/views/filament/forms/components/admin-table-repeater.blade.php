@@ -43,11 +43,11 @@
                                         type="button"
                                         class="admin-action admin-action--with-icon"
                                         wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
-                                        aria-label="Remove color {{ $loop->iteration }}"
-                                        title="Remove color"
+                                        aria-label="Delete color {{ $loop->iteration }}"
+                                        title="Delete color"
                                     >
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Remove->mini()" :size="\Filament\Support\Enums\IconSize::Small" class="admin-action__icon" />
-                                        <span class="admin-action__label">Remove</span>
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" :size="\Filament\Support\Enums\IconSize::Small" class="admin-action__icon" />
+                                        <span class="admin-action__label">Delete</span>
                                     </button>
                                 @endif
                             </td>
