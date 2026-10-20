@@ -1,65 +1,55 @@
 # Editorial Rich Text contract
 
-Source implementation is browser-unverified. Test in isolated local preview before artist acceptance.
+The canonical editable text surface is `AdminRichText`, built on the installed
+Filament 5.7.6 / Tiptap implementation. It is shared by Journal, Custom Pages,
+Home and nested text content. There is no separate CV editor or second
+editor-specific file store.
 
-## One common editor
+## Content and publication
 
-`AdminRichText` owns the shared Tiptap/Filament RichEditor for Journal,
-Custom Page, Home and nested text fields. No separate CV editor, Markdown
-toolbar, hidden second uploader or rich-text-specific media filesystem.
+Existing Markdown values remain readable. The editor converts legacy values
+to supported visual HTML on editing, not in an unconditional backfill. Both
+formats use `SafeRichTextRenderer` with editorial validation; HTML public
+output is sanitized server-side before publication. Every save retains the
+existing owning editorial action, audit, notification and publication paths.
+The editor does not own a second auto-save timer or alternate change history.
 
-The editor accepts historic Markdown source without rewriting untouched
-records. Editing converts it to visual HTML, which is then stored in the
-existing body fields. Public and editorial validation explicitly recognize
-both historical Markdown and new visual HTML; public rendering sanitizes the
-new HTML via Filament's server-side RichContentRenderer rather than echoing
-untrusted text.
+## Image media and layout
 
-## Canonical media
+Images reference canonical available `MediaAsset` IDs, including historical
+`media:` references. The image picker is an inline panel *inside* the current
+Edit form, using the existing searchable Storage selector. It does not open
+a second action modal.
 
-Images are identified by existing MediaAsset IDs, never by raw Storage paths.
-The rich-editor field explicitly wires Filament's attachment save/URL callbacks to the same provider used by Public rendering, and the provider delegates uploads to MediaIngestService
-and resolves file URLs through the established admin/public media routes.
-A shared media asset must not be deleted when its reference is removed from
-one rich-text body: global media deletion/reference cleanup owns that operation.
-No external image can bypass the permitted URL/protocol checks. Public
-publication still requires valid ALT information and an available thumbnail.
+The generic `Attach Files` control and its independent upload capability are
+disabled. Uploads are performed via the existing Storage workflow. Deleting
+an image from text must not delete a shared MediaAsset. Public resolution
+honors existing media rights, visibility and ALT checks.
 
-The image dialog permits selection of an existing Storage image. Filament's
-native image upload uses the same canonical ingestion provider; the visual
-editor keeps supported image resizing. Alignment tools apply to text paragraphs.
-An `ArtistImageLayout` Tiptap extension persists explicit image
-placement and caption attributes in the same document. It offers inline,
-left, centered, right, float-left and float-right placement, plus a
-dedicated caption field. Public uses a conservative, escaped image/caption projection based on those attributes, and wraps floats on
-narrow layouts. The existing Filament image resizer owns dimensions.
-The JavaScript module is a Vite-bundled external Tiptap extension; no
-new popup or parallel editor lifecycle was introduced. Browser acceptance
-for sizing, caption editing, nested text and text wrapping remains pending.
+`ArtistImageLayout` is one Tiptap extension shared between browser editor
+and PHP public rendering. It stores exactly one of: inline, left, center,
+right, float-left, float-right. The image toolbar operates on a selected
+image node, not a paragraph cursor, and retains normal Undo/Redo behavior.
+Float-left and float-right allow *subsequent paragraphs* to flow alongside
+the image while desktop width permits; narrow layouts clear the float.
+An optional 500-character Caption appears below the image; it is not
+alternative text for screen readers and does not replace ALT.
 
-## PDF paste
+Image selection, floating toolbar, sizing, and wrapping remain subject to
+browser acceptance on the actual Filament version.
 
-Ordinary clipboard paste uses Tiptap's rich-content parsing. For plain copied
-PDF text, the explicit Clean PDF text toolbar action works on a selection,
-shows an editable proposed result in a modal and inserts it through Tiptap's
-normal Undo history only after the user confirms. The conservative cleaner
-joins soft wraps and preserves empty-line paragraph boundaries; ambiguous
-poetry and list boundaries require human review. There is no PDF file importer.
+## Clipboard and PDF
 
-All editorial saves continue through the existing owning action, append-only
-audit, notification and Publication paths. No timers and no auto-save per
-keystroke. Tests and actual browser acceptance remain outstanding.
+Normal rich clipboard paste is handled by Tiptap. The experimental
+`Clean PDF Text` action and its unused cleaner have been removed pending
+the artist's explicit decision about paragraph/line-wrap semantics.
+There is no PDF-file importer and no automatic destructive cleanup of text
+copied from PDFs.
 
-## Image selection
+## Acceptance
 
-The artist image layout toolbar must not rely on a text cursor remaining
-on the image after a toolbar click. The bundled Tiptap extension records
-selected image nodes, uses ProseMirror NodeSelection and applies whitelisted
-attributes through a normal document transaction. This preserves Undo/Redo
-and enables an image-specific floating toolbar. Image Caption is an optional
-caption displayed immediately beneath the image, not its ALT text.
-
-The Storage image picker is an inline panel in the owning Edit dialog. It uses
-MediaAssetSelect's existing searchable media choices, with no second modal.
-Selection inserts a canonical media reference into the active rich editor;
-the transient picker field is never dehydrated as editorial content.
+Verify in the actual Edit component dialog: parent/heading and editor layout,
+insert image within the current dialog, image-node selection and floating
+toolbar behavior, all six positions, paragraph wrapping, caption, Undo/Redo,
+close/reopen, public preview and an ordinary publication checkpoint.
+Source review, authored tests and committed code are not browser acceptance.
