@@ -106,10 +106,10 @@ trait GalleryWorkspaceArtworkDialogs
         $action = Action::make('editArtwork')
             ->label('Edit')
             ->modalHeading('Edit artwork')
-            ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)))
+            ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)->fresh()))
             ->schema(fn (array $arguments): array => $dialog->schema(
                 autosave: true,
-                primaryReadOnly: (string) $this->actionArtwork($arguments)->getAttribute('state') === 'published',
+                primaryReadOnly: (string) $this->actionArtwork($arguments)->fresh()->getAttribute('state') === 'published',
                 onPrimaryMediaChanged: function (?int $assetId) use ($dialog, $arguments): void {
                     if (! $dialog->changePrimaryMedia($this->actionArtwork($arguments), $assetId)) {
                         return;
@@ -272,7 +272,10 @@ trait GalleryWorkspaceArtworkDialogs
             })->disabled(! $enabled);
         }
 
-        $isPublished = fn (): bool => (string) $this->actionArtwork($target)->getAttribute('state') === 'published';
+        // The workspace caches Artwork lookups within a Livewire request.
+        // Header icons and disabled states must read the committed state after
+        // a nested Publish/Unpublish without closing and reopening the dialog.
+        $isPublished = fn (): bool => (string) $this->actionArtwork($target)->fresh()->getAttribute('state') === 'published';
         $publicationRole = fn (): AdminRowAction => $isPublished()
             ? AdminRowAction::Unpublish
             : AdminRowAction::Publish;
