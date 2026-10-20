@@ -18,6 +18,7 @@ use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\SiteNavigation;
 use App\Http\Middleware\DeferMatomoReporting;
+use App\Http\Middleware\SetAdminLocale;
 use BladeUI\Icons\Factory as BladeIconFactory;
 use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
@@ -138,6 +139,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                SetAdminLocale::class,
                 DeferMatomoReporting::class,
             ], isPersistent: true);
     }

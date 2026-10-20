@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Database\PublicationPostgresGrammar;
 use App\Domain\Admin\AdminMutationSnapshotBuffer;
 use App\Domain\Admin\AdminUndoContext;
+use Filament\Forms\Components\Field;
+use Filament\Actions\Action as FilamentAction;
+use Filament\Tables\Columns\Column as FilamentColumn;
 use App\Domain\Content\PublicSiteContext;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Publication\PublicationReadContext;
@@ -52,6 +55,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Resolve labels at render time, after the authenticated request's
+        // language has been selected. English remains the source language.
+        Field::configureUsing(static fn (Field $field): Field => $field->translateLabel());
+        FilamentAction::configureUsing(static fn (FilamentAction $action): FilamentAction => $action->translateLabel());
+        FilamentColumn::configureUsing(static fn (FilamentColumn $column): FilamentColumn => $column->translateLabel());
+
         // Livewire's temporary upload validator defaults to 12 MiB. Keep the
         // ingress size tied to the one canonical MediaTypePolicy; individual
         // consumers and MediaIngestService still enforce their own type limits.

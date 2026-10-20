@@ -36,6 +36,7 @@ final class AccountMenuAction
                     'name' => (string) self::user()->getAttribute('name'),
                     'email' => (string) self::user()->getAttribute('email'),
                     'admin_region' => (string) self::user()->getAttribute('admin_region'),
+                    'admin_language' => (string) (self::user()->getAttribute('admin_language') ?: 'en'),
                 ])
                 ->schema(fn (): array => [
                     View::make('filament.schemas.components.admin-section-heading')
@@ -56,7 +57,16 @@ final class AccountMenuAction
                         ->columns(2)
                         ->columnSpanFull(),
                     View::make('filament.schemas.components.admin-section-heading')
-                        ->viewData(['label' => 'Regional Formats'])
+                        ->viewData(['label' => __('Preferences')])
+                        ->columnSpanFull(),
+                    Select::make('admin_language')
+                        ->label('Language')
+                        ->options(['en' => 'English', 'de' => 'Deutsch'])
+                        ->required()
+                        ->in(['en', 'de'])
+                        ->columnSpanFull(),
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData(['label' => __('Regional Formats')])
                         ->columnSpanFull(),
                     Select::make('admin_region')
                         ->label('Dates and numbers')
@@ -114,11 +124,16 @@ final class AccountMenuAction
 
                     $action->halt();
                 })
-                ->action(function (array $data): void {
+                ->action(function (array $data, \Livewire\Component $livewire): void {
                     $user = self::user();
                     $passwordChanged = array_key_exists('password', $data);
+                    $previousLanguage = (string) ($user->getAttribute('admin_language') ?: 'en');
 
                     $user->update($data);
+                    $newLanguage = (string) $user->getAttribute('admin_language');
+                    if ($newLanguage !== $previousLanguage) {
+                        app()->setLocale($newLanguage);
+                    }
 
                     if ($passwordChanged && request()->hasSession()) {
                         request()->session()->put([
@@ -127,9 +142,15 @@ final class AccountMenuAction
                     }
 
                     app(AdminNotifier::class)->notification(
-                        title: 'Account updated',
+                        title: __('Account updated'),
                         status: 'success',
                     );
+
+                    if ($newLanguage !== $previousLanguage) {
+                        // Full navigation rebuild is required; the currently
+                        // mounted SPA nodes were rendered in the old language.
+                        $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
+                    }
                 }),
             'Save account',
             AdminDialogSize::Default,
