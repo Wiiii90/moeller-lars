@@ -18,7 +18,7 @@ untrusted text.
 ## Canonical media
 
 Images are identified by existing MediaAsset IDs, never by raw Storage paths.
-The rich-editor file-attachment provider delegates uploads to MediaIngestService
+The rich-editor field explicitly wires Filament's attachment save/URL callbacks to the same provider used by Public rendering, and the provider delegates uploads to MediaIngestService
 and resolves file URLs through the established admin/public media routes.
 A shared media asset must not be deleted when its reference is removed from
 one rich-text body: global media deletion/reference cleanup owns that operation.

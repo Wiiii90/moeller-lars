@@ -45,7 +45,15 @@ final class AdminRichText
 
         if ($allowEmbeddedMedia) {
             $editor->resizableImages()
-                ->fileAttachmentsAcceptedFileTypes(MediaTypePolicy::IMAGE_MIME_TYPES);
+                ->fileAttachmentsAcceptedFileTypes(MediaTypePolicy::IMAGE_MIME_TYPES)
+                ->fileAttachmentsVisibility('private')
+                ->getFileAttachmentUrlUsing(
+                    static fn (mixed $file): ?string => (new MediaRichTextAttachmentProvider)->getFileAttachmentUrl($file),
+                )
+                ->saveUploadedFileAttachmentUsing(
+                    static fn (\Livewire\Features\SupportFileUploads\TemporaryUploadedFile $file): string =>
+                        (string) (new MediaRichTextAttachmentProvider)->saveUploadedFileAttachment($file),
+                );
         }
 
         if ($maxLength !== null) {
