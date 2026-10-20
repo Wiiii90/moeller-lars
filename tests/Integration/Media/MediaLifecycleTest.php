@@ -345,6 +345,22 @@ it('reserves the incoming thumbnail bytes separately from existing generated sto
         ->toThrow(ValidationException::class, 'site storage allowance is full');
 });
 
+it('uses the same quota gate for generated-only thumbnail consolidation', function (): void {
+    Storage::fake('media-capacity');
+    config(['media.disk' => 'media-capacity']);
+    Storage::disk('media-capacity')->put('originals/original.jpg', str_repeat('o', 50));
+
+    $capacity = app(MediaCapacityService::class);
+    $snapshot = $capacity->snapshot();
+    expect($snapshot['measurement_available'])->toBeTrue();
+    config()->set('media.quota_bytes', $snapshot['site_used_bytes'] + 100);
+
+    $capacity->assertCanStoreGenerated(100);
+
+    expect(fn () => $capacity->assertCanStoreGenerated(101))
+        ->toThrow(ValidationException::class, 'site storage allowance is full');
+});
+
 it('blocks exhausted-quota ingest before the first write', function (): void {
     Storage::fake('media-capacity');
     config(['media.disk' => 'media-capacity', 'media.quota_bytes' => 1]);
