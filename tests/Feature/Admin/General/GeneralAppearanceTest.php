@@ -462,6 +462,39 @@ it('autosaves an inline Solid ColorPicker independently of gradient stops', func
         ->and(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBeNull();
 });
 
+it('round-trips each Solid paint and a multi-stop gradient through fresh General instances', function (): void {
+    $page = Livewire::test(General::class);
+
+    foreach (PublicAppearance::SURFACE_PREFIXES as $index => $surface) {
+        $color = sprintf('#%06X', 0x113355 + (int) $index * 0x10101);
+        $field = PublicAppearance::solidColorField($surface);
+
+        $page->set('data.'.$field, $color)->assertHasNoErrors();
+        expect(PublicContentSetting::general()->getAttribute($field))->toBe($color);
+    }
+
+    $fresh = Livewire::test(General::class);
+    foreach (PublicAppearance::SURFACE_PREFIXES as $index => $surface) {
+        $color = sprintf('#%06X', 0x113355 + (int) $index * 0x10101);
+        $fresh->assertSet('data.'.PublicAppearance::solidColorField($surface), $color);
+    }
+
+    $stops = [
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#445566', 'position' => 50],
+        ['color' => '#778899', 'position' => 100],
+    ];
+
+    $fresh->set('data.menu_background_mode', 'gradient')
+        ->set('data.menu_background_gradient_stops', $stops)
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBe($stops);
+    Livewire::test(General::class)
+        ->assertSet('data.menu_background_mode', 'gradient')
+        ->assertSet('data.menu_background_gradient_stops', $stops);
+});
+
 it('saves color table rows sorted by the chosen numeric position', function (): void {
     Livewire::test(General::class)
         ->set('data.page_background_mode', 'gradient')

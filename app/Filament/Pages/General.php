@@ -693,7 +693,10 @@ final class General extends Page
                     'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
                     default => PublicAppearance::DEFAULT_SURFACE_COLOR,
                 })
-                ->live(onBlur: true)
+                // Filament's picker only commits onBlur after focus/popup close.
+                // Live mode persists a settled color selection without requiring
+                // the artist to dismiss the picker before leaving this page.
+                ->live()
                 ->afterStateUpdated(static function ($livewire, mixed $state) use ($surface): void {
                     if ($livewire instanceof self) {
                         $livewire->persistSurfaceColor($surface, 'primary', $state);
@@ -720,7 +723,7 @@ final class General extends Page
                 AdminColorControl::make('color', 'Color')
                     ->hiddenLabel()
                     ->required()
-                    ->live(onBlur: true),
+                    ->live(),
                 TextInput::make('position')
                     ->label('Position')
                     ->hiddenLabel()
