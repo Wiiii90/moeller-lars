@@ -196,6 +196,23 @@ final class General extends Page
 
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
             $data[$surface.'_gradient_stops'] = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
+
+            // Apply public presentation defaults to the editor only.
+            // Unset gradient parameters remain unset until explicitly changed.
+            $angle = $surface.'_gradient_angle';
+            $data[$angle] = PublicAppearance::normalizeAngle($data[$angle] ?? null, $angle)
+                ?? PublicAppearance::DEFAULT_GRADIENT_ANGLE;
+
+            foreach ([
+                '_gradient_center_x' => 'normalizeCenter',
+                '_gradient_center_y' => 'normalizeCenter',
+                '_gradient_shape' => 'normalizeShape',
+                '_gradient_repeat_span' => 'normalizeRepeatSpan',
+                '_gradient_repeating' => 'normalizeRepeating',
+            ] as $suffix => $method) {
+                $field = $surface.$suffix;
+                $data[$field] = PublicAppearance::$method($data[$field] ?? null, $field);
+            }
         }
 
         $this->data = $data;

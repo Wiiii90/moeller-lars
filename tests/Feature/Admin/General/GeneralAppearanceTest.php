@@ -464,6 +464,45 @@ it('keeps Appearance gradient actions on the shared line-based admin control con
     expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeFalse();
 });
 
+it('hydrates the effective gradient defaults without modifying stored settings', function (): void {
+    $record = PublicContentSetting::general();
+    $fields = [];
+
+    foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+        foreach ([
+            '_gradient_angle',
+            '_gradient_repeating',
+            '_gradient_center_x',
+            '_gradient_center_y',
+            '_gradient_shape',
+            '_gradient_repeat_span',
+        ] as $suffix) {
+            $fields[] = $surface.$suffix;
+        }
+    }
+
+    $stored = $record->only($fields);
+    $page = Livewire::test(General::class)->assertHasNoErrors();
+
+    foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+        $expected = [
+            '_gradient_angle' => PublicAppearance::normalizeAngle($stored[$surface.'_gradient_angle'], $surface.'_gradient_angle')
+                ?? PublicAppearance::DEFAULT_GRADIENT_ANGLE,
+            '_gradient_repeating' => PublicAppearance::normalizeRepeating($stored[$surface.'_gradient_repeating'], $surface.'_gradient_repeating'),
+            '_gradient_center_x' => PublicAppearance::normalizeCenter($stored[$surface.'_gradient_center_x'], $surface.'_gradient_center_x'),
+            '_gradient_center_y' => PublicAppearance::normalizeCenter($stored[$surface.'_gradient_center_y'], $surface.'_gradient_center_y'),
+            '_gradient_shape' => PublicAppearance::normalizeShape($stored[$surface.'_gradient_shape'], $surface.'_gradient_shape'),
+            '_gradient_repeat_span' => PublicAppearance::normalizeRepeatSpan($stored[$surface.'_gradient_repeat_span'], $surface.'_gradient_repeat_span'),
+        ];
+
+        foreach ($expected as $suffix => $value) {
+            $page->assertSet('data.'.$surface.$suffix, $value);
+        }
+    }
+
+    expect(PublicContentSetting::general()->only($fields))->toBe($stored);
+});
+
 it('does not create obsolete Solid repeater state or persist defaults on mount', function (): void {
     $component = Livewire::test(General::class)->assertHasNoErrors();
     foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {

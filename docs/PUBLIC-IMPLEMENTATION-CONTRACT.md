@@ -727,6 +727,9 @@ for Radial/Conic; Repeat span appears conditionally. The AdminAngleControl
 uses Filament's native input wrapper and degree suffix for exactly the same
 height and baseline as Center X/Y, retaining its teleported rotary dial.
 All inputs commit through the established validated General appearance path.
+Unset gradient parameters hydrate in General with the same visible values used
+by `PublicAppearance` (Angle 180°, Center X/Y 50%, Circle, Repeat span 120,
+Repeating Off); opening the editor never materializes those defaults in storage.
 
 All global paint surfaces use the shared Solid ColorPicker inline beside
 their mode Select. Linear, Radial and Conic use one canonical x-admin.table
