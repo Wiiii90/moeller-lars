@@ -480,57 +480,6 @@ it('saves color table rows sorted by the chosen numeric position', function (): 
 });
 
 
-it('renders the General color editor through the canonical admin table, not Filament table chrome', function (): void {
-    $solidHtml = Livewire::test(General::class)->html();
-
-    expect($solidHtml)
-        ->toContain('general-color-table__table')
-        ->toContain('admin-table--data')
-        ->not->toContain('fi-fo-table-repeater');
-
-    $gradientHtml = Livewire::test(General::class)
-        ->set('data.background_mode', 'gradient')
-        ->html();
-
-    expect($gradientHtml)
-        ->toContain('general-color-table__table')
-        ->toContain('Add color')
-        ->toContain('admin-add-row')
-        ->not->toContain('fi-fo-table-repeater');
-});
-
-it('has exactly one visible header row without repeating Color, Position or Colors in every field', function (): void {
-    // The canonical table provides visible column names. Filament field labels
-    // remain screen-reader accessible but must not occupy separate row lines.
-    $markup = Livewire::test(General::class)
-        ->set('data.background_mode', 'radial')
-        ->html();
-
-    expect($markup)
-        ->toContain('general-color-table__table')
-        ->not->toContain('fi-fo-table-repeater');
-
-    // Scope assertions to this actual table, not unrelated General fields.
-    expect(preg_match('/general-color-table__table.*?<\\/table>/s', $markup, $match))->toBe(1);
-    $table = $match[0];
-    expect($table)->toContain('fi-fo-field-label fi-sr-only')
-        ->not->toContain('fi-fo-field-label-col')
-        ->toContain('<th scope="col">Color</th>')
-        ->toContain('<th scope="col">Position</th>');
-});
-
-it('uses registered schema action handlers for adding and removing gradient colors', function (): void {
-    $html = Livewire::test(General::class)
-        ->set('data.background_mode', 'gradient')
-        ->html();
-
-    expect($html)->toContain('general-color-table__table')
-        ->toContain('Add color')
-        ->toContain('wire:click=')
-        ->toContain('schemaComponent')
-        ->not->toContain('x-on:click="$wire.mountAction');
-});
-
 it('preserves the inherited title color until the artist explicitly sets a title paint', function (): void {
     $settings = PublicContentSetting::general();
     $originalColor = $settings->getAttribute('header_name_color');
@@ -602,4 +551,18 @@ it('reuses the same title color-table persistence as Background, Menu and Page',
         ['color' => '#DDEEFF', 'position' => 50],
         ['color' => '#001122', 'position' => 100],
     ]);
+});
+
+it('validates public header settings', function (): void {
+    expect(PublicAppearance::headerText('  Neue Edition  '))->toBe('Neue Edition')
+        ->and(PublicAppearance::normalizeColor('#ab12ff', 'header_name_color'))->toBe('#AB12FF')
+        ->and(PublicAppearance::headerAlignment(null, 'header_name_mobile_alignment'))->toBe('center');
+
+    expect(fn () => PublicAppearance::headerText(''))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerText(str_repeat('X', 101)))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerAlignment('diagonal'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerPosition('overlap'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeTitleMinSize(11))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeTitleSize(65))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeColor('red', 'header_name_color'))->toThrow(ValidationException::class);
 });

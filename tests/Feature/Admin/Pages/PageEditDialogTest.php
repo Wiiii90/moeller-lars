@@ -130,3 +130,33 @@ it('rejects invalid Pages Edit inputs without partially persisting earlier field
     expect($section->fresh()->title)->toBe('Validation Example')
         ->and($section->fresh()->slug)->toBe('validation-example');
 });
+
+it('reorders Pages through the mounted editor', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+    $editorial = app(SiteSectionEditorialService::class);
+    $first = $editorial->createCustomPage('First sibling', 'first-sibling');
+    $second = $editorial->createCustomPage('Second sibling', 'second-sibling');
+
+    $dialog = Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $second->id])
+        ->assertSet('mountedActions.0.name', 'editPage');
+
+    $dialog->mountAction('dialogMoveUp')
+        ->assertHasNoErrors()
+        ->assertSet('mountedActions.0.name', 'editPage')
+        ->assertSet('mountedActions.0.arguments.section', $second->id)
+        ->assertSet('mountedActions.0.data.position', 1);
+    expect((int) $second->fresh()->position)->toBeLessThan((int) $first->fresh()->position);
+    expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveUp')->isDisabled())->toBeTrue();
+
+    $auditCount = AuditEvent::query()->count();
+    $dialog->mountAction('dialogMoveUp')->assertSet('mountedActions.0.name', 'editPage');
+    expect(AuditEvent::query()->count())->toBe($auditCount);
+
+    $dialog->mountAction('toggleDialogPublication')
+        ->assertSet('mountedActions.0.name', 'editPage')
+        ->assertSet('mountedActions.0.arguments.section', $second->id);
+    expect($second->fresh()->state)->toBe('published');
+});

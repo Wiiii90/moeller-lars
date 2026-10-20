@@ -1,14 +1,49 @@
 <?php
 
+
+use App\Domain\Content\HomePresentationEditorialService;
+
+use App\Domain\Content\HomeTemplate;
+
+use App\Filament\Pages\HomePresentation;
+
 use App\Filament\Pages\CustomPageWorkspace;
+
 use App\Models\AdminNotification;
+
 use App\Models\AuditEvent;
+
+use App\Models\HomePresentationSetting;
+
 use App\Models\PublicContentSetting;
+
+use App\Models\SiteSection;
+
 use App\Models\User;
+
 use Filament\Facades\Filament;
+
 use Livewire\Livewire;
 
-require_once __DIR__.'/CustomPageFixtures.php';
+
+require_once __DIR__.'/Pages/CustomPageFixtures.php';
+
+
+function contactHomeFixture(array $children): HomePresentationSetting
+{
+    $home = SiteSection::query()->where('type', SiteSection::TYPE_HOME)->firstOrFail();
+    $settings = HomePresentationSetting::query()->where('site_section_id', $home->getKey())->firstOrFail();
+    $configuration = HomePresentationEditorialService::defaults();
+    $configuration[HomeTemplate::Custom->value]['components'] = [[
+        'type' => 'contact', 'published' => true, 'title' => 'Contact', 'children' => $children,
+    ]];
+    $settings->setAttribute('template', HomeTemplate::Custom->value);
+    $settings->setAttribute('configuration', $configuration);
+    $settings->save();
+
+    return $settings;
+}
+
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -21,7 +56,74 @@ beforeEach(function (): void {
     ]]);
 });
 
-it('autosaves each Contact toggle and form presentation without needing a modal change event', function (): void {
+
+it('persists Home Contact settings once', function (): void {
+    $settings = contactHomeFixture([[
+        'type' => 'social_links', 'published' => true,
+        'social_platforms' => ['instagram', 'facebook'],
+    ]]);
+    $before = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+
+    $editor = Livewire::test(HomePresentation::class)
+        ->mountAction('editHomeChild', ['index' => 0, 'type' => 'contact', 'child' => 'social_links'])
+        ->assertSet('mountedActions.0.name', 'editHomeChild');
+    $editor->set('mountedActions.0.data.social_platforms', ['instagram'])
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
+        ->assertSet('mountedActions.0.name', 'editHomeChild');
+
+    $children = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())['custom']['components'][0]['children'];
+    expect($children[0]['social_platforms'])->toBe(['instagram'])
+        ->and(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+
+    $editor->set('mountedActions.0.data.social_platforms', [])
+        ->assertDispatched('admin-header-notification')
+        ->assertSet('mountedActions.0.name', 'editHomeChild');
+    $children = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())['custom']['components'][0]['children'];
+    expect($children[0]['social_platforms'])->toBe([]);
+
+    $count = AuditEvent::query()->count();
+    $editor->set('mountedActions.0.data.social_platforms', [])
+        ->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($count);
+});
+
+it('defers incomplete Home Contact status', function (): void {
+    $settings = contactHomeFixture([[
+        'type' => 'contact_form', 'published' => true,
+        'form_state' => 'enabled', 'status_text' => null,
+    ]]);
+
+    $editor = Livewire::test(HomePresentation::class)
+        ->mountAction('editHomeChild', ['index' => 0, 'type' => 'contact', 'child' => 'contact_form'])
+        ->assertSet('mountedActions.0.data.form_state', 'enabled');
+    $before = AuditEvent::query()->count();
+
+    $editor->set('mountedActions.0.data.form_state', 'under_construction')
+        ->assertSet('mountedActions.0.name', 'editHomeChild')
+        ->assertNotDispatched('admin-header-notification');
+    $children = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())['custom']['components'][0]['children'];
+    expect($children[0]['form_state'])->toBe('enabled')
+        ->and(AuditEvent::query()->count())->toBe($before);
+
+    $editor->set('mountedActions.0.data.status_text', 'Opening soon')
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
+        ->assertSet('mountedActions.0.name', 'editHomeChild');
+    $children = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())['custom']['components'][0]['children'];
+    expect($children[0]['form_state'])->toBe('under_construction')
+        ->and($children[0]['status_text'])->toBe('Opening soon')
+        ->and(AuditEvent::query()->count())->toBe($before + 1);
+});
+
+
+it('persists Custom Page Contact settings once', function (): void {
     [$page, $settings] = customPageWorkspaceRecord('Contact direct save', 'contact-direct-save');
     $settings->update(['blocks' => [[
         'type' => 'contact', 'published' => true, 'title' => 'Contact',
@@ -93,7 +195,7 @@ it('autosaves each Contact toggle and form presentation without needing a modal 
         ->assertSet('mountedActions.0.data.contact_social_selected.instagram', false);
 });
 
-it('persists Contact heading and preserves sibling values when only one control changes', function (): void {
+it('preserves Custom Page Contact sibling settings', function (): void {
     [$page, $settings] = customPageWorkspaceRecord('Contact heading blur', 'contact-heading-blur');
     $settings->update(['blocks' => [[
         'type' => 'contact', 'published' => true, 'title' => 'Original',
@@ -116,7 +218,7 @@ it('persists Contact heading and preserves sibling values when only one control 
         ->and($updated['children'][2]['form_state'])->toBe('enabled');
 });
 
-it('holds an incomplete Contact form-presentation change until status text is supplied', function (): void {
+it('defers incomplete Custom Page Contact status', function (): void {
     [$page, $settings] = customPageWorkspaceRecord('Pending form presentation', 'pending-form-presentation');
     $settings->update(['blocks' => [[
         'type' => 'contact', 'published' => true, 'title' => 'Contact',
@@ -149,3 +251,4 @@ it('holds an incomplete Contact form-presentation change until status text is su
         ->and($children[1]['social_platforms'])->toBe(['instagram'])
         ->and(AuditEvent::query()->count())->toBe($audits + 1);
 });
+

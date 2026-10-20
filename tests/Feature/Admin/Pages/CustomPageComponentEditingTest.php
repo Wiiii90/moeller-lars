@@ -770,3 +770,34 @@ it('rejects an invalid image replacement at the mounted field without mutation o
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe(0);
 });
+
+it('reorders and publishes Custom Page components in the editor', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+    [$section, $settings] = customPageWorkspaceRecord('Dialog reorder', 'dialog-reorder');
+    $settings->update(['blocks' => [
+        ['type' => 'text', 'published' => true, 'title' => 'First', 'body' => 'One'],
+        ['type' => 'text', 'published' => true, 'title' => 'Second', 'body' => 'Two'],
+    ]]);
+
+    $dialog = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 1, 'componentType' => 'text'])
+        ->assertSet('mountedActions.0.name', 'editComponent');
+    $dialog->mountAction('dialogMoveUp')
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSet('mountedActions.0.arguments.componentIndex', 0);
+    expect(array_column($settings->fresh()->components(), 'title'))->toBe(['Second', 'First']);
+    expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveUp')->isDisabled())->toBeTrue();
+
+    $dialog->mountAction('dialogTogglePublication')
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSet('mountedActions.0.arguments.componentIndex', 0);
+    expect($settings->fresh()->components()[0]['published'])->toBeFalse();
+
+    $dialog->mountAction('dialogMoveDown')
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSet('mountedActions.0.arguments.componentIndex', 1);
+    expect(array_column($settings->fresh()->components(), 'title'))->toBe(['First', 'Second']);
+    expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveDown')->isDisabled())->toBeTrue();
+});
