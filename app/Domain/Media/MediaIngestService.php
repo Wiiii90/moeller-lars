@@ -383,7 +383,10 @@ class MediaIngestService
         $probe = $head.$tail;
 
         if ($this->isMp4Container($head)) {
-            if ($this->hasH264Track($probe)) {
+            // The real stream can be anywhere in the MP4 container; a
+            // compatible brand or an arbitrary sampled 'avc1' string does
+            // not establish an H.264 track.
+            if ($this->probeVideoStream($path) !== null) {
                 return 'video/mp4';
             }
 

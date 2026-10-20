@@ -207,10 +207,20 @@ it('accepts a valid MP4 with the H.264 track metadata outside both byte windows'
         $moovTypeOffset = strrpos($bytes, 'moov');
         expect($moovTypeOffset)->not->toBeFalse();
         $moovOffset = $moovTypeOffset - 4;
+        // FFmpeg can include 'avc1' as a compatible file brand even before
+        // moov. Replacing only that optional brand keeps the real sample
+        // description in moov and makes the incomplete byte-scan regression
+        // detectable rather than accidentally passing.
+        $brandOffset = strpos($bytes, 'avc1');
+        if ($brandOffset !== false && $brandOffset < $moovOffset) {
+            $bytes = substr_replace($bytes, 'mp42', $brandOffset, 4);
+        }
         $paddingBytes = 1_100_000;
         $free = pack('N', $paddingBytes + 8).'free'.str_repeat("\0", $paddingBytes);
         $bytes = substr($bytes, 0, $moovOffset).$free.substr($bytes, $moovOffset).$free;
         file_put_contents($path, $bytes);
+        expect(str_contains(substr($bytes, 0, 1_048_576), 'avc1'))->toBeFalse()
+            ->and(str_contains(substr($bytes, -1_048_576), 'avc1'))->toBeFalse();
 
         $asset = $ingest->ingest(new UploadedFile($path, 'valid-moov-middle.mp4', 'video/mp4', null, true));
         expect($asset->mime_type)->toBe('video/mp4')
