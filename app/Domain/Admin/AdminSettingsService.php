@@ -98,9 +98,6 @@ final class AdminSettingsService
         if (array_key_exists('header_divider_mode', $data)) {
             $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode']);
         }
-        if (array_key_exists('header_divider_color', $data)) {
-            $data['header_divider_color'] = PublicAppearance::normalizeColor($data['header_divider_color'], 'header_divider_color');
-        }
         if (array_key_exists('header_name_color', $data)) {
             $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'], 'header_name_color');
         }
