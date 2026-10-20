@@ -708,3 +708,16 @@ it('materializes the Divider Solid fallback only when Solid is explicitly select
 
     expect(PublicContentSetting::general()->header_divider_color)->toBe(PublicAppearance::DEFAULT_DIVIDER_COLOR);
 });
+
+it('uses the single canonical divider Solid color for the shared direct-color update path', function (): void {
+    Livewire::test(General::class)
+        ->call('persistSurfaceColor', 'header_divider_paint', 'primary', '#AABBCC')
+        ->assertHasNoErrors()
+        ->assertSet('data.header_divider_color', '#AABBCC')
+        ->assertSet('data.header_divider_paint_mode', 'solid');
+
+    $setting = PublicContentSetting::general();
+    expect($setting->getAttribute('header_divider_color'))->toBe('#AABBCC')
+        ->and($setting->getAttribute('header_divider_paint_mode'))->toBe('solid')
+        ->and($setting->getAttribute('header_divider_paint_color'))->toBeNull();
+});

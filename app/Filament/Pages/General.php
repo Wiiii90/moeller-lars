@@ -847,7 +847,7 @@ final class General extends Page
         } else {
             $field = $isGradient
                 ? $surface.($slot === 'primary' ? '_gradient_start' : '_gradient_end')
-                : $surface.'_color';
+                : PublicAppearance::solidColorField($surface);
             $this->data[$field] = $value;
             $this->persistChangedFields($isGradient ? [$field] : [$surface.'_mode', $field]);
         }
