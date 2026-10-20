@@ -19,10 +19,10 @@ editor, public list or geocoding path.
 The public summary falls back to `venue` for unmigrated historical entries
 that still use the ambiguous old field; it never silently appends `city` or
 `country` to that byline. The detailed venue and OpenStreetMap map dialog
-describe the physical location, not the organizer. When a street address is
-present, geocoding uses it with postal locality/country. Without a street,
-it can use the physical `venue` as an address hint. Changes in relevant
-address inputs invalidate stored coordinates via the editorial service.
+describe the physical location, not the organizer. Geocoding uses only the structured
+street/postal locality/country fields; `organizer` and `venue` never
+become address text. Changes to address inputs invalidate stored
+coordinates via the editorial service.
 
 The forward migration moves `venue` to `organizer` only for historical
 `legacy-public-vita` records, whose migration proves the source field

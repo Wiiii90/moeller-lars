@@ -75,7 +75,6 @@ final class ExhibitionEditorialService
 
             $payload = $this->validatedEditorialData($data, $fresh);
             $location = [
-                'venue' => array_key_exists('venue', $payload) ? $payload['venue'] : $fresh->getAttribute('venue'),
                 'location_text' => array_key_exists('location_text', $payload) ? $payload['location_text'] : $fresh->getAttribute('location_text'),
                 'postal_code' => array_key_exists('postal_code', $payload) ? $payload['postal_code'] : $fresh->getAttribute('postal_code'),
                 'city' => array_key_exists('city', $payload) ? $payload['city'] : $fresh->getAttribute('city'),
@@ -340,7 +339,7 @@ final class ExhibitionEditorialService
         $postal = trim((string) ($values['postal_code'] ?? ''));
         $city = trim((string) ($values['city'] ?? ''));
         $parts = collect([
-            ($values['location_text'] ?? null) ?: ($values['venue'] ?? null),
+            $values['location_text'] ?? null,
             trim($postal.' '.$city) ?: null,
             $values['country'] ?? null,
         ])
@@ -396,7 +395,7 @@ final class ExhibitionEditorialService
     /** @param array<string, mixed> $values */
     private function locationSignature(array $values): string
     {
-        return collect([$values['location_text'] ?? null, empty($values['location_text']) ? ($values['venue'] ?? null) : null, $values['postal_code'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
+        return collect([$values['location_text'] ?? null, $values['postal_code'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
             ->map(static fn (mixed $value): string => is_string($value) ? mb_strtolower(trim($value)) : '')
             ->implode('|');
     }
