@@ -107,7 +107,10 @@ trait GalleryWorkspaceArtworkDialogs
             ->label('Edit')
             ->modalHeading('Edit artwork')
             ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)))
-            ->schema($dialog->schema(autosave: true))
+            ->schema(fn (array $arguments): array => $dialog->schema(
+                autosave: true,
+                primaryReadOnly: (string) $this->actionArtwork($arguments)->getAttribute('state') === 'published',
+            ))
             ->extraModalFooterActions(fn (array $arguments): array => $this->artworkEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments) use ($dialog): void {
                 $changed = $dialog->save($this->actionArtwork($arguments), $data);

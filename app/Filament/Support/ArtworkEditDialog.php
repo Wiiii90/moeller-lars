@@ -51,7 +51,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -124,14 +124,17 @@ final class ArtworkEditDialog
                     )
                         ->placeholder('No primary media')
                         ->nullable()
+                        ->disabled($primaryReadOnly)
                         ->live()
                         ->afterStateUpdated(static function (callable $set): void {
                             // ALT belongs to the chosen Media File, not the previous primary.
                             $set('primary_alt_text', null);
                         })
-                        ->helperText($autosave
-                            ? 'Use Upload primary media in the Edit dialog actions to upload a new file.'
-                            : 'Images and videos only.')
+                        ->helperText($primaryReadOnly
+                            ? 'Unpublish the Artwork before replacing its primary media. This does not delete the original from Storage.'
+                            : ($autosave
+                                ? 'Use Upload primary media in the Edit dialog actions to upload a new file.'
+                                : 'Images and videos only.'))
                         ->columnSpanFull(),
                     ...(! $autosave ? [FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
