@@ -47,7 +47,7 @@ final class ArtworkEditDialog
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
             'work_year' => $artwork->getAttribute('work_year'),
             'work_date' => $artwork->getAttribute('work_date'),
-            'exclude_from_home' => (bool) $artwork->getAttribute('exclude_from_home'),
+            'exclude_from_home' => (int) (bool) $artwork->getAttribute('exclude_from_home'),
         ];
     }
 
@@ -82,8 +82,7 @@ final class ArtworkEditDialog
                             ->options(static fn (): array => ArtworkCategory::query()->orderBy('name')->pluck('name', 'id')->all())
                             ->nullable()
                             ->searchable()
-                            ->preload()
-                            ->helperText('An unpublished artwork may remain unassigned. Unpublish before removing it from a Gallery.'),
+                            ->preload(),
                     ] : []),
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
@@ -95,8 +94,6 @@ final class ArtworkEditDialog
                             1 => 'Exclude this Artwork from Home',
                         ])
                         ->default(0)
-                        ->required()
-                        ->helperText('The Gallery controls eligibility by default. Excluding an Artwork takes priority over automatic and manually selected Home groups.')
                         ->columnSpanFull(),
                 ])->columns(['md' => 2]),
             AdminForm::section('Dimensions')->schema([
@@ -143,11 +140,6 @@ final class ArtworkEditDialog
                             // ALT belongs to the newly chosen file, not the old primary.
                             $set('primary_alt_text', null);
                         })
-                        ->helperText($primaryReadOnly
-                            ? 'Unpublish the Artwork before replacing its primary media. This does not delete the original from Storage.'
-                            : ($autosave
-                                ? 'Use Upload primary media in the Edit dialog actions to upload a new file.'
-                                : 'Images and videos only.'))
                         ->columnSpanFull(),
                     ...(! $autosave ? [FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
@@ -161,15 +153,14 @@ final class ArtworkEditDialog
                                 $set('primary_alt_text', null);
                             }
                         })
-                        ->helperText($primaryReadOnly
-                            ? 'Unpublish the Artwork before uploading a different primary file.'
-                            : 'JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
+                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
+                            'title' => 'Unpublish this Artwork before uploading a different primary file.',
+                        ] : [])
                         ->columnSpanFull()] : []),
                     Textarea::make('primary_alt_text')
                         ->label('Primary media ALT text')
                         ->maxLength(500)
                         ->nullable()
-                        ->helperText('Description for screen readers. Leave blank to inherit the Storage Media File ALT text.')
                         ->columnSpanFull(),
                 ])->columns(['md' => 2]),
         ];

@@ -34,11 +34,10 @@ trait GalleryWorkspaceArtworkActions
                 'delete_media_file' => false,
                 'reference_snapshot' => $this->primaryMediaReferenceSnapshot($arguments),
             ])
-            ->schema([
+            ->schema(fn (array $arguments): array => [
                 Checkbox::make('delete_media_file')
                     ->label('Also delete the original media file from Storage')
-                    ->disabled(fn (array $arguments): bool => $this->availablePrimaryMediaAsset($arguments) === null)
-                    ->helperText('Unchecked: only this Artwork and its Gallery slot are deleted. Checked: the file and all its other references are removed too.'),
+                    ->disabled($this->availablePrimaryMediaAsset($arguments) === null),
                 Hidden::make('reference_snapshot'),
             ])
             ->modalContent(function (array $arguments): View {

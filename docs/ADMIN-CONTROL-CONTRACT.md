@@ -8,6 +8,18 @@ There is one visual control language. A field may be rendered by Filament or by 
 
 Do not create page-local input/select/checkbox/toggle styling when the shared control contract fits.
 
+Control labels and the control itself should normally be the entire visible field.
+Do not add persistent `helperText()` descriptions below ordinary controls,
+including self-explanatory selectors, uploads and settings. Such text creates
+unnecessary vertical density and repeats information already communicated by
+the field or task. If a genuinely necessary clarification or safety constraint
+cannot be expressed by the label or a dialog-wide consequence statement, use
+the existing contextual hint/lightbulb affordance at the label (with accessible
+text), not an always-visible paragraph below the control. Validation errors
+remain visible when an actual invalid input requires correction; they must not
+be manufactured by a redundant `required()` rule on an always-selected
+boolean/enum choice.
+
 ## Filament adapter
 
 Use `App\Filament\Support\Controls\AdminControl` for ordinary fields in admin schemas:

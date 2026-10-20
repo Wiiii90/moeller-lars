@@ -272,13 +272,16 @@ trait GalleryWorkspaceArtworkDialogs
             })->disabled(! $enabled);
         }
 
-        $published = (string) $artwork->getAttribute('state') === 'published';
+        $isPublished = fn (): bool => (string) $this->actionArtwork($target)->getAttribute('state') === 'published';
+        $publicationRole = fn (): AdminRowAction => $isPublished()
+            ? AdminRowAction::Unpublish
+            : AdminRowAction::Publish;
         $actions[] = Action::make('dialogUploadPrimaryMedia')
             ->label('Upload primary media')
             ->icon(AdminIcon::Upload->value)
             ->iconButton()
             ->color('gray')
-            ->disabled($published)
+            ->disabled($isPublished)
             ->extraAttributes(['class' => 'admin-dialog__header-action'])
             ->action(function () use ($target): void {
                 $this->replaceMountedAction('uploadArtworkPrimaryMedia', $target);
@@ -286,9 +289,9 @@ trait GalleryWorkspaceArtworkDialogs
 
         $actions[] = AdminDialog::headerAction(
             'dialogArtworkPublication',
-            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-            function () use ($published, $id, $target): void {
-                if ($published) {
+            $publicationRole(),
+            function () use ($isPublished, $id, $target): void {
+                if ($isPublished()) {
                     $this->unpublishArtworkInGallery($id);
                     $this->replaceMountedAction('editArtwork', $target);
 
@@ -298,7 +301,9 @@ trait GalleryWorkspaceArtworkDialogs
                     $this->replaceMountedAction('editArtwork', $target);
                 }
             },
-        );
+        )
+            ->label(fn (): string => $publicationRole()->label())
+            ->icon(fn (): string => $publicationRole()->icon()->value);
 
         // The Gallery action detaches, rather than deletes, an artwork. Use
         // its existing confirmation and semantic icon, never fake Delete.
@@ -307,7 +312,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->icon(AdminIcon::Detach->value)
             ->iconButton()
             ->color('gray')
-            ->disabled($published)
+            ->disabled($isPublished)
             ->extraAttributes(['class' => 'admin-dialog__header-action'])
             ->action(function () use ($target): void {
                 $this->replaceMountedAction('removeArtwork', $target);
