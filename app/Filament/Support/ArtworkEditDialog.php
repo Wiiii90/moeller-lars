@@ -46,6 +46,7 @@ final class ArtworkEditDialog
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
             'work_year' => $artwork->getAttribute('work_year'),
             'work_date' => $artwork->getAttribute('work_date'),
+            'exclude_from_home' => (bool) $artwork->getAttribute('exclude_from_home'),
         ];
     }
 
@@ -86,6 +87,16 @@ final class ArtworkEditDialog
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
                     DatePicker::make('work_date')->label('Exact date')->nullable(),
+                    Select::make('exclude_from_home')
+                        ->label('Home eligibility')
+                        ->options([
+                            0 => 'Follow Gallery setting',
+                            1 => 'Exclude this Artwork from Home',
+                        ])
+                        ->default(0)
+                        ->required()
+                        ->helperText('The Gallery controls eligibility by default. Excluding an Artwork takes priority over automatic and manually selected Home groups.')
+                        ->columnSpanFull(),
                 ])->columns(['md' => 2]),
             AdminForm::section('Dimensions')->schema([
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),

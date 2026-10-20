@@ -391,6 +391,7 @@ class PublicArtworkQuery
 
         /** @var Builder<Artwork> $result */
         $result = $query
+            ->where('exclude_from_home', false)
             ->whereHas('category', function (Builder $query): void {
                 $query->where('show_on_home', true)
                     ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'));

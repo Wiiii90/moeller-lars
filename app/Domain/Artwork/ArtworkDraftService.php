@@ -148,6 +148,7 @@ final class ArtworkDraftService
             'description',
             'work_date',
             'work_year',
+            'exclude_from_home',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
 
@@ -166,6 +167,7 @@ final class ArtworkDraftService
             'description' => ['nullable', 'string', 'max:10000'],
             'work_date' => ['nullable', 'date'],
             'work_year' => ['nullable', 'integer', 'min:1000', 'max:9999'],
+            'exclude_from_home' => ['sometimes', 'boolean'],
         ]);
         $validator->validate();
 
