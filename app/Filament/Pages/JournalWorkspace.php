@@ -132,7 +132,7 @@ final class JournalWorkspace extends Page
     {
         $title = trim($this->journalTitle);
 
-        return $title !== '' ? $title : 'Journal';
+        return $title !== '' ? $title : __('Journal');
     }
 
     public function updatedSearch(): void

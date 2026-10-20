@@ -42,6 +42,11 @@ final class Dashboard extends Page
 
     protected static ?string $title = 'Dashboard';
 
+    public function getTitle(): string
+    {
+        return __('Dashboard');
+    }
+
     protected static string|\UnitEnum|null $navigationGroup = null;
 
     protected static ?int $navigationSort = -100;

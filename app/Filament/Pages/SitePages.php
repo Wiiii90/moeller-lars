@@ -41,6 +41,11 @@ final class SitePages extends Page
 
     protected static ?string $title = 'Pages';
 
+    public function getTitle(): string
+    {
+        return __('Pages');
+    }
+
     protected static ?string $slug = 'pages';
 
     protected static ?int $navigationSort = 5;

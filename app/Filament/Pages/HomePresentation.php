@@ -59,6 +59,11 @@ final class HomePresentation extends Page
 
     protected static ?string $title = 'Home';
 
+    public function getTitle(): string
+    {
+        return __('Home');
+    }
+
     protected static ?string $slug = 'pages/home';
 
     protected string $view = 'filament.pages.home-presentation';

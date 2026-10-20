@@ -132,6 +132,11 @@ final class General extends Page
 
     protected static ?string $title = 'General';
 
+    public function getTitle(): string
+    {
+        return __('General');
+    }
+
     protected static ?string $slug = 'general';
 
     protected static ?int $navigationSort = 1;
@@ -343,7 +348,7 @@ final class General extends Page
                             Group::make([
                                 Select::make('header_name_alignment')
                                     ->label('Alignment')
-                                    ->options(fn (callable $get): array => PublicAppearance::headerAlignmentOptions((string) $get('header_name_position')))
+                                    ->options(fn (callable $get): array => array_map('__', PublicAppearance::headerAlignmentOptions((string) $get('header_name_position'))))
                                     ->native()
                                     ->required()
                                     ->live()

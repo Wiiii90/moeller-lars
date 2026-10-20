@@ -41,6 +41,11 @@ final class Activity extends Page
 
     protected static ?string $title = 'Activity';
 
+    public function getTitle(): string
+    {
+        return __('Activity');
+    }
+
     protected static ?int $navigationSort = 45;
 
     protected string $view = 'filament.pages.activity';
