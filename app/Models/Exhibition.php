@@ -129,6 +129,10 @@ class Exhibition extends Model
         }
 
         $date ??= now();
+        if ($this->temporalState($date) === 'past') {
+            return false;
+        }
+
         $vernissage = $this->getAttribute('vernissage_at');
         if ($vernissage instanceof CarbonInterface) {
             return ! CarbonImmutable::instance($date)->isAfter($vernissage);
