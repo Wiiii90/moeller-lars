@@ -23,7 +23,7 @@ Current accepted media:
 - Ogg (`audio/ogg`)
 - WAV (`audio/wav`)
 
-Upload aliases are normalized through the ingest policy; persisted canonical MIME is content-derived. Content/container validation rejects incompatible payloads.
+Upload aliases are normalized through the ingest policy; persisted canonical MIME is content-derived. FFprobe verifies authoritative video streams and codecs for MP4/WebM instead of accepting a suspicious file from partial signature bytes alone. Content/container validation rejects incompatible payloads. Healthy uploaded originals may be reused by SHA-256/identity checks instead of duplicating Storage assets; an Artwork draft must still be created and canonically linked, never silently skipped.
 
 ## Upload limits and capacity
 
@@ -39,6 +39,14 @@ The artist-facing Storage workspace deliberately separates normal navigation fro
 
 The dedicated local-preview image supplies a 5,000,000,000-byte allowance so capacity behavior can be evaluated locally without creating a production/application default. Production remains operator-controlled.
 
+## One-time local thumbnail consolidation (pre-release only)
+
+Older stored `public-v1` GD thumbnails may coexist with newly ingested `public-v2` libvips derivatives. `MediaThumbnailCutoverService`, exposed as `media:thumbnails:consolidate`, provides an explicit **read-only preview by default** and a separately gated `--apply` conversion. It is **not** a routine ingest path, scheduler, deployment migration, automatic backfill or Production repair command.
+
+Apply is restricted in code to local/testing **PostgreSQL** and obtains both the media-ingest cache lock and Publication advisory/session lock. It byte-verifies immutable originals and conflicting existing variants, runs the authoritative quota check before staging extra bytes, installs new derivative files without overwriting old files, and transactionally updates the same `MediaVariant` IDs in Working, Committed and retained `publication_version_rows`. Existing restorable checkpoints require the **separately explicit** `--rebaseline-checkpoints` flag because checkpoint hashes change (the editorial history is retained); enabled rights delivery blocks apply and existing thumbnail rights selections require the separately explicit `--invalidate-thumbnail-rights`, followed by offline rights re-preparation. Failed staging must clean its own new bytes and leave the old registry intact; post-commit orphan cleanup is limited to unreferenced prior variants and is retryable. An opt-in conversion does **not** license rewriting the canonical original or deleting protected historical references.
+
+**Environment restriction:** The artist-prepared **Validation database/media are protected cutover material**, regardless of any superficial resemblance to a test system. Neither default preview nor apply should be run there as part of documentation work. The first authorized end-to-end run belongs in an explicitly disposable, isolated local copy with synthetic data and separately reviewed Publication/rights/rollback checks; this source review did not execute the command. Do not retire historical GD regeneration until a proven cutover and residual-variant check establish that it is no longer necessary.
+
 ## Canonical original and variants
 
 For every `MediaAsset`, authoritative technical identity includes generated storage key, content-derived MIME, byte size and SHA-256.
@@ -50,11 +58,11 @@ For every `MediaAsset`, authoritative technical identity includes generated stor
 - `MediaVariant` is rebuildable and has independent storage/checksum/state;
 - missing required variants are integrity/readiness failures, not permission to expose the original as an arbitrary fallback.
 
-Video/audio ingest does not imply transcoding/poster/waveform generation.
+Video ingest creates a separate immutable WebP poster via FFmpeg without transcoding the original. Audio produces no poster or waveform. Historical video records may lack a poster; new video uploads create one.
 
-## Current immutable preview and rights artifact policy (dev@434975e1bd09)
+## Immutable preview, rights artifact and retention policy (source `dev@2ad31502ea4e`)
 
-The current [Media ingest owner](../app/Domain/Media/MediaIngestService.php) uses **libvips for every new image thumbnail** (bounded to 960px, with a distinct `public-v2` transform profile for eligible high-resolution originals). FFmpeg produces the immutable `video-poster-v1` WebP preview of a supported video. `MediaPreviewVariant` is the common selector for both thumbnail profiles and video poster, shared across Admin, Gallery, Publication and Public. GD is retained only for historical variant regeneration; it is not a second pipeline for new uploads. The ingest lock spans derivative preparation, and reservation considers generated preview bytes as well as the original. Unsupported, missing or corrupt required previews are failures, not permission to serve a different asset.
+The current [Media ingest owner](../app/Domain/Media/MediaIngestService.php) uses **libvips for every new image thumbnail** (bounded to 960px, with a distinct `public-v2` transform profile for eligible high-resolution originals). FFmpeg produces the immutable `video-poster-v1` WebP preview of a supported video. `MediaPreviewVariant` is the common selector for both thumbnail profiles and video poster, shared across Admin, Gallery, Publication and Public. GD is retained only for historical variant regeneration; it is not a second pipeline for new uploads. The ingest lock spans derivative preparation, and authoritative capacity admission reserves original plus new preview bytes once, without double-counting existing variants. Unsupported, missing or corrupt required previews are failures, not permission to serve a different asset.
 
 Media rights-bearing image bytes are a **separate immutable artifact**: `MediaRightsArtifactService` prepares SHA-256/revision-addressed copies without rewriting originals or existing variants; `MediaRightsPublicationSelections` selects Working/checkpoint/LIVE versions under the Publication lock. Preparation and delivery are independently **opt-in** via `rights_preparation_enabled` and `rights_delivery_enabled`. The source contains optional preparation, revisioned serving and bounded orphan reclamation; presence of these services is not proof that Validation or Production enables them. See [Public rights and privacy](PUBLIC-RIGHTS-AND-PRIVACY.md) and the [Publication architecture](architecture/publication.md).
 
@@ -67,7 +75,7 @@ Consumers reference existing `MediaAsset` IDs rather than copying files.
 Structured consumers include:
 
 - Artwork primary/additional media;
-- Blog/Exhibition Cover and Gallery through `JournalEntryMedia`;
+- Blog/Exhibition Cover and Gallery through `JournalEntryMedia` (Exhibition Cover/Gallery accept canonical image **or video**, Blog Cover stays image-only; Exhibition media can display authored File credits/copyright overrides);
 - historical CV direct-image references were retired with the `cv_entries` table; current CV/Vita is Custom Page List/Text content;
 - Custom Page Image components;
 - Home Image components;
@@ -132,7 +140,7 @@ Usage-specific overrides exist only where an explicit consumer contract supports
 
 Required public ALT is never manufactured from filenames/IDs at render time.
 
-Credit/copyright and the optional `file_creator`, `file_rights_holder`, `rights_usage_terms`, `license_inquiry_url` fields are editorial metadata; they do not alter immutable technical identity or determine authorship automatically. The central `MediaRightsProjection` feeds an **unpublished** `MediaIptcXmpWriter` staging copy, but no embedded rights-bearing public file or versioned public URL follows from editing these fields. The [rights plan](PUBLIC-RIGHTS-AND-PRIVACY.md#b-rights-metadata-across-storage-public-files-and-seo) alone defines the future publishing boundary.
+Credit/copyright and the optional `file_creator`, `file_rights_holder`, `rights_usage_terms`, `license_inquiry_url` fields are editorial metadata; they do not alter immutable technical identity or determine authorship automatically. `MediaRightsProjection` feeds an opt-in immutable rights-artifact preparation system, which can select separate Working/Committed revisions under the Publication lock. Changing editorial text does not automatically prepare or publicly deliver new bytes. Delivery requires explicit configuration, migration and rights selection; see [rights and privacy](PUBLIC-RIGHTS-AND-PRIVACY.md#b-rights-metadata-across-storage-public-files-and-seo).
 
 ## Editor selection
 

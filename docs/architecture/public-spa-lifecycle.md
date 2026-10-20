@@ -1,6 +1,6 @@
 # Öffentliche SPA-Dokumentnavigation und Instanzlebenszyklus
 
-**Historischer Ausgangsbeleg:** `dev@62a104a0` (frühere Folio-Bewegung). **Aktueller Abgleich:** `dev@434975e1bd09ee728a40b80ae344fca8ca83e659` (statische Papierkontur, page-scoped Videos, Vite-Revision). Alte WAAPI-/Folio-Tests sind kein aktueller Runtimebeleg. Keine Browser-/Laravel-/JS-Ausführung.
+**Historischer Ausgangsbeleg:** `dev@62a104a0` (frühere Folio-Bewegung). **Aktueller Abgleich:** `dev@2ad31502ea4eb352da2c9da4f8334a0d614f1b71` (intrinsisches statisches Paper-CSS statt observergetriebener Kontur, page-scoped Videos, Vite-Revision). Alte WAAPI-/Folio-Tests sind kein aktueller Runtimebeleg. Keine Browser-/Laravel-/JS-Ausführung.
 
 ## Architekturentscheidung
 
@@ -15,7 +15,7 @@ sequenceDiagram
     participant Livewire as Livewire 4 Navigate
     participant Server as Laravel Public
     participant App as app.js
-    participant Frame as public-paper-frame.js
+    participant Frame as static paper CSS
     participant Video as public-media-playback.js
 
     User->>Spa: internal public destination
@@ -26,7 +26,7 @@ sequenceDiagram
     App->>App: disposePage()
     App->>Spa: onSwap(applyPublicLayoutFromMeta)
     Livewire->>App: livewire:navigated
-    App->>Frame: initialize static shared contour
+    App->>Frame: render static content-sized frame
     App->>Video: initialize visible muted video
     App->>App: register per-page disposers
 ```
@@ -72,9 +72,9 @@ Die breite SPA-Tabelle oben beschreibt nur die Besitzer. Die folgenden konkreten
 
 ## Statischer Public-Paper-Frame, Home Hero und Gallery-Puffer
 
-**Quellstand `dev@434975e1bd09`:** Die alte Folio-Motion-Engine samt `resources/js/public-folio-motion.js` ist entfernt. `public-paper-frame.js` besitzt einen einzigen statischen Header-/Content-Konturpfad; die tatsächliche Unterkante wird anhand der gerenderten letzten Inhaltsgruppe bestimmt. `ResizeObserver` und SPA-Disposer halten die Kontur über echte Größenänderungen aktuell, ohne zufällige Posen, WAAPI-Loops, Polling oder animierte Ecken. Die Frame-/Divider-Optionen gehören `PublicAppearance`, nicht einer zweiten JS-Rendering-Engine.
+**Quellstand `dev@2ad31502ea4e`:** Die alte Folio-Motion-Engine und **auch** der zwischenzeitliche `resources/js/public-paper-frame.js`-Beobachter sind entfernt. Blade entscheidet nur den Frame-/Sheet-Modus; der statische Content-Sheet-Frame ist ein intrinsisch hohes Flex-Element. Seine Konturen enden anhand der CSS-Boxgröße des tatsächlich gerenderten Inhalts und des einzigen Return-Insets; der Body trägt die übrige Viewport-Höhe. Kein Positionsmesser, observergetriebener Layout-Schreibpfad, WAAPI-Loop, Polling oder Timer ist im aktuellen Paper-Lifecycle enthalten. Leere/min-height Sheets besitzen weiterhin bewusst eigene Geometrie. Die Frame-/Divider-Optionen gehören `PublicAppearance`, nicht einem zweiten JS-Rendering-Owner.
 
-`app.js` installiert einen einzigen documentweiten Livewire-Navigation-Lifecycle. Vor dem Swap werden Seiteninstanzen entsorgt; `applyPublicLayoutFromMeta` synchronisiert Frame-Style und aktuelle CSS-Werte mit dem serverseitig autorisierten Stylesheet, bevor neue Viewer-, Home-Hero-, Journal-, Navigation-, Gallery-/Video- und Paper-Instanzen starten. Vite-Asset-URLs enthalten bei einem gebauten Manifest dieselbe revisionsfähige Query, um veraltete SPA-Bundle-Kombinationen zu erkennen.
+`app.js` installiert einen einzigen documentweiten Livewire-Navigation-Lifecycle. `initializePublicPaperFrame()` ist kein Bootstrap-Disposer mehr. Vor dem Swap werden Seiteninstanzen entsorgt; `applyPublicLayoutFromMeta` synchronisiert Frame-Style und aktuelle CSS-Werte mit dem serverseitig autorisierten Stylesheet, bevor neue Viewer-, Home-Hero-, Journal-, Navigation-, Gallery-/Video- und Paper-Instanzen starten. Vite-Asset-URLs enthalten bei einem gebauten Manifest dieselbe revisionsfähige Query, um veraltete SPA-Bundle-Kombinationen zu erkennen.
 
 Die Gallery behält alle öffentlichen Artwork-/Viewer-Einträge im Markup; ihre ersten **zwei** Images werden eager, nur das erste mit hoher Priorität geladen. Nachfolgende Images nutzt `public-gallery-loading.js` mit dem begrenzten Beobachter-/Prefetch-Budget, ohne Backend-Paging. Der Video-Poster-Reader nutzt `MediaPreviewVariant::videoPoster()`; `public-media-playback.js` startet erlaubte sichtbare Inline-Videos stumm/looping und pausiert bei verstecktem Slide oder inaktivem Dokument. Der separate Viewer besitzt seine eigenen Videocontrols. Browser, Netzwerk, Nonce, Focus-/Back-Forward- und Artist-Akzeptanz wurden **nicht** erneut ausgeführt.
 

@@ -1,6 +1,6 @@
 # Public implementation contract
 
-**Source reconciliation:** public presentation and media owners inspected at `dev@434975e1bd09ee728a40b80ae344fca8ca83e659` (2026-10-19). This is a source contract, not new browser/artist acceptance. A complete native generator rerun requires a coherent local source checkout.
+**Source reconciliation:** public presentation and media owners source-reviewed through `dev@2ad31502ea4eb352da2c9da4f8334a0d614f1b71` (2026-10-20). This is a source contract, not new browser/artist acceptance. A complete native generator rerun requires a coherent local source checkout.
 
 This document defines durable public behavior for the current application. Detailed legacy observations used for cutover comparison live separately in [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md).
 
@@ -78,37 +78,12 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The Public paper outline is **static**, with one explicit presentation
-owner rather than two unrelated strokes forced to meet. A single
-`public-paper-frame` wraps the sticky Header and normal Content without
-introducing another scroll container. Its sole decorative child
-`public-paper-decoration` owns the two uninterrupted exterior contour
-strokes and optional single backing for **physically connected** Menu/Page
-sheets. The frame's connected/compatible status is resolved from rendered
-page geometry once in Blade: a Below-Menu title, transparent Page, or
-landscape-width artwork is not a common paper plane. For separated sheets,
-the existing Menu and Content primitives own their own backing and outlines.
-The common shell and paper edge outset are shared tokens.
+The Public paper outline is **static**. The server-rendered `public-paper-frame` encloses Header and Content without introducing a second scroll owner. Physically compatible, connected Menu/Page surfaces share the single decorative `public-paper-decoration` contour; separate or transparent surfaces use their existing individual sheet edges. Blade decides compatibility from the concrete header and page presentation; CSS owns the final shape.
 
-The static white contour returns inward just before the final visible
-content item (the last Artwork, Journal entry, Exhibition, Home/Custom
-component, or Artwork detail). A single `public-paper-frame.js` owner
-resolves the last rendered content edge within the existing Content flow
-and sets `--public-paper-content-end`. A scoped ResizeObserver follows
-native content reflow (including later-loaded artwork and opened entries);
-a MutationObserver handles visibility changes. Both observers disconnect
-through the existing Public SPA lifecycle. The CSS return inset is shared
-between left/right strokes, while the gray backing continues to the natural
-Content paper bottom independently. The pre-initialization fallback uses
-Content block inset only until real layout geometry is available. No
-intervals, extra scroll container, per-template geometry offsets, or
-animation are introduced.
-The canonical folio palette (`--public-folio-light`,
-`--public-folio-soft`) and 3px-left/4px-down backing remain authoritative.
-Existing six route-deterministic corner endpoints remain in the
-nonce-authorized metadata for independent sheets; there is no ambient
-animation, polling, duplicate frame engine, content scroll owner or timer.
-The prior `public-folio-motion.js` animation remains deleted.
+The frame is an **intrinsically content-sized flex item** (`flex: 0 0 max-content`); the body, not the frame, fills the viewport's remaining height. Contour return uses the frame's actual content-paper height, trailing content padding and one shared return inset. Populated pages do not receive an artificial viewport-driven stretch. Empty/min-height page cases retain their own layout rules and need browser acceptance. There is **no** `public-paper-frame.js`, observer-driven measurement/writes, animation, timeout or duplicated frame engine. The six route-deterministic values retained in nonce-authorized layout metadata belong to the legacy separate-sheet geometry, not an active animation.
+
+General's active-tab/More-Space contract is detailed below under the shared Appearance Stage. Live Preview remains a separate pane, without remounting or reloading solely because More/Less Space changed. This is a source/layout contract, not completed browser acceptance.
+
 Main and child navigation retain the same cyclic complete-item window,
 measured rail, keyboard behavior and selected state.
 
@@ -127,11 +102,7 @@ scroll container itself** is the one CSS Grid owner. Because Filament inserts
 nested Group wrappers, only the wrapper ancestors of these panels are flattened
 with a scoped `:has(.general-appearance-stage__panel)` rule. The real panels
 therefore occupy the **same grid-area: 1 / 1**, instead of four sequential
-rows. In normal mode inactive panels are out of flow; in expanded mode all
-four contribute to that **single track's maximum height**, while remaining
-visually hidden, inert and aria-hidden. This gives precisely the height of
-the tallest tab plus the single fixed header/toolbar/insets, not the sum.
-The responsive General rule preserves this max-content sizing in narrow mode.
+rows. Inactive panels remain visually hidden, inert, aria-hidden **and out of the layout flow** in both regular and expanded modes. Only the selected panel contributes to the active grid track and vertical scroll range; changing tabs can expand **and contract** the Stage. The fixed header/toolbar and responsive layout remain independent of inactive tab heights.
 No duplicated measurement DOM, ResizeObserver, JavaScript pixel height,
 animation, or timer is involved.
 
@@ -261,7 +232,7 @@ Home content uses one of three templates:
 
 Changing the Home content template does not implicitly enable, disable or retarget Skip Home. Existing legacy `skip_home` template rows are normalized to Hero Artwork plus enabled Skip Home routing. **Show in public navigation** is a separate Home-only setting in Pages → Home Edit, using the retained `site_sections.show_in_navigation` field. It defaults to off: `/` remains accessible through the artist-title link without a Home menu item. Turning it on displays Home in the public menu only while Skip Home is disabled. Skip Home always suppresses the entry, independently of this stored switch. Other page types continue to use publication state alone for menu inclusion. This control never affects admin navigation, publication or the root URL.
 
-Artwork selection uses canonical Gallery eligibility, Artwork date and explicit tie-break semantics. Ambiguous invalid state is surfaced rather than resolved by incidental DB order.
+Artwork selection uses canonical Gallery eligibility, Artwork date and explicit tie-break semantics. An Artwork-level `exclude_from_home` flag (false by default) additionally hides that Artwork from Home candidates without unpublishing it or changing its Gallery eligibility. A Gallery must still opt in with `show_on_home`. Existing explicitly selected Home IDs are retained in saved settings even while an Artwork is temporarily excluded; they are not pruned by the eligibility filter. The retired `featured_on_home` marker is historical migration data, not a current artist-facing selection override. Ambiguous invalid state is surfaced rather than resolved by incidental DB order.
 
 - Hero Artwork Home uses the existing resolved eligible Home group and shared `artwork-card` renderer. `show_details` controls the artwork information label; `show_gallery_link` controls Gallery-link visibility when only one Hero is displayed; when `show_navigation` enables cyclic previous/next buttons for a group with multiple eligible Artworks, the centered Gallery link is always shown and follows the category of the currently visible Artwork, even if the single-Hero toggle is off; and `enable_viewer` allows or disables clicking the Hero media to open the existing Artwork Viewer. Artwork information and viewer remain independent switches in the existing Home settings; Gallery-link visibility has the navigable-group exception above. Existing saved defaults remain unchanged (information on, Gallery link off when unset, navigation off, viewer on). Without viewer activation the Hero image/video is not an interactive link. When navigation is off, only the current resolved Hero member is rendered. No new publication filtering or Home selection algorithm is introduced.
 
@@ -331,7 +302,7 @@ Informative public images require canonical ALT; explicit Artwork usage override
 
 Gallery Artwork primary media may be a canonical image or supported video. Inline Gallery/Home/Artwork videos use a single page-scoped playback owner (`public-media-playback.js`): muted looping video plays only while intersecting, the document and slide are visible, and reduced-motion policy permits it. Browser autoplay rejection is handled without a retry timer. An artist-enabled sound toggle is scoped by the Gallery/Home sound policy; the separate Artwork Viewer owns its own full-size player and navigation. Video uses the canonical immutable `video-poster-v1` WebP poster and its recorded intrinsic dimensions rather than an inline sizing workaround.
 
-Artwork cards, Home Hero Artworks and Artwork detail pages share one **unboxed, right-aligned artwork caption** from `artwork-caption.blade.php`, directly below the media and flush with its right edge. The first text line is `Title, Material` when material exists, using a quietly italic editorial-serif title and restrained regular material. The second line is `Year, Size` when authored. Structured dimensions keep their saved unit (cm/mm/in). Strictly numeric legacy H × W [× D] strings without an explicit unit adopt the existing admin editorial default cm; zero-valued legacy depth is omitted, while positive third dimensions remain. Non-numeric freeform artist-authored dimensions are preserved without inventing a unit. Commas appear only between present values. The previous printed prompts, ruled paper slip, handwriting styling, border, card background and NOTE are removed. Long content wraps within the image width without clipping; missing fields introduce no empty lines. Artwork descriptions stay separate on the detail page. On Gallery/Home Artwork cards the caption remains a detail link regardless of media viewer activation.
+Artwork cards, Home Hero Artworks and Artwork detail pages use the shared unboxed `artwork-caption.blade.php`. The first line contains **Title, Year** (if present); the second contains **Dimensions, Material** (whichever is authored). Dimensions preserve saved cm/mm/in, while strict numeric legacy dimensions without unit use the existing editorial cm default and free-form text remains unmodified. Long lines wrap within the available artwork width without clipping or inventing missing fields. Optional MediaAsset file-rights attribution remains **separate from** authored Artwork information; the Gallery may align these as left/right regions under the media. Artwork descriptions stay separate on the detail page. On Gallery/Home Artwork cards the caption remains a detail link regardless of media viewer activation.
 
 Individual Artwork detail pages have one Gallery-specific **Expand landscape Artwork pages** toggle, OFF by default. Image orientation is derived server-side from the stored public thumbnail dimensions, before first paint. The original approved envelope is restored: at most a 1000px white sheet and a 960px image area, with the size also derived from General's `--public-art-max` and always bounded by the viewport. Crucially, the actual thumbnail is shown at its **intrinsic pixel width or smaller**; it is never enlarged to fill empty space. Image and two-line caption occupy the same naturally sized and centered media block, so their right edges coincide for images of every width. Portrait/square Artworks, Gallery indexes, Home Hero and other public pages retain the unchanged normal General geometry. The user-facing multiplier/width selection and its CSS scale classes were removed: a single toggle now enables the coherent, fixed maximum design. The same opt-in layout also allows the description divider, narrative and artwork credits to occupy the complete available Artwork detail text track; the former shared 36rem maximum continues to apply to standard portrait/square detail pages, other content types and disabled Galleries. The description remains outside the intrinsic-width image-and-caption group, avoiding reintroducing its former collapsed-image regression.
 
@@ -383,7 +354,7 @@ A Blog Journal lists only public Posts belonging to it and satisfying lifecycle/
 
 An Exhibitions Journal lists public Exhibitions belonging to it.
 
-Canonical editorial/public concepts include title, dates, vernissage/opening, venue/venue website, separate Street/City/Country, rich description, external link, optional Gallery and optional Map.
+Exhibitions use one [canonical editorial contract](EXHIBITION-EDITORIAL-CONTRACT.md): title, independent `organizer` and physical `venue`, address (street/postal code/city/country), structured start/end dates, optional structured or preserved text vernissage, explicit `show_vernissage`, rich description, external URL, Gallery and Map. Structured opening display stops after its timestamp; hiding an opening never deletes its editorial details. The date-only chronology, organizer byline and geocoding responsibilities must not be inferred from one legacy `venue` string.
 
 Street is stored/displayed separately from city/country; public address composition avoids duplication.
 
@@ -640,7 +611,7 @@ Responsive behavior is content-driven across **Wide**, **Compact**, **Narrow** a
 - Artwork metadata and its adjacent category/detail navigation remain on one horizontal footer row at Narrow and Minimal widths; text may reflow within a control, but the controls themselves do not stack simply because of a viewport breakpoint.
 - The configured Public artwork maximum and shell width jointly determine a single fluid `--public-content-inset`: it never falls below the mobile minimum or exceeds the authored padding, and reduces continuously as the shell approaches the artwork width. Navigation rails and content padding consume that same value. Narrowing the viewport must not make an existing rail or artwork area wider, increase the number of visible pages through a geometry reset, or remove necessary overflow arrows. The 46rem threshold belongs only to feature content whose actual composition changes there; it must not independently resize the shared navigation controls, header title or shell padding.
 - The Public shell and its responsive navigation rail continue to derive horizontal geometry from General's `Page width` and `Content padding` settings. This cleanup does not silently change those saved values, add responsive controls, or introduce another breakpoint-specific geometry owner.
-- Public content retains a stable, border-box minimum height of `15rem` and normal content-driven height by default (including Home and populated sections). Only a genuinely empty Gallery, Exhibitions, Blog or Custom section **without an enabled page heading** expands its white content surface to the bottom of the viewport, leaving `--public-shell-gap` above and below without an unnecessary scrollbar on adequately tall viewports. This is detected from existing rendered child elements; no controller-side duplicate empty-state flags or separate render path are introduced. Longer content retains natural document scrolling. Its vertical inset (`2rem`) and the equal external page margins (`.75rem`) do not vary with viewport width. Header title area (`4.7rem`) and type (`1.75rem`) retain a stable vertical footprint; only the established left-to-center title composition switch remains.
+- Populated Public sheets size intrinsically to actual content rather than forcing a viewport-dependent or `15rem` minimum on every route. Only a genuinely empty Gallery, Exhibitions, Blog or Custom section **without an enabled page heading** expands its white content surface to the bottom of the viewport, leaving `--public-shell-gap` above and below without an unnecessary scrollbar on adequately tall viewports. This is detected from existing rendered child elements; no controller-side duplicate empty-state flags or separate render path are introduced. Longer content retains natural document scrolling. Its vertical inset (`2rem`) and the equal external page margins (`.75rem`) do not vary with viewport width. Header title area (`4.7rem`) and type (`1.75rem`) retain a stable vertical footprint; only the established left-to-center title composition switch remains.
 - Gallery and Artwork spacing is a single `3.55rem` token, without the old Minimal breakpoint collapse. CV-specific presentation rules live exclusively in `custom-pages.css`; generic Rich Text semantics stay in `public-content.css`. Feature-specific responsive composition remains local to its component stylesheet.
 - browser acceptance includes continuous resizing through intermediate widths, not only fixed desktop/tablet/mobile presets.
 
@@ -669,11 +640,12 @@ and selected, and are shown with the canonical full six-column row.
 
 ## Global public appearance surfaces
 
-General is the authoritative global editor for three distinct page paint
-surfaces: **Background** (outer viewport and header), **Menu** (both navigation
-levels) and **Page** (content backing). Each uses the same validated paint contract: Solid, Linear, Radial and
-Conic gradients, each optionally repeating, with 2–12 stops (color and
-position). Linear uses the shared numeric/rotary popover control; Conic has a start angle and
+General is the authoritative global editor for three public background
+surfaces — **Background** (outer viewport), **Menu** (both navigation
+levels) and **Page** (content backing) — plus a fourth, independent
+**Title** text paint. All four share PublicAppearance's validated
+Solid/Linear/Radial/Conic configuration, each optionally repeating with
+2–12 positioned color stops. Linear uses the shared numeric/rotary popover control; Conic has a start angle and
 center; Radial has a center and circle/ellipse shape. Repeating uses an
 explicit span (pixels for Linear/Radial, degrees for Conic) so repetition is
 visible. Missing JSON stop lists preserve the legacy two-color appearance.
@@ -681,7 +653,7 @@ The existing Page width and Content padding remain separate layout parameters.
 Frame style is a separate validated presentation option; gradients remain
 independent of that exterior edge treatment.
 
-The `PublicAppearance` domain validates and projects all three values.
+The `PublicAppearance` domain validates and projects all four paint definitions.
 `PublicSiteContext` uses the existing committed-versus-preview content read
 context; the public layout injects only normalized CSS custom properties into
 the nonce-protected style block. Absent Menu/Page settings keep the original
@@ -704,9 +676,50 @@ the shared ColorPicker. Both input methods commit through the same validated
 General appearance field. The dial is teleported outside the scrollable Stage
 to avoid clipping.
 
-All global paint surfaces use the same compact native Color/Position table.
-Solid shows one directly editable color; Linear, Radial and Conic have 2–12
-stops, each edited with the canonical AdminColorControl and a numeric
-position. Color stops are ordered by position, including coincident stops
-for hard boundaries. Gray native table actions add/remove rows, without
-separate dialog editors or a second color picker. Loading legacy two-color settings never materializes a new JSON array merely by opening the editor.
+All global paint surfaces use the shared Solid ColorPicker inline beside
+their mode Select. Linear, Radial and Conic use one canonical x-admin.table
+with 2–12 Color/Position rows. The
+central AdminTableRepeater replaces only Filament 5.7's embedded table
+presentation, retaining its item schemas, ColorPicker, validation and
+add/delete actions. The markup reuses the same table and Add-row components
+as Social Media; no parallel table chrome or duplicate color picker. Numeric
+positions determine stop order, including coincident stops for hard edges.
+Opening General never writes the legacy two-color values as JSON.
+
+## Public artist title gradient
+
+Title is a **text paint**, not another panel background. Its previously
+supported `header_name_color` remains authoritative for Solid. Null mode
+continues to use the existing CSS `--public-title-default` inherited color
+in each title-placement context. Only an explicitly selected gradient emits
+`--public-title-paint` into the same nonce-protected public layout style and
+activates `site-header--gradient-title`; the artist-name anchor clips that
+validated CSS gradient to glyphs. No gradient-specific layout, polling, or
+separate editor/normalizer is permitted. Every public title placement uses the
+same shared rule, and forced-colors accessibility falls back to plain text.
+The new title settings exist in both Working and Committed schemas.
+
+## Menu-to-page divider paint
+
+The existing `header_divider_mode` selects **whether** and **where** the
+separator is drawn (none, Menu-width, full-width, separate backing, etc.).
+In General → Appearance → Menu, **Divider color** is listed below Menu
+background and uses the **same** Solid/Linear/Radial/Conic + Repeating editor
+and canonical color-stop table as the other global appearance paints.
+
+The existing `header_divider_color` column is the **sole Solid color**.
+The independent `header_divider_paint_mode` and validated
+`header_divider_paint_gradient_*` fields describe optional gradient
+painting without introducing a second solid-color record.
+Unconfigured gradient mode retains the previous public divider color.
+For gradients, `PublicSiteContext` emits only validated CSS variables
+within the existing nonce-protected public style. Menu-width dividers
+paint the existing navigation border; full-width dividers use their
+existing single pseudo-element line. No additional DOM separator or
+alternate public styling pipeline may be introduced.
+
+General's More Space state is owned by the shared Stage grid and must
+size solely to the **active** appearance panel's intrinsic content; no hidden tab may increase the active scroll range.
+Inactive panels remain out of flow. The preview retains its grid pane
+and adjusts to available space with the existing resize observer,
+including when switching tabs or desktop/mobile preview.

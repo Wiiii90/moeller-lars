@@ -4,7 +4,7 @@ The documents in this directory are split by purpose so current application cont
 
 ## Architecture inventory
 
-**Current source alignment (19 October 2026):** Targeted public, Gallery, media, rights, schema and Admin source owners were compared with `dev@434975e1bd09` after the native `docs@317d255e` closeout. Normative changes are recorded in the existing contracts and their architecture owners. This was **not** a merge of 329 intervening `dev` commits, a fresh `dev`-wide test run or a regeneration of the previously checked-in code inventories. The native results below remain the historical, reproducible `docs` checkout baseline.
+**Current source alignment (20 October 2026):** Targeted Public, Gallery/Home, Exhibition/Journal, Media/Rights, Admin Appearance and forward Schema owners were compared with `dev@2ad31502ea4e`. The newest batch covers 62 `dev` commits since the previous selective audit. These source decisions are consolidated into their existing normative owners; no application code was merged and no PHP/browser/DB/CI/Validation checks were run for the new batch. The native `docs@317d255e` results remain historical to their original Checkout. **The user's local Docs worktree is used through Codex only for rare, sufficiently batched, explicitly agreed technical checks, not for each docs update.**
 
 - [Architecture source inventory and models](architecture/README.md) — source-versioned architecture with native source-only checks and generators technically closed out on 19 October 2026; historical inventories and remaining product/runtime/DB checks are explicit. Contracts retain their canonical owners.
 
@@ -42,7 +42,7 @@ Each behavior has **one normative owner**. `ARCHITECTURE.md` is the overview; `a
 | Admin messages and recipient-specific inbox | [Notification](ADMIN-NOTIFICATION-CONTRACT.md) | [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) owns audit, Undo and Commit state—not message delivery |
 | Working, LIVE, Commit, Restore and Revert | [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) | Publication protects history recovery roots; [Media](MEDIA.md) owns reference eligibility and physical deletion |
 | Media ingest, reference discovery and physical cleanup | [Media](MEDIA.md) | [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md) defines user-facing eligibility/presentation; [Rights](PUBLIC-RIGHTS-AND-PRIVACY.md) owns incomplete rights/privacy requirements |
-| Public navigation, Home, Gallery, Journal, SEO and viewer | [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md) | Descriptive source discrepancies do not automatically alter accepted rendering rules |
+| Public navigation, Home, Gallery, Journal, SEO and viewer | [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md) | [Exhibition Editorial](EXHIBITION-EDITORIAL-CONTRACT.md) alone owns organizer, venue and opening; architecture audits only provide evidence |
 | Matomo tracking/reporting, event data and failure isolation | [Analytics](ANALYTICS.md) | [Public integration](PUBLIC-IMPLEMENTATION-CONTRACT.md#analytics-boundary) links here; [Rights](PUBLIC-RIGHTS-AND-PRIVACY.md#d-matomo-consent-and-real-privacy-data) owns deferred consent |
 | Static Dashboard announcements/changelog and release gates | [Release](RELEASE.md) | Code-owned Markdown is not a per-user Notification record |
 | Test layers/discovery/safe isolated DB and cutover | [Testing](TESTING.md), [Migration invariants](MIGRATION-INVARIANTS.md), [Migration plan](MIGRATION-PLAN.md), [Release](RELEASE.md), [platform boundary](SERVER-OPERATIONS-BASELINE.md) | [Completion matrix](architecture/completion-criteria.md) records evidence, not a second test/release contract |
@@ -60,7 +60,8 @@ These describe the durable current application architecture and behavior. Browse
 - [DATA-MODEL.md](DATA-MODEL.md) — durable persistence/domain relationships
 - [TESTING.md](TESTING.md) — test layers, placement, discovery, naming, database safety and browser-testing direction
 - [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md) — public routing/publication/Home/Journal/media behavior
-- [MEDIA.md](MEDIA.md) — media ingest/references, whole-site Storage allowance, capacity/distribution UI and guarded/reclaimable storage behavior
+- [EXHIBITION-EDITORIAL-CONTRACT.md](EXHIBITION-EDITORIAL-CONTRACT.md) — organizer versus venue/address, vernissage visibility and forward compatibility
+- [MEDIA.md](MEDIA.md) — media ingest/references, quota, guarded cleanup and explicitly local pre-release thumbnail consolidation; no Validation execution
 - [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary
 - [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and transactional-mail boundary
 - [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md) — shared environment-aware password policy and browser-local generator contract
