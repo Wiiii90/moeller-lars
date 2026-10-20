@@ -474,7 +474,7 @@
 .admin-angle-control__value {
     display: inline-flex;
     width: 100%;
-    min-height: var(--admin-control-height);
+    min-height: calc(var(--admin-control-height) - 1px);
     align-items: center;
     gap: 0;
 }
@@ -485,7 +485,7 @@
     min-width: 0;
     min-height: calc(var(--admin-control-height) - 1px);
     border: 0;
-    padding: .25rem var(--admin-control-text-inset);
+    /* Let the shared fi-input own its value inset, as for Center X/Y. */
     background: transparent;
     color: var(--admin-text);
     font: inherit;
