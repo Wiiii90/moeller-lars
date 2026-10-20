@@ -167,11 +167,8 @@
                                     @if ($section['children'] !== [] || ($reorderEnabled && $nestedNavigationEnabled))
                                         <div class="admin-hierarchy__children">
                                             <div
-                                                class="admin-hierarchy__children-rows{{ $section['children'] === [] ? ' admin-pages__empty-child-drop' : '' }}"
+                                                class="admin-hierarchy__children-rows"
                                                 role="rowgroup"
-                                                @if ($section['children'] === [] && $reorderEnabled && $nestedNavigationEnabled)
-                                                    data-drop-label="Drop as child"
-                                                @endif
                                                 aria-label="Child pages under {{ $section['title'] }}"
                                                 @if ($reorderEnabled && $nestedNavigationEnabled)
                                                     data-drop-target="true"
