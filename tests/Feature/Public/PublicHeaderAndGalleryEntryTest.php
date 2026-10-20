@@ -19,6 +19,8 @@ it('validates editable name positions, lettering, colors and sizes', function ()
         ->and(PublicAppearance::headerPosition('above'))->toBe('above')
         ->and(PublicAppearance::headerCaps(null))->toBe('small-caps')
         ->and(PublicAppearance::headerCaps('normal'))->toBe('normal')
+        ->and(PublicAppearance::menuType(null))->toBe('cyclic_inline')
+        ->and(PublicAppearance::menuType('cyclic_inline'))->toBe('cyclic_inline')
         ->and(PublicAppearance::headerDivider(null))->toBe('fine')
         ->and(PublicAppearance::headerDivider('full'))->toBe('full')
         ->and(PublicAppearance::headerDivider('menu'))->toBe('menu')
@@ -41,6 +43,7 @@ it('validates editable name positions, lettering, colors and sizes', function ()
         ->and(array_keys(PublicAppearance::headerAlignmentOptions('inside')))->toBe(['left', 'right'])
         ->and(array_keys(PublicAppearance::headerAlignmentOptions('above')))->toBe(['left', 'center', 'right']);
     expect(fn () => PublicAppearance::frameStyle('faux-paper'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::menuType('dropdown'))->toThrow(ValidationException::class);
     expect(PublicAppearance::headerText(null))->toBe('Lars Möller')
         ->and(PublicAppearance::headerText(' Neue Edition '))->toBe('Neue Edition')
         ->and(PublicAppearance::headerAlignment(null))->toBe('left')

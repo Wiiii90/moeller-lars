@@ -90,6 +90,21 @@ final class PublicAppearance
         return $value;
     }
 
+    /** Currently implemented public navigation presentation. */
+    public const MENU_TYPES = [
+        'cyclic_inline' => 'Cyclic inline',
+    ];
+
+    public static function menuType(mixed $value): string
+    {
+        $value ??= 'cyclic_inline';
+        if (! is_string($value) || ! array_key_exists($value, self::MENU_TYPES)) {
+            throw ValidationException::withMessages(['menu_type' => 'Choose a supported menu type.']);
+        }
+
+        return $value;
+    }
+
     public const HEADER_DIVIDERS = [
         'fine' => 'No divider',
         'menu' => 'Menu divider',

@@ -674,6 +674,18 @@ nested content repeater in Image Edit, redundant child counter or special
 child-row design. Existing Image children remain independently editable
 and selected, and are shown with the canonical full six-column row.
 
+## Menu presentation type
+
+General → Appearance → Menu exposes a native **Menu type** selector before
+**Menu to page**. For now, `cyclic_inline` ("Cyclic inline") is the only
+implemented and accepted value. The setting is validated by `PublicAppearance`
+and stored in the existing Working/Committed general public settings flow,
+defaulting to the established cyclic, single-row window navigation for
+existing records. It does not create or imply an implemented Dropdown menu.
+Additional options require a separately accepted public menu interaction and
+presentation contract; do not build or switch to a second renderer merely
+because the selector exists.
+
 ## Global public appearance surfaces
 
 General is the authoritative global editor for three public background

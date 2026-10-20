@@ -18,6 +18,27 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
+it('exposes one real persisted Menu type selector without changing navigation behavior', function (): void {
+    $page = Livewire::test(General::class)
+        ->assertSet('data.menu_type', 'cyclic_inline')
+        ->assertHasNoErrors();
+    $html = $page->html();
+    expect($html)->toContain('Menu type')
+        ->toContain('Cyclic inline');
+
+    $page->set('data.menu_type', 'cyclic_inline')->assertHasNoErrors();
+    expect(PublicContentSetting::general()->getAttribute('menu_type'))->toBe('cyclic_inline');
+
+    Livewire::test(General::class)
+        ->assertSet('data.menu_type', 'cyclic_inline')
+        ->assertHasNoErrors();
+
+    expect(fn () => app(AdminSettingsService::class)->updatePublicContent(
+        PublicContentSetting::general(),
+        ['menu_type' => 'unimplemented_dropdown'],
+    ))->toThrow(ValidationException::class);
+});
+
 it('saves a first solid color as one complete action and repeats silently', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['background_mode' => null, 'background_color' => '#123456']);
     app(AdminActivityNotificationContext::class)->discard();
