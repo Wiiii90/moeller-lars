@@ -108,9 +108,14 @@ it('replaces primary media through a committed Gallery command instead of Edit a
         ->and($oldAsset->fresh()->state)->toBe('available')
         ->and($newAsset->state)->toBe('available')
         ->and($thumbnail->state)->toBe('available')
-        ->and(AdminNotification::query()->where('title', 'Primary media updated')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('title', 'Draft primary media replaced')->count())->toBe(1);
 
     Storage::disk(config('media.disk'))->assertExists([$newAsset->storage_key, $thumbnail->storage_key]);
+
+    $row = collect(Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->get('artworkDataset'))->firstWhere('id', (int) $artwork->getKey());
+    expect($row['primary_media_asset_id'])->toBe((int) $newAsset->getKey())
+        ->and($row['primary_variant_id'])->toBe((int) $thumbnail->getKey());
 
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });

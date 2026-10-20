@@ -202,9 +202,29 @@ trait GalleryWorkspaceArtworkDialogs
                     app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $newAlt);
                 });
 
+                // Persisted state, not completion of the temporary upload,
+                // determines whether the editor may announce replacement.
+                $savedId = (int) $artwork->artworkMedia()
+                    ->where('role', 'primary')
+                    ->value('media_asset_id');
+                if ($savedId !== (int) $asset->getKey()) {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => 'The new file was ingested, but the Artwork still points to its previous primary media.',
+                    ]);
+                }
+
                 $this->refreshWorkspaceAfterMutation();
+                $shown = collect($this->artworkDataset)->firstWhere('id', (int) $artwork->getKey());
+                if (! is_array($shown)
+                    || (int) ($shown['primary_media_asset_id'] ?? 0) !== $savedId) {
+                    throw ValidationException::withMessages([
+                        'primary_upload' => 'The primary media changed, but the Gallery preview did not update. Reload the Gallery before continuing.',
+                    ]);
+                }
+
                 app(AdminNotifier::class)->notification(
-                    title: 'Primary media updated',
+                    title: 'Draft primary media replaced',
+                    body: 'The previous original remains in Storage. Public Gallery and Home change only after the Artwork is published and the publication is committed.',
                     status: 'success',
                 );
             });

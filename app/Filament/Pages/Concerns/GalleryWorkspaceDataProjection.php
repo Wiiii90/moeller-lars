@@ -62,6 +62,8 @@ trait GalleryWorkspaceDataProjection
                 'medium' => $artwork->getAttribute('medium'),
                 'dimensions' => $artwork->getAttribute('dimensions'),
                 'primary_kind' => $kind,
+                'primary_media_asset_id' => $primaryAsset instanceof MediaAsset ? (int) $primaryAsset->getKey() : null,
+                'primary_variant_id' => $thumbnail instanceof MediaVariant ? (int) $thumbnail->getKey() : null,
                 'thumbnail_url' => $thumbnail instanceof MediaVariant ? route('admin.media.variant', $thumbnail) : null,
                 'primary_original_url' => $primaryAsset instanceof MediaAsset && $primaryAsset->getAttribute('state') === 'available'
                     ? route('admin.media.original', $primaryAsset)
