@@ -58,3 +58,8 @@ selected image nodes, uses ProseMirror NodeSelection and applies whitelisted
 attributes through a normal document transaction. This preserves Undo/Redo
 and enables an image-specific floating toolbar. Image Caption is an optional
 caption displayed immediately beneath the image, not its ALT text.
+
+The Storage image picker is an inline panel in the owning Edit dialog. It uses
+MediaAssetSelect's existing searchable media choices, with no second modal.
+Selection inserts a canonical media reference into the active rich editor;
+the transient picker field is never dehydrated as editorial content.

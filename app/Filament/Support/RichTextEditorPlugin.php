@@ -3,8 +3,6 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ArtistImageLayout;
-use App\Domain\Media\MediaPreviewVariant;
-use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\EditorCommand;
@@ -41,8 +39,9 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
     {
         return [
             RichEditorTool::make('insertStorageImage')
+                ->label('Insert image from Storage')
                 ->icon(AdminIcon::Storage->value)
-                ->action(),
+                ->jsHandler("\$dispatch('artist-rich-image-toggle')"),
             ...array_map(
                 static fn (string $placement): RichEditorTool =>
                     RichEditorTool::make('image'.str_replace('-', '', ucfirst($placement)))
@@ -80,34 +79,6 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
     public function getEditorActions(): array
     {
         return [
-            Action::make('insertStorageImage')
-                ->modalHeading('Insert image from Storage')
-                ->schema([
-                    MediaAssetSelect::makeId('media_asset_id', 'Image', imagesOnly: true)->required(),
-                ])
-                ->action(function (array $arguments, array $data, RichEditor $component): void {
-                    $id = (int) ($data['media_asset_id'] ?? 0);
-                    $asset = MediaAsset::query()
-                        ->whereKey($id)
-                        ->where('state', 'available')
-                        ->where('mime_type', 'like', 'image/%')
-                        ->firstOrFail();
-                    $variant = MediaPreviewVariant::imageThumbnail($asset);
-                    if ($variant === null) {
-                        return;
-                    }
-                    $component->runCommands(
-                        [EditorCommand::make('insertContent', arguments: [[
-                            'type' => 'image',
-                            'attrs' => [
-                                'id' => (string) $id,
-                                'src' => route('admin.media.variant', $variant),
-                                'alt' => $asset->getAttribute('alt_text') ?: '',
-                            ],
-                        ]])],
-                        editorSelection: $arguments['editorSelection'],
-                    );
-                }),
             Action::make('imageCaption')
                 ->modalHeading('Image caption')
                 ->fillForm(fn (array $arguments): array => ['caption' => $arguments['caption'] ?? ''])

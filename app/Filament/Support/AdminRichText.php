@@ -3,6 +3,11 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\RichTextDocument;
+use App\Domain\Media\MediaPreviewVariant;
+use App\Models\MediaAsset;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\RichEditor\EditorCommand;
+use Filament\Schemas\Components\Grid;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
 
@@ -71,6 +76,83 @@ final class AdminRichText
             'x-on:focusout' => "if (!\$el.contains(\$event.relatedTarget) && \$el.closest('.admin-dialog--edit')) { \$el.dispatchEvent(new Event('change', { bubbles: true })); }",
         ]);
 
-        return [$editor];
+        if (! $allowEmbeddedMedia) {
+            return [$editor];
+        }
+
+        $editorKey = 'artist-rich-text-'.$name;
+        $editor->key($editorKey);
+
+        $picker = MediaAssetSelect::makeId(
+            '__rich_image_'.$name,
+            'Image from Storage',
+            imagesOnly: true,
+        )
+            ->nullable()
+            ->dehydrated(false)
+            ->live()
+            ->afterStateUpdated(static function (mixed $state, Select $field) use ($editorKey): void {
+                $id = filter_var($state, FILTER_VALIDATE_INT);
+                if ($id === false || $id <= 0) {
+                    return;
+                }
+
+                $asset = MediaAsset::query()
+                    ->whereKey($id)
+                    ->where('state', 'available')
+                    ->where('mime_type', 'like', 'image/%')
+                    ->with('variants')
+                    ->firstOrFail();
+                $variant = MediaPreviewVariant::imageThumbnail($asset);
+                if ($variant === null) {
+                    return;
+                }
+
+                $target = $field->getRootContainer()->getComponent(
+                    static fn (mixed $candidate): bool =>
+                        $candidate instanceof RichEditor && $candidate->getKey() === $editorKey,
+                    withHidden: true,
+                );
+                if (! $target instanceof RichEditor) {
+                    return;
+                }
+
+                $target->runCommands([
+                    EditorCommand::make('insertContent', arguments: [[
+                        'type' => 'image',
+                        'attrs' => [
+                            'id' => (string) $id,
+                            'src' => route('admin.media.variant', $variant),
+                            'alt' => (string) ($asset->getAttribute('alt_text') ?: ''),
+                        ],
+                    ]]),
+                ]);
+
+                $field->state(null);
+                $field->getLivewire()->dispatch('artist-rich-image-inserted');
+            });
+
+        return [
+            Grid::make()
+                ->columns(1)
+                ->schema([
+                    $editor,
+                    Grid::make()
+                        ->columns(1)
+                        ->schema([$picker])
+                        ->extraAttributes([
+                            'x-show' => 'imagePickerOpen',
+                            'x-cloak' => true,
+                            'class' => 'admin-rich-text-inline-picker',
+                        ])
+                        ->columnSpanFull(),
+                ])
+                ->extraAttributes([
+                    'x-data' => '{ imagePickerOpen: false }',
+                    'x-on:artist-rich-image-toggle' => 'imagePickerOpen = !imagePickerOpen',
+                    'x-on:artist-rich-image-inserted.window' => 'imagePickerOpen = false',
+                ])
+                ->columnSpanFull(),
+        ];
     }
 }
