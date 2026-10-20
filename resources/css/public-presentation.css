@@ -2210,18 +2210,17 @@ body.public-site--frame-plain #content {
 }
 
 
-/* Rights and artwork information share one content-sized footer row.
- * Each track flexes from its intrinsic text width, keeping the artwork
- * caption against its image edge and wrapping text instead of the whole
- * caption beneath the rights. */
+/* Both footer texts share the available image width from their
+ * intrinsic minimums. Their first text baselines align while longer
+ * content wraps inside its own side of the row. */
 .artwork-card__footer--with-rights {
     display: flex;
-    align-items: flex-start;
+    align-items: baseline;
     gap: .65rem;
 }
 .artwork-card__rights {
     min-width: 0;
-    flex: 0 1 auto;
+    flex: 1 1 min-content;
     color: var(--public-muted);
     font-family: var(--public-typeface);
     font-size: .74rem;
@@ -2232,7 +2231,7 @@ body.public-site--frame-plain #content {
 }
 .artwork-card__footer--with-rights .artwork-caption-link {
     min-width: 0;
-    flex: 1 1 auto;
+    flex: 1 1 min-content;
     width: auto;
     margin-inline: 0;
 }
