@@ -692,6 +692,41 @@
 
 
 
-/* Native Sortable owns both sibling and inter-level drag gestures. */
+/* Pages: empty child lists must not sit on the root reordering seam.
+ * Keep Livewire/Alpine's one native sortable-group owner for all transfers.
+ * Only an empty child list becomes a labeled, row-contained landing target
+ * during a native drag. This leaves root sibling gaps unobstructed and also
+ * gives the final parent a genuine child drop area. Populated child lists
+ * retain their ordinary flow and sibling sorting unchanged. */
+.admin-hierarchy--pages .admin-pages__empty-child-drop {
+    box-sizing: border-box;
+    position: absolute;
+    z-index: 8;
+    top: .5rem;
+    right: calc(var(--admin-table-selection-width) + .5rem);
+    display: flex;
+    width: max-content;
+    min-width: 7.5rem;
+    min-height: 2rem;
+    padding: .25rem .5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--admin-line-strong);
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    font-size: var(--admin-font-size-table-meta);
+    font-weight: 600;
+    line-height: 1.2;
+    opacity: 0;
+    pointer-events: none;
+}
+.admin-hierarchy--pages .admin-pages__empty-child-drop::before {
+    content: attr(data-drop-label);
+}
+body.sorting .admin-hierarchy--pages .admin-pages__empty-child-drop {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .admin-hierarchy--pages .admin-hierarchy__group { position: relative; }
 .admin-hierarchy__header { position: relative; }
