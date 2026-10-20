@@ -32,6 +32,12 @@ Editor; their current byline stays visible as a compatibility fallback.
 Both Working and Committed schemas receive the same new fields. Do not
 rewrite retained publication checkpoints.
 
+The 2026-10-20 legacy address reconciliation may copy the original dual
+venue description for "Der blonde Hans" into the structured Address fields,
+but only if the original source data remain unchanged. Description text is
+not deleted. Public suppresses a description only when its content exactly
+duplicates the structured address; no geographic pin is invented.
+
 ## Vernissage and dates
 
 - `vernissage_at`: optional structured opening time; never default to today.

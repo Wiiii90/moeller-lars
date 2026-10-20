@@ -25,7 +25,8 @@
                     ? trim((string) $exhibition->venue)
                     : null;
                 $location = $exhibition->mapLocationLabel();
-                $hasDescription = trim((string) ($exhibition->description ?? '')) !== '';
+                $hasDescription = trim((string) ($exhibition->description ?? '')) !== ''
+                    && trim((string) $exhibition->description) !== trim((string) $exhibition->location_text);
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
                 $hasFacts = $vernissage !== null || $address !== null || $physicalVenue !== null;
                 $hasActions = $map !== null || $exhibition->external_url !== null;
