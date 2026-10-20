@@ -621,7 +621,7 @@ final class General extends Page
 
                 Group::make([
                     View::make('filament.schemas.components.admin-section-heading')
-                        ->viewData(['label' => 'Regional Formats', 'class' => 'general-form-section-heading'])
+                        ->viewData(['label' => __('Regional Formats'), 'class' => 'general-form-section-heading'])
                         ->columnSpanFull(),
                     Select::make('regional_format')
                         ->label('Dates and numbers')

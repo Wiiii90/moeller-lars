@@ -31,7 +31,7 @@ final class AccountMenuAction
                 ->icon(AdminIcon::Account->value)
                 ->url(null)
                 ->sort(0)
-                ->modalHeading('Account & security')
+                ->modalHeading(__('Account & security'))
                 ->fillForm(fn (): array => [
                     'name' => (string) self::user()->getAttribute('name'),
                     'email' => (string) self::user()->getAttribute('email'),
@@ -40,7 +40,7 @@ final class AccountMenuAction
                 ])
                 ->schema(fn (): array => [
                     View::make('filament.schemas.components.admin-section-heading')
-                        ->viewData(['label' => 'Account'])
+                        ->viewData(['label' => __('Account')])
                         ->columnSpanFull(),
                     Group::make([
                         TextInput::make('name')
@@ -75,7 +75,7 @@ final class AccountMenuAction
                         ->in(array_keys(RegionalFormats::OPTIONS))
                         ->columnSpanFull(),
                     View::make('filament.schemas.components.admin-section-heading')
-                        ->viewData(['label' => 'Security'])
+                        ->viewData(['label' => __('Security')])
                         ->columnSpanFull(),
                     Group::make([
                         AdminPasswordField::password(

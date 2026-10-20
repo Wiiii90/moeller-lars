@@ -155,21 +155,22 @@ class AdminPanelProvider extends PanelProvider
 
     private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
-        $generalItem = General::getNavigationItems()[0]->group(null);
+        $generalItem = General::getNavigationItems()[0]->group(null)->label(__('General'));
         $pagesItem = SitePages::getNavigationItems()[0]
             ->group(null)
+            ->label(__('Pages'))
             ->childItems(app(SiteNavigation::class)->items())
             ->extraAttributes(['data-admin-tree-root' => 'true']);
-        $analyticsItem = Analytics::getNavigationItems()[0]->group(null);
-        $activityItem = Activity::getNavigationItems()[0]->group(null);
-        $storageItem = MediaAssetResource::getNavigationItems()[0]->group(null);
-        $previewItem = NavigationItem::make('Preview')
+        $analyticsItem = Analytics::getNavigationItems()[0]->group(null)->label(__('Analytics'));
+        $activityItem = Activity::getNavigationItems()[0]->group(null)->label(__('Activity'));
+        $storageItem = MediaAssetResource::getNavigationItems()[0]->group(null)->label(__('Storage'));
+        $previewItem = NavigationItem::make(__('Preview'))
             ->group(null)
             ->icon(AdminIcon::Preview)
             ->url(route('preview.home'))
             ->openUrlInNewTab();
         $hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
-        $commitItem = NavigationItem::make('Commit')
+        $commitItem = NavigationItem::make(__('Commit'))
             ->group(null)
             ->icon(AdminIcon::Commit)
             ->url('#')
@@ -184,7 +185,7 @@ class AdminPanelProvider extends PanelProvider
                 'x-bind:style' => "publicationPending ? '' : 'opacity: .5;'",
                 'x-on:click.prevent' => "if (publicationPending) { \$dispatch('publication-commit') }",
             ]);
-        $publicItem = NavigationItem::make('View Site')
+        $publicItem = NavigationItem::make(__('View Site'))
             ->group(null)
             ->icon(AdminIcon::OpenPublic)
             ->url(route('home'))
@@ -192,7 +193,7 @@ class AdminPanelProvider extends PanelProvider
 
         return $builder
             ->items([
-                ...Dashboard::getNavigationItems(),
+                ...array_map(static fn (NavigationItem $item): NavigationItem => $item->label(__('Dashboard')), Dashboard::getNavigationItems()),
                 $generalItem,
                 $pagesItem,
                 $storageItem,

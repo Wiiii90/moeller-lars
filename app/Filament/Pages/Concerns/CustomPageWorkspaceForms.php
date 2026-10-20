@@ -99,7 +99,7 @@ trait CustomPageWorkspaceForms
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
                 MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)
-                    ->placeholder('No list image')
+                    ->placeholder(__('No list image'))
                     ->nullable(),
                 ComponentListEditor::make(),
             ],
