@@ -69,3 +69,24 @@ test('rights and artwork captions have full-width independent rows, not competin
     assert.match(presentation, /\.artwork-card__footer--rights-right \.artwork-caption-link\s*\{[^}]*justify-self:\s*start;/);
     assert.doesNotMatch(presentation, /\.artwork-caption__title\s*\{[^}]*text-overflow:\s*ellipsis;/);
 });
+
+test('menu-to-page divider gradients reuse the existing stroke without extra pseudo-lines', () => {
+    const presentation = source('resources/css/public-presentation.css');
+    const layout = source('resources/views/layouts/app.blade.php');
+    const menu = presentation.match(/^\.site-header--divider-menu \.site-navigation\s*\{([^}]*)\}/m)?.[1];
+    const full = presentation.match(/^\.site-header--divider-full::after\s*\{([^}]*)\}/m)?.[1];
+    const fullGap = presentation.match(/^\.site-header--divider-full_gap::after\s*\{([^}]*)\}/m)?.[1];
+
+    assert.ok(menu, 'existing Menu-width divider remains the owner');
+    assert.match(menu, /border-bottom: 1px solid var\(--public-separator-color/);
+    assert.match(menu, /border-image-source:\s*var\(--public-separator-gradient, none\);/);
+
+    for (const line of [full, fullGap]) {
+        assert.ok(line, 'full-width divider still has one pseudo-element');
+        assert.match(line, /background:\s*var\(--public-separator-paint, var\(--public-separator-color/);
+    }
+
+    assert.match(layout, /--public-separator-gradient:/);
+    assert.match(layout, /--public-separator-paint:/);
+    assert.match(layout, /nonce="{{ \$publicStyleNonce }}"/);
+});
