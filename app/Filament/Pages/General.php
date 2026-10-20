@@ -98,6 +98,16 @@ final class General extends Page
         'header_name_min_size',
         'header_divider_mode',
         'header_divider_color',
+        'header_divider_paint_mode',
+        'header_divider_paint_gradient_start',
+        'header_divider_paint_gradient_end',
+        'header_divider_paint_gradient_angle',
+        'header_divider_paint_gradient_stops',
+        'header_divider_paint_gradient_repeating',
+        'header_divider_paint_gradient_repeat_span',
+        'header_divider_paint_gradient_center_x',
+        'header_divider_paint_gradient_center_y',
+        'header_divider_paint_gradient_shape',
         'header_name_auto_scale',
         'public_page_width',
         'public_content_padding',
@@ -150,7 +160,7 @@ final class General extends Page
             $mode = $data[$surface.'_mode'] ?? null;
             if ($mode === null || $mode === '' || $mode === PublicAppearance::MODE_DEFAULT) {
                 $data[$surface.'_mode'] = PublicAppearance::MODE_SOLID;
-                if ($surface !== 'header_name') {
+                if (! in_array($surface, ['header_name', 'header_divider_paint'], true)) {
                     $data[$surface.'_color'] = $surface === 'background'
                         ? PublicAppearance::DEFAULT_PAGE_COLOR
                         : PublicAppearance::DEFAULT_SURFACE_COLOR;
@@ -177,13 +187,14 @@ final class General extends Page
 
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
             $data[$surface.'_gradient_stops'] = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
-            $fallback = $surface === 'background'
-                ? PublicAppearance::DEFAULT_PAGE_COLOR
-                : ($surface === 'header_name'
-                    ? ($data['header_name_color'] ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR)
-                    : PublicAppearance::DEFAULT_SURFACE_COLOR);
+            $fallback = match ($surface) {
+                'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
+                'header_name' => $data['header_name_color'] ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+                'header_divider_paint' => $data['header_divider_color'] ?? PublicAppearance::DEFAULT_DIVIDER_COLOR,
+                default => PublicAppearance::DEFAULT_SURFACE_COLOR,
+            };
             $data[$surface.'_solid_colors'] = [[
-                'color' => $data[$surface.'_color'] ?? $fallback,
+                'color' => $data[PublicAppearance::solidColorField($surface)] ?? $fallback,
             ]];
         }
 
@@ -428,15 +439,11 @@ final class General extends Page
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(self::persist('header_divider_mode')),
-                                AdminColorControl::make('header_divider_color', 'Divider color')
-                                    ->nullable()
-                                    ->live()
-                                    ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
-                                    ->afterStateUpdated(self::persist('header_divider_color')),
                                 ])
                                     ->columns(2)
                                     ->columnSpanFull(),
                                 self::appearanceSurfaceControls('menu_background', 'Menu background'),
+                                self::appearanceSurfaceControls('header_divider_paint', 'Divider color'),
                             ])
                                 ->columns(1)
                                 ->extraAttributes([
@@ -723,9 +730,12 @@ final class General extends Page
         $fields = [
             AdminColorControl::make('color', 'Color')
                 ->hiddenLabel()
-                ->default($surface === 'background'
-                    ? PublicAppearance::DEFAULT_PAGE_COLOR
-                    : PublicAppearance::DEFAULT_SURFACE_COLOR)
+                ->default(match ($surface) {
+                    'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
+                    'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+                    'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
+                    default => PublicAppearance::DEFAULT_SURFACE_COLOR,
+                })
                 ->required()
                 ->live(onBlur: true),
         ];
@@ -787,8 +797,9 @@ final class General extends Page
             }
 
             $first = reset($entries);
-            $this->data[$surface.'_color'] = is_array($first) ? ($first['color'] ?? null) : null;
-            $this->persistChangedFields([$surface.'_mode', $surface.'_color']);
+            $colorField = PublicAppearance::solidColorField($surface);
+            $this->data[$colorField] = is_array($first) ? ($first['color'] ?? null) : null;
+            $this->persistChangedFields([$surface.'_mode', $colorField]);
         } else {
             $entries = $this->data[$surface.'_gradient_stops'] ?? null;
             if (! is_array($entries)) {
@@ -855,7 +866,7 @@ final class General extends Page
 
         $fields = [$surface.'_mode'];
         if (($this->data[$surface.'_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
-            $fields[] = $surface.'_color';
+            $fields[] = PublicAppearance::solidColorField($surface);
         }
         $this->persistChangedFields($fields);
         $this->syncAppearanceControlState();
@@ -871,6 +882,7 @@ final class General extends Page
             $default = match ($surface) {
                 'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
                 'header_name' => $this->data['header_name_color'] ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+                'header_divider_paint' => $this->data['header_divider_color'] ?? PublicAppearance::DEFAULT_DIVIDER_COLOR,
                 default => PublicAppearance::DEFAULT_SURFACE_COLOR,
             };
             $mode = $this->data[$surface.'_mode'] ?? PublicAppearance::MODE_SOLID;
@@ -879,7 +891,7 @@ final class General extends Page
                 $this->data[$surface.'_primary_color'] = $stops[0]['color'];
                 $this->data[$surface.'_secondary_color'] = $stops[count($stops) - 1]['color'];
             } else {
-                $this->data[$surface.'_primary_color'] = $this->data[$surface.'_color'] ?? $default;
+                $this->data[$surface.'_primary_color'] = $this->data[PublicAppearance::solidColorField($surface)] ?? $default;
                 $this->data[$surface.'_secondary_color'] = null;
             }
         }
@@ -1233,6 +1245,16 @@ final class General extends Page
                 'header_name_min_size',
                 'header_divider_mode',
                 'header_divider_color',
+                'header_divider_paint_mode',
+                'header_divider_paint_gradient_start',
+                'header_divider_paint_gradient_end',
+                'header_divider_paint_gradient_angle',
+                'header_divider_paint_gradient_stops',
+                'header_divider_paint_gradient_repeating',
+                'header_divider_paint_gradient_repeat_span',
+                'header_divider_paint_gradient_center_x',
+                'header_divider_paint_gradient_center_y',
+                'header_divider_paint_gradient_shape',
                 'header_name_auto_scale',
                         'public_page_width',
                 'public_content_padding',
@@ -1404,6 +1426,7 @@ final class General extends Page
             'header_name_min_size' => 'Minimum responsive name size',
             'header_divider_mode' => 'Menu and page divider',
             'header_divider_color' => 'Divider color',
+            'header_divider_paint_mode' => 'Divider color mode',
             'header_name_auto_scale' => 'Responsive name size',
             'public_page_width' => 'Public page width',
             'public_content_padding' => 'Public content padding',
@@ -1416,20 +1439,21 @@ final class General extends Page
     {
         return match ($field) {
             'favicon_media_asset_id' => is_numeric($value) ? (int) $value : null,
-            'background_mode', 'menu_background_mode', 'page_background_mode', 'header_name_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
+            'background_mode', 'menu_background_mode', 'page_background_mode', 'header_name_mode', 'header_divider_paint_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
             'background_color', 'background_gradient_start', 'background_gradient_end',
             'menu_background_color', 'menu_background_gradient_start', 'menu_background_gradient_end',
             'page_background_color', 'page_background_gradient_start', 'page_background_gradient_end',
-            'header_name_color', 'header_name_gradient_start', 'header_name_gradient_end', 'header_divider_color' => $this->normalizeColorCandidate($value),
-            'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle', 'header_name_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
-            'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops', 'header_name_gradient_stops' =>
+            'header_name_color', 'header_name_gradient_start', 'header_name_gradient_end', 'header_divider_color',
+            'header_divider_paint_gradient_start', 'header_divider_paint_gradient_end' => $this->normalizeColorCandidate($value),
+            'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle', 'header_name_gradient_angle', 'header_divider_paint_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
+            'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops', 'header_name_gradient_stops', 'header_divider_paint_gradient_stops' =>
                 is_array($value) ? array_map(static fn (mixed $stop): mixed => is_array($stop)
                     ? ['color' => is_string($stop['color'] ?? null) ? strtoupper($stop['color']) : ($stop['color'] ?? null),
                        'position' => is_numeric($stop['position'] ?? null) ? (int) $stop['position'] : ($stop['position'] ?? null)]
                     : $stop, array_values($value)) : $value,
-            'background_gradient_repeating', 'menu_background_gradient_repeating', 'page_background_gradient_repeating', 'header_name_gradient_repeating' => (bool) $value,
-            'background_gradient_repeat_span', 'menu_background_gradient_repeat_span', 'page_background_gradient_repeat_span', 'header_name_gradient_repeat_span',
-            'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y', 'header_name_gradient_center_x', 'header_name_gradient_center_y',
+            'background_gradient_repeating', 'menu_background_gradient_repeating', 'page_background_gradient_repeating', 'header_name_gradient_repeating', 'header_divider_paint_gradient_repeating' => (bool) $value,
+            'background_gradient_repeat_span', 'menu_background_gradient_repeat_span', 'page_background_gradient_repeat_span', 'header_name_gradient_repeat_span', 'header_divider_paint_gradient_repeat_span',
+            'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y', 'header_name_gradient_center_x', 'header_name_gradient_center_y', 'header_divider_paint_gradient_center_x', 'header_divider_paint_gradient_center_y',
             'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
                 is_numeric($value) ? (int) $value : $value,
             'header_name_visible', 'header_name_auto_scale' => (bool) $value,
