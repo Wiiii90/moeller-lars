@@ -49,7 +49,7 @@
             <strong>{{ $item['sender_name'] }}</strong>
             <small>{{ $item['sender_email'] }}</small>
         @else
-            <strong>System</strong>
+            <strong>{{ __('System') }}</strong>
         @endif
     </td>
     <td class="admin-table__actions">

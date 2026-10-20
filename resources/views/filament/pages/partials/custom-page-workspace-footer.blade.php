@@ -1,4 +1,4 @@
-        <x-admin.add-row wire:click="mountAction('addComponent')">Add component</x-admin.add-row>
+        <x-admin.add-row wire:click="mountAction('addComponent')">{{ __('Add component') }}</x-admin.add-row>
 
         <footer class="admin-pager">
             <x-admin.page-size-picker
@@ -9,7 +9,7 @@
             />
             <span class="admin-pager__range">@if ($total === 0)0 of 0 @else{{ $resultStart }}–{{ $resultEnd }} of {{ $total }}@endif</span>
             <div class="admin-pager__actions admin-toolbar">
-                <button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>Previous</button>
-                <button class="admin-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>Next</button>
+                <button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>{{ __('Previous') }}</button>
+                <button class="admin-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>{{ __('Next') }}</button>
             </div>
         </footer>

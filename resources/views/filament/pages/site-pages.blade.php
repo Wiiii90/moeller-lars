@@ -11,13 +11,13 @@
 <x-filament-panels::page>
     <x-admin.workspace title="Pages" class="admin-pages-workspace">
         <x-admin.metrics :columns="6" class="pages-status-metrics admin-metrics--six-state">
-            <x-admin.metric class="pages-metric pages-metric--total" label="Total pages" :value="$metrics['total']">All site sections</x-admin.metric>
-            <x-admin.metric class="pages-metric pages-metric--published" label="Published" :value="$metrics['published']">Public now</x-admin.metric>
-            <x-admin.metric class="pages-metric pages-metric--unpublished" label="Unpublished" :value="$metrics['unpublished']">Not public</x-admin.metric>
-            <x-admin.metric class="pages-metric pages-metric--top-level" label="Top level" :value="$metrics['top_level']">Root pages</x-admin.metric>
-            <x-admin.metric class="pages-metric pages-metric--children" label="Child pages" :value="$metrics['children']">Nested pages</x-admin.metric>
-            <x-admin.metric class="pages-metric pages-metric--navigation" label="In navigation" :value="$metrics['navigation']">Visible menu items</x-admin.metric>
-            <x-admin.metric class="pages-metric pages-metric--galleries" label="Galleries" :value="$metrics['galleries']">Gallery pages</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--total" label="Total pages" :value="$metrics['total']">{{ __('All site sections') }}</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--published" label="Published" :value="$metrics['published']">{{ __('Public now') }}</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--unpublished" label="Unpublished" :value="$metrics['unpublished']">{{ __('Not public') }}</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--top-level" label="Top level" :value="$metrics['top_level']">{{ __('Root pages') }}</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--children" label="Child pages" :value="$metrics['children']">{{ __('Nested pages') }}</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--navigation" label="In navigation" :value="$metrics['navigation']">{{ __('Visible menu items') }}</x-admin.metric>
+            <x-admin.metric class="pages-metric pages-metric--galleries" label="Galleries" :value="$metrics['galleries']">{{ __('Gallery pages') }}</x-admin.metric>
         </x-admin.metrics>
 
         <section aria-label="Pages editor">
@@ -30,7 +30,7 @@
             >
                 <x-slot:search>
                     <label class="admin-task-field">
-                        <span>SEARCH</span>
+                        <span>{{ __('SEARCH') }}</span>
                         <x-admin.search-input
                             model="search"
                             placeholder="Search pages"
@@ -40,9 +40,9 @@
 
                 <x-slot:filters>
                     <label class="admin-task-field">
-                        <span>TYPE</span>
+                        <span>{{ __('TYPE') }}</span>
                         <select wire:model.live="typeFilter" aria-label="Filter by page type">
-                            <option value="">All types</option>
+                            <option value="">{{ __('All types') }}</option>
                             @foreach ($typeOptions as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
                             @endforeach
@@ -50,11 +50,11 @@
                     </label>
 
                     <label class="admin-task-field">
-                        <span>STATUS</span>
+                        <span>{{ __('STATUS') }}</span>
                         <select wire:model.live="statusFilter" aria-label="Filter by page status">
-                            <option value="">All statuses</option>
-                            <option value="published">Published</option>
-                            <option value="hidden">Unpublished</option>
+                            <option value="">{{ __('All statuses') }}</option>
+                            <option value="published">{{ __('Published') }}</option>
+                            <option value="hidden">{{ __('Unpublished') }}</option>
                         </select>
                     </label>
                 </x-slot:filters>
@@ -69,15 +69,15 @@
 
                 <x-slot:actions>
                     <div class="admin-task-control-group admin-pages__actions">
-                        <span class="admin-task-control-label">PAGES</span>
+                        <span class="admin-task-control-label">{{ __('PAGES') }}</span>
                         <div class="admin-task-control-actions admin-editorial-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('pagesSettings')" aria-label="Page settings">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Settings</span>
+                                <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addPage')" aria-label="Add page">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Pages->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Add page</span>
+                                <span class="admin-action__label">{{ __('Add page') }}</span>
                             </button>
                         </div>
                     </div>
@@ -95,12 +95,12 @@
                                 aria-label="Selected pages: {{ $selectedCount }}"
                                 @disabled($selectedCount === 0)
                             >
-                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
+                                <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
-                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>Publish selected</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled($selectedCount === 0)>Unpublish selected</button>
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedPages')" x-on:click="open = false" @disabled($selectedCount === 0)>Delete selected</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>{{ __('Publish selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled($selectedCount === 0)>{{ __('Unpublish selected') }}</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedPages')" x-on:click="open = false" @disabled($selectedCount === 0)>{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ $selectedCount }} selected">{{ $selectedCount }}</span>
@@ -117,13 +117,13 @@
                 >
                     <div class="admin-hierarchy__header admin-pages__header" role="row">
                         <div class="admin-pages__primary-grid" role="presentation">
-                            <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
-                            <span role="columnheader" data-column="page">Name</span>
+                            <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">{{ __('Position') }}</span>
+                            <span role="columnheader" data-column="page">{{ __('Name') }}</span>
                         </div>
-                        <span class="admin-pages__type" role="columnheader" data-column="page-type">Page type</span>
-                        <span class="admin-pages__template" role="columnheader" data-column="template">Template</span>
+                        <span class="admin-pages__type" role="columnheader" data-column="page-type">{{ __('Page type') }}</span>
+                        <span class="admin-pages__template" role="columnheader" data-column="template">{{ __('Template') }}</span>
                         <div class="admin-pages__utility-grid" role="presentation">
-                            <span class="admin-row-actions-heading" role="columnheader" data-column="actions">Actions</span>
+                            <span class="admin-row-actions-heading" role="columnheader" data-column="actions">{{ __('Actions') }}</span>
                             <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="columnheader" data-column="selection">
                                 <input
                                     type="checkbox"
@@ -198,11 +198,11 @@
                         <div class="admin-hierarchy__empty" role="row">
                             @if ($metrics['total'] > 0)
                                 <x-admin.empty-state title="No matching pages" minimal>
-                                    <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button></x-slot:actions>
+                                    <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">{{ __('Clear filters') }}</button></x-slot:actions>
                                 </x-admin.empty-state>
                             @else
                                 <x-admin.empty-state title="No pages yet" minimal>
-                                    <x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('addPage')">Add page</button></x-slot:actions>
+                                    <x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('addPage')">{{ __('Add page') }}</button></x-slot:actions>
                                 </x-admin.empty-state>
                             @endif
                         </div>
@@ -210,7 +210,7 @@
                 </div>
             </x-admin.table>
 
-            <x-admin.add-row wire:click="mountAction('addPage')">Add page</x-admin.add-row>
+            <x-admin.add-row wire:click="mountAction('addPage')">{{ __('Add page') }}</x-admin.add-row>
 
             <footer class="admin-pager" aria-label="Pages pagination">
                 <x-admin.page-size-picker
@@ -221,8 +221,8 @@
                 />
                 <span class="admin-pager__range">{{ $rangeStart }}–{{ $rangeEnd }} of {{ $totalGroups }}</span>
                 <div class="admin-toolbar admin-pager__actions">
-                    <button class="admin-action" type="button" wire:click="previousPage" @disabled($pageNumber <= 1)>Previous</button>
-                    <button class="admin-action" type="button" wire:click="nextPage" @disabled($pageNumber >= $lastPage)>Next</button>
+                    <button class="admin-action" type="button" wire:click="previousPage" @disabled($pageNumber <= 1)>{{ __('Previous') }}</button>
+                    <button class="admin-action" type="button" wire:click="nextPage" @disabled($pageNumber >= $lastPage)>{{ __('Next') }}</button>
                 </div>
             </footer>
         </section>

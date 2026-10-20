@@ -7,18 +7,18 @@
 <div class="admin-detail-dialog activity-publication-review">
     <dl class="admin-detail-dialog__meta">
         <div>
-            <dt>Pending changes</dt>
+            <dt>{{ __('Pending changes') }}</dt>
             <dd>{{ number_format($summary['total']) }}</dd>
         </div>
         <div>
-            <dt>Preflight</dt>
+            <dt>{{ __('Preflight') }}</dt>
             <dd>{{ $preflight['label'] }}</dd>
         </div>
     </dl>
 
     @if ($summary['groups'] !== [])
         <div class="admin-detail-dialog__field">
-            <span>What will publish</span>
+            <span>{{ __('What will publish') }}</span>
             <div class="activity-publication-review__groups">
                 @foreach ($summary['groups'] as $group)
                     <article>
@@ -33,14 +33,14 @@
         </div>
     @else
         <div class="admin-detail-dialog__field">
-            <span>What will publish</span>
-            <p>No working-state changes currently differ from the live snapshot.</p>
+            <span>{{ __('What will publish') }}</span>
+            <p>{{ __('No working-state changes currently differ from the live snapshot.') }}</p>
         </div>
     @endif
 
     @if ($details['rows'] !== [])
         <div class="admin-detail-dialog__field">
-            <span>Changed records</span>
+            <span>{{ __('Changed records') }}</span>
             <div class="activity-publication-review__records">
                 @foreach ($details['rows'] as $row)
                     <article>
@@ -63,7 +63,7 @@
 
     @if ($preflight['blockers'] !== [])
         <div class="admin-detail-dialog__field">
-            <span>Blocking issues</span>
+            <span>{{ __('Blocking issues') }}</span>
             <ul class="activity-publication-review__blockers">
                 @foreach ($preflight['blockers'] as $blocker)
                     <li>{{ $blocker }}</li>
@@ -72,9 +72,9 @@
         </div>
     @elseif ($summary['total'] > 0)
         <p class="admin-detail-dialog__context">
-            <span>The current publication checks found no blocking issue.</span>
+            <span>{{ __('The current publication checks found no blocking issue.') }}</span>
             <span aria-hidden="true">·</span>
-            <span>Commit still uses the same server-side preflight.</span>
+            <span>{{ __('Commit still uses the same server-side preflight.') }}</span>
         </p>
     @endif
 </div>

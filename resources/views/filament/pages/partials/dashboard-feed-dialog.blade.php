@@ -10,21 +10,21 @@
 <div class="admin-detail-dialog admin-detail-dialog--feed">
     <dl class="admin-detail-dialog__meta admin-detail-dialog__meta--four">
         <div>
-            <dt>Type</dt>
+            <dt>{{ __('Type') }}</dt>
             <dd>{{ $entry['type_label'] }}</dd>
         </div>
         <div>
-            <dt>Date</dt>
+            <dt>{{ __('Date') }}</dt>
             <dd>{{ $entry['date_display'] }}</dd>
         </div>
 
         @if ($entry['type'] === 'contact')
             <div>
-                <dt>Time</dt>
+                <dt>{{ __('Time') }}</dt>
                 <dd>{{ $entry['time_display'] }}</dd>
             </div>
             <div>
-                <dt>Sender</dt>
+                <dt>{{ __('Sender') }}</dt>
                 <dd class="admin-detail-dialog__sender">
                     <strong>{{ $entry['sender_name'] }}</strong>
                     <a href="mailto:{{ $entry['sender_email'] }}">{{ $entry['sender_email'] }}</a>
@@ -32,20 +32,20 @@
             </div>
         @elseif ($entry['type'] === 'notification')
             <div>
-                <dt>Time</dt>
+                <dt>{{ __('Time') }}</dt>
                 <dd>{{ $entry['time_display'] }}</dd>
             </div>
             <div>
-                <dt>Status</dt>
+                <dt>{{ __('Status') }}</dt>
                 <dd>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }} — {{ ucfirst($entry['notification_status']) }}</dd>
             </div>
         @else
             <div>
-                <dt>Sender</dt>
-                <dd>System</dd>
+                <dt>{{ __('Sender') }}</dt>
+                <dd>{{ __('System') }}</dd>
             </div>
             <div>
-                <dt>Status</dt>
+                <dt>{{ __('Status') }}</dt>
                 <dd>{{ $entry['status'] }}</dd>
             </div>
         @endif
@@ -53,7 +53,7 @@
 
     @if ($message !== '')
         <div class="admin-detail-dialog__field">
-            <span>Message</span>
+            <span>{{ __('Message') }}</span>
             @if (in_array($entry['type'], ['announcement', 'changelog'], true))
                 <div class="admin-detail-dialog__release-notes">
                     @php

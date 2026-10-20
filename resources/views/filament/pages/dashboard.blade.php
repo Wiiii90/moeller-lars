@@ -18,7 +18,7 @@
                 >
                     @if ($isPublishedPagesMetric)
                         <span class="admin-dashboard__metric-detail--long">{{ $metric['detail'] }}</span>
-                        <span class="admin-dashboard__metric-detail--short">Nav groups excluded</span>
+                        <span class="admin-dashboard__metric-detail--short">{{ __('Nav groups excluded') }}</span>
                     @else
                         {{ $metric['detail'] }}
                     @endif
@@ -35,15 +35,15 @@
             <input class="admin-dashboard__overview-panel-toggle" type="radio" name="dashboard-overview-panel" id="dashboard-overview-analytics">
 
             <div class="admin-stage-tabs admin-dashboard__overview-switcher" aria-label="Dashboard overview">
-                <label class="admin-action" for="dashboard-overview-storage">Storage</label>
-                <label class="admin-action" for="dashboard-overview-activity">Activity</label>
-                <label class="admin-action" for="dashboard-overview-analytics">Analytics</label>
+                <label class="admin-action" for="dashboard-overview-storage">{{ __('Storage') }}</label>
+                <label class="admin-action" for="dashboard-overview-activity">{{ __('Activity') }}</label>
+                <label class="admin-action" for="dashboard-overview-analytics">{{ __('Analytics') }}</label>
             </div>
 
             <article class="admin-dashboard__overview-column admin-dashboard__overview-column--storage">
                 <header class="admin-dashboard__overview-head">
-                    <span class="admin-section__kicker">Storage</span>
-                    <a class="admin-action" href="{{ $storage['url'] }}" wire:navigate>Open</a>
+                    <span class="admin-section__kicker">{{ __('Storage') }}</span>
+                    <a class="admin-action" href="{{ $storage['url'] }}" wire:navigate>{{ __('Open') }}</a>
                 </header>
 
                 <div class="admin-dashboard__storage-stage">
@@ -56,17 +56,17 @@
                     </div>
                     <p class="admin-dashboard__facts">
                         <span aria-label="Used {{ $storage['authoritative'] }}">
-                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Used</span>
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">{{ __('Used') }}</span>
                             <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">U:</span>
                             <strong>{{ $storage['authoritative'] }}</strong>
                         </span>
                         <span aria-label="Remaining {{ $storage['remaining'] }}">
-                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Remaining</span>
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">{{ __('Remaining') }}</span>
                             <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">R:</span>
                             <strong>{{ $storage['remaining'] }}</strong>
                         </span>
                         <span aria-label="Allowance {{ $storage['allowance'] }}">
-                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">Allowance</span>
+                            <span class="admin-dashboard__fact-label admin-dashboard__fact-label--long" aria-hidden="true">{{ __('Allowance') }}</span>
                             <span class="admin-dashboard__fact-label admin-dashboard__fact-label--short" aria-hidden="true">A:</span>
                             <strong>{{ $storage['allowance'] }}</strong>
                         </span>
@@ -76,8 +76,8 @@
 
             <article class="admin-dashboard__overview-column admin-dashboard__overview-column--activity">
                 <header class="admin-dashboard__overview-head">
-                    <span class="admin-section__kicker">Activity</span>
-                    <a class="admin-action" href="{{ $activity['url'] }}" wire:navigate>Open</a>
+                    <span class="admin-section__kicker">{{ __('Activity') }}</span>
+                    <a class="admin-action" href="{{ $activity['url'] }}" wire:navigate>{{ __('Open') }}</a>
                 </header>
 
                 <x-admin.activity-clock-visual
@@ -92,8 +92,8 @@
 
             <article class="admin-dashboard__overview-column admin-dashboard__overview-column--analytics">
                 <header class="admin-dashboard__overview-head">
-                    <span class="admin-section__kicker">Analytics</span>
-                    <a class="admin-action" href="{{ $analytics['url'] }}" wire:navigate>Open</a>
+                    <span class="admin-section__kicker">{{ __('Analytics') }}</span>
+                    <a class="admin-action" href="{{ $analytics['url'] }}" wire:navigate>{{ __('Open') }}</a>
                 </header>
 
                 <figure class="admin-dashboard__analytics-visual">
@@ -108,32 +108,32 @@
                     </div>
                     <figcaption class="admin-dashboard__analytics-caption">
                         @if ($analytics['status'] === 'disabled')
-                            <span class="admin-dashboard__analytics-caption--long">No reporting data for this environment.</span>
-                            <span class="admin-dashboard__analytics-caption--short">Reporting disabled.</span>
+                            <span class="admin-dashboard__analytics-caption--long">{{ __('No reporting data for this environment.') }}</span>
+                            <span class="admin-dashboard__analytics-caption--short">{{ __('Reporting disabled.') }}</span>
                         @elseif ($analytics['status'] === 'unavailable')
-                            <span class="admin-dashboard__analytics-caption--long">Reporting data is currently unavailable.</span>
-                            <span class="admin-dashboard__analytics-caption--short">Reporting unavailable.</span>
+                            <span class="admin-dashboard__analytics-caption--long">{{ __('Reporting data is currently unavailable.') }}</span>
+                            <span class="admin-dashboard__analytics-caption--short">{{ __('Reporting unavailable.') }}</span>
                         @elseif ($analytics['country_state'] === 'unavailable')
-                            <span class="admin-dashboard__analytics-caption--long">Country-level reporting is unavailable.</span>
-                            <span class="admin-dashboard__analytics-caption--short">Country data unavailable.</span>
+                            <span class="admin-dashboard__analytics-caption--long">{{ __('Country-level reporting is unavailable.') }}</span>
+                            <span class="admin-dashboard__analytics-caption--short">{{ __('Country data unavailable.') }}</span>
                         @elseif ($analytics['country_state'] === 'empty')
-                            <span class="admin-dashboard__analytics-caption--long">No country-level visits in this period.</span>
-                            <span class="admin-dashboard__analytics-caption--short">No country visits.</span>
+                            <span class="admin-dashboard__analytics-caption--long">{{ __('No country-level visits in this period.') }}</span>
+                            <span class="admin-dashboard__analytics-caption--short">{{ __('No country visits.') }}</span>
                         @else
-                            <span class="admin-dashboard__analytics-caption--long">Country markers follow aggregate visit volume.</span>
-                            <span class="admin-dashboard__analytics-caption--short">Visit volume by country.</span>
+                            <span class="admin-dashboard__analytics-caption--long">{{ __('Country markers follow aggregate visit volume.') }}</span>
+                            <span class="admin-dashboard__analytics-caption--short">{{ __('Visit volume by country.') }}</span>
                         @endif
                     </figcaption>
                 </figure>
                 <p class="admin-dashboard__facts">
-                    <span>Visits <strong>{{ $analytics['visits_display'] }}</strong></span>
+                    <span>{{ __('Visits') }} <strong>{{ $analytics['visits_display'] }}</strong></span>
                     <span>
-                        <span class="admin-dashboard__analytics-fact-label--long">Unique visitors</span>
-                        <span class="admin-dashboard__analytics-fact-label--short">Visitors</span>
+                        <span class="admin-dashboard__analytics-fact-label--long">{{ __('Unique visitors') }}</span>
+                        <span class="admin-dashboard__analytics-fact-label--short">{{ __('Visitors') }}</span>
                         <strong>{{ $analytics['visitors_display'] }}</strong>
                     </span>
                     <span>
-                        <span class="admin-dashboard__analytics-fact-label--long">last 30 days</span>
+                        <span class="admin-dashboard__analytics-fact-label--long">{{ __('last 30 days') }}</span>
                         <span class="admin-dashboard__analytics-fact-label--short">30 days</span>
                     </span>
                 </p>
