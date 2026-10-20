@@ -127,6 +127,12 @@
     pointer-events: none;
 }
 
+/* Invisible absolute panels otherwise still enlarge scrollable overflow.
+ * Exclude them from layout AND overflow; the active panel alone owns extent. */
+.general-appearance-stage__panel:not(.is-active) {
+    display: none !important;
+}
+
 .general-appearance-stage__panel.is-active {
     position: relative;
     inset: auto;

@@ -187,15 +187,6 @@ final class General extends Page
 
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
             $data[$surface.'_gradient_stops'] = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
-            $fallback = match ($surface) {
-                'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
-                'header_name' => $data['header_name_color'] ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
-                'header_divider_paint' => $data['header_divider_color'] ?? PublicAppearance::DEFAULT_DIVIDER_COLOR,
-                default => PublicAppearance::DEFAULT_SURFACE_COLOR,
-            };
-            $data[$surface.'_solid_colors'] = [[
-                'color' => $data[PublicAppearance::solidColorField($surface)] ?? $fallback,
-            ]];
         }
 
         $this->data = $data;
@@ -366,20 +357,6 @@ final class General extends Page
                                 ->columnSpanFull(),
 
                             Group::make([
-                                Select::make('header_name_mode')
-                                    ->label('Title color')
-                                    ->options([
-                                        PublicAppearance::MODE_SOLID => 'Solid',
-                                        PublicAppearance::MODE_GRADIENT => 'Linear gradient',
-                                        PublicAppearance::MODE_RADIAL => 'Radial gradient',
-                                        PublicAppearance::MODE_CONIC => 'Conic gradient',
-                                    ])
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(fn ($livewire) => $livewire instanceof self
-                                        ? $livewire->persistSurfaceMode('header_name')
-                                        : null),
                                 TextInput::make('header_name_size')
                                     ->label('Size')
                                     ->numeric()
@@ -498,13 +475,10 @@ final class General extends Page
                                 ])
                                 ->columnSpanFull(),
 
-                            Hidden::make('background_color'),
                             Hidden::make('background_gradient_start'),
                             Hidden::make('background_gradient_end'),
-                            Hidden::make('menu_background_color'),
                             Hidden::make('menu_background_gradient_start'),
                             Hidden::make('menu_background_gradient_end'),
-                            Hidden::make('page_background_color'),
                             Hidden::make('page_background_gradient_start'),
                             Hidden::make('page_background_gradient_end'),
                             ])
@@ -648,7 +622,7 @@ final class General extends Page
         $this->persistChangedField('favicon_media_asset_id');
     }
 
-    /** Shared editor for the three backgrounds and the artist title text. */
+    /** Shared editor for all five global paints, including Title and Divider. */
     private static function appearanceSurfaceControls(string $surface, string $label): Group
     {
         $gradient = static fn (callable $get): bool => PublicAppearance::isGradient($get($surface.'_mode'));
@@ -657,7 +631,6 @@ final class General extends Page
         return Group::make([
             Select::make($surface.'_mode')
                 ->label($label)
-                ->visible(fn (): bool => $surface !== 'header_name')
                 ->options([
                     PublicAppearance::MODE_SOLID => 'Solid',
                     PublicAppearance::MODE_GRADIENT => 'Linear gradient',
@@ -711,104 +684,84 @@ final class General extends Page
                 ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
                 ->visible($center),
 
-            self::appearanceColorsTable($surface, true)
+            AdminColorControl::make(PublicAppearance::solidColorField($surface), 'Color')
+                ->required()
+                ->formatStateUsing(static fn (mixed $state): string => filled($state) ? (string) $state : match ($surface) {
+                    'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
+                    'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+                    'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
+                    default => PublicAppearance::DEFAULT_SURFACE_COLOR,
+                })
+                ->live(onBlur: true)
+                ->afterStateUpdated(static function ($livewire, mixed $state) use ($surface): void {
+                    if ($livewire instanceof self) {
+                        $livewire->persistSurfaceColor($surface, 'primary', $state);
+                    }
+                })
                 ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
 
-            self::appearanceColorsTable($surface, false)
-                ->visible($gradient),
+            self::appearanceColorsTable($surface)->visible($gradient),
         ])
             ->columns(2)
             ->extraAttributes(['class' => 'general-background-row'])
             ->columnSpanFull();
     }
 
-    /** One compact, native table schema for every global paint surface. */
-    private static function appearanceColorsTable(string $surface, bool $solid): AdminTableRepeater
+    /** Gradient color stops use the shared AdminTableRepeater; Solid is one inline field. */
+    private static function appearanceColorsTable(string $surface): AdminTableRepeater
     {
-        $name = $surface.($solid ? '_solid_colors' : '_gradient_stops');
-        $columns = [TableColumn::make('Color')];
-        $fields = [
-            AdminColorControl::make('color', 'Color')
-                ->hiddenLabel()
-                ->default(match ($surface) {
-                    'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
-                    'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
-                    'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
-                    default => PublicAppearance::DEFAULT_SURFACE_COLOR,
-                })
-                ->required()
-                ->live(onBlur: true),
-        ];
-
-        if (! $solid) {
-            $columns[] = TableColumn::make('Position');
-            $fields[] = TextInput::make('position')
-                ->label('Position')
-                ->hiddenLabel()
-                ->integer()
-                ->minValue(0)
-                ->maxValue(100)
-                ->default(50)
-                ->suffix('%')
-                ->required()
-                ->live(onBlur: true);
-        }
-
-        $table = AdminTableRepeater::make($name)
+        return AdminTableRepeater::make($surface.'_gradient_stops')
             ->label('Colors')
             ->hiddenLabel()
-            ->table($columns)
+            ->table([TableColumn::make('Color'), TableColumn::make('Position')])
             ->compact()
-            ->schema($fields)
-            ->minItems($solid ? 1 : 2)
-            ->maxItems($solid ? 1 : PublicAppearance::MAX_STOPS)
-            ->defaultItems($solid ? 1 : 2)
+            ->schema([
+                AdminColorControl::make('color', 'Color')
+                    ->hiddenLabel()
+                    ->required()
+                    ->live(onBlur: true),
+                TextInput::make('position')
+                    ->label('Position')
+                    ->hiddenLabel()
+                    ->integer()
+                    ->minValue(0)
+                    ->maxValue(100)
+                    ->default(50)
+                    ->suffix('%')
+                    ->required()
+                    ->live(onBlur: true),
+            ])
+            ->minItems(2)
+            ->maxItems(PublicAppearance::MAX_STOPS)
+            ->defaultItems(2)
             ->reorderable(false)
             ->cloneable(false)
             ->collapsible(false)
-            ->addable(! $solid)
-            ->deletable(! $solid)
+            ->addable()
+            ->deletable()
             ->live()
-            ->afterStateUpdated(function ($livewire) use ($surface, $solid): void {
+            ->afterStateUpdated(function ($livewire) use ($surface): void {
                 if ($livewire instanceof self) {
-                    $livewire->persistAppearanceTable($surface, $solid);
+                    $livewire->persistAppearanceTable($surface);
                 }
             })
+            ->addActionLabel('Add color')
             ->extraFieldWrapperAttributes(['class' => 'general-color-table'])
             ->columnSpanFull();
-
-        if (! $solid) {
-            $table->addActionLabel('Add color');
-        }
-
-        return $table;
     }
 
-    public function persistAppearanceTable(string $surface, bool $solid): void
+    public function persistAppearanceTable(string $surface): void
     {
         if (! is_array($this->data) || ! in_array($surface, PublicAppearance::SURFACE_PREFIXES, true)) {
             return;
         }
 
-        if ($solid) {
-            $entries = $this->data[$surface.'_solid_colors'] ?? null;
-            if (! is_array($entries) || count($entries) !== 1) {
-                return;
-            }
-
-            $first = reset($entries);
-            $colorField = PublicAppearance::solidColorField($surface);
-            $this->data[$colorField] = is_array($first) ? ($first['color'] ?? null) : null;
-            $this->persistChangedFields([$surface.'_mode', $colorField]);
-        } else {
-            $entries = $this->data[$surface.'_gradient_stops'] ?? null;
-            if (! is_array($entries)) {
-                return;
-            }
-
-            $this->saveAppearanceStops($surface, array_values($entries));
+        $entries = $this->data[$surface.'_gradient_stops'] ?? null;
+        if (! is_array($entries)) {
+            return;
         }
 
+        $this->saveAppearanceStops($surface, array_values($entries));
         $this->syncAppearanceControlState();
     }
 
@@ -872,9 +825,6 @@ final class General extends Page
             // visible fallback; simply opening General must not change it.
             if ($surface === 'header_divider_paint' && blank($this->data[$solidField] ?? null)) {
                 $this->data[$solidField] = PublicAppearance::DEFAULT_DIVIDER_COLOR;
-                $this->data[$surface.'_solid_colors'] = [
-                    ['color' => PublicAppearance::DEFAULT_DIVIDER_COLOR],
-                ];
             }
             $fields[] = $solidField;
         }

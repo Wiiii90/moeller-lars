@@ -17,6 +17,7 @@
     class="admin-stage-tabs admin-stage-switcher @if ($externalState !== null) admin-stage-tabs--inline @endif @isset($tools) admin-stage-tabs--with-tools @endisset"
     role="group"
     aria-label="{{ $ariaLabel }}"
+    {{ $attributes }}
     @if ($externalState === null)
     x-data="{
         activePane: @js($defaultPane),

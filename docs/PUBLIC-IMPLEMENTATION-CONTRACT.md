@@ -712,8 +712,9 @@ the shared ColorPicker. Both input methods commit through the same validated
 General appearance field. The dial is teleported outside the scrollable Stage
 to avoid clipping.
 
-All global paint surfaces use one canonical x-admin.table. Solid has
-one Color row; Linear, Radial and Conic use 2–12 Color/Position rows. The
+All global paint surfaces use the shared Solid ColorPicker inline beside
+their mode Select. Linear, Radial and Conic use one canonical x-admin.table
+with 2–12 Color/Position rows. The
 central AdminTableRepeater replaces only Filament 5.7's embedded table
 presentation, retaining its item schemas, ColorPicker, validation and
 add/delete actions. The markup reuses the same table and Add-row components

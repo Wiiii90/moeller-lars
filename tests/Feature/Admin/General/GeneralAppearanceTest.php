@@ -474,7 +474,7 @@ it('saves color table rows sorted by the chosen numeric position', function (): 
             ['color' => '#778899', 'position' => 75],
             ['color' => '#445566', 'position' => 50],
         ])
-        ->call('persistAppearanceTable', 'page_background', false)
+        ->call('persistAppearanceTable', 'page_background')
         ->assertHasNoErrors();
 
     expect(PublicAppearance::stops(PublicContentSetting::general(), 'page_background'))->toBe([
@@ -485,12 +485,12 @@ it('saves color table rows sorted by the chosen numeric position', function (): 
 });
 
 
-it('renders the General color editor through the canonical admin table, not Filament table chrome', function (): void {
+it('renders Solid as an inline ColorPicker and gradients with the canonical table', function (): void {
     $solidHtml = Livewire::test(General::class)->html();
 
     expect($solidHtml)
-        ->toContain('general-color-table__table')
-        ->toContain('admin-table--data')
+        ->toContain('admin-color-control')
+        ->not->toContain('general-color-table__table')
         ->not->toContain('fi-fo-table-repeater');
 
     $gradientHtml = Livewire::test(General::class)
@@ -544,9 +544,7 @@ it('preserves the inherited title color until the artist explicitly sets a title
 
     Livewire::test(General::class)
         ->assertSet('data.header_name_mode', 'solid')
-        ->assertSet('data.header_name_solid_colors', [
-            ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR],
-        ])
+        ->assertSet('data.header_name_color', $originalColor)
         ->assertSet('data.header_name_gradient_stops', [
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 0],
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 100],
@@ -599,7 +597,7 @@ it('reuses the same title color-table persistence as Background, Menu and Page',
             ['color' => '#DDEEFF', 'position' => 50],
             ['color' => '#001122', 'position' => 100],
         ])
-        ->call('persistAppearanceTable', 'header_name', false)
+        ->call('persistAppearanceTable', 'header_name')
         ->assertHasNoErrors();
 
     expect(PublicAppearance::stops(PublicContentSetting::general(), 'header_name'))->toBe([
@@ -619,14 +617,13 @@ it('preserves the established solid menu divider color when the gradient editor 
 
     Livewire::test(General::class)
         ->assertSet('data.header_divider_paint_mode', 'solid')
-        ->assertSet('data.header_divider_paint_solid_colors', [['color' => '#ABCDEF']]);
+        ->assertSet('data.header_divider_color', '#ABCDEF');
 
     expect(PublicContentSetting::general()->header_divider_paint_mode)->toBeNull()
         ->and(PublicContentSetting::general()->header_divider_color)->toBe('#ABCDEF');
 
     Livewire::test(General::class)
-        ->set('data.header_divider_paint_solid_colors', [['color' => '#112233']])
-        ->call('persistAppearanceTable', 'header_divider_paint', true)
+        ->set('data.header_divider_color', '#112233')
         ->assertHasNoErrors();
 
     expect(PublicContentSetting::general()->header_divider_color)->toBe('#112233')
@@ -694,9 +691,7 @@ it('materializes the Divider Solid fallback only when Solid is explicitly select
 
     Livewire::test(General::class)
         ->assertSet('data.header_divider_paint_mode', 'solid')
-        ->assertSet('data.header_divider_paint_solid_colors', [
-            ['color' => PublicAppearance::DEFAULT_DIVIDER_COLOR],
-        ]);
+        ->assertSet('data.header_divider_color', null);
 
     expect(PublicContentSetting::general()->header_divider_color)->toBeNull();
 

@@ -476,25 +476,37 @@
     width: 100%;
     min-height: var(--admin-control-height);
     align-items: center;
-    gap: .15rem;
+    gap: 0;
 }
 .admin-angle-control__value input {
     box-sizing: border-box;
-    width: 4rem;
+    flex: 1 1 auto;
+    width: 100%;
     min-width: 0;
+    min-height: calc(var(--admin-control-height) - 1px);
     border: 0;
-    padding: .25rem .15rem;
+    padding: .25rem var(--admin-control-text-inset);
     background: transparent;
     color: var(--admin-text);
     font: inherit;
-    font-size: .78rem;
+    font-size: var(--admin-control-value-size);
     outline: none;
     appearance: textfield;
     -moz-appearance: textfield;
 }
 .admin-angle-control__value input::-webkit-inner-spin-button,
 .admin-angle-control__value input::-webkit-outer-spin-button { appearance: none; margin: 0; }
-.admin-angle-control__value span { color: var(--admin-muted); font-size: .78rem; }
+.admin-angle-control__value .admin-angle-control__suffix {
+    box-sizing: border-box;
+    display: flex;
+    flex: 0 0 2.5rem;
+    align-self: stretch;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid var(--admin-line);
+    color: var(--admin-muted);
+    font-size: var(--admin-control-value-size);
+}
 .admin-angle-control__popover {
     position: fixed;
     z-index: 120;
