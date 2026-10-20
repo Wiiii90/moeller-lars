@@ -1,33 +1,19 @@
 <?php
 
-
 use App\Domain\Content\HomePresentationEditorialService;
-
 use App\Domain\Content\HomeTemplate;
-
 use App\Filament\Pages\HomePresentation;
-
 use App\Filament\Pages\CustomPageWorkspace;
-
 use App\Models\AdminNotification;
-
 use App\Models\AuditEvent;
-
 use App\Models\HomePresentationSetting;
-
 use App\Models\PublicContentSetting;
-
 use App\Models\SiteSection;
-
 use App\Models\User;
-
 use Filament\Facades\Filament;
-
 use Livewire\Livewire;
 
-
 require_once __DIR__.'/Pages/CustomPageFixtures.php';
-
 
 function contactHomeFixture(array $children): HomePresentationSetting
 {
@@ -251,4 +237,3 @@ it('defers incomplete Custom Page Contact status', function (): void {
         ->and($children[1]['social_platforms'])->toBe(['instagram'])
         ->and(AuditEvent::query()->count())->toBe($audits + 1);
 });
-

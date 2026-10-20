@@ -84,37 +84,85 @@ it('allows offline preparation mode without enabling public artifact selection',
 });
 
 
-it('recognizes rights-only Working changes in the canonical publication summary and records a checkpoint', function (): void {
-    config()->set('media.rights_preparation_enabled', true);
+it('publishes a complete rights-only revision through the canonical checkpoint', function (): void {
+    \Illuminate\Support\Facades\Storage::fake('rights-publication');
+    config()->set('media.disk', 'rights-publication');
+    config()->set('media.rights_preparation_enabled', false);
     config()->set('media.rights_delivery_enabled', false);
 
-    $artifact = MediaRightsArtifact::query()->create([
-        'media_asset_id' => 917,
-        'role' => 'original',
-        'revision' => str_repeat('1', 64),
-        'storage_key' => 'variants/rights/'.str_repeat('1', 64).'.jpg',
-        'source_sha256' => str_repeat('2', 64),
-        'sha256' => str_repeat('3', 64),
-        'byte_size' => 172,
+    $originalBytes = 'original-source';
+    $thumbnailBytes = 'thumbnail-source';
+    $disk = \Illuminate\Support\Facades\Storage::disk('rights-publication');
+    $disk->put('originals/rights-publication.jpg', $originalBytes);
+    $disk->put('variants/rights-publication.webp', $thumbnailBytes);
+
+    $asset = \App\Models\MediaAsset::query()->create([
+        'storage_key' => 'originals/rights-publication.jpg',
+        'original_filename' => 'rights-publication.jpg',
         'mime_type' => 'image/jpeg',
-        'created_at' => now(),
+        'byte_size' => strlen($originalBytes),
+        'sha256' => hash('sha256', $originalBytes),
+        'state' => 'available',
+        'alt_text' => 'Rights publication image',
+        'width' => 480,
+        'height' => 720,
     ]);
-    app(MediaRightsPublicationSelections::class)->selectWorking($artifact, 'original', 917);
+    $thumbnail = \App\Models\MediaVariant::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'variant_kind' => 'thumbnail',
+        'transform_profile' => 'public-v1',
+        'state' => 'available',
+        'storage_key' => 'variants/rights-publication.webp',
+        'mime_type' => 'image/webp',
+        'byte_size' => strlen($thumbnailBytes),
+        'sha256' => hash('sha256', $thumbnailBytes),
+        'width' => 480,
+        'height' => 720,
+    ]);
 
     $publication = app(\App\Domain\Publication\PublicationService::class);
-    $summary = $publication->pendingSummary();
-    expect(collect($summary['groups'])->firstWhere('entity', 'Image rights files')['count'] ?? null)->toBe(1)
-        ->and($publication->hasPendingChanges())->toBeTrue()
-        ->and(collect($publication->pendingDetails()['rows'])->firstWhere('table', 'media_rights_artifact_selections')['row_key'] ?? null)
-        ->toBe('original:917');
-
     $actor = \App\Models\User::factory()->admin()->create();
-    $checkpoint = $publication->commit($actor, 'Rights files updated');
+    expect($publication->commit($actor, 'Media baseline'))->toBeInstanceOf(PublicationCheckpoint::class);
+
+    config()->set('media.rights_preparation_enabled', true);
+    $selections = app(MediaRightsPublicationSelections::class);
+    $revisionService = app(\App\Domain\Media\MediaRightsArtifactRevision::class);
+
+    foreach ([
+        ['original', $asset, $originalBytes, 'image/jpeg', 'jpg'],
+        ['thumbnail', $thumbnail, $thumbnailBytes, 'image/webp', 'webp'],
+    ] as [$role, $source, $sourceBytes, $mime, $extension]) {
+        $revision = $revisionService->forSource($asset, $source);
+        $rightsBytes = 'rights:'.$role.':'.$sourceBytes;
+        $key = 'variants/rights/'.$revision.'.'.$extension;
+        $disk->put($key, $rightsBytes);
+        $artifact = MediaRightsArtifact::query()->create([
+            'media_asset_id' => $asset->getKey(),
+            'role' => $role,
+            'revision' => $revision,
+            'storage_key' => $key,
+            'source_sha256' => $source->getAttribute('sha256'),
+            'sha256' => hash('sha256', $rightsBytes),
+            'byte_size' => strlen($rightsBytes),
+            'mime_type' => $mime,
+            'created_at' => now(),
+        ]);
+        $selections->selectWorking($artifact, $role, (int) $source->getKey());
+    }
+
+    expect($selections->workingAssetReadiness($asset)['state'])->toBe('ready');
+    $summary = $publication->pendingSummary();
+    expect($summary['total'])->toBe(2)
+        ->and(collect($summary['groups'])->firstWhere('entity', 'Image rights files')['count'] ?? null)->toBe(2);
+    $changes = collect($publication->pendingDetails()['rows'])
+        ->where('table', 'media_rights_artifact_selections')->pluck('row_key')->sort()->values()->all();
+    expect($changes)->toBe(['original:'.$asset->getKey(), 'thumbnail:'.$thumbnail->getKey()]);
+
+    $checkpoint = $publication->commit($actor, 'Publish image file rights');
     expect($checkpoint)->toBeInstanceOf(PublicationCheckpoint::class)
-        ->and(app(MediaRightsPublicationSelections::class)->pendingCount($checkpoint))->toBe(0)
-        ->and((int) DB::table('media_rights_artifact_selections')
-            ->where('scope_key', 'checkpoint:'.$checkpoint->getKey())
-            ->value('media_rights_artifact_id'))->toBe((int) $artifact->getKey());
+        ->and($selections->pendingCount($checkpoint))->toBe(0)
+        ->and(DB::table('media_rights_artifact_selections')
+            ->where('scope_key', 'checkpoint:'.$checkpoint->getKey())->count())->toBe(2);
 });
 
 
