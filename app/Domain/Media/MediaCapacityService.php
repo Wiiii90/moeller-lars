@@ -133,9 +133,9 @@ final class MediaCapacityService
         return (int) round(self::WARNING_RATIO * 100);
     }
 
-    public function assertCanStoreOriginal(int $bytes, int $generatedBytes = 0): void
+    public function assertCanStoreOriginal(int $bytes, int $incomingPreviewBytes = 0): void
     {
-        if ($bytes <= 0 || $generatedBytes < 0) {
+        if ($bytes <= 0 || $incomingPreviewBytes < 0) {
             throw ValidationException::withMessages(['media' => 'The uploaded media has an invalid size.']);
         }
 
@@ -151,7 +151,7 @@ final class MediaCapacityService
 
         try {
             [$authoritativeBytes] = $this->measurePrefix('originals');
-            [$generatedBytes] = $this->measurePrefix('variants');
+            [$existingGeneratedBytes] = $this->measurePrefix('variants');
         } catch (Throwable) {
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
@@ -162,7 +162,7 @@ final class MediaCapacityService
         }
 
         $siteUsedBytes = $authoritativeBytes
-            + $generatedBytes
+            + $existingGeneratedBytes
             + max(0, (int) ($database['logical_bytes'] ?? 0));
 
         // The preview bytes have already been generated but not written to
@@ -170,7 +170,7 @@ final class MediaCapacityService
         // either file is persisted; the existing ingest lock serializes this.
         if ($siteUsedBytes >= $quota
             || $bytes > ($quota - $siteUsedBytes)
-            || $generatedBytes > ($quota - $siteUsedBytes - $bytes)) {
+            || $incomingPreviewBytes > ($quota - $siteUsedBytes - $bytes)) {
             throw ValidationException::withMessages(['media' => 'The site storage allowance is full. Remove reclaimable storage or ask the operator to increase the allowance before uploading.']);
         }
     }

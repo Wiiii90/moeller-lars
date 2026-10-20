@@ -325,6 +325,26 @@ it('allows an exact-fit site storage write and blocks the first byte beyond quot
         ->toThrow(ValidationException::class, 'site storage allowance is full');
 });
 
+it('reserves the incoming thumbnail bytes separately from existing generated storage', function (): void {
+    Storage::fake('media-capacity');
+    config(['media.disk' => 'media-capacity']);
+    Storage::disk('media-capacity')->put('originals/current.jpg', str_repeat('o', 40));
+    Storage::disk('media-capacity')->put('variants/existing.webp', str_repeat('v', 65));
+
+    $capacity = app(MediaCapacityService::class);
+    $snapshot = $capacity->snapshot();
+    expect($snapshot['measurement_available'])->toBeTrue()
+        ->and($snapshot['generated_bytes'])->toBe(65);
+
+    config()->set('media.quota_bytes', $snapshot['site_used_bytes'] + 100);
+
+    // The 65 already stored variant bytes are included in site_used_bytes.
+    // Only 70 new original + 30 new thumbnail bytes have to fit.
+    $capacity->assertCanStoreOriginal(70, 30);
+    expect(fn () => $capacity->assertCanStoreOriginal(70, 31))
+        ->toThrow(ValidationException::class, 'site storage allowance is full');
+});
+
 it('blocks exhausted-quota ingest before the first write', function (): void {
     Storage::fake('media-capacity');
     config(['media.disk' => 'media-capacity', 'media.quota_bytes' => 1]);
