@@ -187,7 +187,8 @@ trait GalleryWorkspaceArtworkDialogs
                     ? (string) $data['primary_alt_text'] : null;
                 $oldAlt = $current?->getAttribute('alt_text_override');
 
-                if ($oldId === (int) $asset->getKey() && $oldAlt === $newAlt) {
+                $mediaChanged = $oldId !== (int) $asset->getKey();
+                if (! $mediaChanged && $oldAlt === $newAlt) {
                     app(AdminNotifier::class)->notification(
                         title: 'Primary media unchanged',
                         status: 'info',
@@ -226,8 +227,12 @@ trait GalleryWorkspaceArtworkDialogs
                 }
 
                 app(AdminNotifier::class)->notification(
-                    title: 'Draft primary media replaced',
-                    body: 'The previous original remains in Storage. Public Gallery and Home change only after the Artwork is published and the publication is committed.',
+                    title: ! $mediaChanged
+                        ? 'Primary media ALT text saved'
+                        : ($oldId === null ? 'Draft primary media added' : 'Draft primary media replaced'),
+                    body: ! $mediaChanged
+                        ? 'The media file was not changed.'
+                        : 'The previous original remains in Storage. Public Gallery and Home change only after the Artwork is published and the publication is committed.',
                     status: 'success',
                 );
             });

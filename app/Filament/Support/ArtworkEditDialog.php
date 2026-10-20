@@ -125,6 +125,9 @@ final class ArtworkEditDialog
                         ->placeholder('No primary media')
                         ->nullable()
                         ->disabled($primaryReadOnly)
+                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
+                            'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
+                        ] : [])
                         ->live()
                         ->afterStateUpdated(static function (callable $set): void {
                             // ALT belongs to the chosen Media File, not the previous primary.
