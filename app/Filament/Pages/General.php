@@ -642,17 +642,13 @@ final class General extends Page
                 ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
                 ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
 
-            AdminAngleControl::make($surface.'_gradient_angle')
-                ->live()
-                ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
-                ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
-
             Select::make($surface.'_gradient_repeating')
                 ->label('Repeating')
                 ->options(['0' => 'Off', '1' => 'On'])
                 ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
                 ->native()
                 ->live()
+                ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
                 ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
                     if ($livewire instanceof self) {
                         $livewire->persistChangedField($surface.'_gradient_repeating');
@@ -660,6 +656,11 @@ final class General extends Page
                     }
                 })
                 ->visible($gradient),
+
+            AdminAngleControl::make($surface.'_gradient_angle')
+                ->live()
+                ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
+                ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
 
             Select::make($surface.'_gradient_shape')
                 ->label('Shape')

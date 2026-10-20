@@ -23,6 +23,13 @@ test('Appearance has one overlapping panel track through Filament wrappers', () 
     assert.match(responsive, /\.admin-visual-stage--expanded\s*\{\s*grid-template-rows: max-content !important;/);
 });
 
+test('all gradient modes place Repeating beside the Mode selector, before Angle', () => {
+    const mode = stage.indexOf("Select::make($surface.'_mode')");
+    const repeating = stage.indexOf("Select::make($surface.'_gradient_repeating')");
+    const angle = stage.indexOf("AdminAngleControl::make($surface.'_gradient_angle')");
+    assert.ok(mode >= 0 && mode < repeating && repeating < angle);
+});
+
 test('More space is presentation-only; its preview stays mounted while its viewport may grow', () => {
     assert.match(toggle, /x-on:click="moreSpace = ! moreSpace"/);
     assert.match(toggle, /appearanceScroll.scrollTop = 0/);

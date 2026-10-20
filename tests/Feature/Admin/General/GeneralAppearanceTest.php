@@ -443,23 +443,19 @@ it('keeps Appearance gradient actions on the shared line-based admin control con
     expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeFalse();
 });
 
-it('populates a solid color row for each global paint surface', function (): void {
-    $component = Livewire::test(General::class);
+it('does not create obsolete Solid repeater state or persist defaults on mount', function (): void {
+    $component = Livewire::test(General::class)->assertHasNoErrors();
     foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
-        $color = match ($surface) {
-            'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
-            'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
-            'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
-            default => PublicAppearance::DEFAULT_SURFACE_COLOR,
-        };
-        $component->assertSet('data.'.$surface.'_solid_colors', [['color' => $color]]);
+        $component->assertSet('data.'.$surface.'_solid_colors', null);
     }
+
+    expect(PublicContentSetting::general()->getAttribute('header_name_color'))->toBeNull()
+        ->and(PublicContentSetting::general()->getAttribute('header_divider_color'))->toBeNull();
 });
 
-it('saves an inline solid row independently of gradient stops', function (): void {
+it('autosaves an inline Solid ColorPicker independently of gradient stops', function (): void {
     Livewire::test(General::class)
-        ->set('data.menu_background_solid_colors', [['color' => '#ABCDEF']])
-        ->call('persistAppearanceTable', 'menu_background', true)
+        ->set('data.menu_background_color', '#ABCDEF')
         ->assertHasNoErrors();
 
     expect(PublicContentSetting::general()->getAttribute('menu_background_color'))->toBe('#ABCDEF')
@@ -544,7 +540,6 @@ it('preserves the inherited title color until the artist explicitly sets a title
 
     Livewire::test(General::class)
         ->assertSet('data.header_name_mode', 'solid')
-        ->assertSet('data.header_name_color', $originalColor)
         ->assertSet('data.header_name_gradient_stops', [
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 0],
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 100],
@@ -691,7 +686,7 @@ it('materializes the Divider Solid fallback only when Solid is explicitly select
 
     Livewire::test(General::class)
         ->assertSet('data.header_divider_paint_mode', 'solid')
-        ->assertSet('data.header_divider_color', null);
+        ->assertHasNoErrors();
 
     expect(PublicContentSetting::general()->header_divider_color)->toBeNull();
 

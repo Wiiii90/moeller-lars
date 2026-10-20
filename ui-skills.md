@@ -804,7 +804,8 @@ See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliatio
 ### Gradient tables and dynamic Appearance Stage height
 
 Every global paint — Background, Title, Menu, Page and Menu-to-page
-Divider color — must share the same paint domain, ColorPicker and actual
+Divider color — must share the same paint domain and ColorPicker. Solid uses
+one inline field beside the mode selector; only gradients use the actual
 `x-admin.table` representation. Use `x-admin.row-action` for table Delete,
 including its canonical trash icon, label and state. Do not hand-author
 a lookalike action or reuse the X-shaped Remove action.
