@@ -45,10 +45,12 @@ test('cycles complete navigation stacks and refills their space', () => {
 
     const children = [126, 186, 74, 124, 208];
     let visible = fitNavigationWindow(children, 330);
-    for (const expected of [[0, 1], [1, 2], [2, 3], [1, 2]]) {
-        if (expected === undefined) break;
+    assert.deepEqual(visible, [0, 1]);
+    for (const [direction, expected] of [
+        [1, [1, 2]], [1, [2, 3]], [-1, [1, 2]],
+    ]) {
+        visible = advanceNavigationWindow(children, visible, 330, direction);
         assert.deepEqual(visible, expected);
-        visible = advanceNavigationWindow(children, visible, 330, expected[0] === 2 ? -1 : 1);
     }
 
     const overwide = [300, 35, 35];
