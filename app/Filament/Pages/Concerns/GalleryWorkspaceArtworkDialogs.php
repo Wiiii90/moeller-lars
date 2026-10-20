@@ -273,8 +273,8 @@ trait GalleryWorkspaceArtworkDialogs
             $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
             function () use ($published, $id, $target): void {
                 if ($published) {
-                    // Unpublication is confirmed by its existing domain action.
-                    $this->replaceMountedAction('unpublishArtwork', [...$target, 'returnToEditor' => true]);
+                    $this->unpublishArtworkInGallery($id);
+                    $this->replaceMountedAction('editArtwork', $target);
 
                     return;
                 }
