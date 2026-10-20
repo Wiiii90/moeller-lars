@@ -27,6 +27,10 @@ final class AdminRichText
         ];
         if ($allowEmbeddedMedia) {
             $toolbar[] = ['insertStorageImage', 'attachFiles'];
+            $toolbar[] = [
+                'imageInline', 'imageLeft', 'imageCenter', 'imageRight',
+                'imageFloatleft', 'imageFloatright', 'imageCaption',
+            ];
         }
         $toolbar[] = ['undo', 'redo'];
 

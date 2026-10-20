@@ -69,10 +69,12 @@ final class SafeRichTextRenderer
         if (RichTextDocument::isVisual($source)) {
             $this->validateVisual($source, allowEmbeddedMedia: true, requirePublicMedia: true);
 
-            return new HtmlString(RichContentRenderer::make($source)
+            $html = RichContentRenderer::make($source)
                 ->plugins([RichTextEditorPlugin::make()])
                 ->linkProtocols(['http', 'https'])
-                ->toHtml());
+                ->toHtml();
+
+            return new HtmlString(ArtistImageLayout::decorateHtml($html, $source));
         }
 
         $document = $this->parse($source);

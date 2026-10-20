@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\PdfTextCleaner;
+use App\Domain\Content\ArtistImageLayout;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
@@ -13,6 +14,8 @@ use Filament\Forms\Components\RichEditor\Plugins\Contracts\HasFileAttachmentProv
 use Filament\Forms\Components\RichEditor\Plugins\Contracts\RichContentPlugin;
 use Filament\Forms\Components\RichEditor\RichEditorTool;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Illuminate\Support\Facades\Vite;
 
 final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachmentProvider
 {
@@ -28,12 +31,12 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
 
     public function getTipTapPhpExtensions(): array
     {
-        return [];
+        return [new ArtistImageLayout];
     }
 
     public function getTipTapJsExtensions(): array
     {
-        return [];
+        return [Vite::asset('resources/js/artist-rich-image.js')];
     }
 
     public function getEditorTools(): array
@@ -42,6 +45,36 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
             RichEditorTool::make('insertStorageImage')
                 ->icon(AdminIcon::Storage->value)
                 ->action(),
+            ...array_map(
+                static fn (string $placement): RichEditorTool =>
+                    RichEditorTool::make('image'.str_replace('-', '', ucfirst($placement)))
+                        ->label(match ($placement) {
+                            'inline' => 'Inline image',
+                            'left' => 'Align image left',
+                            'center' => 'Center image',
+                            'right' => 'Align image right',
+                            'float-left' => 'Wrap text on right',
+                            'float-right' => 'Wrap text on left',
+                        })
+                        ->icon(match ($placement) {
+                            'inline' => 'heroicon-o-squares-2x2',
+                            'left' => 'heroicon-o-bars-3-bottom-left',
+                            'center' => 'heroicon-o-bars-3',
+                            'right' => 'heroicon-o-bars-3-bottom-right',
+                            'float-left' => 'heroicon-o-bars-arrow-down',
+                            'float-right' => 'heroicon-o-bars-arrow-up',
+                        })
+                        ->disabledWhenNotActive()
+                        ->activeJsExpression("\$getEditor()?.isActive('image')")
+                        ->jsHandler("\$getEditor()?.chain().focus().updateAttributes('image', { artistPlacement: '{$placement}' }).run()"),
+                ArtistImageLayout::PLACEMENTS,
+            ),
+            RichEditorTool::make('imageCaption')
+                ->label('Image caption')
+                ->icon(AdminIcon::Details->value)
+                ->disabledWhenNotActive()
+                ->activeJsExpression("\$getEditor()?.isActive('image')")
+                ->action(arguments: "{ caption: \$getEditor()?.getAttributes('image').artistCaption ?? '' }"),
             RichEditorTool::make('cleanPdfText')
                 ->icon(AdminIcon::Clear->value)
                 ->activeJsExpression('$getEditor()?.state.selection.from !== $getEditor()?.state.selection.to')
@@ -78,6 +111,20 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                                 'alt' => $asset->getAttribute('alt_text') ?: '',
                             ],
                         ]])],
+                        editorSelection: $arguments['editorSelection'],
+                    );
+                }),
+            Action::make('imageCaption')
+                ->modalHeading('Image caption')
+                ->fillForm(fn (array $arguments): array => ['caption' => $arguments['caption'] ?? ''])
+                ->schema([
+                    TextInput::make('caption')->label('Caption')->maxLength(500)->nullable(),
+                ])
+                ->action(function (array $arguments, array $data, RichEditor $component): void {
+                    $component->runCommands(
+                        [EditorCommand::make('updateAttributes', arguments: [
+                            'image', ['artistCaption' => trim((string) ($data['caption'] ?? '')) ?: null],
+                        ])],
                         editorSelection: $arguments['editorSelection'],
                     );
                 }),

@@ -28,10 +28,14 @@ publication still requires valid ALT information and an available thumbnail.
 The image dialog permits selection of an existing Storage image. Filament's
 native image upload uses the same canonical ingestion provider; the visual
 editor keeps supported image resizing. Alignment tools apply to text paragraphs.
-**Independent image float/width/caption controls require a dedicated Tiptap
-image-node extension and are not yet implemented**. Do not advertise text
-wrap or center/left/right image layout as accepted until that extension and
-public rendering are browser verified.
+An `ArtistImageLayout` Tiptap extension persists explicit image
+placement and caption attributes in the same document. It offers inline,
+left, centered, right, float-left and float-right placement, plus a
+dedicated caption field. Public uses a conservative, escaped image/caption projection based on those attributes, and wraps floats on
+narrow layouts. The existing Filament image resizer owns dimensions.
+The JavaScript module is a Vite-bundled external Tiptap extension; no
+new popup or parallel editor lifecycle was introduced. Browser acceptance
+for sizing, caption editing, nested text and text wrapping remains pending.
 
 ## PDF paste
 

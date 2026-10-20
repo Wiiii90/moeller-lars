@@ -220,3 +220,18 @@
     clip: rect(0 0 0 0) !important;
     white-space: nowrap !important;
 }
+
+.rich-text__image { max-width: 100%; margin: .75rem 0; }
+.rich-text__image img { display: block; max-width: 100%; width: auto; height: auto; margin: 0; }
+.rich-text__image-caption { margin-top: .35rem; color: var(--public-muted); font-size: .8em; }
+.rich-text__image--left { margin-inline: 0 auto; }
+.rich-text__image--center { margin-inline: auto; }
+.rich-text__image--right { margin-inline: auto 0; }
+.rich-text__image--float-left { float: left; margin: .2rem 1rem .8rem 0; max-width: min(45%, 22rem); }
+.rich-text__image--float-right { float: right; margin: .2rem 0 .8rem 1rem; max-width: min(45%, 22rem); }
+.rich-text::after { content: ''; display: table; clear: both; }
+@media (max-width: 38rem) {
+    .rich-text__image--float-left, .rich-text__image--float-right {
+        float: none; max-width: 100%; margin-inline: auto;
+    }
+}
