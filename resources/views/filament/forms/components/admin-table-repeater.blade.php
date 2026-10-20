@@ -39,16 +39,11 @@
                         @if ($hasActions)
                             <td class="admin-table__actions">
                                 @if ($canDelete && $deleteAction(['item' => $itemKey])->isVisible())
-                                    <button
-                                        type="button"
-                                        class="admin-action admin-action--with-icon"
+                                    <x-admin.row-action
+                                        :action="\App\Filament\Support\AdminRowAction::Delete"
                                         wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
                                         aria-label="Delete color {{ $loop->iteration }}"
-                                        title="Delete color"
-                                    >
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" :size="\Filament\Support\Enums\IconSize::Small" class="admin-action__icon" />
-                                        <span class="admin-action__label">Delete</span>
-                                    </button>
+                                    />
                                 @endif
                             </td>
                         @endif

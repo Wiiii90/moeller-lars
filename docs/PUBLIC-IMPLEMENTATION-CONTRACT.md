@@ -734,3 +734,28 @@ validated CSS gradient to glyphs. No gradient-specific layout, polling, or
 separate editor/normalizer is permitted. Every public title placement uses the
 same shared rule, and forced-colors accessibility falls back to plain text.
 The new title settings exist in both Working and Committed schemas.
+
+## Menu-to-page divider paint
+
+The existing `header_divider_mode` selects **whether** and **where** the
+separator is drawn (none, Menu-width, full-width, separate backing, etc.).
+In General → Appearance → Menu, **Divider color** is listed below Menu
+background and uses the **same** Solid/Linear/Radial/Conic + Repeating editor
+and canonical color-stop table as the other global appearance paints.
+
+The existing `header_divider_color` column is the **sole Solid color**.
+The independent `header_divider_paint_mode` and validated
+`header_divider_paint_gradient_*` fields describe optional gradient
+painting without introducing a second solid-color record.
+Unconfigured gradient mode retains the previous public divider color.
+For gradients, `PublicSiteContext` emits only validated CSS variables
+within the existing nonce-protected public style. Menu-width dividers
+paint the existing navigation border; full-width dividers use their
+existing single pseudo-element line. No additional DOM separator or
+alternate public styling pipeline may be introduced.
+
+General's More Space state is owned by the shared Stage grid and must
+size solely to the **active** appearance panel's intrinsic content.
+Inactive panels remain out of flow. The preview retains its grid pane
+and adjusts to available space with the existing resize observer,
+including when switching tabs or desktop/mobile preview.

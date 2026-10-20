@@ -800,3 +800,18 @@ See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliatio
 - Analytics/Storage/Activity metric cells explicitly own their Narrow/Minimal columns and stretch to the full cell. Narrow is exact thirds with two dividers; Minimal is exact halves with one centered divider.
 
 - Stage collapse for Analytics/Storage/Activity happens only at Minimal (<= 38rem workspace, with the matching shell fallback). Wide/Compact/Narrow retain their multi-cell stage axes and the shared fixed `--admin-visual-stage-height`; switching state must not introduce extra divider axes.
+
+### Gradient tables and dynamic Appearance Stage height
+
+Every global paint — Background, Title, Menu, Page and Menu-to-page
+Divider color — must share the same paint domain, ColorPicker and actual
+`x-admin.table` representation. Use `x-admin.row-action` for table Delete,
+including its canonical trash icon, label and state. Do not hand-author
+a lookalike action or reuse the X-shaped Remove action.
+
+General's More Space toggles a content-sized Stage for **only the current
+tab**, not the tallest of all tabs. The inactive panels stay absolutely
+positioned and excluded from intrinsic sizing. Tab changes must resize
+the Stage automatically with CSS, while the preview retains its
+existing responsive fitting. Never calculate this by timers, panel-wide
+height constants or duplicate measuring subsystems.
