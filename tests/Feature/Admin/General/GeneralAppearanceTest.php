@@ -443,18 +443,15 @@ it('keeps Appearance gradient actions on the shared line-based admin control con
     expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeFalse();
 });
 
-it('populates a solid color row for each global paint surface', function (): void {
-    $component = Livewire::test(General::class);
-    foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
-        $color = $surface === 'background' ? '#777777' : '#FFFFFF';
-        $component->assertSet('data.'.$surface.'_solid_colors', [['color' => $color]]);
-    }
+it('does not persist color defaults on mount', function (): void {
+    Livewire::test(General::class)->assertHasNoErrors();
+    expect(PublicContentSetting::general()->getAttribute('header_name_color'))->toBeNull()
+        ->and(PublicContentSetting::general()->getAttribute('header_divider_color'))->toBeNull();
 });
 
-it('saves an inline solid row independently of gradient stops', function (): void {
+it('autosaves an inline Solid ColorPicker independently of gradient stops', function (): void {
     Livewire::test(General::class)
-        ->set('data.menu_background_solid_colors', [['color' => '#ABCDEF']])
-        ->call('persistAppearanceTable', 'menu_background', true)
+        ->set('data.menu_background_color', '#ABCDEF')
         ->assertHasNoErrors();
 
     expect(PublicContentSetting::general()->getAttribute('menu_background_color'))->toBe('#ABCDEF')
@@ -469,7 +466,7 @@ it('saves color table rows sorted by the chosen numeric position', function (): 
             ['color' => '#778899', 'position' => 75],
             ['color' => '#445566', 'position' => 50],
         ])
-        ->call('persistAppearanceTable', 'page_background', false)
+        ->call('persistAppearanceTable', 'page_background')
         ->assertHasNoErrors();
 
     expect(PublicAppearance::stops(PublicContentSetting::general(), 'page_background'))->toBe([
@@ -480,6 +477,10 @@ it('saves color table rows sorted by the chosen numeric position', function (): 
 });
 
 
+
+
+
+
 it('preserves the inherited title color until the artist explicitly sets a title paint', function (): void {
     $settings = PublicContentSetting::general();
     $originalColor = $settings->getAttribute('header_name_color');
@@ -488,9 +489,6 @@ it('preserves the inherited title color until the artist explicitly sets a title
 
     Livewire::test(General::class)
         ->assertSet('data.header_name_mode', 'solid')
-        ->assertSet('data.header_name_solid_colors', [
-            ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR],
-        ])
         ->assertSet('data.header_name_gradient_stops', [
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 0],
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 100],
@@ -543,7 +541,7 @@ it('reuses the same title color-table persistence as Background, Menu and Page',
             ['color' => '#DDEEFF', 'position' => 50],
             ['color' => '#001122', 'position' => 100],
         ])
-        ->call('persistAppearanceTable', 'header_name', false)
+        ->call('persistAppearanceTable', 'header_name')
         ->assertHasNoErrors();
 
     expect(PublicAppearance::stops(PublicContentSetting::general(), 'header_name'))->toBe([
@@ -551,6 +549,116 @@ it('reuses the same title color-table persistence as Background, Menu and Page',
         ['color' => '#DDEEFF', 'position' => 50],
         ['color' => '#001122', 'position' => 100],
     ]);
+});
+
+it('preserves the established solid menu divider color when the gradient editor opens', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_mode' => 'menu',
+        'header_divider_color' => '#ABCDEF',
+    ]);
+    $settings = PublicContentSetting::general();
+    expect(PublicAppearance::dividerGradientCss($settings))->toBeNull();
+
+    Livewire::test(General::class)
+        ->assertSet('data.header_divider_paint_mode', 'solid')
+        ->assertSet('data.header_divider_color', '#ABCDEF');
+
+    expect(PublicContentSetting::general()->header_divider_paint_mode)->toBeNull()
+        ->and(PublicContentSetting::general()->header_divider_color)->toBe('#ABCDEF');
+
+    Livewire::test(General::class)
+        ->set('data.header_divider_color', '#112233')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->header_divider_color)->toBe('#112233')
+        ->and(PublicContentSetting::general()->header_divider_paint_mode)->toBe('solid');
+});
+
+it('publishes the menu divider gradient through existing nonce-based Working and Committed styles', function (): void {
+    $actor = User::query()->firstOrFail();
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_mode' => 'menu',
+        'header_divider_color' => '#123456',
+        'header_divider_paint_mode' => 'gradient',
+        'header_divider_paint_gradient_angle' => 90,
+        'header_divider_paint_gradient_stops' => [
+            ['color' => '#112233', 'position' => 0],
+            ['color' => '#445566', 'position' => 40],
+            ['color' => '#778899', 'position' => 100],
+        ],
+    ]);
+
+    $paint = 'linear-gradient(90deg, #112233 0%, #445566 40%, #778899 100%)';
+    expect(PublicAppearance::dividerGradientCss(PublicContentSetting::general()))->toBe($paint);
+
+    $publicBefore = (string) $this->get(route('home'))->assertOk()->getContent();
+    expect($publicBefore)->not->toContain('--public-separator-gradient: '.$paint);
+
+    $preview = $this->get('/preview')->assertOk();
+    $previewHtml = (string) $preview->getContent();
+    expect($previewHtml)->toContain('--public-separator-gradient: '.$paint)
+        ->toContain('--public-separator-paint: '.$paint);
+    generalAssertPublicStyleUsesNonce($previewHtml, generalPublicStyleNonce($preview), '--public-separator-gradient: '.$paint);
+
+    app(PublicationService::class)->commit($actor, 'Publish menu divider gradient');
+    $published = $this->get(route('home'))->assertOk();
+    expect((string) $published->getContent())->toContain('--public-separator-gradient: '.$paint);
+    generalAssertPublicStyleUsesNonce((string) $published->getContent(), generalPublicStyleNonce($published), '--public-separator-gradient: '.$paint);
+});
+
+it('uses the same gradient controls and stops for every global paint including Divider color', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_paint_mode' => 'radial',
+        'header_divider_paint_gradient_center_x' => 40,
+        'header_divider_paint_gradient_center_y' => 65,
+        'header_divider_paint_gradient_stops' => [
+            ['color' => '#112233', 'position' => 0],
+            ['color' => '#445566', 'position' => 100],
+        ],
+    ]);
+
+    $settings = PublicContentSetting::general();
+    expect(PublicAppearance::dividerGradientCss($settings))
+        ->toBe('radial-gradient(circle at 40% 65%, #112233 0%, #445566 100%)');
+
+    Livewire::test(General::class)
+        ->assertSet('data.header_divider_paint_mode', 'radial')
+        ->assertSet('data.header_divider_paint_gradient_stops', [
+            ['color' => '#112233', 'position' => 0],
+            ['color' => '#445566', 'position' => 100],
+        ])
+        ->assertHasNoErrors();
+});
+
+it('materializes the Divider Solid fallback only when Solid is explicitly selected', function (): void {
+    expect(PublicContentSetting::general()->header_divider_color)->toBeNull();
+
+    Livewire::test(General::class)
+        ->assertSet('data.header_divider_paint_mode', 'solid')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->header_divider_color)->toBeNull();
+
+    Livewire::test(General::class)
+        ->set('data.header_divider_paint_mode', 'gradient')
+        ->set('data.header_divider_paint_mode', 'solid')
+        ->call('persistSurfaceMode', 'header_divider_paint')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->header_divider_color)->toBe(PublicAppearance::DEFAULT_DIVIDER_COLOR);
+});
+
+it('uses the single canonical divider Solid color for the shared direct-color update path', function (): void {
+    Livewire::test(General::class)
+        ->call('persistSurfaceColor', 'header_divider_paint', 'primary', '#AABBCC')
+        ->assertHasNoErrors()
+        ->assertSet('data.header_divider_color', '#AABBCC')
+        ->assertSet('data.header_divider_paint_mode', 'solid');
+
+    $setting = PublicContentSetting::general();
+    expect($setting->getAttribute('header_divider_color'))->toBe('#AABBCC')
+        ->and($setting->getAttribute('header_divider_paint_mode'))->toBe('solid')
+        ->and($setting->getAttribute('header_divider_paint_color'))->toBeNull();
 });
 
 it('validates public header settings', function (): void {

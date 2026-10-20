@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use LogicException;
 
-#[Fillable(['artwork_category_id', 'slug', 'title', 'medium', 'dimensions', 'description', 'state', 'position', 'legacy_date_raw', 'work_date', 'work_year', 'featured_on_home', 'date_precision', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['artwork_category_id', 'slug', 'title', 'medium', 'dimensions', 'description', 'state', 'position', 'legacy_date_raw', 'work_date', 'work_year', 'featured_on_home', 'exclude_from_home', 'date_precision', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Artwork extends Model
 {
@@ -24,6 +24,7 @@ class Artwork extends Model
             'work_date' => 'date',
             'work_year' => 'integer',
             'featured_on_home' => 'boolean',
+            'exclude_from_home' => 'boolean',
             'migrated_at' => 'datetime',
             'published_at' => 'datetime',
         ];

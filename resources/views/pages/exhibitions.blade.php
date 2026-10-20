@@ -16,17 +16,18 @@
                     : collect();
                 $galleryPresentation = $exhibition->galleryPresentation();
                 $displayDate = $exhibition->displayDate();
-                $vernissage = $exhibition->vernissageDisplay();
+                $vernissage = $exhibition->shouldShowPublicVernissage() ? $exhibition->vernissageDisplay() : null;
                 $address = $exhibition->streetAddress() !== null ? $exhibition->address() : null;
                 $map = $exhibition->shouldShowPublicMap() ? $exhibition->mapPresentation() : null;
                 $mapDialogId = 'exhibition-map-'.$exhibition->getKey();
-                $location = collect([$exhibition->venue, $exhibition->city, $exhibition->country])
-                    ->filter(fn ($value) => is_string($value) && trim($value) !== '')
-                    ->unique()
-                    ->implode(' · ');
+                $attribution = $exhibition->summaryAttribution();
+                $physicalVenue = filled($exhibition->organizer) && filled($exhibition->venue)
+                    ? trim((string) $exhibition->venue)
+                    : null;
+                $location = $exhibition->mapLocationLabel();
                 $hasDescription = trim((string) ($exhibition->description ?? '')) !== '';
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
-                $hasFacts = $vernissage !== null || $address !== null;
+                $hasFacts = $vernissage !== null || $address !== null || $physicalVenue !== null;
                 $hasActions = $map !== null || $exhibition->external_url !== null;
                 $hasDetails = $hasFacts || $hasDescription || $hasCover
                     || $gallery->isNotEmpty() || $hasActions;
@@ -48,9 +49,9 @@
                     </span>
                     <span class="exhibition-entry__heading">
                         <span class="exhibition-entry__title">{{ $exhibition->title }}</span>
-                        @if ($location !== '')
+                        @if ($attribution !== null)
                             <span class="exhibition-entry__byline">
-                                <span class="exhibition-entry__location">{{ $location }}</span>
+                                <span class="exhibition-entry__location">{{ $attribution }}</span>
                             </span>
                         @endif
                     </span>
@@ -68,6 +69,12 @@
                                         <div class="exhibition-entry__info">
                                             @if ($hasFacts)
                                                 <dl class="exhibition-entry__facts">
+                                                    @if ($physicalVenue !== null)
+                                                        <div class="exhibition-entry__fact">
+                                                            <dt>Venue</dt>
+                                                            <dd>{{ $physicalVenue }}</dd>
+                                                        </div>
+                                                    @endif
                                                     @if ($vernissage !== null)
                                                         <div class="exhibition-entry__fact">
                                                             <dt>Vernissage</dt>
@@ -121,7 +128,7 @@
                                             <div class="exhibition-map-dialog__identity">
                                                 <span class="exhibition-map-dialog__eyebrow">Exhibition location</span>
                                                 <h4 id="exhibition-map-heading-{{ $exhibition->getKey() }}">{{ $exhibition->title }}</h4>
-                                                @if ($location !== '')
+                                                @if ($location !== null)
                                                     <p>{{ $location }}</p>
                                                 @endif
                                             </div>

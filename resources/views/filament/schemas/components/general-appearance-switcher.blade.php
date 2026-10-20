@@ -4,6 +4,7 @@
     :panes="['global' => 'Global', 'title' => 'Title', 'menu' => 'Menu', 'page' => 'Page']"
     aria-label="Appearance"
     external-state="appearanceTab"
+    x-on:click="if ($event.target.closest('[data-admin-stage-slot]')) $refs.appearanceScroll.scrollTop = 0"
 >
     <x-slot:tools>
         <button

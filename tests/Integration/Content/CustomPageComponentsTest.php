@@ -4,6 +4,8 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\CustomPageSetting;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
+use Illuminate\Validation\ValidationException;
 use App\Models\User;
 
 beforeEach(function (): void {
@@ -12,7 +14,7 @@ beforeEach(function (): void {
 
 function customPageComponentAsset(string $suffix): MediaAsset
 {
-    return MediaAsset::query()->create([
+    $asset = MediaAsset::query()->create([
         'storage_key' => 'originals/custom-page-component-'.$suffix.'.jpg',
         'original_filename' => 'custom-page-component-'.$suffix.'.jpg',
         'mime_type' => 'image/jpeg',
@@ -23,7 +25,38 @@ function customPageComponentAsset(string $suffix): MediaAsset
         'width' => 2,
         'height' => 2,
     ]);
+
+    MediaVariant::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'variant_kind' => 'thumbnail',
+        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
+        'storage_key' => 'variants/custom-page-component-'.$suffix.'.webp',
+        'mime_type' => 'image/webp',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'custom-preview-'.$suffix),
+        'state' => 'available',
+        'width' => 2,
+        'height' => 2,
+    ]);
+
+    return $asset;
 }
+
+it('rejects publishing a Custom Page image without a canonical thumbnail', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Missing preview page', 'missing-preview-page');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('without-preview');
+    $asset->variants()->delete();
+    $settings->update(['blocks' => [[
+        'type' => 'image',
+        'published' => true,
+        'media_asset_id' => $asset->getKey(),
+        'image_decorative' => true,
+    ]]]);
+
+    expect(fn () => $settings->fresh()->assertReadyForPublic())
+        ->toThrow(ValidationException::class, 'public thumbnail');
+});
 
 it('persists ordered Custom Page components across add remove and reorder changes', function (): void {
     $section = app(SiteSectionEditorialService::class)->createCustomPage('Component page', 'component-persistence-page');

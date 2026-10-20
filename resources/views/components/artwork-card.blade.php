@@ -21,7 +21,7 @@
     $credit = $showMediaCredits && $asset !== null ? trim((string) ($asset->getAttribute('credit') ?? '')) : '';
     $copyright = $showMediaCopyright && $asset !== null ? trim((string) ($asset->effectiveCopyrightNotice() ?? '')) : '';
     $mediaRights = implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== ''));
-    $rightsRight = $captionLayout === 'rights_right';
+    $rightsRight = $mediaRights !== '' && $captionLayout === 'rights_right';
 @endphp
 
 <article class="artwork-card">

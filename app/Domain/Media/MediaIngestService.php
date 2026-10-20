@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Symfony\Component\Process\Process;
 use Throwable;
 
 class MediaIngestService
@@ -382,7 +383,10 @@ class MediaIngestService
         $probe = $head.$tail;
 
         if ($this->isMp4Container($head)) {
-            if ($this->hasH264Track($probe)) {
+            // The real stream can be anywhere in the MP4 container; a
+            // compatible brand or an arbitrary sampled 'avc1' string does
+            // not establish an H.264 track.
+            if ($this->probeVideoStream($path) !== null) {
                 return 'video/mp4';
             }
 
@@ -413,30 +417,70 @@ class MediaIngestService
 
     private function validateVideoContainer(string $path, string $mime, int $size): void
     {
-        [$head, $tail] = $this->mediaProbe($path, $size);
-        $probe = $head.$tail;
+        // The H.264/VP8/VP9/AV1 description can live anywhere in the
+        // container, including an MP4 moov atom beyond both fixed probes.
+        // FFprobe, bundled with FFmpeg for poster extraction, parses the
+        // actual video stream instead of guessing from arbitrary byte slices.
+        $stream = $this->probeVideoStream($path);
+        $codec = $stream['codec'] ?? null;
 
         if ($mime === 'video/mp4') {
-            if (! $this->isMp4Container($head) || ! $this->hasH264Track($probe)) {
-                throw $this->validationFailure('MP4 uploads must use a browser-native H.264 video track.');
+            [$head] = $this->mediaProbe($path, min($size, 12));
+            if (! $this->isMp4Container($head) || $codec !== 'h264') {
+                throw $this->validationFailure('MP4 uploads must contain a browser-native H.264 video stream.');
             }
 
             return;
         }
 
         if ($mime === 'video/webm') {
-            $isWebm = str_starts_with($head, "\x1A\x45\xDF\xA3");
-            $hasSupportedVideo = str_contains($probe, 'V_VP8')
-                || str_contains($probe, 'V_VP9')
-                || str_contains($probe, 'V_AV1');
-            if (! $isWebm || ! $hasSupportedVideo) {
-                throw $this->validationFailure('WebM uploads must use a browser-native VP8, VP9 or AV1 video track.');
+            [$head] = $this->mediaProbe($path, min($size, 4));
+            if (! str_starts_with($head, "\x1A\x45\xDF\xA3")
+                || ! in_array($codec, ['vp8', 'vp9', 'av1'], true)) {
+                throw $this->validationFailure('WebM uploads must contain a browser-native VP8, VP9 or AV1 video stream.');
             }
 
             return;
         }
 
         throw $this->validationFailure('The uploaded video type is not allowed.');
+    }
+
+    /** @return array{codec:string,width:int,height:int}|null */
+    private function probeVideoStream(string $path): ?array
+    {
+        $process = new Process([
+            'ffprobe', '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=codec_name,width,height',
+            '-of', 'json',
+            $path,
+        ]);
+        $process->setTimeout(30);
+
+        try {
+            if ($process->run() !== 0) {
+                return null;
+            }
+        } catch (\Symfony\Component\Process\Exception\ProcessTimedOutException) {
+            return null;
+        }
+
+        $decoded = json_decode($process->getOutput(), true);
+        $stream = is_array($decoded) ? ($decoded['streams'][0] ?? null) : null;
+        if (! is_array($stream)) {
+            return null;
+        }
+
+        $codec = $stream['codec_name'] ?? null;
+        $width = $stream['width'] ?? null;
+        $height = $stream['height'] ?? null;
+
+        return is_string($codec)
+            && is_int($width) && $width > 0
+            && is_int($height) && $height > 0
+            ? ['codec' => $codec, 'width' => $width, 'height' => $height]
+            : null;
     }
 
     private function validateAudioContainer(string $path, string $mime, int $size): void
@@ -497,11 +541,6 @@ class MediaIngestService
     private function isMp4Container(string $head): bool
     {
         return strlen($head) >= 12 && substr($head, 4, 4) === 'ftyp';
-    }
-
-    private function hasH264Track(string $probe): bool
-    {
-        return str_contains($probe, 'avc1') || str_contains($probe, 'avc3');
     }
 
     private function hasMp4AudioTrack(string $probe): bool

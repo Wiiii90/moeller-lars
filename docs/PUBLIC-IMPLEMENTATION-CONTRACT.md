@@ -340,13 +340,13 @@ Informative public images require canonical ALT; explicit Artwork usage override
 
 Gallery Artwork primary media may be image or supported video. Video uses manual/native controls/no autoplay and shares close/sequence context without image-specific zoom/pan.
 
-Artwork cards, Home Hero Artworks and Artwork detail pages share one **unboxed, right-aligned artwork caption** from `artwork-caption.blade.php`, directly below the media and flush with its right edge. The first text line is `Title, Material` when material exists, using a quietly italic editorial-serif title and restrained regular material. The second line is `Year, Size` when authored. Structured dimensions keep their saved unit (cm/mm/in). Strictly numeric legacy H × W [× D] strings without an explicit unit adopt the existing admin editorial default cm; zero-valued legacy depth is omitted, while positive third dimensions remain. Non-numeric freeform artist-authored dimensions are preserved without inventing a unit. Commas appear only between present values. The previous printed prompts, ruled paper slip, handwriting styling, border, card background and NOTE are removed. Long content wraps within the image width without clipping; missing fields introduce no empty lines. Artwork descriptions stay separate on the detail page. On Gallery/Home Artwork cards the caption remains a detail link regardless of media viewer activation.
+Artwork cards, Home Hero Artworks and Artwork detail pages share one **unboxed, right-aligned artwork caption** from `artwork-caption.blade.php`, directly below the media and flush with its right edge. The first text line is `Title, Year` when year exists, using a quietly italic editorial-serif title and a regular year. The second line is `Size, Material` when authored. Structured dimensions keep their saved unit (cm/mm/in). Strictly numeric legacy H × W [× D] strings without an explicit unit adopt the existing admin editorial default cm; zero-valued legacy depth is omitted, while positive third dimensions remain. Non-numeric freeform artist-authored dimensions are preserved without inventing a unit. Commas appear only between present values. The previous printed prompts, ruled paper slip, handwriting styling, border, card background and NOTE are removed. Long content wraps within the image width without clipping; missing fields introduce no empty lines. Artwork descriptions stay separate on the detail page. On Gallery/Home Artwork cards the caption remains a detail link regardless of media viewer activation.
 
 Individual Artwork detail pages have one Gallery-specific **Expand landscape Artwork pages** toggle, OFF by default. Image orientation is derived server-side from the stored public thumbnail dimensions, before first paint. The original approved envelope is restored: at most a 1000px white sheet and a 960px image area, with the size also derived from General's `--public-art-max` and always bounded by the viewport. Crucially, the actual thumbnail is shown at its **intrinsic pixel width or smaller**; it is never enlarged to fill empty space. Image and two-line caption occupy the same naturally sized and centered media block, so their right edges coincide for images of every width. Portrait/square Artworks, Gallery indexes, Home Hero and other public pages retain the unchanged normal General geometry. The user-facing multiplier/width selection and its CSS scale classes were removed: a single toggle now enables the coherent, fixed maximum design. The same opt-in layout also allows the description divider, narrative and artwork credits to occupy the complete available Artwork detail text track; the former shared 36rem maximum continues to apply to standard portrait/square detail pages, other content types and disabled Galleries. The description remains outside the intrinsic-width image-and-caption group, avoiding reintroducing its former collapsed-image regression.
 
 The shared `artwork-navigation.blade.php` keeps the Gallery name centered and both Artwork arrow targets on General's normal artwork-width track, even when a larger landscape image is displayed. Per-Gallery sequence-end choices remain **Disabled** (default), **Hidden**, or **Cyclic**; the latter wraps between first/last only when two or more Artworks exist. The original Artwork Viewer navigation is a separate interaction and remains unchanged. The responsive **main menu and submenu** arrows are distinct from Artwork arrows: on overflow their CSS grid reserves at least 44px for each arrow hit rail, preventing the buttons from being squeezed beyond the clickable area on smartphones. Whole-item cyclic stack behavior and no-overflow alignment remain owned by existing `public-navigation.js`.
 
-Gallery Settings also control the shared Artwork caption/footer display: Artwork information (default on), Media File credits (default off), and effective copyright notice (default off) are independent visibility decisions. If rights are displayed, they appear on the opposite side from Artwork information; the Gallery can swap the sides. Values come exclusively from the canonical MediaAsset metadata and its configured copyright inheritance, never duplicated on Artwork; the existing public Artwork detail credit policy is not changed. Persist these Gallery settings in Working/Committed, with explicit public publication. Browser and migration acceptance pending.
+Gallery Settings also control the shared Artwork caption/footer display: Artwork information (default on), Media File credits (default off), and effective copyright notice (default off) are independent visibility decisions. If both rights and Artwork information are displayed, they share one horizontal footer row. Their text-content widths participate in the same intrinsic flex-sizing layout; both may wrap inside their tracks without forcing the whole caption below the copyright. The Gallery can reverse their left/right order. Copyright alone uses its natural width, and with rights hidden the caption stays right-aligned. No fixed width quota or duplicate layout is introduced. Values come exclusively from the canonical MediaAsset metadata and its configured copyright inheritance, never duplicated on Artwork; the existing public Artwork detail credit policy is not changed. Persist these Gallery settings in Working/Committed, with explicit public publication. Browser and migration acceptance pending.
 
 Gallery Settings provide an Artwork ordering mode persisted in both Working and Committed: Manual (default, newly created Artworks placed first through the canonical audited Gallery reorder service) or newest Work date (year/date descending with deterministic tie breakers and missing dates last). The Admin and Public galleries use the same `GalleryPresentation::orderArtworks` query; drag/move actions require Manual. Existing manual order is retained when switching modes. Browser and migration acceptance remain pending.
 
@@ -712,8 +712,9 @@ the shared ColorPicker. Both input methods commit through the same validated
 General appearance field. The dial is teleported outside the scrollable Stage
 to avoid clipping.
 
-All global paint surfaces use one canonical x-admin.table. Solid has
-one Color row; Linear, Radial and Conic use 2–12 Color/Position rows. The
+All global paint surfaces use the shared Solid ColorPicker inline beside
+their mode Select. Linear, Radial and Conic use one canonical x-admin.table
+with 2–12 Color/Position rows. The
 central AdminTableRepeater replaces only Filament 5.7's embedded table
 presentation, retaining its item schemas, ColorPicker, validation and
 add/delete actions. The markup reuses the same table and Add-row components
@@ -734,3 +735,28 @@ validated CSS gradient to glyphs. No gradient-specific layout, polling, or
 separate editor/normalizer is permitted. Every public title placement uses the
 same shared rule, and forced-colors accessibility falls back to plain text.
 The new title settings exist in both Working and Committed schemas.
+
+## Menu-to-page divider paint
+
+The existing `header_divider_mode` selects **whether** and **where** the
+separator is drawn (none, Menu-width, full-width, separate backing, etc.).
+In General → Appearance → Menu, **Divider color** is listed below Menu
+background and uses the **same** Solid/Linear/Radial/Conic + Repeating editor
+and canonical color-stop table as the other global appearance paints.
+
+The existing `header_divider_color` column is the **sole Solid color**.
+The independent `header_divider_paint_mode` and validated
+`header_divider_paint_gradient_*` fields describe optional gradient
+painting without introducing a second solid-color record.
+Unconfigured gradient mode retains the previous public divider color.
+For gradients, `PublicSiteContext` emits only validated CSS variables
+within the existing nonce-protected public style. Menu-width dividers
+paint the existing navigation border; full-width dividers use their
+existing single pseudo-element line. No additional DOM separator or
+alternate public styling pipeline may be introduced.
+
+General's More Space state is owned by the shared Stage grid and must
+size solely to the **active** appearance panel's intrinsic content.
+Inactive panels remain out of flow. The preview retains its grid pane
+and adjusts to available space with the existing resize observer,
+including when switching tabs or desktop/mobile preview.

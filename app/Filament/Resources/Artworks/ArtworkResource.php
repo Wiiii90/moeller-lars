@@ -38,7 +38,13 @@ class ArtworkResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components(app(ArtworkEditDialog::class)->schema(includeGalleryAssignment: true));
+        /** @var Artwork|null $record */
+        $record = $schema->getRecord();
+
+        return $schema->components(app(ArtworkEditDialog::class)->schema(
+            includeGalleryAssignment: true,
+            primaryReadOnly: $record instanceof Artwork && (string) $record->getAttribute('state') === 'published',
+        ));
     }
 
     public static function getRelations(): array

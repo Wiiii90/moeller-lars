@@ -46,11 +46,12 @@ final class ArtworkEditDialog
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
             'work_year' => $artwork->getAttribute('work_year'),
             'work_date' => $artwork->getAttribute('work_date'),
+            'exclude_from_home' => (bool) $artwork->getAttribute('exclude_from_home'),
         ];
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -86,6 +87,16 @@ final class ArtworkEditDialog
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
                     DatePicker::make('work_date')->label('Exact date')->nullable(),
+                    Select::make('exclude_from_home')
+                        ->label('Home eligibility')
+                        ->options([
+                            0 => 'Follow Gallery setting',
+                            1 => 'Exclude this Artwork from Home',
+                        ])
+                        ->default(0)
+                        ->required()
+                        ->helperText('The Gallery controls eligibility by default. Excluding an Artwork takes priority over automatic and manually selected Home groups.')
+                        ->columnSpanFull(),
                 ])->columns(['md' => 2]),
             AdminForm::section('Dimensions')->schema([
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
@@ -113,18 +124,22 @@ final class ArtworkEditDialog
                     )
                         ->placeholder('No primary media')
                         ->nullable()
+                        ->disabled($primaryReadOnly)
                         ->live()
                         ->afterStateUpdated(static function (callable $set): void {
                             // ALT belongs to the chosen Media File, not the previous primary.
                             $set('primary_alt_text', null);
                         })
-                        ->helperText($autosave
-                            ? 'Use Upload primary media in the Edit dialog actions to upload a new file.'
-                            : 'Images and videos only.')
+                        ->helperText($primaryReadOnly
+                            ? 'Unpublish the Artwork before replacing its primary media. This does not delete the original from Storage.'
+                            : ($autosave
+                                ? 'Use Upload primary media in the Edit dialog actions to upload a new file.'
+                                : 'Images and videos only.'))
                         ->columnSpanFull(),
                     ...(! $autosave ? [FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
                         ->storeFiles(false)
+                        ->disabled($primaryReadOnly)
                         ->acceptedFileTypes(self::primaryMimeTypes())
                         ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
                         ->live()
@@ -133,7 +148,9 @@ final class ArtworkEditDialog
                                 $set('primary_alt_text', null);
                             }
                         })
-                        ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
+                        ->helperText($primaryReadOnly
+                            ? 'Unpublish the Artwork before uploading a different primary file.'
+                            : 'JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
                         ->columnSpanFull()] : []),
                     Textarea::make('primary_alt_text')
                         ->label('Primary media ALT text')

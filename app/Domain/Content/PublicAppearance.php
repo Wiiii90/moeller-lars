@@ -20,7 +20,9 @@ final class PublicAppearance
 
     public const DEFAULT_PAGE_COLOR = '#777777';
     public const DEFAULT_SURFACE_COLOR = '#FFFFFF';
-    public const SURFACE_PREFIXES = ['background', 'menu_background', 'page_background', 'header_name'];
+    public const SURFACE_PREFIXES = ['background', 'menu_background', 'page_background', 'header_name', 'header_divider_paint'];
+
+    public const DEFAULT_DIVIDER_COLOR = '#D8D5D2';
 
     // Title is a text paint rather than a panel background.
     public const DEFAULT_TITLE_GRADIENT_COLOR = '#E5E9E6';
@@ -275,6 +277,19 @@ final class PublicAppearance
         return self::isGradient($mode) ? self::surfaceCss($settings, 'header_name') : null;
     }
 
+    public static function dividerGradientCss(PublicContentSetting $settings): ?string
+    {
+        $mode = self::normalizeMode($settings->getAttribute('header_divider_paint_mode'), 'header_divider_paint_mode');
+
+        return self::isGradient($mode) ? self::surfaceCss($settings, 'header_divider_paint') : null;
+    }
+
+    // Keep the established Solid divider color in one authoritative column.
+    public static function solidColorField(string $surface): string
+    {
+        return $surface === 'header_divider_paint' ? 'header_divider_color' : $surface.'_color';
+    }
+
     /**
      * The same validated paint contract owns all global public surfaces.
      * Null preserves the existing CSS defaults. Future page overrides can
@@ -297,6 +312,8 @@ final class PublicAppearance
             'background' => self::DEFAULT_PAGE_COLOR,
             'header_name' => self::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color')
                 ?? self::DEFAULT_TITLE_GRADIENT_COLOR,
+            'header_divider_paint' => self::normalizeColor($settings->getAttribute('header_divider_color'), 'header_divider_color')
+                ?? self::DEFAULT_DIVIDER_COLOR,
             default => self::DEFAULT_SURFACE_COLOR,
         };
         return [
@@ -397,13 +414,17 @@ final class PublicAppearance
             'background' => self::DEFAULT_PAGE_COLOR,
             'header_name' => self::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color')
                 ?? self::DEFAULT_TITLE_GRADIENT_COLOR,
+            'header_divider_paint' => self::normalizeColor($settings->getAttribute('header_divider_color'), 'header_divider_color')
+                ?? self::DEFAULT_DIVIDER_COLOR,
             default => self::DEFAULT_SURFACE_COLOR,
         };
         if ($mode === self::MODE_TRANSPARENT) {
             return 'transparent';
         }
         if ($mode === self::MODE_SOLID) {
-            return self::normalizeColor($settings->getAttribute($surface.'_color'), $surface.'_color') ?? $fallback;
+            $colorField = self::solidColorField($surface);
+
+            return self::normalizeColor($settings->getAttribute($colorField), $colorField) ?? $fallback;
         }
 
         $repeating = self::normalizeRepeating($settings->getAttribute($surface.'_gradient_repeating'), $surface.'_gradient_repeating');

@@ -38,6 +38,7 @@ RUN apt-get update \
         zip \
     && command -v vipsthumbnail \
     && command -v ffmpeg \
+    && command -v ffprobe \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

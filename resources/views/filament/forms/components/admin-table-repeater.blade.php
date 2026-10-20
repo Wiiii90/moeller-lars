@@ -38,18 +38,12 @@
                         @endforeach
                         @if ($hasActions)
                             <td class="admin-table__actions">
-                                @if ($canDelete && $deleteAction(['item' => $itemKey])->isVisible())
-                                    <button
-                                        type="button"
-                                        class="admin-action admin-action--with-icon"
-                                        wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
-                                        aria-label="Remove color {{ $loop->iteration }}"
-                                        title="Remove color"
-                                    >
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Remove->mini()" :size="\Filament\Support\Enums\IconSize::Small" class="admin-action__icon" />
-                                        <span class="admin-action__label">Remove</span>
-                                    </button>
-                                @endif
+                                <x-admin.row-action
+                                    :action="\App\Filament\Support\AdminRowAction::Delete"
+                                    :disabled="! $canDelete || ! $deleteAction(['item' => $itemKey])->isVisible()"
+                                    wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
+                                    aria-label="Delete color {{ $loop->iteration }}"
+                                />
                             </td>
                         @endif
                     </tr>

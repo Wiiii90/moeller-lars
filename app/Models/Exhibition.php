@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'postal_code', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'organizer', 'venue', 'city', 'country', 'location_text', 'postal_code', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'show_vernissage', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -29,6 +29,7 @@ class Exhibition extends Model
             'geocoded_at' => 'datetime',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'show_vernissage' => 'boolean',
             'gallery_enabled' => 'boolean',
             'map_enabled' => 'boolean',
             'migrated_at' => 'datetime',
@@ -91,6 +92,51 @@ class Exhibition extends Model
         return $start->year === $end->year
             ? $start->format('j M').' – '.$end->format('j M Y')
             : $start->format('j M Y').' – '.$end->format('j M Y');
+    }
+
+    /** Public bylines prioritize the organizer and never append an unrelated city. */
+    public function summaryAttribution(): ?string
+    {
+        foreach (['organizer', 'venue'] as $field) {
+            $value = trim((string) ($this->getAttribute($field) ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    /** The map identifies the physical place, not the organizing institution. */
+    public function mapLocationLabel(): ?string
+    {
+        $location = collect([
+            $this->getAttribute('venue'),
+            $this->getAttribute('city'),
+            $this->getAttribute('country'),
+        ])
+            ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->map(static fn (string $value): string => trim($value))
+            ->unique()
+            ->implode(' · ');
+
+        return $location !== '' ? $location : null;
+    }
+
+    public function shouldShowPublicVernissage(?CarbonInterface $date = null): bool
+    {
+        if (! (bool) $this->getAttribute('show_vernissage') || $this->vernissageDisplay() === null) {
+            return false;
+        }
+
+        $date ??= now();
+        $vernissage = $this->getAttribute('vernissage_at');
+        if ($vernissage instanceof CarbonInterface) {
+            return ! CarbonImmutable::instance($date)->isAfter($vernissage);
+        }
+
+        // Historical free-text openings have no reliable timestamp.
+        return $this->temporalState($date) === 'upcoming';
     }
 
     public function vernissageDisplay(): ?string

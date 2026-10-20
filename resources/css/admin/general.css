@@ -113,9 +113,9 @@
     display: contents !important;
 }
 
-/* All four panels occupy cell 1 / 1. In normal mode, inactive panels
- * are outside the track. In expanded mode they contribute to its
- * MAX-content size without occupying additional rows. */
+/* All panels share a single grid cell. Only the active panel ever
+ * contributes to the expanded track; inactive panels remain absolute.
+ * Switching tabs recalculates intrinsic height through normal CSS layout. */
 .general-appearance-stage__panel {
     grid-area: 1 / 1;
     position: absolute;
@@ -125,6 +125,12 @@
     min-width: 0;
     visibility: hidden;
     pointer-events: none;
+}
+
+/* Invisible absolute panels otherwise still enlarge scrollable overflow.
+ * Exclude them from layout AND overflow; the active panel alone owns extent. */
+.general-appearance-stage__panel:not(.is-active) {
+    display: none !important;
 }
 
 .general-appearance-stage__panel.is-active {
@@ -145,8 +151,8 @@
     overflow: hidden;
 }
 
-/* The expanded Stage still has ONE grid track, measured by the tallest
- * of the four overlapping panels. Never turn panels into sequential rows. */
+/* Expanded Stage has one content-sized track measured only by the active
+ * panel. The normal collapsed Stage height remains unchanged. */
 .general-appearance-stage.admin-visual-stage--expanded {
     height: max-content;
     min-height: var(--admin-visual-stage-height);
@@ -170,17 +176,10 @@
     overflow: visible;
 }
 
-.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__panel {
-    position: relative;
-    inset: auto;
-}
-
-/* Preview may grow with the available Stage height but must retain the
- * original starting height, its edge spacing, and the fitted device aspect.
- * Existing fitPreview() handles the new viewport size; no iframe reload. */
+/* Preview follows the selected tab's actual height. Its existing
+ * ResizeObserver fits the device to the changed viewport without reload. */
 .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__preview {
     height: 100%;
-    max-height: max(var(--admin-visual-stage-height), 75vh);
     align-self: stretch;
 }
 
@@ -301,10 +300,9 @@
     min-width: 0;
 }
 
-/* Semantic 2 x 2 order is supplied by the schema:
- * Background | Primary color
- * Angle      | Secondary color
- */
+/* Each paint starts with Mode | Solid Color or Repeating.
+ * Conditional angle/shape/center controls follow; gradient stops occupy
+ * the full width of the shared two-column pane. */
 .general-background-row > .fi-sc {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;

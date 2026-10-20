@@ -199,6 +199,7 @@
                             <button
                                 class="admin-gallery-grid__image gallery-workspace__visual"
                                 type="button"
+                                wire:key="gallery-artwork-media-{{ $artwork['id'] }}-{{ $artwork['primary_media_asset_id'] ?? 'empty' }}-{{ $artwork['primary_variant_id'] ?? 'none' }}"
                                 wire:click="mountAction('previewArtwork', { artwork: {{ $artwork['id'] }} })"
                                 aria-label="Preview {{ $artwork['title'] }}"
                             >

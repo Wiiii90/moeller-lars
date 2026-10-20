@@ -84,9 +84,10 @@ final class JournalEntryEditorSchema
 
     private static function venueSection(): mixed
     {
-        return AdminForm::section('Venue')->schema([
-            TextInput::make('venue')->label('Venue')->maxLength(240)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
-            TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
+        return AdminForm::section('Organizer & location')->schema([
+            TextInput::make('organizer')->label('Organizer / gallery')->maxLength(240)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
+            TextInput::make('venue')->label('Exhibition venue (actual location)')->maxLength(240)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
+            TextInput::make('external_url')->label('Exhibition website')->url()->maxLength(2048)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
             self::locationField('location_text', 'Street address', 500)->columnSpan(['default' => 1, 'md' => 2]),
             self::locationField('postal_code', 'Postal code', 16),
             self::locationField('city', 'City', 160)->columnSpan(['default' => 1, 'md' => 2]),
@@ -97,10 +98,11 @@ final class JournalEntryEditorSchema
     private static function datesSection(): mixed
     {
         return AdminForm::section('Dates')->schema([
-            DatePicker::make('starts_on')->label('Starts')->nullable(),
-            DatePicker::make('ends_on')->label('Ends')->afterOrEqual('starts_on')->nullable(),
+            DatePicker::make('starts_on')->label('Starts')->native(true)->format('Y-m-d')->extraInputAttributes(['lang' => 'de-DE'])->nullable(),
+            DatePicker::make('ends_on')->label('Ends')->native(true)->format('Y-m-d')->extraInputAttributes(['lang' => 'de-DE'])->afterOrEqual('starts_on')->nullable(),
             TextInput::make('date_text')->label('Display date override')->maxLength(160)->nullable()->columnSpanFull(),
-            DateTimePicker::make('vernissage_at')->label('Vernissage')->seconds(false)->nullable()->columnSpanFull(),
+            Toggle::make('show_vernissage')->label('Show vernissage until it begins')->default(false)->columnSpanFull(),
+            DateTimePicker::make('vernissage_at')->label('Vernissage')->seconds(false)->default(null)->nullable()->columnSpanFull(),
         ])->columns(['md' => 2]);
     }
 

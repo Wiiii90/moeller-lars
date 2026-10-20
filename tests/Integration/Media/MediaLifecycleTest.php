@@ -184,6 +184,53 @@ it('generates a versioned immutable WebP poster for a real H.264 video and regen
     }
 });
 
+it('accepts a valid MP4 with the H.264 track metadata outside both byte windows', function (): void {
+    $ingest = lifecycleIngestService();
+    $temp = tempnam(sys_get_temp_dir(), 'mp4-moov-middle-');
+    expect($temp)->not->toBeFalse();
+    $path = $temp.'.mp4';
+
+    try {
+        $process = new Process([
+            'ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin',
+            '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1',
+            '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', $path,
+        ]);
+        $process->setTimeout(60);
+        expect($process->run())->toBe(0);
+
+        // Append structurally valid MP4 free atoms on both sides of moov
+        // without changing mdat offsets. The old head/tail sampling would
+        // miss the H.264 sample description despite valid video content.
+        $bytes = file_get_contents($path);
+        expect($bytes)->not->toBeFalse();
+        $moovTypeOffset = strrpos($bytes, 'moov');
+        expect($moovTypeOffset)->not->toBeFalse();
+        $moovOffset = $moovTypeOffset - 4;
+        // FFmpeg can include 'avc1' as a compatible file brand even before
+        // moov. Replacing only that optional brand keeps the real sample
+        // description in moov and makes the incomplete byte-scan regression
+        // detectable rather than accidentally passing.
+        $brandOffset = strpos($bytes, 'avc1');
+        if ($brandOffset !== false && $brandOffset < $moovOffset) {
+            $bytes = substr_replace($bytes, 'mp42', $brandOffset, 4);
+        }
+        $paddingBytes = 1_100_000;
+        $free = pack('N', $paddingBytes + 8).'free'.str_repeat("\0", $paddingBytes);
+        $bytes = substr($bytes, 0, $moovOffset).$free.substr($bytes, $moovOffset).$free;
+        file_put_contents($path, $bytes);
+        expect(str_contains(substr($bytes, 0, 1_048_576), 'avc1'))->toBeFalse()
+            ->and(str_contains(substr($bytes, -1_048_576), 'avc1'))->toBeFalse();
+
+        $asset = $ingest->ingest(new UploadedFile($path, 'valid-moov-middle.mp4', 'video/mp4', null, true));
+        expect($asset->mime_type)->toBe('video/mp4')
+            ->and($asset->variants()->sole()->variant_kind)->toBe(MediaIngestService::VIDEO_POSTER_KIND);
+    } finally {
+        @unlink($path);
+        @unlink($temp);
+    }
+});
+
 it('rejects invalid image bytes before database or storage writes', function (): void {
     Storage::fake(config('media.disk'));
 
@@ -275,6 +322,42 @@ it('allows an exact-fit site storage write and blocks the first byte beyond quot
     $capacity->assertCanStoreOriginal(60);
 
     expect(fn () => $capacity->assertCanStoreOriginal(61))
+        ->toThrow(ValidationException::class, 'site storage allowance is full');
+});
+
+it('reserves the incoming thumbnail bytes separately from existing generated storage', function (): void {
+    Storage::fake('media-capacity');
+    config(['media.disk' => 'media-capacity']);
+    Storage::disk('media-capacity')->put('originals/current.jpg', str_repeat('o', 40));
+    Storage::disk('media-capacity')->put('variants/existing.webp', str_repeat('v', 65));
+
+    $capacity = app(MediaCapacityService::class);
+    $snapshot = $capacity->snapshot();
+    expect($snapshot['measurement_available'])->toBeTrue()
+        ->and($snapshot['generated_bytes'])->toBe(65);
+
+    config()->set('media.quota_bytes', $snapshot['site_used_bytes'] + 100);
+
+    // The 65 already stored variant bytes are included in site_used_bytes.
+    // Only 70 new original + 30 new thumbnail bytes have to fit.
+    $capacity->assertCanStoreOriginal(70, 30);
+    expect(fn () => $capacity->assertCanStoreOriginal(70, 31))
+        ->toThrow(ValidationException::class, 'site storage allowance is full');
+});
+
+it('uses the same quota gate for generated-only thumbnail consolidation', function (): void {
+    Storage::fake('media-capacity');
+    config(['media.disk' => 'media-capacity']);
+    Storage::disk('media-capacity')->put('originals/original.jpg', str_repeat('o', 50));
+
+    $capacity = app(MediaCapacityService::class);
+    $snapshot = $capacity->snapshot();
+    expect($snapshot['measurement_available'])->toBeTrue();
+    config()->set('media.quota_bytes', $snapshot['site_used_bytes'] + 100);
+
+    $capacity->assertCanStoreGenerated(100);
+
+    expect(fn () => $capacity->assertCanStoreGenerated(101))
         ->toThrow(ValidationException::class, 'site storage allowance is full');
 });
 

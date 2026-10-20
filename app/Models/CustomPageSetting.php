@@ -404,6 +404,10 @@ final class CustomPageSetting extends Model
         if (! $decorative && (! is_string($alt) || trim($alt) === '')) {
             throw ValidationException::withMessages(['blocks' => 'Published non-decorative media must have canonical ALT text in Storage.']);
         }
+        if (MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))
+            && \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset) === null) {
+            throw ValidationException::withMessages(['blocks' => 'Published Custom Page images require one available public thumbnail.']);
+        }
     }
 
     /** @param array<string, mixed> $block */

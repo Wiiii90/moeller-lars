@@ -133,12 +133,35 @@ final class MediaCapacityService
         return (int) round(self::WARNING_RATIO * 100);
     }
 
-    public function assertCanStoreOriginal(int $bytes, int $generatedBytes = 0): void
+    /**
+     * Reserve both files before a canonical ingest; previously generated
+     * derivatives already count toward measured usage and must not be
+     * subtracted a second time.
+     */
+    public function assertCanStoreOriginal(int $bytes, int $incomingPreviewBytes = 0): void
     {
-        if ($bytes <= 0 || $generatedBytes < 0) {
+        if ($bytes <= 0 || $incomingPreviewBytes < 0) {
             throw ValidationException::withMessages(['media' => 'The uploaded media has an invalid size.']);
         }
 
+        $this->assertCanStoreAdditionalBytes($bytes + $incomingPreviewBytes);
+    }
+
+    /**
+     * An offline re-derivation stages a new file but no new original.
+     * Use the exact same authoritative admission gate as ordinary uploads.
+     */
+    public function assertCanStoreGenerated(int $bytes): void
+    {
+        if ($bytes <= 0) {
+            throw ValidationException::withMessages(['media' => 'The generated media has an invalid size.']);
+        }
+
+        $this->assertCanStoreAdditionalBytes($bytes);
+    }
+
+    private function assertCanStoreAdditionalBytes(int $additionalBytes): void
+    {
         $quotaConfiguration = $this->quotaConfiguration();
         if (! $quotaConfiguration['valid']) {
             throw ValidationException::withMessages(['media' => 'Storage allowance configuration could not be verified. Try the upload again later.']);
@@ -151,7 +174,7 @@ final class MediaCapacityService
 
         try {
             [$authoritativeBytes] = $this->measurePrefix('originals');
-            [$generatedBytes] = $this->measurePrefix('variants');
+            [$storedGeneratedBytes] = $this->measurePrefix('variants');
         } catch (Throwable) {
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
@@ -162,15 +185,10 @@ final class MediaCapacityService
         }
 
         $siteUsedBytes = $authoritativeBytes
-            + $generatedBytes
+            + $storedGeneratedBytes
             + max(0, (int) ($database['logical_bytes'] ?? 0));
 
-        // The preview bytes have already been generated but not written to
-        // Storage. Reserve them together with the immutable original before
-        // either file is persisted; the existing ingest lock serializes this.
-        if ($siteUsedBytes >= $quota
-            || $bytes > ($quota - $siteUsedBytes)
-            || $generatedBytes > ($quota - $siteUsedBytes - $bytes)) {
+        if ($siteUsedBytes >= $quota || $additionalBytes > ($quota - $siteUsedBytes)) {
             throw ValidationException::withMessages(['media' => 'The site storage allowance is full. Remove reclaimable storage or ask the operator to increase the allowance before uploading.']);
         }
     }

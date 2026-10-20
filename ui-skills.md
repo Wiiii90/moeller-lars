@@ -131,10 +131,10 @@ The global Background/Menu/Page and Title controls retain a concise two-column
 line-based grammar with the shared ColorPicker and numeric field. Do not
 surface a Filament Repeater's card chrome, default rounded Add button,
 red per-row trash icons or explanatory helper paragraphs inside the Stage.
-All colors are directly editable in the **actual shared** x-admin.table,
-not Filament's independently styled table repeater. The shared
-AdminTableRepeater adapts Filament's field/action lifecycle to that canonical
-table; Solid has one Color row and gradients have 2–12 Color/Position rows.
+Solid paints use one inline shared ColorPicker beside their mode Select.
+Gradients use the **actual shared** x-admin.table, never Filament's separately
+styled table repeater. The shared AdminTableRepeater adapts Filament's
+field/action lifecycle to that canonical table, with 2–12 Color/Position rows.
 Use the existing AdminColorControl in the cells and x-admin.add-row below.
 Never recreate the table with local radius/border/row chrome, native browser
 color inputs, card repeaters, edit dialogs, helper prose or red trash actions.
@@ -800,3 +800,19 @@ See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliatio
 - Analytics/Storage/Activity metric cells explicitly own their Narrow/Minimal columns and stretch to the full cell. Narrow is exact thirds with two dividers; Minimal is exact halves with one centered divider.
 
 - Stage collapse for Analytics/Storage/Activity happens only at Minimal (<= 38rem workspace, with the matching shell fallback). Wide/Compact/Narrow retain their multi-cell stage axes and the shared fixed `--admin-visual-stage-height`; switching state must not introduce extra divider axes.
+
+### Gradient tables and dynamic Appearance Stage height
+
+Every global paint — Background, Title, Menu, Page and Menu-to-page
+Divider color — must share the same paint domain and ColorPicker. Solid uses
+one inline field beside the mode selector; only gradients use the actual
+`x-admin.table` representation. Use `x-admin.row-action` for table Delete,
+including its canonical trash icon, label and state. Do not hand-author
+a lookalike action or reuse the X-shaped Remove action.
+
+General's More Space toggles a content-sized Stage for **only the current
+tab**, not the tallest of all tabs. The inactive panels stay absolutely
+positioned and excluded from intrinsic sizing. Tab changes must resize
+the Stage automatically with CSS, while the preview retains its
+existing responsive fitting. Never calculate this by timers, panel-wide
+height constants or duplicate measuring subsystems.

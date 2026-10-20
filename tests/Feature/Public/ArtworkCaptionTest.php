@@ -4,7 +4,7 @@ use App\Models\Artwork;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Str;
 
-it('prints title and material above year and dimension with its unit', function (): void {
+it('prints title and year above dimensions and material with its unit', function (): void {
     $artwork = new Artwork([
         'title' => 'Between Lines',
         'medium' => 'Oil on linen',
@@ -17,7 +17,7 @@ it('prints title and material above year and dimension with its unit', function 
 
     expect($markup)->toContain('class="artwork-caption__primary"')
         ->toContain('class="artwork-caption__secondary"')
-        ->and(Str::squish(strip_tags($markup)))->toBe('Between Lines, Oil on linen 2025, 80 × 60 cm')
+        ->and(Str::squish(strip_tags($markup)))->toBe('Between Lines, 2025 80 × 60 cm, Oil on linen')
         ->and($markup)->not->toContain('Narrative is shown separately.')
         ->not->toContain('artwork-label__prompt');
 });
@@ -34,7 +34,7 @@ it('omits absent fields and preserves custom dimension units', function (): void
     $artwork->dimensions = '12 × 8 × 4 mm';
     $markup = Blade::render('<x-artwork-caption :artwork="$artwork" />', ['artwork' => $artwork]);
 
-    expect(Str::squish(strip_tags($markup)))->toBe('Unframed, Bronze 12 × 8 × 4 mm');
+    expect(Str::squish(strip_tags($markup)))->toBe('Unframed 12 × 8 × 4 mm, Bronze');
 });
 
 it('renders legacy two-dimensional measurements with cm and retains nonzero depth', function (): void {
@@ -46,9 +46,23 @@ it('renders legacy two-dimensional measurements with cm and retains nonzero dept
     ]);
 
     $caption = Blade::render('<x-artwork-caption :artwork="$artwork" />', ['artwork' => $artwork]);
-    expect(Str::squish(strip_tags($caption)))->toBe('Klaus Timm, drawing 2018, 33 × 24 cm');
+    expect(Str::squish(strip_tags($caption)))->toBe('Klaus Timm, 2018 33 × 24 cm, drawing');
 
     $artwork->dimensions = '33 × 24 × 1.5 mm';
     $caption = Blade::render('<x-artwork-caption :artwork="$artwork" />', ['artwork' => $artwork]);
-    expect(Str::squish(strip_tags($caption)))->toBe('Klaus Timm, drawing 2018, 33 × 24 × 1.5 mm');
+    expect(Str::squish(strip_tags($caption)))->toBe('Klaus Timm, 2018 33 × 24 × 1.5 mm, drawing');
+});
+
+it('keeps a long complete title and does not invent a missing dimension or year', function (): void {
+    $artwork = new Artwork([
+        'title' => 'Göttliches Gewissen (Arachne und Athene) – ein ausführlicher Werktitel',
+        'medium' => 'oil on canvas',
+    ]);
+
+    $markup = Blade::render('<x-artwork-caption :artwork="$artwork" />', ['artwork' => $artwork]);
+
+    expect(Str::squish(strip_tags($markup)))
+        ->toBe('Göttliches Gewissen (Arachne und Athene) – ein ausführlicher Werktitel oil on canvas')
+        ->and($markup)->toContain('class="artwork-caption__title"')
+        ->not->toContain('artwork-caption__year');
 });

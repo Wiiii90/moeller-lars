@@ -6,6 +6,8 @@ use App\Domain\Media\PublicMedia;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
+use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -94,7 +96,8 @@ it('replaces primary media through a committed Gallery command instead of Edit a
             'primary_alt_text' => 'A new painting with a yellow circular motif',
         ])
         ->callMountedAction()
-        ->assertHasNoFormErrors();
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
 
     $usage = $artwork->artworkMedia()->where('role', 'primary')->sole();
     $newAsset = $usage->mediaAsset;
@@ -105,13 +108,41 @@ it('replaces primary media through a committed Gallery command instead of Edit a
         ->and($oldAsset->fresh()->state)->toBe('available')
         ->and($newAsset->state)->toBe('available')
         ->and($thumbnail->state)->toBe('available')
-        ->and(AdminNotification::query()->where('title', 'Primary media updated')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('title', 'Draft primary media replaced')->count())->toBe(1);
 
     Storage::disk(config('media.disk'))->assertExists([$newAsset->storage_key, $thumbnail->storage_key]);
+
+    $row = collect(Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->get('artworkDataset'))->firstWhere('id', (int) $artwork->getKey());
+    expect($row['primary_media_asset_id'])->toBe((int) $newAsset->getKey())
+        ->and($row['primary_variant_id'])->toBe((int) $thumbnail->getKey());
 
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
 
+
+it('treats a byte-identical primary upload without ALT changes as a no-op', function (): void {
+    Storage::fake(config('media.disk'));
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $upload = UploadedFile::fake()->image('already-primary.jpg', 48, 36);
+    $asset = app(MediaIngestService::class)->ingest($upload);
+    galleryFixturePrimary($artwork, $asset);
+    galleryFixtureUnavailableAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('uploadArtworkPrimaryMedia', ['artwork' => $artwork->getKey()])
+        ->fillForm(['primary_upload' => $upload, 'primary_alt_text' => null])
+        ->callMountedAction()
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect((int) $artwork->artworkMedia()->where('role', 'primary')->sole()->media_asset_id)
+        ->toBe((int) $asset->getKey())
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')->count())->toBe(0)
+        ->and(AdminNotification::query()->where('status', 'success')->count())->toBe(0)
+        ->and(AdminNotification::query()->where('title', 'Primary media unchanged')->count())->toBe(1);
+});
 
 it('reuses a byte-identical original from Storage and still opens Add artwork', function (): void {
     Storage::fake(config('media.disk'));

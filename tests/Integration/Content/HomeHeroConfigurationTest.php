@@ -162,3 +162,32 @@ it('resolves Automatic random with equal effective weights and no persisted per-
         ->and($low['current']->getKey())->toBe($low['group']->first()->getKey())
         ->and($high['current']->getKey())->toBe($high['group']->last()->getKey());
 });
+
+it('lets a Gallery allow Home while an individual Artwork explicitly opts out', function (): void {
+    $gallery = heroDomainCategory('Home opt-out');
+    $allowed = heroDomainArtwork($gallery, 'Eligible painting', 0);
+    $excluded = heroDomainArtwork($gallery, 'Excluded drawing', 1);
+    $settings = heroDomainSettings();
+    app(HomeHeroConfigurationService::class)->updateArtworkSettings($settings, [
+        'group_source' => 'manual',
+        'manual_group' => heroManualMembers($allowed, $excluded),
+    ]);
+
+    // A previously chosen manual member is hidden while excluded; its
+    // stored selection is retained and becomes eligible again on opt-in.
+    $excluded->setAttribute('exclude_from_home', true);
+    $excluded->save();
+
+    $manual = app(HomeHeroResolver::class)->resolve($settings->fresh());
+    expect($manual['group']->pluck('id')->all())->toBe([(int) $allowed->getKey()]);
+
+    $automatic = heroDomainSettings();
+    $hero = app(HomeHeroResolver::class)->resolve($automatic);
+    expect($hero['group']->pluck('id')->all())->toContain($allowed->getKey())
+        ->not->toContain($excluded->getKey());
+
+    $excluded->setAttribute('exclude_from_home', false);
+    $excluded->save();
+    expect(app(HomeHeroResolver::class)->resolve($automatic->fresh())['group']->pluck('id')->all())
+        ->toContain($allowed->getKey(), $excluded->getKey());
+});

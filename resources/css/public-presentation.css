@@ -861,10 +861,9 @@ body {
     font-style: italic;
 }
 
-.artwork-caption__material {
-    color: #615950;
+.artwork-caption__year {
     font-style: normal;
-    font-size: .92em;
+    white-space: nowrap;
 }
 
 .artwork-caption__secondary {
@@ -1764,7 +1763,7 @@ html:has(.artwork-viewer[open]) {
     height: 1px;
     content: "";
     pointer-events: none;
-    background: var(--public-separator-color, rgba(255, 255, 255, .68));
+    background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
 }
 
 /* Menu-width divider uses the actual white navigation sheet, not the
@@ -1775,6 +1774,11 @@ html:has(.artwork-viewer[open]) {
 
 .site-header--divider-menu .site-navigation {
     border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
+    /* The existing single divider border remains the owner of its stroke.
+     * A gradient can replace its paint without changing geometry or adding
+     * pseudo-elements (which the navigation already uses for paper edges). */
+    border-image-source: var(--public-separator-gradient, none);
+    border-image-slice: 1;
 }
 
 /* Gap belongs to sticky header so scrolling content cannot erase it. */
@@ -1794,7 +1798,7 @@ html:has(.artwork-viewer[open]) {
     height: 1px;
     content: "";
     pointer-events: none;
-    background: var(--public-separator-color, rgba(255, 255, 255, .68));
+    background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
 }
 
 /* Connected paper is a structural layout, not two CSS strokes made to
@@ -2206,20 +2210,18 @@ body.public-site--frame-plain #content {
 }
 
 
-/* One Artwork caption rail; the existing caption remains authoritative.
- * Rights come from the canonical Storage MediaAsset and never synthesize a
- * new copyright owner or force a notice onto Artwork detail. */
+/* Rights and artwork information share one content-sized footer row.
+ * Each track flexes from its intrinsic text width, keeping the artwork
+ * caption against its image edge and wrapping text instead of the whole
+ * caption beneath the rights. */
 .artwork-card__footer--with-rights {
     display: flex;
-    justify-content: space-between;
-    align-items: start;
-    flex-wrap: wrap;
-    gap: .35rem 1.2rem;
+    align-items: flex-start;
+    gap: .65rem;
 }
 .artwork-card__rights {
     min-width: 0;
-    max-width: 100%;
-    flex: 1 1 12rem;
+    flex: 0 1 auto;
     color: var(--public-muted);
     font-family: var(--public-typeface);
     font-size: .74rem;
@@ -2230,15 +2232,15 @@ body.public-site--frame-plain #content {
 }
 .artwork-card__footer--with-rights .artwork-caption-link {
     min-width: 0;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+    width: auto;
+    margin-inline: 0;
+}
+.artwork-card__footer--rights-right {
+    flex-direction: row-reverse;
 }
 .artwork-card__footer--rights-right .artwork-card__rights {
-    order: 2;
     text-align: right;
-}
-.artwork-card__footer--rights-right .artwork-caption-link {
-    margin-right: auto;
-    margin-left: 0;
 }
 .artwork-card__footer--rights-right .artwork-caption {
     text-align: left;
