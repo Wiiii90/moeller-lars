@@ -2210,13 +2210,18 @@ body.public-site--frame-plain #content {
 }
 
 
-/* Attribution and artwork information each use the image-width track.
- * Sharing a flex row squeezed long artwork titles against the copyright.
- * Keep the configurable opposing edge alignment, without competing widths. */
+/* Copyright and artwork information share the same first row, with
+ * bounded side-by-side tracks. Only the artwork text wraps within its own
+ * track; it never pushes the complete caption beneath the copyright.
+ * A copyright-only footer retains the full image-width track. */
 .artwork-card__footer--with-rights {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    row-gap: .35rem;
+    align-items: start;
+}
+.artwork-card__footer--with-rights:has(.artwork-caption-link) {
+    grid-template-columns: fit-content(45%) minmax(0, 1fr);
+    column-gap: .65rem;
 }
 .artwork-card__rights {
     min-width: 0;
@@ -2230,14 +2235,23 @@ body.public-site--frame-plain #content {
 }
 .artwork-card__footer--with-rights .artwork-caption-link {
     min-width: 0;
-    justify-self: end;
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+}
+.artwork-card__footer--rights-right:has(.artwork-caption-link) {
+    grid-template-columns: minmax(0, 1fr) fit-content(45%);
 }
 .artwork-card__footer--rights-right .artwork-card__rights {
     text-align: right;
 }
+.artwork-card__footer--rights-right:has(.artwork-caption-link) .artwork-card__rights {
+    grid-column: 2;
+    grid-row: 1;
+}
 .artwork-card__footer--rights-right .artwork-caption-link {
-    justify-self: start;
-    margin-inline: 0;
+    grid-column: 1;
+    grid-row: 1;
 }
 .artwork-card__footer--rights-right .artwork-caption {
     text-align: left;
