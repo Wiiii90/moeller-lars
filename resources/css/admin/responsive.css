@@ -274,8 +274,10 @@
         margin-left: 0 !important;
     }
 
-    .general-background-row > .fi-sc,
-.general-two-column-settings > .fi-sc{
+    .general-appearance-mode-row > .fi-sc,
+    .general-appearance-parameter-row > .fi-sc,
+    .general-appearance-center-row > .fi-sc,
+    .general-two-column-settings > .fi-sc{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 

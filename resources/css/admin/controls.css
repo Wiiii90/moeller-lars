@@ -465,27 +465,17 @@
  * The picker is teleported to the root so the scrollable Stage cannot clip it. */
 .admin-angle-control {
     min-width: 0;
-    min-height: var(--admin-control-height);
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid var(--admin-line);
 }
-.admin-angle-control:focus-within { border-bottom-color: var(--admin-accent); }
+
+/* Native Filament wrapper and affix own the shared size, border and baseline.
+ * The dial remains the only custom part of this field. */
 .admin-angle-control__value {
-    display: inline-flex;
     width: 100%;
-    min-height: calc(var(--admin-control-height) - 1px);
-    align-items: center;
-    gap: 0;
 }
-.admin-angle-control__value input {
+.admin-angle-control__value .fi-input {
     box-sizing: border-box;
-    flex: 1 1 auto;
     width: 100%;
     min-width: 0;
-    min-height: calc(var(--admin-control-height) - 1px);
-    border: 0;
-    /* Let the shared fi-input own its value inset, as for Center X/Y. */
     background: transparent;
     color: var(--admin-text);
     font: inherit;
@@ -494,18 +484,10 @@
     appearance: textfield;
     -moz-appearance: textfield;
 }
-.admin-angle-control__value input::-webkit-inner-spin-button,
-.admin-angle-control__value input::-webkit-outer-spin-button { appearance: none; margin: 0; }
-.admin-angle-control__value .admin-angle-control__suffix {
-    box-sizing: border-box;
-    display: flex;
-    flex: 0 0 2.5rem;
-    align-self: stretch;
-    align-items: center;
-    justify-content: center;
-    border-left: 1px solid var(--admin-line);
-    color: var(--admin-muted);
-    font-size: var(--admin-control-value-size);
+.admin-angle-control__value .fi-input::-webkit-inner-spin-button,
+.admin-angle-control__value .fi-input::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
 }
 .admin-angle-control__popover {
     position: fixed;

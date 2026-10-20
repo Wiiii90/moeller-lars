@@ -25,18 +25,11 @@ test('Appearance has one overlapping panel track through Filament wrappers', () 
     assert.match(responsive, /\.admin-visual-stage--expanded\s*\{\s*grid-template-rows: max-content !important;/);
 });
 
-test('all gradient modes place Repeating beside the Mode selector, before Angle', () => {
-    const mode = stage.indexOf("Select::make($surface.'_mode')");
-    const repeating = stage.indexOf("Select::make($surface.'_gradient_repeating')");
-    const angle = stage.indexOf("AdminAngleControl::make($surface.'_gradient_angle')");
-    assert.ok(mode >= 0 && mode < repeating && repeating < angle);
-});
-
 test('Angle uses the shared input inset, control height and separated degree suffix', () => {
+    assert.match(angleMarkup, /<x-filament::input\.wrapper[^>]*suffix="°"/);
     assert.match(angleMarkup, /class="fi-input"/);
-    assert.match(angleMarkup, /class="admin-angle-control__suffix fi-input-wrp-suffix"/);
-    assert.match(controlCss, /\.admin-angle-control__value\s*\{[^}]*min-height: calc\(var\(--admin-control-height\) - 1px\)/);
-    assert.match(controlCss, /\.admin-angle-control__value \.admin-angle-control__suffix\s*\{[^}]*border-left: 1px solid var\(--admin-line\)/);
+    assert.doesNotMatch(angleMarkup, /class="admin-angle-control fi-input-wrp"/);
+    assert.doesNotMatch(controlCss, /\.admin-angle-control__suffix\s*\{/);
 });
 
 test('More space is presentation-only; its preview stays mounted while its viewport may grow', () => {

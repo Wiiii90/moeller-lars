@@ -716,13 +716,14 @@ part of the global General editor. Menu remains globally owned by General.
 
 ## Appearance editor control presentation
 
-The artist-facing General Stage retains its concise two-column appearance
-grammar: Background/Menu/Page selection beside Primary color, and Linear/Conic
-angle beside Secondary color. The shared AdminAngleControl exposes one inline
-numeric degree value and opens a rotary dial only on focus/click, analogous to
-the shared ColorPicker. Both input methods commit through the same validated
-General appearance field. The dial is teleported outside the scrollable Stage
-to avoid clipping.
+The artist-facing General Stage uses one shared paint editor for all surfaces.
+Solid shows mode and ColorPicker beside one another. Gradients show a
+full-width mode control followed by Angle and Repeating (Linear/Conic), or
+Shape and Repeating (Radial), on one row. Center X and Center Y share a row
+for Radial/Conic; Repeat span appears conditionally. The AdminAngleControl
+uses Filament's native input wrapper and degree suffix for exactly the same
+height and baseline as Center X/Y, retaining its teleported rotary dial.
+All inputs commit through the established validated General appearance path.
 
 All global paint surfaces use the shared Solid ColorPicker inline beside
 their mode Select. Linear, Radial and Conic use one canonical x-admin.table

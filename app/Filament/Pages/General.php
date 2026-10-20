@@ -658,84 +658,103 @@ final class General extends Page
         $center = static fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_RADIAL, PublicAppearance::MODE_CONIC], true);
 
         return Group::make([
-            Select::make($surface.'_mode')
-                ->label($label)
-                ->options([
-                    PublicAppearance::MODE_SOLID => 'Solid',
-                    PublicAppearance::MODE_GRADIENT => 'Linear gradient',
-                    PublicAppearance::MODE_RADIAL => 'Radial gradient',
-                    PublicAppearance::MODE_CONIC => 'Conic gradient',
-                    ...($surface === 'page_background' ? [PublicAppearance::MODE_TRANSPARENT => 'Transparent'] : []),
+            Group::make([
+                Select::make($surface.'_mode')
+                    ->label($label)
+                    ->options([
+                        PublicAppearance::MODE_SOLID => 'Solid',
+                        PublicAppearance::MODE_GRADIENT => 'Linear gradient',
+                        PublicAppearance::MODE_RADIAL => 'Radial gradient',
+                        PublicAppearance::MODE_CONIC => 'Conic gradient',
+                        ...($surface === 'page_background' ? [PublicAppearance::MODE_TRANSPARENT => 'Transparent'] : []),
+                    ])
+                    ->native()->required()->live()
+                    ->columnSpan(fn (callable $get): int => $gradient($get) ? 2 : 1)
+                    ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                    ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
+                AdminColorControl::make(PublicAppearance::solidColorField($surface), 'Color')
+                    ->required()
+                    ->formatStateUsing(static fn (mixed $state): string => filled($state) ? (string) $state : match ($surface) {
+                        'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
+                        'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+                        'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
+                        default => PublicAppearance::DEFAULT_SURFACE_COLOR,
+                    })
+                    // Filament's picker only commits onBlur after focus/popup close.
+                    // Live mode persists a settled color selection without requiring
+                    // the artist to dismiss the picker before leaving this page.
+                    ->live()
+                    ->afterStateUpdated(static function ($livewire, mixed $state) use ($surface): void {
+                        if ($livewire instanceof self) {
+                            $livewire->persistSurfaceColor($surface, 'primary', $state);
+                        }
+                    })
+                    ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
+            ])
+                ->columns(2)
+                ->extraAttributes(['class' => 'general-appearance-mode-row'])
+                ->columnSpanFull(),
+
+            Group::make([
+                Group::make([
+                AdminAngleControl::make($surface.'_gradient_angle')
+                    ->live()
+                    ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
+                    ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
+                Select::make($surface.'_gradient_shape')
+                    ->label('Shape')
+                    ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
+                    ->native()->live()
+                    ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
+                    ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
+                Select::make($surface.'_gradient_repeating')
+                    ->label('Repeating')
+                    ->options(['0' => 'Off', '1' => 'On'])
+                    ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
+                    ->native()
+                    ->live()
+                    ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                    ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
+                        if ($livewire instanceof self) {
+                            $livewire->persistChangedField($surface.'_gradient_repeating');
+                            $livewire->data[$surface.'_gradient_repeating'] = (bool) $state ? '1' : '0';
+                        }
+                    })
+                    ->visible($gradient),
                 ])
-                ->native()->required()->live()
-                ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
+                    ->columns(2)
+                    ->extraAttributes(['class' => 'general-appearance-parameter-row'])
+                    ->columnSpanFull(),
 
-            Select::make($surface.'_gradient_repeating')
-                ->label('Repeating')
-                ->options(['0' => 'Off', '1' => 'On'])
-                ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
-                ->native()
-                ->live()
-                ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistChangedField($surface.'_gradient_repeating');
-                        $livewire->data[$surface.'_gradient_repeating'] = (bool) $state ? '1' : '0';
-                    }
-                })
-                ->visible($gradient),
+                TextInput::make($surface.'_gradient_repeat_span')
+                    ->label('Repeat span')->integer()->minValue(16)->maxValue(360)
+                    ->suffix(fn (callable $get): string => $get($surface.'_mode') === PublicAppearance::MODE_CONIC ? '°' : 'px')
+                    ->lazy()
+                    ->afterStateUpdated(self::persist($surface.'_gradient_repeat_span'))
+                    ->visible(fn (callable $get): bool => $gradient($get) && (bool) $get($surface.'_gradient_repeating')),
+                Group::make([
+                TextInput::make($surface.'_gradient_center_x')
+                    ->label('Center X')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                    ->afterStateUpdated(self::persist($surface.'_gradient_center_x'))
+                    ->visible($center),
+                TextInput::make($surface.'_gradient_center_y')
+                    ->label('Center Y')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                    ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
+                    ->visible($center),
+                ])
+                    ->columns(2)
+                    ->extraAttributes(['class' => 'general-appearance-center-row'])
+                    ->visible($center)
+                    ->columnSpanFull(),
 
-            AdminAngleControl::make($surface.'_gradient_angle')
-                ->live()
-                ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
-                ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
-
-            Select::make($surface.'_gradient_shape')
-                ->label('Shape')
-                ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
-                ->native()->live()
-                ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
-
-            TextInput::make($surface.'_gradient_repeat_span')
-                ->label('Repeat span')->integer()->minValue(16)->maxValue(360)
-                ->suffix(fn (callable $get): string => $get($surface.'_mode') === PublicAppearance::MODE_CONIC ? '°' : 'px')
-                ->lazy()
-                ->afterStateUpdated(self::persist($surface.'_gradient_repeat_span'))
-                ->visible(fn (callable $get): bool => $gradient($get) && (bool) $get($surface.'_gradient_repeating')),
-
-            TextInput::make($surface.'_gradient_center_x')
-                ->label('Center X')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
-                ->afterStateUpdated(self::persist($surface.'_gradient_center_x'))
-                ->visible($center),
-            TextInput::make($surface.'_gradient_center_y')
-                ->label('Center Y')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
-                ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
-                ->visible($center),
-
-            AdminColorControl::make(PublicAppearance::solidColorField($surface), 'Color')
-                ->required()
-                ->formatStateUsing(static fn (mixed $state): string => filled($state) ? (string) $state : match ($surface) {
-                    'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
-                    'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
-                    'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
-                    default => PublicAppearance::DEFAULT_SURFACE_COLOR,
-                })
-                // Filament's picker only commits onBlur after focus/popup close.
-                // Live mode persists a settled color selection without requiring
-                // the artist to dismiss the picker before leaving this page.
-                ->live()
-                ->afterStateUpdated(static function ($livewire, mixed $state) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistSurfaceColor($surface, 'primary', $state);
-                    }
-                })
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
-
-            self::appearanceColorsTable($surface)->visible($gradient),
+                self::appearanceColorsTable($surface)->columnSpanFull(),
+            ])
+                ->columns(1)
+                ->extraAttributes(['class' => 'general-appearance-gradient-fields'])
+                ->visible($gradient)
+                ->columnSpanFull(),
         ])
-            ->columns(2)
+            ->columns(1)
             ->extraAttributes(['class' => 'general-background-row'])
             ->columnSpanFull();
     }
