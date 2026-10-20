@@ -75,6 +75,7 @@ final class ExhibitionEditorialService
 
             $payload = $this->validatedEditorialData($data, $fresh);
             $location = [
+                'venue' => array_key_exists('venue', $payload) ? $payload['venue'] : $fresh->getAttribute('venue'),
                 'location_text' => array_key_exists('location_text', $payload) ? $payload['location_text'] : $fresh->getAttribute('location_text'),
                 'postal_code' => array_key_exists('postal_code', $payload) ? $payload['postal_code'] : $fresh->getAttribute('postal_code'),
                 'city' => array_key_exists('city', $payload) ? $payload['city'] : $fresh->getAttribute('city'),
@@ -271,8 +272,8 @@ final class ExhibitionEditorialService
     private function validatedEditorialData(array $data, ?Exhibition $entry): array
     {
         $allowed = [
-            'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at',
-            'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'map_enabled',
+            'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at', 'show_vernissage',
+            'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'map_enabled',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
         $slugRule = Rule::unique('exhibitions', 'slug');
@@ -289,6 +290,8 @@ final class ExhibitionEditorialService
             'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
             'date_text' => ['nullable', 'string', 'max:160'],
             'vernissage_at' => ['nullable', 'date'],
+            'show_vernissage' => ['nullable', 'boolean'],
+            'organizer' => ['nullable', 'string', 'max:240'],
             'venue' => ['nullable', 'string', 'max:240'],
             'location_text' => ['nullable', 'string', 'max:500'],
             'postal_code' => ['nullable', 'string', 'max:16'],
@@ -300,7 +303,7 @@ final class ExhibitionEditorialService
             'map_enabled' => ['nullable', 'boolean'],
         ])->validate();
 
-        foreach (['date_text', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url'] as $field) {
+        foreach (['date_text', 'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url'] as $field) {
             if (array_key_exists($field, $payload) && is_string($payload[$field])) {
                 $payload[$field] = trim($payload[$field]) === '' ? null : trim($payload[$field]);
             }
@@ -317,6 +320,9 @@ final class ExhibitionEditorialService
             throw ValidationException::withMessages(['external_url' => 'Use a safe absolute HTTP or HTTPS URL.']);
         }
 
+        if (array_key_exists('show_vernissage', $payload)) {
+            $payload['show_vernissage'] = (bool) $payload['show_vernissage'];
+        }
         if (array_key_exists('gallery_enabled', $payload)) {
             $payload['gallery_enabled'] = (bool) $payload['gallery_enabled'];
         }
@@ -334,7 +340,7 @@ final class ExhibitionEditorialService
         $postal = trim((string) ($values['postal_code'] ?? ''));
         $city = trim((string) ($values['city'] ?? ''));
         $parts = collect([
-            $values['location_text'] ?? null,
+            ($values['location_text'] ?? null) ?: ($values['venue'] ?? null),
             trim($postal.' '.$city) ?: null,
             $values['country'] ?? null,
         ])
@@ -390,7 +396,7 @@ final class ExhibitionEditorialService
     /** @param array<string, mixed> $values */
     private function locationSignature(array $values): string
     {
-        return collect([$values['location_text'] ?? null, $values['postal_code'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
+        return collect([$values['location_text'] ?? null, empty($values['location_text']) ? ($values['venue'] ?? null) : null, $values['postal_code'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
             ->map(static fn (mixed $value): string => is_string($value) ? mb_strtolower(trim($value)) : '')
             ->implode('|');
     }

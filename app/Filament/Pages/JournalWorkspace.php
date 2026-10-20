@@ -888,7 +888,7 @@ final class JournalWorkspace extends Page
         $term = trim($this->search);
         if ($term !== '') {
             $query->where(function (Builder $search) use ($term): void {
-                $search->where('title', 'ilike', '%'.$term.'%')->orWhere('venue', 'ilike', '%'.$term.'%')
+                $search->where('title', 'ilike', '%'.$term.'%')->orWhere('organizer', 'ilike', '%'.$term.'%')->orWhere('venue', 'ilike', '%'.$term.'%')
                     ->orWhere('location_text', 'ilike', '%'.$term.'%')->orWhere('postal_code', 'ilike', '%'.$term.'%')->orWhere('city', 'ilike', '%'.$term.'%')
                     ->orWhere('country', 'ilike', '%'.$term.'%')->orWhere('date_text', 'ilike', '%'.$term.'%');
             });
@@ -908,7 +908,7 @@ final class JournalWorkspace extends Page
             $internalState = (string) $entry->getAttribute('state');
             $state = $internalState === 'published' ? 'published' : 'unpublished';
             $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
-            $location = collect([$entry->getAttribute('venue'), $entry->getAttribute('city')])->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')->map(fn (string $value): string => trim($value))->unique()->implode(' · ');
+            $location = $entry->summaryAttribution();
 
             // The admin table displays structured dates, not the public-facing
             // free-text display override (which may use different separators).
@@ -930,7 +930,7 @@ final class JournalWorkspace extends Page
                 : (filled($entry->getAttribute('opening_text')) ? trim((string) $entry->getAttribute('opening_text')) : null);
 
             return [
-                'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
+                'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location,
                 'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $vernissage,
                 'date_range' => $dateRange,
                 'thumbnail_url' => $this->coverThumbnailUrl($entry),
