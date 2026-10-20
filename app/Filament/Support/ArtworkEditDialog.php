@@ -125,6 +125,7 @@ final class ArtworkEditDialog
                         ->placeholder('No primary media')
                         ->nullable()
                         ->disabled($primaryReadOnly)
+                        ->selectablePlaceholder(! $primaryReadOnly)
                         ->extraFieldWrapperAttributes($primaryReadOnly ? [
                             'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
                         ] : [])
