@@ -139,6 +139,7 @@ final class ArtworkEditDialog
                     ...(! $autosave ? [FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
                         ->storeFiles(false)
+                        ->disabled($primaryReadOnly)
                         ->acceptedFileTypes(self::primaryMimeTypes())
                         ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
                         ->live()
@@ -147,7 +148,9 @@ final class ArtworkEditDialog
                                 $set('primary_alt_text', null);
                             }
                         })
-                        ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
+                        ->helperText($primaryReadOnly
+                            ? 'Unpublish the Artwork before uploading a different primary file.'
+                            : 'JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
                         ->columnSpanFull()] : []),
                     Textarea::make('primary_alt_text')
                         ->label('Primary media ALT text')
