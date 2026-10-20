@@ -8,71 +8,72 @@ import {
     restoreNavigationWindow,
 } from '../../resources/js/public-navigation.js';
 
-test('fits only complete navigation items into the available rail', () => {
-    assert.deepEqual(fitNavigationWindow([60, 60, 95, 60], 190), [0, 1]);
-    assert.deepEqual(fitNavigationWindow([60, 60, 95, 60], 190, 2), [2, 3]);
-});
+test('fits complete entries and reports actual navigation overflow', () => {
+    for (const { widths, available, start = 0, visible } of [
+        { widths: [60, 60, 95, 60], available: 190, visible: [0, 1] },
+        { widths: [60, 60, 95, 60], available: 190, start: 2, visible: [2, 3] },
+        { widths: [300, 35, 35], available: 90, visible: [0] },
+        { widths: [60, 50], available: 200, visible: [0, 1] },
+        { widths: [], available: 200, visible: [] },
+    ]) {
+        assert.deepEqual(fitNavigationWindow(widths, available, start), visible);
+    }
 
-test('makes room for the next complete item by dropping multiple left items', () => {
-    const widths = [40, 40, 40, 120, 40];
-    assert.deepEqual(fitNavigationWindow(widths, 130), [0, 1, 2]);
-    assert.deepEqual(advanceNavigationWindow(widths, [0, 1, 2], 130, 1), [3]);
-    assert.deepEqual(advanceNavigationWindow(widths, [3], 130, 1), [4, 0, 1]);
-});
-
-test('wraps cyclically in both directions and keeps menu order', () => {
-    const widths = [40, 40, 40, 40];
-    const first = fitNavigationWindow(widths, 120);
-    const backwards = advanceNavigationWindow(widths, first, 120, -1);
-    assert.deepEqual(backwards, [3, 0, 1]);
-    assert.deepEqual(advanceNavigationWindow(widths, backwards, 120, 1), first);
-
-    const last = fitNavigationWindow(widths, 120, 2);
-    assert.deepEqual(last, [2, 3, 0]);
-    assert.deepEqual(advanceNavigationWindow(widths, last, 120, 1), [3, 0, 1]);
-});
-
-test('keeps an overwide label as one item so the presentation can wrap its text', () => {
-    const widths = [300, 35, 35];
-    assert.deepEqual(fitNavigationWindow(widths, 90), [0]);
-    assert.deepEqual(advanceNavigationWindow(widths, [2], 90, 1), [0]);
-    assert.deepEqual(advanceNavigationWindow(widths, [0], 90, 1), [1, 2]);
-});
-
-test('handles an empty navigation list and rejects invalid movement direction', () => {
-    assert.deepEqual(fitNavigationWindow([], 200), []);
+    const widths = [62, 81, 72];
+    for (const [available, overflow] of [[320, false], [215, false], [214, true], [180, true]]) {
+        assert.equal(needsNavigationOverflow(widths, available), overflow);
+    }
+    assert.deepEqual(fitNavigationWindow(widths, 180), [0, 1]);
+    assert.equal(needsNavigationOverflow([900], 180), false);
     assert.deepEqual(advanceNavigationWindow([], [], 200, 1), []);
     assert.deepEqual(advanceNavigationWindow([40, 50], [0, 1], 150, 1), [0, 1]);
     assert.throws(() => advanceNavigationWindow([100], [0], 200, 0), RangeError);
 });
 
-test('child navigation shares the cyclic complete-item contract', () => {
-    const widths = [126, 186, 74, 124, 208];
-    const available = 330;
-    let visible = fitNavigationWindow(widths, available);
+test('cycles complete navigation stacks and refills their space', () => {
+    const equal = [40, 40, 40, 40];
+    const first = fitNavigationWindow(equal, 120);
+    assert.deepEqual(advanceNavigationWindow(equal, first, 120, -1), [3, 0, 1]);
+    assert.deepEqual(advanceNavigationWindow(equal, [3, 0, 1], 120, 1), first);
+    assert.deepEqual(fitNavigationWindow(equal, 120, 2), [2, 3, 0]);
+    assert.deepEqual(advanceNavigationWindow(equal, [2, 3, 0], 120, 1), [3, 0, 1]);
 
-    assert.deepEqual(visible, [0, 1]);
-    visible = advanceNavigationWindow(widths, visible, available, 1);
-    assert.deepEqual(visible, [1, 2]);
-    visible = advanceNavigationWindow(widths, visible, available, 1);
-    assert.deepEqual(visible, [2, 3]);
-    visible = advanceNavigationWindow(widths, visible, available, -1);
-    assert.deepEqual(visible, [1, 2]);
+    const variable = [40, 40, 40, 120, 40];
+    assert.deepEqual(fitNavigationWindow(variable, 130), [0, 1, 2]);
+    assert.deepEqual(advanceNavigationWindow(variable, [0, 1, 2], 130, 1), [3]);
+    assert.deepEqual(advanceNavigationWindow(variable, [3], 130, 1), [4, 0, 1]);
+
+    const children = [126, 186, 74, 124, 208];
+    let visible = fitNavigationWindow(children, 330);
+    for (const expected of [[0, 1], [1, 2], [2, 3], [1, 2]]) {
+        if (expected === undefined) break;
+        assert.deepEqual(visible, expected);
+        visible = advanceNavigationWindow(children, visible, 330, expected[0] === 2 ? -1 : 1);
+    }
+
+    const overwide = [300, 35, 35];
+    assert.deepEqual(advanceNavigationWindow(overwide, [2], 90, 1), [0]);
+    assert.deepEqual(advanceNavigationWindow(overwide, [0], 90, 1), [1, 2]);
+
+    const longFirst = [180, 40, 40, 40, 40, 40];
+    const fit = fitNavigationWindow(longFirst, 260);
+    const right = advanceNavigationWindow(longFirst, fit, 260, 1);
+    assert.deepEqual(fit, [0, 1, 2]);
+    assert.deepEqual(right, [1, 2, 3, 4, 5]);
+    assert.deepEqual(advanceNavigationWindow(longFirst, right, 260, -1), fit);
+    assert.deepEqual(advanceNavigationWindow(longFirst, [2, 3, 4, 5], 260, -1), [1, 2, 3, 4, 5]);
 });
 
-test('navigation windows never duplicate items or exceed the available width', () => {
+test('keeps navigation windows unique, bounded and cyclically ordered', () => {
     for (let count = 2; count <= 9; count += 1) {
         const widths = Array.from({ length: count }, (_, index) => 30 + ((index * 41 + count * 17) % 130));
-
-        for (let limit = 48; limit <= 420; limit += 19) {
-            let visible = fitNavigationWindow(widths, limit);
+        for (let available = 48; available <= 420; available += 19) {
+            let visible = fitNavigationWindow(widths, available);
             for (let step = 0; step < count * 3; step += 1) {
-                const direction = step % 4 === 0 ? -1 : 1;
-                visible = advanceNavigationWindow(widths, visible, limit, direction);
+                visible = advanceNavigationWindow(widths, visible, available, step % 4 === 0 ? -1 : 1);
                 assert.equal(visible.length, new Set(visible).size);
-                assert.ok(visible.every((index) => index >= 0 && index < count));
-                assert.ok(visible.length === 1
-                    || visible.reduce((sum, index) => sum + widths[index], 0) <= limit);
+                assert.ok(visible.every(index => index >= 0 && index < count));
+                assert.ok(visible.length === 1 || visible.reduce((sum, index) => sum + widths[index], 0) <= available);
                 assert.ok(visible.every((index, position) =>
                     position === 0 || index === (visible[position - 1] + 1) % count));
             }
@@ -80,101 +81,49 @@ test('navigation windows never duplicate items or exceed the available width', (
     }
 });
 
-test('child level finds its own rail inside the breadcrumb content, not the main rail', () => {
-    const node = (selector) => ({ matches: (query) => query === selector });
+test('resolves navigation controls within their own menu level', () => {
+    const node = selector => ({ matches: query => query === selector });
     const previous = node('button[data-direction="previous"]');
     const next = node('button[data-direction="next"]');
     const back = node('button[data-navigation-back]');
     const rail = node('nav[data-navigation-window-scroll]');
     const content = { ...node('[data-navigation-content]'), children: [back, rail] };
-    const surface = { children: [previous, content, next] };
-    assert.deepEqual(navigationWindowParts(surface), { rail, previous, next });
-});
+    assert.deepEqual(navigationWindowParts({ children: [previous, content, next] }), { rail, previous, next });
 
-test('main controls never resolve to right-arrow buttons inside child submenus', () => {
-    const node = (selector) => ({ matches: (query) => query === selector });
-    const previous = node('button[data-direction="previous"]');
-    const next = node('button[data-direction="next"]');
     const childNext = node('button[data-direction="next"]');
-    const rail = {
-        ...node('nav[data-navigation-window-scroll]'),
-        children: [childNext],
-    };
-    const surface = {
-        children: [previous, rail, next],
-        // A descendant-wide query would incorrectly return the child arrow.
-        querySelector: () => childNext,
-    };
-
-    const parts = navigationWindowParts(surface);
-    assert.strictEqual(parts.rail, rail);
-    assert.strictEqual(parts.previous, previous);
-    assert.strictEqual(parts.next, next);
+    const nestedRail = { ...node('nav[data-navigation-window-scroll]'), children: [childNext] };
+    const surface = { children: [previous, nestedRail, next], querySelector: () => childNext };
+    assert.deepEqual(navigationWindowParts(surface), { rail: nestedRail, previous, next });
 });
 
-test('arrows are absent when all pages fit, including short menus', () => {
-    const widths = [62, 81, 72];
-    assert.equal(needsNavigationOverflow(widths, 320), false);
-    assert.deepEqual(fitNavigationWindow(widths, 320), [0, 1, 2]);
-    assert.equal(needsNavigationOverflow(widths, 215), false);
-    assert.equal(needsNavigationOverflow(widths, 214), true);
-    assert.equal(needsNavigationOverflow(widths, 180), true);
-    assert.deepEqual(fitNavigationWindow(widths, 180), [0, 1]);
-    assert.equal(needsNavigationOverflow([900], 180), false);
-});
+test('restores a saved navigation window without moving the current selection', () => {
+    const cases = [
+        { widths: [110, 60, 125, 80, 90, 115], keys: ['home', 'prints', 'painting', 'cv', 'navigation', 'exhibitions'], visible: [2, 3, 4], available: 300, selections: [3, 4] },
+        { widths: [110, 140, 105, 120, 100], keys: ['first', 'second', 'third', 'fourth', 'fifth'], visible: [1, 2], available: 250, selections: [2] },
+        { widths: Array(8).fill(80), keys: Array.from({ length: 8 }, (_, i) => String(i)), available: 240, windows: [[2, 3, 4], [0, 1, 2], [5, 6, 7], [6, 7, 0]], selections: [0, 1, 3, 5, 7] },
+        { widths: Array(6).fill(75), keys: ['one', 'two', 'three', 'four', 'five', 'six'], visible: [4, 5, 0], available: 225, selections: [0, 5] },
+        { widths: [40, 40, 40, 180, 40, 40, 40, 40], keys: Array.from({ length: 8 }, (_, i) => String(i)), visible: [4, 5, 6, 7, 0, 1], available: 260, selections: [3] },
+    ];
+    for (const { widths, keys, visible, windows = [visible], available, selections } of cases) {
+        for (const window of windows) {
+            for (const selected of selections) {
+                assert.deepEqual(restoreNavigationWindow(widths, available, selected, {
+                    keys, visible: window, width: available,
+                }, keys), window);
+            }
+        }
+    }
 
-test('overflow restores smart refill on both sides after an oversized item drops out', () => {
-    const widths = [180, 40, 40, 40, 40, 40];
-    const available = 260;
-    const first = fitNavigationWindow(widths, available);
-    assert.deepEqual(first, [0, 1, 2]);
-
-    // A single click beyond the long first page pulls three more short pages
-    // from the right, rather than leaving most of the rail empty.
-    const right = advanceNavigationWindow(widths, first, available, 1);
-    assert.deepEqual(right, [1, 2, 3, 4, 5]);
-    assert.deepEqual(advanceNavigationWindow(widths, right, available, -1), first);
-
-    // Leftward movement likewise drops the long page and refills from the left.
-    const fromMiddle = fitNavigationWindow(widths, available, 2);
-    assert.deepEqual(fromMiddle, [2, 3, 4, 5]);
-    assert.deepEqual(
-        advanceNavigationWindow(widths, fromMiddle, available, -1),
-        [1, 2, 3, 4, 5],
-    );
-});
-
-
-test('selection reload preserves exact main window including its cyclic order', () => {
-    const widths = [110, 60, 125, 80, 90, 115];
-    const keys = ['home', 'prints', 'painting', 'cv', 'navigation', 'exhibitions'];
-    const saved = { keys, visible: [2, 3, 4], width: 300 };
-
-    // The current page changes, but its selected index stays in the same slot
-    // instead of advancing repeatedly until that item reaches the right edge.
-    assert.deepEqual(restoreNavigationWindow(widths, 300, 3, saved, keys), [2, 3, 4]);
-    assert.deepEqual(restoreNavigationWindow(widths, 300, 4, saved, keys), [2, 3, 4]);
-});
-
-test('selected child retains its whole-item window on reload', () => {
-    const widths = [110, 140, 105, 120, 100];
-    const keys = ['first', 'second', 'third', 'fourth', 'fifth'];
-    const saved = { keys, visible: [1, 2], width: 250 };
-    assert.deepEqual(restoreNavigationWindow(widths, 250, 2, saved, keys), [1, 2]);
-});
-
-test('direct entries select the parent or child without advancing it to the right edge', () => {
-    const widths = [110, 110, 110, 110, 110, 110];
-    const keys = ['0', '1', '2', '3', '4', '5'];
+    const keys = Array.from({ length: 6 }, (_, i) => String(i));
+    const widths = Array(6).fill(110);
     assert.deepEqual(restoreNavigationWindow(widths, 250, 4, null, keys), [4, 5]);
     assert.deepEqual(restoreNavigationWindow(widths, 250, 1, null, keys), [0, 1]);
 });
 
-test('stale or oversized handoffs do not override canonical menu ordering', () => {
-    const widths = [130, 90, 130, 90, 130];
+test('rejects stale windows and resizes only when the actual space requires it', () => {
     const keys = ['a', 'b', 'c', 'd', 'e'];
+    const widths = [130, 90, 130, 90, 130];
     const saved = { keys, visible: [2, 3], width: 220 };
-
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, saved, keys), [2, 3]);
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, saved, ['a', 'b', 'changed', 'd', 'e']), [3, 4]);
     assert.deepEqual(restoreNavigationWindow(widths, 170, 3, saved, keys), [2]);
@@ -182,67 +131,17 @@ test('stale or oversized handoffs do not override canonical menu ordering', () =
     assert.deepEqual(restoreNavigationWindow(widths, 220, 3, {
         keys, visible: [2, 2], width: 220,
     }, keys), [3, 4]);
-
-    // A menu fitting in its entirety never needs a stored subset.
     assert.deepEqual(restoreNavigationWindow([60, 50], 200, 1,
         { keys: ['a', 'b'], visible: [1], width: 200 }, ['a', 'b']), [0, 1]);
-});
 
+    const resizeKeys = Array.from({ length: 5 }, (_, i) => String(i));
+    const resizeWidths = [70, 90, 65, 75, 90];
+    const resizeSaved = { keys: resizeKeys, visible: [1, 2, 3], width: 245 };
+    assert.deepEqual(restoreNavigationWindow(resizeWidths, 240, 0, resizeSaved, resizeKeys), [1, 2, 3]);
+    assert.deepEqual(restoreNavigationWindow(resizeWidths, 260, 4, resizeSaved, resizeKeys), [1, 2, 3]);
+    assert.deepEqual(restoreNavigationWindow(resizeWidths, 165, 4, resizeSaved, resizeKeys), [1, 2]);
 
-test('cyclic wraparound window survives a selected-item page load unchanged', () => {
-    const keys = ['one', 'two', 'three', 'four', 'five', 'six'];
-    const widths = [75, 75, 75, 75, 75, 75];
-    const saved = { keys, width: 225, visible: [4, 5, 0] };
-    assert.deepEqual(restoreNavigationWindow(widths, 225, 0, saved, keys), [4, 5, 0]);
-    assert.deepEqual(restoreNavigationWindow(widths, 225, 5, saved, keys), [4, 5, 0]);
-});
-
-
-test('selection never moves an intact top-level window, even if its parent is hidden', () => {
-    const widths = Array(8).fill(80);
-    const keys = widths.map((_, index) => String(index));
-    const windows = [
-        [2, 3, 4],
-        [0, 1, 2],
-        [5, 6, 7],
-        [6, 7, 0],
-    ];
-
-    for (const visible of windows) {
-        for (const selected of [0, 1, 3, 5, 7]) {
-            assert.deepEqual(restoreNavigationWindow(
-                widths, 240, selected, { keys, visible, width: 240 }, keys,
-            ), visible);
-        }
-    }
-});
-
-test('a long hidden parent does not displace visible neighbors on child selection', () => {
-    const widths = [40, 40, 40, 180, 40, 40, 40, 40];
-    const keys = widths.map((_, index) => String(index));
-    const visible = [4, 5, 6, 7, 0, 1];
-
-    assert.deepEqual(restoreNavigationWindow(
-        widths, 260, 3, { keys, visible, width: 260 }, keys,
-    ), visible);
-
-    // Only explicit arrow activation is allowed to shift the stack.
-    assert.deepEqual(
-        advanceNavigationWindow(widths, visible, 260, -1),
-        [3, 4, 5],
-    );
-});
-
-
-test('scrollbar appearing or disappearing cannot make selection move a fitting window', () => {
-    const widths = [70, 90, 65, 75, 90];
-    const keys = widths.map((_, index) => String(index));
-    const saved = { keys, visible: [1, 2, 3], width: 245 };
-
-    // Neither of these selections is inside the saved window.
-    assert.deepEqual(restoreNavigationWindow(widths, 240, 0, saved, keys), [1, 2, 3]);
-    assert.deepEqual(restoreNavigationWindow(widths, 260, 4, saved, keys), [1, 2, 3]);
-
-    // Actual insufficient width may evict an item; retain the left edge.
-    assert.deepEqual(restoreNavigationWindow(widths, 165, 4, saved, keys), [1, 2]);
+    const longKeys = Array.from({ length: 8 }, (_, i) => String(i));
+    const longWidths = [40, 40, 40, 180, 40, 40, 40, 40];
+    assert.deepEqual(advanceNavigationWindow(longWidths, [4, 5, 6, 7, 0, 1], 260, -1), [3, 4, 5]);
 });
