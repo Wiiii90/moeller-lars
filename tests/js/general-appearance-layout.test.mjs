@@ -12,7 +12,9 @@ test('Appearance has one overlapping panel track through Filament wrappers', () 
     assert.match(css, /\.general-appearance-stage__scroll\s*\{[^}]*display: grid;/);
     assert.match(css, /\.general-appearance-stage__scroll :not\(\.general-appearance-stage__panel\):has\(\.general-appearance-stage__panel\)\s*\{[^}]*display: contents !important;/);
     assert.match(css, /\.general-appearance-stage__panel\s*\{[^}]*grid-area: 1 \/ 1;/);
-    assert.match(css, /\.admin-visual-stage--expanded \.general-appearance-stage__panel\s*\{[^}]*position: relative;/);
+    assert.match(css, /\.general-appearance-stage__panel\.is-active\s*\{[^}]*position: relative;/);
+    assert.doesNotMatch(css, /\.admin-visual-stage--expanded \.general-appearance-stage__panel\s*\{[^}]*position: relative;/);
+    assert.match(css, /\.general-appearance-stage\.admin-visual-stage--expanded\s*\{[^}]*height: max-content;/);
     assert.doesNotMatch(css, /\.general-appearance-stage__scroll > \.fi-sc/);
     for (const name of ['global', 'title', 'menu', 'page']) {
         assert.ok(stage.includes("'data-appearance-panel' => '" + name + "'"));
@@ -23,7 +25,9 @@ test('Appearance has one overlapping panel track through Filament wrappers', () 
 test('More space is presentation-only; its preview stays mounted while its viewport may grow', () => {
     assert.match(toggle, /x-on:click="moreSpace = ! moreSpace"/);
     assert.match(stage, /'x-data' => "\{ appearanceTab: 'global', moreSpace: false \}"/);
-    assert.match(css, /\.admin-visual-stage--expanded \.general-appearance-stage__preview\s*\{[^}]*height: 100%;[^}]*max-height:/);
+    assert.match(css, /\.admin-visual-stage--expanded \.general-appearance-stage__preview\s*\{[^}]*height: 100%;[^}]*align-self: stretch;/);
+    assert.doesNotMatch(css, /max-height: max\(var\(--admin-visual-stage-height\), 75vh\)/);
+    assert.match(preview, /new ResizeObserver\(\(\) => this\.fitPreview\(\)\)/);
     assert.doesNotMatch(toggle, /wire:click|general-appearance-updated|refreshPreview/);
     assert.match(preview, /x-on:general-appearance-updated\.window="refreshPreview\(\)"/);
     assert.match(preview, /<iframe\s+[^>]*wire:ignore/s);

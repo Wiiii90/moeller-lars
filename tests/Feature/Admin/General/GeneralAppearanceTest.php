@@ -446,7 +446,12 @@ it('keeps Appearance gradient actions on the shared line-based admin control con
 it('populates a solid color row for each global paint surface', function (): void {
     $component = Livewire::test(General::class);
     foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
-        $color = $surface === 'background' ? '#777777' : '#FFFFFF';
+        $color = match ($surface) {
+            'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
+            'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+            'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
+            default => PublicAppearance::DEFAULT_SURFACE_COLOR,
+        };
         $component->assertSet('data.'.$surface.'_solid_colors', [['color' => $color]]);
     }
 });
