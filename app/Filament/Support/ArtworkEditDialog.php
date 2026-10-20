@@ -9,6 +9,7 @@ use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaIngestService;
+use Closure;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -51,7 +52,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -130,8 +131,16 @@ final class ArtworkEditDialog
                             'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
                         ] : [])
                         ->live()
-                        ->afterStateUpdated(static function (callable $set): void {
-                            // ALT belongs to the chosen Media File, not the previous primary.
+                        ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
+                            // Gallery Edit persists this discrete Media File choice at
+                            // the field boundary, not through a bubbled modal change.
+                            // Create and the standalone EditRecord keep their existing
+                            // full-form submission lifecycle.
+                            if ($onPrimaryMediaChanged instanceof Closure) {
+                                $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
+                            }
+
+                            // ALT belongs to the newly chosen file, not the old primary.
                             $set('primary_alt_text', null);
                         })
                         ->helperText($primaryReadOnly
@@ -166,8 +175,43 @@ final class ArtworkEditDialog
         ];
     }
 
+    /**
+     * Persist one primary Media File selection using the existing audited
+     * primary-usage owner. Storage originals are never overwritten or deleted.
+     */
+    public function changePrimaryMedia(Artwork $artwork, ?int $assetId): bool
+    {
+        $artwork = Artwork::query()->findOrFail($artwork->getKey());
+        $primary = $artwork->artworkMedia()->where('role', 'primary')->first();
+        $currentId = $primary === null ? null : (int) $primary->getAttribute('media_asset_id');
+        if ($currentId === $assetId) {
+            return false;
+        }
+
+        if ((string) $artwork->getAttribute('state') !== 'draft') {
+            throw ValidationException::withMessages([
+                'primary_media_asset_id' => 'Unpublish this Artwork before changing or removing its primary Media File.',
+            ]);
+        }
+
+        $service = app(ArtworkPrimaryMediaService::class);
+        if ($assetId === null) {
+            return $service->detachPrimary($artwork);
+        }
+
+        /** @var MediaAsset $asset */
+        $asset = MediaAsset::query()->findOrFail($assetId);
+        if ($primary === null) {
+            $service->attachAsset($artwork, $asset);
+        } else {
+            $service->replaceAsset($artwork, $asset);
+        }
+
+        return true;
+    }
+
     /** @param array<string, mixed> $data */
-    public function save(Artwork $artwork, array $data, bool $allowGalleryAssignment = false): bool
+    public function save(Artwork $artwork, array $data, bool $allowGalleryAssignment = false, bool $savePrimaryMedia = true): bool
     {
         // Services below persist fresh models rather than updating the caller's
         // instance. Compare against persisted state, including on repeated saves.
@@ -212,7 +256,7 @@ final class ArtworkEditDialog
             ]);
         }
 
-        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentAssetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment): void {
+        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
                 $assignments = app(ArtworkGalleryAssignmentService::class);
                 if ($requestedGalleryId === null) {
@@ -234,18 +278,10 @@ final class ArtworkEditDialog
                 $currentPrimary === null
                     ? $primaryMedia->attachAsset($artwork, $uploadedAsset, recordIngest: true)
                     : $primaryMedia->replaceAsset($artwork, $uploadedAsset, recordIngest: true);
-            } elseif ($assetId > 0 && $assetId !== $currentAssetId) {
-                /** @var MediaAsset $asset */
-                $asset = MediaAsset::query()->findOrFail($assetId);
-                $currentPrimary === null
-                    ? $primaryMedia->attachAsset($artwork, $asset)
-                    : $primaryMedia->replaceAsset($artwork, $asset);
-            } elseif (array_key_exists('primary_media_asset_id', $data)
-                && $assetId === 0
-                && $currentPrimary !== null) {
-                // Clearing the existing Media File is an explicit detach.
-                // It must never delete the independent Storage original.
-                $primaryMedia->detachPrimary($artwork);
+            } elseif ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
+                // Gallery autosave persists this field in afterStateUpdated.
+                // This full-form path remains for standalone EditRecord.
+                $this->changePrimaryMedia($artwork, $assetId > 0 ? $assetId : null);
             }
 
             $primary = $artwork->artworkMedia()->where('role', 'primary')->first();

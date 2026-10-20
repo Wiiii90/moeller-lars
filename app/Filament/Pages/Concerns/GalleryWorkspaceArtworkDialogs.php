@@ -110,10 +110,21 @@ trait GalleryWorkspaceArtworkDialogs
             ->schema(fn (array $arguments): array => $dialog->schema(
                 autosave: true,
                 primaryReadOnly: (string) $this->actionArtwork($arguments)->getAttribute('state') === 'published',
+                onPrimaryMediaChanged: function (?int $assetId) use ($dialog, $arguments): void {
+                    if (! $dialog->changePrimaryMedia($this->actionArtwork($arguments), $assetId)) {
+                        return;
+                    }
+
+                    $this->refreshWorkspaceAfterMutation();
+                    app(AdminNotifier::class)->notification(
+                        title: 'Artwork primary media saved',
+                        status: 'success',
+                    );
+                },
             ))
             ->extraModalFooterActions(fn (array $arguments): array => $this->artworkEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments) use ($dialog): void {
-                $changed = $dialog->save($this->actionArtwork($arguments), $data);
+                $changed = $dialog->save($this->actionArtwork($arguments), $data, savePrimaryMedia: false);
                 $this->refreshWorkspaceAfterMutation();
 
                 if ($changed) {

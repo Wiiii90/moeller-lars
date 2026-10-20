@@ -93,6 +93,50 @@ it('refuses to clear primary media from a published Artwork without touching the
         ->and((string) $shared->fresh()->state)->toBe('available');
 });
 
+
+it('saves a changed existing Storage Media File through the Gallery field update only once', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $old = galleryFixtureAsset();
+    $replacement = galleryFixtureAsset();
+    galleryFixtureThumbnail($old);
+    galleryFixtureThumbnail($replacement);
+    galleryFixturePrimary($artwork, $old);
+    galleryFixtureUnavailableAnalytics();
+
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->assertSet('mountedActions.0.data.primary_media_asset_id', $old->getKey());
+
+    $editor->set('mountedActions.0.data.primary_media_asset_id', $replacement->getKey())
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
+        ->assertSet('mountedActions.0.data.primary_alt_text', null);
+
+    expect((int) ArtworkMedia::query()
+        ->where('artwork_id', $artwork->getKey())
+        ->where('role', 'primary')
+        ->value('media_asset_id'))->toBe((int) $replacement->getKey())
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')
+            ->where('entity_id', $artwork->getKey())->count())->toBe(1)
+        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+
+    // A subsequent bubbled modal change must not undo the direct field save.
+    $editor->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->call('unmountAction')
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->assertSet('mountedActions.0.data.primary_media_asset_id', $replacement->getKey());
+
+    expect((int) ArtworkMedia::query()
+        ->where('artwork_id', $artwork->getKey())
+        ->where('role', 'primary')
+        ->value('media_asset_id'))->toBe((int) $replacement->getKey())
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')
+            ->where('entity_id', $artwork->getKey())->count())->toBe(1)
+        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+});
+
 it('repairs an existing media-less Gallery draft using the same Edit form and then publishes it', function (): void {
     $gallery = galleryFixtureCategory();
     $draft = galleryFixtureArtwork($gallery);
