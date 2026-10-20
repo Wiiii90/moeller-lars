@@ -7,6 +7,7 @@ use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Publication\PublicationService;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Publication\PublicationVersionService;
 use App\Filament\Support\ActivityClockProjection;
 use App\Filament\Support\AdminActivityFeed;
@@ -835,7 +836,7 @@ final class Activity extends Page
             ['label' => 'Committed changes', 'value' => number_format((int) ($commitSummary->changed_rows ?? 0)), 'description' => 'Rows in matching commits'],
             ['label' => 'Active days', 'value' => number_format($overview['active_days']), 'description' => 'Days with matching activity'],
             ['label' => 'Pending', 'value' => number_format((int) $publicationContext['staged']), 'description' => 'Working changes not LIVE yet'],
-            ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt?->format('Y-m-d H:i') ?? 'No matching activity'],
+            ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($latestAt) : null ?? 'No matching activity'],
         ];
 
         $timeline = $this->timelinePresentation(
@@ -952,7 +953,7 @@ final class Activity extends Page
 
             $calendarDays[] = [
                 'date' => $dateKey,
-                'label' => $date->format('D, M j'),
+                'label' => RegionalFormats::adminDate($date),
                 'count' => $count,
                 'level' => $level,
                 'selected' => $date->isSameDay($selectedDate),
@@ -978,7 +979,7 @@ final class Activity extends Page
             'calendarActiveDays' => count(array_filter($calendarDaily, static fn (int $count): bool => $count > 0)),
             'calendarMaximum' => $calendarMaximum,
             'selectedCalendarDate' => $selectedDate->format('Y-m-d'),
-            'selectedCalendarLabel' => $selectedDate->format('M j, Y'),
+            'selectedCalendarLabel' => RegionalFormats::adminDate($selectedDate),
             'timelineItemLabel' => 'changes',
         ];
     }
