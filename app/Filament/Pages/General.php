@@ -619,8 +619,6 @@ final class General extends Page
                     ->extraAttributes(['class' => 'general-settings-section'])
                     ->columnSpanFull(),
 
-                View::make('filament.schemas.components.general-separator')->columnSpanFull(),
-
                 Group::make([
                     View::make('filament.schemas.components.admin-section-heading')
                         ->viewData(['label' => 'Regional Formats', 'class' => 'general-form-section-heading'])
@@ -704,7 +702,9 @@ final class General extends Page
                     Select::make($surface.'_gradient_shape')
                         ->label('Shape')
                         ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
-                        ->native()->live()
+                        ->native()
+                        ->live()
+                        ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
                         ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
                         ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
                     Select::make($surface.'_gradient_repeating')

@@ -315,6 +315,7 @@
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-auto-flow: row !important;
+    align-items: start !important;
     gap: .65rem var(--admin-stage-pane-space) !important;
 }
 

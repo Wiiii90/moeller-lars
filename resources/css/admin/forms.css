@@ -182,12 +182,6 @@
     margin-top: var(--admin-section-gap);
 }
 
-.general-separator {
-    width: 100%;
-    border: 0;
-    border-top: 1px solid var(--admin-line);
-}
-
 .admin-favicon-control .fi-input-wrp,
 .admin-favicon-control .fi-select-input-btn {
     min-height: 4.5rem;
