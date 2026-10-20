@@ -300,10 +300,9 @@
     min-width: 0;
 }
 
-/* Semantic 2 x 2 order is supplied by the schema:
- * Background | Primary color
- * Angle      | Secondary color
- */
+/* Each paint starts with Mode | Solid Color or Repeating.
+ * Conditional angle/shape/center controls follow; gradient stops occupy
+ * the full width of the shared two-column pane. */
 .general-background-row > .fi-sc {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;

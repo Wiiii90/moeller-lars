@@ -532,6 +532,23 @@ it('uses registered schema action handlers for adding and removing gradient colo
         ->not->toContain('x-on:click="$wire.mountAction');
 });
 
+it('renders the minimum two gradient-stop Delete actions visibly disabled and enables them above the minimum', function (): void {
+    $page = Livewire::test(General::class)->set('data.background_mode', 'gradient');
+    $minimum = $page->html();
+    expect(preg_match('/<button\\b[^>]*aria-label="Delete color 1"[^>]*>/s', $minimum, $matches))->toBe(1);
+    expect($matches[0])->toContain('disabled');
+
+    $page->set('data.background_gradient_stops', [
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#445566', 'position' => 50],
+        ['color' => '#778899', 'position' => 100],
+    ])->assertHasNoErrors();
+
+    $expanded = $page->html();
+    expect(preg_match('/<button\\b[^>]*aria-label="Delete color 1"[^>]*>/s', $expanded, $matches))->toBe(1);
+    expect($matches[0])->not->toContain('disabled');
+});
+
 it('preserves the inherited title color until the artist explicitly sets a title paint', function (): void {
     $settings = PublicContentSetting::general();
     $originalColor = $settings->getAttribute('header_name_color');

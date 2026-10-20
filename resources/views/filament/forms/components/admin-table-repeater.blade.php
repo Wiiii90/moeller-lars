@@ -38,14 +38,12 @@
                         @endforeach
                         @if ($hasActions)
                             <td class="admin-table__actions">
-                                @if ($deleteAction(['item' => $itemKey])->isVisible())
-                                    <x-admin.row-action
-                                        :action="\App\Filament\Support\AdminRowAction::Delete"
-                                        :disabled="! $canDelete"
-                                        wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
-                                        aria-label="Delete color {{ $loop->iteration }}"
-                                    />
-                                @endif
+                                <x-admin.row-action
+                                    :action="\App\Filament\Support\AdminRowAction::Delete"
+                                    :disabled="! $canDelete || ! $deleteAction(['item' => $itemKey])->isVisible()"
+                                    wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
+                                    aria-label="Delete color {{ $loop->iteration }}"
+                                />
                             </td>
                         @endif
                     </tr>
