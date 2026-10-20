@@ -866,7 +866,17 @@ final class General extends Page
 
         $fields = [$surface.'_mode'];
         if (($this->data[$surface.'_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
-            $fields[] = PublicAppearance::solidColorField($surface);
+            $solidField = PublicAppearance::solidColorField($surface);
+            // Legacy dividers may have inherited a CSS default rather than a
+            // stored color. Only an explicit switch to Solid materializes the
+            // visible fallback; simply opening General must not change it.
+            if ($surface === 'header_divider_paint' && blank($this->data[$solidField] ?? null)) {
+                $this->data[$solidField] = PublicAppearance::DEFAULT_DIVIDER_COLOR;
+                $this->data[$surface.'_solid_colors'] = [
+                    ['color' => PublicAppearance::DEFAULT_DIVIDER_COLOR],
+                ];
+            }
+            $fields[] = $solidField;
         }
         $this->persistChangedFields($fields);
         $this->syncAppearanceControlState();

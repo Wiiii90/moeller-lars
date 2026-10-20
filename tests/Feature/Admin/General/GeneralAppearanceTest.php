@@ -688,3 +688,23 @@ it('uses the same gradient controls and stops for every global paint including D
         ])
         ->assertHasNoErrors();
 });
+
+it('materializes the Divider Solid fallback only when Solid is explicitly selected', function (): void {
+    expect(PublicContentSetting::general()->header_divider_color)->toBeNull();
+
+    Livewire::test(General::class)
+        ->assertSet('data.header_divider_paint_mode', 'solid')
+        ->assertSet('data.header_divider_paint_solid_colors', [
+            ['color' => PublicAppearance::DEFAULT_DIVIDER_COLOR],
+        ]);
+
+    expect(PublicContentSetting::general()->header_divider_color)->toBeNull();
+
+    Livewire::test(General::class)
+        ->set('data.header_divider_paint_mode', 'gradient')
+        ->set('data.header_divider_paint_mode', 'solid')
+        ->call('persistSurfaceMode', 'header_divider_paint')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->header_divider_color)->toBe(PublicAppearance::DEFAULT_DIVIDER_COLOR);
+});
