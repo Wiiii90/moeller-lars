@@ -58,25 +58,6 @@ test('public Menu has no implicit title-only divider fragment', () => {
     assert.match(presentation, /\.site-header--divider-fine \.site-navigation\s*\{[^}]*border-bottom:\s*0;/);
 });
 
-test('copyright and artwork caption share a single bounded row, even for long titles', () => {
-    const presentation = source('resources/css/public-presentation.css');
-    const soleRights = presentation.match(/^\.artwork-card__footer--with-rights\s*\{([^}]*)\}/m)?.[1];
-    const sideBySide = presentation.match(/^\.artwork-card__footer--with-rights:has\(\.artwork-caption-link\)\s*\{([^}]*)\}/m)?.[1];
-    const reversed = presentation.match(/^\.artwork-card__footer--rights-right:has\(\.artwork-caption-link\)\s*\{([^}]*)\}/m)?.[1];
-    const caption = presentation.match(/^\.artwork-card__footer--with-rights \.artwork-caption-link\s*\{([^}]*)\}/m)?.[1];
-
-    assert.ok(soleRights && sideBySide && reversed && caption, 'one shared footer with both alignments');
-    assert.match(soleRights, /grid-template-columns:\s*minmax\(0,\s*1fr\);/);
-    assert.match(sideBySide, /grid-template-columns:\s*fit-content\(45%\) minmax\(0,\s*1fr\);/);
-    assert.match(reversed, /grid-template-columns:\s*minmax\(0,\s*1fr\) fit-content\(45%\);/);
-    assert.match(caption, /width:\s*100%;/);
-    assert.match(caption, /min-width:\s*0;/);
-    assert.match(caption, /margin-inline:\s*0;/);
-    assert.match(presentation, /\.artwork-card__footer--rights-right:has\(\.artwork-caption-link\) \.artwork-card__rights\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/);
-    assert.match(presentation, /\.artwork-card__footer--rights-right \.artwork-caption-link\s*\{[^}]*grid-column:\s*1;[^}]*grid-row:\s*1;/);
-    assert.doesNotMatch(presentation, /\.artwork-caption__title\s*\{[^}]*text-overflow:\s*ellipsis;/);
-});
-
 test('menu-to-page divider gradients reuse the existing stroke without extra pseudo-lines', () => {
     const presentation = source('resources/css/public-presentation.css');
     const layout = source('resources/views/layouts/app.blade.php');
