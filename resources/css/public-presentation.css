@@ -861,10 +861,9 @@ body {
     font-style: italic;
 }
 
-.artwork-caption__material {
-    color: #615950;
+.artwork-caption__year {
     font-style: normal;
-    font-size: .92em;
+    white-space: nowrap;
 }
 
 .artwork-caption__secondary {
@@ -2206,20 +2205,16 @@ body.public-site--frame-plain #content {
 }
 
 
-/* One Artwork caption rail; the existing caption remains authoritative.
- * Rights come from the canonical Storage MediaAsset and never synthesize a
- * new copyright owner or force a notice onto Artwork detail. */
+/* Attribution and artwork information each use the image-width track.
+ * Sharing a flex row squeezed long artwork titles against the copyright.
+ * Keep the configurable opposing edge alignment, without competing widths. */
 .artwork-card__footer--with-rights {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    flex-wrap: wrap;
-    gap: .35rem 1.2rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: .35rem;
 }
 .artwork-card__rights {
     min-width: 0;
-    max-width: 100%;
-    flex: 1 1 12rem;
     color: var(--public-muted);
     font-family: var(--public-typeface);
     font-size: .74rem;
@@ -2230,15 +2225,14 @@ body.public-site--frame-plain #content {
 }
 .artwork-card__footer--with-rights .artwork-caption-link {
     min-width: 0;
-    flex: 0 1 auto;
+    justify-self: end;
 }
 .artwork-card__footer--rights-right .artwork-card__rights {
-    order: 2;
     text-align: right;
 }
 .artwork-card__footer--rights-right .artwork-caption-link {
-    margin-right: auto;
-    margin-left: 0;
+    justify-self: start;
+    margin-inline: 0;
 }
 .artwork-card__footer--rights-right .artwork-caption {
     text-align: left;

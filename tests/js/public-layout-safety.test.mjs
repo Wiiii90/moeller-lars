@@ -57,3 +57,15 @@ test('public Menu has no implicit title-only divider fragment', () => {
     assert.match(presentation, /\.site-header--divider-menu \.site-navigation\s*\{[^}]*border-bottom:\s*1px solid var\(--public-separator-color/);
     assert.match(presentation, /\.site-header--divider-fine \.site-navigation\s*\{[^}]*border-bottom:\s*0;/);
 });
+
+test('rights and artwork captions have full-width independent rows, not competing flex columns', () => {
+    const presentation = source('resources/css/public-presentation.css');
+    const footer = presentation.match(/^\.artwork-card__footer--with-rights\s*\{([^}]*)\}/m)?.[1];
+    assert.ok(footer, 'shared attribution footer exists');
+    assert.match(footer, /display:\s*grid;/);
+    assert.match(footer, /grid-template-columns:\s*minmax\(0,\s*1fr\);/);
+    assert.doesNotMatch(footer, /display:\s*flex;/);
+    assert.match(presentation, /\.artwork-card__footer--with-rights \.artwork-caption-link\s*\{[^}]*justify-self:\s*end;/);
+    assert.match(presentation, /\.artwork-card__footer--rights-right \.artwork-caption-link\s*\{[^}]*justify-self:\s*start;/);
+    assert.doesNotMatch(presentation, /\.artwork-caption__title\s*\{[^}]*text-overflow:\s*ellipsis;/);
+});
