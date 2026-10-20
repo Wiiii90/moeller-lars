@@ -15,7 +15,7 @@ final class PublicSiteContext
         private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicFrameStyle:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderVisible:bool,publicHeaderText:string,publicHeaderAlignment:string,publicHeaderMobileAlignment:string,publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderGradientCss:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool,publicNavigationHover:bool} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicFrameStyle:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderVisible:bool,publicHeaderText:string,publicHeaderAlignment:string,publicHeaderMobileAlignment:string,publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderGradientCss:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderDividerGradientCss:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool,publicNavigationHover:bool} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::general();
@@ -49,6 +49,7 @@ final class PublicSiteContext
             'publicHeaderMinSize' => PublicAppearance::normalizeTitleMinSize($settings->getAttribute('header_name_min_size')).'px',
             'publicHeaderDivider' => PublicAppearance::headerDivider($settings->getAttribute('header_divider_mode')),
             'publicHeaderDividerColor' => PublicAppearance::normalizeColor($settings->getAttribute('header_divider_color'), 'header_divider_color'),
+            'publicHeaderDividerGradientCss' => PublicAppearance::dividerGradientCss($settings),
             'publicHeaderAutoScale' => $settings->getAttribute('header_name_auto_scale') === null ? true : (bool) $settings->getAttribute('header_name_auto_scale'),
             'publicPageTransparent' => PublicAppearance::normalizeMode($settings->getAttribute('page_background_mode'), 'page_background_mode') === PublicAppearance::MODE_TRANSPARENT,
         ];

@@ -1763,7 +1763,7 @@ html:has(.artwork-viewer[open]) {
     height: 1px;
     content: "";
     pointer-events: none;
-    background: var(--public-separator-color, rgba(255, 255, 255, .68));
+    background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
 }
 
 /* Menu-width divider uses the actual white navigation sheet, not the
@@ -1774,6 +1774,11 @@ html:has(.artwork-viewer[open]) {
 
 .site-header--divider-menu .site-navigation {
     border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
+    /* The existing single divider border remains the owner of its stroke.
+     * A gradient can replace its paint without changing geometry or adding
+     * pseudo-elements (which the navigation already uses for paper edges). */
+    border-image-source: var(--public-separator-gradient, none);
+    border-image-slice: 1;
 }
 
 /* Gap belongs to sticky header so scrolling content cannot erase it. */
@@ -1793,7 +1798,7 @@ html:has(.artwork-viewer[open]) {
     height: 1px;
     content: "";
     pointer-events: none;
-    background: var(--public-separator-color, rgba(255, 255, 255, .68));
+    background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
 }
 
 /* Connected paper is a structural layout, not two CSS strokes made to
