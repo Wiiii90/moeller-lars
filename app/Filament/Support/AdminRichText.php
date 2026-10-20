@@ -3,10 +3,8 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\RichTextDocument;
-use App\Domain\Media\MediaTypePolicy;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
-use Filament\Schemas\Components\Component;
 
 final class AdminRichText
 {
@@ -23,13 +21,15 @@ final class AdminRichText
             [ToolbarButtonGroup::make('Alignment', ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
             ['blockquote', 'bulletList', 'orderedList', 'horizontalRule'],
             ['table', 'highlight', 'textColor', 'clearFormatting'],
-            ['cleanPdfText'],
         ];
         if ($allowEmbeddedMedia) {
-            $toolbar[] = ['insertStorageImage', 'attachFiles'];
+            $toolbar[] = ['insertStorageImage'];
             $toolbar[] = [
-                'imageInline', 'imageLeft', 'imageCenter', 'imageRight',
-                'imageFloatleft', 'imageFloatright', 'imageCaption',
+                ToolbarButtonGroup::make('Image position', [
+                    'imageInline', 'imageLeft', 'imageCenter', 'imageRight',
+                    'imageFloatleft', 'imageFloatright',
+                ])->textualButtons(),
+                'imageCaption',
             ];
         }
         $toolbar[] = ['undo', 'redo'];
@@ -47,16 +47,7 @@ final class AdminRichText
             ->extraFieldWrapperAttributes(['class' => 'admin-rich-text admin-rich-text--visual']);
 
         if ($allowEmbeddedMedia) {
-            $editor->resizableImages()
-                ->fileAttachmentsAcceptedFileTypes(MediaTypePolicy::IMAGE_MIME_TYPES)
-                ->fileAttachmentsVisibility('private')
-                ->getFileAttachmentUrlUsing(
-                    static fn (mixed $file): ?string => (new MediaRichTextAttachmentProvider)->getFileAttachmentUrl($file),
-                )
-                ->saveUploadedFileAttachmentUsing(
-                    static fn (\Livewire\Features\SupportFileUploads\TemporaryUploadedFile $file): string =>
-                        (string) (new MediaRichTextAttachmentProvider)->saveUploadedFileAttachment($file),
-                );
+            $editor->resizableImages();
         }
 
         if ($maxLength !== null) {

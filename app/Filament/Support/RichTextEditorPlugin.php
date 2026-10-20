@@ -2,7 +2,6 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Content\PdfTextCleaner;
 use App\Domain\Content\ArtistImageLayout;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Models\MediaAsset;
@@ -13,7 +12,6 @@ use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileA
 use Filament\Forms\Components\RichEditor\Plugins\Contracts\HasFileAttachmentProvider;
 use Filament\Forms\Components\RichEditor\Plugins\Contracts\RichContentPlugin;
 use Filament\Forms\Components\RichEditor\RichEditorTool;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Vite;
 
@@ -75,11 +73,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ->disabledWhenNotActive()
                 ->activeJsExpression("\$getEditor()?.isActive('image')")
                 ->action(arguments: "{ caption: \$getEditor()?.getAttributes('image').artistCaption ?? '' }"),
-            RichEditorTool::make('cleanPdfText')
-                ->icon(AdminIcon::Clear->value)
-                ->activeJsExpression('$getEditor()?.state.selection.from !== $getEditor()?.state.selection.to')
-                ->disabledWhenNotActive()
-                ->action(arguments: "{ selectedText: \$getEditor()?.state.doc.textBetween(\$getEditor()?.state.selection.from, \$getEditor()?.state.selection.to, '\\n') }"),
+
         ];
     }
 
@@ -125,23 +119,6 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                         [EditorCommand::make('updateAttributes', arguments: [
                             'image', ['artistCaption' => trim((string) ($data['caption'] ?? '')) ?: null],
                         ])],
-                        editorSelection: $arguments['editorSelection'],
-                    );
-                }),
-            Action::make('cleanPdfText')
-                ->modalHeading('Clean copied PDF text')
-                ->fillForm(fn (array $arguments): array => [
-                    'result' => PdfTextCleaner::clean((string) ($arguments['selectedText'] ?? '')),
-                ])
-                ->schema([
-                    Textarea::make('result')
-                        ->label('Review the corrected paragraphs')
-                        ->rows(12)
-                        ->required(),
-                ])
-                ->action(function (array $arguments, array $data, RichEditor $component): void {
-                    $component->runCommands(
-                        [EditorCommand::make('insertContent', arguments: [(string) $data['result']])],
                         editorSelection: $arguments['editorSelection'],
                     );
                 }),

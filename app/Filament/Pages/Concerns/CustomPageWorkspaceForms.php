@@ -58,6 +58,7 @@ trait CustomPageWorkspaceForms
                     $typeField,
                     $statusField,
                     ...($onTypeChange !== null && in_array($editingType, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                        && $editingType !== 'text'
                         ? [$this->componentParentField($editingType)]
                         : []),
                     $dynamicFields,
@@ -89,10 +90,11 @@ trait CustomPageWorkspaceForms
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
             ],
             'text' => $isNew
-                ? AdminRichText::schema('body', 'Rich Text', 20000)
+                ? AdminRichText::schema('body', 'Text Editor', 20000)
                 : [
+                    $this->componentParentField('text')->columnSpan(1),
                     TextInput::make('title')->label('Heading')->maxLength(160),
-                    ...AdminRichText::schema('body', 'Rich Text', 20000),
+                    ...AdminRichText::schema('body', 'Text Editor', 20000),
                 ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
