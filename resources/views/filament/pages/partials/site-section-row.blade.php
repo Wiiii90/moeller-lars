@@ -195,4 +195,7 @@
         </label>
     </div>
 
+    @if (! $isChild && $reorderEnabled && $nestedNavigationEnabled)
+        <div class="admin-pages__child-drop" data-pages-drop="child" data-pages-parent="{{ $section['id'] }}" role="button" aria-label="Move dragged page under {{ $label }}"><span>Drop as child</span></div>
+    @endif
 </div>
