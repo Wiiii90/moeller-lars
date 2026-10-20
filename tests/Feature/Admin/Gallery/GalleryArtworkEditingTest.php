@@ -58,21 +58,18 @@ it('clears a draft primary Media File from Edit without deleting the shared Stor
     galleryFixturePrimary($draft, $shared);
     galleryFixtureUnavailableAnalytics();
 
-    $form = app(ArtworkEditDialog::class)->fill($draft);
-    $form['primary_media_asset_id'] = null;
-    $form['primary_alt_text'] = null;
-
+    // Gallery Edit owns this selection as a discrete field mutation. It must
+    // persist without a submit or an unrelated modal change event.
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('editArtwork', ['artwork' => $draft->getKey()])
-        ->fillForm($form)
-        ->callMountedAction()
+        ->set('mountedActions.0.data.primary_media_asset_id', null)
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification');
 
     expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeFalse()
         ->and((string) $shared->fresh()->state)->toBe('available')
         ->and(AuditEvent::query()->where('action', 'artwork.primary_media_detached')->where('entity_id', $draft->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork saved')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
 });
 
 it('refuses to clear primary media from a published Artwork without touching the Storage original', function (): void {
