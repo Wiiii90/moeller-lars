@@ -2,19 +2,15 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Content\RichTextMediaReference;
-use App\Models\MediaAsset;
-use Filament\Forms\Components\MarkdownEditor;
+use App\Domain\Content\RichTextDocument;
+use App\Domain\Media\MediaTypePolicy;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
 use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
-use Filament\Schemas\Components\View;
-use Illuminate\Validation\ValidationException;
 
 final class AdminRichText
 {
-    /** @return array<int, Component> */
+    /** One visual editor shared by Journal, Custom Pages, Home and nested text. */
     public static function schema(
         string $name,
         string $label,
@@ -22,151 +18,46 @@ final class AdminRichText
         bool $allowEmbeddedMedia = true,
     ): array {
         $toolbar = [
-            ['bold', 'italic', 'link'],
-            ['heading'],
-            ['bulletList', 'orderedList'],
-            ['undo', 'redo'],
+            ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', 'link'],
+            [ToolbarButtonGroup::make('Paragraph', ['paragraph', 'h1', 'h2', 'h3', 'h4'])->textualButtons()],
+            [ToolbarButtonGroup::make('Alignment', ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
+            ['blockquote', 'bulletList', 'orderedList', 'horizontalRule'],
+            ['table', 'highlight', 'textColor', 'clearFormatting'],
+            ['cleanPdfText'],
         ];
+        if ($allowEmbeddedMedia) {
+            $toolbar[] = ['insertStorageImage', 'attachFiles'];
+        }
+        $toolbar[] = ['undo', 'redo'];
 
-        // Images are inserted through the canonical Storage/reference picker
-        // below. Filament's attachFiles command invokes its own uploader even
-        // when fileAttachments(false) is set, and can hit Flysystem with a
-        // null location before the project's media service is involved.
-
-        $pickerKey = substr(sha1($name), 0, 12);
-        $pickerName = '__rich_text_media_'.$pickerKey;
-
-        $editor = MarkdownEditor::make($name)
+        $editor = RichEditor::make($name)
             ->label($label)
+            ->plugins([RichTextEditorPlugin::make()])
+            ->formatStateUsing(static fn (mixed $state): mixed =>
+                is_string($state) ? RichTextDocument::forEditor($state) : $state
+            )
             ->toolbarButtons($toolbar)
-            ->fileAttachments(false)
+            ->linkProtocols(['http', 'https'])
+            ->stickyToolbar()
             ->nullable()
             ->columnSpanFull()
-            ->extraFieldWrapperAttributes([
-                'class' => 'admin-rich-text',
-                'data-admin-rich-text-editor' => $pickerKey,
-            ]);
+            ->extraFieldWrapperAttributes(['class' => 'admin-rich-text admin-rich-text--visual']);
+
+        if ($allowEmbeddedMedia) {
+            $editor->resizableImages()
+                ->fileAttachmentsAcceptedFileTypes(MediaTypePolicy::IMAGE_MIME_TYPES);
+        }
 
         if ($maxLength !== null) {
             $editor->maxLength($maxLength);
         }
 
-        if (! $allowEmbeddedMedia) {
-            return [$editor];
-        }
-
-        // Keep the editor Alpine behavior limited to inserting a canonical
-        // image reference and committing an edit on blur. The image picker has
-        // an explicit neighboring trigger; there are no observers, timers or
-        // interception of Filament's native attachment command.
-        // CodeMirror does not emit a native change on blur; bridge that
-        // semantic event into AdminDialog::edit(), never on keystrokes.
+        // Commit through the owning Edit dialog's existing change boundary.
+        // Never auto-save on every Tiptap keystroke.
         $editor->extraAlpineAttributes([
-            'data-admin-rich-text-editor-input' => $pickerKey,
             'x-on:focusout' => "if (!\$el.contains(\$event.relatedTarget) && \$el.closest('.admin-dialog--edit')) { \$el.dispatchEvent(new Event('change', { bubbles: true })); }",
-            'x-on:admin-rich-text-image-insert' => "const markdown = \$event.detail?.markdown; if (typeof markdown === 'string' && markdown !== '') { const current = String(state ?? '').trim(); state = current === '' ? markdown : current + '\\n\\n' + markdown; if (\$el.closest('.admin-dialog--edit')) { \$nextTick(() => \$el.dispatchEvent(new Event('change', { bubbles: true }))); } }",
         ]);
 
-        $picker = MediaAssetSelect::makeId($pickerName, 'Image from Storage', imagesOnly: true)
-            ->hiddenLabel()
-            ->nullable()
-            ->dehydrated(false)
-            ->live()
-            ->extraFieldWrapperAttributes([
-                'class' => 'admin-rich-text-media-picker',
-                'data-admin-rich-text-media-picker' => $pickerKey,
-                'x-show' => "source === 'media'",
-            ])
-            ->afterStateUpdated(function (mixed $state, Get $get, Set $set, $livewire) use ($name, $pickerName, $pickerKey): void {
-                if ($state === null || $state === '') {
-                    return;
-                }
-
-                $id = filter_var($state, FILTER_VALIDATE_INT);
-                if ($id === false || $id <= 0) {
-                    throw ValidationException::withMessages([$pickerName => 'Choose an image from Storage.']);
-                }
-
-                $valid = MediaAsset::query()
-                    ->whereKey((int) $id)
-                    ->where('state', 'available')
-                    ->where('mime_type', 'like', 'image/%')
-                    ->exists();
-                if (! $valid) {
-                    throw ValidationException::withMessages([$pickerName => 'Choose an available image from Storage.']);
-                }
-
-                $currentState = $get($name);
-                $current = trim(is_string($currentState) ? $currentState : '');
-                $reference = RichTextMediaReference::markdown((int) $id);
-                $set($name, $current === '' ? $reference : $current."\n\n".$reference);
-                $set($pickerName, null);
-                $livewire->dispatch('admin-rich-text-image-close', key: $pickerKey);
-            });
-
-        $pickerContent = Group::make([
-            View::make('filament.support.rich-text-image-insert'),
-            $picker,
-        ])
-            ->extraAttributes([
-                'class' => 'admin-rich-text-image-insert',
-                'x-cloak' => true,
-                'x-show' => 'open',
-            ]);
-
-        $insertFlow = Group::make([
-            View::make('filament.support.rich-text-image-trigger'),
-            $pickerContent,
-        ])
-            ->columnSpanFull()
-            ->extraAttributes([
-                'class' => 'admin-rich-text-insert-control',
-                'data-admin-rich-text-image-insert' => $pickerKey,
-                'x-data' => <<<JS
-                    {
-                        key: '{$pickerKey}',
-                        open: false,
-                        source: 'media',
-                        externalUrl: '',
-                        externalError: '',
-                        submitExternal(element) {
-                            const value = this.externalUrl.trim()
-                            let parsed
-
-                            try {
-                                parsed = new URL(value)
-                            } catch (error) {
-                                this.externalError = 'Enter a valid HTTP or HTTPS image URL.'
-                                return
-                            }
-
-                            if (! ['http:', 'https:'].includes(parsed.protocol) || parsed.username !== '' || parsed.password !== '') {
-                                this.externalError = 'Enter a valid HTTP or HTTPS image URL.'
-                                return
-                            }
-
-                            const source = parsed.href.replaceAll('(', '%28').replaceAll(')', '%29')
-                            const scope = element.closest('.fi-fo-repeater-item, .fi-modal-window, form, .fi-page') ?? document
-                            const editor = scope.querySelector('[data-admin-rich-text-editor-input="' + this.key + '"]')
-                            if (! editor) {
-                                this.externalError = 'The editor is not available.'
-                                return
-                            }
-
-                            editor.dispatchEvent(new CustomEvent('admin-rich-text-image-insert', {
-                                detail: { markdown: '![](' + source + ')' },
-                            }))
-                            this.externalUrl = ''
-                            this.externalError = ''
-                            this.open = false
-                        },
-                    }
-                JS,
-                'x-on:admin-rich-text-image-close.window' => "if (\$event.detail.key === key) { open = false; externalUrl = ''; externalError = ''; }",
-                'x-on:click.outside' => 'open = false',
-                'x-on:keydown.escape.window' => 'open = false',
-            ]);
-
-        return [$editor, $insertFlow];
+        return [$editor];
     }
 }

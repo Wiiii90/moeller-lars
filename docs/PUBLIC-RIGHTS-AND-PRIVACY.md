@@ -60,6 +60,12 @@ have run or the actual browser layout has been accepted. The artist still
 needs to supply accurate legal text. Do not turn this temporary status note
 into a permanent misleading completion claim.
 
+The shared Rich Text editor's embedded images must remain canonical MediaAsset
+references, including for files uploaded directly from the editor. No extra
+public file directory, untracked file deletion, or alternate upload pipeline is
+authorized. Public image URLs, ALT and visibility checks remain governed by
+the existing PublicMedia service and rights/publication state.
+
 ## B. Rights metadata across Storage, public files and SEO
 
 ### Current source

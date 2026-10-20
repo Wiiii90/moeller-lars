@@ -6,6 +6,9 @@ final class RichTextMediaReference
 {
     private const MARKDOWN_PATTERN = '/!\[([^\r\n]*?)\]\(media:(\d+)\)/';
 
+    // New visual rich content stores the canonical MediaAsset id in data-id.
+    private const HTML_IMAGE_PATTERN = '/<img\\b(?=[^>]*\\bdata-id\\s*=\\s*[\"\\\'](\\d+)[\"\\\'])[^>]*>/i';
+
     private const URL_PATTERN = '/\Amedia:(\d+)\z/';
 
     public static function url(int $mediaAssetId): string
@@ -65,11 +68,11 @@ final class RichTextMediaReference
     /** @return list<int> */
     public static function ids(string $source): array
     {
-        return collect(self::references($source))
-            ->pluck('media_asset_id')
-            ->unique()
-            ->values()
-            ->all();
+        $legacy = collect(self::references($source))->pluck('media_asset_id')->all();
+        preg_match_all(self::HTML_IMAGE_PATTERN, $source, $matches);
+        $visual = array_map('intval', $matches[1] ?? []);
+
+        return array_values(array_unique(array_filter([...$legacy, ...$visual], static fn (int $id): bool => $id > 0)));
     }
 
     public static function remove(string $source, int $mediaAssetId): string

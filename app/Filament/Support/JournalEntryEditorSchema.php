@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ExhibitionMapAddress;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Media\MediaTypePolicy;
@@ -98,11 +99,11 @@ final class JournalEntryEditorSchema
     private static function datesSection(): mixed
     {
         return AdminForm::section('Dates')->schema([
-            DatePicker::make('starts_on')->label('Starts')->native(true)->format('Y-m-d')->extraInputAttributes(['lang' => 'de-DE'])->nullable(),
-            DatePicker::make('ends_on')->label('Ends')->native(true)->format('Y-m-d')->extraInputAttributes(['lang' => 'de-DE'])->afterOrEqual('starts_on')->nullable(),
+            DatePicker::make('starts_on')->label('Starts')->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->nullable(),
+            DatePicker::make('ends_on')->label('Ends')->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
             TextInput::make('date_text')->label('Display date override')->maxLength(160)->nullable()->columnSpanFull(),
             Toggle::make('show_vernissage')->label('Show vernissage until it begins')->default(false)->columnSpanFull(),
-            DateTimePicker::make('vernissage_at')->label('Vernissage')->seconds(false)->default(null)->nullable()->columnSpanFull(),
+            DateTimePicker::make('vernissage_at')->label('Vernissage')->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())->seconds(false)->default(null)->nullable()->columnSpanFull(),
         ])->columns(['md' => 2]);
     }
 

@@ -469,80 +469,47 @@
     font-size: .7rem;
 }
 
-.admin-rich-text-insert-control {
-    display: grid;
-    justify-items: start;
-    gap: .4rem;
-}
-
-.admin-rich-text-image-trigger {
-    min-height: var(--admin-control-height);
-}
-
-.admin-rich-text-image-insert {
-    display: grid;
-    width: min(100%, 34rem);
-    gap: .55rem;
-    margin-top: -.35rem;
-    padding: .65rem;
+/* Canonical artist Rich Text surface — shared by all editorial dialogs.
+   Filament/Tiptap owns selection, focus, history and floating toolbars. */
+.admin-rich-text--visual .fi-fo-rich-editor {
     border: 1px solid var(--admin-line);
-    background: var(--admin-subtle);
-}
-
-.admin-rich-text-image-insert__content,
-.admin-rich-text-image-insert__external {
-    display: grid;
-    gap: .45rem;
-}
-
-.admin-rich-text-image-insert__sources {
-    display: flex;
-    gap: .25rem;
-}
-
-.admin-rich-text-image-insert__source {
-    min-height: 1.9rem;
-    padding: .28rem .55rem;
-    border: 1px solid var(--admin-line);
+    border-radius: var(--admin-radius, .35rem);
     background: var(--admin-surface);
-    color: var(--admin-muted);
-    font-size: .72rem;
-    font-weight: 600;
-    line-height: 1;
-    cursor: pointer;
-}
-
-.admin-rich-text-image-insert__source:hover,
-.admin-rich-text-image-insert__source:focus-visible,
-.admin-rich-text-image-insert__source.is-active {
-    border-color: var(--admin-line-strong);
     color: var(--admin-text);
 }
 
-.admin-rich-text-image-insert__external-label {
+.admin-rich-text--visual .fi-fo-rich-editor-toolbar {
+    background: var(--admin-subtle);
+    border-bottom: 1px solid var(--admin-line);
+    padding: .25rem .35rem;
+    gap: .2rem;
+}
+
+.admin-rich-text--visual .fi-fo-rich-editor-tool {
+    border-radius: .2rem;
+    min-height: var(--admin-control-height);
+    min-width: 2rem;
     color: var(--admin-muted);
-    font-size: .7rem;
-    font-weight: 600;
+    transition: color 120ms ease, background-color 120ms ease;
 }
 
-.admin-rich-text-image-insert__external-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: .4rem;
-    align-items: center;
+.admin-rich-text--visual .fi-fo-rich-editor-tool:is(:hover, :focus-visible, .fi-active) {
+    color: var(--admin-text);
+    background: var(--admin-subtle);
 }
 
-.admin-rich-text-image-insert__external-input {
-    min-width: 0;
+.admin-rich-text--visual .fi-fo-rich-editor-content {
+    min-height: 11rem;
+    line-height: 1.6;
 }
 
-.admin-rich-text-image-insert__error {
-    margin: 0;
-    color: var(--admin-danger);
-    font-size: .7rem;
+.admin-rich-text--visual .tiptap {
+    color: var(--admin-text);
+    overflow-wrap: anywhere;
 }
 
-.admin-rich-text-media-picker {
-    margin: 0 !important;
+.admin-rich-text--visual .tiptap img {
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
 }
-

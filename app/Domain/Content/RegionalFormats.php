@@ -51,6 +51,20 @@ final class RegionalFormats
         return self::dateTime($date, self::adminRegion());
     }
 
+    public static function pickerDateFormat(): string
+    {
+        return match (self::adminRegion()) {
+            'de-DE' => 'd.m.Y',
+            'en-GB' => 'd/m/Y',
+            'en-US' => 'm/d/Y',
+        };
+    }
+
+    public static function pickerDateTimeFormat(): string
+    {
+        return self::pickerDateFormat().' H:i';
+    }
+
     public static function date(DateTimeInterface $date, string $region): string
     {
         return $date->format(match (self::region($region)) {

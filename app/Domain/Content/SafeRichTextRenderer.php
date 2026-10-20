@@ -3,6 +3,8 @@
 namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
+use App\Filament\Support\RichTextEditorPlugin;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use App\Models\MediaAsset;
 use Illuminate\Support\HtmlString;
 use League\CommonMark\Environment\Environment;
@@ -54,11 +56,25 @@ final class SafeRichTextRenderer
         bool $allowEmbeddedMedia = false,
         bool $requirePublicMedia = false,
     ): void {
+        if (RichTextDocument::isVisual($source)) {
+            $this->validateVisual($source, $allowEmbeddedMedia, $requirePublicMedia);
+
+            return;
+        }
         $this->validate($this->parse($source), $source, $allowEmbeddedMedia, $requirePublicMedia);
     }
 
     public function render(string $source): HtmlString
     {
+        if (RichTextDocument::isVisual($source)) {
+            $this->validateVisual($source, allowEmbeddedMedia: true, requirePublicMedia: true);
+
+            return new HtmlString(RichContentRenderer::make($source)
+                ->plugins([RichTextEditorPlugin::make()])
+                ->linkProtocols(['http', 'https'])
+                ->toHtml());
+        }
+
         $document = $this->parse($source);
         $this->validate(
             $document,
@@ -185,6 +201,69 @@ final class SafeRichTextRenderer
                 $this->publicMedia->thumbnailVariantForAsset($asset);
             } catch (LogicException) {
                 throw UnsafeRichTextException::unsupportedSyntax();
+            }
+        }
+    }
+
+    private function validateVisual(string $source, bool $allowEmbeddedMedia, bool $requirePublicMedia): void
+    {
+        // Reject active and remote-embed payloads before TipTap's normal HTML
+        // normalization. All public rendering additionally goes through its
+        // server-side sanitized renderer, never raw stored HTML.
+        if (preg_match('/<\\s*(?:script|iframe|object|embed|svg|form|style|meta|link)\\b/i', $source)) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
+        if (preg_match('/\\son[a-z]+\\s*=/i', $source)) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
+
+        $images = RichTextMediaReference::ids($source);
+        if (! $allowEmbeddedMedia && preg_match('/<img\\b/i', $source)) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
+        if ($images !== []) {
+            $assets = MediaAsset::query()
+                ->whereIn('id', $images)
+                ->where('state', 'available')
+                ->where('mime_type', 'like', 'image/%')
+                ->with('variants')
+                ->get()
+                ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
+
+            if ($assets->count() !== count($images)) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
+            if ($requirePublicMedia) {
+                preg_match_all('/<img\\b[^>]*>/i', $source, $imgTags);
+                foreach ($assets as $asset) {
+                    $override = null;
+                    foreach ($imgTags[0] ?? [] as $imgTag) {
+                        if (preg_match('/\\bdata-id\\s*=\\s*([\"\\\'])'.preg_quote((string) $asset->getKey(), '/').'\\1/i', $imgTag) !== 1) {
+                            continue;
+                        }
+                        if (preg_match('/\\balt\\s*=\\s*([\"\\\'])(.*?)\\1/i', $imgTag, $alt)) {
+                            $candidate = html_entity_decode($alt[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                            $override = trim($candidate) === '' ? null : $candidate;
+                        }
+                        break;
+                    }
+                    try {
+                        $this->publicMedia->altTextForAsset($asset, $override);
+                        $this->publicMedia->thumbnailVariantForAsset($asset);
+                    } catch (LogicException) {
+                        throw UnsafeRichTextException::unsupportedSyntax();
+                    }
+                }
+            }
+        }
+
+        // Validate any external links and images in addition to canonical IDs.
+        if (preg_match_all('/\\b(?:href|src)\\s*=\\s*([\"\\\'])(.*?)\\1/i', $source, $attributes, PREG_SET_ORDER)) {
+            foreach ($attributes as $attribute) {
+                $url = html_entity_decode($attribute[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                if ($url !== '' && ! $this->safeLinkPolicy->isAllowed($url)) {
+                    throw UnsafeRichTextException::unsafeLink();
+                }
             }
         }
     }
