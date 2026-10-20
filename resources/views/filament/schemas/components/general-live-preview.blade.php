@@ -27,7 +27,6 @@
     class="general-appearance-stage__preview admin-visual-stage__pane"
     aria-label="Live public preview"
     x-data="{
-        refreshTimer: null,
         resizeObserver: null,
         zoomHudTimer: null,
         zoomHudVisible: false,
@@ -53,7 +52,6 @@
             })
         },
         destroy() {
-            window.clearTimeout(this.refreshTimer)
             window.clearTimeout(this.zoomHudTimer)
             this.resizeObserver?.disconnect()
         },
@@ -253,12 +251,14 @@
             this.endPan(null)
         },
         refreshPreview() {
-            window.clearTimeout(this.refreshTimer)
-            this.refreshTimer = window.setTimeout(() => {
-                const url = new URL(this.$refs.frame.src, window.location.origin)
-                url.searchParams.set('_appearance', Date.now().toString())
-                this.$refs.frame.src = url.toString()
-            }, 700)
+            const frame = this.$refs.frame
+            if (! frame) return
+
+            // An already-persisted Appearance change must not wait on a
+            // timeout that can be cancelled when Livewire morphs this pane.
+            const url = new URL(frame.src, window.location.origin)
+            url.searchParams.set('_appearance', Date.now().toString())
+            frame.src = url.toString()
         },
     }"
     x-on:general-appearance-updated.window="refreshPreview()"

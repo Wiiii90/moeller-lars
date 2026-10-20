@@ -159,7 +159,9 @@ begins after the same toolbar-to-content spacing as the Appearance pane.
 
 No duplicate forms, special responsive tabs, or independent CSS buttons are
 introduced. All actual Appearance changes still use the existing autosave
-methods and explicit `general-appearance-updated` iframe refresh event.
+methods and explicit `general-appearance-updated` iframe refresh event,
+which refreshes the public iframe immediately after persistence, without
+a delayed refresh timer that can be cancelled by a Livewire morph.
 Local tab switches and Stage expansion do not reload the preview.
 
 Title Position offers **Beside menu**, **Inside menu**,
@@ -223,7 +225,8 @@ existing independent Divider color:
 - `fine`: **No divider** — no drawn line; when geometrically compatible,
   Menu/Content use a single structural paper frame.
 - `menu`: **Menu divider** — one line across the Menu's white paper
-  width (never the whole viewport), followed by a sticky-owned gap.
+  width (never the whole viewport). When geometrically compatible, Menu
+  and Content use one connected paper frame without a separating gap.
 - `full`: **Full-width divider** — one line across the viewport
   followed by a sticky-owned gap.
 - `separate`: **Separate surfaces** — individual Menu/Page backing

@@ -146,11 +146,25 @@ it('keeps one connected paper frame for the above-menu title without a divider',
         'frame_style' => 'continuous',
         'header_divider_mode' => 'menu',
     ]);
-    $separate = $this->get('/preview/'.$category->slug)->assertOk()->getContent();
-    expect($separate)->toContain('public-site--frame-continuous')
+    $menu = $this->get('/preview/'.$category->slug)->assertOk()->getContent();
+    expect($menu)->toContain('public-site--frame-continuous')
         ->toContain('public-paper-frame--compatible')
-        ->not->toContain('public-paper-frame--connected')
+        ->toContain('public-paper-frame--connected')
         ->toContain('site-header--divider-menu');
+
+    foreach (['separate', 'full_gap'] as $mode) {
+        app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+            'header_divider_mode' => $mode,
+        ]);
+        $separate = $this->get('/preview/'.$category->slug)->assertOk()->getContent();
+        expect($separate)->toContain('public-paper-frame--compatible')
+            ->not->toContain('public-paper-frame--connected')
+            ->toContain('site-header--divider-'.$mode);
+    }
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_mode' => 'menu',
+    ]);
 
     app(PublicationService::class)->commit($actor, 'Publish paper and divider settings');
     $public = $this->get('/'.$category->slug)->assertOk()->getContent();

@@ -87,6 +87,14 @@ export function applyPublicLayoutFromMeta() {
     } else {
         rule.style.removeProperty('--public-separator-color');
     }
+    // SPA document swaps must replay the currently rendered divider paint.
+    if (config.dataset.publicLayoutDividerGradient) {
+        rule.style.setProperty('--public-separator-gradient', config.dataset.publicLayoutDividerGradient);
+        rule.style.setProperty('--public-separator-paint', config.dataset.publicLayoutDividerGradient);
+    } else {
+        rule.style.removeProperty('--public-separator-gradient');
+        rule.style.removeProperty('--public-separator-paint');
+    }
     if (config.dataset.publicLayoutTitleColor) {
         rule.style.setProperty('--public-title-color', config.dataset.publicLayoutTitleColor);
     } else {

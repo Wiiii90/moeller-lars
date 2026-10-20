@@ -1766,17 +1766,24 @@ html:has(.artwork-viewer[open]) {
     background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
 }
 
-/* Menu-width divider uses the actual white navigation sheet, not the
- * viewport. It shares the sticky gap semantics of Full-width divider. */
-.site-header--divider-menu {
-    padding-bottom: var(--public-shell-gap);
-}
-
+/* Menu divider is a stroke within the connected Menu/Page paper, not
+ * a separating gap. The actual Menu sheet is the stroke owner. */
 .site-header--divider-menu .site-navigation {
     border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
-    /* The existing single divider border remains the owner of its stroke.
-     * A gradient can replace its paint without changing geometry or adding
-     * pseudo-elements (which the navigation already uses for paper edges). */
+    border-image-source: var(--public-separator-gradient, none);
+    border-image-slice: 1;
+}
+
+/* Beside menu expands the outer navigation wrapper to the viewport for the
+ * title column. In that layout the centered visible rail, not its wrapper,
+ * is the Menu paper and owns this single border. */
+.site-header--divider-menu.site-header--name-outside:not(.is-title-stacked) .site-navigation {
+    border-bottom: 0;
+    border-image-source: none;
+}
+.site-header--divider-menu.site-header--name-outside:not(.is-title-stacked)
+.site-navigation > :is(.site-navigation__rail, .site-navigation__submenu):not([hidden]) {
+    border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
     border-image-source: var(--public-separator-gradient, none);
     border-image-slice: 1;
 }

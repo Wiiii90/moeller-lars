@@ -83,7 +83,7 @@
             $paperCompatible = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
                 && ! $publicPageTransparent
                 && ! str_contains($__env->yieldContent('content_class'), 'landscape-artwork');
-            $paperConnected = $paperCompatible && $publicHeaderDivider === 'fine';
+            $paperConnected = $paperCompatible && in_array($publicHeaderDivider, ['fine', 'menu'], true);
         @endphp
         <div class="public-paper-frame @if ($paperCompatible) public-paper-frame--compatible @endif @if ($paperConnected) public-paper-frame--connected @endif">
             <div class="public-paper-decoration" aria-hidden="true"></div>
