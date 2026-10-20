@@ -488,7 +488,7 @@ it('hydrates the effective gradient defaults without modifying stored settings',
         $expected = [
             '_gradient_angle' => PublicAppearance::normalizeAngle($stored[$surface.'_gradient_angle'], $surface.'_gradient_angle')
                 ?? PublicAppearance::DEFAULT_GRADIENT_ANGLE,
-            '_gradient_repeating' => PublicAppearance::normalizeRepeating($stored[$surface.'_gradient_repeating'], $surface.'_gradient_repeating'),
+            '_gradient_repeating' => PublicAppearance::normalizeRepeating($stored[$surface.'_gradient_repeating'], $surface.'_gradient_repeating') ? '1' : '0',
             '_gradient_center_x' => PublicAppearance::normalizeCenter($stored[$surface.'_gradient_center_x'], $surface.'_gradient_center_x'),
             '_gradient_center_y' => PublicAppearance::normalizeCenter($stored[$surface.'_gradient_center_y'], $surface.'_gradient_center_y'),
             '_gradient_shape' => PublicAppearance::normalizeShape($stored[$surface.'_gradient_shape'], $surface.'_gradient_shape'),
