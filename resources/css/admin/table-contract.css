@@ -692,42 +692,6 @@
 
 
 
-/* Pages: native sort handles siblings; explicit targets handle parent changes.
- * Never use a full parent row as a nesting drop zone. */
-.admin-hierarchy--pages .admin-hierarchy__group,
-.admin-hierarchy--pages .admin-hierarchy__header { position: relative; }
-.admin-hierarchy--pages :is(.admin-pages__child-drop, .admin-pages__root-drop) {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: .25rem .5rem;
-    border: 1px dashed var(--admin-line-strong);
-    background: var(--admin-surface);
-    color: var(--admin-text);
-    font-size: var(--admin-font-size-table-meta);
-    font-weight: 600;
-    line-height: 1.2;
-}
-.admin-hierarchy--pages :is(.admin-pages__child-drop, .admin-pages__root-drop).is-page-drop-eligible { display: flex; }
-.admin-hierarchy--pages :is(.admin-pages__child-drop, .admin-pages__root-drop).is-page-drop-hovered {
-    border-style: solid;
-    border-color: var(--admin-accent);
-    background: var(--admin-subtle);
-}
-.admin-hierarchy--pages .admin-pages__child-drop {
-    position: absolute;
-    z-index: 8;
-    top: .55rem;
-    right: calc(var(--admin-table-selection-width, 2.5rem) + .45rem);
-    width: 7.5rem;
-    min-height: 1.75rem;
-}
-.admin-hierarchy--pages .admin-pages__root-drop.is-page-drop-eligible {
-    position: fixed;
-    z-index: 100;
-    right: clamp(1rem, 3vw, 2rem);
-    bottom: clamp(1rem, 3vh, 2rem);
-    width: 11rem;
-    min-height: 2.75rem;
-    box-shadow: 0 4px 18px rgb(0 0 0 / 13%);
-}
+/* Native Sortable owns both sibling and inter-level drag gestures. */
+.admin-hierarchy--pages .admin-hierarchy__group { position: relative; }
+.admin-hierarchy__header { position: relative; }
