@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Content\RegionalFormats;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\User;
@@ -10,6 +11,7 @@ use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
@@ -33,6 +35,7 @@ final class AccountMenuAction
                 ->fillForm(fn (): array => [
                     'name' => (string) self::user()->getAttribute('name'),
                     'email' => (string) self::user()->getAttribute('email'),
+                    'admin_region' => (string) self::user()->getAttribute('admin_region'),
                 ])
                 ->schema(fn (): array => [
                     View::make('filament.schemas.components.admin-section-heading')
@@ -51,6 +54,15 @@ final class AccountMenuAction
                             ->rule(fn () => Rule::unique('users', 'email')->ignore(self::user()->getKey())),
                     ])
                         ->columns(2)
+                        ->columnSpanFull(),
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData(['label' => 'Regional Formats'])
+                        ->columnSpanFull(),
+                    Select::make('admin_region')
+                        ->label('Dates and numbers')
+                        ->options(RegionalFormats::OPTIONS)
+                        ->required()
+                        ->in(array_keys(RegionalFormats::OPTIONS))
                         ->columnSpanFull(),
                     View::make('filament.schemas.components.admin-section-heading')
                         ->viewData(['label' => 'Security'])

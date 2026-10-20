@@ -15,7 +15,7 @@
     <article class="blog-post" data-matomo-event-category="Journal" data-matomo-event-on-load="blog_view" data-matomo-event-name="{{ $post->title }}">
         <header class="blog-post__header">
             @if ($postDate instanceof \DateTimeInterface)
-                <time class="blog-post__date" datetime="{{ $postDate->format('Y-m-d') }}">{{ $postDate->format('j F Y') }}</time>
+                <time class="blog-post__date" datetime="{{ $postDate->format('Y-m-d') }}">{{ \App\Domain\Content\RegionalFormats::publicDate($postDate) }}</time>
             @endif
             <h2 class="blog-post__title">{{ $post->title }}</h2>
         </header>

@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SocialLinks;
 use App\Filament\Support\AdminAngleControl;
 use App\Filament\Support\AdminColorControl;
@@ -119,6 +120,7 @@ final class General extends Page
         'legal_imprint',
         'legal_privacy',
         'legal_usage_rights',
+        'regional_format',
     ];
 
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::General;
@@ -602,6 +604,24 @@ final class General extends Page
                     ])
                         ->columns(2)
                         ->extraAttributes(['class' => 'general-two-column-settings general-legal-settings'])
+                        ->columnSpanFull(),
+                ])
+                    ->columns(1)
+                    ->extraAttributes(['class' => 'general-settings-section'])
+                    ->columnSpanFull(),
+
+                View::make('filament.schemas.components.general-separator')->columnSpanFull(),
+
+                Group::make([
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData(['label' => 'Regional Formats', 'class' => 'general-form-section-heading'])
+                        ->columnSpanFull(),
+                    Select::make('regional_format')
+                        ->label('Dates and numbers')
+                        ->options(RegionalFormats::OPTIONS)
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(self::persist('regional_format'))
                         ->columnSpanFull(),
                 ])
                     ->columns(1)
@@ -1370,6 +1390,7 @@ final class General extends Page
             'legal_imprint' => 'Imprint',
             'legal_privacy' => 'Privacy Policy',
             'legal_usage_rights' => 'Copyright & AI Use',
+            'regional_format' => 'Public regional formats',
             'default_media_copyright_notice' => 'Default copyright notice',
             'background_mode' => 'Background',
             'background_color' => 'Background color',

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -13,6 +14,7 @@ use InvalidArgumentException;
 use LogicException;
 
 #[Fillable([
+    'regional_format',
     'contact_recipient_email',
     'public_email',
     'show_public_email',
@@ -240,6 +242,11 @@ class PublicContentSetting extends Model
 
     private static function validateGeneral(self $setting): void
     {
+        $region = $setting->getAttribute('regional_format');
+        if (! is_string($region) || ! array_key_exists($region, RegionalFormats::OPTIONS)) {
+            throw ValidationException::withMessages(['regional_format' => 'Choose a supported regional format.']);
+        }
+
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
             $mode = $surface.'_mode';
             $setting->setAttribute($mode, PublicAppearance::normalizeMode($setting->getAttribute($mode), $mode));

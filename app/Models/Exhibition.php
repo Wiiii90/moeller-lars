@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\SafeLinkPolicy;
+use App\Domain\Content\RegionalFormats;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -85,13 +86,11 @@ class Exhibition extends Model
         $start = CarbonImmutable::instance($starts);
         $ends = $this->getAttribute('ends_on');
         if (! $ends instanceof CarbonInterface || $start->isSameDay($ends)) {
-            return $start->format('j M Y');
+            return RegionalFormats::publicDate($start);
         }
         $end = CarbonImmutable::instance($ends);
 
-        return $start->year === $end->year
-            ? $start->format('j M').' – '.$end->format('j M Y')
-            : $start->format('j M Y').' – '.$end->format('j M Y');
+        return RegionalFormats::publicDateRange($start, $end);
     }
 
     /** Public bylines prioritize the organizer and never append an unrelated city. */
@@ -143,7 +142,7 @@ class Exhibition extends Model
     {
         $normalized = $this->getAttribute('vernissage_at');
         if ($normalized instanceof CarbonInterface) {
-            return CarbonImmutable::instance($normalized)->format('j M Y · H:i');
+            return RegionalFormats::publicDateTime($normalized);
         }
 
         $legacy = trim((string) ($this->getAttribute('opening_text') ?? ''));

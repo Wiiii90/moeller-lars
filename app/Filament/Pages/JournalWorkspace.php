@@ -9,6 +9,7 @@ use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
@@ -844,8 +845,8 @@ final class JournalWorkspace extends Page
             $published = $post->getAttribute('published_at');
             $scheduled = $post->getAttribute('scheduled_at');
             $publication = match (true) {
-                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => $scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
-                $published instanceof DateTimeInterface => $published->format('M j, Y'),
+                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => RegionalFormats::adminDateTime($scheduled),
+                $published instanceof DateTimeInterface => RegionalFormats::adminDate($published),
                 default => null,
             };
             $rank = ((int) ($ranks[(int) $post->getKey()] ?? 0)) + 1;
@@ -914,8 +915,8 @@ final class JournalWorkspace extends Page
             // free-text display override (which may use different separators).
             $startsOn = $entry->getAttribute('starts_on');
             $endsOn = $entry->getAttribute('ends_on');
-            $dateStart = $startsOn instanceof CarbonInterface ? $startsOn->format('d.m.Y') : null;
-            $dateEnd = $endsOn instanceof CarbonInterface ? $endsOn->format('d.m.Y') : null;
+            $dateStart = $startsOn instanceof CarbonInterface ? RegionalFormats::adminDate($startsOn) : null;
+            $dateEnd = $endsOn instanceof CarbonInterface ? RegionalFormats::adminDate($endsOn) : null;
             // Display structured dates as one consistent range, independent of
             // the public-facing free-text date override.
             $dateRange = match (true) {
@@ -926,7 +927,7 @@ final class JournalWorkspace extends Page
             };
             $vernissageAt = $entry->getAttribute('vernissage_at');
             $vernissage = $vernissageAt instanceof CarbonInterface
-                ? $vernissageAt->format('d.m.Y, H:i')
+                ? RegionalFormats::adminDateTime($vernissageAt)
                 : (filled($entry->getAttribute('opening_text')) ? trim((string) $entry->getAttribute('opening_text')) : null);
 
             return [

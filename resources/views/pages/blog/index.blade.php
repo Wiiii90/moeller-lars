@@ -38,7 +38,7 @@
                     @endif
                     <header class="blog-entry__header">
                         @if ($postDate instanceof \DateTimeInterface)
-                            <time class="blog-entry__date" datetime="{{ $postDate->format('Y-m-d') }}">{{ $postDate->format('j F Y') }}</time>
+                            <time class="blog-entry__date" datetime="{{ $postDate->format('Y-m-d') }}">{{ \App\Domain\Content\RegionalFormats::publicDate($postDate) }}</time>
                         @endif
                         <h2 class="blog-entry__title"><a href="{{ $postUrl }}">{{ $post->title }}</a></h2>
                     </header>
