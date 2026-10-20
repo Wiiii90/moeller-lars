@@ -23,7 +23,7 @@ trait CustomPageWorkspaceForms
     {
         $typeField = Select::make('type')
             ->label('Component')
-            ->options(self::COMPONENT_LABELS)
+            ->options(array_map('__', self::COMPONENT_LABELS))
             ->required()
             ->live()
             ->afterStateUpdated(
@@ -36,7 +36,7 @@ trait CustomPageWorkspaceForms
 
         $statusField = Select::make('publication_state')
             ->label('Status')
-            ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+            ->options(['published' => __('Published'), 'unpublished' => __('Unpublished')])
             ->default('published')
             ->required();
 
@@ -84,7 +84,7 @@ trait CustomPageWorkspaceForms
                     ->required(),
                 Select::make('image_alignment')
                     ->label('Image alignment')
-                    ->options(['left' => 'Left', 'right' => 'Right'])
+                    ->options(['left' => __('Left'), 'right' => __('Right')])
                     ->default('left')
                     ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
@@ -104,7 +104,7 @@ trait CustomPageWorkspaceForms
                 ComponentListEditor::make(),
             ],
             'divider' => [
-                Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
+                Select::make('variant')->label('Divider')->options(array_map('__', self::DIVIDER_LABELS))->default('thin')->required(),
             ],
             'contact' => [
                 $this->contactEditorField(
@@ -141,7 +141,7 @@ trait CustomPageWorkspaceForms
                 $this->contactEditorField(
                     Select::make('contact_form_state')
                         ->label('Form presentation')
-                        ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
+                        ->options(['enabled' => __('Enabled'), 'under_construction' => __('Under construction')])
                         ->default('enabled')->live()
                         ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled')),
                     'contact_form_state', $onContactChange,

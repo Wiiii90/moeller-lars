@@ -224,7 +224,7 @@ final class General extends Page
                         Group::make([
                             View::make('filament.schemas.components.admin-section-heading')
                                 ->viewData([
-                                    'label' => 'Appearance',
+                                    'label' => __('Appearance'),
                                     'class' => 'general-stage-kicker admin-visual-stage__heading',
                                 ])
                                 ->columnSpanFull(),
@@ -266,7 +266,7 @@ final class General extends Page
 
                                 Select::make('frame_style')
                                     ->label('Frame style')
-                                    ->options(PublicAppearance::FRAME_STYLES)
+                                    ->options(array_map('__', PublicAppearance::FRAME_STYLES))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -287,7 +287,7 @@ final class General extends Page
                                 Group::make([
                                 Select::make('header_name_visible')
                                     ->label('Title')
-                                    ->options(['1' => 'Show', '0' => 'Hide'])
+                                    ->options(['1' => __('Show'), '0' => __('Hide')])
                                     ->native()
                                     ->required()
                                     ->live()
@@ -307,7 +307,7 @@ final class General extends Page
                                 Group::make([
                                 Select::make('header_name_position')
                                     ->label('Position')
-                                    ->options(PublicAppearance::HEADER_POSITIONS)
+                                    ->options(array_map('__', PublicAppearance::HEADER_POSITIONS))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -330,7 +330,7 @@ final class General extends Page
                                     }),
                                 Select::make('header_name_caps')
                                     ->label('Lettering')
-                                    ->options(PublicAppearance::HEADER_CAPS)
+                                    ->options(array_map('__', PublicAppearance::HEADER_CAPS))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -350,7 +350,7 @@ final class General extends Page
                                     ->afterStateUpdated(self::persist('header_name_alignment')),
                                 Select::make('header_name_mobile_alignment')
                                     ->label('Responsive alignment')
-                                    ->options(PublicAppearance::HEADER_ALIGNMENT)
+                                    ->options(array_map('__', PublicAppearance::HEADER_ALIGNMENT))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -375,7 +375,7 @@ final class General extends Page
                                     ->afterStateUpdated(self::persist('header_name_size')),
                                 Select::make('header_name_auto_scale')
                                     ->label('Responsive size')
-                                    ->options(['1' => 'Allow reduction', '0' => 'Keep selected size'])
+                                    ->options(['1' => __('Allow reduction'), '0' => __('Keep selected size')])
                                     ->native()
                                     ->required()
                                     ->live()
@@ -415,14 +415,14 @@ final class General extends Page
                                 Group::make([
                                 Select::make('menu_type')
                                     ->label('Menu type')
-                                    ->options(PublicAppearance::MENU_TYPES)
+                                    ->options(array_map('__', PublicAppearance::MENU_TYPES))
                                     ->native()
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(self::persist('menu_type')),
                                 Select::make('header_divider_mode')
                                     ->label('Menu to page')
-                                    ->options(PublicAppearance::HEADER_DIVIDERS)
+                                    ->options(array_map('__', PublicAppearance::HEADER_DIVIDERS))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -534,7 +534,7 @@ final class General extends Page
                 Group::make([
                     View::make('filament.schemas.components.admin-section-heading')
                         ->viewData([
-                            'label' => 'Contact',
+                            'label' => __('Contact'),
                             'class' => 'general-form-section-heading',
                         ])
                         ->columnSpanFull(),
@@ -568,7 +568,7 @@ final class General extends Page
                 Group::make([
                     View::make('filament.schemas.components.admin-section-heading')
                         ->viewData([
-                            'label' => 'Legal',
+                            'label' => __('Legal'),
                             'class' => 'general-form-section-heading',
                         ])
                         ->columnSpanFull(),
@@ -701,7 +701,7 @@ final class General extends Page
                         ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
                     Select::make($surface.'_gradient_shape')
                         ->label('Shape')
-                        ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
+                        ->options(['circle' => __('Circle'), 'ellipse' => __('Ellipse')])
                         ->native()
                         ->live()
                         ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
@@ -709,7 +709,7 @@ final class General extends Page
                         ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
                     Select::make($surface.'_gradient_repeating')
                         ->label('Repeating')
-                        ->options(['0' => 'Off', '1' => 'On'])
+                        ->options(['0' => __('Off'), '1' => __('On')])
                         ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
                         ->native()
                         ->live()
