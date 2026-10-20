@@ -250,29 +250,56 @@ Journal already uses visible Position and is the current reference for the conve
 ## 9. Drag and ordering
 
 
-For hierarchical editors (Pages and Custom Pages), root and child
-sortable lists share ONE native `wire:sort:group` name per editor, with
-different `wire:sort:group-id` values for each parent and for root.
-This restores the older working Pages behavior. Both sibling sorting
-and root/child transfer are handled by the native Livewire Sortable
-lifecycle, with no shadow Alpine/JS gesture handler or synthetic
-drop targets. Each Image child is a FULL independent six-cell component
-row rendered by the same partial as its root siblings: numbered position,
-normal drag grip, editable component type, at most two content lines,
-Move Up/Down, Edit, Publish/Unpublish, Delete and Selection.
-There is no "Move out" action, arrow glyph, redundant decorative hint,
-child-count metadata or Image-owned child editing. Parent is editable in
-the child's own Edit dialog. Backend mutations are transactional.
+**Behavior is authoritative; sortable group names are an implementation
+detail.** The claim that putting every root and child list into one
+`wire:sort:group` restores previously accepted Pages behavior was not
+established by browser acceptance and must not be treated as a contract.
+In particular, nested empty child sortables can compete with root drop
+placement. Do not preserve, reinstate, or remove an implementation solely
+because it is described as more native or simpler.
 
-Use native Livewire sorting only:
+Pages and Custom Pages both support hierarchy, but they have **different
+domain owners**: Pages nests site sections under pages; Custom Page nests
+eligible components under an Image. Reusing table/drag styling must not
+silently change either editor's drop semantics.
 
-```text
-wire:sort
-wire:sort:item
-wire:sort:handle
-```
+Required Pages behavior when ordering is enabled and unfiltered:
 
-Do not build custom HTML5 `draggable`/dragstart/drop state machines.
+- Root pages can be moved before, between and after other root pages, **not
+  merely after the final root**. Dropping for root ordering never silently
+  reparents the page, even when the destination root has an empty child list.
+- Eligible pages can be deliberately nested under the first, an intermediate
+  **or the last** eligible root. The target for nesting must not compete
+  ambiguously with a normal root-reorder drop.
+- A child can be returned to root level; children can be reordered within
+  their parent and moved between eligible parents as supported by the
+  canonical two-level hierarchy.
+- Home stays the first non-draggable root. Filtering and incomplete
+  pagination still disable ambiguous ordering, not other page controls.
+- Persistence, Sidebar refresh, Activity/audit and exactly-once success
+  feedback remain owned by the existing editor/domain mutation path.
+
+Custom Page's Image children are independent full component rows using
+the same row grammar as root components: Position, Drag, editable type,
+Content, Move Up/Down, Edit, publication, Delete and Selection. Eligible
+Text, List (without media), Contact details and Legal Disclaimer children
+can be placed under Image components and returned/moved according to the
+existing domain rules. Image Edit does not subsume child editing.
+
+Native `wire:sort`, `wire:sort:item`, and `wire:sort:handle` remain the
+existing preferred sibling-order controls. No new custom HTML5 drag state
+machine or second parallel sorting engine is authorized by this document.
+If the native primitive cannot unambiguously express both reorder and
+parent-change intent, **stop and establish the owner and real browser
+behavior** before changing the architecture. In particular, do not alter
+Pages sorting while simplifying Custom Page nesting, or vice versa, without
+explicit cross-feature authorization and a complete gesture review.
+
+Browser acceptance must exercise root-to-root before/middle/last,
+root-to-child including the last parent, child-to-root, child-to-child,
+and Custom Page Image-child placement when shared code is touched.
+Testing only the backend sort action, or a single end-of-list drag, is not
+evidence that the competing drop targets behave correctly.
 
 Rules:
 
@@ -281,7 +308,7 @@ Rules:
 - use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
 - drag is disabled when Search/filters/pagination make canonical order ambiguous;
-- in Custom Page, only top-level components have drag handles and row Actions; List entries and Contact options are edited inside their parent forms, not reordered as independent rows; a single parent does not expose an inert drag handle;
+- Custom Page Image children are independent draggable/actionable rows; List entries and Contact options inside their parent forms are **not** independent rows; a single non-reorderable parent does not expose an inert drag handle;
 - ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
 - filtered reorder must not pretend that a filtered projection is the complete canonical sequence.
 
