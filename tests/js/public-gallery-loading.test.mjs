@@ -133,3 +133,40 @@ test('without IntersectionObserver every image falls back to native lazy loading
         scene.restore();
     }
 });
+
+test('Artwork detail image displays only when loaded, and exposes a real media failure', () => {
+    const makeImage = (complete = false, naturalWidth = 0) => {
+        const image = new EventTarget();
+        image.complete = complete;
+        image.naturalWidth = naturalWidth;
+        image.dataset = { artworkImageState: 'pending' };
+        return image;
+    };
+    const setup = (image) => ({
+        querySelector: () => image,
+        querySelectorAll: () => [],
+    });
+
+    const loading = makeImage();
+    const stop = initializeGalleryImageLoading(setup(loading));
+    assert.equal(loading.dataset.artworkImageState, 'pending');
+    loading.naturalWidth = 960;
+    loading.dispatchEvent(new Event('load'));
+    assert.equal(loading.dataset.artworkImageState, 'ready');
+    stop();
+
+    const broken = makeImage();
+    initializeGalleryImageLoading(setup(broken));
+    broken.dispatchEvent(new Event('error'));
+    assert.equal(broken.dataset.artworkImageState, 'error');
+
+    const cached = makeImage(true, 960);
+    initializeGalleryImageLoading(setup(cached));
+    assert.equal(cached.dataset.artworkImageState, 'ready');
+
+    const disposed = makeImage();
+    initializeGalleryImageLoading(setup(disposed))();
+    disposed.naturalWidth = 960;
+    disposed.dispatchEvent(new Event('load'));
+    assert.equal(disposed.dataset.artworkImageState, 'pending');
+});

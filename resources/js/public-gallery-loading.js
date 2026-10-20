@@ -11,12 +11,38 @@ export function galleryImageDistance(image, viewportHeight) {
     return 0;
 }
 
+// The same Artwork image lifecycle also resolves the short-lived native ALT
+// placeholder on detail routes. The server owns the pending state so the
+// placeholder is hidden before JavaScript starts, including during SPA swaps.
+function initializeArtworkDetailImage(root) {
+    const image = root.querySelector?.('.artwork-detail__image[data-artwork-image-state="pending"]');
+    if (! image) return () => {};
+
+    const lifetime = new AbortController();
+    const ready = () => {
+        image.dataset.artworkImageState = image.naturalWidth > 0 ? 'ready' : 'error';
+    };
+    const failed = () => {
+        // Keep broken-image ALT visible: a real media failure must not silently
+        // become a permanently blank artwork.
+        image.dataset.artworkImageState = 'error';
+    };
+
+    image.addEventListener('load', ready, { signal: lifetime.signal });
+    image.addEventListener('error', failed, { signal: lifetime.signal });
+    // The image may have completed before the SPA page initializer runs.
+    if (image.complete) ready();
+
+    return () => lifetime.abort();
+}
+
 export function initializeGalleryImageLoading(root = document) {
+    const disposeDetail = initializeArtworkDetailImage(root);
     const images = Array.from(root.querySelectorAll('[data-gallery-image-buffer] .artwork-card__image'));
-    if (images.length === 0) return () => {};
+    if (images.length === 0) return disposeDetail;
 
     const deferred = images.filter(image => image.dataset.gallerySrc);
-    if (deferred.length === 0) return () => {};
+    if (deferred.length === 0) return disposeDetail;
 
     // HTML keeps gated images hidden for the no-JS <noscript> fallback.
     // Reveal before observing: intrinsic width/height reserve layout space.
@@ -32,7 +58,7 @@ export function initializeGalleryImageLoading(root = document) {
             delete image.dataset.gallerySrc;
             image.dataset.galleryImageState = 'pending';
         }
-        return () => {};
+        return disposeDetail;
     }
 
     const owned = new Set(deferred);
@@ -123,6 +149,7 @@ export function initializeGalleryImageLoading(root = document) {
 
     return () => {
         disposed = true;
+        disposeDetail();
         lifetime.abort();
         bufferObserver.disconnect();
         visibleObserver.disconnect();
