@@ -219,9 +219,19 @@ final class SafeRichTextRenderer
             throw UnsafeRichTextException::unsupportedSyntax();
         }
 
+        preg_match_all('/<img\\b[^>]*>/i', $source, $visualImageTags);
         $images = RichTextMediaReference::ids($source);
-        if (! $allowEmbeddedMedia && preg_match('/<img\\b/i', $source)) {
+        if (! $allowEmbeddedMedia && ($visualImageTags[0] ?? []) !== []) {
             throw UnsafeRichTextException::unsupportedSyntax();
+        }
+
+        // Every visual-editor image must identify a canonical Storage asset.
+        // A bare external <img> would bypass the asset's publication,
+        // availability and ALT checks.
+        foreach ($visualImageTags[0] ?? [] as $imageTag) {
+            if (preg_match('/\\bdata-id\\s*=\\s*(["\\\'])([1-9]\\d*)\\1/i', $imageTag) !== 1) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
         }
         if ($images !== []) {
             $assets = MediaAsset::query()

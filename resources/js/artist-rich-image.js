@@ -1,5 +1,9 @@
 // Single Tiptap extension for editor and Public image layout attributes.
 // Filament owns the editor lifecycle; this adds only canonical image metadata.
+// Keep the node selections shared across all editor instances in the SPA,
+// rather than resetting the registry when each editor is mounted.
+const selectedImages = new WeakMap();
+
 export default () => {
     const tiptap = window.FilamentRichEditor?.tiptap;
     if (!tiptap?.core?.Extension) {
@@ -7,7 +11,6 @@ export default () => {
     }
     const { Extension } = tiptap.core;
     const { Plugin, PluginKey, NodeSelection } = tiptap.pmState;
-    const selectedImages = new WeakMap();
 
     const selectedImage = editor => {
         if (!editor || editor.isDestroyed) return null;

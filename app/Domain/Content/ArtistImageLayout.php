@@ -48,6 +48,14 @@ final class ArtistImageLayout extends Extension
         preg_match_all('/<img\\b[^>]*>/i', $source, $matches);
         $sourceImages = $matches[0] ?? [];
         $index = 0;
+        preg_match_all('/<img\\b[^>]*>/i', $html, $renderedImages);
+
+        // Each displayed image must correspond to one submitted image.
+        // Never attach the next image's caption when sanitization or
+        // parsing has removed a node.
+        if (count($sourceImages) !== count($renderedImages[0] ?? [])) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
 
         // The renderer has already sanitized all image HTML. Only our own
         // fixed placement classes and escaped caption text are added.
