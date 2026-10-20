@@ -401,5 +401,19 @@
     "Menu divider": "Menü-Trennstrich",
     "Full-width divider": "Trennstrich über volle Breite",
     "Separate surfaces": "Getrennte Flächen",
-    "Full-width divider and separate surfaces": "Trennstrich über volle Breite und getrennte Flächen"
+    "Full-width divider and separate surfaces": "Trennstrich über volle Breite und getrennte Flächen",
+    "Per page": "Pro Seite",
+    "Items per page": "Einträge pro Seite",
+    "Pagination": "Seitennavigation",
+    "of": "von",
+    "Filters": "Filter",
+    "Live local time": "Lokale Echtzeit",
+    "Live local time:": "Lokale Echtzeit:",
+    "and live local time": "und lokale Echtzeit",
+    "activity distribution": "Aktivitätsverteilung",
+    "World visitor map": "Weltkarte der Besucher",
+    "Country visit markers": "Markierungen für Länderbesuche",
+    "Map geometry unavailable in this build.": "Kartengeometrie ist in diesem Build nicht verfügbar.",
+    "visits": "Besuche",
+    "changes": "Änderungen"
 }
