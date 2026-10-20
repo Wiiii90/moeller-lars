@@ -117,10 +117,13 @@ final class MediaThumbnailCutoverService
                         // cutover. Reserve staging bytes before writing any
                         // new file, using the ordinary whole-site quota owner.
                         app(MediaCapacityService::class)->assertCanStoreGenerated(strlen($image['bytes']));
+                        // Register ownership before writing: a failed
+                        // filesystem write may leave a partial file behind.
+                        // The failure cleanup must remove it as well.
+                        $written[] = $newKey;
                         if (! $disk->put($newKey, $image['bytes'])) {
                             throw new RuntimeException('Unable to write the newly generated thumbnail.');
                         }
-                        $written[] = $newKey;
                     }
 
                     $prepared[$id] = [
