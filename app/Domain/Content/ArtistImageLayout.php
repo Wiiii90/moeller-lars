@@ -76,10 +76,6 @@ final class ArtistImageLayout extends Extension
             }
             $caption = mb_substr($caption, 0, 500);
 
-            if ($placement === 'inline' && $caption === '') {
-                return $rendered[0];
-            }
-
             $class = 'rich-text__image rich-text__image--'.$placement;
 
             return '<span class="'.$class.'" role="figure">'.$rendered[0].

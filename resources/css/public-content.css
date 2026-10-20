@@ -293,6 +293,9 @@
     margin-block: 1rem;
 }
 .rich-text mark { background: var(--public-highlight, #f3e7bd); color: inherit; }
+.rich-text .color { color: var(--color, currentColor); }
+.rich-text td > p:first-child, .rich-text th > p:first-child { margin-top: 0; }
+.rich-text td > p:last-child, .rich-text th > p:last-child { margin-bottom: 0; }
 .rich-text sub,
 .rich-text sup { line-height: 0; }
 .rich-text [style*="text-align: center"],
