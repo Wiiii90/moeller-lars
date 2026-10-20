@@ -86,6 +86,17 @@ final class RichTextMediaReference
             return $source;
         }
 
+        // MediaAssets are shared across Journal, Home and Custom Pages.
+        // Deletion must also remove visual-editor nodes, not just Markdown.
+        $clean = preg_replace_callback(
+            self::HTML_IMAGE_PATTERN,
+            static fn (array $match): string => (int) $match[1] === $mediaAssetId ? '' : $match[0],
+            $clean,
+        );
+        if (! is_string($clean)) {
+            return $source;
+        }
+
         $clean = preg_replace('/(?:\R[ \t]*){3,}/', "\n\n", $clean);
 
         return trim(is_string($clean) ? $clean : '');

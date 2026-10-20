@@ -7,6 +7,7 @@ use App\Domain\Media\MediaPreviewVariant;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileAttachmentProvider;
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
+use Filament\Facades\Filament;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 final class MediaRichTextAttachmentProvider implements FileAttachmentProvider
@@ -37,7 +38,7 @@ final class MediaRichTextAttachmentProvider implements FileAttachmentProvider
 
         // The canonical public/preview media route is derived from the asset.
         // No public filesystem path or duplicate editor attachment is created.
-        if (request()->is('admin/*')) {
+        if (Filament::getCurrentPanel()?->getId() === 'admin') {
             return route('admin.media.variant', $variant);
         }
         return app(\App\Domain\Media\PublicMedia::class)->thumbnailUrlForAsset($asset);
