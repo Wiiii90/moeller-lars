@@ -603,3 +603,21 @@
 }
 .admin-rich-text-link-dropdown__button--apply { background: var(--admin-subtle); font-weight: 600; }
 .admin-rich-text-link-dropdown__button--remove { margin-right: auto; }
+
+.admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-y: auto;
+}
+
+.admin-rich-text-image-caption-dropdown {
+    position: absolute;
+    z-index: 46;
+    width: min(20rem, 100%);
+    padding: .75rem;
+    border: 1px solid var(--admin-line);
+    border-radius: var(--admin-radius, .35rem);
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
+}

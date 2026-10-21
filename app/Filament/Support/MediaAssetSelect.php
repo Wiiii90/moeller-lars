@@ -106,7 +106,9 @@ final class MediaAssetSelect
 
         $term = trim($search);
         if ($term !== '') {
-            $query->where('original_filename', 'ilike', '%'.$term.'%');
+            $query->where(static fn (Builder $query): Builder => $query
+                ->where('original_filename', 'ilike', '%'.$term.'%')
+                ->orWhere('alt_text', 'ilike', '%'.$term.'%'));
         }
 
         /** @var Collection<int, MediaAsset> $assets */
@@ -165,7 +167,7 @@ final class MediaAssetSelect
                 $modifyQueryUsing,
             ))
             ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
-            ->searchPrompt(__('Search Storage by filename'))
+            ->searchPrompt(__('Search Storage by filename or ALT text'))
             ->noSearchResultsMessage(__('No matching files in Storage'))
             ->allowHtml();
     }

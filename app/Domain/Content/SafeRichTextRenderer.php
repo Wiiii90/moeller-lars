@@ -72,7 +72,7 @@ final class SafeRichTextRenderer
 
             $html = RichContentRenderer::make($source)
                 ->plugins([RichTextEditorPlugin::make()])
-                ->linkProtocols(['http', 'https'])
+                ->linkProtocols(['http', 'https', 'mailto'])
                 ->processNodesUsing(static function (object &$node) use ($imageMetadata, &$imageIndex): void {
                     if (($node->type ?? null) !== 'image') {
                         return;

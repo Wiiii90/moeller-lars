@@ -3,14 +3,10 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ArtistImageLayout;
-use Filament\Actions\Action;
-use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\RichEditor\EditorCommand;
 use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileAttachmentProvider;
 use Filament\Forms\Components\RichEditor\Plugins\Contracts\HasFileAttachmentProvider;
 use Filament\Forms\Components\RichEditor\Plugins\Contracts\RichContentPlugin;
 use Filament\Forms\Components\RichEditor\RichEditorTool;
-use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Vite;
 
 final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachmentProvider
@@ -68,38 +64,21 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                             'float-left' => 'heroicon-o-bars-arrow-down',
                             'float-right' => 'heroicon-o-bars-arrow-up',
                         })
-                        ->disabledWhenNotActive()
-                        ->activeJsExpression("window.ArtistRichImage?.hasSelection(\$getEditor()) ?? false")
+                        ->activeStyling()
+                        ->activeJsExpression("window.ArtistRichImage?.hasPlacement(\$getEditor(), '{$placement}') ?? false")
                         ->jsHandler("window.ArtistRichImage?.setPlacement(\$getEditor(), '{$placement}')"),
                 ArtistImageLayout::PLACEMENTS,
             ),
             RichEditorTool::make('imageCaption')
                 ->label(__('Image caption'))
                 ->icon(AdminIcon::Details->value)
-                ->disabledWhenNotActive()
-                ->activeJsExpression("window.ArtistRichImage?.hasSelection(\$getEditor()) ?? false")
-                ->action(arguments: "{ caption: \$getEditor()?.getAttributes('image').artistCaption ?? '' }"),
+                ->jsHandler("\$dispatch('artist-rich-caption-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
 
         ];
     }
 
     public function getEditorActions(): array
     {
-        return [
-            Action::make('imageCaption')
-                ->modalHeading(__('Image caption'))
-                ->fillForm(fn (array $arguments): array => ['caption' => $arguments['caption'] ?? ''])
-                ->schema([
-                    TextInput::make('caption')->label('Caption')->maxLength(500)->nullable(),
-                ])
-                ->action(function (array $arguments, array $data, RichEditor $component): void {
-                    $component->runCommands(
-                        [EditorCommand::make('updateAttributes', arguments: [
-                            'image', ['artistCaption' => trim((string) ($data['caption'] ?? '')) ?: null],
-                        ])],
-                        editorSelection: $arguments['editorSelection'],
-                    );
-                }),
-        ];
+        return [];
     }
 }

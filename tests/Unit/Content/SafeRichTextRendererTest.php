@@ -53,3 +53,9 @@ it('rejects scripts and unsafe links inside visual editor paragraphs', function 
     expect(fn () => contentRenderer()->render('<p><a href="javascript:alert(1)">Link</a></p>'))
         ->toThrow(UnsafeRichTextException::class);
 });
+
+
+it('renders safe email links in visual rich text', function (): void {
+    $html = contentRenderer()->render('<p><a href="mailto:artist@example.com">Email</a></p>')->toHtml();
+    expect($html)->toContain('href="mailto:artist@example.com"');
+});

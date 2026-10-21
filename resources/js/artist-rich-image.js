@@ -24,21 +24,31 @@ export default () => {
 
     // Mutation acts on a selected image node, not on the toolbar's focus or
     // the surrounding paragraph. TipTap/ProseMirror records normal undo history.
+    const updateSelectedImage = (editor, attrs) => {
+        const selected = selectedImage(editor);
+        if (!selected) return false;
+        const transaction = editor.state.tr.setNodeMarkup(
+            selected.pos, undefined, { ...selected.node.attrs, ...attrs },
+        );
+        transaction.setSelection(NodeSelection.create(transaction.doc, selected.pos));
+        editor.view.dispatch(transaction);
+        selectedImages.set(editor, selected.pos);
+        editor.view.focus();
+        return true;
+    };
+
     window.ArtistRichImage = {
-        hasSelection: editor => Boolean(selectedImage(editor)),
-        setPlacement(editor, value) {
+        selected: editor => {
             const selected = selectedImage(editor);
-            if (!selected) return false;
-            const placement = placements.has(value) ? value : 'inline';
-            const transaction = editor.state.tr.setNodeMarkup(
-                selected.pos, undefined, { ...selected.node.attrs, artistPlacement: placement },
-            );
-            transaction.setSelection(NodeSelection.create(transaction.doc, selected.pos));
-            editor.view.dispatch(transaction);
-            selectedImages.set(editor, selected.pos);
-            editor.view.focus();
-            return true;
+            return selected ? { caption: selected.node.attrs.artistCaption } : null;
         },
+        hasPlacement: (editor, value) => selectedImage(editor)?.node.attrs.artistPlacement === value,
+        setCaption: (editor, value) => updateSelectedImage(
+            editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
+        ),
+        setPlacement: (editor, value) => updateSelectedImage(
+            editor, { artistPlacement: placements.has(value) ? value : 'inline' },
+        ),
     };
     const { Decoration, DecorationSet } = tiptap.pmView;
     const placements = new Set(['inline', 'left', 'center', 'right', 'float-left', 'float-right']);
@@ -73,9 +83,32 @@ export default () => {
                     handleClickOn(view, pos, node, nodePos) {
                         if (node.type.name !== 'image') return false;
                         selectedImages.set(editor, nodePos);
-                        view.dispatch(view.state.tr.setSelection(
+                        const transaction = view.state.tr.setSelection(
                             NodeSelection.create(view.state.doc, nodePos),
-                        ));
+                        );
+                        const boundary = view.dom.closest('.fi-modal-content');
+                        if (boundary) {
+                            const padding = 8;
+                            transaction.setMeta('floatingToolbar::image', {
+                                type: 'updateOptions',
+                                options: {
+                                    options: {
+                                        flip: { boundary, padding },
+                                        shift: { boundary, padding, crossAxis: true },
+                                        size: {
+                                            boundary,
+                                            padding,
+                                            apply({ availableWidth, availableHeight, elements }) {
+                                                elements.floating.style.maxWidth = `${Math.max(0, availableWidth)}px`;
+                                                elements.floating.style.maxHeight = `${Math.max(0, availableHeight)}px`;
+                                            },
+                                        },
+                                        scrollTarget: boundary,
+                                    },
+                                },
+                            });
+                        }
+                        view.dispatch(transaction);
                         return true;
                     },
                     decorations: state => {

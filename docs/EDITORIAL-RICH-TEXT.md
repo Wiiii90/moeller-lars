@@ -37,10 +37,18 @@ the image while desktop width permits; narrow layouts clear the float.
 An optional 500-character Caption appears below the image; it is not
 alternative text for screen readers and does not replace ALT.
 
-Paragraph, alignment and image-position controls remain separate, icon-only
-toolbar buttons. The shared toolbar has one icon baseline and consistent
-dimensions. Image selection, floating toolbar, sizing, and wrapping remain
-subject to browser acceptance on the actual Filament version.
+Paragraph and alignment controls remain separate, icon-only toolbar buttons.
+Image placement, text wrapping and Caption appear only in the contextual
+image floating toolbar, never duplicated in the general toolbar. All image
+actions remain enabled on an image selection and use the existing Tiptap
+image node. The floating toolbar uses Filament's Floating UI boundary,
+constrained to the visible native dialog scrollport, with native flip,
+shift and size handling. Caption entry is inside the same editor dialog,
+not a nested Filament Action. The existing Edit change boundary is reused.
+
+Storage search remains lazy and searches the original filename and ALT text;
+MediaAsset does not have a standalone title field. Image selection, toolbar
+sizing, wrapping and saving remain subject to real browser acceptance.
 
 ## Clipboard and PDF
 

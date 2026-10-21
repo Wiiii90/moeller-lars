@@ -19,6 +19,7 @@ final class AdminRichText
         string $label,
         ?int $maxLength = null,
         bool $allowEmbeddedMedia = true,
+        bool $required = false,
     ): array {
         $toolbar = [
             ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', 'link'],
@@ -29,10 +30,6 @@ final class AdminRichText
         ];
         if ($allowEmbeddedMedia) {
             $toolbar[] = ['insertStorageImage'];
-            $toolbar[] = [
-                'imageInline', 'imageLeft', 'imageCenter', 'imageRight',
-                'imageFloatleft', 'imageFloatright', 'imageCaption',
-            ];
         }
         $toolbar[] = ['undo', 'redo'];
 
@@ -58,6 +55,7 @@ final class AdminRichText
             // Disables button, drop/paste and Livewire temporary uploads;
             // only the canonical existing-Storage picker may insert images.
             ->fileAttachments(false)
+            ->required($required)
             ->nullable()
             ->columnSpanFull()
             ->extraFieldWrapperAttributes(['class' => 'admin-rich-text admin-rich-text--visual']);
@@ -81,6 +79,8 @@ final class AdminRichText
         ];
 
         if ($allowEmbeddedMedia) {
+            $fields[] = View::make('filament.schemas.components.rich-text-image-caption-picker')->columnSpanFull();
+
             $picker = MediaAssetSelect::makeId(
                 '__rich_image_'.$name,
                 'Image from Storage',
@@ -262,15 +262,58 @@ final class AdminRichText
                                 this.linkOpen = false
                                 this.linkEditor = null
                                 this.linkSelection = null
-                                // Tiptap synchronizes its Livewire state before
-                                // this single canonical Edit-dialog change event.
-                                if (this.$el.closest('.admin-dialog--edit')) {
-                                    this.$nextTick(() => {
-                                        if (this.$el.isConnected) {
-                                            this.$el.dispatchEvent(new Event('change', { bubbles: true }))
-                                        }
-                                    })
+                                this.commitEditorChange()
+                            },
+                            captionOpen: false,
+                            captionEditor: null,
+                            captionText: '',
+                            captionLeft: 0,
+                            captionTop: 0,
+                            openCaptionEditor(event) {
+                                const editor = window.Alpine?.raw?.(event.detail?.editor) ?? event.detail?.editor
+                                const image = window.ArtistRichImage?.selected(editor)
+                                if (!image) return
+                                if (this.captionOpen) {
+                                    this.captionOpen = false
+                                    return
                                 }
+
+                                this.captionEditor = editor
+                                this.captionText = image.caption ?? ''
+                                this.imagePickerOpen = false
+                                this.linkOpen = false
+                                this.captionOpen = true
+                                this.$nextTick(() => {
+                                    const panel = this.$refs.richCaptionPanel
+                                    const anchor = event.detail?.anchor?.getBoundingClientRect()
+                                    if (!panel || !anchor) return
+                                    const shell = this.$el.getBoundingClientRect()
+                                    const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect() ?? shell
+                                    const leftMin = bounds.left + 8
+                                    const leftMax = Math.max(leftMin, bounds.right - panel.offsetWidth - 8)
+                                    this.captionLeft = Math.max(leftMin, Math.min(anchor.left, leftMax)) - shell.left
+                                    const below = anchor.bottom + 4
+                                    const above = anchor.top - panel.offsetHeight - 4
+                                    this.captionTop = (below + panel.offsetHeight <= bounds.bottom - 8
+                                        ? below
+                                        : Math.max(bounds.top + 8, above)) - shell.top
+                                    this.$refs.richCaptionInput?.focus()
+                                })
+                            },
+                            applyCaption() {
+                                const editor = window.Alpine?.raw?.(this.captionEditor) ?? this.captionEditor
+                                if (!window.ArtistRichImage?.setCaption(editor, this.captionText)) return
+                                this.captionOpen = false
+                                this.captionEditor = null
+                                this.commitEditorChange()
+                            },
+                            commitEditorChange() {
+                                if (!this.$el.closest('.admin-dialog--edit')) return
+                                this.$nextTick(() => {
+                                    if (this.$el.isConnected) {
+                                        this.$el.dispatchEvent(new Event('change', { bubbles: true }))
+                                    }
+                                })
                             },
                             imagePickerOpen: false,
                             pickerLeft: 0,
@@ -312,10 +355,11 @@ final class AdminRichText
                         });
                         JS,
                     'x-on:artist-rich-link-toggle' => 'openLinkEditor($event)',
+                    'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
                     'x-on:artist-rich-image-inserted.window' => 'imagePickerOpen = false',
-                    'x-on:click.outside' => 'imagePickerOpen = false; linkOpen = false',
-                    'x-on:keydown.escape.window' => 'imagePickerOpen = false; linkOpen = false',
+                    'x-on:click.outside' => 'imagePickerOpen = false; linkOpen = false; captionOpen = false',
+                    'x-on:keydown.escape.window' => 'imagePickerOpen = false; linkOpen = false; captionOpen = false',
                 ])
                 ->columnSpanFull(),
         ];

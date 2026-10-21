@@ -93,6 +93,7 @@
     "No matching files in Storage": "Keine passenden Dateien im Speicher",
     "Choose from Storage": "Aus Speicher auswählen",
     "Search Storage by filename": "Speicher nach Dateinamen durchsuchen",
+    "Search Storage by filename or ALT text": "Speicher nach Dateinamen oder Alternativtext durchsuchen",
     "Optional list image": "Optionales Listenbild",
     "No list image": "Kein Listenbild",
     "Add component": "Komponente hinzufügen",
