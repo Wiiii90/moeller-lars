@@ -39,19 +39,19 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
     {
         return [
             RichEditorTool::make('insertStorageImage')
-                ->label('Insert image from Storage')
+                ->label(__('Insert image from Storage'))
                 ->icon(AdminIcon::Storage->value)
                 ->jsHandler("\$dispatch('artist-rich-image-toggle')"),
             ...array_map(
                 static fn (string $placement): RichEditorTool =>
                     RichEditorTool::make('image'.str_replace('-', '', ucfirst($placement)))
                         ->label(match ($placement) {
-                            'inline' => 'Inline image',
-                            'left' => 'Align image left',
-                            'center' => 'Center image',
-                            'right' => 'Align image right',
-                            'float-left' => 'Wrap text on right',
-                            'float-right' => 'Wrap text on left',
+                            'inline' => __('Inline image'),
+                            'left' => __('Align image left'),
+                            'center' => __('Center image'),
+                            'right' => __('Align image right'),
+                            'float-left' => __('Wrap text on right'),
+                            'float-right' => __('Wrap text on left'),
                         })
                         ->icon(match ($placement) {
                             'inline' => 'heroicon-o-squares-2x2',
@@ -67,7 +67,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ArtistImageLayout::PLACEMENTS,
             ),
             RichEditorTool::make('imageCaption')
-                ->label('Image caption')
+                ->label(__('Image caption'))
                 ->icon(AdminIcon::Details->value)
                 ->disabledWhenNotActive()
                 ->activeJsExpression("window.ArtistRichImage?.hasSelection(\$getEditor()) ?? false")

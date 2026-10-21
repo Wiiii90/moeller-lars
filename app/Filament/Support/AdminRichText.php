@@ -22,15 +22,15 @@ final class AdminRichText
     ): array {
         $toolbar = [
             ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', 'link'],
-            [ToolbarButtonGroup::make('Paragraph', ['paragraph', 'h1', 'h2', 'h3', 'h4'])->textualButtons()],
-            [ToolbarButtonGroup::make('Alignment', ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
+            [ToolbarButtonGroup::make(__('Paragraph'), ['paragraph', 'h1', 'h2', 'h3', 'h4'])->textualButtons()],
+            [ToolbarButtonGroup::make(__('Alignment'), ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
             ['blockquote', 'bulletList', 'orderedList', 'horizontalRule'],
             ['table', 'highlight', 'textColor', 'clearFormatting'],
         ];
         if ($allowEmbeddedMedia) {
             $toolbar[] = ['insertStorageImage'];
             $toolbar[] = [
-                ToolbarButtonGroup::make('Image position', [
+                ToolbarButtonGroup::make(__('Image position'), [
                     'imageInline', 'imageLeft', 'imageCenter', 'imageRight',
                     'imageFloatleft', 'imageFloatright',
                 ])->textualButtons(),
