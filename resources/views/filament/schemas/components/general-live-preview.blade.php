@@ -23,8 +23,6 @@
     aria-label="Live public preview"
     x-data="{
         resizeObserver: null,
-        zoomHudTimer: null,
-        zoomHudVisible: false,
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -47,18 +45,10 @@
             })
         },
         destroy() {
-            window.clearTimeout(this.zoomHudTimer)
             this.resizeObserver?.disconnect()
         },
         zoomPercent() {
             return `${Math.round(this.zoom * 100)}%`
-        },
-        showZoomHud() {
-            window.clearTimeout(this.zoomHudTimer)
-            this.zoomHudVisible = true
-            this.zoomHudTimer = window.setTimeout(() => {
-                this.zoomHudVisible = false
-            }, 900)
         },
         fitPreview() {
             const viewport = this.$refs.viewport
@@ -134,7 +124,6 @@
             this.panMode = false
             this.spacePan = false
             this.applyPreviewTransform()
-            this.showZoomHud()
         },
         changeZoom(step) {
             const page = this.$refs.page
@@ -157,7 +146,6 @@
             this.zoom = nextZoom
             this.clampPan()
             this.applyPreviewTransform()
-            this.showZoomHud()
         },
         togglePanMode() {
             if (this.zoom <= this.minZoom) return
@@ -404,14 +392,6 @@
                     x-on:wheel.prevent.stop
                 ></div>
 
-                <div
-                    class="general-live-preview__zoom-hud"
-                    x-show="zoomHudVisible"
-                    x-transition.opacity.duration.120ms
-                    x-cloak
-                    aria-hidden="true"
-                    x-text="zoomPercent()"
-                ></div>
             </div>
         </div>
     </div>

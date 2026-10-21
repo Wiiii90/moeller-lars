@@ -115,6 +115,7 @@ test('delegated Livewire navigation preserves browser-native link behavior', () 
 test('public layout follows the destination metadata through CSSOM without inserting styles', () => {
     const values = new Map();
     const previousDocument = globalThis.document;
+    const frameClasses = new Set();
     const meta = { dataset: {
         publicLayoutBackground: 'linear-gradient(45deg, #112233, #445566)',
         publicLayoutDividerMode: 'menu',
@@ -128,6 +129,10 @@ test('public layout follows the destination metadata through CSSOM without inser
         else headerClasses.delete(name);
     } } };
     globalThis.document = {
+        body: { classList: { toggle: (name, enabled) => {
+            if (enabled) frameClasses.add(name);
+            else frameClasses.delete(name);
+        } } },
         querySelector: (selector) => {
             if (selector === 'meta[data-public-layout]') return meta;
             if (selector === '.site-header') return header;
@@ -137,6 +142,7 @@ test('public layout follows the destination metadata through CSSOM without inser
             assert.equal(selector, 'style[data-public-layout-style]');
             return [{ sheet: { cssRules: [{ selectorText: ':root', style: {
                 setProperty: (name, value) => values.set(name, value),
+                removeProperty: (name) => values.delete(name),
             } }] } }];
         },
         documentElement: { style: { setProperty: () => assert.fail('Layout must not create snapshot style attributes') } },
@@ -146,6 +152,7 @@ test('public layout follows the destination metadata through CSSOM without inser
         assert.equal(headerClasses.has('site-header--divider-full'), false);
         assert.equal(headerClasses.has('site-header--divider-menu'), true);
         assert.equal(headerClasses.has('site-header--name-above'), true);
+        assert.equal(frameClasses.has('public-site--frame-layered'), true);
         assert.deepEqual(Object.fromEntries(values), {
             '--public-page': 'linear-gradient(45deg, #112233, #445566)',
             '--public-shell-max': '1120px',

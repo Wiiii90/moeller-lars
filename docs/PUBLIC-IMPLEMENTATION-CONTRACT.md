@@ -156,6 +156,8 @@ the toolbar, not from the preview's internal device width/height dataset.
 Desktop/Phone selection lives in the existing Alpine Stage/Preview state,
 updates the Stage split and recalculates iframe sizing in the same interaction,
 and does not morph or remount the device through a Livewire action.
+Zoom remains available through the toolbar's percentage control; the redundant
+timed zoom HUD and contradictory iframe interaction styles are removed.
 The old General-specific icon and separator styling has been deleted;
 `primitives.css` and `stage.css` own the common look. Preview content
 begins after the same toolbar-to-content spacing as the Appearance pane.
