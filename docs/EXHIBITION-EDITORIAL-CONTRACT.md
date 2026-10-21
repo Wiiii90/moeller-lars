@@ -58,3 +58,27 @@ duplicates the structured address; no geographic pin is invented.
 
 Changes use the existing transactional editorial/audit/notification path.
 Public preview may include drafts; normal Public is publication-filtered.
+
+## Per-field public visibility
+
+The existing exhibition Editor exposes small Publish/Unpublish icon actions beside
+the labels for Organizer, Venue, Exhibition website, Street address, Postal code,
+City and Country. Each action controls only that field's public presentation;
+source values remain editable, retained and available for map geocoding.
+All seven fields default to visible for existing and new exhibitions. New
+drafts expose the visibility actions after their first save.
+
+These actions use the normal audited exhibition domain and do not introduce
+a second geocoding or publication system. Their changes are Working changes
+subject to the usual site Commit; they are not instantly deployed to Public.
+
+Public summary attribution, venue facts, website links, address composition and
+map-dialog text honor these settings. The map's independently controlled
+`map_enabled` option is **not** silently changed by hiding an address label:
+an enabled map can still reveal coordinates through OpenStreetMap. Turn off
+the map separately if the location itself should be hidden.
+
+Admin labels are translated at render time through Laravel using the user's
+`admin_language`. The date pickers, admin table and public date strings use
+`RegionalFormats` with the respective independent admin/public region.
+The artist-provided `date_text` and legacy opening text remain unchanged.

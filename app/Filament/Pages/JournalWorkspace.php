@@ -568,7 +568,10 @@ final class JournalWorkspace extends Page
                 $this->entryEditorOriginal = $this->journalEntryMutationState($entry);
                 return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
             })
-            ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
+            ->schema(fn (Schema $schema, array $arguments): Schema => JournalEntryEditorSchema::exhibition(
+                $schema,
+                $this->exhibition((int) ($arguments['exhibition'] ?? 0)),
+            ))
             ->modalHeading(__('Edit exhibition'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'exhibition'))
             ->action(function (Action $action, Schema $schema, array $data, array $arguments): void {

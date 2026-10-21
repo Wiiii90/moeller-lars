@@ -17,11 +17,12 @@
                 $galleryPresentation = $exhibition->galleryPresentation();
                 $displayDate = $exhibition->displayDate();
                 $vernissage = $exhibition->shouldShowPublicVernissage() ? $exhibition->vernissageDisplay() : null;
-                $address = $exhibition->streetAddress() !== null ? $exhibition->address() : null;
+                $address = $exhibition->publicAddress();
                 $map = $exhibition->shouldShowPublicMap() ? $exhibition->mapPresentation() : null;
                 $mapDialogId = 'exhibition-map-'.$exhibition->getKey();
                 $attribution = $exhibition->summaryAttribution();
-                $physicalVenue = filled($exhibition->organizer) && filled($exhibition->venue)
+                $physicalVenue = $exhibition->publicFieldVisible('organizer') && $exhibition->publicFieldVisible('venue')
+                    && filled($exhibition->organizer) && filled($exhibition->venue)
                     ? trim((string) $exhibition->venue)
                     : null;
                 $location = $exhibition->mapLocationLabel();
@@ -29,7 +30,7 @@
                     && trim((string) $exhibition->description) !== trim((string) $exhibition->location_text);
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
                 $hasFacts = $vernissage !== null || $address !== null || $physicalVenue !== null;
-                $hasActions = $map !== null || $exhibition->external_url !== null;
+                $hasActions = $map !== null || ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null);
                 $hasDetails = $hasFacts || $hasDescription || $hasCover
                     || $gallery->isNotEmpty() || $hasActions;
             @endphp
@@ -100,7 +101,7 @@
                                                             Show map
                                                         </button>
                                                     @endif
-                                                    @if ($exhibition->external_url !== null)
+                                                    @if ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null)
                                                         <a href="{{ $exhibition->external_url }}" target="_blank" rel="noopener noreferrer"
                                                             data-matomo-event-category="Journal"
                                                             data-matomo-event-action="exhibition_external_click"

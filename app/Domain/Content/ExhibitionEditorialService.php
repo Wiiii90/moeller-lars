@@ -118,6 +118,36 @@ final class ExhibitionEditorialService
         });
     }
 
+    /**
+     * Field-level visibility is a discrete editor action, not a mutation of
+     * source location data or the map's geocoding inputs.
+     */
+    public function setPublicFieldVisibility(Exhibition $entry, string $field, bool $visible): bool
+    {
+        if (! in_array($field, Exhibition::PUBLIC_VISIBILITY_FIELDS, true)) {
+            throw new \InvalidArgumentException('Unknown exhibition visibility field.');
+        }
+
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($entry, $field, $visible, $actor): bool {
+            $fresh = Exhibition::query()->whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
+            $column = 'show_'.$field;
+            if ((bool) $fresh->getAttribute($column) === $visible) {
+                return false;
+            }
+
+            $fresh->setAttribute($column, $visible);
+            $fresh->save();
+            $this->audit->record($actor, 'exhibition.visibility_updated', 'exhibition', $fresh->getKey(), [
+                'field' => $field,
+                'visible' => $visible,
+            ]);
+
+            return true;
+        });
+    }
+
     public function publish(Exhibition $entry): Exhibition
     {
         return $this->transition($entry, 'published', ['draft', 'archived'], 'published', true);

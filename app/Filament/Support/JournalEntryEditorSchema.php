@@ -3,6 +3,10 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ExhibitionMapAddress;
+use App\Domain\Content\ExhibitionEditorialService;
+use App\Domain\Admin\AdminNotifier;
+use App\Filament\Support\AdminIcon;
+use Filament\Actions\Action;
 use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\JournalTemplate;
@@ -30,17 +34,17 @@ final class JournalEntryEditorSchema
         return self::entry($schema, JournalTemplate::Blog);
     }
 
-    public static function exhibition(Schema $schema): Schema
+    public static function exhibition(Schema $schema, ?Exhibition $exhibition = null): Schema
     {
-        return self::entry($schema, JournalTemplate::Exhibitions);
+        return self::entry($schema, JournalTemplate::Exhibitions, $exhibition);
     }
 
-    private static function entry(Schema $schema, JournalTemplate $template): Schema
+    private static function entry(Schema $schema, JournalTemplate $template, ?Exhibition $exhibition = null): Schema
     {
         $components = [self::basicsSection($template)];
 
         if ($template === JournalTemplate::Exhibitions) {
-            $components[] = self::venueSection();
+            $components[] = self::venueSection($exhibition);
         }
 
         $components[] = self::textSection($template === JournalTemplate::Blog ? 'body' : 'description');
@@ -66,7 +70,7 @@ final class JournalEntryEditorSchema
         ];
 
         if ($template === JournalTemplate::Blog) {
-            $schema[] = Textarea::make('excerpt')->label('Excerpt')->maxLength(1000)->nullable()->columnSpanFull();
+            $schema[] = Textarea::make('excerpt')->label(__('Excerpt'))->maxLength(1000)->nullable()->columnSpanFull();
         }
 
         $cover = $template === JournalTemplate::Exhibitions
@@ -74,36 +78,36 @@ final class JournalEntryEditorSchema
                 'cover_media_asset_id',
                 'Cover image or video',
                 allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
-            )->placeholder('No cover media')
+            )->placeholder(__('No cover media'))
             : MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
-                ->placeholder('No cover image');
+                ->placeholder(__('No cover image'));
 
         $schema[] = $cover->nullable()->columnSpanFull();
 
-        return AdminForm::section('Basics')->schema($schema)->columns(['md' => 2]);
+        return AdminForm::section(__('Basics'))->schema($schema)->columns(['md' => 2]);
     }
 
-    private static function venueSection(): mixed
+    private static function venueSection(?Exhibition $exhibition): mixed
     {
-        return AdminForm::section('Organizer & location')->schema([
-            TextInput::make('organizer')->label('Organizer / gallery')->maxLength(240)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
-            TextInput::make('venue')->label('Exhibition venue (actual location)')->maxLength(240)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
-            TextInput::make('external_url')->label('Exhibition website')->url()->maxLength(2048)->nullable()->columnSpan(['default' => 1, 'md' => 3]),
-            self::locationField('location_text', 'Street address', 500)->columnSpan(['default' => 1, 'md' => 2]),
-            self::locationField('postal_code', 'Postal code', 16),
-            self::locationField('city', 'City', 160)->columnSpan(['default' => 1, 'md' => 2]),
-            self::locationField('country', 'Country', 160),
+        return AdminForm::section(__('Organizer & location'))->schema([
+            self::publicLocationField('organizer', 'Organizer / gallery', 240, $exhibition)->columnSpan(['default' => 1, 'md' => 3]),
+            self::publicLocationField('venue', 'Exhibition venue (actual location)', 240, $exhibition)->columnSpan(['default' => 1, 'md' => 3]),
+            self::publicLocationField('external_url', 'Exhibition website', 2048, $exhibition)->url()->columnSpan(['default' => 1, 'md' => 3]),
+            self::publicLocationField('location_text', 'Street address', 500, $exhibition)->columnSpan(['default' => 1, 'md' => 2]),
+            self::publicLocationField('postal_code', 'Postal code', 16, $exhibition),
+            self::publicLocationField('city', 'City', 160, $exhibition)->columnSpan(['default' => 1, 'md' => 2]),
+            self::publicLocationField('country', 'Country', 160, $exhibition),
         ])->columns(['md' => 6]);
     }
 
     private static function datesSection(): mixed
     {
-        return AdminForm::section('Dates')->schema([
-            DatePicker::make('starts_on')->label('Starts')->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->nullable(),
-            DatePicker::make('ends_on')->label('Ends')->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
-            TextInput::make('date_text')->label('Display date override')->maxLength(160)->nullable()->columnSpanFull(),
-            Toggle::make('show_vernissage')->label('Show vernissage until it begins')->default(false)->columnSpanFull(),
-            DateTimePicker::make('vernissage_at')->label('Vernissage')->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())->seconds(false)->default(null)->nullable()->columnSpanFull(),
+        return AdminForm::section(__('Dates'))->schema([
+            DatePicker::make('starts_on')->label(__('Starts'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->nullable(),
+            DatePicker::make('ends_on')->label(__('Ends'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
+            TextInput::make('date_text')->label(__('Display date override'))->maxLength(160)->nullable()->columnSpanFull(),
+            Toggle::make('show_vernissage')->label(__('Show vernissage until it begins'))->default(false)->columnSpanFull(),
+            DateTimePicker::make('vernissage_at')->label(__('Vernissage'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())->seconds(false)->default(null)->nullable()->columnSpanFull(),
         ])->columns(['md' => 2]);
     }
 
@@ -112,14 +116,14 @@ final class JournalEntryEditorSchema
         $images = self::galleryImages();
 
         if ($template === JournalTemplate::Blog) {
-            return AdminForm::section('Gallery')->schema([
+            return AdminForm::section(__('Gallery'))->schema([
                 Select::make('gallery_presentation')
-                    ->label('Gallery presentation')
+                    ->label(__('Gallery presentation'))
                     ->options([
-                        'sequence' => 'Media sequence',
-                        'grid' => 'Grid',
-                        'mosaic' => 'Mosaic',
-                        'slideshow' => 'Slideshow',
+                        'sequence' => __('Media sequence'),
+                        'grid' => __('Grid'),
+                        'mosaic' => __('Mosaic'),
+                        'slideshow' => __('Slideshow'),
                     ])
                     ->default('sequence')
                     ->required(),
@@ -131,17 +135,17 @@ final class JournalEntryEditorSchema
             ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
             ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled'));
 
-        return AdminForm::section('Gallery')->schema([
+        return AdminForm::section(__('Gallery'))->schema([
             Toggle::make('gallery_enabled')
-                ->label('Gallery enabled')
+                ->label(__('Gallery enabled'))
                 ->live()
                 ->columnSpanFull(),
             Select::make('gallery_presentation')
-                ->label('Gallery presentation')
+                ->label(__('Gallery presentation'))
                 ->options([
-                    'grid' => 'Grid',
-                    'mosaic' => 'Mosaic',
-                    'slideshow' => 'Slideshow',
+                    'grid' => __('Grid'),
+                    'mosaic' => __('Mosaic'),
+                    'slideshow' => __('Slideshow'),
                 ])
                 ->default('grid')
                 ->required()
@@ -152,9 +156,9 @@ final class JournalEntryEditorSchema
 
     private static function mapSection(): mixed
     {
-        return AdminForm::section('Map')->schema([
+        return AdminForm::section(__('Map'))->schema([
             Toggle::make('map_enabled')
-                ->label('Map enabled')
+                ->label(__('Map enabled'))
                 // The central Edit change event is the only persistence request.
                 // A second eager Livewire request can race with the first
                 // enable immediately after a newly entered country is saved.
@@ -166,13 +170,13 @@ final class JournalEntryEditorSchema
                         'city' => $get('city'),
                         'country' => $get('country'),
                     ]))
-                ->helperText('Requires Country and either City or Postal code.')
+                ->hint(AdminHelp::make(__('Map location help'), __('Requires Country and either City or Postal code.')))
                 ->columnSpanFull(),
             Hidden::make('latitude')->dehydrated(false),
             Hidden::make('longitude')->dehydrated(false),
             Hidden::make('geocoded_at')->dehydrated(false),
             Placeholder::make('map_preview')
-                ->label('Preview')
+                ->label(__('Preview'))
                 ->content(fn (Get $get): HtmlString => self::mapPreview($get))
                 ->visible(fn (Get $get): bool => (bool) $get('map_enabled'))
                 ->columnSpanFull(),
@@ -195,7 +199,7 @@ final class JournalEntryEditorSchema
     private static function slug(int $max): TextInput
     {
         return TextInput::make('slug')
-            ->label('Public URL slug')
+            ->label(__('Public URL slug'))
             ->required()
             ->maxLength($max)
             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
@@ -203,7 +207,7 @@ final class JournalEntryEditorSchema
 
     private static function textSection(string $name): mixed
     {
-        return AdminForm::section('Text')->schema([
+        return AdminForm::section(__('Text'))->schema([
             ...AdminRichText::schema($name, 'Text', 50000, allowEmbeddedMedia: true),
         ]);
     }
@@ -211,7 +215,7 @@ final class JournalEntryEditorSchema
     private static function galleryImages(): Repeater
     {
         return Repeater::make('gallery_images')
-            ->label('Gallery media')
+            ->label(__('Gallery media'))
             ->schema([
                 MediaAssetSelect::makeId(
                     'media_asset_id',
@@ -219,18 +223,54 @@ final class JournalEntryEditorSchema
                     allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
                 )->required(),
             ])
-            ->addActionLabel('Add media')
+            ->addActionLabel(__('Add media'))
             ->reorderableWithButtons()
             ->reorderableWithDragAndDrop(false)
             ->columnSpanFull();
     }
 
-    private static function locationField(string $name, string $label, int $max): TextInput
+    private static function publicLocationField(string $name, string $label, int $max, ?Exhibition $exhibition): TextInput
     {
-        return TextInput::make($name)
-            ->label($label)
+        $field = TextInput::make($name)
+            ->label(__($label))
             ->maxLength($max)
             ->nullable();
+
+        if (! $exhibition instanceof Exhibition) {
+            // New exhibitions retain the default-visible policy. Discrete
+            // visibility controls appear once the draft has been created.
+            return $field;
+        }
+
+        $visible = static fn (): bool => $exhibition->fresh()->publicFieldVisible($name);
+
+        return $field->hintAction(
+            Action::make('togglePublicVisibility_'.$name)
+                ->label(static fn (): string => $visible()
+                    ? __('Hide from public page')
+                    : __('Show on public page'))
+                ->icon(static fn (): string => $visible()
+                    ? AdminIcon::Unpublish->value
+                    : AdminIcon::Publish->value)
+                ->color('gray')
+                ->iconButton()
+                ->action(static function () use ($exhibition, $name, $visible): void {
+                    if (! app(ExhibitionEditorialService::class)->setPublicFieldVisibility($exhibition, $name, ! $visible())) {
+                        return;
+                    }
+
+                    app(AdminNotifier::class)->notification(
+                        title: __('Exhibition visibility updated'),
+                        status: 'success',
+                    );
+                })
+                // As for shared Edit header actions: retain the mounted Editor,
+                // and render the new icon/visibility state without a reload.
+                ->after(static function (Action $action): void {
+                    $action->getLivewire()->forceRender();
+                    $action->halt();
+                }),
+        );
     }
 
     private static function mapPreview(Get $get): HtmlString
