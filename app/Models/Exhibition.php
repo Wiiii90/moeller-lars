@@ -102,11 +102,6 @@ class Exhibition extends Model
         return RegionalFormats::publicDateRange($start, $end);
     }
 
-    /**
-     * Display settings are presentation-only. Original address fields remain
-     * available to the editor and to optional geocoding when their public text
-     * is hidden. Existing records default to visible during migration.
-     */
     public function publicFieldVisible(string $field): bool
     {
         if (! in_array($field, self::PUBLIC_VISIBILITY_FIELDS, true)) {
@@ -118,9 +113,6 @@ class Exhibition extends Model
 
     public function publicAddress(): ?string
     {
-        // Keep accepted legacy presentation: no address fact was rendered
-        // for entries without a genuine street. A deliberately hidden
-        // existing street may still leave visible postal/city/country parts.
         if ($this->streetAddress() === null) {
             return null;
         }

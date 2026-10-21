@@ -559,12 +559,6 @@ final class JournalWorkspace extends Page
         return AdminDialog::create($action, 'Create exhibition', AdminDialogSize::Large);
     }
 
-    /**
-     * A visibility hint is a committed field action inside the mounted Edit
-     * dialog. Reconcile only its own column in the optimistic Edit snapshot
-     * so the next ordinary autosave does not report a false conflict. Do not
-     * reset other columns: unrelated concurrent edits must still be detected.
-     */
     public function setExhibitionFieldVisibility(int $id, string $field, bool $visible): void
     {
         abort_unless($this->journalTemplate() === JournalTemplate::Exhibitions, 404);

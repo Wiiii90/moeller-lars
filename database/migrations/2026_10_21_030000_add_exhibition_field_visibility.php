@@ -27,7 +27,5 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Visibility choices are artist editorial data. Do not silently drop
-        // them or break an existing committed publication on rollback.
     }
 };

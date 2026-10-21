@@ -236,8 +236,6 @@ final class JournalEntryEditorSchema
             ->nullable();
 
         if (! $exhibition instanceof Exhibition) {
-            // New exhibitions retain the default-visible policy. Discrete
-            // visibility controls appear once the draft has been created.
             return $field;
         }
 
@@ -257,8 +255,6 @@ final class JournalEntryEditorSchema
                     /** @var \App\Filament\Pages\JournalWorkspace $livewire */
                     $livewire->setExhibitionFieldVisibility((int) $exhibition->getKey(), $name, ! $visible());
                 })
-                // As for shared Edit header actions: retain the mounted Editor,
-                // and render the new icon/visibility state without a reload.
                 ->after(static function (Action $action): void {
                     $action->getLivewire()->forceRender();
                     $action->halt();

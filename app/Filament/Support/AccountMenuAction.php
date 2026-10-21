@@ -30,7 +30,6 @@ final class AccountMenuAction
                 ->label(__('Account'))
                 ->icon(AdminIcon::Account->value)
                 ->url(null)
-                // Preserve the original position after the theme switcher.
                 ->sort(0)
                 ->modalHeading(fn (): string => __('Account & security'))
                 ->fillForm(fn (): array => [
@@ -151,18 +150,12 @@ final class AccountMenuAction
         );
     }
 
-    /**
-     * Expose the language choice directly from the user badge, without
-     * requiring the full account/security editor. Both paths persist the same
-     * per-user preference and reuse the panel's normal locale middleware.
-     */
     public static function languageAction(): Action
     {
         return AdminDialog::command(
             Action::make('changeAdminLanguage')
                 ->label(fn (): string => __('Language'))
                 ->icon(AdminIcon::Language->value)
-                // New item after Account; do not move any existing menu entry.
                 ->sort(1)
                 ->modalHeading(fn (): string => __('Language'))
                 ->fillForm(fn (): array => ['admin_language' => self::language()])
@@ -207,8 +200,6 @@ final class AccountMenuAction
 
         app()->setLocale($next);
 
-        // Existing Alpine/Livewire trees contain old-language strings. Use a
-        // full navigation, not Filament's SPA partial navigation.
         $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
     }
 

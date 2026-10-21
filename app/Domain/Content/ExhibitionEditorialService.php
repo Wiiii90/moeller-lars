@@ -118,10 +118,6 @@ final class ExhibitionEditorialService
         });
     }
 
-    /**
-     * Field-level visibility is a discrete editor action, not a mutation of
-     * source location data or the map's geocoding inputs.
-     */
     public function setPublicFieldVisibility(Exhibition $entry, string $field, bool $visible): bool
     {
         if (! in_array($field, Exhibition::PUBLIC_VISIBILITY_FIELDS, true)) {
