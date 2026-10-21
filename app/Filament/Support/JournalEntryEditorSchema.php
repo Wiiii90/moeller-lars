@@ -3,10 +3,9 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ExhibitionMapAddress;
-use App\Domain\Content\ExhibitionEditorialService;
-use App\Domain\Admin\AdminNotifier;
 use App\Filament\Support\AdminIcon;
 use Filament\Actions\Action;
+use Livewire\Component;
 use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\JournalTemplate;
@@ -76,10 +75,10 @@ final class JournalEntryEditorSchema
         $cover = $template === JournalTemplate::Exhibitions
             ? MediaAssetSelect::makeId(
                 'cover_media_asset_id',
-                'Cover image or video',
+                __('Cover image or video'),
                 allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
             )->placeholder(__('No cover media'))
-            : MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
+            : MediaAssetSelect::makeId('cover_media_asset_id', __('Cover image'), imagesOnly: true)
                 ->placeholder(__('No cover image'));
 
         $schema[] = $cover->nullable()->columnSpanFull();
@@ -208,7 +207,7 @@ final class JournalEntryEditorSchema
     private static function textSection(string $name): mixed
     {
         return AdminForm::section(__('Text'))->schema([
-            ...AdminRichText::schema($name, 'Text', 50000, allowEmbeddedMedia: true),
+            ...AdminRichText::schema($name, __('Text'), 50000, allowEmbeddedMedia: true),
         ]);
     }
 
@@ -219,7 +218,7 @@ final class JournalEntryEditorSchema
             ->schema([
                 MediaAssetSelect::makeId(
                     'media_asset_id',
-                    'Image or video',
+                    __('Image or video'),
                     allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
                 )->required(),
             ])
@@ -254,15 +253,9 @@ final class JournalEntryEditorSchema
                     : AdminIcon::Publish->value)
                 ->color('gray')
                 ->iconButton()
-                ->action(static function () use ($exhibition, $name, $visible): void {
-                    if (! app(ExhibitionEditorialService::class)->setPublicFieldVisibility($exhibition, $name, ! $visible())) {
-                        return;
-                    }
-
-                    app(AdminNotifier::class)->notification(
-                        title: __('Exhibition visibility updated'),
-                        status: 'success',
-                    );
+                ->action(static function (Component $livewire) use ($exhibition, $name, $visible): void {
+                    /** @var \App\Filament\Pages\JournalWorkspace $livewire */
+                    $livewire->setExhibitionFieldVisibility((int) $exhibition->getKey(), $name, ! $visible());
                 })
                 // As for shared Edit header actions: retain the mounted Editor,
                 // and render the new icon/visibility state without a reload.

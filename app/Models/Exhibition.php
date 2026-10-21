@@ -118,6 +118,13 @@ class Exhibition extends Model
 
     public function publicAddress(): ?string
     {
+        // Keep accepted legacy presentation: no address fact was rendered
+        // for entries without a genuine street. A deliberately hidden
+        // existing street may still leave visible postal/city/country parts.
+        if ($this->streetAddress() === null) {
+            return null;
+        }
+
         $postal = $this->publicFieldVisible('postal_code') ? trim((string) ($this->getAttribute('postal_code') ?? '')) : '';
         $city = $this->publicFieldVisible('city') ? trim((string) ($this->getAttribute('city') ?? '')) : '';
         $postalCity = trim($postal.' '.$city);

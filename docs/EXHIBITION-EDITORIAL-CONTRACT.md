@@ -82,3 +82,9 @@ Admin labels are translated at render time through Laravel using the user's
 `admin_language`. The date pickers, admin table and public date strings use
 `RegionalFormats` with the respective independent admin/public region.
 The artist-provided `date_text` and legacy opening text remain unchanged.
+
+Visibility icons reconcile the optimistic `JournalWorkspace::entryEditorOriginal`
+snapshot for their own flag and record timestamp, retaining edit-dialog
+autosave and detection of unrelated concurrent changes. The historic rule
+that entries lacking a genuine street address do not render an Address fact
+is preserved; hiding an existing street can still show opted-in locality.
