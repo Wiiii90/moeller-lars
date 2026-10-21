@@ -67,11 +67,27 @@ final class SafeRichTextRenderer
     public function render(string $source): HtmlString
     {
         if (RichTextDocument::isVisual($source)) {
-            $this->validateVisual($source, allowEmbeddedMedia: true, requirePublicMedia: true);
+            $imageMetadata = $this->validateVisual($source, allowEmbeddedMedia: true, requirePublicMedia: true);
+            $imageIndex = 0;
 
             $html = RichContentRenderer::make($source)
                 ->plugins([RichTextEditorPlugin::make()])
                 ->linkProtocols(['http', 'https'])
+                ->processNodesUsing(static function (object &$node) use ($imageMetadata, &$imageIndex): void {
+                    if (($node->type ?? null) !== 'image') {
+                        return;
+                    }
+
+                    $entry = $imageMetadata[$imageIndex++] ?? null;
+                    if (! is_array($entry)
+                        || (int) ($node->attrs->id ?? 0) !== $entry['media_asset_id']) {
+                        throw UnsafeRichTextException::unsupportedSyntax();
+                    }
+
+                    // The public ALT is resolved from canonical Storage metadata
+                    // and any validated override, never from an old editor URL.
+                    $node->attrs->alt = $entry['alt'];
+                })
                 ->toHtml();
 
             return new HtmlString(ArtistImageLayout::decorateHtml($html, $source));
@@ -207,7 +223,8 @@ final class SafeRichTextRenderer
         }
     }
 
-    private function validateVisual(string $source, bool $allowEmbeddedMedia, bool $requirePublicMedia): void
+    /** @return list<array{media_asset_id: int, alt: string}> */
+    private function validateVisual(string $source, bool $allowEmbeddedMedia, bool $requirePublicMedia): array
     {
         // Reject active and remote-embed payloads before TipTap's normal HTML
         // normalization. All public rendering additionally goes through its
@@ -233,6 +250,7 @@ final class SafeRichTextRenderer
                 throw UnsafeRichTextException::unsupportedSyntax();
             }
         }
+        $resolvedImages = [];
         if ($images !== []) {
             $assets = MediaAsset::query()
                 ->whereIn('id', $images)
@@ -245,26 +263,39 @@ final class SafeRichTextRenderer
             if ($assets->count() !== count($images)) {
                 throw UnsafeRichTextException::unsupportedSyntax();
             }
+
             if ($requirePublicMedia) {
-                preg_match_all('/<img\\b[^>]*>/i', $source, $imgTags);
-                foreach ($assets as $asset) {
-                    $override = null;
-                    foreach ($imgTags[0] ?? [] as $imgTag) {
-                        if (preg_match('/\\bdata-id\\s*=\\s*([\"\\\'])'.preg_quote((string) $asset->getKey(), '/').'\\1/i', $imgTag) !== 1) {
-                            continue;
-                        }
-                        if (preg_match('/\\balt\\s*=\\s*([\"\\\'])(.*?)\\1/i', $imgTag, $alt)) {
-                            $candidate = html_entity_decode($alt[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                            $override = trim($candidate) === '' ? null : $candidate;
-                        }
-                        break;
+                // Resolve in document order: repeated references to one asset
+                // may have different editorial ALT overrides.
+                foreach ($visualImageTags[0] ?? [] as $imageTag) {
+                    if (preg_match('/\\bdata-id\\s*=\\s*(["\\\'])([1-9]\\d*)\\1/i', $imageTag, $idMatch) !== 1) {
+                        throw UnsafeRichTextException::unsupportedSyntax();
                     }
+                    $asset = $assets->get((int) $idMatch[2]);
+                    if (! $asset instanceof MediaAsset) {
+                        throw UnsafeRichTextException::unsupportedSyntax();
+                    }
+
+                    $override = null;
+                    if (preg_match('/\\balt\\s*=\\s*(["\\\'])(.*?)\\1/i', $imageTag, $altMatch) === 1) {
+                        $value = trim(html_entity_decode($altMatch[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                        $override = $value !== '' ? $value : null;
+                        if ($override !== null && mb_strlen($override) > 500) {
+                            throw UnsafeRichTextException::unsupportedSyntax();
+                        }
+                    }
+
                     try {
-                        $this->publicMedia->altTextForAsset($asset, $override);
+                        $alt = $this->publicMedia->altTextForAsset($asset, $override);
                         $this->publicMedia->thumbnailVariantForAsset($asset);
                     } catch (LogicException) {
                         throw UnsafeRichTextException::unsupportedSyntax();
                     }
+
+                    $resolvedImages[] = [
+                        'media_asset_id' => (int) $asset->getKey(),
+                        'alt' => $alt,
+                    ];
                 }
             }
         }
@@ -278,6 +309,8 @@ final class SafeRichTextRenderer
                 }
             }
         }
+
+        return $resolvedImages;
     }
 
     private function isAllowedExternalImageUrl(string $url): bool
