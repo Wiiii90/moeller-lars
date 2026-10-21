@@ -323,8 +323,9 @@ final class AdminRichText
                             },
                             imagePickerOpen: false,
                             closeImagePicker() {
-                                const trigger = this.$refs.richImagePicker?.querySelector('.fi-select-input-btn')
-                                if (trigger?.getAttribute('aria-expanded') === 'true') trigger.click()
+                                const input = this.$refs.richImagePicker?.querySelector('.fi-select-input')
+                                const select = input ? window.Alpine?.$data(input)?.select : null
+                                if (select?.isOpen) select.closeDropdown()
                                 this.imagePickerOpen = false
                             },
                             pickerLeft: 0,
