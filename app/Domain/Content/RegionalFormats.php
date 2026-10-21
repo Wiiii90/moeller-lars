@@ -9,9 +9,14 @@ use Illuminate\Support\Facades\Auth;
 final class RegionalFormats
 {
     public const OPTIONS = [
-        'de-DE' => 'Deutschland (20.10.2026 · 1.234,56)',
-        'en-GB' => 'United Kingdom (20/10/2026 · 1,234.56)',
-        'en-US' => 'United States (10/20/2026 · 1,234.56)',
+        'de-DE' => 'Deutschland (20.10.2026)',
+        'en-GB' => 'United Kingdom (20/10/2026)',
+        'en-US' => 'United States (10/20/2026)',
+    ];
+
+    public const NUMBER_OPTIONS = [
+        'de-DE' => '1.234,56',
+        'en-US' => '1,234.56',
     ];
 
     public const DEFAULT = 'de-DE';
@@ -19,6 +24,18 @@ final class RegionalFormats
     public static function publicRegion(): string
     {
         return self::region(PublicContentSetting::general()->getAttribute('regional_format'));
+    }
+
+    public static function publicNumberRegion(): string
+    {
+        return self::numberRegion(PublicContentSetting::general()->getAttribute('number_format'));
+    }
+
+    public static function numberRegion(mixed $value): string
+    {
+        return is_string($value) && array_key_exists($value, self::NUMBER_OPTIONS)
+            ? $value
+            : self::DEFAULT;
     }
 
     public static function adminRegion(): string
@@ -39,6 +56,11 @@ final class RegionalFormats
     public static function publicDateRange(DateTimeInterface $start, DateTimeInterface $end): string
     {
         return self::dateRange($start, $end, self::publicRegion());
+    }
+
+    public static function publicNumber(float|int $value, int $decimals): string
+    {
+        return self::number($value, $decimals, self::publicNumberRegion());
     }
 
     public static function adminDate(DateTimeInterface $date): string

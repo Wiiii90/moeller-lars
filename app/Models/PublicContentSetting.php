@@ -15,6 +15,7 @@ use LogicException;
 
 #[Fillable([
     'regional_format',
+    'number_format',
     'contact_recipient_email',
     'public_email',
     'show_public_email',
@@ -245,7 +246,11 @@ class PublicContentSetting extends Model
     {
         $region = $setting->getAttribute('regional_format');
         if (! is_string($region) || ! array_key_exists($region, RegionalFormats::OPTIONS)) {
-            throw ValidationException::withMessages(['regional_format' => 'Choose a supported regional format.']);
+            throw ValidationException::withMessages(['regional_format' => 'Choose a supported date format.']);
+        }
+        $numberFormat = $setting->getAttribute('number_format');
+        if (! is_string($numberFormat) || ! array_key_exists($numberFormat, RegionalFormats::NUMBER_OPTIONS)) {
+            throw ValidationException::withMessages(['number_format' => 'Choose a supported number format.']);
         }
 
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {

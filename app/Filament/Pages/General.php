@@ -122,6 +122,7 @@ final class General extends Page
         'legal_privacy',
         'legal_usage_rights',
         'regional_format',
+        'number_format',
     ];
 
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::General;
@@ -635,15 +636,23 @@ final class General extends Page
                         ->viewData(['label' => __('Regional Formats'), 'class' => 'general-form-section-heading'])
                         ->columnSpanFull(),
                     Select::make('regional_format')
-                        ->label('Dates and numbers')
+                        ->label('Dates')
                         ->options(RegionalFormats::OPTIONS)
+                        ->native()
                         ->required()
                         ->live()
-                        ->afterStateUpdated(self::persist('regional_format'))
-                        ->columnSpanFull(),
+                        ->afterStateUpdated(self::persist('regional_format')),
+                    Select::make('number_format')
+                        ->label('Numbers')
+                        ->options(RegionalFormats::NUMBER_OPTIONS)
+                        ->native()
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(self::persist('number_format')),
                 ])
-                    ->columns(1)
-                    ->extraAttributes(['class' => 'general-settings-section'])
+                    ->columns(2)
+                    ->extraAttributes(['class' => 'general-settings-section general-layout-row'])
+                    ->columnSpanFull()
                     ->columnSpanFull(),
             ])
             ->record($this->generalSettingsRecord())
@@ -1431,7 +1440,8 @@ final class General extends Page
             'legal_imprint' => 'Imprint',
             'legal_privacy' => 'Privacy Policy',
             'legal_usage_rights' => 'Copyright & AI Use',
-            'regional_format' => 'Public regional formats',
+            'regional_format' => 'Public date format',
+            'number_format' => 'Public number format',
             'default_media_copyright_notice' => 'Default copyright notice',
             'background_mode' => 'Background',
             'background_color' => 'Background color',

@@ -39,6 +39,38 @@ it('rolls back an autosave audit failure and successfully retries without false 
 
 require_once __DIR__.'/GeneralFixtures.php';
 
+it('keeps public Dates and Numbers independently editable', function (): void {
+    $auditBefore = generalSettingsAuditCount();
+    $notificationBefore = AdminNotification::query()->count();
+
+    $page = Livewire::test(General::class)
+        ->assertSet('data.regional_format', 'de-DE')
+        ->assertSet('data.number_format', 'de-DE')
+        ->set('data.number_format', 'en-US')
+        ->assertHasNoErrors()
+        ->assertDispatched('admin-header-notification')
+        ->set('data.regional_format', 'en-GB')
+        ->assertHasNoErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect(PublicContentSetting::general()->getAttribute('regional_format'))->toBe('en-GB')
+        ->and(PublicContentSetting::general()->getAttribute('number_format'))->toBe('en-US')
+        ->and(\App\Domain\Content\RegionalFormats::publicDate(new \DateTimeImmutable('2026-10-20')))->toBe('20/10/2026')
+        ->and(\App\Domain\Content\RegionalFormats::publicNumber(1234.56, 2))->toBe('1,234.56')
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationBefore + 2);
+
+    $page->call('persistChangedField', 'regional_format')
+        ->call('persistChangedField', 'number_format');
+
+    expect(generalSettingsAuditCount())->toBe($auditBefore + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationBefore + 2);
+
+    Livewire::test(General::class)
+        ->assertSet('data.regional_format', 'en-GB')
+        ->assertSet('data.number_format', 'en-US');
+});
+
 it('persists changed text once and skips normalized no-op commits', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['public_email' => 'before@example.invalid']);
     $auditBefore = generalSettingsAuditCount();
