@@ -34,7 +34,7 @@
                 $hasDetails = $hasFacts || $hasDescription || $hasCover
                     || $gallery->isNotEmpty() || $hasActions;
             @endphp
-            <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
+            <article class="exhibition-entry" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
                     <details class="exhibition-entry__disclosure">
                         <summary class="exhibition-entry__summary">
@@ -65,7 +65,7 @@
                             @if ($hasCover || $hasFacts || $hasActions || $hasDescription)
                                 <div class="exhibition-entry__feature {{ $hasCover ? 'exhibition-entry__feature--with-cover' : 'exhibition-entry__feature--text' }}">
                                     @if ($hasCover)
-                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: true) !!}
+                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: true, enableViewer: (bool) $exhibition->image_viewer_enabled) !!}
                                     @endif
                                     @if ($hasFacts || $hasActions)
                                         <div class="exhibition-entry__info">
@@ -112,13 +112,13 @@
                                         </div>
                                     @endif
                                     @if ($hasDescription)
-                                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $richText->render((string) $exhibition->description) !!}</div>
+                                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $exhibition->image_viewer_enabled ? $journalMedia->renderRichText((string) $exhibition->description) : $richText->render((string) $exhibition->description) !!}</div>
                                     @endif
                                 </div>
                             @endif
 
                             @if ($gallery->isNotEmpty())
-                                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Exhibition media" :journal-media="$journalMedia" :show-captions="true" />
+                                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Exhibition media" :journal-media="$journalMedia" :show-captions="true" :enable-viewer="(bool) $exhibition->image_viewer_enabled" />
                             @endif
 
                             @if ($map !== null)

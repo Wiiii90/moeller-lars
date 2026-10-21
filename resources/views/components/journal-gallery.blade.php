@@ -1,4 +1,4 @@
-@props(['gallery', 'presentation', 'label', 'journalMedia', 'includeCopyrightNotice' => true, 'showCaptions' => false])
+@props(['gallery', 'presentation', 'label', 'journalMedia', 'includeCopyrightNotice' => true, 'showCaptions' => false, 'enableViewer' => false])
 
 @php
     $galleryGroups = $presentation === 'mosaic'
@@ -18,7 +18,7 @@
             <div class="journal-entry-gallery__column">
         @endif
         @foreach ($column as $usage)
-            <div class="journal-entry-gallery__item" @if ($presentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false, includeCopyrightNotice: $includeCopyrightNotice, showCaption: $showCaptions) !!}</div>
+            <div class="journal-entry-gallery__item" @if ($presentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false, includeCopyrightNotice: $includeCopyrightNotice, showCaption: $showCaptions, enableViewer: $enableViewer) !!}</div>
         @endforeach
         @if ($presentation === 'mosaic')
             </div>

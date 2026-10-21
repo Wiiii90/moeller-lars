@@ -82,6 +82,10 @@ final class JournalEntryEditorSchema
                 ->placeholder(__('No cover image'));
 
         $schema[] = $cover->nullable()->columnSpanFull();
+        $schema[] = Toggle::make('image_viewer_enabled')
+            ->label(__('Enlarge images on click'))
+            ->default(false)
+            ->columnSpanFull();
 
         return AdminForm::section(__('Basics'))->schema($schema)->columns(['md' => 2]);
     }

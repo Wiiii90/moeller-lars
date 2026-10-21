@@ -11,7 +11,10 @@ use LogicException;
 
 final class JournalMediaRenderer
 {
-    public function __construct(private readonly PublicMedia $media) {}
+    public function __construct(
+        private readonly PublicMedia $media,
+        private readonly SafeRichTextRenderer $richText,
+    ) {}
 
     public function inheritsDefaultNotice(JournalEntryMedia $usage): bool
     {
@@ -25,7 +28,7 @@ final class JournalMediaRenderer
             ], true);
     }
 
-    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true, bool $includeCopyrightNotice = true, bool $showCaption = true): HtmlString
+    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true, bool $includeCopyrightNotice = true, bool $showCaption = true, bool $enableViewer = false): HtmlString
     {
         $usage->loadMissing('mediaAsset.variants');
         $asset = $usage->mediaAsset;
@@ -53,6 +56,10 @@ final class JournalMediaRenderer
         // by their existing canonical media metadata, not this display flag.
         $caption = trim(implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== '')));
 
+        $viewerAttributes = $enableViewer && ! $isVideo
+            ? $this->viewerAttributes('journal-media-'.(int) $usage->getKey(), $this->media->originalUrlForAsset($asset), $alt)
+            : '';
+
         $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';
         $element = $isVideo
             ? '<video src="'.e($this->media->originalUrlForAsset($asset)).'" aria-label="'.e($alt).'"'
@@ -60,7 +67,7 @@ final class JournalMediaRenderer
                 .($posterVariant !== null ? ' width="'.(int) $posterVariant->getAttribute('width').'" height="'.(int) $posterVariant->getAttribute('height').'"' : '')
                 .' controls muted loop playsinline preload="metadata" data-public-loop-video></video>'
             : '<img src="'.e($this->media->variantUrl($variant)).'" alt="'.e($alt).'"'.$dimensions
-                .' loading="'.($priority ? 'eager' : 'lazy').'" decoding="async" fetchpriority="'.($priority ? 'high' : 'auto').'">';
+                .' loading="'.($priority ? 'eager' : 'lazy').'" decoding="async" fetchpriority="'.($priority ? 'high' : 'auto').'"'.$viewerAttributes.'>';
         $figure = '<figure class="'.e($class).'">'
             .$element
             .($showCaption && $caption !== '' ? '<figcaption>'.e($caption).'</figcaption>' : '')
@@ -68,4 +75,69 @@ final class JournalMediaRenderer
 
         return new HtmlString($figure);
     }
+
+    public function renderRichText(string $source): HtmlString
+    {
+        $html = (string) $this->richText->render($source);
+        $ids = [];
+
+        if (RichTextDocument::isVisual($source)) {
+            preg_match_all('/<img\b[^>]*>/i', $source, $sourceImages);
+            foreach ($sourceImages[0] ?? [] as $tag) {
+                if (preg_match('/\bdata-id\s*=\s*(["\'])(\d+)\1/i', $tag, $match) === 1) {
+                    $ids[] = (int) $match[2];
+                }
+            }
+        } else {
+            preg_match_all('/!\[[^\r\n]*?\]\(([^)\r\n]+)\)/', $source, $sourceImages);
+            foreach ($sourceImages[1] ?? [] as $url) {
+                $ids[] = RichTextMediaReference::idFromUrl($url);
+            }
+        }
+
+        $assets = MediaAsset::query()
+            ->whereIn('id', array_values(array_unique(array_filter($ids, static fn (?int $id): bool => $id !== null))))
+            ->where('state', 'available')
+            ->get()
+            ->keyBy('id');
+
+        $index = 0;
+        $rendered = preg_replace_callback('/<img\b[^>]*>/i', function (array $match) use ($ids, $assets, &$index): string {
+            $index++;
+            $tag = $match[0];
+            $id = $ids[$index - 1] ?? null;
+            $asset = $id !== null ? $assets->get($id) : null;
+            $imageUrl = $asset instanceof MediaAsset ? $this->media->originalUrlForAsset($asset) : null;
+
+            if ($imageUrl === null && preg_match('/\bsrc\s*=\s*(["\'])(.*?)\1/i', $tag, $urlMatch) === 1) {
+                $imageUrl = html_entity_decode($urlMatch[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+            if ($imageUrl === null || $imageUrl === '') {
+                return $tag;
+            }
+
+            $alt = '';
+            if (preg_match('/\balt\s*=\s*(["\'])(.*?)\1/i', $tag, $altMatch) === 1) {
+                $alt = html_entity_decode($altMatch[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+
+            $prefix = preg_replace('/\s*\/?>$/', '', $tag);
+
+            return ($prefix ?? $tag).$this->viewerAttributes('journal-rich-'.$index, $imageUrl, $alt).'>';
+        }, $html);
+
+        return new HtmlString($rendered ?? $html);
+    }
+
+    private function viewerAttributes(string $key, string $source, string $alt): string
+    {
+        return ' data-artwork-viewer-item data-artwork-viewer-trigger data-viewer-scope="journal"'
+            .' data-viewer-key="'.e($key).'"'
+            .' data-viewer-kind="image"'
+            .' data-viewer-src="'.e($source).'"'
+            .' data-viewer-alt="'.e($alt).'"'
+            .' data-viewer-title="'.e($alt !== '' ? $alt : 'Journal image').'"'
+            .' role="button" tabindex="0" aria-label="'.e('Enlarge image: '.($alt !== '' ? $alt : 'Journal image')).'"';
+    }
+
 }

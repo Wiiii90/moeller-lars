@@ -396,3 +396,14 @@
     line-height: 1.5;
     overflow-wrap: anywhere;
 }
+
+.journal-entry-media img[data-artwork-viewer-trigger],
+.journal-entry-content img[data-artwork-viewer-trigger] {
+    cursor: zoom-in;
+}
+
+.journal-entry-media img[data-artwork-viewer-trigger]:focus-visible,
+.journal-entry-content img[data-artwork-viewer-trigger]:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}

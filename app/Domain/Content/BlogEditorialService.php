@@ -53,6 +53,7 @@ final class BlogEditorialService
         $actor = $this->audit->requireActor();
         $data['site_section_id'] = $post->getAttribute('site_section_id');
         $data['gallery_presentation'] ??= $post->galleryPresentation();
+        $data['image_viewer_enabled'] ??= (bool) $post->getAttribute('image_viewer_enabled');
         $validated = $this->validate($data, (int) $post->getKey());
 
         return DB::transaction(function () use ($post, $data, $validated, $actor): BlogPost {
@@ -290,6 +291,10 @@ final class BlogEditorialService
         if ($presentation !== null && (! is_string($presentation) || ! in_array($presentation, ['sequence', 'grid', 'mosaic', 'slideshow'], true))) {
             throw ValidationException::withMessages(['gallery_presentation' => 'Choose a supported Gallery presentation.']);
         }
+        $viewer = $data['image_viewer_enabled'] ?? false;
+        if (! is_bool($viewer) && ! in_array($viewer, [0, 1, '0', '1'], true)) {
+            throw ValidationException::withMessages(['image_viewer_enabled' => 'Choose whether Journal images can be enlarged.']);
+        }
         $excerpt = $data['excerpt'] ?? null;
         if ($excerpt !== null && (! is_string($excerpt) || mb_strlen($excerpt) > 1000)) {
             throw ValidationException::withMessages(['excerpt' => 'The blog excerpt is invalid.']);
@@ -304,6 +309,7 @@ final class BlogEditorialService
             'position' => (int) $position,
             'excerpt' => is_string($excerpt) && trim($excerpt) !== '' ? trim($excerpt) : null,
             'gallery_presentation' => $presentation ?? 'sequence',
+            'image_viewer_enabled' => (bool) $viewer,
             'published_at' => $this->dateTime($data['published_at'] ?? null, 'published_at'),
             'scheduled_at' => $this->dateTime($data['scheduled_at'] ?? null, 'scheduled_at'),
         ];
