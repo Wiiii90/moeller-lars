@@ -3,11 +3,11 @@
 The authenticated Filament SPA supports per-user `admin_language` values:
 `en` (English) and `de` (Deutsch). This is independent of the same user's
 `admin_region` preference (de-DE/en-GB/en-US) for dates and numbers.
-Both are managed in Account. Language is also directly available in the
-top-right user-badge dropdown as a dedicated compact Language action, before
-the theme switcher, with the saved language visible in its label. The original theme switcher stays first; Account retains its original
-position immediately below it. Language follows Account as a new item,
-without modifying any existing menu item's position. Both entry points update the same users.admin_language preference.
+Both are managed in Account. The top-right user-badge dropdown retains
+its existing Theme → Account → Logout order, with the new Language action
+inserted directly after Account. Its label is simply "Language" (or "Sprache"
+in German), without displaying the current value. Both entry points update
+the same users.admin_language preference.
 Changing Language requires a full SPA page reload, because a pre-existing
 Livewire/Alpine tree contains already rendered server-side labels.
 
