@@ -726,7 +726,7 @@ body.sorting .admin-hierarchy--pages .admin-pages__root-rows
 body.sorting .admin-hierarchy--pages .admin-pages__root-rows
     > .admin-hierarchy__group > .admin-pages__row:hover::after,
 body.sorting .admin-hierarchy--pages .admin-hierarchy__children-rows:not(.admin-pages__empty-child-rows)
-    > [wire\\:sort\\:item] > .admin-pages__row:hover::after {
+    > [wire\:sort\:item] > .admin-pages__row:hover::after {
     content: attr(data-page-placement-label);
     position: absolute;
     bottom: .08rem;
