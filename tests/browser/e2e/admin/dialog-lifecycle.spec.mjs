@@ -36,3 +36,32 @@ test('the page is scrollable again after dismissing an open modal', async ({ pag
   await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
   await expect.poll(() => page.evaluate(() => document.scrollingElement.scrollTop)).toBeGreaterThan(0);
 });
+
+test('admin modal closes from sidebar, topbar and outer page background', async ({ page }) => {
+  await signIn(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/admin/pages');
+
+  const open = page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true });
+  const heading = page.getByRole('heading', { name: 'Add page', exact: true });
+
+  for (const [region, x, y] of [
+    ['sidebar', 24, 180],
+    ['topbar', 500, 20],
+    ['outer page edge', 1430, 220],
+  ]) {
+    await open.click();
+    await expect(heading).toBeVisible();
+
+    const modal = page.locator('.fi-modal.fi-modal-open').last();
+    const hitArea = await modal.locator(':scope > .fi-modal-window-ctn').boundingBox();
+    expect(hitArea, `${region} must be within the Filament click-away area`).not.toBeNull();
+    expect(hitArea.x).toBe(0);
+    expect(hitArea.y).toBe(0);
+    expect(hitArea.width).toBe(1440);
+    expect(hitArea.height).toBe(900);
+
+    await page.mouse.click(x, y);
+    await expect(heading, `clicking ${region} must close the dialog`).toBeHidden();
+  }
+});
