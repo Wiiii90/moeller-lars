@@ -166,6 +166,13 @@ final class AdminRichText
                                 this.pickerLeft = Math.max(0, Math.min(anchor.left - shell.left, maxLeft))
                                 this.pickerTop = anchor.bottom - shell.top + 4
                                 this.imagePickerOpen = true
+                                // Open Filament's own searchable Select immediately:
+                                // one toolbar click goes straight to image search.
+                                this.$nextTick(() => {
+                                    this.$el.querySelector(
+                                        '.admin-rich-text-storage-dropdown .fi-select-input-btn',
+                                    )?.click()
+                                })
                             },
                         }
                         JS,
