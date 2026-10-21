@@ -69,87 +69,79 @@ final class AdminRichText
             $editor->maxLength($maxLength);
         }
 
-        // Filament 5.7.6 renders extraInputAttributes on the editor area,
-        // but does not render extraAlpineAttributes in its embedded view.
-        // For a bare editor, leaving the area must reach the canonical
-        // Edit-dialog change handler. The media-enabled editor below binds
-        // the same event to its whole shell, including tools and picker.
-        if (! $allowEmbeddedMedia) {
-            $editor->extraInputAttributes([
-                'x-on:focusout' => <<<'JS'
-                    if (!$el.closest('.admin-dialog--edit')) return;
-                    if ($el.closest('.fi-fo-rich-editor')?.contains($event.relatedTarget)) return;
-                    $el.dispatchEvent(new Event('change', { bubbles: true }));
-                    JS,
-            ]);
-
-            return [$editor];
-        }
-
+        // One autosave boundary for every shared RichEditor instance.
+        // The owning AdminDialog remains responsible for persistence.
+        // Creation and Command dialogs never autosave.
         $editorKey = 'artist-rich-text-'.$name;
         $editor->key($editorKey);
+        $fields = [$editor];
 
-        $picker = MediaAssetSelect::makeId(
-            '__rich_image_'.$name,
-            'Image from Storage',
-            imagesOnly: true,
-        )
-            ->nullable()
-            ->dehydrated(false)
-            ->live()
-            ->afterStateUpdated(static function (mixed $state, Select $field) use ($editor): void {
-                $id = filter_var($state, FILTER_VALIDATE_INT);
-                if ($id === false || $id <= 0) {
-                    return;
-                }
+        if ($allowEmbeddedMedia) {
+            $picker = MediaAssetSelect::makeId(
+                '__rich_image_'.$name,
+                'Image from Storage',
+                imagesOnly: true,
+            )
+                ->nullable()
+                ->dehydrated(false)
+                ->live()
+                ->afterStateUpdated(static function (mixed $state, Select $field) use ($editor): void {
+                    $id = filter_var($state, FILTER_VALIDATE_INT);
+                    if ($id === false || $id <= 0) {
+                        return;
+                    }
 
-                $asset = MediaAsset::query()
-                    ->whereKey($id)
-                    ->where('state', 'available')
-                    ->where('mime_type', 'like', 'image/%')
-                    ->with('variants')
-                    ->firstOrFail();
-                $variant = MediaPreviewVariant::imageThumbnail($asset);
-                if ($variant === null) {
-                    return;
-                }
+                    $asset = MediaAsset::query()
+                        ->whereKey($id)
+                        ->where('state', 'available')
+                        ->where('mime_type', 'like', 'image/%')
+                        ->with('variants')
+                        ->firstOrFail();
+                    $variant = MediaPreviewVariant::imageThumbnail($asset);
+                    if ($variant === null) {
+                        return;
+                    }
 
-                // Use the owning editor object from this shared schema.
-                // The former root-schema search could resolve the wrong
-                // component during Livewire morphs and break Edit dialogs.
-                $editor->runCommands([
-                    EditorCommand::make('insertContent', arguments: [[
-                        'type' => 'image',
-                        'attrs' => [
-                            'id' => (string) $id,
-                            'src' => route('admin.media.variant', $variant),
-                            'alt' => (string) ($asset->getAttribute('alt_text') ?: ''),
-                        ],
-                    ]]),
-                ]);
+                    // Use the owning editor object from this shared schema.
+                    // The former root-schema search could resolve the wrong
+                    // component during Livewire morphs and break Edit dialogs.
+                    $editor->runCommands([
+                        EditorCommand::make('insertContent', arguments: [[
+                            'type' => 'image',
+                            'attrs' => [
+                                'id' => (string) $id,
+                                'src' => route('admin.media.variant', $variant),
+                                'alt' => (string) ($asset->getAttribute('alt_text') ?: ''),
+                            ],
+                        ]]),
+                    ]);
 
-                $field->state(null);
-                $field->getLivewire()->dispatch('artist-rich-image-inserted');
-            });
+                    $field->state(null);
+                    $field->getLivewire()->dispatch('artist-rich-image-inserted');
+                });
+
+
+            $fields[] = Grid::make()
+                ->columns(1)
+                ->schema([$picker])
+                ->extraAttributes([
+                    'x-show' => 'imagePickerOpen',
+                    'x-cloak' => true,
+                    'x-bind:style' => '`top: ${pickerTop}px; left: ${pickerLeft}px`',
+                    // Picker is a transient Livewire field. Its native change
+                    // must not autosave an unrelated Rich Text state.
+                    'x-on:change.stop' => 'void 0',
+                    'class' => 'admin-rich-text-storage-dropdown',
+                    'role' => 'group',
+                    'aria-label' => __('Image from Storage'),
+                ])
+                ->columnSpanFull();
+        }
 
         return [
             Grid::make()
                 ->columns(1)
-                ->schema([
-                    $editor,
-                    Grid::make()
-                        ->columns(1)
-                        ->schema([$picker])
-                        ->extraAttributes([
-                            'x-show' => 'imagePickerOpen',
-                            'x-cloak' => true,
-                            'x-bind:style' => '`top: ${pickerTop}px; left: ${pickerLeft}px`',
-                            'class' => 'admin-rich-text-storage-dropdown',
-                            'role' => 'group',
-                            'aria-label' => __('Image from Storage'),
-                        ])
-                        ->columnSpanFull(),
-                ])
+                ->schema($fields)
                 ->key($editorKey.'-shell')
                 ->extraAttributes([
                     'class' => 'admin-rich-text-editor-shell',
@@ -173,8 +165,6 @@ final class AdminRichText
                                 this.pickerLeft = Math.max(0, Math.min(anchor.left - shell.left, maxLeft))
                                 this.pickerTop = anchor.bottom - shell.top + 4
                                 this.imagePickerOpen = true
-                                // Open Filament's own searchable Select immediately:
-                                // one toolbar click goes straight to image search.
                                 this.$nextTick(() => {
                                     this.$el.querySelector(
                                         '.admin-rich-text-storage-dropdown .fi-select-input-btn',
@@ -183,12 +173,17 @@ final class AdminRichText
                             },
                         }
                         JS,
-                    // One blur boundary for editor, toolbar and image picker:
-                    // do not autosave while switching between their controls.
+                    // One shared blur-to-change bridge, including image tools.
+                    // A focus change inside the editor/picker never commits.
+                    // The focus check runs after Alpine's state update without
+                    // a timer, but only when the editor genuinely loses focus.
                     'x-on:focusout' => <<<'JS'
                         if (!$el.closest('.admin-dialog--edit')) return;
-                        if ($el.contains($event.relatedTarget)) return;
-                        $el.dispatchEvent(new Event('change', { bubbles: true }));
+                        const shell = $el;
+                        $nextTick(() => {
+                            if (!shell.isConnected || shell.contains(document.activeElement)) return;
+                            shell.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
                         JS,
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
                     'x-on:artist-rich-image-inserted.window' => 'imagePickerOpen = false',
