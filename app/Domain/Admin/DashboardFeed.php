@@ -612,9 +612,13 @@ final class DashboardFeed
         $body = trim((string) ($notification->getAttribute('body') ?? ''));
         $status = (string) $notification->getAttribute('status');
         $readAt = $notification->getAttribute('read_at');
-        $title = (string) $notification->getAttribute('title');
+        $title = __((string) $notification->getAttribute('title'));
+        $body = $body !== '' ? __($body) : '';
         $actionUrl = trim((string) ($notification->getAttribute('action_url') ?? ''));
         $actionLabel = trim((string) ($notification->getAttribute('action_label') ?? ''));
+        if ($actionLabel !== '') {
+            $actionLabel = __($actionLabel);
+        }
 
         return [
             'key' => 'notification:'.$notification->getKey(),

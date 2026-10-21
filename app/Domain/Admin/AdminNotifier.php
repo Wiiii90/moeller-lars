@@ -120,9 +120,9 @@ final class AdminNotifier
             return [];
         }
 
-        return array_values(array_filter(
-            $pending,
-            static fn (mixed $message): bool => is_array($message),
+        return array_values(array_map(
+            static fn (array $message): array => self::translatedSurfaceMessage($message),
+            array_filter($pending, static fn (mixed $message): bool => is_array($message)),
         ));
     }
 
@@ -192,13 +192,23 @@ final class AdminNotifier
             $component = app(LivewireManager::class)->current();
 
             if ($component instanceof Component) {
-                $component->dispatch('admin-header-notification', notification: $message);
+                $component->dispatch('admin-header-notification', notification: self::translatedSurfaceMessage($message));
 
                 return;
             }
         }
 
         $this->storePendingNotification($message);
+    }
+
+    /** Visible translation only; the original notification is persisted in English. */
+    private static function translatedSurfaceMessage(array $message): array
+    {
+        return [
+            ...$message,
+            'title' => __((string) ($message['title'] ?? '')),
+            'body' => is_string($message['body'] ?? null) ? __($message['body']) : null,
+        ];
     }
 
     private function recipientId(User|int|null $user): ?int
