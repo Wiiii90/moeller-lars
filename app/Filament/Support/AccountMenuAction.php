@@ -33,7 +33,7 @@ final class AccountMenuAction
                 // A profile action belongs above the theme switcher.
                 // Non-negative sort values place it in the menu's lower group.
                 ->sort(-1)
-                ->modalHeading(__('Account & security'))
+                ->modalHeading(fn (): string => __('Account & security'))
                 ->fillForm(fn (): array => [
                     'name' => (string) self::user()->getAttribute('name'),
                     'email' => (string) self::user()->getAttribute('email'),
@@ -147,7 +147,7 @@ final class AccountMenuAction
                     );
 
                 }),
-            __('Save account'),
+            fn (): string => __('Save account'),
             AdminDialogSize::Default,
         );
     }
@@ -164,9 +164,9 @@ final class AccountMenuAction
                 ->label(fn (): string => __('Language').' · '.(self::language() === 'de' ? 'Deutsch' : 'English'))
                 ->icon(AdminIcon::Language->value)
                 ->sort(-1)
-                ->modalHeading(__('Language'))
+                ->modalHeading(fn (): string => __('Language'))
                 ->fillForm(fn (): array => ['admin_language' => self::language()])
-                ->schema([
+                ->schema(fn (): array => [
                     Select::make('admin_language')
                         ->label(__('Language'))
                         ->options(['en' => 'English', 'de' => 'Deutsch'])
@@ -189,7 +189,7 @@ final class AccountMenuAction
                         status: 'success',
                     );
                 }),
-            __('Save account'),
+            fn (): string => __('Save language'),
             AdminDialogSize::Small,
         );
     }

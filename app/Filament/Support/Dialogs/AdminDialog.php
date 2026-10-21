@@ -82,7 +82,7 @@ final class AdminDialog
 
     public static function command(
         Action $action,
-        string $submitLabel,
+        string|Closure $submitLabel,
         AdminDialogSize $size = AdminDialogSize::Small,
     ): Action {
         return self::committedTask($action, AdminDialogType::Command, $submitLabel, $size);
@@ -127,7 +127,7 @@ final class AdminDialog
     private static function committedTask(
         Action $action,
         AdminDialogType $type,
-        string $submitLabel,
+        string|Closure $submitLabel,
         AdminDialogSize $size,
         ?AdminIcon $submitIcon = null,
     ): Action {
