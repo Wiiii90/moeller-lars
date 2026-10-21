@@ -2,6 +2,16 @@
 
 This file is the default working contract for coding agents, review/orchestration chats and parallel workers in `Wiiii90/moeller-lars`.
 
+## Abbreviations in user-facing communication — mandatory
+
+**On first use in each user-facing reply, report, handoff, explanation or standalone document, write out every abbreviation in full and immediately explain what it means in plain language.** This applies to technical initialisms, acronyms, file formats, protocols, systems and project-specific shorthand, even if they are familiar to developers or were explained in an earlier chat. Format: **full term (abbreviation)**, followed by a short explanation of its purpose when the term is not self-explanatory.
+
+For example: **International Press Telecommunications Council (IPTC)** — a standard for descriptive information in image files; **Extensible Metadata Platform (XMP)** — a format for embedding metadata in files. Afterwards the short forms may be used within that response.
+
+If the expansion is unknown, verify it before using the abbreviation, or avoid the abbreviation. Never present a string of unexplained short forms as a progress report; describe what was built, what the artist can see or do, and what is still missing in ordinary language first.
+
+Literal identifiers in source code, paths, commands, configuration keys and existing product labels must remain unchanged; explain their meaning in the surrounding text rather than renaming them merely to satisfy this communication rule.
+
 Two companion files are part of this contract:
 
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
