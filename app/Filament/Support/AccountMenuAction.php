@@ -30,9 +30,8 @@ final class AccountMenuAction
                 ->label(__('Account'))
                 ->icon(AdminIcon::Account->value)
                 ->url(null)
-                // A profile action belongs above the theme switcher.
-                // Non-negative sort values place it in the menu's lower group.
-                ->sort(-1)
+                // Preserve the original position after the theme switcher.
+                ->sort(0)
                 ->modalHeading(fn (): string => __('Account & security'))
                 ->fillForm(fn (): array => [
                     'name' => (string) self::user()->getAttribute('name'),
@@ -161,9 +160,10 @@ final class AccountMenuAction
     {
         return AdminDialog::command(
             Action::make('changeAdminLanguage')
-                ->label(fn (): string => __('Language').' · '.(self::language() === 'de' ? 'Deutsch' : 'English'))
+                ->label(fn (): string => __('Language'))
                 ->icon(AdminIcon::Language->value)
-                ->sort(-1)
+                // New item after Account; do not move any existing menu entry.
+                ->sort(1)
                 ->modalHeading(fn (): string => __('Language'))
                 ->fillForm(fn (): array => ['admin_language' => self::language()])
                 ->schema(fn (): array => [
