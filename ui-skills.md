@@ -277,9 +277,15 @@ does not jump; the leading Position/Drag region is outside the child target.
 global pointer handlers, a second drag controller, or unrestricted empty
 sortable proximity detection.** Before changing this structure, reproduce
 root-before/middle/last and nest-under-last behavior in the real browser.
-The remaining presentation problem is making root-level versus child-level
-drop intent legible; presentation feedback must not change hit geometry,
-sortable membership, parent placement or row size.
+The interaction accepted by the user remains the immutable baseline for
+presentation changes. Root placement needs only the same horizontal separator
+used between root groups; nesting beneath a parent must have **no** separator
+between parent and child. No colored side rail, visible target surface, label,
+extra spacing, or custom pointer handler is acceptable. A source-only candidate
+may mark root insertion using the native `.sortable-ghost` placeholder's
+position among direct root siblings, without changing hit geometry, sortable
+membership, parent placement or row size. User browser acceptance of that
+visual cue is separate from the already accepted drag behavior.
 
 Pages and Custom Pages both support hierarchy, but they have **different
 domain owners**: Pages nests site sections under pages; Custom Page nests

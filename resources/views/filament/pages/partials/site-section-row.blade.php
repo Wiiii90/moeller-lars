@@ -13,7 +13,6 @@
     data-section-id="{{ $section['id'] }}"
     data-parent-id="{{ $section['parent_id'] ?? '' }}"
     data-has-children="{{ $section['has_children'] ? 'true' : 'false' }}"
-    data-page-placement-label="{{ $isChild ? __('Child level') : __('Top level') }}"
 >
     <div class="admin-pages__primary-grid" role="presentation">
         <div class="admin-hierarchy__position-cell" role="cell" data-cell="position">
