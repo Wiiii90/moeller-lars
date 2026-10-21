@@ -610,6 +610,10 @@
     overflow-y: auto;
 }
 
+.admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar .fi-fo-rich-editor-tool:not(:disabled) {
+    color: var(--admin-text);
+}
+
 .admin-rich-text-image-caption-dropdown {
     position: absolute;
     z-index: 46;
