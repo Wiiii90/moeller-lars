@@ -206,6 +206,50 @@ gradient does not restart in the much shorter Header and create a
 viewport-wide false divider at its lower edge. Actual divider modes retain
 their own independent stroke and surface semantics.
 
+### Regression record: false divider from independent gradient paints (2026-10-21)
+
+**Symptom and misleading leads:** General's embedded Live Preview showed a
+viewport-spanning seam below the sticky Menu even when "No divider" was
+selected. The directly opened `/preview` made it far less conspicuous.
+Earlier attempts looked at divider classes, paper contours, preview reloads
+and responsive iframe scaling instead of identifying the painted element.
+The embedded view uses the same `/preview` Working route; the desktop and
+phone iframe viewports are respectively 1280px and 390px before visual
+scaling. Scaling is not a new responsive breakpoint.
+
+**Decisive evidence:** The affected Validation iframe reported
+`data-public-layout-divider-mode="fine"`; its computed Header `::after`
+content was `none` and its Menu `border-bottom` was `0px`. Therefore the
+visible seam was **not** a configured divider. An earlier local inspection
+reported `full_gap`, but that different mode intentionally draws a
+full-width line; conclusions from distinct preview states must not be mixed.
+
+**Root cause and repair:** Both the document `body` and sticky
+`.site-header` painted `background: var(--public-page)` independently.
+With a vertical gradient, each element's height determined the gradient
+coordinates; the short Header's bottom color differed from the document
+background immediately below, visually imitating a full-width divider.
+Commit `63420fa17b5088367d88f9f17acc211ebcd41b53` set
+`background-attachment: fixed` on **both** elements in
+`resources/css/public-presentation.css`. They now share viewport-aligned
+gradient coordinates. This changes neither Menu-to-page mode nor the
+General appearance controls and does not introduce another layout owner.
+
+**Regression diagnostic:** First compare embedded and direct `/preview`
+at matching iframe/window CSS viewport widths. Inspect the current divider
+mode in `meta[data-public-layout]`, the Header pseudo-element and Menu
+bottom border; if the mode is `fine` and those strokes are absent, investigate
+Header/Body background paint and attachment **before** touching divider
+classes or responsive geometry. Preserve all five divider modes, including
+the intentionally full-width `full` and `full_gap` variants.
+
+**Verification boundary:** Source diff and an isolated Chromium comparison
+supported the gradient-seam correction, including on scroll. The real
+deployed General Live Preview was **not** browser-accepted at the time of
+this record. Confirm gradients and solids, sticky scrolling, and divider
+variants in the actual Validation browser before marking this visually
+accepted.
+
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width
 still sets the Menu/Page shell geometry and Content padding still sets the
