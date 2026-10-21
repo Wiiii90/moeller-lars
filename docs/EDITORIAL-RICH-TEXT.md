@@ -17,9 +17,11 @@ The editor does not own a second auto-save timer or alternate change history.
 ## Image media and layout
 
 Images reference canonical available `MediaAsset` IDs, including historical
-`media:` references. The image picker is an inline panel *inside* the current
-Edit form, using the existing searchable Storage selector. It does not open
-a second action modal.
+`media:` references. The image picker is a searchable Storage dropdown anchored to the Insert
+Image toolbar control *inside* the current Edit form. It does not open
+a second action modal or introduce a second media catalog. The selection
+callback holds its owning RichEditor component directly; it does not
+search the entire schema during Livewire updates.
 
 The generic `Attach Files` control and its independent upload capability are
 disabled. Uploads are performed via the existing Storage workflow. Deleting
@@ -35,8 +37,10 @@ the image while desktop width permits; narrow layouts clear the float.
 An optional 500-character Caption appears below the image; it is not
 alternative text for screen readers and does not replace ALT.
 
-Image selection, floating toolbar, sizing, and wrapping remain subject to
-browser acceptance on the actual Filament version.
+Paragraph, alignment and image-position controls remain separate, icon-only
+toolbar buttons. The shared toolbar has one icon baseline and consistent
+dimensions. Image selection, floating toolbar, sizing, and wrapping remain
+subject to browser acceptance on the actual Filament version.
 
 ## Clipboard and PDF
 

@@ -9,7 +9,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\RichEditor\EditorCommand;
 use Filament\Schemas\Components\Grid;
 use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
 
 final class AdminRichText
 {
@@ -22,19 +21,16 @@ final class AdminRichText
     ): array {
         $toolbar = [
             ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', 'link'],
-            [ToolbarButtonGroup::make(__('Paragraph'), ['paragraph', 'h1', 'h2', 'h3', 'h4'])->textualButtons()],
-            [ToolbarButtonGroup::make(__('Alignment'), ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
+            ['paragraph', 'h1', 'h2', 'h3', 'h4'],
+            ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'],
             ['blockquote', 'bulletList', 'orderedList', 'horizontalRule'],
             ['table', 'highlight', 'textColor', 'clearFormatting'],
         ];
         if ($allowEmbeddedMedia) {
             $toolbar[] = ['insertStorageImage'];
             $toolbar[] = [
-                ToolbarButtonGroup::make(__('Image position'), [
-                    'imageInline', 'imageLeft', 'imageCenter', 'imageRight',
-                    'imageFloatleft', 'imageFloatright',
-                ])->textualButtons(),
-                'imageCaption',
+                'imageInline', 'imageLeft', 'imageCenter', 'imageRight',
+                'imageFloatleft', 'imageFloatright', 'imageCaption',
             ];
         }
         $toolbar[] = ['undo', 'redo'];
@@ -94,7 +90,7 @@ final class AdminRichText
             ->nullable()
             ->dehydrated(false)
             ->live()
-            ->afterStateUpdated(static function (mixed $state, Select $field) use ($editorKey): void {
+            ->afterStateUpdated(static function (mixed $state, Select $field) use ($editor): void {
                 $id = filter_var($state, FILTER_VALIDATE_INT);
                 if ($id === false || $id <= 0) {
                     return;
@@ -111,16 +107,10 @@ final class AdminRichText
                     return;
                 }
 
-                $target = $field->getRootContainer()->getComponent(
-                    static fn (mixed $candidate): bool =>
-                        $candidate instanceof RichEditor && $candidate->getKey() === $editorKey,
-                    withHidden: true,
-                );
-                if (! $target instanceof RichEditor) {
-                    return;
-                }
-
-                $target->runCommands([
+                // Use the owning editor object from this shared schema.
+                // The former root-schema search could resolve the wrong
+                // component during Livewire morphs and break Edit dialogs.
+                $editor->runCommands([
                     EditorCommand::make('insertContent', arguments: [[
                         'type' => 'image',
                         'attrs' => [
@@ -146,14 +136,43 @@ final class AdminRichText
                         ->extraAttributes([
                             'x-show' => 'imagePickerOpen',
                             'x-cloak' => true,
-                            'class' => 'admin-rich-text-inline-picker',
+                            'x-bind:style' => '`top: ${pickerTop}px; left: ${pickerLeft}px`',
+                            'class' => 'admin-rich-text-storage-dropdown',
+                            'role' => 'group',
+                            'aria-label' => __('Image from Storage'),
                         ])
                         ->columnSpanFull(),
                 ])
+                ->key($editorKey.'-shell')
                 ->extraAttributes([
-                    'x-data' => '{ imagePickerOpen: false }',
-                    'x-on:artist-rich-image-toggle' => 'imagePickerOpen = !imagePickerOpen',
+                    'class' => 'admin-rich-text-editor-shell',
+                    'x-data' => <<<'JS'
+                        {
+                            imagePickerOpen: false,
+                            pickerLeft: 0,
+                            pickerTop: 0,
+                            toggleImagePicker(event) {
+                                if (this.imagePickerOpen) {
+                                    this.imagePickerOpen = false
+                                    return
+                                }
+
+                                const trigger = event.target.closest('.fi-fo-rich-editor-tool')
+                                if (!trigger) return
+
+                                const shell = this.$el.getBoundingClientRect()
+                                const anchor = trigger.getBoundingClientRect()
+                                const maxLeft = Math.max(0, shell.width - 320)
+                                this.pickerLeft = Math.max(0, Math.min(anchor.left - shell.left, maxLeft))
+                                this.pickerTop = anchor.bottom - shell.top + 4
+                                this.imagePickerOpen = true
+                            },
+                        }
+                        JS,
+                    'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
                     'x-on:artist-rich-image-inserted.window' => 'imagePickerOpen = false',
+                    'x-on:click.outside' => 'imagePickerOpen = false',
+                    'x-on:keydown.escape.window' => 'imagePickerOpen = false',
                 ])
                 ->columnSpanFull(),
         ];
