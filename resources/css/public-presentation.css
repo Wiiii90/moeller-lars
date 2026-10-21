@@ -1760,17 +1760,11 @@ html:has(.artwork-viewer[open]) {
     border-bottom: 0;
 }
 
-/* Full-width divider: a viewport-wide line at the end of the title/menu,
- * with an actual gap below it, owned by the sticky header. Do not use a
- * border-bottom on the padded header: that would move the line *below* gap. */
-.site-header--divider-full {
-    padding-bottom: var(--public-shell-gap);
-}
-
+/* Full-width divider marks the connected Menu/Content boundary. */
 .site-header--divider-full::after {
     position: absolute;
     right: 0;
-    bottom: var(--public-shell-gap);
+    bottom: 0;
     left: 0;
     height: 1px;
     content: "";
@@ -1781,20 +1775,6 @@ html:has(.artwork-viewer[open]) {
 /* Menu divider is a stroke within the connected Menu/Page paper, not
  * a separating gap. The actual Menu sheet is the stroke owner. */
 .site-header--divider-menu .site-navigation {
-    border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
-    border-image-source: var(--public-separator-gradient, none);
-    border-image-slice: 1;
-}
-
-/* Beside menu expands the outer navigation wrapper to the viewport for the
- * title column. In that layout the centered visible rail, not its wrapper,
- * is the Menu paper and owns this single border. */
-.site-header--divider-menu.site-header--name-outside:not(.is-title-stacked) .site-navigation {
-    border-bottom: 0;
-    border-image-source: none;
-}
-.site-header--divider-menu.site-header--name-outside:not(.is-title-stacked)
-.site-navigation > :is(.site-navigation__rail, .site-navigation__submenu):not([hidden]) {
     border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
     border-image-source: var(--public-separator-gradient, none);
     border-image-slice: 1;
@@ -1948,12 +1928,11 @@ body.public-site--frame-plain #content {
     padding-bottom: var(--public-shell-gap);
 }
 
-/* The same menu paper owns the name in both placements. Its wide,
- * outside composition places the name beside the paper without changing
- * its measured menu width; the narrow fallback moves it into the paper. */
+/* The centered Menu paper owns both title and navigation. Beside gives
+ * the title its intrinsic width; Inside reserves an alignment rail. */
 .site-header--name-inside,
 .site-header--name-above,
-.site-header--name-outside.is-title-stacked {
+.site-header--name-outside {
     --public-title-default: var(--public-index-ink);
 }
 
@@ -1991,50 +1970,6 @@ body.public-site--frame-plain #content {
 .site-header:is(.site-header--name-inside, .site-header--name-outside) :is(.site-navigation__rail, .site-navigation__submenu) {
     grid-column: 2;
     grid-row: 1;
-}
-
-/* Beside menu reserves the entire exterior gutter as a real title column.
- * The paper remains centered at the same shell width as #content. The
- * title lives on the background, never beneath the Menu paper surface. */
-.site-header--name-outside:not(.is-title-stacked) .site-navigation {
-    display: grid;
-    width: 100%;
-    margin: 0;
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(0, min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max)))
-        minmax(0, 1fr);
-    background: transparent;
-}
-
-.site-header--name-outside:not(.is-title-stacked) .site-navigation > h1 {
-    position: relative;
-    box-sizing: border-box;
-    grid-column: 1;
-    grid-row: 1;
-    /* Keep the title rail beside the Menu without consuming an additional
-     * whole gutter on both sides of the actual text. */
-    justify-self: end;
-    width: min(100%, calc(var(--public-shell-max) * .5));
-    height: 100%;
-    min-width: 0;
-    padding-inline: calc(var(--public-gutter) / 2);
-}
-
-.site-header--name-outside:not(.is-title-stacked) :is(.site-navigation__rail, .site-navigation__submenu) {
-    grid-column: 2;
-    grid-row: 1;
-    width: 100%;
-}
-
-/* Beside's navigation is viewport-wide only for layout. Anchor its own
- * independent white Menu edges at the centered paper, not the viewport. */
-.site-header--name-outside:not(.is-title-stacked) .site-navigation::before {
-    left: calc((100% - min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max))) / 2 - var(--public-folio-edge-outset));
-}
-
-.site-header--name-outside:not(.is-title-stacked) .site-navigation::after {
-    right: calc((100% - min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max))) / 2 - var(--public-folio-edge-outset));
 }
 
 /* Above menu is a stable two-row Menu composition. It is not the

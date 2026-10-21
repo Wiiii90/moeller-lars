@@ -152,6 +152,14 @@ it('keeps one connected paper frame for the above-menu title without a divider',
         ->toContain('public-paper-frame--connected')
         ->toContain('site-header--divider-menu');
 
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_mode' => 'full',
+    ]);
+    $full = $this->get('/preview/'.$category->slug)->assertOk()->getContent();
+    expect($full)->toContain('public-paper-frame--compatible')
+        ->toContain('public-paper-frame--connected')
+        ->toContain('site-header--divider-full');
+
     foreach (['separate', 'full_gap'] as $mode) {
         app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
             'header_divider_mode' => $mode,

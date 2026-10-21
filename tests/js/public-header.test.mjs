@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { headerNeedsStack, headerShellGeometry } from '../../resources/js/public-header.js';
 
-test('Beside stacks according to one stable title slot, not the active navigation rail', () => {
-    assert.equal(headerNeedsStack('outside', 640, 145, 320), false);
-    assert.equal(headerNeedsStack('outside', 800, 145, 112), true);
-    assert.equal(headerNeedsStack('outside', 640, 145, 160), true);
-    assert.equal(headerNeedsStack('outside', 640, 145, 210), false);
-    assert.equal(headerNeedsStack('outside', 800, 195, 240, 16, 24), false);
-    assert.equal(headerNeedsStack('outside', 800, 221, 240, 16, 24), true);
+test('Beside shares configured Content width with the navigation', () => {
+    assert.equal(headerNeedsStack('outside', 800, 145), false);
+    assert.equal(headerNeedsStack('outside', 640, 320), false);
+    assert.equal(headerNeedsStack('outside', 560, 320), true);
+    assert.equal(headerNeedsStack('outside', 420, 145), false);
+    assert.equal(headerNeedsStack('outside', 390, 145), true);
+    assert.equal(headerNeedsStack('outside', 800, 540), true);
 });
 
 test('Inside title fits its real title column and preserves 15rem for navigation', () => {
@@ -27,10 +27,9 @@ test('Inside title fits its real title column and preserves 15rem for navigation
 test('responsive shell geometry comes from configured width and fixed viewport only', () => {
     const desktop = headerShellGeometry(1440, 800);
     const narrow = headerShellGeometry(520, 800);
-    assert.deepEqual(desktop, { gutter: 24, menuWidth: 800, outsideSpace: 320 });
+    assert.deepEqual(desktop, { gutter: 24, menuWidth: 800 });
     assert.ok(Math.abs(narrow.gutter - 10.4) < 0.001);
     assert.ok(Math.abs(narrow.menuWidth - 499.2) < 0.001);
-    assert.ok(Math.abs(narrow.outsideSpace - 10.4) < 0.001);
     assert.equal(headerShellGeometry(1440, 640).menuWidth, 640);
     // Nothing from the current title-stack class or rail geometry is an input.
     assert.deepEqual(headerShellGeometry(1440, 800), desktop);

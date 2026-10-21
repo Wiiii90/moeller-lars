@@ -173,14 +173,15 @@ restored on the header along with the existing frame style, preventing stale
 full-width divider classes in the cached preview document.
 
 Title Position offers **Beside menu**, **Inside menu**,
-**Above menu**, and **Below menu**. Beside is a true outer title column
-on the Global Background, while the Menu paper stays centered and aligned
-to the Content paper. Inside has a real reserved title width, so Left/Right
-have different positions; its Alignment dropdown intentionally omits Center.
+**Above menu**, and **Below menu**. Beside places a natural-width title
+column and a reduced navigation rail inside the **same** Menu paper,
+both within the configured Content width. Inside reserves a wider title
+alignment rail, so Left/Right have different positions; its Alignment
+dropdown intentionally omits Center.
 Above owns a permanent top title row **inside** the Menu paper, matching the
-responsive stacked composition. Both Inside and Beside move that same
-title into the Menu paper on their content-fit fallback and apply
-Responsive alignment (Left/Center/Right). Above and Below support the three
+responsive stacked composition. Both Inside and Beside stack the
+title above navigation inside the same Menu paper only when their combined
+widths do not fit, and apply Responsive alignment (Left/Center/Right). Above and Below support the three
 desktop alignments; the 40rem narrow mode applies the configured responsive
 alignment. Below is still its own content-sized row outside Menu.
 Public-header title fitting uses an initial synchronous calculation and
@@ -191,11 +192,10 @@ reads the rendered width or origin of a Menu rail that changes when
 `is-title-stacked` toggles. Inside requires both that the actual title
 column (15rem minimum, 32% share) fits the title and that the remaining
 navigation gets 15rem; this prevents names overflowing the column without
-triggering the stack. Beside uses a real exterior title area capped at half
-the configured shell, anchored adjacent to the Menu rather than the far
-left of a wide viewport. The title uses half of the actual shell gutter
-on each side and stacks only if its intrinsic width plus those paddings
-cannot fit that exterior area. Both variants retain their Admin alignment choices.
+triggering the stack. Beside uses the intrinsic title width plus regular title padding inside
+the centered shell. It keeps at least 15rem available for navigation;
+otherwise it stacks inside the same paper. Both variants retain their
+Admin alignment choices.
 There is no title-owned ResizeObserver, feedback loop, per-frame geometry
 write, timer or transition. The SPA lifecycle owns one resize listener and
 removes it at navigation teardown.
@@ -267,8 +267,9 @@ home link and accessible label use the same edited plain-text title; the
 default is `Lars Möller`. The title is always HTML-escaped on output.
 The positions `inside`, `outside`, `above` and `below` are
 distinct Menu compositions; their existing stored values are preserved.
-Outside is a true non-paper title column, Above always has its own Menu
-row, Inside reserves space for meaningful Left/Right alignment, and Below
+Outside/Beside has a natural-width title rail on the Menu paper,
+Above has its own Menu row, Inside reserves a meaningful alignment width,
+and Below
 remains its own content-sized row. On narrow Inside/Beside layouts the
 title stacks above the navigation **inside** the Menu paper. The base
 Title size is
@@ -288,7 +289,8 @@ existing independent Divider color:
   width (never the whole viewport). When geometrically compatible, Menu
   and Content use one connected paper frame without a separating gap.
 - `full`: **Full-width divider** — one line across the viewport
-  followed by a sticky-owned gap.
+  at the Menu/Content boundary, without splitting compatible paper
+  surfaces or inserting a separating gap.
 - `separate`: **Separate surfaces** — individual Menu/Page backing
   and a sticky-owned gap, without additional divider.
 - `full_gap`: **Full-width divider and separate surfaces** — a
