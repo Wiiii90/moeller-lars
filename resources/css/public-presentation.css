@@ -2010,13 +2010,13 @@ body.public-site--frame-plain #content {
     box-sizing: border-box;
     grid-column: 1;
     grid-row: 1;
-    /* Reserve a title rail immediately beside the centered Menu paper.
-     * At wide viewports it must not start at the browser's far-left edge. */
+    /* Keep the title rail beside the Menu without consuming an additional
+     * whole gutter on both sides of the actual text. */
     justify-self: end;
     width: min(100%, calc(var(--public-shell-max) * .5));
     height: 100%;
     min-width: 0;
-    padding-inline: var(--public-gutter);
+    padding-inline: calc(var(--public-gutter) / 2);
 }
 
 .site-header--name-outside:not(.is-title-stacked) :is(.site-navigation__rail, .site-navigation__submenu) {

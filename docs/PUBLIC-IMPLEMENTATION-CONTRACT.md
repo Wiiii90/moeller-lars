@@ -193,7 +193,9 @@ column (15rem minimum, 32% share) fits the title and that the remaining
 navigation gets 15rem; this prevents names overflowing the column without
 triggering the stack. Beside uses a real exterior title area capped at half
 the configured shell, anchored adjacent to the Menu rather than the far
-left of a wide viewport. Both variants retain their Admin alignment choices.
+left of a wide viewport. The title uses half of the actual shell gutter
+on each side and stacks only if its intrinsic width plus those paddings
+cannot fit that exterior area. Both variants retain their Admin alignment choices.
 There is no title-owned ResizeObserver, feedback loop, per-frame geometry
 write, timer or transition. The SPA lifecycle owns one resize listener and
 removes it at navigation teardown.

@@ -18,11 +18,10 @@ export function headerShellGeometry(viewportWidth, shellMax, rem = 16) {
     return { gutter, menuWidth, outsideSpace };
 }
 
-export function headerNeedsStack(mode, menuWidth, titleWidth, outsideSpace, rem = 16) {
+export function headerNeedsStack(mode, menuWidth, titleWidth, outsideSpace, rem = 16, gutter = 1.5 * rem) {
     if (mode === 'outside') {
-        // Beside's content-aligned title slot uses at most half of the
-        // configured shell width. Reserve both gutters at its sides.
-        return outsideSpace < titleWidth + 3 * rem;
+        // Both half-gutter paddings together consume one actual gutter.
+        return outsideSpace < titleWidth + gutter;
     }
     if (mode === 'inside') {
         // The real title rail is minmax(15rem, 32%) in the unstacked menu.
@@ -65,10 +64,10 @@ export function initializePublicHeader() {
         const root = getComputedStyle(document.documentElement);
         const rem = Number.parseFloat(root.fontSize) || 16;
         const configuredShellMax = Number.parseFloat(root.getPropertyValue('--public-shell-max')) || 800;
-        const { menuWidth, outsideSpace } = headerShellGeometry(window.innerWidth, configuredShellMax, rem);
+        const { menuWidth, outsideSpace, gutter } = headerShellGeometry(window.innerWidth, configuredShellMax, rem);
         const titleWidth = intrinsicTitleWidth(title, measurementContext);
         const besideRail = Math.min(outsideSpace, configuredShellMax * OUTSIDE_MAX_TITLE_SHELL_SHARE);
-        const stacked = headerNeedsStack(mode, menuWidth, titleWidth, besideRail, rem);
+        const stacked = headerNeedsStack(mode, menuWidth, titleWidth, besideRail, rem, gutter);
         if (header.classList.contains('is-title-stacked') !== stacked) {
             header.classList.toggle('is-title-stacked', stacked);
         }

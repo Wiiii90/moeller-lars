@@ -34,7 +34,8 @@ test('Angle uses the shared input inset, control height and separated degree suf
 
 test('More space is presentation-only; its preview stays mounted while its viewport may grow', () => {
     assert.match(toggle, /x-on:click="moreSpace = ! moreSpace"/);
-    assert.match(toggle, /appearanceScroll.scrollTop = 0/);
+    assert.match(toggle, /\.general-appearance-stage__scroll/);
+    assert.doesNotMatch(toggle, /\$refs\.appearanceScroll/);
     assert.match(stage, /'x-data' => "\{ appearanceTab: 'global', moreSpace: false, previewDevice: 'desktop' \}"/);
     assert.match(css, /\.admin-visual-stage--expanded \.general-appearance-stage__preview\s*\{[^}]*height: 100%;[^}]*align-self: stretch;/);
     assert.doesNotMatch(css, /max-height: max\(var\(--admin-visual-stage-height\), 75vh\)/);

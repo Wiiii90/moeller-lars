@@ -7,6 +7,8 @@ test('Beside stacks according to one stable title slot, not the active navigatio
     assert.equal(headerNeedsStack('outside', 800, 145, 112), true);
     assert.equal(headerNeedsStack('outside', 640, 145, 160), true);
     assert.equal(headerNeedsStack('outside', 640, 145, 210), false);
+    assert.equal(headerNeedsStack('outside', 800, 195, 240, 16, 24), false);
+    assert.equal(headerNeedsStack('outside', 800, 221, 240, 16, 24), true);
 });
 
 test('Inside title fits its real title column and preserves 15rem for navigation', () => {
