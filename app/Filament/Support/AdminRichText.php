@@ -58,6 +58,9 @@ final class AdminRichText
                 ],
             ] : null)
             ->linkProtocols(['http', 'https'])
+            // Disables button, drop/paste and Livewire temporary uploads;
+            // only the canonical existing-Storage picker may insert images.
+            ->fileAttachments(false)
             ->nullable()
             ->columnSpanFull()
             ->extraFieldWrapperAttributes(['class' => 'admin-rich-text admin-rich-text--visual']);

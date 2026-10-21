@@ -2,7 +2,6 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileAttachmentProvider;
@@ -46,7 +45,9 @@ final class MediaRichTextAttachmentProvider implements FileAttachmentProvider
 
     public function saveUploadedFileAttachment(TemporaryUploadedFile $file): mixed
     {
-        return (string) app(MediaIngestService::class)->ingestUnique($file)['asset']->getKey();
+        // Defensive backstop: no direct rich-editor upload is permitted.
+        // The artist's Storage workflow is the only media ingestion owner.
+        throw new \LogicException('Rich Text uploads are disabled; select an existing Storage image.');
     }
 
     public function getDefaultFileAttachmentVisibility(): ?string
