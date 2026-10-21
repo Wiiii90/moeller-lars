@@ -12,16 +12,16 @@ test('Beside shares configured Content width with the navigation', () => {
 });
 
 test('Inside title fits its real title column and preserves 15rem for navigation', () => {
-    assert.equal(headerNeedsStack('inside', 640, 130, 0), false);
-    assert.equal(headerNeedsStack('inside', 360, 130, 0), true);
-    assert.equal(headerNeedsStack('inside', 420, 70, 0), true);
+    assert.equal(headerNeedsStack('inside', 640, 130), false);
+    assert.equal(headerNeedsStack('inside', 360, 130), true);
+    assert.equal(headerNeedsStack('inside', 420, 70), true);
     // Formerly returned false: a 320px title overflowed its 240px column.
-    assert.equal(headerNeedsStack('inside', 640, 320, 0), true);
-    assert.equal(headerNeedsStack('inside', 470, 100, 0), true);
-    assert.equal(headerNeedsStack('inside', 540, 100, 0), false);
-    assert.equal(headerNeedsStack('inside', 560, 320, 0), true);
-    assert.equal(headerNeedsStack('below', 360, 130, 0), false);
-    assert.equal(headerNeedsStack('above', 360, 130, 0), false);
+    assert.equal(headerNeedsStack('inside', 640, 320), true);
+    assert.equal(headerNeedsStack('inside', 470, 100), true);
+    assert.equal(headerNeedsStack('inside', 540, 100), false);
+    assert.equal(headerNeedsStack('inside', 560, 320), true);
+    assert.equal(headerNeedsStack('below', 360, 130), false);
+    assert.equal(headerNeedsStack('above', 360, 130), false);
 });
 
 test('responsive shell geometry comes from configured width and fixed viewport only', () => {
