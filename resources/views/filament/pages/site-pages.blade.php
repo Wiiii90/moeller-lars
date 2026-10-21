@@ -170,6 +170,9 @@
                                                 class="admin-hierarchy__children-rows{{ $section['children'] === [] && $reorderEnabled && $nestedNavigationEnabled ? ' admin-pages__empty-child-rows' : '' }}"
                                                 role="rowgroup"
                                                 aria-label="Child pages under {{ $section['title'] }}"
+                                                @if ($section['children'] === [] && $reorderEnabled && $nestedNavigationEnabled)
+                                                    data-page-placement-label="{{ __('As child') }}"
+                                                @endif
                                                 @if ($reorderEnabled && $nestedNavigationEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"

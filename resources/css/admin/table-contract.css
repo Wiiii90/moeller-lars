@@ -715,6 +715,43 @@ body.sorting .admin-hierarchy--pages .admin-pages__empty-child-rows {
     pointer-events: auto;
 }
 
+/* Pages drop-intent feedback only. Native Sortable still owns hit testing,
+ * empty-list tolerances and persistence. The labels are CSS-only and never
+ * become sortable items or pointer targets. Root shows a full-level rail;
+ * nesting shows an indented seam. Neither changes row/list geometry. */
+body.sorting .admin-hierarchy--pages .admin-pages__root-rows
+    > .admin-hierarchy__group > .admin-pages__row:hover {
+    box-shadow: inset .15rem 0 0 var(--admin-accent);
+}
+body.sorting .admin-hierarchy--pages .admin-pages__root-rows
+    > .admin-hierarchy__group > .admin-pages__row:hover::after,
+body.sorting .admin-hierarchy--pages .admin-hierarchy__children-rows:not(.admin-pages__empty-child-rows)
+    > [wire\\:sort\\:item] > .admin-pages__row:hover::after {
+    content: attr(data-page-placement-label);
+    position: absolute;
+    bottom: .08rem;
+    left: calc(3.25rem + 2rem + .9rem);
+    color: var(--admin-accent-strong);
+    font-size: .6rem;
+    font-weight: 600;
+    line-height: .7rem;
+    pointer-events: none;
+}
+body.sorting .admin-hierarchy--pages .admin-pages__empty-child-rows:hover {
+    box-shadow: inset 0 -.15rem 0 var(--admin-accent);
+}
+body.sorting .admin-hierarchy--pages .admin-pages__empty-child-rows:hover::after {
+    content: attr(data-page-placement-label);
+    position: absolute;
+    bottom: 0;
+    left: .25rem;
+    color: var(--admin-accent-strong);
+    font-size: .6rem;
+    font-weight: 600;
+    line-height: .75rem;
+    pointer-events: none;
+}
+
 /* Native Sortable owns both sibling and inter-level drag gestures. */
 .admin-hierarchy--pages .admin-hierarchy__group { position: relative; }
 .admin-hierarchy__header { position: relative; }

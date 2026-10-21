@@ -258,6 +258,29 @@ In particular, nested empty child sortables can compete with root drop
 placement. Do not preserve, reinstate, or remove an implementation solely
 because it is described as more native or simpler.
 
+**Browser-confirmed Pages behavior (21 October 2026):** The user verified
+that root ordering and nesting work again with the correction introduced by
+`f7b79d49112b80ac2385377e934a9c1579785548`. This acceptance is for
+the placement behavior, **not** a blanket acceptance of the drag preview.
+The repair uses the existing Livewire/Alpine Sortable owner and the existing
+shared `wire:sort:group="site-pages"` with parent-specific group IDs.
+For **empty** children only, `site-pages.blade.php` sets
+`wire:sort:config="{ emptyInsertThreshold: 0 }"` because SortableJS
+otherwise gives invisible empty lists a five-pixel proximity capture zone
+that can steal root-to-root drops. The corresponding
+`.admin-pages__empty-child-rows` in `table-contract.css` is an actual
+0.75rem-high, bounded child destination inside its root row. Its negative
+block-start margin compensates for its own height, so root sibling geometry
+does not jump; the leading Position/Drag region is outside the child target.
+`body.sorting` enables pointer hits only during a native drag.
+**Do not replace this with separate visible right-side drop surfaces,
+global pointer handlers, a second drag controller, or unrestricted empty
+sortable proximity detection.** Before changing this structure, reproduce
+root-before/middle/last and nest-under-last behavior in the real browser.
+The remaining presentation problem is making root-level versus child-level
+drop intent legible; presentation feedback must not change hit geometry,
+sortable membership, parent placement or row size.
+
 Pages and Custom Pages both support hierarchy, but they have **different
 domain owners**: Pages nests site sections under pages; Custom Page nests
 eligible components under an Image. Reusing table/drag styling must not
