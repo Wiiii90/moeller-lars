@@ -505,5 +505,7 @@
     "Add media": "Medium hinzufügen",
     "Excerpt": "Auszug",
     "Map location help": "Hinweis zur Kartenposition",
-    "Requires Country and either City or Postal code.": "Erfordert Land und entweder Stadt oder Postleitzahl."
+    "Requires Country and either City or Postal code.": "Erfordert Land und entweder Stadt oder Postleitzahl.",
+    "Too many attempts": "Zu viele Versuche",
+    "Try again in a minute.": "Bitte in einer Minute erneut versuchen."
 }
