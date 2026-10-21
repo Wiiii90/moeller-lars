@@ -85,6 +85,7 @@ final class AdminRichText
                 '__rich_image_'.$name,
                 'Image from Storage',
                 imagesOnly: true,
+                visual: true,
             )
                 ->nullable()
                 ->dehydrated(false)
@@ -130,6 +131,7 @@ final class AdminRichText
                 ->schema([$picker])
                 ->extraAttributes([
                     'x-show' => 'imagePickerOpen',
+                    'x-ref' => 'richImagePicker',
                     'x-cloak' => true,
                     'x-bind:style' => '`top: ${pickerTop}px; left: ${pickerLeft}px`',
                     // Picker is a transient Livewire field. Its native change
@@ -327,17 +329,23 @@ final class AdminRichText
                                 const trigger = event.target.closest('.fi-fo-rich-editor-tool')
                                 if (!trigger) return
 
-                                const shell = this.$el.getBoundingClientRect()
-                                const anchor = trigger.getBoundingClientRect()
-                                const maxLeft = Math.max(0, shell.width - 320)
-                                this.pickerLeft = Math.max(0, Math.min(anchor.left - shell.left, maxLeft))
-                                this.pickerTop = anchor.bottom - shell.top + 4
                                 this.imagePickerOpen = true
                                 this.linkOpen = false
+                                this.captionOpen = false
                                 this.$nextTick(() => {
-                                    this.$el.querySelector(
-                                        '.admin-rich-text-storage-dropdown .fi-select-input-btn',
-                                    )?.click()
+                                    const picker = this.$refs.richImagePicker
+                                    if (!picker) return
+                                    const shell = this.$el.getBoundingClientRect()
+                                    const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect() ?? shell
+                                    const anchor = trigger.getBoundingClientRect()
+                                    const minLeft = Math.max(shell.left, bounds.left) + 8
+                                    const maxRight = Math.min(shell.right, bounds.right) - 8
+                                    this.pickerLeft = Math.max(
+                                        minLeft,
+                                        Math.min(anchor.left, maxRight - picker.offsetWidth),
+                                    ) - shell.left
+                                    this.pickerTop = anchor.bottom - shell.top + 4
+                                    picker.querySelector('.fi-select-input-btn')?.click()
                                 })
                             },
                         }

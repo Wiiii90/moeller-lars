@@ -596,7 +596,12 @@ Use the central lazy `MediaAssetSelect` pattern.
 
 Do not eagerly `pluck()` hundreds of MediaAsset options merely because a normal Select supports preload.
 
-The picker should narrow by allowed media kind and query lazily. This is both a UI consistency and performance rule.
+The shared visual selector uses the existing Filament Select and its normal
+open/search lifecycle, with a bounded initial contact sheet (24 recent assets)
+and separately filtered lazy searches (up to 30). It is an opt-in presentation
+of `MediaAssetSelect`, not a second media picker or source of persisted state.
+Search and previews must retain available-asset and media-kind constraints,
+escape all editorial metadata, and remain inside the current task dialog.
 
 ## 19. Performance as UI quality
 

@@ -522,7 +522,7 @@
 .admin-rich-text-storage-dropdown {
     position: absolute;
     z-index: 40;
-    width: min(20rem, 100%);
+    width: min(38rem, calc(100% - 1rem));
     padding: .65rem;
     background: var(--admin-surface);
     color: var(--admin-text);

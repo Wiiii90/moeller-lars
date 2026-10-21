@@ -46,9 +46,15 @@ constrained to the visible native dialog scrollport, with native flip,
 shift and size handling. Caption entry is inside the same editor dialog,
 not a nested Filament Action. The existing Edit change boundary is reused.
 
-Storage search remains lazy and searches the original filename and ALT text;
-MediaAsset does not have a standalone title field. Image selection, toolbar
-sizing, wrapping and saving remain subject to real browser acceptance.
+The shared `MediaAssetSelect` remains the only selection and query owner.
+Its reusable visual variant shows a bounded set of up to 24 recently added
+Storage images as soon as the dropdown opens, in a contact-sheet layout
+matching Storage. Additional searches query filename and alternative text
+server-side with at most 30 results. The choice UI retains Filament's normal
+keyboard navigation, focus and selection handling. No duplicate media
+catalog, extra upload flow, or background polling is introduced.
+`MediaAsset` has no separate title field. Image selection, popup geometry,
+wrapping and saving remain subject to real browser acceptance.
 
 ## Clipboard and PDF
 
