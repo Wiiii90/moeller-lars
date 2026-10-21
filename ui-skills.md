@@ -258,10 +258,13 @@ In particular, nested empty child sortables can compete with root drop
 placement. Do not preserve, reinstate, or remove an implementation solely
 because it is described as more native or simpler.
 
-**Browser-confirmed Pages behavior (21 October 2026):** The user verified
-that root ordering and nesting work again with the correction introduced by
-`f7b79d49112b80ac2385377e934a9c1579785548`. This acceptance is for
-the placement behavior, **not** a blanket acceptance of the drag preview.
+**Browser-accepted Pages drag-and-drop (21 October 2026):** The user
+confirmed that both root ordering and deliberate child placement work with
+the correction introduced by `f7b79d49112b80ac2385377e934a9c1579785548`.
+The user subsequently also accepted the simple root-insertion separator
+presentation introduced by `5b53e9fe9aa0f71dc25806aaaea13141dfeb4e8d`
+as **good enough in the real browser**. Preserve this combined behavior and
+appearance as the accepted baseline; do not redesign it during cleanup.
 The repair uses the existing Livewire/Alpine Sortable owner and the existing
 shared `wire:sort:group="site-pages"` with parent-specific group IDs.
 For **empty** children only, `site-pages.blade.php` sets
@@ -277,15 +280,15 @@ does not jump; the leading Position/Drag region is outside the child target.
 global pointer handlers, a second drag controller, or unrestricted empty
 sortable proximity detection.** Before changing this structure, reproduce
 root-before/middle/last and nest-under-last behavior in the real browser.
-The interaction accepted by the user remains the immutable baseline for
-presentation changes. Root placement needs only the same horizontal separator
-used between root groups; nesting beneath a parent must have **no** separator
-between parent and child. No colored side rail, visible target surface, label,
-extra spacing, or custom pointer handler is acceptable. A source-only candidate
-may mark root insertion using the native `.sortable-ghost` placeholder's
-position among direct root siblings, without changing hit geometry, sortable
-membership, parent placement or row size. User browser acceptance of that
-visual cue is separate from the already accepted drag behavior.
+The accepted drop preview uses **only the existing horizontal separator
+style** to indicate a root-level insertion. When a page is nested under a
+parent, no additional line separates that parent from its child. The visual
+signal follows the native `.sortable-ghost` placeholder among direct root
+siblings; it does not change hit geometry, sortable membership, placement
+or row size. **No colored side rail, visible target surface, label, added
+spacing, or custom pointer handler.** The user explicitly accepted this
+minimal presentation on 21 October 2026; neither it nor the functioning
+drag gestures should be replaced without a new explicit request.
 
 Pages and Custom Pages both support hierarchy, but they have **different
 domain owners**: Pages nests site sections under pages; Custom Page nests
