@@ -35,13 +35,17 @@ test('Angle uses the shared input inset, control height and separated degree suf
 test('More space is presentation-only; its preview stays mounted while its viewport may grow', () => {
     assert.match(toggle, /x-on:click="moreSpace = ! moreSpace"/);
     assert.match(toggle, /appearanceScroll.scrollTop = 0/);
-    assert.match(stage, /'x-data' => "\{ appearanceTab: 'global', moreSpace: false \}"/);
+    assert.match(stage, /'x-data' => "\{ appearanceTab: 'global', moreSpace: false, previewDevice: 'desktop' \}"/);
     assert.match(css, /\.admin-visual-stage--expanded \.general-appearance-stage__preview\s*\{[^}]*height: 100%;[^}]*align-self: stretch;/);
     assert.doesNotMatch(css, /max-height: max\(var\(--admin-visual-stage-height\), 75vh\)/);
     assert.match(preview, /new ResizeObserver\(\(\) => this\.fitPreview\(\)\)/);
     assert.doesNotMatch(toggle, /wire:click|general-appearance-updated|refreshPreview/);
     assert.match(preview, /x-on:general-appearance-updated\.window="refreshPreview\(\)"/);
     assert.match(preview, /<iframe\s+[^>]*wire:ignore/s);
+    assert.match(stage, /'x-bind:data-preview-device' => 'previewDevice'/);
+    assert.match(preview, /x-bind:data-preview-width="previewDevice === 'mobile' \? 390 : 1280"/);
+    assert.match(preview, /x-on:click="previewDevice = 'mobile'; \$nextTick\(\(\) => fitPreview\(\)\)"/);
+    assert.doesNotMatch(preview, /wire:click="setPreviewDevice/);
 });
 
 test('the preview stays top-aligned and shares Appearance toolbar spacing', () => {

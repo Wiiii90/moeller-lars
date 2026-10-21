@@ -117,14 +117,21 @@ test('public layout follows the destination metadata through CSSOM without inser
     const previousDocument = globalThis.document;
     const meta = { dataset: {
         publicLayoutBackground: 'linear-gradient(45deg, #112233, #445566)',
+        publicLayoutDividerMode: 'menu',
         publicLayoutShell: '1120px',
         publicLayoutArt: '960px',
         publicLayoutPadding: '48px',
     } };
+    const headerClasses = new Set(['site-header--divider-full', 'site-header--name-above']);
+    const header = { classList: { toggle: (name, enabled) => {
+        if (enabled) headerClasses.add(name);
+        else headerClasses.delete(name);
+    } } };
     globalThis.document = {
         querySelector: (selector) => {
-            assert.equal(selector, 'meta[data-public-layout]');
-            return meta;
+            if (selector === 'meta[data-public-layout]') return meta;
+            if (selector === '.site-header') return header;
+            assert.fail('Unexpected selector ' + selector);
         },
         querySelectorAll: (selector) => {
             assert.equal(selector, 'style[data-public-layout-style]');
@@ -136,6 +143,9 @@ test('public layout follows the destination metadata through CSSOM without inser
     };
     try {
         applyPublicLayoutFromMeta();
+        assert.equal(headerClasses.has('site-header--divider-full'), false);
+        assert.equal(headerClasses.has('site-header--divider-menu'), true);
+        assert.equal(headerClasses.has('site-header--name-above'), true);
         assert.deepEqual(Object.fromEntries(values), {
             '--public-page': 'linear-gradient(45deg, #112233, #445566)',
             '--public-shell-max': '1120px',
@@ -146,7 +156,10 @@ test('public layout follows the destination metadata through CSSOM without inser
         values.clear();
         meta.dataset.publicLayoutBackground = '';
         meta.dataset.publicLayoutArt = '';
+        meta.dataset.publicLayoutDividerMode = 'fine';
         applyPublicLayoutFromMeta();
+        assert.equal(headerClasses.has('site-header--divider-menu'), false);
+        assert.equal(headerClasses.has('site-header--divider-fine'), true);
         assert.equal(values.get('--public-page'), '#777');
         assert.equal(values.has('--public-art-max'), false);
 

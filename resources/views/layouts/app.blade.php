@@ -53,6 +53,7 @@
             data-public-layout-title-gradient="{{ $publicHeaderGradientCss ?? '' }}"
             data-public-layout-title-size="{{ $publicHeaderSize }}"
             data-public-layout-title-min-size="{{ $publicHeaderMinSize }}"
+            data-public-layout-divider-mode="{{ $publicHeaderDivider }}"
             data-public-layout-divider-color="{{ $publicHeaderDividerColor ?? '' }}"
             data-public-layout-divider-gradient="{{ $publicHeaderDividerGradientCss ?? '' }}"
             data-folio-left-top="{{ $folioPlacement['leftTop'] }}"

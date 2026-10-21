@@ -153,6 +153,9 @@ the existing special Zoom Out/percentage/Zoom In group, Pan and Open preview
 retain their original behavior, disabled/selected states, tooltips and
 accessible labels. The redundant device-dimensions text is removed from
 the toolbar, not from the preview's internal device width/height dataset.
+Desktop/Phone selection lives in the existing Alpine Stage/Preview state,
+updates the Stage split and recalculates iframe sizing in the same interaction,
+and does not morph or remount the device through a Livewire action.
 The old General-specific icon and separator styling has been deleted;
 `primitives.css` and `stage.css` own the common look. Preview content
 begins after the same toolbar-to-content spacing as the Appearance pane.
@@ -162,7 +165,10 @@ introduced. All actual Appearance changes still use the existing autosave
 methods and explicit `general-appearance-updated` iframe refresh event,
 which refreshes the public iframe immediately after persistence, without
 a delayed refresh timer that can be cancelled by a Livewire morph.
-Local tab switches and Stage expansion do not reload the preview.
+Local tab switches, device switches and Stage expansion do not reload the preview.
+During Public SPA swaps, the destination's server-rendered divider mode is
+restored on the header along with the existing frame style, preventing stale
+full-width divider classes in the cached preview document.
 
 Title Position offers **Beside menu**, **Inside menu**,
 **Above menu**, and **Below menu**. Beside is a true outer title column

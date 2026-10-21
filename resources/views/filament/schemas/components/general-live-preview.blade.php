@@ -16,11 +16,6 @@
     $directPreviewUrl = route('preview.home');
     $previewHost = parse_url($directPreviewUrl, PHP_URL_HOST) ?: 'preview';
     $previewPath = parse_url($directPreviewUrl, PHP_URL_PATH) ?: '/preview';
-    $device = isset($generalPage) && $generalPage instanceof \App\Filament\Pages\General
-        ? $generalPage->previewDevice
-        : 'desktop';
-    $previewWidth = $device === 'mobile' ? 390 : 1280;
-    $previewHeight = $device === 'mobile' ? 844 : 720;
 @endphp
 
 <aside
@@ -270,19 +265,21 @@
     <x-admin.stage-tool-row label="Live preview controls">
         <div class="admin-stage-tool-group" role="group" aria-label="Preview device">
                 <button
-                    class="admin-action admin-stage-tool-icon {{ $device === 'desktop' ? 'is-primary' : '' }}"
+                    class="admin-action admin-stage-tool-icon"
                     type="button"
-                    wire:click="setPreviewDevice('desktop')"
-                    aria-pressed="{{ $device === 'desktop' ? 'true' : 'false' }}"
+                    x-on:click="previewDevice = 'desktop'; $nextTick(() => fitPreview())"
+                    x-bind:class="{ 'is-primary': previewDevice === 'desktop' }"
+                    x-bind:aria-pressed="(previewDevice === 'desktop').toString()"
                     title="Desktop preview"
                 >
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()" />
                 </button>
                 <button
-                    class="admin-action admin-stage-tool-icon {{ $device === 'mobile' ? 'is-primary' : '' }}"
+                    class="admin-action admin-stage-tool-icon"
                     type="button"
-                    wire:click="setPreviewDevice('mobile')"
-                    aria-pressed="{{ $device === 'mobile' ? 'true' : 'false' }}"
+                    x-on:click="previewDevice = 'mobile'; $nextTick(() => fitPreview())"
+                    x-bind:class="{ 'is-primary': previewDevice === 'mobile' }"
+                    x-bind:aria-pressed="(previewDevice === 'mobile').toString()"
                     title="Phone preview"
                 >
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()" />
@@ -351,9 +348,12 @@
     <div x-ref="viewport" class="general-live-preview__viewport">
         <div
             x-ref="device"
-            class="general-live-preview__device is-{{ $device }}"
-            data-preview-width="{{ $previewWidth }}"
-            data-preview-height="{{ $previewHeight }}"
+            class="general-live-preview__device is-desktop"
+            x-bind:class="previewDevice === 'mobile' ? 'is-mobile' : 'is-desktop'"
+            data-preview-width="1280"
+            data-preview-height="720"
+            x-bind:data-preview-width="previewDevice === 'mobile' ? 390 : 1280"
+            x-bind:data-preview-height="previewDevice === 'mobile' ? 844 : 720"
         >
             <div x-ref="browser" class="general-live-preview__browser" aria-hidden="true">
                 <span class="general-live-preview__browser-dots">

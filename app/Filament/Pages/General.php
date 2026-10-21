@@ -148,8 +148,6 @@ final class General extends Page
     /** @var array<string, mixed>|null */
     public ?array $data = [];
 
-    public string $previewDevice = 'desktop';
-
     // Edit Action identity is the unique social platform, not a mutable row index.
     // Autosaved reordering must not redirect later field edits to another profile.
     public ?string $editingSocialPlatform = null;
@@ -223,15 +221,6 @@ final class General extends Page
     public function getBreadcrumbs(): array
     {
         return [];
-    }
-
-    public function setPreviewDevice(string $device): void
-    {
-        if (! in_array($device, ['desktop', 'mobile'], true)) {
-            return;
-        }
-
-        $this->previewDevice = $device;
     }
 
     public function form(Schema $schema): Schema
@@ -527,15 +516,15 @@ final class General extends Page
                             ->columnSpanFull(),
 
                         View::make('filament.schemas.components.general-live-preview')
-                            ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
                             ->columnSpanFull(),
                     ])
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
                             'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--split',
-                            'x-data' => "{ appearanceTab: 'global', moreSpace: false }",
+                            'x-data' => "{ appearanceTab: 'global', moreSpace: false, previewDevice: 'desktop' }",
                             'x-bind:class' => "{ 'admin-visual-stage--expanded': moreSpace }",
-                            'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
+                            'data-preview-device' => 'desktop',
+                            'x-bind:data-preview-device' => 'previewDevice',
                             'aria-label' => 'General settings and live public preview',
                         ])
                         ->columnSpanFull(),
