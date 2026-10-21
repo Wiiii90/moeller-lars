@@ -18,6 +18,32 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
+it('limits integrated desktop title alignment to Left and Right', function (): void {
+    foreach (['inside', 'outside'] as $position) {
+        expect(PublicAppearance::headerAlignmentOptions($position))->toBe([
+            'left' => 'Left',
+            'right' => 'Right',
+        ]);
+        expect(PublicAppearance::presentedHeaderAlignment('center', $position))->toBe('left');
+    }
+    expect(PublicAppearance::headerAlignmentOptions('above'))->toHaveKey('center')
+        ->and(PublicAppearance::headerAlignmentOptions('below'))->toHaveKey('center');
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_position' => 'above',
+        'header_name_alignment' => 'center',
+    ]);
+
+    Livewire::test(General::class)
+        ->assertSet('data.header_name_alignment', 'center')
+        ->set('data.header_name_position', 'outside')
+        ->assertSet('data.header_name_alignment', 'left')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->getAttribute('header_name_position'))->toBe('outside')
+        ->and(PublicContentSetting::general()->getAttribute('header_name_alignment'))->toBe('left');
+});
+
 it('exposes one real persisted Menu type selector without changing navigation behavior', function (): void {
     $page = Livewire::test(General::class)
         ->assertSet('data.menu_type', 'cyclic_inline')

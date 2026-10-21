@@ -177,7 +177,10 @@ Title Position offers **Beside menu**, **Inside menu**,
 column and a reduced navigation rail inside the **same** Menu paper,
 both within the configured Content width. Inside reserves a wider title
 alignment rail, so Left/Right have different positions; its Alignment
-dropdown intentionally omits Center.
+dropdown intentionally omits Center. Beside also offers only Left and Right
+in desktop Alignment, while Responsive alignment retains Left/Center/Right.
+Switching from a centered Above/Below title to either integrated mode
+normalizes the stored desktop alignment to Left in the same save.
 Above owns a permanent top title row **inside** the Menu paper, matching the
 responsive stacked composition. Both Inside and Beside stack the
 title above navigation inside the same Menu paper only when their combined

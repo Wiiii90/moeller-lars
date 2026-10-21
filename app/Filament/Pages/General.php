@@ -328,9 +328,7 @@ final class General extends Page
                                             return;
                                         }
 
-                                        // Inside Menu has no center slot. Normalize an existing
-                                        // centered selection along with Position in one save.
-                                        if (($livewire->data['header_name_position'] ?? null) === 'inside'
+                                        if (in_array($livewire->data['header_name_position'] ?? null, ['inside', 'outside'], true)
                                             && ($livewire->data['header_name_alignment'] ?? null) === 'center') {
                                             $livewire->data['header_name_alignment'] = 'left';
                                             $livewire->persistChangedFields(['header_name_position', 'header_name_alignment']);
