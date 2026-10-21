@@ -69,10 +69,20 @@ final class AdminRichText
             $editor->maxLength($maxLength);
         }
 
-        // Commit through the owning Edit dialog's existing change boundary.
-        // Never auto-save on every Tiptap keystroke.
-        $editor->extraAlpineAttributes([
-            'x-on:focusout' => "if (!\$el.contains(\$event.relatedTarget) && \$el.closest('.admin-dialog--edit')) { \$el.dispatchEvent(new Event('change', { bubbles: true })); }",
+        // Filament 5.7.6 renders extraInputAttributes on the actual editor
+        // area. extraAlpineAttributes is not rendered by its embedded view,
+        // so an autosave listener there never ran.
+        //
+        // Match the existing Edit-dialog change boundary on genuine blur.
+        // Keep focus moves within the editor's own toolbar out of the save
+        // path; the next Alpine tick also lets Tiptap's Livewire state settle.
+        // No timer, keystroke autosave, or second persistence mechanism.
+        $editor->extraInputAttributes([
+            'x-on:focusout' => <<<'JS'
+                if (!$el.closest('.admin-dialog--edit')) return;
+                if ($el.closest('.fi-fo-rich-editor')?.contains($event.relatedTarget)) return;
+                $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })));
+                JS,
         ]);
 
         if (! $allowEmbeddedMedia) {
