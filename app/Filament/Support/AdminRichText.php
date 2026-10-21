@@ -69,23 +69,20 @@ final class AdminRichText
             $editor->maxLength($maxLength);
         }
 
-        // Filament 5.7.6 renders extraInputAttributes on the actual editor
-        // area. extraAlpineAttributes is not rendered by its embedded view,
-        // so an autosave listener there never ran.
-        //
-        // Match the existing Edit-dialog change boundary on genuine blur.
-        // Keep focus moves within the editor's own toolbar out of the save
-        // path; the next Alpine tick also lets Tiptap's Livewire state settle.
-        // No timer, keystroke autosave, or second persistence mechanism.
-        $editor->extraInputAttributes([
-            'x-on:focusout' => <<<'JS'
-                if (!$el.closest('.admin-dialog--edit')) return;
-                if ($el.closest('.fi-fo-rich-editor')?.contains($event.relatedTarget)) return;
-                $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })));
-                JS,
-        ]);
-
+        // Filament 5.7.6 renders extraInputAttributes on the editor area,
+        // but does not render extraAlpineAttributes in its embedded view.
+        // For a bare editor, leaving the area must reach the canonical
+        // Edit-dialog change handler. The media-enabled editor below binds
+        // the same event to its whole shell, including tools and picker.
         if (! $allowEmbeddedMedia) {
+            $editor->extraInputAttributes([
+                'x-on:focusout' => <<<'JS'
+                    if (!$el.closest('.admin-dialog--edit')) return;
+                    if ($el.closest('.fi-fo-rich-editor')?.contains($event.relatedTarget)) return;
+                    $el.dispatchEvent(new Event('change', { bubbles: true }));
+                    JS,
+            ]);
+
             return [$editor];
         }
 
@@ -185,6 +182,13 @@ final class AdminRichText
                                 })
                             },
                         }
+                        JS,
+                    // One blur boundary for editor, toolbar and image picker:
+                    // do not autosave while switching between their controls.
+                    'x-on:focusout' => <<<'JS'
+                        if (!$el.closest('.admin-dialog--edit')) return;
+                        if ($el.contains($event.relatedTarget)) return;
+                        $el.dispatchEvent(new Event('change', { bubbles: true }));
                         JS,
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
                     'x-on:artist-rich-image-inserted.window' => 'imagePickerOpen = false',
