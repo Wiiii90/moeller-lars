@@ -32,6 +32,7 @@ enum AdminIcon: string
     case BlogPost = 'heroicon-o-document';
     case Exhibition = 'heroicon-o-calendar';
     case Account = 'heroicon-o-user-circle';
+    case Language = 'heroicon-o-language';
     case GeneratePassword = 'heroicon-o-sparkles';
     case Copy = 'heroicon-o-clipboard-document';
     case Clear = 'heroicon-o-backspace';

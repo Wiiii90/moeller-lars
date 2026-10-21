@@ -77,6 +77,7 @@ class AdminPanelProvider extends PanelProvider
             ], isRequired: false)
             ->userMenuItems([
                 'profile' => fn (Action $action): Action => AccountMenuAction::configure($action, $appAuthentication),
+                AccountMenuAction::languageAction(),
             ])
             ->authGuard('web')
             ->authPasswordBroker('users')

@@ -30,7 +30,9 @@ final class AccountMenuAction
                 ->label(__('Account'))
                 ->icon(AdminIcon::Account->value)
                 ->url(null)
-                ->sort(0)
+                // A profile action belongs above the theme switcher.
+                // Non-negative sort values place it in the menu's lower group.
+                ->sort(-1)
                 ->modalHeading(__('Account & security'))
                 ->fillForm(fn (): array => [
                     'name' => (string) self::user()->getAttribute('name'),
@@ -127,13 +129,11 @@ final class AccountMenuAction
                 ->action(function (array $data, \Livewire\Component $livewire): void {
                     $user = self::user();
                     $passwordChanged = array_key_exists('password', $data);
-                    $previousLanguage = (string) ($user->getAttribute('admin_language') ?: 'en');
+                    $previousLanguage = self::language();
 
                     $user->update($data);
-                    $newLanguage = (string) $user->getAttribute('admin_language');
-                    if ($newLanguage !== $previousLanguage) {
-                        app()->setLocale($newLanguage);
-                    }
+                    $newLanguage = self::language();
+                    self::refreshLanguage($previousLanguage, $newLanguage, $livewire);
 
                     if ($passwordChanged && request()->hasSession()) {
                         request()->session()->put([
@@ -146,15 +146,70 @@ final class AccountMenuAction
                         status: 'success',
                     );
 
-                    if ($newLanguage !== $previousLanguage) {
-                        // Full navigation rebuild is required; the currently
-                        // mounted SPA nodes were rendered in the old language.
-                        $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
-                    }
                 }),
             __('Save account'),
             AdminDialogSize::Default,
         );
+    }
+
+    /**
+     * Expose the language choice directly from the user badge, without
+     * requiring the full account/security editor. Both paths persist the same
+     * per-user preference and reuse the panel's normal locale middleware.
+     */
+    public static function languageAction(): Action
+    {
+        return AdminDialog::command(
+            Action::make('changeAdminLanguage')
+                ->label(fn (): string => __('Language').' · '.(self::language() === 'de' ? 'Deutsch' : 'English'))
+                ->icon(AdminIcon::Language->value)
+                ->sort(-1)
+                ->modalHeading(__('Language'))
+                ->fillForm(fn (): array => ['admin_language' => self::language()])
+                ->schema([
+                    Select::make('admin_language')
+                        ->label(__('Language'))
+                        ->options(['en' => 'English', 'de' => 'Deutsch'])
+                        ->required()
+                        ->in(['en', 'de']),
+                ])
+                ->action(function (array $data, \Livewire\Component $livewire): void {
+                    $user = self::user();
+                    $next = (string) ($data['admin_language'] ?? '');
+                    $previous = self::language();
+
+                    if ($previous === $next) {
+                        return;
+                    }
+
+                    $user->update(['admin_language' => $next]);
+                    self::refreshLanguage($previous, $next, $livewire);
+                    app(AdminNotifier::class)->notification(
+                        title: __('Account updated'),
+                        status: 'success',
+                    );
+                }),
+            __('Save account'),
+            AdminDialogSize::Small,
+        );
+    }
+
+    private static function language(): string
+    {
+        return (string) (self::user()->getAttribute('admin_language') ?: 'en');
+    }
+
+    private static function refreshLanguage(string $previous, string $next, \Livewire\Component $livewire): void
+    {
+        if ($next === $previous) {
+            return;
+        }
+
+        app()->setLocale($next);
+
+        // Existing Alpine/Livewire trees contain old-language strings. Use a
+        // full navigation, not Filament's SPA partial navigation.
+        $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
     }
 
     private static function requiresCurrentPassword(Get $get): bool

@@ -3,9 +3,13 @@
 The authenticated Filament SPA supports per-user `admin_language` values:
 `en` (English) and `de` (Deutsch). This is independent of the same user's
 `admin_region` preference (de-DE/en-GB/en-US) for dates and numbers.
-Both are managed in Account. Changing Language requires a full SPA page
-reload, because a pre-existing Livewire/Alpine tree contains already
-rendered server-side labels.
+Both are managed in Account. Language is also directly available in the
+top-right user-badge dropdown as a dedicated compact Language action, before
+the theme switcher, with the saved language visible in its label. The Account
+entry is the first action in the badge dropdown, not placed after theme
+settings. Both entry points update the same users.admin_language preference.
+Changing Language requires a full SPA page reload, because a pre-existing
+Livewire/Alpine tree contains already rendered server-side labels.
 
 `SetAdminLocale` is a persistent authenticated admin middleware, including
 Livewire updates. Public routes MUST NOT inherit a signed-in editor's language
