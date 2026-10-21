@@ -90,8 +90,8 @@ final class ArtworkEditDialog
                     Select::make('exclude_from_home')
                         ->label('Home eligibility')
                         ->options([
-                            0 => 'Follow Gallery setting',
-                            1 => 'Exclude this Artwork from Home',
+                            0 => __('Follow Gallery setting'),
+                            1 => __('Exclude this Artwork from Home'),
                         ])
                         ->default(0)
                         ->columnSpanFull(),

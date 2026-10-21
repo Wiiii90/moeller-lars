@@ -59,13 +59,13 @@ trait ManagesSitePageEditDialog
                     ->schema([
                         Select::make('type')
                             ->label('Page type')
-                            ->options(SiteSectionType::compactOptions())
+                            ->options(array_map('__', SiteSectionType::compactOptions()))
                             ->native()
                             ->required()
                             ->live(),
                         Select::make('template')
                             ->label('Template')
-                            ->options(JournalTemplate::options())
+                            ->options(array_map('__', JournalTemplate::options()))
                             ->native()
                             ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
                             ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),

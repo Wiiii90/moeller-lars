@@ -37,14 +37,14 @@ trait ManagesSitePageCreateDialog
                     ->schema([
                         Select::make('type')
                             ->label('Page type')
-                            ->options(SiteSectionType::compactOptions())
+                            ->options(array_map('__', SiteSectionType::compactOptions()))
                             ->default(SiteSectionType::CustomPage->value)
                             ->native()
                             ->required()
                             ->live(),
                         Select::make('template')
                             ->label('Template')
-                            ->options(JournalTemplate::options())
+                            ->options(array_map('__', JournalTemplate::options()))
                             ->default(JournalTemplate::Blog->value)
                             ->native()
                             ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
