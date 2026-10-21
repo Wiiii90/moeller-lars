@@ -11,6 +11,7 @@ final class AdminColorControl
         return ColorPicker::make($name)
             ->label($label)
             ->nullable()
+            ->skipRenderAfterStateUpdated()
             ->extraAttributes(['class' => 'admin-color-control']);
     }
 }

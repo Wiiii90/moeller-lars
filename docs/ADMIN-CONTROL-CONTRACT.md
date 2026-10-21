@@ -51,7 +51,14 @@ These are intentionally specialized and remain canonical:
 - `MediaAssetSelect` for reusable Storage media selection;
 - `ArtworkMaterialSelect` for material presets and creation;
 - `AdminRichText` for rich text plus canonical Storage media insertion;
-- `AdminColorControl` for the General appearance color workflow.
+- `AdminColorControl` for the General appearance color workflow. Its existing live
+  color save is renderless for pure color changes: persistence and the
+  Appearance-preview event still run, but the entire General form must not
+  morph and remount every other ColorPicker for a single edited color.
+  Mode changes and repeater row add/remove still follow their normal
+  render lifecycle. The embedded Filament/vanilla-colorful picker continues
+  to own native touch interactions; do not silence browser warnings by
+  changing scroll-blocking listener semantics without verifying gestures.
 
 Do not create alternative media pickers, rich-text editors, material selectors or color controls for one page.
 

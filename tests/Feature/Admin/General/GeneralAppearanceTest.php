@@ -539,13 +539,15 @@ it('does not create obsolete Solid repeater state or persist defaults on mount',
         ->and(PublicContentSetting::general()->getAttribute('header_divider_color'))->toBeNull();
 });
 
-it('autosaves an inline Solid ColorPicker independently of gradient stops', function (): void {
-    Livewire::test(General::class)
+it('autosaves a color without remounting the General form', function (): void {
+    $page = Livewire::test(General::class)
         ->set('data.menu_background_color', '#ABCDEF')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('general-appearance-updated');
 
     expect(PublicContentSetting::general()->getAttribute('menu_background_color'))->toBe('#ABCDEF')
-        ->and(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBeNull();
+        ->and(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBeNull()
+        ->and($page->effects)->not->toHaveKey('html');
 });
 
 it('round-trips each Solid paint and a multi-stop gradient through fresh General instances', function (): void {
