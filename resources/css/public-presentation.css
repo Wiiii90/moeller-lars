@@ -1760,7 +1760,6 @@ html:has(.artwork-viewer[open]) {
     border-bottom: 0;
 }
 
-/* Full-width divider marks the connected Menu/Content boundary. */
 .site-header--divider-full::after {
     position: absolute;
     right: 0;
@@ -1928,8 +1927,6 @@ body.public-site--frame-plain #content {
     padding-bottom: var(--public-shell-gap);
 }
 
-/* The centered Menu paper owns both title and navigation. Beside gives
- * the title its intrinsic width; Inside reserves an alignment rail. */
 .site-header--name-inside,
 .site-header--name-above,
 .site-header--name-outside {
