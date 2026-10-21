@@ -200,6 +200,12 @@ There is no title-owned ResizeObserver, feedback loop, per-frame geometry
 write, timer or transition. The SPA lifecycle owns one resize listener and
 removes it at navigation teardown.
 
+The Global background is one viewport-aligned paint across the document and
+the sticky Header. Both use fixed background attachment so a vertical
+gradient does not restart in the much shorter Header and create a
+viewport-wide false divider at its lower edge. Actual divider modes retain
+their own independent stroke and surface semantics.
+
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width
 still sets the Menu/Page shell geometry and Content padding still sets the

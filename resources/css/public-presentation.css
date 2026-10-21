@@ -55,6 +55,7 @@ body {
     margin: 0;
     overflow-x: clip;
     background: var(--public-page);
+    background-attachment: fixed;
     color: var(--public-ink);
     font-family: var(--public-typeface);
     font-size: 14px;
@@ -73,6 +74,7 @@ body {
     padding: 0;
     flex-direction: column;
     background: var(--public-page);
+    background-attachment: fixed;
 }
 
 /* Header navigation and page content share one centered shell geometry. */
