@@ -27,7 +27,7 @@ final class AccountMenuAction
     {
         return AdminDialog::command(
             $action
-                ->label('Account')
+                ->label(__('Account'))
                 ->icon(AdminIcon::Account->value)
                 ->url(null)
                 ->sort(0)
@@ -44,11 +44,11 @@ final class AccountMenuAction
                         ->columnSpanFull(),
                     Group::make([
                         TextInput::make('name')
-                            ->label('Name')
+                            ->label(__('Name'))
                             ->required()
                             ->maxLength(255),
                         TextInput::make('email')
-                            ->label('Email')
+                            ->label(__('Email'))
                             ->email()
                             ->required()
                             ->maxLength(255)
@@ -60,7 +60,7 @@ final class AccountMenuAction
                         ->viewData(['label' => __('Preferences')])
                         ->columnSpanFull(),
                     Select::make('admin_language')
-                        ->label('Language')
+                        ->label(__('Language'))
                         ->options(['en' => 'English', 'de' => 'Deutsch'])
                         ->required()
                         ->in(['en', 'de'])
@@ -69,7 +69,7 @@ final class AccountMenuAction
                         ->viewData(['label' => __('Regional Formats')])
                         ->columnSpanFull(),
                     Select::make('admin_region')
-                        ->label('Dates and numbers')
+                        ->label(__('Dates and numbers'))
                         ->options(RegionalFormats::OPTIONS)
                         ->required()
                         ->in(array_keys(RegionalFormats::OPTIONS))
@@ -79,19 +79,19 @@ final class AccountMenuAction
                         ->columnSpanFull(),
                     Group::make([
                         AdminPasswordField::password(
-                            TextInput::make('password')->label('New password'),
+                            TextInput::make('password')->label(__('New password')),
                             'account',
                         )
                             ->dehydrated(fn (#[SensitiveParameter] mixed $state): bool => filled($state))
                             ->dehydrateStateUsing(fn (#[SensitiveParameter] string $state): string => Hash::make($state)),
                         AdminPasswordField::confirmation(
-                            TextInput::make('passwordConfirmation')->label('Confirm new password'),
+                            TextInput::make('passwordConfirmation')->label(__('Confirm new password')),
                             'account',
                         )
                             ->required(fn (Get $get): bool => filled($get('password')))
                             ->dehydrated(false),
                         TextInput::make('currentPassword')
-                            ->label('Current password')
+                            ->label(__('Current password'))
                             ->password()
                             ->autocomplete('current-password')
                             ->revealable(Filament::arePasswordsRevealable())
@@ -117,8 +117,8 @@ final class AccountMenuAction
                     }
 
                     app(AdminNotifier::class)->notification(
-                        title: 'Too many attempts',
-                        body: 'Try again in a minute.',
+                        title: __('Too many attempts'),
+                        body: __('Try again in a minute.'),
                         status: 'danger',
                     );
 
@@ -152,7 +152,7 @@ final class AccountMenuAction
                         $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
                     }
                 }),
-            'Save account',
+            __('Save account'),
             AdminDialogSize::Default,
         );
     }
