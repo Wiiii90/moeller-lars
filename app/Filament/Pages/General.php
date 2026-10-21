@@ -651,8 +651,7 @@ final class General extends Page
                         ->afterStateUpdated(self::persist('number_format')),
                 ])
                     ->columns(2)
-                    ->extraAttributes(['class' => 'general-settings-section general-layout-row'])
-                    ->columnSpanFull()
+                    ->extraAttributes(['class' => 'general-settings-section'])
                     ->columnSpanFull(),
             ])
             ->record($this->generalSettingsRecord())
