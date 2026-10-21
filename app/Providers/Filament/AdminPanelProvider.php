@@ -84,7 +84,7 @@ class AdminPanelProvider extends PanelProvider
             ->revealablePasswords(false)
             ->brandName('Admin Area')
             ->brandLogo(new HtmlString('Lars Möller'))
-            ->favicon($this->adminFaviconUrl())
+            ->favicon(fn (): string => $this->adminFaviconUrl())
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
             ->globalSearch(false)
