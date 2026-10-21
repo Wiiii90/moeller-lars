@@ -57,3 +57,14 @@ insert image within the current dialog, image-node selection and floating
 toolbar behavior, all six positions, paragraph wrapping, caption, Undo/Redo,
 close/reopen, public preview and an ordinary publication checkpoint.
 Source review, authored tests and committed code are not browser acceptance.
+
+## Inline links
+
+The shared artist RichEditor overrides Filament's built-in `link` tool; the
+framework `LinkAction` is never mounted by the toolbar. A lightweight
+editable link panel belongs to the *existing Edit dialog* and
+operates on the original Tiptap text selection, including existing links,
+removal, new label insertion and an optional new-tab target. Only http(s)
+and mailto links are accepted; public rendering still enforces the shared
+`SafeLinkPolicy`. The canonical Edit-dialog change boundary owns persistence.
+No extra nested modal, duplicated editor, second link storage or timer.

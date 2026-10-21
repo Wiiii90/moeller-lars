@@ -115,3 +115,9 @@ This is a **consolidated operational state**, not an append-only log. Durable co
 - [ ] Durable docs and tests absorb final architecture; delete this temporary file and pointer only upon complete workstream closure.
 
 **Next workstream action:** Verify new guarded rights GC (historical references, missing file, concurrent selection, orphan path), then the new artifact migration, isolated real-file prepare path, rights-only Pending/Commit/Undo and stale-rights tests in a positively isolated disposable PostgreSQL/ExifTool environment. Before enabling public delivery, finish historical-retention-aware cleanup, capacity accounting/recovery, bounded/idempotent backfill, and public/preview X-Sendfile/ETag/cache/authorization browser tests. The public UI and existing URLs remain unchanged until accepted. No new Matomo consent or Legal UI in this task.
+
+**Rich Text link editing (source-only, browser unverified):** The visual editor
+now overrides Filament's nested modal LinkAction with a local inline link
+panel. Selection, new-tab links and removal use Tiptap commands; URL schemes
+are constrained to the existing public SafeLinkPolicy. No separate public
+link renderer or new persistence route was introduced.

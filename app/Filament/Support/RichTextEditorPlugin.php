@@ -38,6 +38,13 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
     public function getEditorTools(): array
     {
         return [
+            // Override Filament's default 'link' tool. Its native LinkAction
+            // opens a nested modal and breaks the owning autosave Edit dialog.
+            RichEditorTool::make('link')
+                ->label(__('Link'))
+                ->icon('heroicon-o-link')
+                ->toggle()
+                ->jsHandler("\$dispatch('artist-rich-link-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
             RichEditorTool::make('insertStorageImage')
                 ->label(__('Insert image from Storage'))
                 ->icon(AdminIcon::Storage->value)

@@ -508,5 +508,13 @@
     "Requires Country and either City or Postal code.": "Erfordert Land und entweder Stadt oder Postleitzahl.",
     "Too many attempts": "Zu viele Versuche",
     "Try again in a minute.": "Bitte in einer Minute erneut versuchen.",
-    "Save language": "Sprache speichern"
+    "Save language": "Sprache speichern",
+    "Link": "Link",
+    "Link URL": "Link-Adresse",
+    "Link text": "Linktext",
+    "Optional link label": "Optionale Linkbeschriftung",
+    "Open in new tab": "In neuem Tab öffnen",
+    "Remove link": "Link entfernen",
+    "Apply": "Übernehmen",
+    "Enter a valid HTTP, HTTPS or email link.": "Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben."
 }

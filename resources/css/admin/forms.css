@@ -560,3 +560,46 @@
 .admin-rich-text--visual .tiptap img[data-artist-placement="float-right"] { float: right; margin: 0 0 .75rem 1rem; }
 .admin-rich-text--visual .tiptap::after { content: ''; display: table; clear: both; }
 .admin-artist-image-caption { display: block; font-size: .75rem; line-height: 1.5; color: var(--admin-muted); }
+
+/* In-editor link entry: stays inside the owning Edit dialog, never a nested modal. */
+.admin-rich-text-link-dropdown {
+    position: absolute;
+    z-index: 45;
+    width: min(20rem, 100%);
+    padding: .75rem;
+    border: 1px solid var(--admin-line);
+    border-radius: var(--admin-radius, .35rem);
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
+}
+.admin-rich-text-link-dropdown__form { display: grid; gap: .65rem; }
+.admin-rich-text-link-dropdown__label { display: grid; gap: .25rem; font-size: .8125rem; font-weight: 500; }
+.admin-rich-text-link-dropdown__input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--admin-line);
+    border-radius: .25rem;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    padding: .45rem .6rem;
+    font: inherit;
+    font-weight: 400;
+}
+.admin-rich-text-link-dropdown__input:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+}
+.admin-rich-text-link-dropdown__input[aria-invalid="true"] { border-color: var(--admin-danger, #b33); }
+.admin-rich-text-link-dropdown__checkbox { display: flex; align-items: center; gap: .45rem; font-size: .8125rem; }
+.admin-rich-text-link-dropdown__error { font-size: .75rem; color: var(--admin-danger, #b33); }
+.admin-rich-text-link-dropdown__actions { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
+.admin-rich-text-link-dropdown__button {
+    padding: .4rem .6rem;
+    border: 1px solid var(--admin-line);
+    border-radius: .25rem;
+    font-size: .8125rem;
+}
+.admin-rich-text-link-dropdown__button--apply { background: var(--admin-subtle); font-weight: 600; }
+.admin-rich-text-link-dropdown__button--remove { margin-right: auto; }
