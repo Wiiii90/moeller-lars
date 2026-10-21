@@ -46,15 +46,22 @@ constrained to the visible native dialog scrollport, with native flip,
 shift and size handling. Caption entry is inside the same editor dialog,
 not a nested Filament Action. The existing Edit change boundary is reused.
 
-The shared `MediaAssetSelect` remains the only selection and query owner.
-Its reusable visual variant shows a bounded set of up to 24 recently added
-Storage images as soon as the dropdown opens, in a contact-sheet layout
-matching Storage. Additional searches query filename and alternative text
-server-side with at most 30 results. The choice UI retains Filament's normal
-keyboard navigation, focus and selection handling. No duplicate media
-catalog, extra upload flow, or background polling is introduced.
-`MediaAsset` has no separate title field. Image selection, popup geometry,
-wrapping and saving remain subject to real browser acceptance.
+The shared `MediaAssetSelect` is the selection and query owner for all
+Storage media choices, including Gallery, Journal, Home, Custom Pages and
+the site icon. Its default visual presentation uses the accepted Storage
+contact-sheet grammar. It shows a bounded initial set (up to 24 recently
+added assets for ID-backed selects) and server-side search by filename and
+alternative text (up to 30 results). Relationship-backed site-icon choices
+use Filament's bounded relationship preload. All options retain available
+media type constraints and native Filament selection and keyboard behavior.
+
+The Rich Text insert-image control presents the same shared Select inside
+its existing toolbar-anchored panel. The panel and Select have a single
+close operation that shuts both together on Cancel/X, outside click,
+Escape and insertion. Popup-owned click-away replaces the too-wide
+editor-shell click-away listener. No alternative media model, catalog,
+upload or autosave flow is added. `MediaAsset` has no separate title field.
+Popup geometry and selection remain subject to browser acceptance.
 
 ## Clipboard and PDF
 

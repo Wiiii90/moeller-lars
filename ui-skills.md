@@ -596,12 +596,19 @@ Use the central lazy `MediaAssetSelect` pattern.
 
 Do not eagerly `pluck()` hundreds of MediaAsset options merely because a normal Select supports preload.
 
-The shared visual selector uses the existing Filament Select and its normal
-open/search lifecycle, with a bounded initial contact sheet (24 recent assets)
-and separately filtered lazy searches (up to 30). It is an opt-in presentation
-of `MediaAssetSelect`, not a second media picker or source of persisted state.
-Search and previews must retain available-asset and media-kind constraints,
-escape all editorial metadata, and remain inside the current task dialog.
+All `MediaAssetSelect` instances use the same visual Storage contact-sheet
+presentation by default: Gallery, Journal, Home, Custom Pages, rich text and
+site icon. The established Select remains the sole value/focus/keyboard owner.
+The initial set is bounded to 24 recent assets (relationship Selects use
+Filament's bounded preload), and filtered queries remain lazy (up to 30).
+Do not introduce page-specific appearance flags for the same media choice.
+
+A Rich Text toolbar-anchored Storage panel wraps this shared Select without
+replacing it. Its visible Close control, outside click, Escape, toolbar toggle
+and completed insertion close the panel and the Select together. Click-away
+is owned by the popup, not its enclosing editor shell. All options must
+retain available-asset and media-kind constraints, escape metadata, and stay
+inside the actual dialog.
 
 ## 19. Performance as UI quality
 

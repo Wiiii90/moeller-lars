@@ -5,6 +5,7 @@
     x-cloak
     x-bind:style="`top: ${captionTop}px; left: ${captionLeft}px`"
     x-on:change.stop
+    x-on:click.outside="captionOpen = false"
     x-on:keydown.escape.stop.prevent="captionOpen = false"
     role="group"
     aria-label="{{ __('Image caption') }}"

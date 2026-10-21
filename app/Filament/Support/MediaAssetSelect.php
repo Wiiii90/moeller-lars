@@ -27,7 +27,7 @@ final class MediaAssetSelect
         bool $imagesOnly = false,
         bool $includeDimensions = true,
     ): Select {
-        return self::configure(Select::make($name), $label, $imagesOnly, $includeDimensions)
+        return self::configure(Select::make($name), $label, $imagesOnly, $includeDimensions, visual: true)
             ->relationship(
                 name: $relationship,
                 titleAttribute: 'original_filename',
@@ -42,10 +42,18 @@ final class MediaAssetSelect
                     return '';
                 }
 
-                self::primeOptionLabel($record, $includeDimensions);
+                self::primeOptionLabel($record, $includeDimensions, true);
 
-                return self::optionLabel($record, $includeDimensions);
-            });
+                return self::optionLabel($record, $includeDimensions, true);
+            })
+            ->preload()
+            ->optionsLimit(self::INITIAL_PREVIEW_LIMIT)
+            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
+                $search,
+                $imagesOnly,
+                $includeDimensions,
+                visual: true,
+            ));
     }
 
     /**
@@ -57,7 +65,7 @@ final class MediaAssetSelect
         bool $imagesOnly = false,
         ?array $allowedMimeTypes = null,
         ?Closure $modifyQueryUsing = null,
-        bool $visual = false,
+        bool $visual = true,
     ): Select {
         $select = self::configure(
             Select::make($name),
@@ -185,7 +193,7 @@ final class MediaAssetSelect
         bool $visual = false,
     ): Select {
         if ($visual) {
-            $select->extraFieldWrapperAttributes(['class' => 'admin-media-picker--visual'], merge: true);
+            $select->extraAlpineAttributes(['class' => 'admin-media-picker--visual'], merge: true);
         }
 
         return $select

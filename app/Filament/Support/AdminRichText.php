@@ -85,7 +85,6 @@ final class AdminRichText
                 '__rich_image_'.$name,
                 'Image from Storage',
                 imagesOnly: true,
-                visual: true,
             )
                 ->nullable()
                 ->dehydrated(false)
@@ -128,7 +127,10 @@ final class AdminRichText
 
             $fields[] = Grid::make()
                 ->columns(1)
-                ->schema([$picker])
+                ->schema([
+                    View::make('filament.schemas.components.rich-text-image-picker-header'),
+                    $picker->hiddenLabel(),
+                ])
                 ->extraAttributes([
                     'x-show' => 'imagePickerOpen',
                     'x-ref' => 'richImagePicker',
@@ -137,6 +139,8 @@ final class AdminRichText
                     // Picker is a transient Livewire field. Its native change
                     // must not autosave an unrelated Rich Text state.
                     'x-on:change.stop' => 'void 0',
+                    'x-on:click.outside' => 'closeImagePicker()',
+                    'x-on:keydown.escape.capture.stop.prevent' => 'closeImagePicker()',
                     'class' => 'admin-rich-text-storage-dropdown',
                     'role' => 'group',
                     'aria-label' => __('Image from Storage'),
@@ -171,7 +175,7 @@ final class AdminRichText
                                     return
                                 }
 
-                                this.imagePickerOpen = false
+                                this.closeImagePicker()
                                 const selection = editor.state.selection
                                 const attrs = editor.getAttributes('link')
                                 this.linkEditor = editor
@@ -282,7 +286,7 @@ final class AdminRichText
 
                                 this.captionEditor = editor
                                 this.captionText = image.caption ?? ''
-                                this.imagePickerOpen = false
+                                this.closeImagePicker()
                                 this.linkOpen = false
                                 this.captionOpen = true
                                 this.$nextTick(() => {
@@ -318,11 +322,16 @@ final class AdminRichText
                                 })
                             },
                             imagePickerOpen: false,
+                            closeImagePicker() {
+                                const trigger = this.$refs.richImagePicker?.querySelector('.fi-select-input-btn')
+                                if (trigger?.getAttribute('aria-expanded') === 'true') trigger.click()
+                                this.imagePickerOpen = false
+                            },
                             pickerLeft: 0,
                             pickerTop: 0,
                             toggleImagePicker(event) {
                                 if (this.imagePickerOpen) {
-                                    this.imagePickerOpen = false
+                                    this.closeImagePicker()
                                     return
                                 }
 
@@ -365,9 +374,8 @@ final class AdminRichText
                     'x-on:artist-rich-link-toggle' => 'openLinkEditor($event)',
                     'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
-                    'x-on:artist-rich-image-inserted.window' => 'imagePickerOpen = false',
-                    'x-on:click.outside' => 'imagePickerOpen = false; linkOpen = false; captionOpen = false',
-                    'x-on:keydown.escape.window' => 'imagePickerOpen = false; linkOpen = false; captionOpen = false',
+                    'x-on:artist-rich-image-inserted.window' => 'closeImagePicker()',
+                    'x-on:keydown.escape.window' => 'closeImagePicker(); linkOpen = false; captionOpen = false',
                 ])
                 ->columnSpanFull(),
         ];

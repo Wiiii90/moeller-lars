@@ -4,6 +4,7 @@
     x-cloak
     x-bind:style="`top: ${linkTop}px; left: ${linkLeft}px`"
     x-on:change.stop
+    x-on:click.outside="linkOpen = false"
     x-on:keydown.escape.stop.prevent="linkOpen = false"
     role="group"
     aria-label="{{ __('Link') }}"
