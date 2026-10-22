@@ -4,6 +4,7 @@
     :panes="['global' => 'Global', 'title' => 'Title', 'menu' => 'Menu', 'page' => 'Page']"
     aria-label="Appearance"
     external-state="appearanceTab"
+    :remembered-state="['previewDevice' => ['desktop', 'mobile'], 'moreSpace' => [false, true]]"
     x-on:click="if ($event.target.closest('[data-admin-stage-slot]')) { const scroll = $el.closest('.general-appearance-stage')?.querySelector('.general-appearance-stage__scroll'); if (scroll) scroll.scrollTop = 0 }"
 >
     <x-slot:tools>
