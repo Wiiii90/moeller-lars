@@ -18,6 +18,49 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
+it('limits integrated desktop title alignment to Left and Right', function (): void {
+    foreach (['inside', 'outside'] as $position) {
+        expect(PublicAppearance::headerAlignmentOptions($position))->toBe([
+            'left' => 'Left',
+            'right' => 'Right',
+        ]);
+        expect(PublicAppearance::presentedHeaderAlignment('center', $position))->toBe('left');
+    }
+    expect(PublicAppearance::headerAlignmentOptions('above'))->toHaveKey('center')
+        ->and(PublicAppearance::headerAlignmentOptions('below'))->toHaveKey('center');
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_position' => 'above',
+        'header_name_alignment' => 'center',
+    ]);
+
+    Livewire::test(General::class)
+        ->assertSet('data.header_name_alignment', 'center')
+        ->set('data.header_name_position', 'outside')
+        ->assertSet('data.header_name_alignment', 'left')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->getAttribute('header_name_position'))->toBe('outside')
+        ->and(PublicContentSetting::general()->getAttribute('header_name_alignment'))->toBe('left');
+});
+
+it('validates and persists the configured Menu type', function (): void {
+    $page = Livewire::test(General::class)
+        ->assertSet('data.menu_type', 'cyclic_inline')
+        ->assertHasNoErrors();
+    $page->set('data.menu_type', 'cyclic_inline')->assertHasNoErrors();
+    expect(PublicContentSetting::general()->getAttribute('menu_type'))->toBe('cyclic_inline');
+
+    Livewire::test(General::class)
+        ->assertSet('data.menu_type', 'cyclic_inline')
+        ->assertHasNoErrors();
+
+    expect(fn () => app(AdminSettingsService::class)->updatePublicContent(
+        PublicContentSetting::general(),
+        ['menu_type' => 'unimplemented_dropdown'],
+    ))->toThrow(ValidationException::class);
+});
+
 it('saves a first solid color as one complete action and repeats silently', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['background_mode' => null, 'background_color' => '#123456']);
     app(AdminActivityNotificationContext::class)->discard();
@@ -443,19 +486,83 @@ it('keeps Appearance gradient actions on the shared line-based admin control con
     expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_repeating'))->toBeFalse();
 });
 
+it('hydrates the effective gradient defaults without modifying stored settings', function (): void {
+    $record = PublicContentSetting::general();
+    $fields = [];
+
+    foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+        foreach ([
+            '_gradient_angle',
+            '_gradient_repeating',
+            '_gradient_center_x',
+            '_gradient_center_y',
+            '_gradient_shape',
+            '_gradient_repeat_span',
+        ] as $suffix) {
+            $fields[] = $surface.$suffix;
+        }
+    }
+
+    $stored = $record->only($fields);
+    $page = Livewire::test(General::class)->assertHasNoErrors();
+
+    foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+        $expected = [
+            '_gradient_angle' => PublicAppearance::normalizeAngle($stored[$surface.'_gradient_angle'], $surface.'_gradient_angle')
+                ?? PublicAppearance::DEFAULT_GRADIENT_ANGLE,
+            '_gradient_repeating' => PublicAppearance::normalizeRepeating($stored[$surface.'_gradient_repeating'], $surface.'_gradient_repeating') ? '1' : '0',
+            '_gradient_center_x' => PublicAppearance::normalizeCenter($stored[$surface.'_gradient_center_x'], $surface.'_gradient_center_x'),
+            '_gradient_center_y' => PublicAppearance::normalizeCenter($stored[$surface.'_gradient_center_y'], $surface.'_gradient_center_y'),
+            '_gradient_shape' => PublicAppearance::normalizeShape($stored[$surface.'_gradient_shape'], $surface.'_gradient_shape'),
+            '_gradient_repeat_span' => PublicAppearance::normalizeRepeatSpan($stored[$surface.'_gradient_repeat_span'], $surface.'_gradient_repeat_span'),
+        ];
+
+        foreach ($expected as $suffix => $value) {
+            $page->assertSet('data.'.$surface.$suffix, $value);
+        }
+    }
+
+    expect(PublicContentSetting::general()->only($fields))->toBe($stored);
+});
+
 it('does not persist color defaults on mount', function (): void {
     Livewire::test(General::class)->assertHasNoErrors();
     expect(PublicContentSetting::general()->getAttribute('header_name_color'))->toBeNull()
         ->and(PublicContentSetting::general()->getAttribute('header_divider_color'))->toBeNull();
 });
 
-it('autosaves an inline Solid ColorPicker independently of gradient stops', function (): void {
-    Livewire::test(General::class)
-        ->set('data.menu_background_color', '#ABCDEF')
+
+it('round-trips each Solid paint and a multi-stop gradient through fresh General instances', function (): void {
+    $page = Livewire::test(General::class);
+
+    foreach (PublicAppearance::SURFACE_PREFIXES as $index => $surface) {
+        $color = sprintf('#%06X', 0x113355 + (int) $index * 0x10101);
+        $field = PublicAppearance::solidColorField($surface);
+
+        $page->set('data.'.$field, $color)->assertHasNoErrors();
+        expect(PublicContentSetting::general()->getAttribute($field))->toBe($color);
+    }
+
+    $fresh = Livewire::test(General::class);
+    foreach (PublicAppearance::SURFACE_PREFIXES as $index => $surface) {
+        $color = sprintf('#%06X', 0x113355 + (int) $index * 0x10101);
+        $fresh->assertSet('data.'.PublicAppearance::solidColorField($surface), $color);
+    }
+
+    $stops = [
+        ['color' => '#112233', 'position' => 0],
+        ['color' => '#445566', 'position' => 50],
+        ['color' => '#778899', 'position' => 100],
+    ];
+
+    $fresh->set('data.menu_background_mode', 'gradient')
+        ->set('data.menu_background_gradient_stops', $stops)
         ->assertHasNoErrors();
 
-    expect(PublicContentSetting::general()->getAttribute('menu_background_color'))->toBe('#ABCDEF')
-        ->and(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBeNull();
+    expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBe($stops);
+    Livewire::test(General::class)
+        ->assertSet('data.menu_background_mode', 'gradient')
+        ->assertSet('data.menu_background_gradient_stops', $stops);
 });
 
 it('saves color table rows sorted by the chosen numeric position', function (): void {

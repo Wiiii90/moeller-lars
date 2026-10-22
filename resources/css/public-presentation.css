@@ -55,6 +55,7 @@ body {
     margin: 0;
     overflow-x: clip;
     background: var(--public-page);
+    background-attachment: fixed;
     color: var(--public-ink);
     font-family: var(--public-typeface);
     font-size: 14px;
@@ -73,6 +74,7 @@ body {
     padding: 0;
     flex-direction: column;
     background: var(--public-page);
+    background-attachment: fixed;
 }
 
 /* Header navigation and page content share one centered shell geometry. */
@@ -795,6 +797,16 @@ body {
 .artwork-card__image[data-gallery-image-state="deferred"],
 .artwork-card__image[data-gallery-image-state="pending"] {
     visibility: hidden;
+}
+
+/* The native ALT placeholder can appear as vertical text while an Artwork
+ * detail image has not loaded, especially in intrinsically sized landscape
+ * media. Reserve its authored dimensions but show pixels only after load.
+ * Without scripting, leave the browser's normal image/ALT behavior intact. */
+@media (scripting: enabled) {
+    .artwork-detail__image[data-artwork-image-state="pending"] {
+        visibility: hidden;
+    }
 }
 
 
@@ -1748,17 +1760,10 @@ html:has(.artwork-viewer[open]) {
     border-bottom: 0;
 }
 
-/* Full-width divider: a viewport-wide line at the end of the title/menu,
- * with an actual gap below it, owned by the sticky header. Do not use a
- * border-bottom on the padded header: that would move the line *below* gap. */
-.site-header--divider-full {
-    padding-bottom: var(--public-shell-gap);
-}
-
 .site-header--divider-full::after {
     position: absolute;
     right: 0;
-    bottom: var(--public-shell-gap);
+    bottom: 0;
     left: 0;
     height: 1px;
     content: "";
@@ -1766,17 +1771,10 @@ html:has(.artwork-viewer[open]) {
     background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
 }
 
-/* Menu-width divider uses the actual white navigation sheet, not the
- * viewport. It shares the sticky gap semantics of Full-width divider. */
-.site-header--divider-menu {
-    padding-bottom: var(--public-shell-gap);
-}
-
+/* Menu divider is a stroke within the connected Menu/Page paper, not
+ * a separating gap. The actual Menu sheet is the stroke owner. */
 .site-header--divider-menu .site-navigation {
     border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
-    /* The existing single divider border remains the owner of its stroke.
-     * A gradient can replace its paint without changing geometry or adding
-     * pseudo-elements (which the navigation already uses for paper edges). */
     border-image-source: var(--public-separator-gradient, none);
     border-image-slice: 1;
 }
@@ -1929,12 +1927,9 @@ body.public-site--frame-plain #content {
     padding-bottom: var(--public-shell-gap);
 }
 
-/* The same menu paper owns the name in both placements. Its wide,
- * outside composition places the name beside the paper without changing
- * its measured menu width; the narrow fallback moves it into the paper. */
 .site-header--name-inside,
 .site-header--name-above,
-.site-header--name-outside.is-title-stacked {
+.site-header--name-outside {
     --public-title-default: var(--public-index-ink);
 }
 
@@ -1972,50 +1967,6 @@ body.public-site--frame-plain #content {
 .site-header:is(.site-header--name-inside, .site-header--name-outside) :is(.site-navigation__rail, .site-navigation__submenu) {
     grid-column: 2;
     grid-row: 1;
-}
-
-/* Beside menu reserves the entire exterior gutter as a real title column.
- * The paper remains centered at the same shell width as #content. The
- * title lives on the background, never beneath the Menu paper surface. */
-.site-header--name-outside:not(.is-title-stacked) .site-navigation {
-    display: grid;
-    width: 100%;
-    margin: 0;
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(0, min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max)))
-        minmax(0, 1fr);
-    background: transparent;
-}
-
-.site-header--name-outside:not(.is-title-stacked) .site-navigation > h1 {
-    position: relative;
-    box-sizing: border-box;
-    grid-column: 1;
-    grid-row: 1;
-    /* Reserve a title rail immediately beside the centered Menu paper.
-     * At wide viewports it must not start at the browser's far-left edge. */
-    justify-self: end;
-    width: min(100%, calc(var(--public-shell-max) * .5));
-    height: 100%;
-    min-width: 0;
-    padding-inline: var(--public-gutter);
-}
-
-.site-header--name-outside:not(.is-title-stacked) :is(.site-navigation__rail, .site-navigation__submenu) {
-    grid-column: 2;
-    grid-row: 1;
-    width: 100%;
-}
-
-/* Beside's navigation is viewport-wide only for layout. Anchor its own
- * independent white Menu edges at the centered paper, not the viewport. */
-.site-header--name-outside:not(.is-title-stacked) .site-navigation::before {
-    left: calc((100% - min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max))) / 2 - var(--public-folio-edge-outset));
-}
-
-.site-header--name-outside:not(.is-title-stacked) .site-navigation::after {
-    right: calc((100% - min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max))) / 2 - var(--public-folio-edge-outset));
 }
 
 /* Above menu is a stable two-row Menu composition. It is not the
@@ -2210,18 +2161,17 @@ body.public-site--frame-plain #content {
 }
 
 
-/* Rights and artwork information share one content-sized footer row.
- * Each track flexes from its intrinsic text width, keeping the artwork
- * caption against its image edge and wrapping text instead of the whole
- * caption beneath the rights. */
+/* Both footer texts share the available image width from their
+ * intrinsic minimums. Their first text baselines align while longer
+ * content wraps inside its own side of the row. */
 .artwork-card__footer--with-rights {
     display: flex;
-    align-items: flex-start;
+    align-items: baseline;
     gap: .65rem;
 }
 .artwork-card__rights {
     min-width: 0;
-    flex: 0 1 auto;
+    flex: 1 1 min-content;
     color: var(--public-muted);
     font-family: var(--public-typeface);
     font-size: .74rem;
@@ -2232,7 +2182,7 @@ body.public-site--frame-plain #content {
 }
 .artwork-card__footer--with-rights .artwork-caption-link {
     min-width: 0;
-    flex: 1 1 auto;
+    flex: 1 1 min-content;
     width: auto;
     margin-inline: 0;
 }

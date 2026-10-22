@@ -35,7 +35,7 @@ final class PublicAppearance
 
     public static function headerAlignmentOptions(string $position): array
     {
-        return $position === 'inside'
+        return in_array($position, ['inside', 'outside'], true)
             ? ['left' => 'Left', 'right' => 'Right']
             : self::HEADER_ALIGNMENT;
     }
@@ -44,10 +44,7 @@ final class PublicAppearance
     {
         $alignment = self::headerAlignment($value);
 
-        // Historic Inside/Center selections were formerly allowed but cannot
-        // be meaningfully positioned in the narrow title rail. Show Left
-        // until the artist selects an explicit Left or Right in the editor.
-        return self::headerPosition($position) === 'inside' && $alignment === 'center'
+        return in_array(self::headerPosition($position), ['inside', 'outside'], true) && $alignment === 'center'
             ? 'left'
             : $alignment;
     }
@@ -85,6 +82,21 @@ final class PublicAppearance
         $value ??= 'layered';
         if (! is_string($value) || ! array_key_exists($value, self::FRAME_STYLES)) {
             throw ValidationException::withMessages(['frame_style' => 'Choose a supported frame style.']);
+        }
+
+        return $value;
+    }
+
+    /** Currently implemented public navigation presentation. */
+    public const MENU_TYPES = [
+        'cyclic_inline' => 'Cyclic inline',
+    ];
+
+    public static function menuType(mixed $value): string
+    {
+        $value ??= 'cyclic_inline';
+        if (! is_string($value) || ! array_key_exists($value, self::MENU_TYPES)) {
+            throw ValidationException::withMessages(['menu_type' => 'Choose a supported menu type.']);
         }
 
         return $value;

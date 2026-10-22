@@ -1,7 +1,7 @@
 @props([
     'points' => [],
     'animateArrival' => false,
-    'ariaLabel' => 'World visitor map',
+    'ariaLabel' => __('World visitor map'),
 ])
 
 <div {{ $attributes->class(['analytics-world']) }} aria-label="{{ $ariaLabel }}">
@@ -10,7 +10,7 @@
             @include('filament.generated.analytics-world-map')
         @else
             <div class="analytics-map-build-warning" role="status">
-                Map geometry unavailable in this build.
+                {{ __('Map geometry unavailable in this build.') }}
             </div>
         @endif
 
@@ -20,7 +20,7 @@
                 viewBox="0 0 1200 600"
                 preserveAspectRatio="xMidYMid meet"
                 role="group"
-                aria-label="Country visit markers"
+                aria-label="{{ __('Country visit markers') }}"
             >
                 @foreach ($points as $point)
                     @if ($animateArrival)
@@ -46,9 +46,9 @@
                         x-on:keydown.space.prevent="selectCountry(@js($point['label']))"
                         x-bind:class="selectedCountry === @js($point['label']) ? 'is-selected' : ''"
                         x-bind:aria-pressed="(selectedCountry === @js($point['label'])).toString()"
-                        aria-label="{{ $point['label'] }}: {{ number_format($point['visits']) }} visits"
+                        aria-label="{{ $point['label'] }}: {{ number_format($point['visits']) }} {{ __('visits') }}"
                     >
-                        <title>{{ $point['label'] }} · {{ number_format($point['visits']) }} visits</title>
+                        <title>{{ $point['label'] }} · {{ number_format($point['visits']) }} {{ __('visits') }}</title>
                     </circle>
                 @endforeach
             </svg>

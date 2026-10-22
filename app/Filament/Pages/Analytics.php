@@ -22,6 +22,11 @@ final class Analytics extends Page
 
     protected static ?string $title = 'Analytics';
 
+    public function getTitle(): string
+    {
+        return __('Analytics');
+    }
+
     protected static ?int $navigationSort = 40;
 
     protected string $view = 'filament.pages.analytics';

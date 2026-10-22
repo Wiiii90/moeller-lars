@@ -64,14 +64,36 @@
     color: var(--public-muted);
 }
 
-.rich-text__media {
+.rich-text__media,
+.rich-text img {
     display: block;
-    width: min(100%, 34rem);
     max-width: 100%;
     height: auto;
     margin: .75rem 0;
     outline: 1px solid rgba(50, 47, 44, .14);
     outline-offset: -1px;
+}
+
+.rich-text__media {
+    width: min(100%, 34rem);
+}
+
+.rich-text img:not(.rich-text__media) {
+    width: auto;
+    max-width: min(100%, 34rem);
+}
+
+/* Paragraph alignment from the same Tiptap document controls image
+   positioning; it must not require a separate public layout mode. */
+.rich-text [style*="text-align: center"] img,
+.rich-text [style*="text-align:center"] img {
+    margin-inline: auto;
+}
+
+.rich-text [style*="text-align: right"] img,
+.rich-text [style*="text-align:right"] img {
+    margin-left: auto;
+    margin-right: 0;
 }
 
 .rich-text a,
@@ -197,4 +219,98 @@
     overflow: hidden !important;
     clip: rect(0 0 0 0) !important;
     white-space: nowrap !important;
+}
+
+/*
+ * One public presentation contract for the canonical Tiptap image
+ * attributes. Inline images remain inline; other positions become
+ * independently alignable image/caption units. Floats can be followed
+ * by multiple paragraphs and never escape the rich-text component.
+ */
+.rich-text__image {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-block: .75rem;
+}
+.rich-text__image img {
+    display: block;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    margin: 0;
+}
+.rich-text__image-caption {
+    display: block;
+    margin-top: .35rem;
+    color: var(--public-muted);
+    font-size: .8em;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+.rich-text__image--inline {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 .25em;
+}
+.rich-text__image--left { margin-inline: 0 auto; }
+.rich-text__image--center { margin-inline: auto; }
+.rich-text__image--right { margin-inline: auto 0; }
+.rich-text__image--float-left,
+.rich-text__image--float-right {
+    max-width: min(45%, 22rem);
+    margin-block: .2rem .8rem;
+}
+.rich-text__image--float-left {
+    float: left;
+    margin-inline: 0 1rem;
+}
+.rich-text__image--float-right {
+    float: right;
+    margin-inline: 1rem 0;
+}
+.rich-text::after { content: ''; display: table; clear: both; }
+
+.rich-text table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-block: .75rem;
+    font-size: inherit;
+}
+.rich-text th,
+.rich-text td {
+    min-width: 0;
+    padding: .45em .65em;
+    border: 1px solid var(--public-divider);
+    text-align: start;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+}
+.rich-text th { font-weight: 650; }
+.rich-text hr {
+    border: 0;
+    border-top: 1px solid var(--public-divider);
+    margin-block: 1rem;
+}
+.rich-text mark { background: var(--public-highlight, #f3e7bd); color: inherit; }
+.rich-text .color { color: var(--color, currentColor); }
+.rich-text td > p:first-child, .rich-text th > p:first-child { margin-top: 0; }
+.rich-text td > p:last-child, .rich-text th > p:last-child { margin-bottom: 0; }
+.rich-text sub,
+.rich-text sup { line-height: 0; }
+.rich-text [style*="text-align: center"],
+.rich-text [style*="text-align:center"] { text-align: center; }
+.rich-text [style*="text-align: right"],
+.rich-text [style*="text-align:right"] { text-align: right; }
+.rich-text [style*="text-align: justify"],
+.rich-text [style*="text-align:justify"] { text-align: justify; }
+
+@media (max-width: 38rem) {
+    .rich-text__image--float-left,
+    .rich-text__image--float-right {
+        float: none;
+        max-width: 100%;
+        margin-inline: auto;
+    }
+    .rich-text table { display: block; max-width: 100%; overflow-x: auto; }
 }

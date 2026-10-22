@@ -228,6 +228,7 @@ body.public-site .site-header {
     pointer-events: none;
 }
 
+[data-viewer-page-link][hidden],
 [data-viewer-loading][hidden],
 [data-viewer-missing][hidden],
 [data-viewer-image][hidden],

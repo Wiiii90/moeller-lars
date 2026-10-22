@@ -100,7 +100,8 @@ function normalizeItem(element) {
     const title = element.dataset.viewerTitle;
     const page = element.dataset.viewerPage;
 
-    if (!key || !analyticsKey || !src || alt === undefined || !title || !page) {
+    const journal = element.dataset.viewerScope === 'journal';
+    if (!key || !src || alt === undefined || !title || (!journal && (!analyticsKey || !page))) {
         throw new Error('Artwork viewer item is missing required canonical data.');
     }
 
@@ -166,7 +167,7 @@ export function initializeArtworkViewer(root = document) {
 
     const resumeAttention = () => {
         const item = currentItem();
-        if (!item || !mediaVisible() || !dialog.open || document.visibilityState === 'hidden') return;
+        if (!item?.analyticsKey || !mediaVisible() || !dialog.open || document.visibilityState === 'hidden') return;
         if (attentionKey !== item.analyticsKey) {
             resetAttention();
             attentionKey = item.analyticsKey;
@@ -282,8 +283,9 @@ export function initializeArtworkViewer(root = document) {
         previous.disabled = adjacentIndex(index, -1, items.length) === null;
         next.disabled = adjacentIndex(index, 1, items.length) === null;
         preserveControlFocus();
-        pageLink.hidden = false;
-        pageLink.href = item.page;
+        pageLink.hidden = !item.page;
+        if (item.page) pageLink.href = item.page;
+        else pageLink.removeAttribute('href');
         // The existing public SPA delegation handles this on-demand href.
         // Adding wire:navigate after Alpine initialization would not bind it.
         expectedSrc = item.src;
@@ -318,7 +320,7 @@ export function initializeArtworkViewer(root = document) {
         zoomTracked.clear();
         resetAttention();
         showItem(start);
-        trackMatomoEvent('Artwork', 'artwork_open', normalized[start].analyticsKey, null, root);
+        if (normalized[start].analyticsKey) trackMatomoEvent('Artwork', 'artwork_open', normalized[start].analyticsKey, null, root);
         dialog.showModal();
         close.focus();
         return true;
@@ -326,7 +328,7 @@ export function initializeArtworkViewer(root = document) {
 
     const trackZoomIfNeeded = () => {
         const item = currentItem();
-        if (!item || item.kind !== 'image' || state.scale <= MIN_SCALE || zoomTracked.has(item.analyticsKey)) return;
+        if (!item?.analyticsKey || item.kind !== 'image' || state.scale <= MIN_SCALE || zoomTracked.has(item.analyticsKey)) return;
         zoomTracked.add(item.analyticsKey);
         trackMatomoEvent('Artwork', 'artwork_zoom_used', item.analyticsKey, null, root);
     };
@@ -345,7 +347,7 @@ export function initializeArtworkViewer(root = document) {
         video.pause();
         showItem(destination);
         const item = currentItem();
-        trackMatomoEvent('Artwork', action, item?.analyticsKey ?? null, null, root);
+        if (item?.analyticsKey) trackMatomoEvent('Artwork', action, item.analyticsKey, null, root);
     };
 
     const stagePoint = (event) => {
@@ -362,6 +364,15 @@ export function initializeArtworkViewer(root = document) {
         if (!source) return;
         const sequence = source.closest('[data-artwork-viewer-sequence]');
         if (sequence && open(source, sequence)) event.preventDefault();
+    }, { signal: lifetime.signal });
+
+    root.addEventListener('keydown', (event) => {
+        if ((event.key !== 'Enter' && event.key !== ' ') || !event.target.matches?.('img[data-artwork-viewer-trigger]')) return;
+        const source = event.target;
+        const sequence = source.closest('[data-artwork-viewer-sequence]');
+        if (!sequence) return;
+        event.preventDefault();
+        open(source, sequence);
     }, { signal: lifetime.signal });
 
     close.addEventListener('click', () => dialog.close());

@@ -59,6 +59,16 @@ export function applyPublicLayoutFromMeta() {
     for (const candidate of frameStyles) {
         document.body.classList.toggle('public-site--frame-' + candidate, candidate === frameStyle);
     }
+    // Livewire history can restore a cached header with the preceding page's
+    // divider class. Reconcile it with the destination's server-owned mode.
+    const dividerModes = ['fine', 'menu', 'full', 'separate', 'full_gap'];
+    const header = document.querySelector('.site-header');
+    const dividerMode = config.dataset.publicLayoutDividerMode;
+    if (header && dividerModes.includes(dividerMode)) {
+        for (const candidate of dividerModes) {
+            header.classList.toggle('site-header--divider-' + candidate, candidate === dividerMode);
+        }
+    }
     // Update the nonce-authorized rule itself. Element.style becomes a style
     // attribute in Livewire's HTML snapshots and CSP rejects it on restore.
     const sheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
@@ -86,6 +96,14 @@ export function applyPublicLayoutFromMeta() {
         rule.style.setProperty('--public-separator-color', config.dataset.publicLayoutDividerColor);
     } else {
         rule.style.removeProperty('--public-separator-color');
+    }
+    // SPA document swaps must replay the currently rendered divider paint.
+    if (config.dataset.publicLayoutDividerGradient) {
+        rule.style.setProperty('--public-separator-gradient', config.dataset.publicLayoutDividerGradient);
+        rule.style.setProperty('--public-separator-paint', config.dataset.publicLayoutDividerGradient);
+    } else {
+        rule.style.removeProperty('--public-separator-gradient');
+        rule.style.removeProperty('--public-separator-paint');
     }
     if (config.dataset.publicLayoutTitleColor) {
         rule.style.setProperty('--public-title-color', config.dataset.publicLayoutTitleColor);

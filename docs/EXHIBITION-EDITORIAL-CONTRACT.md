@@ -32,6 +32,12 @@ Editor; their current byline stays visible as a compatibility fallback.
 Both Working and Committed schemas receive the same new fields. Do not
 rewrite retained publication checkpoints.
 
+The 2026-10-20 legacy address reconciliation may copy the original dual
+venue description for "Der blonde Hans" into the structured Address fields,
+but only if the original source data remain unchanged. Description text is
+not deleted. Public suppresses a description only when its content exactly
+duplicates the structured address; no geographic pin is invented.
+
 ## Vernissage and dates
 
 - `vernissage_at`: optional structured opening time; never default to today.
@@ -52,3 +58,33 @@ rewrite retained publication checkpoints.
 
 Changes use the existing transactional editorial/audit/notification path.
 Public preview may include drafts; normal Public is publication-filtered.
+
+## Per-field public visibility
+
+The existing exhibition Editor exposes small Publish/Unpublish icon actions beside
+the labels for Organizer, Venue, Exhibition website, Street address, Postal code,
+City and Country. Each action controls only that field's public presentation;
+source values remain editable, retained and available for map geocoding.
+All seven fields default to visible for existing and new exhibitions. New
+drafts expose the visibility actions after their first save.
+
+These actions use the normal audited exhibition domain and do not introduce
+a second geocoding or publication system. Their changes are Working changes
+subject to the usual site Commit; they are not instantly deployed to Public.
+
+Public summary attribution, venue facts, website links, address composition and
+map-dialog text honor these settings. The map's independently controlled
+`map_enabled` option is **not** silently changed by hiding an address label:
+an enabled map can still reveal coordinates through OpenStreetMap. Turn off
+the map separately if the location itself should be hidden.
+
+Admin labels are translated at render time through Laravel using the user's
+`admin_language`. The date pickers, admin table and public date strings use
+`RegionalFormats` with the respective independent admin/public region.
+The artist-provided `date_text` and legacy opening text remain unchanged.
+
+Visibility icons reconcile the optimistic `JournalWorkspace::entryEditorOriginal`
+snapshot for their own flag and record timestamp, retaining edit-dialog
+autosave and detection of unrelated concurrent changes. The historic rule
+that entries lacking a genuine street address do not render an Address fact
+is preserved; hiding an existing street can still show opted-in locality.

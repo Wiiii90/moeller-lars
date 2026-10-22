@@ -1,10 +1,10 @@
 <x-admin.table>
     <section class="custom-page-component-sequence home-component-sequence admin-hierarchy" aria-label="Home component sequence">
         <div class="custom-page-component-sequence__header admin-hierarchy__header">
-            <span class="admin-hierarchy__ordering-heading">Position</span>
-            <span>Component</span>
-            <span>Content</span>
-            <span class="admin-row-actions-heading">Actions</span>
+            <span class="admin-hierarchy__ordering-heading">{{ __('Position') }}</span>
+            <span>{{ __('Component') }}</span>
+            <span>{{ __('Content') }}</span>
+            <span class="admin-row-actions-heading">{{ __('Actions') }}</span>
             <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select all visible Home items">
                 <input
                     type="checkbox"
@@ -31,7 +31,7 @@
         @elseif ($components === [])
             <x-admin.empty-state title="No matching components" :minimal="true">
                 <x-slot:actions>
-                    <button class="admin-action" type="button" wire:click="resetComponentFilters">Clear filters</button>
+                    <button class="admin-action" type="button" wire:click="resetComponentFilters">{{ __('Clear filters') }}</button>
                 </x-slot:actions>
             </x-admin.empty-state>
         @else
@@ -125,7 +125,7 @@
                                             <button class="admin-drag-handle custom-page-child-row__drag" type="button"
                                                 @if ($reorderEnabled && count($homeComponent['children']) > 1) wire:sort:handle @else disabled @endif
                                                 aria-label="Drag {{ $child['title'] }} to reorder">⋮⋮</button>
-                                            <span class="custom-page-child-row__kind">Contact item</span>
+                                            <span class="custom-page-child-row__kind">{{ __('Contact item') }}</span>
                                             <div class="custom-page-child-row__content admin-hierarchy__content">
                                                 <strong>{{ $child['title'] }}</strong>
                                                 @if ($child['detail'] !== '') <small>{{ $child['detail'] }}</small> @endif
@@ -162,13 +162,13 @@
                                 </div>
                             </div>
                         @elseif ($homeComponent['type'] === 'contact')
-                            <div class="custom-page-component__children-empty">No contact items</div>
+                            <div class="custom-page-component__children-empty">{{ __('No contact items') }}</div>
                         @endif
 
                         @if ($homeComponent['type'] === 'contact' && count($homeComponent['children']) < 3)
                             <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button"
                                 wire:click="mountAction('addHomeChild', { index: {{ $homeComponent['index'] }}, type: 'contact' })">
-                                <span aria-hidden="true">+</span><strong>Add contact item</strong>
+                                <span aria-hidden="true">+</span><strong>{{ __('Add contact item') }}</strong>
                             </button>
                         @endif
                     </article>

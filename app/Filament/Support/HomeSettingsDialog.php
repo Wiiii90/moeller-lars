@@ -75,7 +75,7 @@ final class HomeSettingsDialog
                 ->schema([
                     Select::make('template')
                         ->label('Template')
-                        ->options(HomeTemplate::options())
+                        ->options(array_map('__', HomeTemplate::options()))
                         ->required()
                         ->live(),
                     ...$this->routingDialog->schema(),
@@ -92,7 +92,7 @@ final class HomeSettingsDialog
                         }),
                     Select::make('group_source')
                         ->label('Group source')
-                        ->options(['automatic' => 'Automatic', 'manual' => 'Manual'])
+                        ->options(['automatic' => __('Automatic'), 'manual' => __('Manual')])
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
@@ -105,12 +105,12 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
                     Select::make('newest_by')
                         ->label('Newest by')
-                        ->options(['artwork_date' => 'Artwork date', 'added' => 'Added'])
+                        ->options(['artwork_date' => __('Artwork date'), 'added' => __('Added')])
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
                     Select::make('pool_rule')
                         ->label('Candidate filter')
-                        ->options(['all' => 'All eligible', 'year' => 'Specific Year'])
+                        ->options(['all' => __('All eligible'), 'year' => __('Specific Year')])
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
@@ -126,7 +126,7 @@ final class HomeSettingsDialog
                         ->columnSpanFull(),
                     Select::make('display_strategy')
                         ->label('Display strategy')
-                        ->options(['ordered' => 'Ordered', 'random' => 'Random', 'sequential' => 'Sequential'])
+                        ->options(['ordered' => __('Ordered'), 'random' => __('Random'), 'sequential' => __('Sequential')])
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
@@ -138,7 +138,7 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
                     Select::make('rotation_interval_unit')
                         ->label('Interval unit')
-                        ->options(['days' => 'Days', 'weeks' => 'Weeks'])
+                        ->options(['days' => __('Days'), 'weeks' => __('Weeks')])
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
                     $this->heroDisplayToggle('show_details', 'Show artwork information', $persistHeroToggle),
@@ -295,13 +295,13 @@ final class HomeSettingsDialog
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
             ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
-            ->searchPrompt('Search eligible Hero Artworks')
-            ->noSearchResultsMessage('No matching eligible artworks');
+            ->searchPrompt(__('Search eligible Hero Artworks'))
+            ->noSearchResultsMessage(__('No matching eligible artworks'));
 
         if ($multiple) {
             $select
                 ->multiple()
-                ->placeholder('No additional artworks')
+                ->placeholder(__('No additional artworks'))
                 ->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
         } else {
             $select->getOptionLabelUsing(fn (mixed $value): ?string => $this->heroArtworkOptionLabel($value));

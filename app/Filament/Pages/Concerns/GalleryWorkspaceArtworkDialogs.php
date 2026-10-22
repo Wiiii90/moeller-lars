@@ -34,7 +34,7 @@ trait GalleryWorkspaceArtworkDialogs
                 'work_date' => null,
             ])
             ->schema($this->artworkCreateFormSchema())
-            ->modalHeading('Add artwork')
+            ->modalHeading(__('Add artwork'))
             ->action(function (array $data): void {
                 $upload = $data['primary_upload'] ?? null;
                 $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
@@ -105,15 +105,26 @@ trait GalleryWorkspaceArtworkDialogs
         $dialog = app(ArtworkEditDialog::class);
         $action = Action::make('editArtwork')
             ->label('Edit')
-            ->modalHeading('Edit artwork')
-            ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)))
+            ->modalHeading(__('Edit artwork'))
+            ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)->fresh()))
             ->schema(fn (array $arguments): array => $dialog->schema(
                 autosave: true,
-                primaryReadOnly: (string) $this->actionArtwork($arguments)->getAttribute('state') === 'published',
+                primaryReadOnly: (string) $this->actionArtwork($arguments)->fresh()->getAttribute('state') === 'published',
+                onPrimaryMediaChanged: function (?int $assetId) use ($dialog, $arguments): void {
+                    if (! $dialog->changePrimaryMedia($this->actionArtwork($arguments), $assetId)) {
+                        return;
+                    }
+
+                    $this->refreshWorkspaceAfterMutation();
+                    app(AdminNotifier::class)->notification(
+                        title: 'Artwork primary media saved',
+                        status: 'success',
+                    );
+                },
             ))
             ->extraModalFooterActions(fn (array $arguments): array => $this->artworkEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments) use ($dialog): void {
-                $changed = $dialog->save($this->actionArtwork($arguments), $data);
+                $changed = $dialog->save($this->actionArtwork($arguments), $data, savePrimaryMedia: false);
                 $this->refreshWorkspaceAfterMutation();
 
                 if ($changed) {
@@ -135,7 +146,7 @@ trait GalleryWorkspaceArtworkDialogs
     {
         $action = Action::make('uploadArtworkPrimaryMedia')
             ->label('Upload primary media')
-            ->modalHeading('Upload primary media')
+            ->modalHeading(__('Upload primary media'))
             ->schema([
                 FileUpload::make('primary_upload')
                     ->label('New image or video')
@@ -143,12 +154,12 @@ trait GalleryWorkspaceArtworkDialogs
                     ->acceptedFileTypes([...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
                     ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
                     ->required()
-                    ->helperText('Replaces the draft artwork’s primary media. The previous file remains in Storage.'),
+                    ->helperText(__('Replaces the draft artwork’s primary media. The previous file remains in Storage.')),
                 Textarea::make('primary_alt_text')
                     ->label('ALT text')
                     ->maxLength(500)
                     ->nullable()
-                    ->helperText('Describe this media for screen readers, or inherit its Storage ALT.'),
+                    ->helperText(__('Describe this media for screen readers, or inherit its Storage ALT.')),
             ])
             ->action(function (array $data, array $arguments): void {
                 $artwork = $this->actionArtwork($arguments)->fresh();
@@ -187,7 +198,8 @@ trait GalleryWorkspaceArtworkDialogs
                     ? (string) $data['primary_alt_text'] : null;
                 $oldAlt = $current?->getAttribute('alt_text_override');
 
-                if ($oldId === (int) $asset->getKey() && $oldAlt === $newAlt) {
+                $mediaChanged = $oldId !== (int) $asset->getKey();
+                if (! $mediaChanged && $oldAlt === $newAlt) {
                     app(AdminNotifier::class)->notification(
                         title: 'Primary media unchanged',
                         status: 'info',
@@ -226,8 +238,12 @@ trait GalleryWorkspaceArtworkDialogs
                 }
 
                 app(AdminNotifier::class)->notification(
-                    title: 'Draft primary media replaced',
-                    body: 'The previous original remains in Storage. Public Gallery and Home change only after the Artwork is published and the publication is committed.',
+                    title: ! $mediaChanged
+                        ? 'Primary media ALT text saved'
+                        : ($oldId === null ? 'Draft primary media added' : 'Draft primary media replaced'),
+                    body: ! $mediaChanged
+                        ? 'The media file was not changed.'
+                        : 'The previous original remains in Storage. Public Gallery and Home change only after the Artwork is published and the publication is committed.',
                     status: 'success',
                 );
             });
@@ -256,13 +272,19 @@ trait GalleryWorkspaceArtworkDialogs
             })->disabled(! $enabled);
         }
 
-        $published = (string) $artwork->getAttribute('state') === 'published';
+        // The workspace caches Artwork lookups within a Livewire request.
+        // Header icons and disabled states must read the committed state after
+        // a nested Publish/Unpublish without closing and reopening the dialog.
+        $isPublished = fn (): bool => (string) $this->actionArtwork($target)->fresh()->getAttribute('state') === 'published';
+        $publicationRole = fn (): AdminRowAction => $isPublished()
+            ? AdminRowAction::Unpublish
+            : AdminRowAction::Publish;
         $actions[] = Action::make('dialogUploadPrimaryMedia')
             ->label('Upload primary media')
             ->icon(AdminIcon::Upload->value)
             ->iconButton()
             ->color('gray')
-            ->disabled($published)
+            ->disabled($isPublished)
             ->extraAttributes(['class' => 'admin-dialog__header-action'])
             ->action(function () use ($target): void {
                 $this->replaceMountedAction('uploadArtworkPrimaryMedia', $target);
@@ -270,11 +292,11 @@ trait GalleryWorkspaceArtworkDialogs
 
         $actions[] = AdminDialog::headerAction(
             'dialogArtworkPublication',
-            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-            function () use ($published, $id, $target): void {
-                if ($published) {
-                    // Unpublication is confirmed by its existing domain action.
-                    $this->replaceMountedAction('unpublishArtwork', [...$target, 'returnToEditor' => true]);
+            $publicationRole(),
+            function () use ($isPublished, $id, $target): void {
+                if ($isPublished()) {
+                    $this->unpublishArtworkInGallery($id);
+                    $this->replaceMountedAction('editArtwork', $target);
 
                     return;
                 }
@@ -282,7 +304,9 @@ trait GalleryWorkspaceArtworkDialogs
                     $this->replaceMountedAction('editArtwork', $target);
                 }
             },
-        );
+        )
+            ->label(fn (): string => $publicationRole()->label())
+            ->icon(fn (): string => $publicationRole()->icon()->value);
 
         // The Gallery action detaches, rather than deletes, an artwork. Use
         // its existing confirmation and semantic icon, never fake Delete.
@@ -291,7 +315,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->icon(AdminIcon::Detach->value)
             ->iconButton()
             ->color('gray')
-            ->disabled($published)
+            ->disabled($isPublished)
             ->extraAttributes(['class' => 'admin-dialog__header-action'])
             ->action(function () use ($target): void {
                 $this->replaceMountedAction('removeArtwork', $target);

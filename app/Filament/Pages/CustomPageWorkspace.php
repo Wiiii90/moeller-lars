@@ -112,6 +112,6 @@ final class CustomPageWorkspace extends Page
     {
         $title = trim($this->pageTitle);
 
-        return $title !== '' ? $title : 'Custom Page';
+        return $title !== '' ? $title : __('Custom Page');
     }
 }

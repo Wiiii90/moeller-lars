@@ -102,7 +102,7 @@ final class GalleryWorkspace extends Page
     {
         $name = $this->galleryContext['name'] ?? null;
 
-        return is_string($name) && trim($name) !== '' ? trim($name) : 'Gallery artworks';
+        return is_string($name) && trim($name) !== '' ? trim($name) : __('Gallery artworks');
     }
 
     public function updatedSearch(): void

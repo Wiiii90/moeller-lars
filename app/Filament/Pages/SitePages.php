@@ -41,6 +41,11 @@ final class SitePages extends Page
 
     protected static ?string $title = 'Pages';
 
+    public function getTitle(): string
+    {
+        return __('Pages');
+    }
+
     protected static ?string $slug = 'pages';
 
     protected static ?int $navigationSort = 5;
@@ -271,7 +276,7 @@ final class SitePages extends Page
         return AdminDialog::edit(
             Action::make('editPlacement')
                 ->label('Edit')
-                ->modalHeading('Page placement')
+                ->modalHeading(__('Page placement'))
                 ->fillForm(function (array $arguments): array {
                     /** @var SiteSection $section */
                     $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));

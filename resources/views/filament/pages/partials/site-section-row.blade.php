@@ -45,7 +45,7 @@
 
     <div class="admin-pages__type" role="cell" data-cell="page-type">
         @if ($isHome)
-            <span class="admin-inline-control-value">Landing Page</span>
+            <span class="admin-inline-control-value">{{ __('Landing Page') }}</span>
         @elseif ($section['can_convert'])
             <select
                 class="admin-inline-select"
@@ -115,7 +115,7 @@
                                 aria-checked="{{ $homeState['skip_target_section_id'] === null ? 'true' : 'false' }}"
                                 wire:click="changeSkipHomeTarget('')"
                                 x-on:click="open = false"
-                            >Next page in order</button>
+                            >{{ __('Next page in order') }}</button>
                             @foreach ($homeState['skip_target_options'] as $targetId => $targetLabel)
                                 <button
                                     class="admin-action"

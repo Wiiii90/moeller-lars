@@ -250,29 +250,88 @@ Journal already uses visible Position and is the current reference for the conve
 ## 9. Drag and ordering
 
 
-For hierarchical editors (Pages and Custom Pages), root and child
-sortable lists share ONE native `wire:sort:group` name per editor, with
-different `wire:sort:group-id` values for each parent and for root.
-This restores the older working Pages behavior. Both sibling sorting
-and root/child transfer are handled by the native Livewire Sortable
-lifecycle, with no shadow Alpine/JS gesture handler or synthetic
-drop targets. Each Image child is a FULL independent six-cell component
-row rendered by the same partial as its root siblings: numbered position,
-normal drag grip, editable component type, at most two content lines,
-Move Up/Down, Edit, Publish/Unpublish, Delete and Selection.
-There is no "Move out" action, arrow glyph, redundant decorative hint,
-child-count metadata or Image-owned child editing. Parent is editable in
-the child's own Edit dialog. Backend mutations are transactional.
+**Behavior is authoritative; sortable group names are an implementation
+detail.** The claim that putting every root and child list into one
+`wire:sort:group` restores previously accepted Pages behavior was not
+established by browser acceptance and must not be treated as a contract.
+In particular, nested empty child sortables can compete with root drop
+placement. Do not preserve, reinstate, or remove an implementation solely
+because it is described as more native or simpler.
 
-Use native Livewire sorting only:
+**Browser-accepted Pages drag-and-drop (21 October 2026):** The user
+confirmed that both root ordering and deliberate child placement work with
+the correction introduced by `f7b79d49112b80ac2385377e934a9c1579785548`.
+The user subsequently also accepted the simple root-insertion separator
+presentation introduced by `5b53e9fe9aa0f71dc25806aaaea13141dfeb4e8d`
+as **good enough in the real browser**. Preserve this combined behavior and
+appearance as the accepted baseline; do not redesign it during cleanup.
+The repair uses the existing Livewire/Alpine Sortable owner and the existing
+shared `wire:sort:group="site-pages"` with parent-specific group IDs.
+For **empty** children only, `site-pages.blade.php` sets
+`wire:sort:config="{ emptyInsertThreshold: 0 }"` because SortableJS
+otherwise gives invisible empty lists a five-pixel proximity capture zone
+that can steal root-to-root drops. The corresponding
+`.admin-pages__empty-child-rows` in `table-contract.css` is an actual
+0.75rem-high, bounded child destination inside its root row. Its negative
+block-start margin compensates for its own height, so root sibling geometry
+does not jump; the leading Position/Drag region is outside the child target.
+`body.sorting` enables pointer hits only during a native drag.
+**Do not replace this with separate visible right-side drop surfaces,
+global pointer handlers, a second drag controller, or unrestricted empty
+sortable proximity detection.** Before changing this structure, reproduce
+root-before/middle/last and nest-under-last behavior in the real browser.
+The accepted drop preview uses **only the existing horizontal separator
+style** to indicate a root-level insertion. When a page is nested under a
+parent, no additional line separates that parent from its child. The visual
+signal follows the native `.sortable-ghost` placeholder among direct root
+siblings; it does not change hit geometry, sortable membership, placement
+or row size. **No colored side rail, visible target surface, label, added
+spacing, or custom pointer handler.** The user explicitly accepted this
+minimal presentation on 21 October 2026; neither it nor the functioning
+drag gestures should be replaced without a new explicit request.
 
-```text
-wire:sort
-wire:sort:item
-wire:sort:handle
-```
+Pages and Custom Pages both support hierarchy, but they have **different
+domain owners**: Pages nests site sections under pages; Custom Page nests
+eligible components under an Image. Reusing table/drag styling must not
+silently change either editor's drop semantics.
 
-Do not build custom HTML5 `draggable`/dragstart/drop state machines.
+Required Pages behavior when ordering is enabled and unfiltered:
+
+- Root pages can be moved before, between and after other root pages, **not
+  merely after the final root**. Dropping for root ordering never silently
+  reparents the page, even when the destination root has an empty child list.
+- Eligible pages can be deliberately nested under the first, an intermediate
+  **or the last** eligible root. The target for nesting must not compete
+  ambiguously with a normal root-reorder drop.
+- A child can be returned to root level; children can be reordered within
+  their parent and moved between eligible parents as supported by the
+  canonical two-level hierarchy.
+- Home stays the first non-draggable root. Filtering and incomplete
+  pagination still disable ambiguous ordering, not other page controls.
+- Persistence, Sidebar refresh, Activity/audit and exactly-once success
+  feedback remain owned by the existing editor/domain mutation path.
+
+Custom Page's Image children are independent full component rows using
+the same row grammar as root components: Position, Drag, editable type,
+Content, Move Up/Down, Edit, publication, Delete and Selection. Eligible
+Text, List (without media), Contact details and Legal Disclaimer children
+can be placed under Image components and returned/moved according to the
+existing domain rules. Image Edit does not subsume child editing.
+
+Native `wire:sort`, `wire:sort:item`, and `wire:sort:handle` remain the
+existing preferred sibling-order controls. No new custom HTML5 drag state
+machine or second parallel sorting engine is authorized by this document.
+If the native primitive cannot unambiguously express both reorder and
+parent-change intent, **stop and establish the owner and real browser
+behavior** before changing the architecture. In particular, do not alter
+Pages sorting while simplifying Custom Page nesting, or vice versa, without
+explicit cross-feature authorization and a complete gesture review.
+
+Browser acceptance must exercise root-to-root before/middle/last,
+root-to-child including the last parent, child-to-root, child-to-child,
+and Custom Page Image-child placement when shared code is touched.
+Testing only the backend sort action, or a single end-of-list drag, is not
+evidence that the competing drop targets behave correctly.
 
 Rules:
 
@@ -281,7 +340,7 @@ Rules:
 - use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
 - drag is disabled when Search/filters/pagination make canonical order ambiguous;
-- in Custom Page, only top-level components have drag handles and row Actions; List entries and Contact options are edited inside their parent forms, not reordered as independent rows; a single parent does not expose an inert drag handle;
+- Custom Page Image children are independent draggable/actionable rows; List entries and Contact options inside their parent forms are **not** independent rows; a single non-reorderable parent does not expose an inert drag handle;
 - ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
 - filtered reorder must not pretend that a filtered projection is the complete canonical sequence.
 
@@ -537,7 +596,19 @@ Use the central lazy `MediaAssetSelect` pattern.
 
 Do not eagerly `pluck()` hundreds of MediaAsset options merely because a normal Select supports preload.
 
-The picker should narrow by allowed media kind and query lazily. This is both a UI consistency and performance rule.
+All `MediaAssetSelect` instances use the same visual Storage contact-sheet
+presentation by default: Gallery, Journal, Home, Custom Pages, rich text and
+site icon. The established Select remains the sole value/focus/keyboard owner.
+The initial set is bounded to 24 recent assets (relationship Selects use
+Filament's bounded preload), and filtered queries remain lazy (up to 30).
+Do not introduce page-specific appearance flags for the same media choice.
+
+A Rich Text toolbar-anchored Storage panel wraps this shared Select without
+replacing it. Its visible Close control, outside click, Escape, toolbar toggle
+and completed insertion close the panel and the Select together. Click-away
+is owned by the popup, not its enclosing editor shell. All options must
+retain available-asset and media-kind constraints, escape metadata, and stay
+inside the actual dialog.
 
 ## 19. Performance as UI quality
 

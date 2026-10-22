@@ -37,7 +37,7 @@ trait ManagesSitePageEditDialog
     {
         $action = Action::make('editPage')
             ->label('Edit')
-            ->modalHeading('Edit page')
+            ->modalHeading(__('Edit page'))
             ->fillForm(function (array $arguments): array {
                 $section = $this->dialogSection($arguments);
                 $template = $section->journalTemplate();
@@ -59,13 +59,13 @@ trait ManagesSitePageEditDialog
                     ->schema([
                         Select::make('type')
                             ->label('Page type')
-                            ->options(SiteSectionType::compactOptions())
+                            ->options(array_map('__', SiteSectionType::compactOptions()))
                             ->native()
                             ->required()
                             ->live(),
                         Select::make('template')
                             ->label('Template')
-                            ->options(JournalTemplate::options())
+                            ->options(array_map('__', JournalTemplate::options()))
                             ->native()
                             ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
                             ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
@@ -130,7 +130,7 @@ trait ManagesSitePageEditDialog
         $dialog = app(HomeSettingsDialog::class);
         $action = Action::make('editHome')
             ->label('Edit')
-            ->modalHeading('Edit page')
+            ->modalHeading(__('Edit page'))
             ->fillForm(function () use ($dialog): array {
                 $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
                 $this->pageDialogOriginals[(int) $home->getKey()] = $this->pageDialogPersistedState($home);

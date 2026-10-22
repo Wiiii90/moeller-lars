@@ -42,6 +42,11 @@ final class Dashboard extends Page
 
     protected static ?string $title = 'Dashboard';
 
+    public function getTitle(): string
+    {
+        return __('Dashboard');
+    }
+
     protected static string|\UnitEnum|null $navigationGroup = null;
 
     protected static ?int $navigationSort = -100;
@@ -351,7 +356,7 @@ final class Dashboard extends Page
         return AdminDialog::edit(
             Action::make('dashboardSettings')
                 ->label('Settings')
-                ->modalHeading('Dashboard settings')
+                ->modalHeading(__('Dashboard settings'))
                 ->fillForm(function (): array {
                     $user = auth()->user();
 

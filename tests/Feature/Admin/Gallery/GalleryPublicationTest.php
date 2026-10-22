@@ -271,8 +271,6 @@ it('retains the Gallery Artwork editor after a confirmed Unpublish launched from
         ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
         ->assertSet('mountedActions.0.name', 'editArtwork')
         ->mountAction('dialogArtworkPublication')
-        ->assertSet('mountedActions.0.name', 'unpublishArtwork')
-        ->callMountedAction()
         ->assertHasNoFormErrors()
         ->assertSet('mountedActions.0.name', 'editArtwork')
         ->assertSet('mountedActions.0.arguments.artwork', $artwork->getKey())

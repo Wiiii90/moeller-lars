@@ -58,21 +58,18 @@ it('clears a draft primary Media File from Edit without deleting the shared Stor
     galleryFixturePrimary($draft, $shared);
     galleryFixtureUnavailableAnalytics();
 
-    $form = app(ArtworkEditDialog::class)->fill($draft);
-    $form['primary_media_asset_id'] = null;
-    $form['primary_alt_text'] = null;
-
+    // Gallery Edit owns this selection as a discrete field mutation. It must
+    // persist without a submit or an unrelated modal change event.
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('editArtwork', ['artwork' => $draft->getKey()])
-        ->fillForm($form)
-        ->callMountedAction()
+        ->set('mountedActions.0.data.primary_media_asset_id', null)
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification');
 
     expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeFalse()
         ->and((string) $shared->fresh()->state)->toBe('available')
         ->and(AuditEvent::query()->where('action', 'artwork.primary_media_detached')->where('entity_id', $draft->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork saved')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
 });
 
 it('refuses to clear primary media from a published Artwork without touching the Storage original', function (): void {
@@ -91,6 +88,50 @@ it('refuses to clear primary media from a published Artwork without touching the
         ->toThrow(\Illuminate\Validation\ValidationException::class);
     expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeTrue()
         ->and((string) $shared->fresh()->state)->toBe('available');
+});
+
+
+it('saves a changed existing Storage Media File through the Gallery field update only once', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    $old = galleryFixtureAsset();
+    $replacement = galleryFixtureAsset();
+    galleryFixtureThumbnail($old);
+    galleryFixtureThumbnail($replacement);
+    galleryFixturePrimary($artwork, $old);
+    galleryFixtureUnavailableAnalytics();
+
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->assertSet('mountedActions.0.data.primary_media_asset_id', $old->getKey());
+
+    $editor->set('mountedActions.0.data.primary_media_asset_id', $replacement->getKey())
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification')
+        ->assertSet('mountedActions.0.data.primary_alt_text', null);
+
+    expect((int) ArtworkMedia::query()
+        ->where('artwork_id', $artwork->getKey())
+        ->where('role', 'primary')
+        ->value('media_asset_id'))->toBe((int) $replacement->getKey())
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')
+            ->where('entity_id', $artwork->getKey())->count())->toBe(1)
+        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+
+    // A subsequent bubbled modal change must not undo the direct field save.
+    $editor->call('callMountedAction')
+        ->assertHasNoFormErrors()
+        ->call('unmountAction')
+        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
+        ->assertSet('mountedActions.0.data.primary_media_asset_id', $replacement->getKey());
+
+    expect((int) ArtworkMedia::query()
+        ->where('artwork_id', $artwork->getKey())
+        ->where('role', 'primary')
+        ->value('media_asset_id'))->toBe((int) $replacement->getKey())
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')
+            ->where('entity_id', $artwork->getKey())->count())->toBe(1)
+        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
 });
 
 it('repairs an existing media-less Gallery draft using the same Edit form and then publishes it', function (): void {
@@ -233,16 +274,3 @@ it('does not rename artwork belonging to another Gallery through the inline edit
 });
 
 
-it('opens the shared Add and Edit artwork forms with the canonical dialog lifecycle', function (): void {
-    $gallery = galleryFixtureCategory();
-    galleryFixtureUnavailableAnalytics();
-    $artwork = galleryFixtureArtwork($gallery);
-
-    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->mountAction('addArtwork')
-        ->assertMountedActionModalSee('Add artwork');
-
-    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
-        ->assertMountedActionModalSee('Edit artwork');
-});

@@ -118,6 +118,32 @@ final class ExhibitionEditorialService
         });
     }
 
+    public function setPublicFieldVisibility(Exhibition $entry, string $field, bool $visible): bool
+    {
+        if (! in_array($field, Exhibition::PUBLIC_VISIBILITY_FIELDS, true)) {
+            throw new \InvalidArgumentException('Unknown exhibition visibility field.');
+        }
+
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($entry, $field, $visible, $actor): bool {
+            $fresh = Exhibition::query()->whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
+            $column = 'show_'.$field;
+            if ((bool) $fresh->getAttribute($column) === $visible) {
+                return false;
+            }
+
+            $fresh->setAttribute($column, $visible);
+            $fresh->save();
+            $this->audit->record($actor, 'exhibition.visibility_updated', 'exhibition', $fresh->getKey(), [
+                'field' => $field,
+                'visible' => $visible,
+            ]);
+
+            return true;
+        });
+    }
+
     public function publish(Exhibition $entry): Exhibition
     {
         return $this->transition($entry, 'published', ['draft', 'archived'], 'published', true);
@@ -272,7 +298,7 @@ final class ExhibitionEditorialService
     {
         $allowed = [
             'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at', 'show_vernissage',
-            'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'map_enabled',
+            'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
         $slugRule = Rule::unique('exhibitions', 'slug');
@@ -299,6 +325,7 @@ final class ExhibitionEditorialService
             'external_url' => ['nullable', 'string', 'max:2048'],
             'gallery_enabled' => ['nullable', 'boolean'],
             'gallery_presentation' => ['nullable', Rule::in(['grid', 'mosaic', 'slideshow'])],
+            'image_viewer_enabled' => ['sometimes', 'boolean'],
             'map_enabled' => ['nullable', 'boolean'],
         ])->validate();
 
@@ -324,6 +351,9 @@ final class ExhibitionEditorialService
         }
         if (array_key_exists('gallery_enabled', $payload)) {
             $payload['gallery_enabled'] = (bool) $payload['gallery_enabled'];
+        }
+        if (array_key_exists('image_viewer_enabled', $payload)) {
+            $payload['image_viewer_enabled'] = (bool) $payload['image_viewer_enabled'];
         }
         if (array_key_exists('map_enabled', $payload)) {
             $payload['map_enabled'] = (bool) $payload['map_enabled'];

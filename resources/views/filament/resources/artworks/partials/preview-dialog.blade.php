@@ -24,7 +24,7 @@
             @else
                 disabled
             @endif
-        >Previous</button>
+        >{{ __('Previous') }}</button>
         <span>
             @if ($resultPosition !== null)
                 {{ $resultPosition }} of {{ $resultTotal }} filtered artworks
@@ -40,19 +40,19 @@
             @else
                 disabled
             @endif
-        >Next</button>
+        >{{ __('Next') }}</button>
     </nav>
 
     <div class="media-file-dialog__details">
         <section aria-labelledby="gallery-artwork-preview-details-{{ $artwork['id'] }}">
             <h3 id="gallery-artwork-preview-details-{{ $artwork['id'] }}">Artwork</h3>
             <dl class="media-file-dialog__metadata-grid">
-                <div><dt>Title</dt><dd>{{ $artwork['title'] }}</dd></div>
+                <div><dt>{{ __('Title') }}</dt><dd>{{ $artwork['title'] }}</dd></div>
                 <div><dt>Material</dt><dd>{{ $artwork['medium'] !== '' ? $artwork['medium'] : '—' }}</dd></div>
                 <div><dt>Dimensions</dt><dd>{{ $artwork['dimensions'] !== '' ? $artwork['dimensions'] : '—' }}</dd></div>
                 <div><dt>Year</dt><dd>{{ $artwork['year'] ?: '—' }}</dd></div>
-                <div><dt>Status</dt><dd>{{ $artwork['state_label'] }}</dd></div>
-                <div><dt>Readiness</dt><dd>{{ $artwork['readiness_label'] }}</dd></div>
+                <div><dt>{{ __('Status') }}</dt><dd>{{ $artwork['state_label'] }}</dd></div>
+                <div><dt>{{ __('Readiness') }}</dt><dd>{{ $artwork['readiness_label'] }}</dd></div>
             </dl>
         </section>
 
@@ -61,7 +61,7 @@
             @if ($primaryMedia !== null)
                 <dl class="media-file-dialog__metadata-grid">
                     <div><dt>File</dt><dd>{{ $primaryMedia['filename'] }}</dd></div>
-                    <div><dt>Type</dt><dd>{{ $primaryMedia['type_label'] }}</dd></div>
+                    <div><dt>{{ __('Type') }}</dt><dd>{{ $primaryMedia['type_label'] }}</dd></div>
                     <div><dt>Dimensions</dt><dd>{{ $primaryMedia['dimensions'] }}</dd></div>
                     <div><dt>ALT text</dt><dd>{{ $primaryMedia['alt_text'] !== '' ? $primaryMedia['alt_text'] : '—' }}</dd></div>
                 </dl>

@@ -86,6 +86,7 @@
                 @else
                     <img
                         class="artwork-image artwork-detail__image"
+                        data-artwork-image-state="pending"
                         src="{{ $imageUrl }}"
                         alt="{{ $media->altText($artwork) }}"
                         @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)

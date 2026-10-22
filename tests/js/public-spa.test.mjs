@@ -115,27 +115,44 @@ test('delegated Livewire navigation preserves browser-native link behavior', () 
 test('public layout follows the destination metadata through CSSOM without inserting styles', () => {
     const values = new Map();
     const previousDocument = globalThis.document;
+    const frameClasses = new Set();
     const meta = { dataset: {
         publicLayoutBackground: 'linear-gradient(45deg, #112233, #445566)',
+        publicLayoutDividerMode: 'menu',
         publicLayoutShell: '1120px',
         publicLayoutArt: '960px',
         publicLayoutPadding: '48px',
     } };
+    const headerClasses = new Set(['site-header--divider-full', 'site-header--name-above']);
+    const header = { classList: { toggle: (name, enabled) => {
+        if (enabled) headerClasses.add(name);
+        else headerClasses.delete(name);
+    } } };
     globalThis.document = {
+        body: { classList: { toggle: (name, enabled) => {
+            if (enabled) frameClasses.add(name);
+            else frameClasses.delete(name);
+        } } },
         querySelector: (selector) => {
-            assert.equal(selector, 'meta[data-public-layout]');
-            return meta;
+            if (selector === 'meta[data-public-layout]') return meta;
+            if (selector === '.site-header') return header;
+            assert.fail('Unexpected selector ' + selector);
         },
         querySelectorAll: (selector) => {
             assert.equal(selector, 'style[data-public-layout-style]');
             return [{ sheet: { cssRules: [{ selectorText: ':root', style: {
                 setProperty: (name, value) => values.set(name, value),
+                removeProperty: (name) => values.delete(name),
             } }] } }];
         },
         documentElement: { style: { setProperty: () => assert.fail('Layout must not create snapshot style attributes') } },
     };
     try {
         applyPublicLayoutFromMeta();
+        assert.equal(headerClasses.has('site-header--divider-full'), false);
+        assert.equal(headerClasses.has('site-header--divider-menu'), true);
+        assert.equal(headerClasses.has('site-header--name-above'), true);
+        assert.equal(frameClasses.has('public-site--frame-layered'), true);
         assert.deepEqual(Object.fromEntries(values), {
             '--public-page': 'linear-gradient(45deg, #112233, #445566)',
             '--public-shell-max': '1120px',
@@ -146,7 +163,10 @@ test('public layout follows the destination metadata through CSSOM without inser
         values.clear();
         meta.dataset.publicLayoutBackground = '';
         meta.dataset.publicLayoutArt = '';
+        meta.dataset.publicLayoutDividerMode = 'fine';
         applyPublicLayoutFromMeta();
+        assert.equal(headerClasses.has('site-header--divider-menu'), false);
+        assert.equal(headerClasses.has('site-header--divider-fine'), true);
         assert.equal(values.get('--public-page'), '#777');
         assert.equal(values.has('--public-art-max'), false);
 

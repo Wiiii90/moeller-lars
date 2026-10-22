@@ -153,24 +153,38 @@ the existing special Zoom Out/percentage/Zoom In group, Pan and Open preview
 retain their original behavior, disabled/selected states, tooltips and
 accessible labels. The redundant device-dimensions text is removed from
 the toolbar, not from the preview's internal device width/height dataset.
+Desktop/Phone selection lives in the existing Alpine Stage/Preview state,
+updates the Stage split and recalculates iframe sizing in the same interaction,
+and does not morph or remount the device through a Livewire action.
+Zoom remains available through the toolbar's percentage control; the redundant
+timed zoom HUD and contradictory iframe interaction styles are removed.
 The old General-specific icon and separator styling has been deleted;
 `primitives.css` and `stage.css` own the common look. Preview content
 begins after the same toolbar-to-content spacing as the Appearance pane.
 
 No duplicate forms, special responsive tabs, or independent CSS buttons are
 introduced. All actual Appearance changes still use the existing autosave
-methods and explicit `general-appearance-updated` iframe refresh event.
-Local tab switches and Stage expansion do not reload the preview.
+methods and explicit `general-appearance-updated` iframe refresh event,
+which refreshes the public iframe immediately after persistence, without
+a delayed refresh timer that can be cancelled by a Livewire morph.
+Local tab switches, device switches and Stage expansion do not reload the preview.
+During Public SPA swaps, the destination's server-rendered divider mode is
+restored on the header along with the existing frame style, preventing stale
+full-width divider classes in the cached preview document.
 
 Title Position offers **Beside menu**, **Inside menu**,
-**Above menu**, and **Below menu**. Beside is a true outer title column
-on the Global Background, while the Menu paper stays centered and aligned
-to the Content paper. Inside has a real reserved title width, so Left/Right
-have different positions; its Alignment dropdown intentionally omits Center.
+**Above menu**, and **Below menu**. Beside places a natural-width title
+column and a reduced navigation rail inside the **same** Menu paper,
+both within the configured Content width. Inside reserves a wider title
+alignment rail, so Left/Right have different positions; its Alignment
+dropdown intentionally omits Center. Beside also offers only Left and Right
+in desktop Alignment, while Responsive alignment retains Left/Center/Right.
+Switching from a centered Above/Below title to either integrated mode
+normalizes the stored desktop alignment to Left in the same save.
 Above owns a permanent top title row **inside** the Menu paper, matching the
-responsive stacked composition. Both Inside and Beside move that same
-title into the Menu paper on their content-fit fallback and apply
-Responsive alignment (Left/Center/Right). Above and Below support the three
+responsive stacked composition. Both Inside and Beside stack the
+title above navigation inside the same Menu paper only when their combined
+widths do not fit, and apply Responsive alignment (Left/Center/Right). Above and Below support the three
 desktop alignments; the 40rem narrow mode applies the configured responsive
 alignment. Below is still its own content-sized row outside Menu.
 Public-header title fitting uses an initial synchronous calculation and
@@ -181,12 +195,63 @@ reads the rendered width or origin of a Menu rail that changes when
 `is-title-stacked` toggles. Inside requires both that the actual title
 column (15rem minimum, 32% share) fits the title and that the remaining
 navigation gets 15rem; this prevents names overflowing the column without
-triggering the stack. Beside uses a real exterior title area capped at half
-the configured shell, anchored adjacent to the Menu rather than the far
-left of a wide viewport. Both variants retain their Admin alignment choices.
+triggering the stack. Beside uses the intrinsic title width plus regular title padding inside
+the centered shell. It keeps at least 15rem available for navigation;
+otherwise it stacks inside the same paper. Both variants retain their
+Admin alignment choices.
 There is no title-owned ResizeObserver, feedback loop, per-frame geometry
 write, timer or transition. The SPA lifecycle owns one resize listener and
 removes it at navigation teardown.
+
+The Global background is one viewport-aligned paint across the document and
+the sticky Header. Both use fixed background attachment so a vertical
+gradient does not restart in the much shorter Header and create a
+viewport-wide false divider at its lower edge. Actual divider modes retain
+their own independent stroke and surface semantics.
+
+### Regression record: false divider from independent gradient paints (2026-10-21)
+
+**Symptom and misleading leads:** General's embedded Live Preview showed a
+viewport-spanning seam below the sticky Menu even when "No divider" was
+selected. The directly opened `/preview` made it far less conspicuous.
+Earlier attempts looked at divider classes, paper contours, preview reloads
+and responsive iframe scaling instead of identifying the painted element.
+The embedded view uses the same `/preview` Working route; the desktop and
+phone iframe viewports are respectively 1280px and 390px before visual
+scaling. Scaling is not a new responsive breakpoint.
+
+**Decisive evidence:** The affected Validation iframe reported
+`data-public-layout-divider-mode="fine"`; its computed Header `::after`
+content was `none` and its Menu `border-bottom` was `0px`. Therefore the
+visible seam was **not** a configured divider. An earlier local inspection
+reported `full_gap`, but that different mode intentionally draws a
+full-width line; conclusions from distinct preview states must not be mixed.
+
+**Root cause and repair:** Both the document `body` and sticky
+`.site-header` painted `background: var(--public-page)` independently.
+With a vertical gradient, each element's height determined the gradient
+coordinates; the short Header's bottom color differed from the document
+background immediately below, visually imitating a full-width divider.
+Commit `63420fa17b5088367d88f9f17acc211ebcd41b53` set
+`background-attachment: fixed` on **both** elements in
+`resources/css/public-presentation.css`. They now share viewport-aligned
+gradient coordinates. This changes neither Menu-to-page mode nor the
+General appearance controls and does not introduce another layout owner.
+
+**Regression diagnostic:** First compare embedded and direct `/preview`
+at matching iframe/window CSS viewport widths. Inspect the current divider
+mode in `meta[data-public-layout]`, the Header pseudo-element and Menu
+bottom border; if the mode is `fine` and those strokes are absent, investigate
+Header/Body background paint and attachment **before** touching divider
+classes or responsive geometry. Preserve all five divider modes, including
+the intentionally full-width `full` and `full_gap` variants.
+
+**Verification boundary:** Source diff and an isolated Chromium comparison
+supported the gradient-seam correction, including on scroll. The real
+deployed General Live Preview was **not** browser-accepted at the time of
+this record. Confirm gradients and solids, sticky scrolling, and divider
+variants in the actual Validation browser before marking this visually
+accepted.
 
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width
@@ -205,8 +270,9 @@ home link and accessible label use the same edited plain-text title; the
 default is `Lars Möller`. The title is always HTML-escaped on output.
 The positions `inside`, `outside`, `above` and `below` are
 distinct Menu compositions; their existing stored values are preserved.
-Outside is a true non-paper title column, Above always has its own Menu
-row, Inside reserves space for meaningful Left/Right alignment, and Below
+Outside/Beside has a natural-width title rail on the Menu paper,
+Above has its own Menu row, Inside reserves a meaningful alignment width,
+and Below
 remains its own content-sized row. On narrow Inside/Beside layouts the
 title stacks above the navigation **inside** the Menu paper. The base
 Title size is
@@ -223,9 +289,11 @@ existing independent Divider color:
 - `fine`: **No divider** — no drawn line; when geometrically compatible,
   Menu/Content use a single structural paper frame.
 - `menu`: **Menu divider** — one line across the Menu's white paper
-  width (never the whole viewport), followed by a sticky-owned gap.
+  width (never the whole viewport). When geometrically compatible, Menu
+  and Content use one connected paper frame without a separating gap.
 - `full`: **Full-width divider** — one line across the viewport
-  followed by a sticky-owned gap.
+  at the Menu/Content boundary, without splitting compatible paper
+  surfaces or inserting a separating gap.
 - `separate`: **Separate surfaces** — individual Menu/Page backing
   and a sticky-owned gap, without additional divider.
 - `full_gap`: **Full-width divider and separate surfaces** — a
@@ -674,6 +742,18 @@ nested content repeater in Image Edit, redundant child counter or special
 child-row design. Existing Image children remain independently editable
 and selected, and are shown with the canonical full six-column row.
 
+## Menu presentation type
+
+General → Appearance → Menu exposes a native **Menu type** selector before
+**Menu to page**. For now, `cyclic_inline` ("Cyclic inline") is the only
+implemented and accepted value. The setting is validated by `PublicAppearance`
+and stored in the existing Working/Committed general public settings flow,
+defaulting to the established cyclic, single-row window navigation for
+existing records. It does not create or imply an implemented Dropdown menu.
+Additional options require a separately accepted public menu interaction and
+presentation contract; do not build or switch to a second renderer merely
+because the selector exists.
+
 ## Global public appearance surfaces
 
 General is the authoritative global editor for three public background
@@ -704,13 +784,17 @@ part of the global General editor. Menu remains globally owned by General.
 
 ## Appearance editor control presentation
 
-The artist-facing General Stage retains its concise two-column appearance
-grammar: Background/Menu/Page selection beside Primary color, and Linear/Conic
-angle beside Secondary color. The shared AdminAngleControl exposes one inline
-numeric degree value and opens a rotary dial only on focus/click, analogous to
-the shared ColorPicker. Both input methods commit through the same validated
-General appearance field. The dial is teleported outside the scrollable Stage
-to avoid clipping.
+The artist-facing General Stage uses one shared paint editor for all surfaces.
+Solid shows mode and ColorPicker beside one another. Gradients show a
+full-width mode control followed by Angle and Repeating (Linear/Conic), or
+Shape and Repeating (Radial), on one row. Center X and Center Y share a row
+for Radial/Conic; Repeat span appears conditionally. The AdminAngleControl
+uses Filament's native input wrapper and degree suffix for exactly the same
+height and baseline as Center X/Y, retaining its teleported rotary dial.
+All inputs commit through the established validated General appearance path.
+Unset gradient parameters hydrate in General with the same visible values used
+by `PublicAppearance` (Angle 180°, Center X/Y 50%, Circle, Repeat span 120,
+Repeating Off); opening the editor never materializes those defaults in storage.
 
 All global paint surfaces use the shared Solid ColorPicker inline beside
 their mode Select. Linear, Radial and Conic use one canonical x-admin.table

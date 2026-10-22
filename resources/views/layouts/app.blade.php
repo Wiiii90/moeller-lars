@@ -53,6 +53,7 @@
             data-public-layout-title-gradient="{{ $publicHeaderGradientCss ?? '' }}"
             data-public-layout-title-size="{{ $publicHeaderSize }}"
             data-public-layout-title-min-size="{{ $publicHeaderMinSize }}"
+            data-public-layout-divider-mode="{{ $publicHeaderDivider }}"
             data-public-layout-divider-color="{{ $publicHeaderDividerColor ?? '' }}"
             data-public-layout-divider-gradient="{{ $publicHeaderDividerGradientCss ?? '' }}"
             data-folio-left-top="{{ $folioPlacement['leftTop'] }}"
@@ -83,7 +84,7 @@
             $paperCompatible = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
                 && ! $publicPageTransparent
                 && ! str_contains($__env->yieldContent('content_class'), 'landscape-artwork');
-            $paperConnected = $paperCompatible && $publicHeaderDivider === 'fine';
+            $paperConnected = $paperCompatible && in_array($publicHeaderDivider, ['fine', 'menu', 'full'], true);
         @endphp
         <div class="public-paper-frame @if ($paperCompatible) public-paper-frame--compatible @endif @if ($paperConnected) public-paper-frame--connected @endif">
             <div class="public-paper-decoration" aria-hidden="true"></div>

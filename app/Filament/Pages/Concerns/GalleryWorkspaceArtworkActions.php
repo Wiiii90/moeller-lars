@@ -34,11 +34,10 @@ trait GalleryWorkspaceArtworkActions
                 'delete_media_file' => false,
                 'reference_snapshot' => $this->primaryMediaReferenceSnapshot($arguments),
             ])
-            ->schema([
+            ->schema(fn (array $arguments): array => [
                 Checkbox::make('delete_media_file')
                     ->label('Also delete the original media file from Storage')
-                    ->disabled(fn (array $arguments): bool => $this->availablePrimaryMediaAsset($arguments) === null)
-                    ->helperText('Unchecked: only this Artwork and its Gallery slot are deleted. Checked: the file and all its other references are removed too.'),
+                    ->disabled($this->availablePrimaryMediaAsset($arguments) === null),
                 Hidden::make('reference_snapshot'),
             ])
             ->modalContent(function (array $arguments): View {
@@ -187,29 +186,27 @@ trait GalleryWorkspaceArtworkActions
 
     public function unpublishArtworkAction(): Action
     {
-        $action = Action::make('unpublishArtwork')
+        return Action::make('unpublishArtwork')
             ->label('Unpublish')
             ->action(function (array $arguments): void {
-                $artwork = $this->actionArtwork($arguments);
-                $previousState = (string) $artwork->getAttribute('state');
-                $updated = app(ArtworkPublicationService::class)->unpublish($artwork);
-                $this->refreshWorkspaceAfterMutation();
-                if ($previousState !== (string) $updated->getAttribute('state')) {
-                    app(AdminNotifier::class)->notification(
-                        title: 'Artwork unpublished',
-                        status: 'success',
-                    );
-                }
-                // A confirmation opened from the Edit header is a state
-                // mutation, not a request to close the editing session.
-                // Standalone table Unpublish still completes normally.
-                if (($arguments['returnToEditor'] ?? false) === true) {
-                    $this->replaceMountedAction('editArtwork', ['artwork' => (int) $artwork->getKey()]);
-                }
+                $this->unpublishArtworkInGallery((int) ($arguments['artwork'] ?? 0));
             });
+    }
 
-        // Unpublish is a reversible editorial state change, performed in one click.
-        return $action;
+    /** Reused by the Gallery row Action and the Edit header Action. */
+    private function unpublishArtworkInGallery(int $id): void
+    {
+        $artwork = $this->actionArtwork(['artwork' => $id])->fresh();
+        $previousState = (string) $artwork->getAttribute('state');
+        $updated = app(ArtworkPublicationService::class)->unpublish($artwork);
+        $this->refreshWorkspaceAfterMutation();
+
+        if ($previousState !== (string) $updated->getAttribute('state')) {
+            app(AdminNotifier::class)->notification(
+                title: 'Artwork unpublished',
+                status: 'success',
+            );
+        }
     }
 
     /** @return array<string, mixed> */

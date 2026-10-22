@@ -1,31 +1,31 @@
 <div class="admin-detail-dialog activity-commit-dialog">
     <dl class="admin-detail-dialog__meta">
         <div>
-            <dt>Status</dt>
+            <dt>{{ __('Status') }}</dt>
             <dd>{{ $commit['live'] ? 'LIVE' : ($commit['restorable'] ? 'Restorable' : 'Historical metadata') }}</dd>
         </div>
         <div>
-            <dt>Commit</dt>
+            <dt>{{ __('Commit') }}</dt>
             <dd><code>{{ $commit['short_hash'] }}</code></dd>
         </div>
         <div>
-            <dt>Published</dt>
+            <dt>{{ __('Published') }}</dt>
             <dd>{{ $commit['timestamp'] }}</dd>
         </div>
     </dl>
 
     <div class="admin-detail-dialog__field">
-        <span>Message</span>
+        <span>{{ __('Message') }}</span>
         <p>{{ $commit['message'] ?? 'No commit message' }}</p>
     </div>
 
     <div class="admin-detail-dialog__field">
-        <span>Publication</span>
+        <span>{{ __('Publication') }}</span>
         <p>{{ $commit['actor'] }} · {{ number_format($commit['change_count']) }} change{{ $commit['change_count'] === 1 ? '' : 's' }} · {{ number_format($commit['activity_count']) }} activit{{ $commit['activity_count'] === 1 ? 'y' : 'ies' }}</p>
     </div>
 
     <div class="admin-detail-dialog__field">
-        <span>Lineage</span>
+        <span>{{ __('Lineage') }}</span>
         <p>
             Parent: {{ $commit['parent_short_hash'] ?? '—' }}
             @if ($commit['source_hash'])
@@ -35,7 +35,7 @@
     </div>
 
     <div class="admin-detail-dialog__field">
-        <span>Integrity</span>
+        <span>{{ __('Integrity') }}</span>
         <p class="activity-commit-dialog__hashes">
             <code title="{{ $commit['hash'] }}">Commit {{ $commit['hash'] ?: 'legacy' }}</code>
             <code title="{{ $commit['snapshot_hash'] ?? '' }}">Snapshot {{ $commit['snapshot_hash'] ?? 'not retained' }}</code>
@@ -53,7 +53,7 @@
     @endif
 
     <div class="admin-detail-dialog__field">
-        <span>Included activity</span>
+        <span>{{ __('Included activity') }}</span>
         @if ($commit['activities'] !== [])
             <div class="activity-commit-dialog__activities">
                 @foreach ($commit['activities'] as $activity)

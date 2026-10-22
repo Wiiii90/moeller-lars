@@ -41,11 +41,11 @@
 @endphp
 
 <x-admin.metrics :columns="6" class="storage-status-metrics admin-metrics--six-state" aria-label="Storage statistics">
-    <x-admin.metric class="storage-metric storage-metric--files" label="Files" :value="number_format($libraryFiles)">Available</x-admin.metric>
-    <x-admin.metric class="storage-metric storage-metric--images" label="Images" :value="number_format($libraryImages)">Available images</x-admin.metric>
-    <x-admin.metric class="storage-metric storage-metric--unreferenced" label="Unreferenced" :value="number_format($libraryUnreferenced)">No canonical consumer</x-admin.metric>
-    <x-admin.metric class="storage-metric storage-metric--used" label="Original storage" :value="$capacity['authoritative'] ?? '—'">Counts against allowance</x-admin.metric>
-    <x-admin.metric class="storage-metric storage-metric--generated" label="Generated" :value="$capacity['generated'] ?? '—'">Rebuildable derivatives</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--files" label="Files" :value="number_format($libraryFiles)">{{ __('Available') }}</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--images" label="Images" :value="number_format($libraryImages)">{{ __('Available images') }}</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--unreferenced" label="Unreferenced" :value="number_format($libraryUnreferenced)">{{ __('No canonical consumer') }}</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--used" label="Original storage" :value="$capacity['authoritative'] ?? '—'">{{ __('Counts against allowance') }}</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--generated" label="Generated" :value="$capacity['generated'] ?? '—'">{{ __('Rebuildable derivatives') }}</x-admin.metric>
     <x-admin.metric class="storage-metric storage-metric--remaining" label="Remaining" :value="$capacity['remaining'] ?? '—'">{{ $capacity['remaining_detail'] ?? 'Storage allowance' }}</x-admin.metric>
 </x-admin.metrics>
 
@@ -115,7 +115,7 @@
 
     <div class="admin-storage__upload admin-visual-stage__pane" data-admin-stage-pane="upload" data-admin-stage-slot="1">
         <div class="admin-storage__visual-heading">
-            <p class="admin-storage__eyebrow">Upload Media Files</p>
+            <p class="admin-storage__eyebrow">{{ __('Upload Media Files') }}</p>
         </div>
 
         <div
@@ -164,7 +164,7 @@
                                     ? result
                                     : 'Drop files here or choose from your device'
                     "
-                >Drop files here or choose from your device</strong>
+                >{{ __('Drop files here or choose from your device') }}</strong>
                 <span x-show="phase === 'idle'">JPEG, PNG, WebP · {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB / {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB; MP3, M4A/AAC, Ogg, WAV · {{ number_format(\App\Domain\Media\MediaTypePolicy::audioMaxBytes() / 1048576, 0) }} MiB.</span>
             </div>
             <div
@@ -186,7 +186,7 @@
 
     <div class="admin-storage__capacity-group admin-visual-stage__pane" data-admin-stage-pane="capacity" data-admin-stage-slot="2">
         <div class="admin-storage__visual-heading">
-            <p class="admin-storage__eyebrow">Total Capacity</p>
+            <p class="admin-storage__eyebrow">{{ __('Total Capacity') }}</p>
         </div>
 
         <x-admin.storage-capacity-visual
@@ -206,7 +206,7 @@
                 title="Refresh storage measurement"
             >
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
-                <span class="admin-action__label">Refresh</span>
+                <span class="admin-action__label">{{ __('Refresh') }}</span>
             </button>
 
             <livewire:admin.site-storage-reclaim-control />
@@ -216,14 +216,14 @@
 
     <div class="admin-storage__distribution admin-visual-stage__pane" data-admin-stage-pane="distribution" data-admin-stage-slot="3">
         <div class="admin-storage__visual-heading">
-            <p class="admin-storage__eyebrow">Media Distribution</p>
+            <p class="admin-storage__eyebrow">{{ __('Media Distribution') }}</p>
         </div>
 
         <div class="admin-storage__target-plot" aria-live="polite">
             <div class="admin-storage__distribution-columns" aria-hidden="true">
-                <span>Area</span>
-                <span>Files</span>
-                <span>Storage</span>
+                <span>{{ __('Area') }}</span>
+                <span>{{ __('Files') }}</span>
+                <span>{{ __('Storage') }}</span>
             </div>
 
             <template x-for="target in visibleTargets()" x-bind:key="target.key">
@@ -261,21 +261,21 @@
         <div class="admin-storage__attention" aria-label="Storage attention">
             @if (($storageAttention['unreferenced_files'] ?? 0) > 0)
                 <div class="admin-storage__attention-row">
-                    <span>Unused storage</span>
+                    <span>{{ __('Unused storage') }}</span>
                     <strong>{{ $storageAttention['unreferenced_display_bytes'] }} · {{ number_format($storageAttention['unreferenced_files']) }} {{ ($storageAttention['unreferenced_files'] ?? 0) === 1 ? 'file' : 'files' }}</strong>
                 </div>
             @endif
 
             @if (($storageAttention['uncatalogued_files'] ?? 0) > 0)
                 <div class="admin-storage__attention-row is-warning">
-                    <span>Uncatalogued storage</span>
+                    <span>{{ __('Uncatalogued storage') }}</span>
                     <strong>{{ $storageAttention['uncatalogued_display_bytes'] }} · {{ number_format($storageAttention['uncatalogued_files']) }} {{ ($storageAttention['uncatalogued_files'] ?? 0) === 1 ? 'file' : 'files' }}</strong>
                 </div>
             @endif
 
             @if (is_array($storageAttention['largest_file'] ?? null))
                 <div class="admin-storage__attention-row">
-                    <span>Largest file</span>
+                    <span>{{ __('Largest file') }}</span>
                     <strong title="{{ $storageAttention['largest_file']['filename'] }}">{{ $storageAttention['largest_file']['filename'] }} · {{ $storageAttention['largest_file']['display_bytes'] }}</strong>
                 </div>
             @endif

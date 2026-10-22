@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -13,6 +14,8 @@ use InvalidArgumentException;
 use LogicException;
 
 #[Fillable([
+    'regional_format',
+    'number_format',
     'contact_recipient_email',
     'public_email',
     'show_public_email',
@@ -26,6 +29,7 @@ use LogicException;
     'favicon_media_asset_id',
     'default_media_copyright_notice',
     'frame_style',
+    'menu_type',
     'background_mode',
     'background_color',
     'background_gradient_start',
@@ -240,6 +244,15 @@ class PublicContentSetting extends Model
 
     private static function validateGeneral(self $setting): void
     {
+        $region = $setting->getAttribute('regional_format');
+        if (! is_string($region) || ! array_key_exists($region, RegionalFormats::OPTIONS)) {
+            throw ValidationException::withMessages(['regional_format' => 'Choose a supported date format.']);
+        }
+        $numberFormat = $setting->getAttribute('number_format');
+        if (! is_string($numberFormat) || ! array_key_exists($numberFormat, RegionalFormats::NUMBER_OPTIONS)) {
+            throw ValidationException::withMessages(['number_format' => 'Choose a supported number format.']);
+        }
+
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
             $mode = $surface.'_mode';
             $setting->setAttribute($mode, PublicAppearance::normalizeMode($setting->getAttribute($mode), $mode));
@@ -273,6 +286,7 @@ class PublicContentSetting extends Model
         $setting->setAttribute('header_name_size', PublicAppearance::normalizeTitleSize($setting->getAttribute('header_name_size')));
         $setting->setAttribute('header_name_min_size', PublicAppearance::normalizeTitleMinSize($setting->getAttribute('header_name_min_size')));
         $setting->setAttribute('frame_style', PublicAppearance::frameStyle($setting->getAttribute('frame_style')));
+        $setting->setAttribute('menu_type', PublicAppearance::menuType($setting->getAttribute('menu_type')));
         $setting->setAttribute('header_divider_mode', PublicAppearance::headerDivider($setting->getAttribute('header_divider_mode')));
         $setting->setAttribute('header_name_auto_scale', $setting->getAttribute('header_name_auto_scale') === null ? true : (bool) $setting->getAttribute('header_name_auto_scale'));
         $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));

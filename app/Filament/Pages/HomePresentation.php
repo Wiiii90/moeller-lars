@@ -37,7 +37,6 @@ use App\Routing\SiteNodeRoute;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -58,6 +57,11 @@ final class HomePresentation extends Page
     protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $title = 'Home';
+
+    public function getTitle(): string
+    {
+        return __('Home');
+    }
 
     protected static ?string $slug = 'pages/home';
 
@@ -1392,12 +1396,9 @@ final class HomePresentation extends Page
     /** @return list<mixed> */
     private function homeRichTextFields(string $stateField, string $stateValue, bool $required = false): array
     {
-        $fields = AdminRichText::schema('body', 'Rich Text', 20000);
-        foreach ($fields as $index => $field) {
+        $fields = AdminRichText::schema('body', 'Rich Text', 20000, required: $required);
+        foreach ($fields as $field) {
             $field->visible(fn (callable $get): bool => $get($stateField) === $stateValue);
-            if ($required && $index === 0 && $field instanceof MarkdownEditor) {
-                $field->required(fn (callable $get): bool => $get($stateField) === $stateValue);
-            }
         }
 
         return $fields;

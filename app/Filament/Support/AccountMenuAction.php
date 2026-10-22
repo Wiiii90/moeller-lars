@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Content\RegionalFormats;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\User;
@@ -10,6 +11,7 @@ use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
@@ -25,26 +27,28 @@ final class AccountMenuAction
     {
         return AdminDialog::command(
             $action
-                ->label('Account')
+                ->label(__('Account'))
                 ->icon(AdminIcon::Account->value)
                 ->url(null)
                 ->sort(0)
-                ->modalHeading('Account & security')
+                ->modalHeading(fn (): string => __('Account & security'))
                 ->fillForm(fn (): array => [
                     'name' => (string) self::user()->getAttribute('name'),
                     'email' => (string) self::user()->getAttribute('email'),
+                    'admin_region' => (string) self::user()->getAttribute('admin_region'),
+                    'admin_language' => (string) (self::user()->getAttribute('admin_language') ?: 'en'),
                 ])
                 ->schema(fn (): array => [
                     View::make('filament.schemas.components.admin-section-heading')
-                        ->viewData(['label' => 'Account'])
+                        ->viewData(['label' => __('Account')])
                         ->columnSpanFull(),
                     Group::make([
                         TextInput::make('name')
-                            ->label('Name')
+                            ->label(__('Name'))
                             ->required()
                             ->maxLength(255),
                         TextInput::make('email')
-                            ->label('Email')
+                            ->label(__('Email'))
                             ->email()
                             ->required()
                             ->maxLength(255)
@@ -53,23 +57,41 @@ final class AccountMenuAction
                         ->columns(2)
                         ->columnSpanFull(),
                     View::make('filament.schemas.components.admin-section-heading')
-                        ->viewData(['label' => 'Security'])
+                        ->viewData(['label' => __('Preferences')])
+                        ->columnSpanFull(),
+                    Select::make('admin_language')
+                        ->label(__('Language'))
+                        ->options(['en' => 'English', 'de' => 'Deutsch'])
+                        ->required()
+                        ->in(['en', 'de'])
+                        ->columnSpanFull(),
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData(['label' => __('Regional Formats')])
+                        ->columnSpanFull(),
+                    Select::make('admin_region')
+                        ->label(__('Dates and numbers'))
+                        ->options(RegionalFormats::OPTIONS)
+                        ->required()
+                        ->in(array_keys(RegionalFormats::OPTIONS))
+                        ->columnSpanFull(),
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData(['label' => __('Security')])
                         ->columnSpanFull(),
                     Group::make([
                         AdminPasswordField::password(
-                            TextInput::make('password')->label('New password'),
+                            TextInput::make('password')->label(__('New password')),
                             'account',
                         )
                             ->dehydrated(fn (#[SensitiveParameter] mixed $state): bool => filled($state))
                             ->dehydrateStateUsing(fn (#[SensitiveParameter] string $state): string => Hash::make($state)),
                         AdminPasswordField::confirmation(
-                            TextInput::make('passwordConfirmation')->label('Confirm new password'),
+                            TextInput::make('passwordConfirmation')->label(__('Confirm new password')),
                             'account',
                         )
                             ->required(fn (Get $get): bool => filled($get('password')))
                             ->dehydrated(false),
                         TextInput::make('currentPassword')
-                            ->label('Current password')
+                            ->label(__('Current password'))
                             ->password()
                             ->autocomplete('current-password')
                             ->revealable(Filament::arePasswordsRevealable())
@@ -95,18 +117,21 @@ final class AccountMenuAction
                     }
 
                     app(AdminNotifier::class)->notification(
-                        title: 'Too many attempts',
-                        body: 'Try again in a minute.',
+                        title: __('Too many attempts'),
+                        body: __('Try again in a minute.'),
                         status: 'danger',
                     );
 
                     $action->halt();
                 })
-                ->action(function (array $data): void {
+                ->action(function (array $data, \Livewire\Component $livewire): void {
                     $user = self::user();
                     $passwordChanged = array_key_exists('password', $data);
+                    $previousLanguage = self::language();
 
                     $user->update($data);
+                    $newLanguage = self::language();
+                    self::refreshLanguage($previousLanguage, $newLanguage, $livewire);
 
                     if ($passwordChanged && request()->hasSession()) {
                         request()->session()->put([
@@ -115,13 +140,67 @@ final class AccountMenuAction
                     }
 
                     app(AdminNotifier::class)->notification(
-                        title: 'Account updated',
+                        title: __('Account updated'),
+                        status: 'success',
+                    );
+
+                }),
+            fn (): string => __('Save account'),
+            AdminDialogSize::Default,
+        );
+    }
+
+    public static function languageAction(): Action
+    {
+        return AdminDialog::command(
+            Action::make('changeAdminLanguage')
+                ->label(fn (): string => __('Language'))
+                ->icon(AdminIcon::Language->value)
+                ->sort(1)
+                ->modalHeading(fn (): string => __('Language'))
+                ->fillForm(fn (): array => ['admin_language' => self::language()])
+                ->schema(fn (): array => [
+                    Select::make('admin_language')
+                        ->label(__('Language'))
+                        ->options(['en' => 'English', 'de' => 'Deutsch'])
+                        ->required()
+                        ->in(['en', 'de']),
+                ])
+                ->action(function (array $data, \Livewire\Component $livewire): void {
+                    $user = self::user();
+                    $next = (string) ($data['admin_language'] ?? '');
+                    $previous = self::language();
+
+                    if ($previous === $next) {
+                        return;
+                    }
+
+                    $user->update(['admin_language' => $next]);
+                    self::refreshLanguage($previous, $next, $livewire);
+                    app(AdminNotifier::class)->notification(
+                        title: __('Account updated'),
                         status: 'success',
                     );
                 }),
-            'Save account',
-            AdminDialogSize::Default,
+            fn (): string => __('Save language'),
+            AdminDialogSize::Small,
         );
+    }
+
+    private static function language(): string
+    {
+        return (string) (self::user()->getAttribute('admin_language') ?: 'en');
+    }
+
+    private static function refreshLanguage(string $previous, string $next, \Livewire\Component $livewire): void
+    {
+        if ($next === $previous) {
+            return;
+        }
+
+        app()->setLocale($next);
+
+        $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
     }
 
     private static function requiresCurrentPassword(Get $get): bool

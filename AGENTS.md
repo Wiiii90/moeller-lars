@@ -2,6 +2,16 @@
 
 This file is the default working contract for coding agents, review/orchestration chats and parallel workers in `Wiiii90/moeller-lars`.
 
+## Abbreviations in user-facing communication — mandatory
+
+**On first use in each user-facing reply, report, handoff, explanation or standalone document, write out every abbreviation in full and immediately explain what it means in plain language.** This applies to technical initialisms, acronyms, file formats, protocols, systems and project-specific shorthand, even if they are familiar to developers or were explained in an earlier chat. Format: **full term (abbreviation)**, followed by a short explanation of its purpose when the term is not self-explanatory.
+
+For example: **International Press Telecommunications Council (IPTC)** — a standard for descriptive information in image files; **Extensible Metadata Platform (XMP)** — a format for embedding metadata in files. Afterwards the short forms may be used within that response.
+
+If the expansion is unknown, verify it before using the abbreviation, or avoid the abbreviation. Never present a string of unexplained short forms as a progress report; describe what was built, what the artist can see or do, and what is still missing in ordinary language first.
+
+Literal identifiers in source code, paths, commands, configuration keys and existing product labels must remain unchanged; explain their meaning in the surrounding text rather than renaming them merely to satisfy this communication rule.
+
 Two companion files are part of this contract:
 
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
@@ -138,6 +148,48 @@ Use the current artist-facing concepts:
 - reusable Contact component inside Custom Page content.
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
+
+## Cross-feature acceptance preservation gate — mandatory before refactoring
+
+An accepted interaction is a **behavioral constraint**, not permission to
+replace its implementation during unrelated cleanup. A refactor, component
+reuse, dependency upgrade, CSS change, import cleanup, or test consolidation
+that can affect another editor is **cross-feature work** even if its commit
+message mentions only one editor.
+
+Before changing a shared owner or a previously browser-reviewed interaction:
+
+1. Name every consumer of the touched owner (including indirectly through
+   shared components, sortable groups, styles, entrypoints, and lifecycle).
+   Compare the actual before/after behavior and the existing accepted
+   requirements for **each** consumer, not just the requested page.
+2. Preserve all already accepted behaviors unless the user explicitly
+   authorizes their replacement. Do not call a new implementation
+   equivalent because it has fewer files, fewer listeners or uses more native
+   framework APIs. Technical simplification is not acceptance evidence.
+3. For Pages, preserve both **root-level ordering** and **deliberate child
+   placement** across first/middle/last parents, including returning a child
+   to the top level. A drop meant to reorder a root must never silently
+   change its parent. Custom Page Image-child ordering/placement is a
+   distinct consumer: do not change Pages while refactoring Custom Page,
+   or vice versa, without explicit cross-feature scope and verification.
+   The concrete interaction contract is in `ui-skills.md` section 9.
+4. Verify the actual combined browser gestures in the affected editor(s),
+   using the current candidate, before asserting a working replacement. A
+   domain test that calls the sort method does not establish which drop zone
+   the browser chose. If browser verification is unavailable, stop before
+   an unrelated cross-feature architectural change; if the user expressly
+   requests a directly affected experimental fix, mark it **unverified**
+   and obtain real acceptance before treating it as established.
+5. Review the net diff against the requested scope. If an unrequested editor,
+   shared interaction owner or accepted behavior would change, **do not
+   silently include it**: report the dependency and request explicit scope
+   approval. Do not weaken, replace or rewrite the accepted behavior in
+   documentation or tests to match an unaccepted candidate.
+
+When fixing a rejected candidate, first isolate and remove that candidate's
+unverified change without rolling back unrelated concurrent work; do not add
+a compensating drag/drop runtime in a new file by default.
 
 ## Direct-`dev` collaboration
 

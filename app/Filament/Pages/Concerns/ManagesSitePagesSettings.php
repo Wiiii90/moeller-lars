@@ -33,7 +33,7 @@ trait ManagesSitePagesSettings
         return AdminDialog::edit(
             Action::make('pagesSettings')
                 ->label('Settings')
-                ->modalHeading('Pages settings')
+                ->modalHeading(__('Pages settings'))
                 ->fillForm(fn (): array => $dialog->fill())
                 ->schema(fn (): array => $dialog->schema($persist))
                 ->action($persist),

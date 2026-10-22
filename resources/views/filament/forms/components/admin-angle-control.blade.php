@@ -1,6 +1,6 @@
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
     <div
-        class="admin-angle-control fi-input-wrp"
+        class="admin-angle-control"
         x-data="{
             open: false,
             value: Number($wire.get('{{ $getStatePath() }}') ?? 180),
@@ -30,7 +30,7 @@
         }"
         x-on:keydown.escape.window="open = false; dragging = false"
     >
-        <div class="admin-angle-control__value fi-input-wrp-content" x-ref="input">
+        <x-filament::input.wrapper class="admin-angle-control__value" suffix="°" x-ref="input">
             <input
                 class="fi-input"
                 type="number"
@@ -44,8 +44,7 @@
                 x-on:keydown.enter.prevent="commit(); open = false"
                 aria-label="Gradient angle in degrees"
             >
-            <span class="admin-angle-control__suffix fi-input-wrp-suffix" aria-hidden="true">°</span>
-        </div>
+        </x-filament::input.wrapper>
 
         <template x-teleport="body">
             <div

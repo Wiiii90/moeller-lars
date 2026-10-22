@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SocialLinks;
 use App\Filament\Support\AdminAngleControl;
 use App\Filament\Support\AdminColorControl;
@@ -44,6 +45,7 @@ final class General extends Page
     private const PERSISTED_FIELDS = [
         'favicon_media_asset_id',
         'frame_style',
+        'menu_type',
         'background_mode',
         'background_color',
         'background_gradient_start',
@@ -119,6 +121,8 @@ final class General extends Page
         'legal_imprint',
         'legal_privacy',
         'legal_usage_rights',
+        'regional_format',
+        'number_format',
     ];
 
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::General;
@@ -128,6 +132,11 @@ final class General extends Page
     protected static ?string $navigationLabel = 'General';
 
     protected static ?string $title = 'General';
+
+    public function getTitle(): string
+    {
+        return __('General');
+    }
 
     protected static ?string $slug = 'general';
 
@@ -139,8 +148,6 @@ final class General extends Page
 
     /** @var array<string, mixed>|null */
     public ?array $data = [];
-
-    public string $previewDevice = 'desktop';
 
     // Edit Action identity is the unique social platform, not a mutable row index.
     // Autosaved reordering must not redirect later field edits to another profile.
@@ -169,6 +176,7 @@ final class General extends Page
         }
 
         $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style'] ?? null);
+        $data['menu_type'] = PublicAppearance::menuType($data['menu_type'] ?? null);
         $data['header_name_visible'] = $data['header_name_visible'] === null ? true : (bool) $data['header_name_visible'];
         $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text'] ?? null);
         $data['header_name_alignment'] = PublicAppearance::presentedHeaderAlignment($data['header_name_alignment'] ?? null, $data['header_name_position'] ?? null);
@@ -187,6 +195,23 @@ final class General extends Page
 
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
             $data[$surface.'_gradient_stops'] = PublicAppearance::stops($this->generalSettingsRecord(), $surface);
+
+            // Apply public presentation defaults to the editor only.
+            // Unset gradient parameters remain unset until explicitly changed.
+            $angle = $surface.'_gradient_angle';
+            $data[$angle] = PublicAppearance::normalizeAngle($data[$angle] ?? null, $angle)
+                ?? PublicAppearance::DEFAULT_GRADIENT_ANGLE;
+
+            foreach ([
+                '_gradient_center_x' => 'normalizeCenter',
+                '_gradient_center_y' => 'normalizeCenter',
+                '_gradient_shape' => 'normalizeShape',
+                '_gradient_repeat_span' => 'normalizeRepeatSpan',
+                '_gradient_repeating' => 'normalizeRepeating',
+            ] as $suffix => $method) {
+                $field = $surface.$suffix;
+                $data[$field] = PublicAppearance::$method($data[$field] ?? null, $field);
+            }
         }
 
         $this->data = $data;
@@ -197,15 +222,6 @@ final class General extends Page
     public function getBreadcrumbs(): array
     {
         return [];
-    }
-
-    public function setPreviewDevice(string $device): void
-    {
-        if (! in_array($device, ['desktop', 'mobile'], true)) {
-            return;
-        }
-
-        $this->previewDevice = $device;
     }
 
     public function form(Schema $schema): Schema
@@ -220,7 +236,7 @@ final class General extends Page
                         Group::make([
                             View::make('filament.schemas.components.admin-section-heading')
                                 ->viewData([
-                                    'label' => 'Appearance',
+                                    'label' => __('Appearance'),
                                     'class' => 'general-stage-kicker admin-visual-stage__heading',
                                 ])
                                 ->columnSpanFull(),
@@ -239,7 +255,7 @@ final class General extends Page
                                 imagesOnly: true,
                                 includeDimensions: false,
                             )
-                                ->placeholder('Choose from Storage')
+                                ->placeholder(__('Choose from Storage'))
                                 ->selectablePlaceholder(false)
                                 ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control general-site-icon-control'])
                                 ->nullable()
@@ -262,7 +278,7 @@ final class General extends Page
 
                                 Select::make('frame_style')
                                     ->label('Frame style')
-                                    ->options(PublicAppearance::FRAME_STYLES)
+                                    ->options(array_map('__', PublicAppearance::FRAME_STYLES))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -283,7 +299,7 @@ final class General extends Page
                                 Group::make([
                                 Select::make('header_name_visible')
                                     ->label('Title')
-                                    ->options(['1' => 'Show', '0' => 'Hide'])
+                                    ->options(['1' => __('Show'), '0' => __('Hide')])
                                     ->native()
                                     ->required()
                                     ->live()
@@ -303,7 +319,7 @@ final class General extends Page
                                 Group::make([
                                 Select::make('header_name_position')
                                     ->label('Position')
-                                    ->options(PublicAppearance::HEADER_POSITIONS)
+                                    ->options(array_map('__', PublicAppearance::HEADER_POSITIONS))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -312,9 +328,7 @@ final class General extends Page
                                             return;
                                         }
 
-                                        // Inside Menu has no center slot. Normalize an existing
-                                        // centered selection along with Position in one save.
-                                        if (($livewire->data['header_name_position'] ?? null) === 'inside'
+                                        if (in_array($livewire->data['header_name_position'] ?? null, ['inside', 'outside'], true)
                                             && ($livewire->data['header_name_alignment'] ?? null) === 'center') {
                                             $livewire->data['header_name_alignment'] = 'left';
                                             $livewire->persistChangedFields(['header_name_position', 'header_name_alignment']);
@@ -326,7 +340,7 @@ final class General extends Page
                                     }),
                                 Select::make('header_name_caps')
                                     ->label('Lettering')
-                                    ->options(PublicAppearance::HEADER_CAPS)
+                                    ->options(array_map('__', PublicAppearance::HEADER_CAPS))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -339,14 +353,14 @@ final class General extends Page
                             Group::make([
                                 Select::make('header_name_alignment')
                                     ->label('Alignment')
-                                    ->options(fn (callable $get): array => PublicAppearance::headerAlignmentOptions((string) $get('header_name_position')))
+                                    ->options(fn (callable $get): array => array_map('__', PublicAppearance::headerAlignmentOptions((string) $get('header_name_position'))))
                                     ->native()
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(self::persist('header_name_alignment')),
                                 Select::make('header_name_mobile_alignment')
                                     ->label('Responsive alignment')
-                                    ->options(PublicAppearance::HEADER_ALIGNMENT)
+                                    ->options(array_map('__', PublicAppearance::HEADER_ALIGNMENT))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -371,7 +385,7 @@ final class General extends Page
                                     ->afterStateUpdated(self::persist('header_name_size')),
                                 Select::make('header_name_auto_scale')
                                     ->label('Responsive size')
-                                    ->options(['1' => 'Allow reduction', '0' => 'Keep selected size'])
+                                    ->options(['1' => __('Allow reduction'), '0' => __('Keep selected size')])
                                     ->native()
                                     ->required()
                                     ->live()
@@ -409,9 +423,16 @@ final class General extends Page
 
                             Group::make([
                                 Group::make([
+                                Select::make('menu_type')
+                                    ->label('Menu type')
+                                    ->options(array_map('__', PublicAppearance::MENU_TYPES))
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(self::persist('menu_type')),
                                 Select::make('header_divider_mode')
                                     ->label('Menu to page')
-                                    ->options(PublicAppearance::HEADER_DIVIDERS)
+                                    ->options(array_map('__', PublicAppearance::HEADER_DIVIDERS))
                                     ->native()
                                     ->required()
                                     ->live()
@@ -494,15 +515,15 @@ final class General extends Page
                             ->columnSpanFull(),
 
                         View::make('filament.schemas.components.general-live-preview')
-                            ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
                             ->columnSpanFull(),
                     ])
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
                             'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--split',
-                            'x-data' => "{ appearanceTab: 'global', moreSpace: false }",
+                            'x-data' => "{ appearanceTab: 'global', moreSpace: false, previewDevice: 'desktop' }",
                             'x-bind:class' => "{ 'admin-visual-stage--expanded': moreSpace }",
-                            'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
+                            'data-preview-device' => 'desktop',
+                            'x-bind:data-preview-device' => 'previewDevice',
                             'aria-label' => 'General settings and live public preview',
                         ])
                         ->columnSpanFull(),
@@ -523,7 +544,7 @@ final class General extends Page
                 Group::make([
                     View::make('filament.schemas.components.admin-section-heading')
                         ->viewData([
-                            'label' => 'Contact',
+                            'label' => __('Contact'),
                             'class' => 'general-form-section-heading',
                         ])
                         ->columnSpanFull(),
@@ -557,7 +578,7 @@ final class General extends Page
                 Group::make([
                     View::make('filament.schemas.components.admin-section-heading')
                         ->viewData([
-                            'label' => 'Legal',
+                            'label' => __('Legal'),
                             'class' => 'general-form-section-heading',
                         ])
                         ->columnSpanFull(),
@@ -607,6 +628,29 @@ final class General extends Page
                     ->columns(1)
                     ->extraAttributes(['class' => 'general-settings-section'])
                     ->columnSpanFull(),
+
+                Group::make([
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData(['label' => __('Regional Formats'), 'class' => 'general-form-section-heading'])
+                        ->columnSpanFull(),
+                    Select::make('regional_format')
+                        ->label('Dates')
+                        ->options(RegionalFormats::OPTIONS)
+                        ->native()
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(self::persist('regional_format')),
+                    Select::make('number_format')
+                        ->label('Numbers')
+                        ->options(RegionalFormats::NUMBER_OPTIONS)
+                        ->native()
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(self::persist('number_format')),
+                ])
+                    ->columns(2)
+                    ->extraAttributes(['class' => 'general-settings-section'])
+                    ->columnSpanFull(),
             ])
             ->record($this->generalSettingsRecord())
             ->statePath('data');
@@ -629,81 +673,105 @@ final class General extends Page
         $center = static fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_RADIAL, PublicAppearance::MODE_CONIC], true);
 
         return Group::make([
-            Select::make($surface.'_mode')
-                ->label($label)
-                ->options([
-                    PublicAppearance::MODE_SOLID => 'Solid',
-                    PublicAppearance::MODE_GRADIENT => 'Linear gradient',
-                    PublicAppearance::MODE_RADIAL => 'Radial gradient',
-                    PublicAppearance::MODE_CONIC => 'Conic gradient',
-                    ...($surface === 'page_background' ? [PublicAppearance::MODE_TRANSPARENT => 'Transparent'] : []),
+            Group::make([
+                Select::make($surface.'_mode')
+                    ->label($label)
+                    ->options([
+                        PublicAppearance::MODE_SOLID => 'Solid',
+                        PublicAppearance::MODE_GRADIENT => 'Linear gradient',
+                        PublicAppearance::MODE_RADIAL => 'Radial gradient',
+                        PublicAppearance::MODE_CONIC => 'Conic gradient',
+                        ...($surface === 'page_background' ? [PublicAppearance::MODE_TRANSPARENT => 'Transparent'] : []),
+                    ])
+                    ->native()->required()->live()
+                    ->columnSpan(fn (callable $get): int => $get($surface.'_mode') === PublicAppearance::MODE_SOLID ? 1 : 2)
+                    ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                    ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
+                AdminColorControl::make(PublicAppearance::solidColorField($surface), 'Color')
+                    ->required()
+                    ->formatStateUsing(static fn (mixed $state): string => filled($state) ? (string) $state : match ($surface) {
+                        'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
+                        'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
+                        'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
+                        default => PublicAppearance::DEFAULT_SURFACE_COLOR,
+                    })
+                    // Filament's picker only commits onBlur after focus/popup close.
+                    // Live mode persists a settled color selection without requiring
+                    // the artist to dismiss the picker before leaving this page.
+                    ->live()
+                    ->afterStateUpdated(static function ($livewire, mixed $state) use ($surface): void {
+                        if ($livewire instanceof self) {
+                            $livewire->persistSurfaceColor($surface, 'primary', $state);
+                        }
+                    })
+                    ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
+            ])
+                ->columns(2)
+                ->extraAttributes(['class' => 'general-appearance-mode-row'])
+                ->columnSpanFull(),
+
+            Group::make([
+                Group::make([
+                    AdminAngleControl::make($surface.'_gradient_angle')
+                        ->live()
+                        ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
+                        ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
+                    Select::make($surface.'_gradient_shape')
+                        ->label('Shape')
+                        ->options(['circle' => __('Circle'), 'ellipse' => __('Ellipse')])
+                        ->native()
+                        ->live()
+                        ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                        ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
+                        ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
+                    Select::make($surface.'_gradient_repeating')
+                        ->label('Repeating')
+                        ->options(['0' => __('Off'), '1' => __('On')])
+                        ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
+                        ->native()
+                        ->live()
+                        ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                        ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
+                            if ($livewire instanceof self) {
+                                $livewire->persistChangedField($surface.'_gradient_repeating');
+                                $livewire->data[$surface.'_gradient_repeating'] = (bool) $state ? '1' : '0';
+                            }
+                        })
+                        ->visible($gradient),
                 ])
-                ->native()->required()->live()
-                ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                ->afterStateUpdated(fn ($livewire) => $livewire instanceof self ? $livewire->persistSurfaceMode($surface) : null),
+                    ->columns(2)
+                    ->extraAttributes(['class' => 'general-appearance-parameter-row'])
+                    ->columnSpanFull(),
 
-            Select::make($surface.'_gradient_repeating')
-                ->label('Repeating')
-                ->options(['0' => 'Off', '1' => 'On'])
-                ->formatStateUsing(static fn (mixed $state): string => (bool) $state ? '1' : '0')
-                ->native()
-                ->live()
-                ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                ->afterStateUpdated(function ($livewire, mixed $state) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistChangedField($surface.'_gradient_repeating');
-                        $livewire->data[$surface.'_gradient_repeating'] = (bool) $state ? '1' : '0';
-                    }
-                })
-                ->visible($gradient),
+                Group::make([
+                    TextInput::make($surface.'_gradient_center_x')
+                        ->label('Center X')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                        ->afterStateUpdated(self::persist($surface.'_gradient_center_x'))
+                        ->visible($center),
+                    TextInput::make($surface.'_gradient_center_y')
+                        ->label('Center Y')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
+                        ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
+                        ->visible($center),
+                ])
+                    ->columns(2)
+                    ->extraAttributes(['class' => 'general-appearance-center-row'])
+                    ->visible($center)
+                    ->columnSpanFull(),
 
-            AdminAngleControl::make($surface.'_gradient_angle')
-                ->live()
-                ->afterStateUpdated(self::persist($surface.'_gradient_angle'))
-                ->visible(fn (callable $get): bool => in_array($get($surface.'_mode'), [PublicAppearance::MODE_GRADIENT, PublicAppearance::MODE_CONIC], true)),
-
-            Select::make($surface.'_gradient_shape')
-                ->label('Shape')
-                ->options(['circle' => 'Circle', 'ellipse' => 'Ellipse'])
-                ->native()->live()
-                ->afterStateUpdated(self::persist($surface.'_gradient_shape'))
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_RADIAL),
-
-            TextInput::make($surface.'_gradient_repeat_span')
-                ->label('Repeat span')->integer()->minValue(16)->maxValue(360)
-                ->suffix(fn (callable $get): string => $get($surface.'_mode') === PublicAppearance::MODE_CONIC ? '°' : 'px')
-                ->lazy()
-                ->afterStateUpdated(self::persist($surface.'_gradient_repeat_span'))
-                ->visible(fn (callable $get): bool => $gradient($get) && (bool) $get($surface.'_gradient_repeating')),
-
-            TextInput::make($surface.'_gradient_center_x')
-                ->label('Center X')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
-                ->afterStateUpdated(self::persist($surface.'_gradient_center_x'))
-                ->visible($center),
-            TextInput::make($surface.'_gradient_center_y')
-                ->label('Center Y')->integer()->minValue(0)->maxValue(100)->suffix('%')->lazy()
-                ->afterStateUpdated(self::persist($surface.'_gradient_center_y'))
-                ->visible($center),
-
-            AdminColorControl::make(PublicAppearance::solidColorField($surface), 'Color')
-                ->required()
-                ->formatStateUsing(static fn (mixed $state): string => filled($state) ? (string) $state : match ($surface) {
-                    'background' => PublicAppearance::DEFAULT_PAGE_COLOR,
-                    'header_name' => PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR,
-                    'header_divider_paint' => PublicAppearance::DEFAULT_DIVIDER_COLOR,
-                    default => PublicAppearance::DEFAULT_SURFACE_COLOR,
-                })
-                ->live(onBlur: true)
-                ->afterStateUpdated(static function ($livewire, mixed $state) use ($surface): void {
-                    if ($livewire instanceof self) {
-                        $livewire->persistSurfaceColor($surface, 'primary', $state);
-                    }
-                })
-                ->visible(fn (callable $get): bool => $get($surface.'_mode') === PublicAppearance::MODE_SOLID),
-
-            self::appearanceColorsTable($surface)->visible($gradient),
+                TextInput::make($surface.'_gradient_repeat_span')
+                    ->label('Repeat span')->integer()->minValue(16)->maxValue(360)
+                    ->suffix(fn (callable $get): string => $get($surface.'_mode') === PublicAppearance::MODE_CONIC ? '°' : 'px')
+                    ->lazy()
+                    ->afterStateUpdated(self::persist($surface.'_gradient_repeat_span'))
+                    ->visible(fn (callable $get): bool => $gradient($get) && (bool) $get($surface.'_gradient_repeating')),
+                self::appearanceColorsTable($surface)->columnSpanFull(),
+            ])
+                ->columns(1)
+                ->extraAttributes(['class' => 'general-appearance-gradient-fields'])
+                ->visible($gradient)
+                ->columnSpanFull(),
         ])
-            ->columns(2)
+            ->columns(1)
             ->extraAttributes(['class' => 'general-background-row'])
             ->columnSpanFull();
     }
@@ -720,7 +788,7 @@ final class General extends Page
                 AdminColorControl::make('color', 'Color')
                     ->hiddenLabel()
                     ->required()
-                    ->live(onBlur: true),
+                    ->live(),
                 TextInput::make('position')
                     ->label('Position')
                     ->hiddenLabel()
@@ -880,7 +948,7 @@ final class General extends Page
         return AdminDialog::create(
             Action::make('addSocialLink')
                 ->label('Add social link')
-                ->modalHeading('Add profile')
+                ->modalHeading(__('Add profile'))
                 ->fillForm(fn (): array => [
                     'platform' => '',
                     'url' => '',
@@ -939,7 +1007,7 @@ final class General extends Page
         return AdminDialog::edit(
             Action::make('editSocialLink')
                 ->label('Edit')
-                ->modalHeading('Edit profile')
+                ->modalHeading(__('Edit profile'))
                 ->extraModalFooterActions(fn (array $arguments): array => $this->socialEditHeaderActions($arguments))
                 ->fillForm(function (array $arguments): array {
                     $index = $this->socialLinkIndexForAction($arguments);
@@ -1152,6 +1220,7 @@ final class General extends Page
             if (array_intersect(array_keys($changes), [
                 'favicon_media_asset_id',
                 'frame_style',
+                'menu_type',
                 'background_mode',
                 'background_color',
                 'background_gradient_start',
@@ -1359,6 +1428,7 @@ final class General extends Page
         return match ($field) {
             'favicon_media_asset_id' => 'Site icon',
             'frame_style' => 'Frame style',
+            'menu_type' => 'Menu type',
             'contact_recipient_email' => 'Contact form recipient',
             'public_email' => 'Public email',
             'show_public_email' => 'Public email visibility',
@@ -1367,6 +1437,8 @@ final class General extends Page
             'legal_imprint' => 'Imprint',
             'legal_privacy' => 'Privacy Policy',
             'legal_usage_rights' => 'Copyright & AI Use',
+            'regional_format' => 'Public date format',
+            'number_format' => 'Public number format',
             'default_media_copyright_notice' => 'Default copyright notice',
             'background_mode' => 'Background',
             'background_color' => 'Background color',

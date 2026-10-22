@@ -9,6 +9,7 @@ use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
@@ -131,7 +132,7 @@ final class JournalWorkspace extends Page
     {
         $title = trim($this->journalTitle);
 
-        return $title !== '' ? $title : 'Journal';
+        return $title !== '' ? $title : __('Journal');
     }
 
     public function updatedSearch(): void
@@ -401,14 +402,14 @@ final class JournalWorkspace extends Page
             })
             ->schema([
                 Grid::make()->columns(['md' => 2])->schema([
-                    Select::make('template')->label('Template')->options(JournalTemplate::options())->required(),
+                    Select::make('template')->label('Template')->options(array_map('__', JournalTemplate::options()))->required(),
                     TextInput::make('title')->label('Journal title')->required()->maxLength(160),
                     TextInput::make('navigation_label')->label('Navigation label')->maxLength(160),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                 ]),
             ])
-            ->modalHeading('Journal settings')
+            ->modalHeading(__('Journal settings'))
             ->action(function (Schema $schema, array $data): void {
                 $section = $this->section();
                 $before = $section->only(['template', 'title', 'navigation_label', 'slug']);
@@ -449,7 +450,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('addPost')->label('Add post')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
-            ->modalHeading('Add post')
+            ->modalHeading(__('Add post'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try {
@@ -480,7 +481,7 @@ final class JournalWorkspace extends Page
                 return [...$post->attributesToArray(), ...app(JournalEntryEditorState::class)->for($post)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
-            ->modalHeading('Edit post')
+            ->modalHeading(__('Edit post'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'post'))
             ->action(function (Action $action, array $data, array $arguments): void {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
@@ -510,7 +511,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('schedulePost')->label('Schedule publication')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema([DateTimePicker::make('scheduled_at')->label('Publish at')->seconds(false)->required()])
-            ->modalHeading('Schedule publication')
+            ->modalHeading(__('Schedule publication'))
             ->action(function (Action $action, array $data, array $arguments): void {
                 try {
                     app(BlogEditorialService::class)->schedule($this->post((int) ($arguments['post'] ?? 0)), $data['scheduled_at'] ?? null);
@@ -537,7 +538,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('addExhibition')->label('Add exhibition')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Add exhibition')
+            ->modalHeading(__('Add exhibition'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try {
@@ -558,6 +559,25 @@ final class JournalWorkspace extends Page
         return AdminDialog::create($action, 'Create exhibition', AdminDialogSize::Large);
     }
 
+    public function setExhibitionFieldVisibility(int $id, string $field, bool $visible): void
+    {
+        abort_unless($this->journalTemplate() === JournalTemplate::Exhibitions, 404);
+        $exhibition = $this->exhibition($id);
+        if (! app(ExhibitionEditorialService::class)->setPublicFieldVisibility($exhibition, $field, $visible)) {
+            return;
+        }
+
+        $saved = $exhibition->fresh()->getAttributes();
+        $this->entryEditorOriginal['record']['show_'.$field] = $saved['show_'.$field];
+        $this->entryEditorOriginal['record']['updated_at'] = $saved['updated_at'];
+
+        $this->loadExhibitions(false);
+        app(AdminNotifier::class)->notification(
+            title: __('Exhibition visibility updated'),
+            status: 'success',
+        );
+    }
+
     public function editExhibitionAction(): Action
     {
         $action = Action::make('editExhibition')->label('Edit')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
@@ -567,8 +587,11 @@ final class JournalWorkspace extends Page
                 $this->entryEditorOriginal = $this->journalEntryMutationState($entry);
                 return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
             })
-            ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Edit exhibition')
+            ->schema(fn (Schema $schema, array $arguments): Schema => JournalEntryEditorSchema::exhibition(
+                $schema,
+                $this->exhibition((int) ($arguments['exhibition'] ?? 0)),
+            ))
+            ->modalHeading(__('Edit exhibition'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'exhibition'))
             ->action(function (Action $action, Schema $schema, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
@@ -844,8 +867,8 @@ final class JournalWorkspace extends Page
             $published = $post->getAttribute('published_at');
             $scheduled = $post->getAttribute('scheduled_at');
             $publication = match (true) {
-                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => $scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
-                $published instanceof DateTimeInterface => $published->format('M j, Y'),
+                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => RegionalFormats::adminDateTime($scheduled),
+                $published instanceof DateTimeInterface => RegionalFormats::adminDate($published),
                 default => null,
             };
             $rank = ((int) ($ranks[(int) $post->getKey()] ?? 0)) + 1;
@@ -914,8 +937,8 @@ final class JournalWorkspace extends Page
             // free-text display override (which may use different separators).
             $startsOn = $entry->getAttribute('starts_on');
             $endsOn = $entry->getAttribute('ends_on');
-            $dateStart = $startsOn instanceof CarbonInterface ? $startsOn->format('d.m.Y') : null;
-            $dateEnd = $endsOn instanceof CarbonInterface ? $endsOn->format('d.m.Y') : null;
+            $dateStart = $startsOn instanceof CarbonInterface ? RegionalFormats::adminDate($startsOn) : null;
+            $dateEnd = $endsOn instanceof CarbonInterface ? RegionalFormats::adminDate($endsOn) : null;
             // Display structured dates as one consistent range, independent of
             // the public-facing free-text date override.
             $dateRange = match (true) {
@@ -926,7 +949,7 @@ final class JournalWorkspace extends Page
             };
             $vernissageAt = $entry->getAttribute('vernissage_at');
             $vernissage = $vernissageAt instanceof CarbonInterface
-                ? $vernissageAt->format('d.m.Y, H:i')
+                ? RegionalFormats::adminDateTime($vernissageAt)
                 : (filled($entry->getAttribute('opening_text')) ? trim((string) $entry->getAttribute('opening_text')) : null);
 
             return [

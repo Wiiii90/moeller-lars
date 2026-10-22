@@ -30,21 +30,21 @@ trait ManagesSitePageCreateDialog
     {
         $action = Action::make('addPage')
             ->label('Add page')
-            ->modalHeading('Add page')
+            ->modalHeading(__('Add page'))
             ->schema([
                 Grid::make()
                     ->columns(['md' => 2])
                     ->schema([
                         Select::make('type')
                             ->label('Page type')
-                            ->options(SiteSectionType::compactOptions())
+                            ->options(array_map('__', SiteSectionType::compactOptions()))
                             ->default(SiteSectionType::CustomPage->value)
                             ->native()
                             ->required()
                             ->live(),
                         Select::make('template')
                             ->label('Template')
-                            ->options(JournalTemplate::options())
+                            ->options(array_map('__', JournalTemplate::options()))
                             ->default(JournalTemplate::Blog->value)
                             ->native()
                             ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
@@ -68,7 +68,7 @@ trait ManagesSitePageCreateDialog
                         Select::make('parent_id')
                             ->label('Parent page')
                             ->options(fn (): array => $this->parentOptions)
-                            ->placeholder('Top level')
+                            ->placeholder(__('Top level'))
                             ->native()
                             ->nullable()
                             ->visible(fn (): bool => $this->nestedNavigationEnabled),
@@ -78,7 +78,7 @@ trait ManagesSitePageCreateDialog
                             ->integer()
                             ->minValue(1)
                             ->nullable()
-                            ->placeholder('Last'),
+                            ->placeholder(__('Last')),
                     ]),
                 PageHeadingFields::schema()
                     ->visible(fn (Get $get): bool =>

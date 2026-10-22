@@ -36,3 +36,24 @@ test('the page is scrollable again after dismissing an open modal', async ({ pag
   await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
   await expect.poll(() => page.evaluate(() => document.scrollingElement.scrollTop)).toBeGreaterThan(0);
 });
+
+test('admin modal closes from sidebar, topbar and outer page background', async ({ page }) => {
+  await signIn(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/admin/pages');
+
+  const open = page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true });
+  const heading = page.getByRole('heading', { name: 'Add page', exact: true });
+
+  for (const [region, x, y] of [
+    ['sidebar', 24, 180],
+    ['topbar', 500, 20],
+    ['outer page edge', 1430, 220],
+  ]) {
+    await open.click();
+    await expect(heading).toBeVisible();
+
+    await page.mouse.click(x, y);
+    await expect(heading, `clicking ${region} must close the dialog`).toBeHidden();
+  }
+});

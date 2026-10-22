@@ -5,7 +5,7 @@
     'selectedHour' => null,
     'hourUrls' => [],
     'captionLabel' => null,
-    'ariaContext' => 'activity distribution',
+    'ariaContext' => __('activity distribution'),
 ])
 
 <div
@@ -51,7 +51,7 @@
             class="activity-clock__dial"
             viewBox="0 0 320 320"
             role="img"
-            x-bind:aria-label="`Live local time ${timeLabel()}; {{ $ariaContext }}`"
+            x-bind:aria-label="@js(__('Live local time')) + ' ' + timeLabel() + '; ' + @js($ariaContext)"
         >
             <circle class="activity-clock__activity-track" cx="160" cy="160" r="134" />
             @foreach ($activity as $bucket)
@@ -147,9 +147,9 @@
     </div>
 
     @if ($captionLabel !== null)
-        <div class="activity-clock__caption" aria-label="{{ $captionLabel }} and live local time">
+        <div class="activity-clock__caption" aria-label="{{ $captionLabel }} {{ __('and live local time') }}">
             <strong>{{ $captionLabel }}</strong>
-            <span>Live local time: <time x-text="timeLabel()">—</time></span>
+            <span>{{ __('Live local time:') }} <time x-text="timeLabel()">—</time></span>
         </div>
     @endif
 </div>

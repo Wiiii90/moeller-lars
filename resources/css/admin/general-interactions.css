@@ -57,29 +57,6 @@
     cursor: grabbing;
 }
 
-.general-live-preview__zoom-hud {
-    position: absolute;
-    z-index: 4;
-    top: .4rem;
-    right: .4rem;
-    min-width: 2.75rem;
-    padding: .28rem .38rem;
-    border: 1px solid color-mix(in srgb, var(--admin-text) 28%, var(--admin-line));
-    border-radius: .2rem;
-    background: color-mix(in srgb, var(--admin-surface) 94%, var(--admin-subtle));
-    color: var(--admin-text);
-    font-size: .58rem;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    text-align: center;
-    pointer-events: none;
-    box-shadow: 0 .12rem .3rem color-mix(in srgb, #000 10%, transparent);
-}
-
-.dark .general-live-preview__zoom-hud {
-    background: #181818;
-}
-
 .general-social-table__edit-action,
 .general-social-table__delete-action {
     gap: .3rem;

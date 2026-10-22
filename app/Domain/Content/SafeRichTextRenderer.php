@@ -3,6 +3,8 @@
 namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
+use App\Filament\Support\RichTextEditorPlugin;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use App\Models\MediaAsset;
 use Illuminate\Support\HtmlString;
 use League\CommonMark\Environment\Environment;
@@ -54,11 +56,43 @@ final class SafeRichTextRenderer
         bool $allowEmbeddedMedia = false,
         bool $requirePublicMedia = false,
     ): void {
+        if (RichTextDocument::isVisual($source)) {
+            $this->validateVisual($source, $allowEmbeddedMedia, $requirePublicMedia);
+
+            return;
+        }
         $this->validate($this->parse($source), $source, $allowEmbeddedMedia, $requirePublicMedia);
     }
 
     public function render(string $source): HtmlString
     {
+        if (RichTextDocument::isVisual($source)) {
+            $imageMetadata = $this->validateVisual($source, allowEmbeddedMedia: true, requirePublicMedia: true);
+            $imageIndex = 0;
+
+            $html = RichContentRenderer::make($source)
+                ->plugins([RichTextEditorPlugin::make()])
+                ->linkProtocols(['http', 'https', 'mailto'])
+                ->processNodesUsing(static function (object &$node) use ($imageMetadata, &$imageIndex): void {
+                    if (($node->type ?? null) !== 'image') {
+                        return;
+                    }
+
+                    $entry = $imageMetadata[$imageIndex++] ?? null;
+                    if (! is_array($entry)
+                        || (int) ($node->attrs->id ?? 0) !== $entry['media_asset_id']) {
+                        throw UnsafeRichTextException::unsupportedSyntax();
+                    }
+
+                    // The public ALT is resolved from canonical Storage metadata
+                    // and any validated override, never from an old editor URL.
+                    $node->attrs->alt = $entry['alt'];
+                })
+                ->toHtml();
+
+            return new HtmlString(ArtistImageLayout::decorateHtml($html, $source));
+        }
+
         $document = $this->parse($source);
         $this->validate(
             $document,
@@ -187,6 +221,96 @@ final class SafeRichTextRenderer
                 throw UnsafeRichTextException::unsupportedSyntax();
             }
         }
+    }
+
+    /** @return list<array{media_asset_id: int, alt: string}> */
+    private function validateVisual(string $source, bool $allowEmbeddedMedia, bool $requirePublicMedia): array
+    {
+        // Reject active and remote-embed payloads before TipTap's normal HTML
+        // normalization. All public rendering additionally goes through its
+        // server-side sanitized renderer, never raw stored HTML.
+        if (preg_match('/<\\s*(?:script|iframe|object|embed|svg|form|style|meta|link)\\b/i', $source)) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
+        if (preg_match('/\\son[a-z]+\\s*=/i', $source)) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
+
+        preg_match_all('/<img\\b[^>]*>/i', $source, $visualImageTags);
+        $images = RichTextMediaReference::ids($source);
+        if (! $allowEmbeddedMedia && ($visualImageTags[0] ?? []) !== []) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
+
+        // Every visual-editor image must identify a canonical Storage asset.
+        // A bare external <img> would bypass the asset's publication,
+        // availability and ALT checks.
+        foreach ($visualImageTags[0] ?? [] as $imageTag) {
+            if (preg_match('/\\bdata-id\\s*=\\s*(["\\\'])([1-9]\\d*)\\1/i', $imageTag) !== 1) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
+        }
+        $resolvedImages = [];
+        if ($images !== []) {
+            $assets = MediaAsset::query()
+                ->whereIn('id', $images)
+                ->where('state', 'available')
+                ->where('mime_type', 'like', 'image/%')
+                ->with('variants')
+                ->get()
+                ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
+
+            if ($assets->count() !== count($images)) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
+
+            if ($requirePublicMedia) {
+                // Resolve in document order: repeated references to one asset
+                // may have different editorial ALT overrides.
+                foreach ($visualImageTags[0] ?? [] as $imageTag) {
+                    if (preg_match('/\\bdata-id\\s*=\\s*(["\\\'])([1-9]\\d*)\\1/i', $imageTag, $idMatch) !== 1) {
+                        throw UnsafeRichTextException::unsupportedSyntax();
+                    }
+                    $asset = $assets->get((int) $idMatch[2]);
+                    if (! $asset instanceof MediaAsset) {
+                        throw UnsafeRichTextException::unsupportedSyntax();
+                    }
+
+                    $override = null;
+                    if (preg_match('/\\balt\\s*=\\s*(["\\\'])(.*?)\\1/i', $imageTag, $altMatch) === 1) {
+                        $value = trim(html_entity_decode($altMatch[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                        $override = $value !== '' ? $value : null;
+                        if ($override !== null && mb_strlen($override) > 500) {
+                            throw UnsafeRichTextException::unsupportedSyntax();
+                        }
+                    }
+
+                    try {
+                        $alt = $this->publicMedia->altTextForAsset($asset, $override);
+                        $this->publicMedia->thumbnailVariantForAsset($asset);
+                    } catch (LogicException) {
+                        throw UnsafeRichTextException::unsupportedSyntax();
+                    }
+
+                    $resolvedImages[] = [
+                        'media_asset_id' => (int) $asset->getKey(),
+                        'alt' => $alt,
+                    ];
+                }
+            }
+        }
+
+        // Validate any external links and images in addition to canonical IDs.
+        if (preg_match_all('/\\b(?:href|src)\\s*=\\s*([\"\\\'])(.*?)\\1/i', $source, $attributes, PREG_SET_ORDER)) {
+            foreach ($attributes as $attribute) {
+                $url = html_entity_decode($attribute[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                if ($url !== '' && ! $this->safeLinkPolicy->isAllowed($url)) {
+                    throw UnsafeRichTextException::unsafeLink();
+                }
+            }
+        }
+
+        return $resolvedImages;
     }
 
     private function isAllowedExternalImageUrl(string $url): bool

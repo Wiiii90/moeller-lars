@@ -2,6 +2,7 @@
 
 namespace App\Domain\Admin;
 
+use App\Domain\Content\RegionalFormats;
 use App\Models\AdminNotification;
 use App\Models\ContactMessage;
 use Carbon\Carbon;
@@ -536,7 +537,7 @@ final class DashboardFeed
                     'sort_timestamp' => $parsedDate->getTimestamp(),
                     'sort_microsecond' => (int) $parsedDate->format('u'),
                     'date' => $parsedDate->toDateString(),
-                    'date_display' => $parsedDate->format('j M Y'),
+                    'date_display' => RegionalFormats::adminDate($parsedDate),
                     'time_display' => '—',
                     'title' => $title,
                     'sender' => 'System',
@@ -587,7 +588,7 @@ final class DashboardFeed
             'sort_timestamp' => $receivedAt->getTimestamp(),
             'sort_microsecond' => (int) $receivedAt->format('u'),
             'date' => $receivedAt->toIso8601String(),
-            'date_display' => $receivedAt->format('j M Y'),
+            'date_display' => RegionalFormats::adminDate($receivedAt),
             'time_display' => $receivedAt->format('H:i'),
             'title' => 'Contact message',
             'sender' => trim($senderName.' — '.$senderEmail),
@@ -597,7 +598,7 @@ final class DashboardFeed
             'body' => $body,
             'status' => $readAt === null ? 'Unread' : 'Read',
             'mail_delivery_status' => (string) $message->getAttribute('mail_delivery_status'),
-            'mail_delivered_at' => $deliveredAt instanceof CarbonInterface ? $deliveredAt->format('j M Y H:i') : null,
+            'mail_delivered_at' => $deliveredAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($deliveredAt) : null,
             'link' => null,
             'link_label' => null,
         ];
@@ -611,9 +612,13 @@ final class DashboardFeed
         $body = trim((string) ($notification->getAttribute('body') ?? ''));
         $status = (string) $notification->getAttribute('status');
         $readAt = $notification->getAttribute('read_at');
-        $title = (string) $notification->getAttribute('title');
+        $title = __((string) $notification->getAttribute('title'));
+        $body = $body !== '' ? __($body) : '';
         $actionUrl = trim((string) ($notification->getAttribute('action_url') ?? ''));
         $actionLabel = trim((string) ($notification->getAttribute('action_label') ?? ''));
+        if ($actionLabel !== '') {
+            $actionLabel = __($actionLabel);
+        }
 
         return [
             'key' => 'notification:'.$notification->getKey(),
@@ -632,7 +637,7 @@ final class DashboardFeed
             'sort_timestamp' => $receivedAt->getTimestamp(),
             'sort_microsecond' => (int) $receivedAt->format('u'),
             'date' => $receivedAt->toIso8601String(),
-            'date_display' => $receivedAt->format('j M Y'),
+            'date_display' => RegionalFormats::adminDate($receivedAt),
             'time_display' => $receivedAt->format('H:i'),
             'title' => $title,
             'sender' => 'System',
