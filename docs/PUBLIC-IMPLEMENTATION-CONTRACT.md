@@ -398,6 +398,27 @@ Gallery presentation uses persisted Artwork `position` as authoritative order.
 
 Viewer previous/next follows the same public Gallery order.
 
+**Context-scoped image viewer:** The same modal, zoom controls and keyboard
+interaction are reused across Artwork, Journal and Home; each public content
+context owns its own sequence and actions. Gallery and Artwork detail continue
+to navigate eligible Artwork and may link to the individual Artwork page.
+Home Artwork keeps its saved `enable_viewer` behavior and navigates only the
+currently rendered Hero group. Blog and Exhibition enable the viewer per
+entry with `image_viewer_enabled`: Cover, gallery and embedded Rich Text
+images navigate **inside that single post or exhibition**, never across other
+posts or exhibitions on the same Journal page. Journal has no Artwork detail
+link or Artwork-specific analytics; video playback is unchanged. Home Custom
+and Under Construction each persist their own `image_viewer_enabled` in
+the existing template configuration; when enabled, all non-decorative component
+images, list images and embedded Rich Text images share the current Home
+component sequence. Decorative images do not open. Their viewer has no Artwork
+detail link or Artwork-specific analytics. All supported editor switches use
+the exact visible label **Enlarge images on click**. The Gallery viewer is
+already active by default; Gallery's separate landscape detail expansion
+option is not a viewer enable/disable toggle. Existing saved Home Artwork
+viewer defaults stay enabled and Journal/Home component opt-ins stay disabled
+unless the artist enables them.
+
 ## Artwork presentation/media/viewer
 
 Public Artwork exposes approved authored metadata and valid media.

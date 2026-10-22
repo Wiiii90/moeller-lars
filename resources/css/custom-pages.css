@@ -393,3 +393,12 @@
     max-height: 34rem;
     object-fit: contain;
 }
+
+.home-components img[data-artwork-viewer-trigger] {
+    cursor: zoom-in;
+}
+
+.home-components img[data-artwork-viewer-trigger]:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}

@@ -100,8 +100,8 @@ function normalizeItem(element) {
     const title = element.dataset.viewerTitle;
     const page = element.dataset.viewerPage;
 
-    const journal = element.dataset.viewerScope === 'journal';
-    if (!key || !src || alt === undefined || !title || (!journal && (!analyticsKey || !page))) {
+    const content = ['journal', 'content'].includes(element.dataset.viewerScope);
+    if (!key || !src || alt === undefined || !title || (!content && (!analyticsKey || !page))) {
         throw new Error('Artwork viewer item is missing required canonical data.');
     }
 
