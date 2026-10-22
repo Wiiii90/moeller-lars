@@ -1,6 +1,6 @@
-# Test suites — current dev workflow
+# Test suites — canonical testing branch
 
-Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. Normal development is on `dev`; an explicitly authorized isolated B2 verification round uses the existing `testing` branch without introducing a second test structure.
+Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. **`testing` is the authoritative curated suite**; `dev` carries ongoing features and provisional tests. The current production changes are periodically merged into `testing` while preserving canonical test deletions and refactors. Only an explicitly authorized, isolated qualification and user-directed promotion puts the curated suite back on `dev` before cutover; `main` is a separate release step.
 
 ## Layers
 
@@ -53,7 +53,7 @@ In the current direct-`dev` mode, CI/Actions must not be run, inspected or monit
 1. Identify the violated visible/domain invariant.
 2. Test the narrowest meaningful behavior, including failure/no-op boundaries.
 3. Verify database/HTTP/browser outcomes rather than source-string matches.
-4. Delete superseded assertions, orphaned fixtures and repair-era scaffolding.
+4. Compare actual source changes and both Git trees; delete superseded assertions, orphaned fixtures, repair-era scaffolding and files accidentally resurrected by rename detection.
 5. Do not silently skip required fixtures or weaken assertions to obtain green results.
 6. Distinguish source review, actual test runs, browser review and user acceptance.
 

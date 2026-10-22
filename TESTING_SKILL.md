@@ -1,10 +1,10 @@
 # TESTING_SKILL.md — current testing contract
 
-Repository: `Wiiii90/moeller-lars`. **This explicitly authorized B2 verification round runs on the existing `testing` branch**, fast-forwarded from `dev` without a new branch or separate test suite. Ordinary feature development continues on `dev`. Keep test-only changes on `testing`; do not promote or merge them to `dev` without an explicit instruction. Current suite definitions remain `tests/README.md` and `docs/TESTING.md`.
+Repository: `Wiiii90/moeller-lars`. **`testing` is the canonical, curated test suite.** Active feature development and temporary incident tests occur on `dev`. Periodically merge newer `dev` product changes into the existing `testing` branch, preserving the curated tests and rejecting superseded or presentation-only regressions. Do not merge `testing` back to `dev` until the user explicitly authorizes the final testing promotion (before cutover) and isolated qualification is complete. There is no second test structure or new branch. Suite definitions remain `tests/README.md` and `docs/TESTING.md`.
 
 ## Scope and execution
 
-- For this test round, read `testing` and the current `dev` HEAD, `AGENTS.md`, responsible B2/publication source and relevant tests. Before every write, recheck `testing`; do not automatically merge newer `dev` changes mid-test. Reconcile changes only deliberately, without force/reset/rebase. No new branches/worktrees.
+- For each batch, read both current HEADs, compare all intervening production and test changes, then reconcile onto `testing`. The **actual Git tree** is authoritative: preserve deletions, consolidation and intentional renames even when compare reports a file as renamed. Inspect tests supplied by `dev` against the responsible production contract; keep enduring behavior, replace duplicate scenarios, and delete obsolete source/markup assertions. Recheck branch HEADs before writing; no force/reset/rebase, no new branches/worktrees.
 - In direct-`dev` mode, **no CI/Actions interaction**, including status/log reads, dispatch, monitoring and retries. Editing workflow source on `dev` is permitted when requested; running CI, releases, Server, Validation or Production is separate user authorization.
 - Report `SOURCE-REVIEWED`, `TEST-RUN`, `BROWSER-VERIFIED` and `USER-ACCEPTED` distinctly. Old suite results never certify subsequent production changes.
 
@@ -28,7 +28,7 @@ The persistent Compose database `moeller_lars_testing` and volume `moeller-lars_
 
 Protect persisted behavior, visibility in Working vs Committed, authorization after role changes, source media and checksum integrity, atomic audit/Undo/rollback semantics, exactly-one notification per real admin mutation, no-op/error feedback, route/media authorization, real HTTP and correct Session lifecycle. Tests should fail for broken behavior, not changed source spelling or UI repair-era CSS. Do not weaken assertions, silently skip fixtures or create duplicate incident test systems.
 
-Use targeted B2 checks for real JPEG/PNG/WebP metadata and bytes, rights artifact lifecycle, preparation CLI guards, Pending/Commit/Undo/Reset, legacy snapshot compatibility and Public/Preview media authorization. Record failures without changing production code speculatively. Use only tests relevant to changes; avoid repeating a 700+-test suite without a reason. The normal Pest sessions are in-memory, so **Public Session races require** their separate HTTP/database-session runner. Publication concurrency uses genuine PostgreSQL blocking in its own runner.
+Use targeted checks appropriate to the changed domain: media rights and artifacts, Working/Committed publication and historical snapshots, rich-text sanitization, public media/privacy, admin persistence/permissions, regional formatting and real HTTP/SPA interaction. Add cases to existing topical tests and consolidate redundant variants instead of retaining incident-named files or superficial UI layout assertions. Record failures without speculative production-code changes. Avoid an unnecessary full-suite rerun after each small `dev` commit. The normal Pest sessions are in-memory, so **Public Session races require** their separate HTTP/database-session runner. Publication concurrency uses genuine PostgreSQL blocking in its own runner.
 
 ## Coverage and release boundary
 

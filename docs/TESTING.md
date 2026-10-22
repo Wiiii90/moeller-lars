@@ -13,7 +13,7 @@ This is the current durable test strategy for `moeller-lars`. The suite protects
 | JavaScript | `tests/js` | Node-based production frontend logic |
 | Browser | `tests/browser/component`, `e2e`, `profiling` | Chromium components, seeded Laravel E2E and representative performance evidence |
 
-The former separate Architecture suite is retired. Structural contracts belong in the narrowest meaningful behavior test; source-string matching is not a substitute for working software. `tests/Pest.php` and `phpunit.xml` own PHP discovery; `playwright.config.mjs` owns the Playwright projects. There is one test structure on `dev`.
+The former separate Architecture suite is retired. Structural contracts belong in the narrowest meaningful behavior test; source-string matching is not a substitute for working software. `tests/Pest.php` and `phpunit.xml` own PHP discovery; `playwright.config.mjs` owns the Playwright projects. There is one test structure, maintained as the authoritative curated suite on `testing` while `dev` continues feature work. The finished, qualified test changes return to `dev` only on the user's explicit instruction before cutover.
 
 ## Running and discovering tests
 
@@ -35,7 +35,7 @@ composer analyse
 composer lint
 ```
 
-Special real-process PostgreSQL concurrency cases do not execute in an ordinary Pest/CI run; they require the existing verified Windows PowerShell runners from the `dev` checkout:
+Special real-process PostgreSQL concurrency cases do not execute in an ordinary Pest/CI run; they require the existing verified Windows PowerShell runners from the authorized `testing` or `dev` checkout:
 
 ```powershell
 & .\tests\Support\RunPublicationConcurrency.ps1 --compact
@@ -52,7 +52,7 @@ Standard Pest suites typically use in-memory sessions; that does not exercise ra
 
 ## Durable regression rules
 
-Choose the narrowest layer that demonstrates the actual failure and success/no-op boundaries. Prioritize persisted outcomes, HTTP requests, Filament/Livewire actions, authentication and permission revocation, publication consistency, append-only audit, media integrity, concurrency and error behavior. Remove duplicate incident scaffolding and tests that only pin filenames, CSS selectors or implementation details.
+For each new batch of `dev` changes, review actual production and provisional-test diffs, reconcile against the curated `testing` tree (including intentional deletions and renames), then choose the narrowest layer that demonstrates the actual failure and success/no-op boundaries. Prioritize persisted outcomes, HTTP requests, Filament/Livewire actions, authentication and permission revocation, publication consistency, append-only audit, media integrity, concurrency and error behavior. Remove duplicate incident scaffolding and tests that only pin filenames, CSS selectors or implementation details.
 
 Authenticated admin mutations need meaningful verification from the domain result through persistence, append-only Activity/audit, one durable notification and one immediate header event per successful change, and no false success on no-op or failure. Close/reopen and browser-visible field state are separate acceptance evidence.
 
@@ -72,6 +72,6 @@ The existing `release.yml` workflow will report the combined PHP app/ line-cover
 
 `release.yml` verifies dependencies, Vite build/manifest, the four current Pest suites, PHPStan, Pint and JS. `browser-profile.yml` verifies Chromium component, E2E and profiling paths. `runtime-image-smoke.yml` verifies its scoped container boot contract. Special multi-process concurrency is intentionally a separate isolated test boundary until a safe CI runner exists.
 
-During direct-`dev` work, development agents do not run, monitor, inspect or troubleshoot GitHub Actions. Updating CI source on `dev` does not authorize CI execution. Release qualification and `main` promotion are separate, explicitly authorized tasks described by `docs/RELEASE.md`.
+During direct-`dev` work, development agents do not run, monitor, inspect or troubleshoot GitHub Actions. Updating CI source on `dev` does not authorize CI execution. Qualifying the curated `testing` suite, promoting it back to `dev` before cutover, and later releasing `main` are separate explicitly authorized steps described by `docs/RELEASE.md`.
 
 Migration/legacy tests are retained only until their documented cutover retirement condition. Remove obsolete Architecture/SitePages suite descriptions, abandoned testing-worktree runbooks, redundant regressions, and replaced assertions rather than maintaining two incompatible systems.
