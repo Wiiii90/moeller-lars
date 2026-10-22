@@ -151,12 +151,12 @@
     overflow: hidden;
 }
 
-/* Expanded Stage has one content-sized track measured only by the active
- * panel. The normal collapsed Stage height remains unchanged. */
+/* The active panel alone determines height; the Stage minimum stays intact.
+ * The Preview must never contribute its fitted device height to this track. */
 .general-appearance-stage.admin-visual-stage--expanded {
     height: max-content;
     min-height: var(--admin-visual-stage-height);
-    grid-template-rows: max-content !important;
+    grid-template-rows: minmax(var(--admin-visual-stage-height), max-content) !important;
 }
 
 .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls {
@@ -176,9 +176,10 @@
     overflow: visible;
 }
 
-/* Preview follows the selected tab's actual height. Its existing
- * ResizeObserver fits the device to the changed viewport without reload. */
+/* The Preview consumes the height chosen by the active panel but does
+ * not feed its previously fitted size back into intrinsic track sizing. */
 .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__preview {
+    contain: size;
     height: 100%;
     align-self: stretch;
 }

@@ -18,11 +18,12 @@ test('Appearance has one overlapping panel track through Filament wrappers', () 
     assert.match(css, /\.general-appearance-stage__panel:not\(\.is-active\)\s*\{[^}]*display: none !important;/);
     assert.doesNotMatch(css, /\.admin-visual-stage--expanded \.general-appearance-stage__panel\s*\{[^}]*position: relative;/);
     assert.match(css, /\.general-appearance-stage\.admin-visual-stage--expanded\s*\{[^}]*height: max-content;/);
+    assert.match(css, /grid-template-rows: minmax\(var\(--admin-visual-stage-height\), max-content\) !important;/);
     assert.doesNotMatch(css, /\.general-appearance-stage__scroll > \.fi-sc/);
     for (const name of ['global', 'title', 'menu', 'page']) {
         assert.ok(stage.includes("'data-appearance-panel' => '" + name + "'"));
     }
-    assert.match(responsive, /\.admin-visual-stage--expanded\s*\{\s*grid-template-rows: max-content !important;/);
+    assert.match(responsive, /\.admin-visual-stage--expanded\s*\{\s*grid-template-rows: minmax\(var\(--admin-visual-stage-height\), max-content\) !important;/);
 });
 
 test('Angle uses the shared input inset, control height and separated degree suffix', () => {
@@ -37,7 +38,7 @@ test('More space is presentation-only; its preview stays mounted while its viewp
     assert.match(toggle, /\.general-appearance-stage__scroll/);
     assert.doesNotMatch(toggle, /\$refs\.appearanceScroll/);
     assert.match(stage, /'x-data' => "\{ appearanceTab: 'global', moreSpace: false, previewDevice: 'desktop' \}"/);
-    assert.match(css, /\.admin-visual-stage--expanded \.general-appearance-stage__preview\s*\{[^}]*height: 100%;[^}]*align-self: stretch;/);
+    assert.match(css, /\.admin-visual-stage--expanded \.general-appearance-stage__preview\s*\{[^}]*contain: size;[^}]*height: 100%;[^}]*align-self: stretch;/);
     assert.doesNotMatch(css, /max-height: max\(var\(--admin-visual-stage-height\), 75vh\)/);
     assert.match(preview, /new ResizeObserver\(\(\) => this\.fitPreview\(\)\)/);
     assert.doesNotMatch(toggle, /wire:click|general-appearance-updated|refreshPreview/);
