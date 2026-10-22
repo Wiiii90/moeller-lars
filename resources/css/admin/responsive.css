@@ -450,11 +450,9 @@
         display: none !important;
     }
 
-    /* Expanded mode remains intrinsically sized after the preview is
-     * removed; the normal responsive 100% control height cannot override
-     * max-content sizing for the single overlapping-panel grid. */
+    /* The active tab remains the sole height owner even without Preview. */
     .general-appearance-stage.admin-visual-stage--expanded{
-        grid-template-rows: max-content !important;
+        grid-template-rows: minmax(var(--admin-visual-stage-height), max-content) !important;
     }
 
     .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls{
