@@ -138,17 +138,34 @@ class Exhibition extends Model
     /** Public bylines prioritize the organizer and never append an unrelated city. */
     public function summaryAttribution(): ?string
     {
-        foreach (['organizer', 'venue'] as $field) {
-            if (! $this->publicFieldVisible($field)) {
-                continue;
-            }
-            $value = trim((string) ($this->getAttribute($field) ?? ''));
-            if ($value !== '') {
-                return $value;
-            }
+        $organizer = trim((string) ($this->getAttribute('organizer') ?? ''));
+        if ($organizer !== '') {
+            return $this->publicFieldVisible('organizer') ? $organizer : null;
         }
 
-        return null;
+        $venue = trim((string) ($this->getAttribute('venue') ?? ''));
+
+        return $venue !== '' && $this->publicFieldVisible('venue') ? $venue : null;
+    }
+
+    public function publicVenue(): ?string
+    {
+        if (! $this->publicFieldVisible('venue')) {
+            return null;
+        }
+
+        $venue = trim((string) ($this->getAttribute('venue') ?? ''));
+        $organizer = trim((string) ($this->getAttribute('organizer') ?? ''));
+
+        if ($venue === '' || $organizer === '') {
+            return null;
+        }
+
+        if ($this->publicFieldVisible('organizer') && $organizer === $venue) {
+            return null;
+        }
+
+        return $venue;
     }
 
     /** The map identifies the physical place, not the organizing institution. */

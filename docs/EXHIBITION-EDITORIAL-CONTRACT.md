@@ -73,7 +73,10 @@ a second geocoding or publication system. Their changes are Working changes
 subject to the usual site Commit; they are not instantly deployed to Public.
 
 Public summary attribution, venue facts, website links, address composition and
-map-dialog text honor these settings. The map's independently controlled
+map-dialog text honor these settings. A hidden Organizer never silently falls
+back to Venue when an Organizer value exists: an independently visible Venue
+appears as the detail fact instead. Historical entries without an Organizer
+keep their Venue summary fallback without a duplicate Venue fact. The map's independently controlled
 `map_enabled` option is **not** silently changed by hiding an address label:
 an enabled map can still reveal coordinates through OpenStreetMap. Turn off
 the map separately if the location itself should be hidden.

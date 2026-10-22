@@ -29,6 +29,52 @@ it('keeps ambiguous pre-migration venue display without appending a ghost city',
         ->and($exhibition->mapLocationLabel())->toBe('Der blonde Hans · Hamburg');
 });
 
+it('keeps organizer and venue visibility independent without duplicating the venue byline', function (): void {
+    $exhibition = new Exhibition;
+    $exhibition->setRawAttributes([
+        'organizer' => 'Galerie Muster',
+        'venue' => 'Kunsthalle Musterstadt',
+        'show_organizer' => true,
+        'show_venue' => true,
+    ]);
+
+    expect($exhibition->summaryAttribution())->toBe('Galerie Muster')
+        ->and($exhibition->publicVenue())->toBe('Kunsthalle Musterstadt');
+
+    $exhibition->show_organizer = false;
+    expect($exhibition->summaryAttribution())->toBeNull()
+        ->and($exhibition->publicVenue())->toBe('Kunsthalle Musterstadt');
+
+    $exhibition->show_venue = false;
+    expect($exhibition->summaryAttribution())->toBeNull()
+        ->and($exhibition->publicVenue())->toBeNull();
+
+    $exhibition->show_organizer = true;
+    expect($exhibition->summaryAttribution())->toBe('Galerie Muster')
+        ->and($exhibition->publicVenue())->toBeNull();
+});
+
+it('preserves historical venue-only bylines without repeating them as details', function (): void {
+    $exhibition = new Exhibition;
+    $exhibition->setRawAttributes([
+        'organizer' => null,
+        'venue' => 'Der blonde Hans',
+        'show_organizer' => false,
+        'show_venue' => true,
+    ]);
+
+    expect($exhibition->summaryAttribution())->toBe('Der blonde Hans')
+        ->and($exhibition->publicVenue())->toBeNull();
+
+    $exhibition->organizer = 'Der blonde Hans';
+    expect($exhibition->summaryAttribution())->toBeNull()
+        ->and($exhibition->publicVenue())->toBe('Der blonde Hans');
+
+    $exhibition->show_organizer = true;
+    expect($exhibition->summaryAttribution())->toBe('Der blonde Hans')
+        ->and($exhibition->publicVenue())->toBeNull();
+});
+
 it('does not invent a public city byline when no organizer or venue exists', function (): void {
     $exhibition = new Exhibition;
     $exhibition->setRawAttributes([
