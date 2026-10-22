@@ -28,7 +28,7 @@
             <div class="artwork-viewer__missing" data-viewer-missing role="img" aria-label="Media unavailable" hidden>Media unavailable</div>
         </div>
 
-        <div class="artwork-viewer__controls" aria-label="Artwork viewer controls">
+        <div class="artwork-viewer__controls" aria-label="Media viewer controls">
             <button type="button" data-viewer-previous aria-label="Previous media" title="Previous media"><x-public-icon name="chevron-left" /></button>
             <button type="button" data-viewer-zoom-out aria-label="Zoom out" title="Zoom out"><x-public-icon name="minus" /></button>
             <button type="button" class="artwork-viewer__reset" data-viewer-reset aria-label="Reset zoom" title="Reset zoom">100%</button>

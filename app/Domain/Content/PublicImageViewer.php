@@ -75,8 +75,8 @@ final class PublicImageViewer
             .' data-viewer-kind="image"'
             .' data-viewer-src="'.e($source).'"'
             .' data-viewer-alt="'.e($alt).'"'
-            .' data-viewer-title="'.e($alt !== '' ? $alt : 'Journal image').'"'
-            .' role="button" tabindex="0" aria-label="'.e('Enlarge image: '.($alt !== '' ? $alt : 'Journal image')).'"';
+            .' data-viewer-title="'.e($alt !== '' ? $alt : 'Image').'"'
+            .' role="button" tabindex="0" aria-label="'.e('Enlarge image'.($alt !== '' ? ': '.$alt : '')).'"';
     }
 
 }
