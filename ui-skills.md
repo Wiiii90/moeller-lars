@@ -1,5 +1,7 @@
 # Admin UI skills and consistency contract
 
+**Docs-branch historical snapshot:** The corresponding `dev/ui-skills.md` is now newer and is the **current accepted Admin visual contract for direct-dev workers**. Do not replace or merge that file blindly with this older Docs text. For new documentation and integration decisions compare the active dev copy, user browser acceptance and the central shared implementation owners. See [Worker Protocol](docs/WORKER-PROTOCOL.md).
+
 This file is the reusable UI reference for the authenticated artist administration in `Wiiii90/moeller-lars`.
 
 It deliberately covers **admin UI only**. It does not define the public artist-site frontend.

@@ -1,6 +1,8 @@
-# Follow-up chat handoff — compatibility entrypoint
+# Follow-up chat handoff — docs-branch compatibility entrypoint
 
 The maintained, authoritative process is [.agents/skills/handoff/SKILL.md](.agents/skills/handoff/SKILL.md). This root file retains the original entrypoint for older links and requests such as “Folgeprompt nach followup-skill.md”. **Do not recreate the superseded temporary worker-branch/reconciliation model or infer that all tasks must run on `dev`.**
+
+**For current direct-development workers use the newer `dev/followup-skill.md` and `dev/AGENTS.md` as the operative policies.** This Docs-branch file is retained as an historical compatibility entry, not a second active handoff implementation. [Role-based startup](docs/WORKER-PROTOCOL.md) and [cross-feature composition](docs/architecture/cross-feature-compositions.md) are the concise entrypoints for future handoffs.
 
 ## Current branch responsibilities
 

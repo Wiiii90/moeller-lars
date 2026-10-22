@@ -94,3 +94,9 @@ Die Gallery behält alle öffentlichen Artwork-/Viewer-Einträge im Markup; ihre
 - Die bestehende zyklische ganze-Item-Navigation behält ihren eigenen `sessionStorage`-Handoff; der Document-Swap soll ihn nicht durch Pixel-Scrolling ersetzen.
 - Der Admin benutzt ebenfalls Filament/Livewire-SPA, aber mit eigener Auth-/Lifecycle-Policy. Aus dem Public-SPA-Skript ist **keine** Admin-Route ableitbar.
 - **Zu überprüfen:** tatsächliche Livewire-Head-/Nonce-Updates, Scroll-/Focus-Restoration, Back/Forward, Wechsel zwischen Parent/Child-Menüs, erneute offene Viewer/Map-Instanzen, Matomo pro echtem Seitenwechsel und Escape/Hydration-Verhalten. Ein Quell-Diagramm allein ist kein Browsertest.
+
+## Cross-page rendering changes since the last static frame audit (`dev@74e629274ac2`)
+
+The shared `public-spa.js` still delegates eligible same-origin links to Livewire; `app.js` disposes page-scoped viewer, Gallery image loading, video, Journal, header and navigation owners at swaps. Public image metadata/ALT and layout must not flash placeholder text while the high-resolution Artwork image loads. `public-header.js` and the shared styles preserve the chosen Beside/Inside title layout and full-width versus Menu-width divider in **the same canonical geometry**: the full-width divider is not permission to enable separate-surface backing, and Beside title alignment cannot invent a Center option. Gradient styling uses existing nonce-authorized CSS properties instead of a second render/observer pipeline.
+
+New Journal image-viewer opt-in reuses `artwork-viewer.js` with a Journal scope rather than mounting another viewer; [Journal owner](journal-content-lifecycle.md#shared-rich-text-and-optional-journal-image-viewer) defines which image occurrences are eligible. Source and authored tests were read, not executed as a new Browser/SPA/CSP acceptance pass.

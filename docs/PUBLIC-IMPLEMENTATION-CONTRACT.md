@@ -50,6 +50,8 @@ editable content. See `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`.
 
 ## Site navigation
 
+The persisted `menu_type` is validated by `PublicAppearance::menuType()`. Its sole supported value at this source boundary is `cyclic_inline` (artist-facing **Cyclic inline**); this is an explicit configuration axis, **not** permission to add a second navigation renderer. Existing one-row root/child cyclic-window behaviors below remain authoritative.
+
 **SPA asset build consistency (2026-10-17):** `AppServiceProvider` uses Laravel Vite's supported `createAssetPathsUsing` API and `manifestHash()` for the existing built JS/CSS URLs. The same `?id=<manifest hash>` query string is attached to every built Vite entry asset, preserving its hashed filename and the normal `@vite` `data-navigate-track` tags. Livewire only compares tracked query-string revisions, not changes to hashed asset filenames. A preview rebuild therefore causes a full reload on the **next internal SPA navigation**, rather than retaining outdated JS alongside newer CSS/Blade; this also applies to Vite-managed Admin assets without changing Filament's SPA implementation. Hot Vite and missing-manifest contexts are unaffected. No parallel loader, reload listener, polling or custom cache-buster is introduced. Existing public layout CSSOM handoff still needs real browser stress testing for repeated Gallery→Gallery transitions; static code review cannot prove the incident resolved.
 
 Public visits use the already installed Livewire 4 `wire:navigate` document-swap
@@ -320,9 +322,9 @@ The image viewer supports close/Escape, visible zoom, wheel/trackpad zoom, touch
 
 ## Rich Text public rendering
 
-Canonical Rich Text public rendering uses Markdown through `SafeRichTextRenderer`.
+Canonical Rich Text public rendering accepts validated **visual HTML** and historical Markdown through the one `SafeRichTextRenderer`. Visual input is sanitized on the server before rendering, with `RichTextDocument` handling legacy conversion only when editing; no second public renderer or unconditional backfill is introduced.
 
-Embedded Storage media images use canonical `media:<id>` references resolved by central media rendering. Arbitrary external-image URLs and legacy Journal inline-token runtime syntax are not equivalent public formats.
+Embedded Storage images resolve through canonical `MediaAsset` IDs in both historical `media:<id>` Markdown and current visual HTML. `ArtistImageLayout` owns the six inline/float placements and optional caption without changing ALT, permissions or shared file identity. `SafeRichTextRenderer` resolves the current media variant and canonical public ALT, never an editor-only image URL. The [Editorial Rich Text contract](EDITORIAL-RICH-TEXT.md) is the canonical owner of editor/layout formats; Public owns only permitted presentation and publication eligibility. Do not reintroduce a Markdown-only public rendering assumption.
 
 ## Custom Pages, CV and Contact
 
@@ -348,7 +350,7 @@ Switching the active Journal template does not convert/delete retained inactive 
 
 ### Blog
 
-A Blog Journal lists only public Posts belonging to it and satisfying lifecycle/schedule. Body uses canonical Rich Text Markdown/media references. Structured Cover/Gallery media use canonical Journal media policy.
+A Blog Journal lists only public Posts belonging to it and satisfying lifecycle/schedule. Body uses canonical safe Rich Text visual HTML or historical Markdown/media references. Structured Cover/Gallery media use canonical Journal media policy.
 
 ### Exhibitions
 
@@ -589,6 +591,10 @@ See [MEDIA.md](MEDIA.md).
 - stable Artwork/content slugs support sharing;
 - deliberate path changes may create redirect records;
 - titles/favicon/meaningful ALT remain part of acceptance.
+
+## Regional formatting and editorial language
+
+`RegionalFormats` separates three independent choices: administrator UI language (English or German per authenticated user), administrator date/number region (per user), and public date/number formats (General's separate region settings). Public prose remains artist-authored and the public language remains English; an administrator switching UI language does not translate published content. Exhibition dates and Public numbers use `RegionalFormats`, while legacy authored `date_text` and `opening_text` are preserved verbatim. See [Admin Localization](ADMIN-LOCALIZATION-CONTRACT.md) and [Exhibition Editorial](EXHIBITION-EDITORIAL-CONTRACT.md).
 
 ## Analytics boundary
 

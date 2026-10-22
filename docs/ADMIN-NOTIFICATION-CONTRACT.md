@@ -187,3 +187,7 @@ Coverage should prove at least:
 - the header surface is rendered at `BODY_END`, **after the workspace DOM**, outside Livewire page components, and uses `@persist`;
 - the header queue and remaining lifetime survive SPA navigation;
 - no parallel notifier API or framework notification renderer remains.
+
+## Per-user language is presentation, not a new stored notification
+
+At `dev@74e629274ac2`, `AdminNotifier::recordAndSurface()` keeps canonical durable English titles/bodies and source references. `translatedSurfaceMessage()` translates the **recipient-visible** header/pending message at render or dispatch time; old Activity/Audit and historical mailbox records are never rewritten into a user's temporary language. The per-user locale middleware covers authorized Filament and Livewire actions; this does not alter the single-notification-per-success-action cardinality, no-op policy, source ID or multiple `metadata.audit_event_ids` contract. [Admin language/regions](ADMIN-LOCALIZATION-CONTRACT.md) owns language preferences. No newly executed Livewire delivery test is claimed.

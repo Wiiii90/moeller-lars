@@ -24,6 +24,12 @@ The dialog's position must derive from the **actual post-sidebar Main/document s
 
 Use the existing single `x-modal-opened` measurement owned by `admin-dialog-geometry.js` and persistent CSS variables, not an additional per-page layout process. Conditional form fields may alter height, not the top position. The dialog remains keyboard-reachable: native Escape, focus trap and restoration, nested popovers/select lists above the modal, scrollable lengthy content, and restoration of the original workspace state after close all remain required. These are part of the shared Filament modal lifecycle, not a reason for a second overlay implementation.
 
+## Native full-viewport backdrop and nested picker boundary
+
+The Filament **backdrop hit surface is full viewport**, including Topbar, Sidebar and the space outside the centered Admin content frame. Clicking anywhere on the actual backdrop is the native click-away action; the dialog's own framed scrollport and any legitimate nested popover must not be treated as backdrop. `AdminDialog`/Filament retain modal ownership, Escape, focus trapping, lifecycle and X. The shared backdrop/layout styles provide geometry, not another global click listener or nested modal manager.
+
+The Rich Text Storage select/link/caption panels open **inside the same Edit dialog** with independent, shared popup dismissal; clicking outside the popup closes that popup without destroying the owning editor or committing a fake success. The visual image Select must use its native Filament selection-close lifecycle, not its editor shell as a large click-away region. Source rechecked at `dev@74e629274ac2`; the precise mobile/focus interaction still requires a real accepted browser run.
+
 ## Dialog types
 
 Exactly five semantic dialog types are supported:

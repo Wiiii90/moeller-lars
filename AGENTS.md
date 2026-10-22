@@ -128,6 +128,12 @@ Use the current artist-facing concepts:
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
 
+## Worker roles and cross-feature non-regression
+
+[Worker Protocol](docs/WORKER-PROTOCOL.md) is the concise starting point for role-based new chats and the controlled future Docs-to-dev transfer; [Cross-feature compositions](docs/architecture/cross-feature-compositions.md) maps edit, publication, safe media, Public/SPA and shared-UI impacts. It is a **workflow index**, not a competing root policy. The active `dev/AGENTS.md` already owns the mandatory preservation gate: an accepted shared behavior must be checked across every consumer before a refactor, not redefined to match a rejected implementation.
+
+**Future integration rule:** keep the newer current `dev/AGENTS.md` (and `ui-skills.md`/`followup-skill.md`) as authoritative. Do not merge this historical Docs-branch copy over it wholesale. A name like "devworker 1" is a scope label, not permission to create a branch or continue tasks asynchronously.
+
 ## Documentation branch exception and unified dev tests
 
 `docs` remains the expressly authorized documentation/architecture workstream,
@@ -143,8 +149,7 @@ independent suites, testing worktrees or testing-to-dev handoffs.
   conflict-reviewed **two-parent merge** preserving both histories; do not
   rewrite either branch or import each new commit by reflex.
 - The user authorized one local documentation worktree at
-  `P:\moeller-lars-docs` on the existing `docs` branch for the source-only
-  documentation closeout. Reuse it; leave `P:\moeller-lars` and the existing
+  `P:\moeller-lars-docs` on the existing `docs` branch for rare Codex verification. Do not request local use after each documentation update; leave `P:\moeller-lars` and the existing
   testing checkout untouched. No other branches/worktrees/PRs are authorized.
   Do not merge `docs` to `dev` or `main` without separate authorization.
 - The existing prohibition on CI interaction remains absolute for this workstream.

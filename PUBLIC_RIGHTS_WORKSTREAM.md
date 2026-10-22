@@ -1,4 +1,6 @@
-# PUBLIC RIGHTS WORKSTREAM — living handoff (temporary)
+# PUBLIC RIGHTS WORKSTREAM — historical docs snapshot (not the active implementation handoff)
+
+**Not current:** The active and materially newer Rights implementation checkpoint is `dev/PUBLIC_RIGHTS_WORKSTREAM.md`. Do not resume development or execute instructions from this older Docs-branch copy, nor overwrite the dev copy during the later docs integration. Durable source contract: [Public rights/privacy](docs/PUBLIC-RIGHTS-AND-PRIVACY.md); short [Worker Protocol](docs/WORKER-PROTOCOL.md). It may be retired only after full reference and active-state review.
 
 **ACTIVE · 2026-10-15 · `Wiiii90/moeller-lars` · `dev` only · slice B2.**
 This is a **consolidated operational state**, not an append-only log. Durable contracts: `AGENTS.md`, `ui-skills.md`, `followup-skill.md`, `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`, `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`. Accepted newer decisions below supersede stale proposed wording in older plans; reconcile durable docs at completion.

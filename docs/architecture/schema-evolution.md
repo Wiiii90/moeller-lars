@@ -108,3 +108,12 @@ Weitere **nicht ausgeführte** Quellmigrationen vom 19.–20. Oktober erweitern 
 
 Diese Änderungen sind **Migrationsquellen**, kein Nachweis angewendeter Migrationen oder einer validierten physikalischen Datenbank. Die `committed`-Spalten und reversiblen Publication-Snapshots sind gesondert zu prüfen. Die durch den Künstler für den Cutover vorbereitete **Validation-Datenbank ist geschützt**: keine `migrate:fresh`, `db:wipe`, Test-Seeds oder ungeprüften Schreiboperationen dort. Für ein echtes `pg_catalog`-Audit nur eine nachweislich isolierte, vollständig migrierte Wegwerf-PostgreSQL verwenden.
 
+## New editorial/UI forward migrations (source `dev@74e629274ac2`)
+
+- `2026_10_20_160000_add_public_menu_type.php`: explicit `cyclic_inline` menu mode for Working and Committed public settings. One enum choice does **not** imply a second runtime menu implementation.
+- `2026_10_20_160000_add_regional_format_preferences.php` and `2026_10_21_233000_add_public_number_format.php`: date/number region settings on `users` and `public_content_settings` with independent public and authenticated-admin ownership.
+- `2026_10_21_000001_add_admin_language.php`: per-user `admin_language` for authenticated Filament; public language is separate.
+- `2026_10_21_030000_add_exhibition_field_visibility.php`: seven source field-visibility flags in Working/Committed Exhibitions. The value is retained independently of public presentation and map enabled state; see [Exhibition Editorial](../EXHIBITION-EDITORIAL-CONTRACT.md).
+- `2026_10_21_171200_add_journal_image_viewer_option.php`: persisted Journal entry image viewer opt-in; public image assets/rights still rely on existing shared owner. See [Journal lifecycle](journal-content-lifecycle.md).
+
+These are **read migration sources only**, not proof they were applied on any environment. In particular, the artist-curated Validation content is not disposable and must not be reset, automatically backfilled or used for experiments. The previous fully executed source-only documentation inventory predates these migrations.

@@ -81,15 +81,11 @@ Structured consumers include:
 - Home Image components;
 - site identity/favicon.
 
-Rich Text consumers reference media through canonical Markdown:
+Rich Text uses the **same canonical `MediaAsset` identifier** in both historical Markdown (`![](media:<id>)`) and current visual HTML. `RichTextDocument` converts legacy Markdown only when entering the visual editor; no compulsory database rewrite occurs. `RichTextMediaReference` discovers managed image references and `SafeRichTextRenderer` validates and safely renders both formats under the current media-eligibility and link policy. HTML rendering is not a separate image library or a general license to insert external assets. The visual editor selects available Storage assets through `MediaAssetSelect`, never uploads a second file through RichEditor; its defensive attachment provider rejects such uploads. Deleting an image node leaves the reusable Storage asset intact.
 
-```markdown
-![](media:<id>)
-```
+Public image ALT uses canonical Storage metadata and a validated occurrence-specific override when allowed; captions are visible descriptions **not** substitutes for ALT. Existing external HTTP(S) content links and legacy media compatibility require `SafeLinkPolicy` and the Content Security Policy (CSP); editor URL acceptance does not prove a browser may load a remote image. See [Editorial Rich Text](EDITORIAL-RICH-TEXT.md) and [Public Security](architecture/public-security-privacy-boundaries.md).
 
-`RichTextMediaReference` owns parsing/formatting of **managed Storage media IDs**. There is no second managed-media identifier syntax for Journal. The shared `AdminRichText` editor also supports **independent, validated external HTTP(S) image URLs**; `SafeRichTextRenderer` and `SafeLinkPolicy` govern them. Such external links are not `MediaAsset` references and must not be presented as managed Storage assets. See [Admin control contract](ADMIN-CONTROL-CONTRACT.md#rich-text-and-reusable-media-selection).
-
-Current Rich Text consumers include Blog body, Exhibition description, Custom Page Text/List rich text and Home rich text. Historical CV-body references belonged to the retired `cv_entries` schema and are **not** a current independently queryable editor/persistence model.
+Current Rich Text consumers include Blog body, Exhibition description, Custom Page Text/List rich text and Home rich text; historical CV-specific editor/table paths remain retired. Structured Journal Cover/Gallery media and inline images are independent consumer roles, with the same canonical Storage ownership.
 
 ## Reference versus publication
 
