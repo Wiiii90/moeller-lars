@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
+use App\Filament\Support\MediaAssetSelect;
 use App\Models\MediaAsset;
 use App\Models\AuditEvent;
 use App\Models\AdminNotification;
@@ -63,3 +64,20 @@ it('does not delete selected assets after the actor loses admin authorization', 
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
 })->with(['guest' => true, 'non-admin' => false]);
+
+it('searches available Storage images by filename and ALT text', function (): void {
+    $filenameMatch = filesSelectionAsset('studio-landscape.jpg');
+    $altMatch = filesSelectionAsset('unrelated-image.jpg');
+    $altMatch->update(['alt_text' => 'Landscape detail']);
+    $unavailable = filesSelectionAsset('old-landscape.jpg');
+    $unavailable->update(['state' => 'deleted']);
+
+    $found = MediaAssetSelect::searchOptions('landscape', imagesOnly: true, visual: false);
+    expect(array_keys($found))->toBe([$altMatch->getKey(), $filenameMatch->getKey()])
+        ->and($found)->not->toHaveKey($unavailable->getKey());
+
+    $initial = MediaAssetSelect::searchOptions('', imagesOnly: true, visual: false);
+    expect($initial)->toHaveKey($filenameMatch->getKey())
+        ->toHaveKey($altMatch->getKey())
+        ->not->toHaveKey($unavailable->getKey());
+});
