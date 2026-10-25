@@ -12,7 +12,7 @@ Use existing CSS/Alpine state for resize and presentation; do not send browser-w
 
 ## Shared implementation ownership versus accepted task-specific behavior
 
-These rules **do not create a second CSS/control implementation authority**. Shared controls, filter panels and toolbar geometry belong to [ADMIN-CONTROL-CONTRACT.md](controls.md); shared table role order, split/fold classes, action/checkbox alignment and pagination belong to [ADMIN-TABLE-CONTRACT.md](tables.md); modal sizing and scroll lock belong to [ADMIN-DIALOG-CONTRACT.md](dialogs.md). This contract records **which semantic content stays/merges/yields on each page**, not license to duplicate the corresponding primitive in feature CSS.
+These rules **do not create a second CSS/control implementation authority**. Shared controls, filter panels and toolbar geometry belong to [Controls](controls.md); shared table role order, split/fold classes, action/checkbox alignment and pagination belong to [Tables](tables.md); modal sizing and scroll lock belong to [Dialogs](dialogs.md). This contract records **which semantic content stays/merges/yields on each page**, not license to duplicate the corresponding primitive in feature CSS.
 
 ## Native select value readability
 

@@ -203,54 +203,11 @@ Rules:
 
 ## 7. Table grammar
 
-Prefer flat tables for list-oriented editorial work instead of cards pretending to be rows.
-
-The canonical ordinary-table role order is defined together with `docs/admin/tables.md`:
-
-```text
-Position + Drag | primary identity | secondary data | Actions | Selection
-```
-
-A table renders only roles that actually exist. When Position is absent, Drag may be the leading role; when Selection is absent, Actions remain the final semantic work column. Selection, when present, is always the trailing utility column.
-
-Shared principles:
-
-- one canonical header row;
-- stable columns from header through every row;
-- action cells share one alignment and right edge;
-- avoid nested child tables with their own duplicate headers when children belong to the parent task table;
-- row identity/content should ellipsize rather than push action columns around;
-- normal desktop action bars should be `nowrap`; responsive wrapping belongs at an intentional breakpoint;
-- state indicators occupy a stable column;
-- do not conditionally remove a leading action if that makes every following action shift;
-- use the metric-unit reference grid where it improves cross-surface alignment; semantic columns may span or subdivide those units rather than being forced to equal widths;
-- compact rows may use **one or two meaningful lines per cell** when the second line adds useful support information; do not force every field onto one line, but also do not stack four or five redundant fragments into a single cell;
-- status dots/markers in the same state column must keep a stable marker axis across rows, even when supporting text such as a commit hash sits on a second line;
-- do not add vertical cell borders solely to make column/metric alignment visible when accepted admin tables do not use them.
-
-### Stable action order
-
-For ordinary editorial tables, use the shared semantic action order when those actions exist:
-
-```text
-Move up | Move down | Edit / View | state / workflow | other task actions | Delete
-```
-
-Not every table has every action. Movement comes first because it belongs to ordering, Delete remains last, and state/workflow actions keep stable slots where row-state variation would otherwise make controls jump.
-
-For tables whose canonical leading action is Details rather than Edit/View, keep **Details first on every row** and append contextual actions such as Undo/Restore/Revert after it. Do not right-pack a lone Details action differently from rows that happen to have more actions.
+The **[single Admin Table Contract](tables.md)** owns ordinary column roles, semantic action order, Selection position, row typography, alignment, accessible controls and breakpoint-driven fitting. Editorial work uses a table where ordered rows and actual actions benefit from that representation, not a fake card list. Do not restate the same column or action matrix in this UI overview.
 
 ## 8. Ranked tables and Position
 
-New convention: ranked/ordered admin tables should expose a human-readable **Position** where that helps the editor understand order.
-
-Use a 1-based display rank. Do not expose sparse/zero-based internal persistence values directly.
-
-Compact forms such as `01`, `02`, `03` are acceptable.
-
-This convention should be propagated deliberately as pages are reviewed; do not create a broad site-wide rewrite just to add Position everywhere in one worker.
-
-Journal already uses visible Position and is the current reference for the convention.
+Ranked task tables expose a readable one-based **Position** when editorial order matters, according to [Position and Add Row](tables.md#position-and-add-row). Applying this convention elsewhere is a scoped feature decision, not authorization to rewrite every table or expose internal sparse position values.
 
 ## 9. Drag and ordering
 
@@ -403,22 +360,9 @@ audit event.
 
 ## 12. Journal table references
 
-The Journal has separate data columns at full width, and folds them as the table becomes tighter:
+The **[Journal split/fold table contract](tables.md#journals-splitfold-composition)** owns the complete Blog/Exhibitions column and action matrices, distinct calendar versus publication state, essential metadata, seven fixed Blog action slots, and container-based Wide/Compact/Narrow transitions. Shared table pressure is implemented in `table-contract.css`; the Journal stylesheet only sizes and styles Journal-specific content. There is no second action rail or alternate responsive table policy here.
 
-```text
-Blog · Wide:            [Position] [Drag] [Image] [Post] [Date] [Status] [Actions] [Selection]
-Blog · Folded:          [Position] [Drag] [Image] [Post] [Date]          [Actions] [Selection]
-Exhibitions · Wide:     [Position] [Drag] [Image] [Exhibition] [Date] [Status] [Actions] [Selection]
-Exhibitions · Folded:   [Position] [Drag] [Image] [Exhibition] [Dates]       [Actions] [Selection]
-```
-
-Blog's seven-action rail, Date, and Status all remain expanded at maximum workspace width. At 72rem actual table width, the shared table-pressure rule simultaneously folds Status into Date and switches all seven action labels to icons. There is no earlier fold that hides Status at full width. Blog Date reserves 7rem, Status 6rem, and Post identity absorbs the remaining width. The Blog Actions rail uses the exact canonical seven-slot grid, as Pages and General do for their action sets: every icon axis is identical across all rows, including Publish/Unpublish and Archive/Restore. The publication-state slot reuses the central `--admin-row-action-slot-state-width`; the long Cancel schedule action displays the short label `Cancel` while its tooltip and accessible name remain `Cancel schedule`. This removes the obsolete 9rem publication track without sacrificing icon alignment. The shared 72rem boundary continues to switch all seven slots to the compact icon grid. Exhibition Date and Status remain separate down to 64rem, then merge into Dates. Date appears before Status. In Blog, Date shows the scheduled/published date (or a dash if unavailable) and Status shows the editorial state. In Exhibitions, Date and Status also merge into Dates at 64rem; their separate wide widths are 12.5rem and 8rem, with 12.5rem for folded Dates. Exhibition Date uses only structured Starts/Ends values, with a single unbroken range `dd.mm.yyyy – dd.mm.yyyy`. A single available date occupies the same one line; end-only legacy records retain their available date. The supporting Date track is wide enough to prevent clipping before it yields at Narrow. The public-facing free-text display override is not shown in this admin table. Optional Vernissage appears on one unbroken line under the date range as `Vernissage: dd.mm.yyyy, HH:mm`; legacy opening text is used only when structured Vernissage is absent. The line ellipsizes when it cannot fit rather than wrapping. Exhibition Status shows the derived state (Past/Current/Upcoming), not the publication state. The Date cell keeps the full range on one line; Vernissage follows underneath without truncating its content. These are width-based table transitions, not viewport thresholds.
-
-Blog and Exhibitions use the same canonical Cover/feature-media preview when configured; an empty preview is the neutral fallback. Position and Drag share the leading ordering region; Selection remains trailing. At Narrow (54rem), the merged Date/Dates column yields before the primary identity can be squeezed. Post identity displays the editorial state and date; Exhibition identity displays the *structured* date range, derived status and optional vernissage. These metadata lines must remain hidden while a dedicated column is still visible: the shared `admin-responsive-meta` hiding selector must outrank the identity cell's `small { display: block; }` styling, and Journal only reveals the metadata under Narrow. Actions and Selection never yield. Split/fold visibility stays in the shared table-pressure contract; Journal-specific track sizing and responsive metadata live only in `journal.css`.
-
-Both Journal identity cells present a one-line title and one-line secondary summary with overflow ellipsis, using the canonical `admin-table__identity--ellipsis-meta` modifier. Exhibition uses `Venue · City` (never full street/country metadata). Blog uses the authored excerpt or a plain-text body preview when no excerpt exists; it normalizes whitespace and limits that preview to 140 characters in addition to CSS ellipsis. At Narrow, separate responsive state/date metadata may appear as additional individually unwrapped lines. Blog has seven fixed semantic action slots: slot 4 Publish/Unpublish/Cancel schedule (disabled Publish for archived entries), slot 5 Schedule, slot 6 Archive/Restore, and slot 7 Delete. Restore never moves to slot 4.
-
-**Editorial dialog reference:** Blog/Exhibitions Add and Edit share `JournalEntryEditorSchema`, with responsive Basics/Venue/Dates/Map groups. Their Edit headers use the same `AdminRowAction` roles and existing domain mutations as the table rows; Delete and Schedule remain canonical modal tasks. Gallery Add Artwork and Edit Artwork use one `ArtworkEditDialog` schema with a create-only uniqueness rule, and Gallery Edit shows Move, Publication, and Remove/Detach above the form. Materials is an atomic `Apply changes` Command because its Repeater does not have reliable per-item Edit autosave. All top-right actions use the central `AdminDialog` presentation, not page-local CSS.
+The **[Admin Dialog contract](dialogs.md#journal-blogexhibitions-edit-aktionen)** owns Journal Create/Edit modal lifecycle and header actions. Blog uses Basics/Text/Gallery sections; the Exhibition editor uses the flat shared responsive schema and the [Exhibition editorial contract](../content/exhibitions.md) governs its specific fields and Gallery media table. Neither a tabular Journal row nor this UI overview defines a separate persistence owner.
 
 ## 13. Gallery and Storage are accepted style references
 
