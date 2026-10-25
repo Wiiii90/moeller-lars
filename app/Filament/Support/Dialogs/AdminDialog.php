@@ -44,7 +44,10 @@ final class AdminDialog
             ->after(static function (Action $action): void {
                 $action->halt();
             })
-            ->extraModalWindowAttributes(['wire:change' => 'callMountedAction'], merge: true);
+            ->extraModalWindowAttributes([
+                'wire:change' => 'callMountedAction',
+                'x-on:admin-edit-list-updated.window' => "if ($el.classList.contains('fi-modal-open')) $wire.call('callMountedAction')",
+            ], merge: true);
 
         if ($windowAttributes instanceof Closure || $windowAttributes !== []) {
             $action->extraModalWindowAttributes($windowAttributes, merge: true);

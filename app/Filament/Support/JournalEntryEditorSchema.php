@@ -16,6 +16,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -44,9 +45,10 @@ final class JournalEntryEditorSchema
             return $schema
                 ->components([
                     ...self::basicsFields($template),
+                    ...self::dateFields(),
+                    self::imageViewerField(),
                     ...self::venueFields($exhibition),
                     ...AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true),
-                    ...self::dateFields(),
                     ...self::exhibitionGalleryFields(),
                     ...self::mapFields(),
                 ])
@@ -86,12 +88,20 @@ final class JournalEntryEditorSchema
                 ->placeholder(__('No cover image'));
 
         $schema[] = $cover->nullable()->columnSpanFull();
-        $schema[] = Toggle::make('image_viewer_enabled')
+
+        if ($template === JournalTemplate::Blog) {
+            $schema[] = self::imageViewerField();
+        }
+
+        return $schema;
+    }
+
+    private static function imageViewerField(): Toggle
+    {
+        return Toggle::make('image_viewer_enabled')
             ->label(__('Enlarge images on click'))
             ->default(false)
             ->columnSpanFull();
-
-        return $schema;
     }
 
     private static function venueFields(?Exhibition $exhibition): array
@@ -156,7 +166,8 @@ final class JournalEntryEditorSchema
                 ])
                 ->default('grid')
                 ->required()
-                ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled')),
+                ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
+                ->columnSpanFull(),
             $images,
         ];
     }
@@ -221,18 +232,30 @@ final class JournalEntryEditorSchema
 
     private static function galleryImages(): Repeater
     {
-        return Repeater::make('gallery_images')
+        return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
+            ->hiddenLabel()
+            ->table([TableColumn::make(__('Image or video'))])
+            ->compact()
             ->schema([
                 MediaAssetSelect::makeId(
                     'media_asset_id',
                     __('Image or video'),
                     allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
-                )->required(),
+                )->hiddenLabel()->required(),
             ])
             ->addActionLabel(__('Add media'))
             ->reorderableWithButtons()
             ->reorderableWithDragAndDrop(false)
+            ->deleteAction(fn (Action $action): Action => $action->after(
+                static fn (Component $livewire) => $livewire->dispatch('admin-edit-list-updated'),
+            ))
+            ->moveUpAction(fn (Action $action): Action => $action->after(
+                static fn (Component $livewire) => $livewire->dispatch('admin-edit-list-updated'),
+            ))
+            ->moveDownAction(fn (Action $action): Action => $action->after(
+                static fn (Component $livewire) => $livewire->dispatch('admin-edit-list-updated'),
+            ))
             ->columnSpanFull();
     }
 

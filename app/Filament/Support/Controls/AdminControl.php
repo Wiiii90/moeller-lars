@@ -121,6 +121,14 @@ final class AdminControl
             // Edit dialogs are filled from persisted state, so they cannot fall
             // back to a selectable "Select an option" branch.
             $field->selectablePlaceholder(fn (): bool => ! $field->isRequired());
+            $field->extraAlpineAttributes([
+                'x-init' => <<<'JS'
+                    $watch('state', (value, previous) => {
+                        if (value === previous || ! $el.closest('.admin-dialog--edit')) return
+                        $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })))
+                    })
+                    JS,
+            ], merge: true);
         }
 
         return $field->extraFieldWrapperAttributes([
