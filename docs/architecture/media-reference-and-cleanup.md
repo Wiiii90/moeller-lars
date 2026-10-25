@@ -1,6 +1,6 @@
 # Media-Referenzen und physische Bereinigung: Quellenpfade und Negativfälle
 
-**Quellvergleich:** Medienlösch-/Cleanup-/Reclaim-Pfade erneut auf `dev@f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0` geprüft; historische Beleglinien bleiben gesondert erhalten. **Statischer Source-Audit**, kein ausgeführter Datenbank-/Storage-/Browser-Test. Die [Media-Produktregeln](../MEDIA.md#deletion-and-cleanup) sind normativ; dieses Dokument macht ihre tatsächlichen Call-Pfade, Guards und Abweichungen sichtbar.
+**Quellvergleich:** Working reader `MediaReferenceQuery`, public delivery reader `PublicMedia`, Rich Text extraction and the shared Storage-delete mutation were **rechecked against the source on `dev@e8db4295de9af7201a8f212281b9276732407895`**. The same three structured-media coverage gaps described below remain visible in those methods. Other cleanup/reclaim/race paths retain their explicitly dated source evidence unless separately reviewed. **Source inspection only**: no executed database, filesystem, browser or test run. [Media product contract](../MEDIA.md#deletion-and-cleanup) remains normative.
 
 ## Drei unabhängige Grenzen
 
@@ -93,7 +93,7 @@ flowchart TD
 
 ## Quellbasierte Medienreferenzmatrix
 
-**Quellabschluss erneut gegen `dev@11f7e101`, nur lesend gegen `testing@14af6804`: keine ausgeführten DB-/HTTP-/Lösch-/Pest-Tests.** Die Medienbeziehungen haben **mehrere fachlich verschiedene Leser**, die nicht als äquivalent angenommen werden dürfen:
+**Reader matrix:** Core Working, Public and removal paths were re-read on `dev@e8db4295`; the Storage Usage/Detail column retains the previous source review and is **not** claimed re-executed. No database, HTTP, deletion or automated test was run. The distinct readers must not be treated as interchangeable:
 
 | Referenzquelle | Working-`MediaReferenceQuery` / `isReferenced` | Storage Usage / Detail | `PublicMedia` bei tatsächlich öffentlicher Quelle | `MediaAssetEditorialService` vor/bei Delete |
 | --- | --- | --- | --- | --- |
