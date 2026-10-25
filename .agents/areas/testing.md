@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | *(none activated under this prototype)* | | | | |
 
-**Current source alignment:** `testing` has now imported `dev@02004071` (zero commits behind, 22 ahead at last check). The previously noted 12-commit gap is resolved. The active Testing worker retains ownership of test curation and later updates.
+**Last verified source alignment:** the active Testing worker imported `dev@02004071` and has continued curating the suite (`testing@36cbc020` at this review). The earlier 12-commit gap was resolved; newer heads must always be checked before declaring the branches synchronized. Testing's implementation and test ownership stays with its running chat.
 
 The existing Testing chat is running **outside the new numbered-worker system**; it has not yet been assigned a numbered identity. Do not invent its private task state or reserve a number for it. After the user activates a Testing Worker, allocate the lowest free positive ID and read that worker's real conversation/task where available.
 

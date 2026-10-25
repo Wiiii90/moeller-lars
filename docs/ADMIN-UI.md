@@ -43,6 +43,10 @@ Do not add a decorative kicker above the page heading.
 
 Do not interpret this as a requirement to add fake metrics or a fake toolbar to a page that does not need them.
 
+**Admin and public navigation are separate projections of the same site tree.** The Filament Sidebar is the editorial navigation: it includes existing draft and published pages in their persisted order. The public menu includes only published content; a published child of an unavailable editorial parent becomes a public root entry. Preview has its separate authenticated draft exception. Skip Home affects both projections, but does not remove other draft pages from the Admin Sidebar. Historical navigation-visibility columns retained for Publication restores do not define current visibility; the canonical domain services do.
+
+After a **successful persisted navigation change** (page creation/editing, publication, deletion, hierarchy/order or applicable Home/Pages settings), `SitePages::loadSections(navigationChanged: true)` emits Filament's existing `refresh-sidebar` event once. The native Sidebar re-queries `SiteNavigation`; filtering, paging, opening a modal, validation errors and no-ops must not trigger a refresh. This does not publish drafts and does not introduce a second JavaScript tree, polling, forced reload or duplicate state. The public counterpart is documented in the [Public implementation contract](PUBLIC-IMPLEMENTATION-CONTRACT.md).
+
 ## 3. Page/action control group
 
 The canonical action-group geometry is the pattern used by Gallery/Storage and should be reused by Home/Custom/Journal when applicable.

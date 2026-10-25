@@ -4,7 +4,7 @@ The root [AGENTS.md](../AGENTS.md) is the always-on entry. This file owns **only
 
 ## Open a worker
 
-Read the relevant shared [Dev](areas/dev.md), [Docs](areas/docs.md), [Testing](areas/testing.md) or proposed [Refactor](areas/refactor.md) area file. Resolve the user message as follows:
+Read the relevant shared [Dev](areas/dev.md), [Docs](areas/docs.md), [Testing](areas/testing.md) or [Refactor](areas/refactor.md) area file. Resolve the user message as follows:
 
 | Request | Action |
 | --- | --- |
