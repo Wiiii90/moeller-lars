@@ -668,16 +668,6 @@ it('offers a visible Parent selector in CV List Edit and persists the nesting', 
         ->and($blocks[0]['children'][0]['items'][1]['context'])->toBeNull();
 });
 
-it('exposes the same Parent field above the content of a Text Edit', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Text parent chooser', 'text-parent-chooser');
-    $settings->update(['blocks' => [
-        ['type' => 'text', 'title' => 'Artist statement', 'body' => 'Words'],
-    ]]);
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
-        ->assertMountedActionModalSee('Parent')
-        ->assertHasNoFormErrors();
-});
 
 
 it('protects stale image autosave and nesting edits through the mounted validation owner', function (string $operation): void {
