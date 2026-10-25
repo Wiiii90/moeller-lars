@@ -450,6 +450,41 @@ Individual Artwork detail pages have one Gallery-specific **Expand landscape Art
 
 The shared `artwork-navigation.blade.php` keeps the Gallery name centered and both Artwork arrow targets on General's normal artwork-width track, even when a larger landscape image is displayed. Per-Gallery sequence-end choices remain **Disabled** (default), **Hidden**, or **Cyclic**; the latter wraps between first/last only when two or more Artworks exist. The original Artwork Viewer navigation is a separate interaction and remains unchanged. The responsive **main menu and submenu** arrows are distinct from Artwork arrows: on overflow their CSS grid reserves at least 44px for each arrow hit rail, preventing the buttons from being squeezed beyond the clickable area on smartphones. Whole-item cyclic stack behavior and no-overflow alignment remain owned by existing `public-navigation.js`.
 
+Custom Pages offer Left / Center / Right for standalone Image components.
+Center aligns the whole media component within the configured Content width;
+for a decorative Image with nested text, Center disables floating and places
+the nested content below the image. Existing default Left remains unchanged.
+The same shared component policy also offers optional native video playback
+controls for inline Home and Custom Page media, enabled by default for
+non-decorative videos. Disabling them preserves existing muted, looping
+inline playback; it does not change the independent fullscreen Artwork
+Viewer player or Gallery's sound permission.
+
+Gallery Settings now also offer `Fit portrait Artwork pages to screen height`,
+defaulting to OFF, independently of landscape expansion. Server-side public
+thumbnail dimensions distinguish portraits from landscape and square works
+before painting. The normal Content width remains unchanged; only portrait
+detail images cap their height against the dynamic viewport minus reserved
+space for Header, Artwork navigation, caption and the usual page gaps.
+The image uses its intrinsic aspect ratio without cropping; its caption
+stays aligned with the image's actual right edge. This changes neither
+Gallery lists nor Home display. The option is stored in both Working and
+Committed Gallery settings and becomes public only after publication.
+
+Gallery Settings also provide **Artwork page surface**, independently of
+the landscape and portrait detail-sizing switches: **Follow General**
+(default) inherits General's Menu divider/surface mode, **No gap** locally
+selects the existing General `fine`/no-divider composition, and **Separate
+Surface** locally selects General's existing `separate` composition. The
+override is stored on the Gallery in both Working and Committed publication
+snapshots; it applies only to individual Artwork detail routes associated
+with that Gallery, in both Public and authenticated Preview. Gallery indexes,
+Home, Journal and Custom Pages always retain General's mode. The effective
+mode is resolved in the shared Public layout before deriving the Menu class,
+connected-paper decision and layout data attribute. No Artwork-specific CSS
+gap, automatic landscape separation or global General setting mutation.
+The gap is available regardless of Artwork orientation or detail expansion.
+
 Gallery Settings also control the shared Artwork caption/footer display: Artwork information (default on), Media File credits (default off), and effective copyright notice (default off) are independent visibility decisions. If both rights and Artwork information are displayed, they share one horizontal footer row. Their text-content widths participate in the same intrinsic flex-sizing layout; both may wrap inside their tracks without forcing the whole caption below the copyright. The Gallery can reverse their left/right order. Copyright alone uses its natural width, and with rights hidden the caption stays right-aligned. No fixed width quota or duplicate layout is introduced. Values come exclusively from the canonical MediaAsset metadata and its configured copyright inheritance, never duplicated on Artwork; the existing public Artwork detail credit policy is not changed. Persist these Gallery settings in Working/Committed, with explicit public publication. Browser and migration acceptance pending.
 
 Gallery Settings provide an Artwork ordering mode persisted in both Working and Committed: Manual (default, newly created Artworks placed first through the canonical audited Gallery reorder service) or newest Work date (year/date descending with deterministic tie breakers and missing dates last). The Admin and Public galleries use the same `GalleryPresentation::orderArtworks` query; drag/move actions require Manual. Existing manual order is retained when switching modes. Browser and migration acceptance remain pending.

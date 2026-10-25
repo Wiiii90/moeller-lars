@@ -57,7 +57,7 @@
                                     width="{{ $posterVariant->getAttribute('width') }}"
                                     height="{{ $posterVariant->getAttribute('height') }}"
                                 @endif
-                                @if ($decorative) aria-hidden="true" @else aria-label="{{ $imageAlt }}" controls @endif
+                                @if ($decorative) aria-hidden="true" @else aria-label="{{ $imageAlt }}" @if (\App\Models\CustomPageSetting::videoControls($block)) controls @endif @endif
                                 muted loop playsinline preload="metadata" data-public-loop-video></video>
                         @else
                             <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async" @if ($homeImageViewerEnabled && ! $decorative) {!! $imageViewer->attributes('home-image-'.$imageBlockPrefix.'-'.$blockIndex, $media->originalUrlForAsset($asset), $imageAlt) !!} @endif>

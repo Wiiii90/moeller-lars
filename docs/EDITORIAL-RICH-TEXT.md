@@ -46,7 +46,9 @@ constrained to the visible native dialog scrollport, with native flip,
 shift and size handling. Caption entry is inside the same editor dialog,
 not a nested Filament Action. The existing Edit change boundary is reused. Table creation and structural
 table operations also notify the same change boundary; ordinary typing
-retains the shared blur-to-change lifecycle.
+retains the shared blur-to-change lifecycle. Floating image controls resolve
+the clicked image or its adjacent inline cursor and dispatch the change from
+the editor's own DOM, not from the potentially detached floating toolbar.
 
 The shared `MediaAssetSelect` is the selection and query owner for all
 Storage media choices, including Gallery, Journal, Home, Custom Pages and
@@ -75,6 +77,11 @@ registered color extension.
 Paragraphs and headings support default, no spacing, compact, and relaxed
 spacing via one shared Tiptap attribute. The PHP and JavaScript extensions
 use the same fixed preset names; editorial and public styles match.
+A single shared `resources/css/rich-text-spacing.css` is imported by both the
+admin and public entries so spacing is visible when editing and publishing.
+The inline color and spacing popovers keep their Tiptap editor references
+nonreactive and suppress native change bubbling; changes persist only through
+the existing Edit dialog's single explicit mutation event.
 
 ## Editor transport
 

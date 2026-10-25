@@ -84,10 +84,11 @@ trait CustomPageWorkspaceForms
                     ->required(),
                 Select::make('image_alignment')
                     ->label('Image alignment')
-                    ->options(['left' => __('Left'), 'right' => __('Right')])
+                    ->options(['left' => __('Left'), 'center' => __('Center'), 'right' => __('Right')])
                     ->default('left')
                     ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
+                Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
             ],
             'text' => $isNew
                 ? AdminRichText::schema('body', 'Text Editor', 20000)

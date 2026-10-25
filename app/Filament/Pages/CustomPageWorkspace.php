@@ -13,6 +13,7 @@ use App\Filament\Pages\Concerns\CustomPageWorkspaceTargetHelpers;
 use Filament\Pages\Page;
 use Filament\Facades\Filament;
 use App\Models\User;
+use Livewire\Attributes\Session;
 
 final class CustomPageWorkspace extends Page
 {
@@ -95,6 +96,7 @@ final class CustomPageWorkspace extends Page
 
     public string $componentSearch = '';
 
+    #[Session]
     public string $componentType = 'any';
 
     /** @var list<string> */
@@ -102,6 +104,7 @@ final class CustomPageWorkspace extends Page
 
     public int $page = 1;
 
+    #[Session]
     public int $pageSize = self::DEFAULT_PAGE_SIZE;
 
     public int $total = 0;

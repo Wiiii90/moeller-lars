@@ -63,6 +63,16 @@ These are intentionally specialized and remain canonical:
 Do not create alternative media pickers, rich-text editors, material selectors or color controls for one page.
 
 ## Session-scoped presentation state
+For Livewire-owned workspace controls, use Livewire's native `#[Session]`
+attribute on small, stable presentation properties (report mode, page size,
+named status/type filter choices). It restores them across return visits and
+refreshes without an additional page-local storage implementation. Existing
+owners remain authoritative: Storage's List/Grid/Dense cookie, Activity's URL
+query state, Dashboard's saved notification preference, the shared Stage
+switcher and Sidebar session state. Do not apply this to record selections,
+unsaved editor content, paging cursors, free-text searches or data-dependent
+map targets. Revalidate restored options as their available choices evolve.
+
 
 The shared `x-admin.stage-switcher` owns session storage for both its internally
 managed `activePane` and an optional parent-owned `external-state`. The latter

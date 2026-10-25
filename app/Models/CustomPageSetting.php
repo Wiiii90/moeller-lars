@@ -28,7 +28,7 @@ final class CustomPageSetting extends Model
     /** One shared allowlist for Image children in persistence, editing and sorting. */
     public const IMAGE_CHILD_TYPES = ['text', 'list', 'divider', 'contact', 'legal_disclaimer'];
 
-    public const IMAGE_ALIGNMENTS = ['left', 'right'];
+    public const IMAGE_ALIGNMENTS = ['left', 'center', 'right'];
 
     public const CONTACT_CHILD_TYPES = [
         'public_email',
@@ -95,7 +95,14 @@ final class CustomPageSetting extends Model
     /** Historical images default to left without storing a redundant value. */
     public static function imageAlignment(array $block): string
     {
-        return ($block['image_alignment'] ?? 'left') === 'right' ? 'right' : 'left';
+        $alignment = $block['image_alignment'] ?? 'left';
+
+        return is_string($alignment) && in_array($alignment, self::IMAGE_ALIGNMENTS, true) ? $alignment : 'left';
+    }
+
+    public static function videoControls(array $block): bool
+    {
+        return ($block['video_controls_enabled'] ?? true) !== false;
     }
 
     public static function componentPublished(array $block): bool
@@ -181,7 +188,8 @@ final class CustomPageSetting extends Model
                     'published' => $published,
                     'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
                     'image_decorative' => (bool) ($block['image_decorative'] ?? false),
-                    ...($this->validatedImageAlignment($block) === 'right' ? ['image_alignment' => 'right'] : []),
+                    ...($this->validatedImageAlignment($block) !== 'left' ? ['image_alignment' => $this->validatedImageAlignment($block)] : []),
+                    ...(self::videoControls($block) ? [] : ['video_controls_enabled' => false]),
                     ...$this->normalizedImageScale($block),
                     ...$this->normalizedImageChildren($block),
                 ],
@@ -220,7 +228,7 @@ final class CustomPageSetting extends Model
     {
         $alignment = $block['image_alignment'] ?? 'left';
         if (! is_string($alignment) || ! in_array($alignment, self::IMAGE_ALIGNMENTS, true)) {
-            throw ValidationException::withMessages(['blocks' => 'Image alignment must be Left or Right.']);
+            throw ValidationException::withMessages(['blocks' => 'Image alignment must be Left, Center or Right.']);
         }
 
         return $alignment;
@@ -364,6 +372,9 @@ final class CustomPageSetting extends Model
     private function validateImageComponent(array $block, bool $requirePublicMedia): void
     {
         $this->validatedImageAlignment($block);
+        if (array_key_exists('video_controls_enabled', $block) && ! is_bool($block['video_controls_enabled'])) {
+            throw ValidationException::withMessages(['blocks' => 'Video playback controls must be enabled or disabled.']);
+        }
         $scale = $block['image_scale_percent'] ?? self::DEFAULT_IMAGE_SCALE_PERCENT;
         if (! is_int($scale) || $scale < self::MIN_IMAGE_SCALE_PERCENT || $scale > self::MAX_IMAGE_SCALE_PERCENT) {
             throw ValidationException::withMessages(['blocks' => 'Image size must be a whole percentage between 25 and 200.']);

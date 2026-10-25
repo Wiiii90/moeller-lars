@@ -195,3 +195,17 @@ it('selects all visible Pages from none or mixed, and clears them from all', fun
     $component->call('toggleSelectAll');
     expect($component->get('selectedSectionIds'))->toBe([]);
 });
+
+it('remembers Pages filters across visits without retaining row selections', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+
+    Livewire::test(SitePages::class)
+        ->set('perPage', 50)
+        ->set('statusFilter', 'published')
+        ->assertHasNoErrors();
+
+    Livewire::test(SitePages::class)
+        ->assertSet('perPage', 50)
+        ->assertSet('statusFilter', 'published')
+        ->assertSet('selectedSectionIds', []);
+});

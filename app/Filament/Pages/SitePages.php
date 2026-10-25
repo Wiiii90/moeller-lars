@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use UnitEnum;
+use Livewire\Attributes\Session;
 
 final class SitePages extends Page
 {
@@ -77,8 +78,10 @@ final class SitePages extends Page
 
     public string $search = '';
 
+    #[Session]
     public string $typeFilter = '';
 
+    #[Session]
     public string $statusFilter = '';
 
     public bool $filtersActive = false;
@@ -99,6 +102,7 @@ final class SitePages extends Page
 
     public string $newPageParent = '';
 
+    #[Session]
     public int $perPage = 25;
 
     public int $pageNumber = 1;

@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Session;
 use Livewire\Attributes\On;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
@@ -79,10 +80,12 @@ final class ListMediaAssets extends Page
 
     public string $type = 'all';
 
+    #[Session]
     public string $size = 'all';
 
     public string $usage = 'all';
 
+    #[Session]
     public string $state = 'available';
 
     public string $viewMode = 'list';
@@ -94,6 +97,7 @@ final class ListMediaAssets extends Page
 
     public int $page = 1;
 
+    #[Session]
     public int $pageSize = self::DEFAULT_PAGE_SIZE;
 
     public int $total = 0;
@@ -108,6 +112,9 @@ final class ListMediaAssets extends Page
 
     public function mount(): void
     {
+        $this->pageSize = $this->normalizePageSize($this->pageSize);
+        $this->size = in_array($this->size, ['all', 'under-1-mb', '1-5-mb', '5-20-mb', '20-mb-plus'], true) ? $this->size : 'all';
+        $this->state = in_array($this->state, ['available', 'all', 'quarantined', 'deleted'], true) ? $this->state : 'available';
         $storedView = request()->cookie(self::VIEW_COOKIE);
         $this->viewMode = is_string($storedView) && in_array($storedView, self::VIEW_MODES, true)
             ? $storedView

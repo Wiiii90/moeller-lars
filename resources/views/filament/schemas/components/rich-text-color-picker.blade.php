@@ -3,6 +3,7 @@
     class="admin-rich-text-link-dropdown"
     x-show="colorOpen"
     x-cloak
+    x-on:change.stop
     x-bind:style="`top: ${colorTop}px; left: ${colorLeft}px`"
     x-on:click.outside="colorOpen = false"
     x-on:keydown.escape.stop.prevent="colorOpen = false"

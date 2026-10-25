@@ -20,6 +20,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Session;
 
 final class Dashboard extends Page
 {
@@ -57,10 +58,12 @@ final class Dashboard extends Page
 
     public string $feedSearch = '';
 
+    #[Session]
     public string $feedType = 'all';
 
     public int $feedPage = 1;
 
+    #[Session]
     public int $feedPageSize = self::DEFAULT_PAGE_SIZE;
 
     public string $notificationFilter = 'all';
@@ -80,6 +83,10 @@ final class Dashboard extends Page
 
     public function mount(): void
     {
+        $this->feedType = array_key_exists($this->feedType, DashboardFeed::types()) ? $this->feedType : 'all';
+        $this->feedPageSize = in_array($this->feedPageSize, self::PAGE_SIZES, true)
+            ? $this->feedPageSize
+            : self::DEFAULT_PAGE_SIZE;
         $filter = auth()->user()?->getAttribute('dashboard_notification_filter');
         $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
             ? $filter

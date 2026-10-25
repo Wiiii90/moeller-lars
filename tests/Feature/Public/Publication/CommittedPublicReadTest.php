@@ -149,3 +149,77 @@ it('publishes a Gallery parent as a page even when it has child navigation', fun
     $this->get('/'.$parent->slug)->assertOk();
     $this->get('/'.$child->slug)->assertOk();
 });
+
+it('publishes Artwork surface overrides only for their own Gallery detail pages', function (): void {
+    $actor = $this->actor;
+
+    foreach (['public', 'committed'] as $schema) {
+        DB::table($schema.'.home_presentation_settings')->update(['template' => 'custom']);
+    }
+
+    $first = galleryFixtureCategory();
+    $second = galleryFixtureCategory();
+
+    $artworkA = galleryFixtureArtwork($first, ['state' => 'published', 'position' => 10]);
+    $assetA = galleryFixtureAsset();
+    galleryFixturePrimary($artworkA, $assetA);
+    galleryFixtureThumbnail($assetA);
+
+    $artworkB = galleryFixtureArtwork($second, ['state' => 'published', 'position' => 10]);
+    $assetB = galleryFixtureAsset();
+    galleryFixturePrimary($artworkB, $assetB);
+    galleryFixtureThumbnail($assetB);
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_mode' => 'fine',
+    ]);
+    $publication = app(PublicationService::class);
+    expect($publication->commit($actor, 'Publish Gallery baseline'))->not->toBeNull();
+
+    $artworkAUrl = '/artworks/'.$artworkA->slug;
+    $artworkBUrl = '/artworks/'.$artworkB->slug;
+    expect($this->get($artworkAUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    app(GalleryEditorialService::class)->update($first, [
+        'name' => $first->name,
+        'description' => $first->description,
+        'artwork_page_surface_mode' => 'separate',
+    ]);
+
+    $previewArtwork = $this->get('/preview'.$artworkAUrl)->assertOk()->getContent();
+    expect($previewArtwork)
+        ->toContain('data-public-layout-divider-mode="separate"')
+;
+
+    expect($this->get('/preview/'.$first->slug)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    expect($this->get('/preview'.$artworkBUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    expect($this->get($artworkAUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    expect($publication->commit($actor, 'Publish Artwork page surface override'))->not->toBeNull();
+    expect($this->get($artworkAUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="separate"');
+    expect($this->get($artworkBUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_mode' => 'separate',
+    ]);
+    app(GalleryEditorialService::class)->update($first, [
+        'name' => $first->name,
+        'description' => $first->description,
+        'artwork_page_surface_mode' => 'joined',
+    ]);
+
+    expect($this->get('/preview'.$artworkAUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+    expect($this->get('/preview'.$artworkBUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="separate"');
+    expect($this->get('/preview/'.$first->slug)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="separate"');
+});

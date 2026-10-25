@@ -104,13 +104,13 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                         })
                         ->activeStyling()
                         ->activeJsExpression("window.ArtistRichImage?.hasPlacement(\$getEditor(), '{$placement}') ?? false")
-                        ->jsHandler("if (window.ArtistRichImage?.setPlacement(\$getEditor(), '{$placement}')) \$dispatch('artist-rich-image-changed')"),
+                        ->jsHandler("window.ArtistRichImage?.setPlacement(\$getEditor(), '{$placement}')"),
                 ArtistImageLayout::PLACEMENTS,
             ),
             RichEditorTool::make('imageCaption')
                 ->label(__('Image caption'))
                 ->icon(AdminIcon::Details->value)
-                ->jsHandler("\$dispatch('artist-rich-caption-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("const editor = \$getEditor(); if (editor) editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-caption-toggle', { detail: { editor, anchor: \$event.currentTarget }, bubbles: true }))"),
 
         ];
     }

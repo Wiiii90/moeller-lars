@@ -17,6 +17,7 @@ trait CustomPageWorkspaceSecondaryForms
         if (($block['type'] ?? null) === 'image') {
             $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
             $data['image_alignment'] = CustomPageSetting::imageAlignment($block);
+            $data['video_controls_enabled'] = CustomPageSetting::videoControls($block);
         }
         if (($block['type'] ?? null) === 'list') {
             $data['items'] = array_map(static fn (array $item): array => [
@@ -67,6 +68,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
                 ...$this->imageAlignmentPayload($data, $existing),
+                ...$this->videoControlsPayload($data, $existing),
                 ...$this->imageScalePayload($data, $existing),
                 ...$this->imageChildrenPayload($data, $existing),
             ],
@@ -106,10 +108,20 @@ trait CustomPageWorkspaceSecondaryForms
     {
         $alignment = $data['image_alignment'] ?? ($existing['image_alignment'] ?? 'left');
         if (! is_string($alignment) || ! in_array($alignment, CustomPageSetting::IMAGE_ALIGNMENTS, true)) {
-            throw ValidationException::withMessages(['image_alignment' => 'Choose Left or Right alignment.']);
+            throw ValidationException::withMessages(['image_alignment' => 'Choose Left, Center or Right alignment.']);
         }
 
-        return $alignment === 'left' ? [] : ['image_alignment' => 'right'];
+        return $alignment === 'left' ? [] : ['image_alignment' => $alignment];
+    }
+
+    private function videoControlsPayload(array $data, ?array $existing): array
+    {
+        $enabled = $data['video_controls_enabled'] ?? ($existing['video_controls_enabled'] ?? true);
+        if (! is_bool($enabled)) {
+            throw ValidationException::withMessages(['video_controls_enabled' => 'Choose whether to show video playback controls.']);
+        }
+
+        return $enabled ? [] : ['video_controls_enabled' => false];
     }
 
     /** @param array<string, mixed> $data

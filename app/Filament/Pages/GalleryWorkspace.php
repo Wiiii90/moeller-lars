@@ -19,6 +19,7 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Session;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
@@ -84,12 +85,18 @@ final class GalleryWorkspace extends Page
 
     public string $search = '';
 
+    #[Session]
     public string $statusFilter = 'any';
 
+    #[Session]
     public string $readinessFilter = 'any';
 
     public function mount(int|string $gallery): void
     {
+        $this->statusFilter = in_array($this->statusFilter, ['any', 'published', 'draft'], true) ? $this->statusFilter : 'any';
+        $this->readinessFilter = in_array($this->readinessFilter, ['any', 'ready', 'needs-attention'], true)
+            ? $this->readinessFilter
+            : 'any';
         $this->loadGallery((int) $gallery);
         $this->loadMoveTargets();
         $this->loadGalleryDataset();

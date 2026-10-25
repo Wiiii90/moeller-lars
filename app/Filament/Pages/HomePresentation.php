@@ -47,6 +47,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Session;
 use Livewire\WithFileUploads;
 
 final class HomePresentation extends Page
@@ -138,12 +139,15 @@ final class HomePresentation extends Page
 
     public string $sourceSearch = '';
 
+    #[Session]
     public string $sourceStatusFilter = 'any';
 
+    #[Session]
     public string $sourceHomeFilter = 'any';
 
     public int $sourcePage = 1;
 
+    #[Session]
     public int $sourcePerPage = 10;
 
     /** @var list<int|string> */
@@ -179,6 +183,7 @@ final class HomePresentation extends Page
 
     public string $componentSearch = '';
 
+    #[Session]
     public string $componentType = 'any';
 
     /** @var list<string> */
@@ -476,6 +481,8 @@ final class HomePresentation extends Page
                         ->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Toggle::make('image_decorative')->label('Decorative image')
                         ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
+                    Toggle::make('video_controls_enabled')->label('Show video playback controls')
+                        ->default(true)->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
                         ->default('thin')->required(fn (callable $get): bool => $get('kind') === 'divider')
                         ->visible(fn (callable $get): bool => $get('kind') === 'divider'),
@@ -499,6 +506,7 @@ final class HomePresentation extends Page
                     'type' => 'image',
                     'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                     'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                    'video_controls_enabled' => (bool) ($data['video_controls_enabled'] ?? true),
                 ],
                 'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
                 'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
@@ -545,6 +553,7 @@ final class HomePresentation extends Page
                     'body' => $component['body'] ?? null,
                     'media_asset_id' => $component['media_asset_id'] ?? null,
                     'image_decorative' => (bool) ($component['image_decorative'] ?? false),
+                    'video_controls_enabled' => CustomPageSetting::videoControls($component),
                     'variant' => $component['variant'] ?? 'thin',
                     'list_title' => $component['title'] ?? null,
                     'list_media_asset_id' => $component['media_asset_id'] ?? null,
@@ -586,6 +595,8 @@ final class HomePresentation extends Page
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Toggle::make('image_decorative')->label('Decorative image')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
+                Toggle::make('video_controls_enabled')->label('Show video playback controls')
+                    ->default(true)->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'divider')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'divider'),
@@ -616,6 +627,7 @@ final class HomePresentation extends Page
                         'type' => 'image',
                         'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                         'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                        'video_controls_enabled' => (bool) ($data['video_controls_enabled'] ?? ($current['video_controls_enabled'] ?? true)),
                     ],
                     'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
                     'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,

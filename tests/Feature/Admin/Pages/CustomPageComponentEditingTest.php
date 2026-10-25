@@ -800,3 +800,31 @@ it('reorders and publishes Custom Page components in the editor', function (): v
     expect(array_column($settings->fresh()->components(), 'title'))->toBe(['First', 'Second']);
     expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveDown')->isDisabled())->toBeTrue();
 });
+
+it('persists image alignment and video playback preferences in the shared component editor', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image presentation', 'image-presentation');
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'published' => false, 'media_asset_id' => null,
+        'image_decorative' => false, 'image_alignment' => 'center',
+        'video_controls_enabled' => false,
+    ]]]);
+
+    $image = $settings->fresh()->components()[0];
+    expect(CustomPageSetting::imageAlignment($image))->toBe('center')
+        ->and(CustomPageSetting::videoControls($image))->toBeFalse();
+
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertActionDataSet([
+            'image_alignment' => 'center',
+            'video_controls_enabled' => false,
+        ]);
+
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'published' => false, 'media_asset_id' => null,
+        'image_decorative' => false,
+    ]]]);
+    $defaultImage = $settings->fresh()->components()[0];
+    expect($defaultImage)->not->toHaveKey('video_controls_enabled')
+        ->and(CustomPageSetting::videoControls($defaultImage))->toBeTrue();
+});
