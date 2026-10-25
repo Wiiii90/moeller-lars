@@ -30,7 +30,9 @@ function fixture() {
         naturalWidth: 0,
         fetchPriority: index === 0 ? 'high' : 'low',
         hidden: index >= 2,
-        dataset: index >= 2 ? { gallerySrc: '/media/' + index } : {},
+        dataset: index >= 2
+            ? { gallerySrc: '/media/' + index, galleryImageState: 'deferred' }
+            : { galleryImageState: 'pending' },
         getBoundingClientRect: () => ({ top: 600 + index * 600, bottom: 1100 + index * 600 }),
     }));
     const listeners = new Map();
@@ -169,4 +171,45 @@ test('Artwork detail image displays only when loaded, and exposes a real media f
     disposed.naturalWidth = 960;
     disposed.dispatchEvent(new Event('load'));
     assert.equal(disposed.dataset.artworkImageState, 'pending');
+});
+
+test('initial Gallery images decode before display and retain a visible failure', async () => {
+    const scene = fixture();
+    try {
+        const original = scene.root.querySelectorAll;
+        scene.root.querySelectorAll = () => original().slice(0, 2);
+        let finish;
+        const image = scene.images[0];
+        image.decode = () => new Promise(resolve => { finish = resolve; });
+        const dispose = initializeGalleryImageLoading(scene.root);
+        assert.equal(scene.observers.length, 0);
+        image.naturalWidth = 850;
+        image.complete = true;
+        scene.root.dispatch('load', image);
+        assert.equal(image.dataset.galleryImageState, 'pending');
+        finish();
+        await Promise.resolve();
+        assert.equal(image.dataset.galleryImageState, 'ready');
+        scene.root.dispatch('error', scene.images[1]);
+        assert.equal(scene.images[1].dataset.galleryImageState, 'error');
+        dispose();
+        image.dataset.galleryImageState = 'pending';
+        scene.root.dispatch('load', image);
+        assert.equal(image.dataset.galleryImageState, 'pending');
+    } finally {
+        scene.restore();
+    }
+});
+
+test('cached initial Gallery images are ready without waiting for an event', () => {
+    const scene = fixture();
+    try {
+        scene.images[0].complete = true;
+        scene.images[0].naturalWidth = 1200;
+        const dispose = initializeGalleryImageLoading(scene.root);
+        assert.equal(scene.images[0].dataset.galleryImageState, 'ready');
+        dispose();
+    } finally {
+        scene.restore();
+    }
 });

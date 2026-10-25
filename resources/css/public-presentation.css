@@ -800,16 +800,9 @@ body {
 .artwork-card__image[hidden] {
     display: none;
 }
-.artwork-card__image[data-gallery-image-state="deferred"],
-.artwork-card__image[data-gallery-image-state="pending"] {
-    visibility: hidden;
-}
-
-/* The native ALT placeholder can appear as vertical text while an Artwork
- * detail image has not loaded, especially in intrinsically sized landscape
- * media. Reserve its authored dimensions but show pixels only after load.
- * Without scripting, leave the browser's normal image/ALT behavior intact. */
 @media (scripting: enabled) {
+    .artwork-card__image[data-gallery-image-state="deferred"],
+    .artwork-card__image[data-gallery-image-state="pending"],
     .artwork-detail__image[data-artwork-image-state="pending"] {
         visibility: hidden;
     }
