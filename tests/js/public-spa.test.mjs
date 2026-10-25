@@ -118,6 +118,9 @@ test('public layout follows the destination metadata through CSSOM without inser
     const frameClasses = new Set();
     const meta = { dataset: {
         publicLayoutBackground: 'linear-gradient(45deg, #112233, #445566)',
+        publicLayoutMenuBackground: '#dddddd',
+        publicLayoutContentBackground: '#eeeeee',
+        publicLayoutTitleGradient: 'linear-gradient(20deg, #abcdef, #fedcba)',
         publicLayoutDividerMode: 'menu',
         publicLayoutShell: '1120px',
         publicLayoutArt: '960px',
@@ -155,6 +158,9 @@ test('public layout follows the destination metadata through CSSOM without inser
         assert.equal(frameClasses.has('public-site--frame-layered'), true);
         assert.deepEqual(Object.fromEntries(values), {
             '--public-page': 'linear-gradient(45deg, #112233, #445566)',
+            '--public-menu-background': '#dddddd',
+            '--public-content-background': '#eeeeee',
+            '--public-title-paint': 'linear-gradient(20deg, #abcdef, #fedcba)',
             '--public-shell-max': '1120px',
             '--public-art-max': '960px',
             '--public-content-padding': '48px',
@@ -162,12 +168,18 @@ test('public layout follows the destination metadata through CSSOM without inser
 
         values.clear();
         meta.dataset.publicLayoutBackground = '';
+        meta.dataset.publicLayoutMenuBackground = '';
+        meta.dataset.publicLayoutContentBackground = '';
+        meta.dataset.publicLayoutTitleGradient = '';
         meta.dataset.publicLayoutArt = '';
         meta.dataset.publicLayoutDividerMode = 'fine';
         applyPublicLayoutFromMeta();
         assert.equal(headerClasses.has('site-header--divider-menu'), false);
         assert.equal(headerClasses.has('site-header--divider-fine'), true);
         assert.equal(values.get('--public-page'), '#777');
+        assert.equal(values.has('--public-menu-background'), false);
+        assert.equal(values.has('--public-content-background'), false);
+        assert.equal(values.has('--public-title-paint'), false);
         assert.equal(values.has('--public-art-max'), false);
 
         values.clear();

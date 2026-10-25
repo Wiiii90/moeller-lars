@@ -68,9 +68,14 @@ entrypoint (foundation, content, presentation, custom pages and journal);
 the Public layout no longer requests individual CSS entrypoints or their
 preloads. The Admin Vite entrypoints and Filament bundle stay unchanged.
 General
-layout CSS variables are reapplied from server-rendered metadata at the swap
-boundary, so new nonces cannot invalidate the artist's configured background
-or widths. The static contour presentation is independent of the SPA transport.
+layout CSS variables, including Menu/Page surfaces and Title paint, are
+reconciled from destination metadata at the swap boundary and absent
+values are cleared, so a previous page cannot leak its appearance through
+the reused stylesheet. The static contour presentation is independent of
+the document-swap transport. While scripting is active, the server-rendered
+Menu paper is visible only after the existing Header and cyclic-navigation
+initializers have resolved the destination layout. Without scripting the
+ordinary server-rendered navigation remains visible.
 
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 

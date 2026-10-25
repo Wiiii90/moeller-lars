@@ -77,6 +77,9 @@ export function applyPublicLayoutFromMeta() {
 
     const declarations = {
         '--public-page': config.dataset.publicLayoutBackground || '#777',
+        '--public-menu-background': config.dataset.publicLayoutMenuBackground,
+        '--public-content-background': config.dataset.publicLayoutContentBackground,
+        '--public-title-paint': config.dataset.publicLayoutTitleGradient,
         '--public-shell-max': config.dataset.publicLayoutShell,
         '--public-art-max': config.dataset.publicLayoutArt,
         '--public-content-padding': config.dataset.publicLayoutPadding,
@@ -91,6 +94,7 @@ export function applyPublicLayoutFromMeta() {
     };
     for (const [name, value] of Object.entries(declarations)) {
         if (value) rule.style.setProperty(name, value);
+        else rule.style.removeProperty(name);
     }
     if (config.dataset.publicLayoutDividerColor) {
         rule.style.setProperty('--public-separator-color', config.dataset.publicLayoutDividerColor);

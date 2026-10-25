@@ -94,6 +94,12 @@ body {
     --public-menu-sheet-y: var(--public-folio-sheet-y);
     background: var(--public-menu-background);
 }
+@media (scripting: enabled) {
+    .site-navigation[data-site-navigation]:not([data-navigation-ready]) {
+        visibility: hidden;
+    }
+}
+
 .site-navigation::before,
 .site-navigation::after {
     position: absolute;
