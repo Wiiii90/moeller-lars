@@ -26,7 +26,7 @@ final class AdminRichText
             ['paragraph', 'h1', 'h2', 'h3', 'h4'],
             ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'],
             ['blockquote', 'bulletList', 'orderedList', 'horizontalRule'],
-            ['table', 'highlight', 'textColor', 'clearFormatting'],
+            ['table', 'highlight', 'textColor', 'lineSpacing', 'clearFormatting'],
         ];
         if ($allowEmbeddedMedia) {
             $toolbar[] = ['insertStorageImage'];
@@ -36,6 +36,7 @@ final class AdminRichText
         $editor = RichEditor::make($name)
             ->label($label)
             ->plugins([RichTextEditorPlugin::make()])
+            ->json(false)
             ->formatStateUsing(static fn (mixed $state): mixed =>
                 is_string($state) ? RichTextDocument::forEditor($state) : $state
             )
@@ -76,6 +77,8 @@ final class AdminRichText
         $fields = [
             $editor,
             View::make('filament.schemas.components.rich-text-link-picker')->columnSpanFull(),
+            View::make('filament.schemas.components.rich-text-color-picker')->columnSpanFull(),
+            View::make('filament.schemas.components.rich-text-spacing-picker')->columnSpanFull(),
         ];
 
         if ($allowEmbeddedMedia) {
@@ -188,13 +191,12 @@ final class AdminRichText
                                     : ''
                                 this.linkInvalid = false
 
-                                const shell = this.$el.getBoundingClientRect()
-                                const anchor = event.detail?.anchor?.getBoundingClientRect()
-                                const maxLeft = Math.max(0, shell.width - 320)
-                                this.linkLeft = Math.max(0, Math.min((anchor?.left ?? shell.left) - shell.left, maxLeft))
-                                this.linkTop = (anchor?.bottom ?? shell.top) - shell.top + 4
                                 this.linkOpen = true
-                                this.$nextTick(() => this.$refs.richLinkUrl?.focus())
+                                this.$nextTick(() => {
+                                    const panel = this.$refs.richLinkPanel
+                                    if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'link')
+                                    this.$refs.richLinkUrl?.focus()
+                                })
                             },
                             normalizedLinkUrl() {
                                 let url = this.linkUrl.trim()
@@ -291,18 +293,8 @@ final class AdminRichText
                                 this.captionOpen = true
                                 this.$nextTick(() => {
                                     const panel = this.$refs.richCaptionPanel
-                                    const anchor = event.detail?.anchor?.getBoundingClientRect()
-                                    if (!panel || !anchor) return
-                                    const shell = this.$el.getBoundingClientRect()
-                                    const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect() ?? shell
-                                    const leftMin = bounds.left + 8
-                                    const leftMax = Math.max(leftMin, bounds.right - panel.offsetWidth - 8)
-                                    this.captionLeft = Math.max(leftMin, Math.min(anchor.left, leftMax)) - shell.left
-                                    const below = anchor.bottom + 4
-                                    const above = anchor.top - panel.offsetHeight - 4
-                                    this.captionTop = (below + panel.offsetHeight <= bounds.bottom - 8
-                                        ? below
-                                        : Math.max(bounds.top + 8, above)) - shell.top
+                                    if (!panel || !event.detail?.anchor) return
+                                    this.positionInlinePanel(panel, event.detail?.anchor, 'caption')
                                     this.$refs.richCaptionInput?.focus()
                                 })
                             },
@@ -320,6 +312,93 @@ final class AdminRichText
                                         this.$el.dispatchEvent(new Event('change', { bubbles: true }))
                                     }
                                 })
+                            },
+                            colorOpen: false,
+                            colorEditor: null,
+                            colorSelection: null,
+                            colorValue: '#333333',
+                            colorLeft: 0,
+                            colorTop: 0,
+                            spacingOpen: false,
+                            spacingEditor: null,
+                            spacingValue: 'default',
+                            spacingLeft: 0,
+                            spacingTop: 0,
+                            positionInlinePanel(panel, anchor, prefix) {
+                                const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect()
+                                    ?? this.$el.getBoundingClientRect()
+                                const shell = this.$el.getBoundingClientRect()
+                                const box = anchor?.getBoundingClientRect() ?? shell
+                                const left = Math.max(bounds.left + 8,
+                                    Math.min(box.left, bounds.right - panel.offsetWidth - 8))
+                                const below = box.bottom + 4
+                                const top = below + panel.offsetHeight <= bounds.bottom - 8
+                                    ? below
+                                    : Math.max(bounds.top + 8, box.top - panel.offsetHeight - 4)
+                                this[prefix + 'Left'] = left - shell.left
+                                this[prefix + 'Top'] = top - shell.top
+                            },
+                            openColorEditor(event) {
+                                const editor = window.Alpine?.raw?.(event.detail?.editor) ?? event.detail?.editor
+                                if (!editor || editor.isDestroyed) return
+                                if (this.colorOpen) { this.colorOpen = false; return }
+                                const selection = editor.state.selection
+                                const current = editor.getAttributes('textColor')['data-color']
+                                this.colorEditor = editor
+                                this.colorSelection = { from: selection.from, to: selection.to }
+                                this.colorValue = /^#[0-9a-f]{6}$/i.test(current ?? '') ? current : '#333333'
+                                this.colorOpen = true
+                                this.spacingOpen = false
+                                this.linkOpen = false
+                                this.captionOpen = false
+                                this.closeImagePicker()
+                                this.$nextTick(() => {
+                                    const panel = this.$refs.richColorPanel
+                                    if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'color')
+                                })
+                            },
+                            applyTextColor(clear = false) {
+                                const editor = window.Alpine?.raw?.(this.colorEditor) ?? this.colorEditor
+                                if (!editor || editor.isDestroyed || !this.colorSelection) return
+                                let chain = editor.chain().focus().setTextSelection(this.colorSelection)
+                                if (this.colorSelection.from === this.colorSelection.to) {
+                                    chain = chain.extendMarkRange('textColor')
+                                }
+                                const changed = clear ? chain.unsetTextColor().run()
+                                    : chain.setTextColor({ color: this.colorValue }).run()
+                                if (changed) {
+                                    this.colorOpen = false
+                                    this.commitEditorChange()
+                                }
+                            },
+                            openSpacingEditor(event) {
+                                const editor = window.Alpine?.raw?.(event.detail?.editor) ?? event.detail?.editor
+                                if (!editor || editor.isDestroyed) return
+                                if (this.spacingOpen) { this.spacingOpen = false; return }
+                                this.spacingEditor = editor
+                                this.spacingValue = editor.getAttributes(
+                                    editor.isActive('heading') ? 'heading' : 'paragraph'
+                                ).artistSpacing ?? 'default'
+                                this.spacingOpen = true
+                                this.colorOpen = false
+                                this.linkOpen = false
+                                this.captionOpen = false
+                                this.closeImagePicker()
+                                this.$nextTick(() => {
+                                    const panel = this.$refs.richSpacingPanel
+                                    if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'spacing')
+                                })
+                            },
+                            applySpacing() {
+                                const editor = window.Alpine?.raw?.(this.spacingEditor) ?? this.spacingEditor
+                                if (!editor || editor.isDestroyed) return
+                                const node = editor.isActive('heading') ? 'heading' : 'paragraph'
+                                if (editor.chain().focus().updateAttributes(node, {
+                                    artistSpacing: this.spacingValue
+                                }).run()) {
+                                    this.spacingOpen = false
+                                    this.commitEditorChange()
+                                }
                             },
                             imagePickerOpen: false,
                             closeImagePicker() {
@@ -373,10 +452,14 @@ final class AdminRichText
                         });
                         JS,
                     'x-on:artist-rich-link-toggle' => 'openLinkEditor($event)',
+                    'x-on:artist-rich-color-toggle' => 'openColorEditor($event)',
+                    'x-on:artist-rich-spacing-toggle' => 'openSpacingEditor($event)',
+                    'x-on:artist-rich-image-changed' => 'commitEditorChange()',
+                    'x-on:artist-rich-content-changed' => 'commitEditorChange()',
                     'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
                     'x-on:artist-rich-image-inserted.window' => 'closeImagePicker()',
-                    'x-on:keydown.escape.window' => 'closeImagePicker(); linkOpen = false; captionOpen = false',
+                    'x-on:keydown.escape.window' => 'closeImagePicker(); linkOpen = false; captionOpen = false; colorOpen = false; spacingOpen = false',
                 ])
                 ->columnSpanFull(),
         ];

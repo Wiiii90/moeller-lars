@@ -660,3 +660,29 @@
     color: var(--admin-text);
     box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
 }
+
+.admin-rich-text-color-input {
+    display: block;
+    width: 100%;
+    height: var(--admin-control-height);
+    padding: .2rem;
+    border: 1px solid var(--admin-line);
+    border-radius: 0;
+    background: var(--admin-surface);
+    cursor: pointer;
+}
+
+.admin-rich-text--visual .tiptap table {
+    width: 100%;
+    margin-block: .75rem;
+    border-collapse: collapse;
+}
+.admin-rich-text--visual .tiptap :is(th, td) {
+    min-width: 0;
+    padding: .45em .65em;
+    border: 1px solid var(--admin-line);
+    vertical-align: top;
+}
+.admin-rich-text--visual .tiptap th {
+    font-weight: 600;
+}

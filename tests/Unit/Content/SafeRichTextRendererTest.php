@@ -59,3 +59,19 @@ it('renders safe email links in visual rich text', function (): void {
     $html = contentRenderer()->render('<p><a href="mailto:artist@example.com">Email</a></p>')->toHtml();
     expect($html)->toContain('href="mailto:artist@example.com"');
 });
+
+it('renders nested links, tables and text color in visual rich text', function (): void {
+    $html = contentRenderer()->render(
+        '<ul><li><p>See <a href="https://example.com/">documentation</a>.</p></li></ul>'
+        .'<table><tbody><tr><th><p>Title</p></th><td><p>Value</p></td></tr></tbody></table>'
+        .'<p><span class="color" data-color="#336699">Colored</span></p>'
+        .'<p data-artist-line-spacing="none">Single spaced</p>'
+    )->toHtml();
+
+    expect($html)->toContain('href="https://example.com/"')
+        ->toContain('<table')
+        ->toContain('<th')
+        ->toContain('<td')
+        ->toContain('data-color="#336699"')
+        ->toContain('data-artist-line-spacing="none"');
+});

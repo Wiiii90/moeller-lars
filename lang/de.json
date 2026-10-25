@@ -520,5 +520,12 @@
     "Apply": "Übernehmen",
     "Enter a valid HTTP, HTTPS or email link.": "Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.",
     "Organizer": "Veranstalter",
-    "Venue": "Ausstellungsort"
+    "Venue": "Ausstellungsort",
+    "Line spacing": "Zeilenabstand",
+    "No spacing": "Ohne Abstand",
+    "Compact": "Kompakt",
+    "Relaxed": "Großzügig",
+    "Remove color": "Farbe entfernen",
+    "Text color": "Textfarbe",
+    "Default": "Standard"
 }
