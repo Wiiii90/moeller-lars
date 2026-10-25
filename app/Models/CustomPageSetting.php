@@ -100,6 +100,11 @@ final class CustomPageSetting extends Model
         return is_string($alignment) && in_array($alignment, self::IMAGE_ALIGNMENTS, true) ? $alignment : 'left';
     }
 
+    public static function videoControls(array $block): bool
+    {
+        return ($block['video_controls_enabled'] ?? true) !== false;
+    }
+
     public static function componentPublished(array $block): bool
     {
         return ($block['published'] ?? true) === true;
@@ -184,6 +189,7 @@ final class CustomPageSetting extends Model
                     'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
                     'image_decorative' => (bool) ($block['image_decorative'] ?? false),
                     ...($this->validatedImageAlignment($block) !== 'left' ? ['image_alignment' => $this->validatedImageAlignment($block)] : []),
+                    ...(self::videoControls($block) ? [] : ['video_controls_enabled' => false]),
                     ...$this->normalizedImageScale($block),
                     ...$this->normalizedImageChildren($block),
                 ],
@@ -366,6 +372,9 @@ final class CustomPageSetting extends Model
     private function validateImageComponent(array $block, bool $requirePublicMedia): void
     {
         $this->validatedImageAlignment($block);
+        if (array_key_exists('video_controls_enabled', $block) && ! is_bool($block['video_controls_enabled'])) {
+            throw ValidationException::withMessages(['blocks' => 'Video playback controls must be enabled or disabled.']);
+        }
         $scale = $block['image_scale_percent'] ?? self::DEFAULT_IMAGE_SCALE_PERCENT;
         if (! is_int($scale) || $scale < self::MIN_IMAGE_SCALE_PERCENT || $scale > self::MAX_IMAGE_SCALE_PERCENT) {
             throw ValidationException::withMessages(['blocks' => 'Image size must be a whole percentage between 25 and 200.']);

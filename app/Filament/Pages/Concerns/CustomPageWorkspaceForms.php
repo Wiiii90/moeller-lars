@@ -88,6 +88,7 @@ trait CustomPageWorkspaceForms
                     ->default('left')
                     ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
+                Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
             ],
             'text' => $isNew
                 ? AdminRichText::schema('body', 'Text Editor', 20000)

@@ -785,3 +785,25 @@ it('keeps centered Image placement in the canonical component schema', function 
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
         ->assertActionDataSet(['image_alignment' => 'center']);
 });
+
+it('validates and normalizes optional native video controls on shared Image components', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Video controls', 'video-controls');
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'published' => false, 'media_asset_id' => null,
+        'image_decorative' => false, 'video_controls_enabled' => false,
+    ]]]);
+    $saved = $settings->fresh()->components()[0];
+    expect(CustomPageSetting::videoControls($saved))->toBeFalse()
+        ->and($saved['video_controls_enabled'])->toBeFalse();
+
+    Livewire::test(CustomPageWorkspace::class, ['page' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertActionDataSet(['video_controls_enabled' => false]);
+
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'published' => false, 'media_asset_id' => null,
+        'image_decorative' => false,
+    ]]]);
+    expect($settings->fresh()->components()[0])->not->toHaveKey('video_controls_enabled')
+        ->and(CustomPageSetting::videoControls($settings->fresh()->components()[0]))->toBeTrue();
+});
