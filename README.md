@@ -75,7 +75,7 @@ Start with:
 - [ui-skills.md](ui-skills.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
 - [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
 - [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-`dev` browser workflow, shared Visual Stage ownership and local preview loop
-- [followup-skill.md](followup-skill.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
+- [followup-skill.md](followup-skill.md) — compact manual handoff fallback; numbered workers primarily resume from their registered current task record
 
 Normal source work happens directly on `dev`, including separate chats with clearly scoped ownership. During this mode there is no CI/Actions interaction, branch-worker choreography or release without separate authorization.
 

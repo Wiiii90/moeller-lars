@@ -1,56 +1,29 @@
-# Follow-up chat handoff skill
+# Chat continuation and work handoff
 
-This file defines a compact, lossless continuation handoff for `Wiiii90/moeller-lars`. It transfers current facts and remaining work, not a history of closed chats, abandoned branches or every implementation attempt.
+**Default for a registered worker:** the branch-local [worker protocol](.agents/README.md), current [area roster](.agents/areas/docs.md) where applicable and **that worker's actual task record** are the handoff. Update the record with decisions, evidence, open scope and next action **before** the chat ends. A new chat must not infer assignments from its name or recreate a completed task. A same-number replacement requires the explicit takeover and new lease defined in the protocol. Do not publish these temporary records as permanent project documentation.
 
-## Active execution mode
+**Fallback for a task without a registered worker:** use one concise continuation prompt only when necessary. It conveys concrete facts, not an entire chat transcript or another management workflow.
 
-- Work **directly on `dev`**, usually in `P:\moeller-lars` when locally available. Other chats may also modify `dev`; inspect the current HEAD and reconcile overlapping changes before writing. Never create development branches/worktrees, force/reset/rebase or rewrite other chats' work.
-- No CI/Actions access, logs, status inspection, manual workflow runs, release, server or deployment during ordinary development. `main` promotion and release qualification are separately authorized.
-- Keep the current shared Domain, publication, media, Rich Text and admin UI owners. Never introduce duplicate runtime paths, timers or symptom-level workarounds.
-- A test-only environment must be positively isolated from the persistent browser Preview DB, media and filesystem. Tests that were merely authored or reviewed are not "passed".
-- For current work on public media/privacy/SEO, read the active `PUBLIC_RIGHTS_WORKSTREAM.md` and current durable rights contracts before modifications. That temporary handoff is deleted only when its complete workstream ends.
+## Verified context to transfer
 
-## Source of truth
+Include only what materially changes the next action:
 
-1. Exact current `dev` SHA and production source.
-2. Current user's browser screenshots/feedback on the same candidate.
-3. Open product issues/unfinished acceptance.
-4. Durable `AGENTS.md`, `ui-skills.md`, `docs/*` and focused test contracts.
-5. Actual checks performed with results; never infer success from a worker statement or from older commits.
+1. **Goal and scope:** accepted user decision, exact owned components/files, protected neighbors, exclusions and permissions.
+2. **Repository:** working branch, checked commit SHA, uncommitted/stashed state if actually observed, known parallel editing scope. Never assume an old local checkout equals remote HEAD.
+3. **Current implementation and responsibility:** the real service/Blade/JavaScript owners and authoritative [product contracts](docs/README.md); no parallel storage, rendering, notification or publication system.
+4. **Candidate and verification:** source inspected; focused tests **actually executed** and safely isolated; browser build/URL and review **actually confirmed**; product acceptance; release/deployment only if separately authorized. Never promote authored assertions or a previously green build into a current result.
+5. **Open actions:** one ordered queue of concrete still-reproducible defects, next safe step, blockers and stop conditions. Remove resolved, rejected and superseded items.
 
-A newer accepted browser result overrides stale repair-era descriptions. Do not silently resurrect old branch modes, old test suites or abandoned implementations.
+Use precise states: **SOURCE-REVIEWED**, **TEST-EXECUTED**, **BROWSER-REVIEWED**, **USER-ACCEPTED**, **RELEASE-QUALIFIED**. Each has different evidence. No-op/validation/rollback and durable audit/Notification matter independently of presentation.
 
-## Before creating a follow-up
+## Continuation procedure
 
-- Establish latest local and remote `dev` commit as appropriate and report uncommitted changes or stashes **without modifying them**.
-- Check which edits were source-reviewed, tested, built, browser-reviewed and user-accepted.
-- Identify concurrent chats' scope ownership, shared files and any unmerged or not-yet-verified changes.
-- Capture the concrete current preview/Validation URL and commit identity **only when actually verified**. Do not assume the browser is showing the most recent commit.
-- Name remaining errors or blockers by actual behavior and evidence, not guesswork. Avoid copying secrets, cookies, tokens or full logs.
-- Update any active scoped living handoff before transfer. Do not append obsolete historical incidents to living documents.
+Read the actual task record (or compact manual handoff) and current branch rules first. Revalidate HEAD and overlapping edits; read the relevant implementation and **one** canonical owner rather than every long manual. Confirm the user's most recent accepted requirement; when the browser candidate is older than source, do not claim the newer code was seen. Modify the canonical owner, make a focused safe check, and update the same task record plus any changed durable contract.
 
-## Required content of a continuation prompt
+For an explicit **manual copy/paste prompt**, keep all required details in one block: mission, SHA, owned files, actual symptom, accepted outcome, known root cause (only if proven), verification so far, next check and branch/commit guard. Do not add unsupported promises of runtime tests, CI status, deployment or production changes.
 
-A single copyable prompt should cover:
+## Protected boundaries
 
-1. **Mission and boundaries:** what the next chat owns and explicitly must not touch; direct `dev`, no CI/server/release, shared-contract rules.
-2. **Repository state:** exact latest verified `dev` SHA, local path if known, working-tree/stash precautions, other chats' concurrent scope.
-3. **Current application behavior:** relevant public/admin design, latest accepted user requirements, exact affected owner files and invariants.
-4. **Runtime/browser state:** current Preview command and URL, whether rebuilt after the latest source change, current browser acceptance and errors.
-5. **Actual verification:** exact focused checks run vs unexecuted, test database isolation, any outstanding risks.
-6. **Remaining queue:** user-prioritized defects and next actionable step; do not present completed or rejected proposals as open work.
-7. **Handoff output:** changed files, commit SHA, diff intent, checks truly performed, source-vs-browser acceptance state, remaining blockers.
+Normal application work follows the destination branch's own [AGENTS.md](AGENTS.md), with concurrency-safe non-forced commits. Never treat a handoff as new authorization for release, server access, protected Validation/Production, CI interaction, destructive database resets or an extra branch. Keep browser Preview data and production media safe. Use disposable verified test environments for destructive DB/file tests.
 
-Preserve the distinctions `SOURCE-REVIEWED`, `TEST-RUN`, `BROWSER-VERIFIED` and `USER-ACCEPTED`. A passing Playwright or PHP test is not proof of the user's browser presentation. One successful page does not authorize UI changes to neighboring areas.
-
-## Implementation and review process
-
-Work from the current symptom inward. Read only the responsible source and applicable shared contract rather than re-auditing the entire repository. Reconcile any newly advanced `dev` before committing. Verify the actual net diff against requirements and reject unrelated edits, duplicate CSS/persistence owners and untested claims.
-
-For copy/paste prompts, put the entire actionable prompt in **one fenced block**, with source SHA, allowed scope, non-goals, exact target state, root cause when established, checks, stop conditions, and commit/push rules. Do not imply a role must operate on its own Git branch. A separate audit can remain read-only; an implementation session may change files only within its explicitly owned scope.
-
-For browser tasks, use the accepted shared reference, keep a single canonical implementation, and rebuild the local Preview once per coherent batch. Browser acceptance belongs to the actual integrated candidate. If a user rejects the markup or behavior, passing tests do not make it accepted. After acceptance, remove safely proven obsolete markup, CSS, hooks and duplicated tests for that scoped change.
-
-## Handoff quality
-
-Keep the prompt concise enough for a new chat to act immediately, and include enough exact paths, constraints and user decisions to avoid re-asking settled questions. Do not include massive command histories, unrelated issue archives, old SHA chronologies, abandoned worktrees, obsolete testing-branch workflows, fabricated test evidence or full CI logs. Do not block a source-only task merely because the user's local Preview isn't accessible from a connected agent.
+The handoff is successful when the next worker can **act on the next verified step without asking again about settled constraints**; it is not measured by document length.
