@@ -136,10 +136,12 @@ final class AdminControl
     {
         $field->extraAlpineAttributes([
             'x-init' => <<<'JS'
-                $watch('state', (value, previous) => {
-                    if (value === previous || ! $el.closest('.admin-dialog--edit')) return
-                    $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })))
-                })
+                if (typeof state !== 'undefined') {
+                    $watch('state', (value, previous) => {
+                        if (value === previous || ! $el.closest('.admin-dialog--edit')) return
+                        $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })))
+                    })
+                }
                 JS,
         ], merge: true);
     }
