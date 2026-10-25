@@ -13,7 +13,7 @@ This is the current durable test strategy for `moeller-lars`. The suite protects
 | JavaScript | `tests/js` | Node-based production frontend logic |
 | Browser | `tests/browser/component`, `e2e`, `profiling` | Chromium components, seeded Laravel E2E and representative performance evidence |
 
-The former separate Architecture suite is retired. Structural contracts belong in the narrowest meaningful behavior test; source-string matching is not a substitute for working software. `tests/Pest.php` and `phpunit.xml` own PHP discovery; `playwright.config.mjs` owns the Playwright projects. There is **one** active test structure on `dev` (source-read `dev@fbc93f71cecc2eacde63466b9988bc9296ec4645`). The former separate `testing` branch was integrated by `dev@25bc40144`; earlier branch-specific test snapshots are historical evidence, never an independent current suite or a claim of passing tests.
+The former separate Architecture suite is retired. Structural contracts belong in the narrowest meaningful behavior test; source-string matching is not a substitute for working software. `tests/Pest.php` and `phpunit.xml` own PHP discovery; `playwright.config.mjs` owns the Playwright projects. The test architecture is intended to remain **one coherent suite** rather than diverging parallel taxonomies. An earlier `testing` iteration was integrated by `dev@25bc40144` (source-read `dev@fbc93f71cecc2eacde63466b9988bc9296ec4645`), but the active `testing` branch again curates and consolidates tests against new `dev` changes (`testing@b7eee549` on 25 October 2026). `dev` retains its interim test copies until a separately authorized integration. These are source/branch observations, not passing-test evidence.
 
 ## Running and discovering tests
 
@@ -35,7 +35,7 @@ composer analyse
 composer lint
 ```
 
-Special real-process PostgreSQL concurrency cases do not execute in an ordinary Pest/CI run; they require the existing verified Windows PowerShell runners from the `dev` checkout:
+Special real-process PostgreSQL concurrency cases do not execute in an ordinary Pest or Continuous Integration (CI) run; they require the verified Windows PowerShell runners in the authorized checkout:
 
 ```powershell
 & .\tests\Support\RunPublicationConcurrency.ps1 --compact
@@ -74,4 +74,4 @@ The existing `release.yml` workflow will report the combined PHP app/ line-cover
 
 During direct-`dev` work, development agents do not run, monitor, inspect or troubleshoot GitHub Actions. Updating CI source on `dev` does not authorize CI execution. Release qualification and `main` promotion are separate, explicitly authorized tasks described by `docs/RELEASE.md`.
 
-Migration/legacy tests are retained only until their documented cutover retirement condition. Remove obsolete Architecture/SitePages suite descriptions, abandoned testing-worktree runbooks, redundant regressions, and replaced assertions rather than maintaining two incompatible systems.
+Migration/legacy tests are retained only until their documented cutover retirement condition. Remove obsolete Architecture/SitePages suite descriptions, obsolete runbooks, redundant regressions and replaced assertions. Keep the active `testing` curation aligned to the common architecture rather than establishing two incompatible permanent systems.

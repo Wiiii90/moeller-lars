@@ -29,9 +29,9 @@ No mechanism can perfectly retain uncommitted chats, invisible reasoning or anot
 
 | Git branch | Current role | Boundary |
 | --- | --- | --- |
-| `dev` | Application integration, existing author-written tests and normal feature work | Direct development rules in the current `dev/AGENTS.md`; changes require an actual user task. |
+| `dev` | Application integration and interim development tests | Direct development rules in the current `dev/AGENTS.md`; changes require an actual user task. |
 | `docs` | Normative architecture and living agent/project docs | Documentation writes only here until integration is authorized. Routine work is GitHub-only, not local Codex runs. |
-| `testing` | Existing historical branch ref; verify whether it has any distinct useful work before reuse | Test suites currently live on `dev`; calling oneself a Testing Worker does not automatically switch branches. |
+| `testing` | Active curation and restructuring of the test suite against newer `dev` code | The curated test branch is maintained separately for a later, explicitly controlled integration back into `dev`. A worker name alone does not authorize a branch write. |
 | `refactor` | **Proposed only**, not created | A separate refactoring lane is possible if explicitly authorized and given clear integration/ownership boundaries. |
 
 There must be no silent branch creation, new worktrees, CI interaction or unilateral integration. Protect artist-curated Validation and Production. Before shared commits, refresh branch HEAD and check concurrent owners and changed files. A future [Docs→dev integration](DOCUMENTATION.md#integration-boundary) should reconcile current `dev` working rules and living states, not clobber them with older snapshots.

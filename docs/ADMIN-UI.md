@@ -516,7 +516,7 @@ For visual/admin work:
 3. inspect existing shared Blade primitives and theme tokens;
 4. compose the target page from those authorities;
 5. add feature-local CSS only for task-specific behavior that remains;
-6. explain every new shared-looking selector or token in the worker handoff.
+6. explain every new shared-looking selector or token in the current implementation review.
 
 ### Source-review gate
 
@@ -524,7 +524,7 @@ A visual worker result is not source-coherent until the reviewer checks the chan
 
 The reviewer should reject the change before reconciliation when a page recreates an existing shared primitive locally, even if the markup is functional and the worker claims visual consistency.
 
-The handoff for visual work must state:
+The implementation review for visual work must state:
 
 - which accepted reference files were inspected;
 - which shared primitives/tokens were reused;

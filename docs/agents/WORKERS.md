@@ -6,7 +6,7 @@ Worker names are **flexible conversation/work areas**, not intrinsically Git bra
 | --- | --- | --- | --- |
 | Dev Worker 1 / Developer Worker 1 | Current application development conversations | [Worker 1](workers/worker-1.md) | Available for a task **or a discussion**; no active assignment is reliably recorded here yet. |
 | Docs Worker | Documentation and architecture | [Docs workspace](workers/docsworker.md) | Existing living documentation context; inspect its open questions before acting. |
-| Testing Worker | Test design, executed verification and safe environments | [Testing procedure](TESTING.md) | Role can be used for a discussion or testing task; no separate worker state or branch assumption until actually needed. |
+| Testing Worker | Curated test-suite design, source review and safe verification | [Testing procedure](TESTING.md) and [test strategy](../TESTING.md) | Active work exists on `testing`; determine the current subject from its latest work and the user's message before acting. |
 | Refactor Worker | Systematic architecture/code cleanup | [Architecture compositions](../architecture/cross-feature-compositions.md) | Possible role; `refactor` branch **not yet created or authorized**. Establish scope first. |
 
 A user may name any additional worker; add a small state file **only when ongoing relevant context exists**. Worker numbers need not be global and never imply a branch. A workspace may switch between discussion, implementation and verification; the current message takes precedence over any older pending idea.

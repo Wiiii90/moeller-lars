@@ -153,7 +153,7 @@ Zusätzlich tatsächlich ausgeführt: JSON-Parsing aller zehn Inventare, read-on
 
 **Native Evidenz bleibt historisch:** `docs@317d255e` (PHP 8.3.33, 77 Markdown-Dateien, 1.221 lokale Links, 199 Heading-Links, fünf Selbsttests, zwei Checker, acht Generatorprüfungen, 43 kategorisierte Artefakte). Die neuen Text-/Mermaid-Änderungen sind **nicht Bestandteil dieser Messung**. Für diese Aktualisierung nur remote Quell- und Linkabgleich; kein Codex-Lauf, keine neue Testausführung, keine CI, keine DB/Preview/Validation und kein dev→docs-Programmcode-Merge.
 
-**Integration:** Die aktuelle konsolidierte Architektur liegt bislang nur auf `docs`. Der [Integrationsplan](../agents/README.md#future-docs-to-dev-integration) verlangt einen kontrollierten Vergleich mit der **aktuellen** `dev`-Fassung von `AGENTS.md`, den dort noch existierenden bisherigen UI-/Follow-up-/Testing-Regeln und dem aktiven Rechte-Arbeitsstand. Worker-Rollen und Git-Branches werden getrennt organisiert. **Kein Merge nach `dev`, keine Wiederbelebung der alten Handoff-Dateien und kein neuer `refactor`-Branch ohne gesonderte Autorisierung.**
+**Integration:** Die aktuelle konsolidierte Architektur liegt bislang nur auf `docs`. Der [Integrationsplan](../agents/DOCUMENTATION.md#integration-boundary) verlangt einen kontrollierten Vergleich mit der **aktuellen** `dev`-Fassung von `AGENTS.md`, den dort noch existierenden bisherigen UI-/Follow-up-/Testing-Regeln und dem aktiven Rechte-Arbeitsstand. Worker-Rollen und Git-Branches werden getrennt organisiert. **Kein Merge nach `dev`, keine Wiederbelebung der alten Handoff-Dateien und kein neuer `refactor`-Branch ohne gesonderte Autorisierung.**
 
 ## Neuer Quellabgleich und Agent-Neuordnung (25.10.2026)
 

@@ -18,7 +18,7 @@ The previous full source-only run on `docs@317d255e` checked 77 Markdown files, 
 
 ## Branch ownership for documentation
 
-The **`docs`** branch remains the explicitly authorized documentation-only exception to ordinary direct-`dev` work; `main` remains the release branch. The former `testing` workstream has been **integrated into `dev`** (`dev@25bc40144`), and there is **one active suite**, not two independently managed test branches. Read current `dev` source/tests, write **only `docs`**, and import coherent dev batches only with conflict-reviewed **genuine two-parent merges**. The user authorized `P:\moeller-lars-docs` only for rare, explicit Codex bulk checks. Routine source reconciliation uses the remote repository and requires no local command. No other branches/worktrees, automatic dev import or CI interaction are authorized. See [AGENTS.md](../AGENTS.md).
+The **`docs`** branch remains the explicitly authorized documentation-only exception to ordinary direct-`dev` work; `main` remains the release branch. An earlier `testing` suite was **integrated into `dev`** (`dev@25bc40144`), but active curated test work subsequently resumed on `testing` (verified `testing@b7eee549`, 25 October 2026). The intended test architecture is singular, while `dev` carries interim tests and `testing` curates changes for a controlled return to `dev` before cutover. Read current `dev` source/tests, write **only `docs`**, and import coherent dev batches only with conflict-reviewed **genuine two-parent merges**. The user authorized `P:\moeller-lars-docs` only for rare, explicit Codex bulk checks. Routine source reconciliation uses the remote repository and requires no local command. No new branches/worktrees, automatic `dev` import or Continuous Integration (CI) interaction are authorized without a separate decision; the already-active `testing` branch remains independently maintained. See [AGENTS.md](../AGENTS.md).
 
 ## Normative ownership and conflict resolution
 
@@ -74,7 +74,7 @@ These documents state current durable contracts. They are not chronological PR/w
 
 [Agent entry](agents/README.md) uses the [work-area registry](agents/WORKERS.md) to locate current topics, decisions, constraints and open questions when relevant. A worker does **not** automatically execute a previous next step. There is no separate handoff document or user-authored restart prompt. The living files are revised in place at meaningful milestones instead of appending chat diaries. [Documentation procedure](agents/DOCUMENTATION.md), [Testing safety](agents/TESTING.md), and the complete [current Admin UI contract](ADMIN-UI.md) are task-specific stable references. Retired root handoff/skill documents are preserved in Git history, not kept as competing working policies.
 
-For the later controlled integration to `dev`, [integration plan](agents/README.md#future-docs-to-dev-integration) explicitly protects the newer direct-`dev` root agent policy and existing active worker state. No automatic merge, CI or local Codex batch follows a routine Docs update.
+For the later controlled integration to `dev`, [integration boundary](agents/DOCUMENTATION.md#integration-boundary) explicitly protects the newer direct-`dev` root agent policy and existing active worker state. No automatic merge, CI or local Codex batch follows a routine Docs update.
 
 ## Live work and acceptance status
 
@@ -82,7 +82,7 @@ GitHub Issues and the current browser/orchestration review are the source of tru
 
 A source-reviewed or technically running reconciliation candidate is not automatically product accepted. A durable contract may be implemented on a temporary browser branch or directly on explicitly authorized `dev` before it reaches `main`; documentation should describe the intended/current contract without pretending that transient browser acceptance is complete.
 
-Browser feedback from the exact current candidate overrides stale acceptance wording. Once an exact `dev` candidate is browser/product accepted, stale issue history must not be treated as proof that already-resolved UI defects still exist; update/close the affected acceptance issues and promote that exact candidate through the `main`/release gates. Temporary worker branches, candidate SHAs and local container state belong in the current continuation handoff, not in timeless architecture docs.
+Browser feedback from the exact current candidate overrides stale acceptance wording. Once an exact `dev` candidate is browser/product accepted, stale issue history must not be treated as proof that already-resolved UI defects still exist; update/close the affected acceptance issues and promote that exact candidate through the `main`/release gates. Temporary candidate references and relevant acceptance state belong in concise, living worker/topic records when needed, not in timeless architecture contracts or standalone chat handoffs.
 
 ## Migration and cutover evidence
 

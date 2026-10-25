@@ -1,6 +1,6 @@
 # Tests, verification and environment isolation for agents
 
-**Canonical test architecture:** [Testing documentation](../TESTING.md), current `tests/README.md` and `tests/Pest.php` on `dev`. One active test structure on `dev`: PHP Pest Unit, Integration, Feature, Migration; JavaScript, browser Component/End-to-End/Profiling; two dedicated multi-process PostgreSQL 17 runners for Publication and Session races. The historical `testing` worktree/branch is **not** a second active suite. No obsolete Architecture suite.
+**Canonical test architecture:** [Testing documentation](../TESTING.md), current `tests/README.md` and `tests/Pest.php` on `dev`. One shared test architecture across current branches: `dev` contains integrated/interim tests, while the actively maintained `testing` branch curates the intended canonical suite for controlled reintegration before cutover. Its layers are PHP Pest Unit, Integration, Feature, Migration; JavaScript, browser Component/End-to-End/Profiling; and two dedicated multi-process PostgreSQL 17 runners for Publication and Session races. There is no obsolete Architecture suite or independently invented second test architecture.
 
 Use **targeted tests of durable behavior**, not a regression file for every repair iteration, decorative button location, CSS class name or branch-specific scenario. Protect Working versus Committed, authorization, audit/Undo, media integrity, notifications only on actual successful changes, no-op paths, real HTTP/session semantics and concurrency where justified. A written test is not an executed test, and a component test does not prove actual browser drag/popup gestures.
 
@@ -8,4 +8,4 @@ Use **targeted tests of durable behavior**, not a regression file for every repa
 
 **No Continuous Integration (CI) interaction** without separate explicit authorization, including status or log reads, dispatch, cancellation or retries. Release qualification, `main` promotion and deployment are separate. Report **source-reviewed**, **test-executed**, **browser-reviewed**, **artist-accepted** as distinct levels. If a test cannot safely run, report that instead of making a pass claim.
 
-This file replaces the role/use instructions historically carried in root `TESTING_SKILL.md`; the active `dev` version must be retired **only during the controlled docs→dev integration**, not altered from this Docs-only workstream.
+This file consolidates role/use instructions historically carried in root `TESTING_SKILL.md`; the still-existing `dev` version must be reconciled **only during controlled docs→dev integration**, not altered from this Docs-only workstream. Current test-content claims should compare `dev` and active `testing`, with exact commit provenance.
