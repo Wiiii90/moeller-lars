@@ -1,6 +1,6 @@
 # Editorial-Mutationspfade: Home-Menüsichtbarkeit und Custom-Page-Bildwechsel
 
-**Quellstand:** `dev@f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0` (auf `docs` durch Zwei-Eltern-Merge übernommen). Dies ist **deskriptive Source-Tracing-Dokumentation**, keine zweite UI-Norm: [Dialog-Owner](../ADMIN-DIALOG-CONTRACT.md), [Notification-Owner](../ADMIN-NOTIFICATION-CONTRACT.md), [Public-Navigationsvertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Tests sind nur als **gelesene Belege** zitiert; keine Ausführung oder Browserprüfung.
+**Quellstand:** `dev@f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0` (auf `docs` durch Zwei-Eltern-Merge übernommen). Dies ist **deskriptive Source-Tracing-Dokumentation**, keine zweite UI-Norm: [Dialog-Owner](../admin/dialogs.md), [Notification-Owner](../admin/notifications.md), [Public-Navigationsvertrag](../public/site.md). Tests sind nur als **gelesene Belege** zitiert; keine Ausführung oder Browserprüfung.
 
 ## Grundlegende Rollen
 

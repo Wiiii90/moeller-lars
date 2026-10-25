@@ -1,6 +1,6 @@
 # Fachliche Lebenszyklen: Zustände, Guards und Seiteneffekte
 
-Die fünf hier begonnenen Zustandsautomaten sind in [lifecycles.json](lifecycles.json) mit konkreten PHP-Quellpfaden und Textankern abgelegt. [generate-architecture-lifecycles.php](../../scripts/generate-architecture-lifecycles.php) erzeugt daraus reproduzierbare [Mermaid-Diagramme](generated/lifecycles/). Die Textanker werden geprüft, die **fachliche Korrektheit ist weiterhin manuell gegen die Methoden zu überprüfen**. Am 19.10.2026 besteht der native `--check` mit PHP 8.3.33 auf `docs@8c9bd0a0`: fünf Modelle, 35 Übergänge, sechs Quelldateien; Manifest und Diagramme unverändert. Das bestätigt Textanker und Rendering, keine erneute vollständige Semantikprüfung gegenüber neuerem `dev` und keine dynamische Laufzeitanalyse.
+Die fünf hier begonnenen Zustandsautomaten sind in [lifecycles.json](lifecycles.json) mit konkreten PHP-Quellpfaden und Textankern abgelegt. [generate-architecture-lifecycles.php](../../scripts/generate-architecture-lifecycles.php) erzeugt daraus reproduzierbare [Mermaid-Diagramme](generated/lifecycles). Die Textanker werden geprüft, die **fachliche Korrektheit ist weiterhin manuell gegen die Methoden zu überprüfen**. Am 19.10.2026 besteht der native `--check` mit PHP 8.3.33 auf `docs@8c9bd0a0`: fünf Modelle, 35 Übergänge, sechs Quelldateien; Manifest und Diagramme unverändert. Das bestätigt Textanker und Rendering, keine erneute vollständige Semantikprüfung gegenüber neuerem `dev` und keine dynamische Laufzeitanalyse.
 
 ## 1. BlogPost
 

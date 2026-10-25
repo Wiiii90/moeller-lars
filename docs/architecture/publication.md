@@ -1,6 +1,6 @@
 # Publication: Working, LIVE und öffentlicher Lesezugriff
 
-**Quellbelege:** `PublicationSnapshot.php`, `PublicationService.php`, `PublicationVersionService.php`, `PublicationReadContext.php`, `CommittedRead.php`, `PublicationPostgresGrammar.php`, `UseCommittedPublicState.php`, `bootstrap/app.php` (Beleg-HEAD siehe [Inventar](inventory.md)). Vertragsregeln verbleiben vorläufig in [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md).
+**Quellbelege:** `PublicationSnapshot.php`, `PublicationService.php`, `PublicationVersionService.php`, `PublicationReadContext.php`, `CommittedRead.php`, `PublicationPostgresGrammar.php`, `UseCommittedPublicState.php`, `bootstrap/app.php` (Beleg-HEAD siehe [Inventar](inventory.md)). Vertragsregeln verbleiben vorläufig in [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](../admin/activity-publication.md).
 
 ## Physische und logische Zustände
 
