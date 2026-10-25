@@ -46,6 +46,9 @@ Do not trigger extra/manual canonical verification runs merely to inspect a CSS/
 
 ## Accepted candidate promotion to `main`
 
+**One-time mandatory pre-promotion reminder — public Git history:** Before the **next** user-approved transfer or push to protected `main`, the responsible release/Docs worker **must explicitly remind the user** that the formerly tracked public `docs/adr/ADR-0001-APPLICATION-STACK.md` and `docs/adr/ADR-0002-HOSTING-COST-BASELINE.md` are still present in prior Git commits (and, at the time this task was deferred, in the old `main` tip). The user intentionally deferred cleanup to this event. **Pause ordinary promotion until the user decides/authorizes the one-time repository-wide history cleanup.** This is not a routine documentation commit or Pull Request: coordinate worker freeze, private backup, complete inventory of reachable sensitive paths/content, Git-history filtering of all relevant branches/tags and relevant commit metadata, protection-aware controlled force updates, cleanup of stale refs/caches where GitHub permits, fresh clone/reconciliation instructions, and reinstatement/verification of all protections. A normal promotion Pull Request alone does **not** erase old commits. Never silently weaken branch protection, rewrite shared history, run verification or deploy without separate authorization. After the user confirms completion or explicitly cancels this one-time action, **delete this reminder paragraph**; do not make a new file or permanent special workflow.
+
+
 When an exact `dev` candidate has browser/product acceptance and is intended to become the release candidate:
 
 1. finish durable documentation and acceptance-issue bookkeeping on that exact integration line;

@@ -20,7 +20,7 @@
 
 ## Open next
 
-1. **Protected `main` ADR removal:** requires a separately authorized protected-branch pull-request/check workflow; this workstream cannot bypass the protection. Decide separately whether public Git history warrants a coordinated privacy purge; file deletion alone is not sufficient.
+1. **One-time deferred pre-main reminder:** The user explicitly chose to postpone the public ADR/history cleanup **until the next transfer/push to protected `main`**. Before that event, the responsible worker must remind the user and request specific permission for a coordinated all-ref history rewrite/protection-aware update; normal Pull Requests and tip deletions do not purge past commits. This gate is recorded in [the existing release contract](../../docs/RELEASE.md#accepted-candidate-promotion-to-main). Once resolved/cancelled, **remove the temporary release paragraph and this item**, not add a reminder file.
 2. **Only after the above requested workflow work:** full semantic/current-source documentation audit of Public, Admin, Media, Rights, architecture references and generated artifacts. Consolidate outdated or misowned material; do not start by producing new documents.
 3. At user-authorized Docs integration, reconcile exact frozen accepted source, complete relevant generation only then, run native link/heading checks in an isolated authorized checkout, and transfer only reviewed durable docs.
 
