@@ -294,6 +294,8 @@ presentation or an eligible published Custom Page. Home and Custom media
 references (including List media and child Rich Text) use the canonical
 MediaAsset reference/publication contracts.
 
+**Inline video controls are consumer-specific in current source:** Home Custom/Under Construction and Custom Page Image/video components share the stored `video_controls_enabled` setting (**Show video playback controls**, default on), edited in their existing component dialogs; `CustomPageSetting::videoControls()` reads historical missing values as enabled. The shared `component-sequence.blade.php` renders native `controls` only for a non-decorative video when that setting is enabled. The central page-scoped autoplay/visibility owner still applies; hiding native controls does not introduce a second playback engine or suppress the Artwork Viewer's separate controls. **Journal Cover/Gallery videos use `JournalMediaRenderer` and currently render native controls unconditionally**; the Journal `image_viewer_enabled` setting is an image-only lightbox choice, not a video-controls switch. The Gallery/Home Artwork renderer has its own optional sound toggle, which is distinct from native video controls. This is a documented difference in **existing** consumers, not a claim that a Journal controls option has been implemented or browser-accepted.
+
 ## Gallery delivery and loading
 
 Gallery index markup retains the **complete canonical Artwork and Viewer

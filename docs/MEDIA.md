@@ -142,7 +142,7 @@ Credit/copyright and the optional `file_creator`, `file_rights_holder`, `rights_
 
 Storage is the authoritative reusable media library. Editor media selection should use the central lazy `MediaAssetSelect` pattern rather than eager full-library preloading/plucking.
 
-Consumer-specific type restrictions remain explicit. Storage supporting audio does not make audio valid in every image/video consumer.
+Consumer-specific type restrictions remain explicit. Storage supporting audio does not make audio valid in every image/video consumer. Home and Custom Page structured video components own `video_controls_enabled` through the shared Image component schema and render path (default true for existing/missing data); a decorative media component omits native controls. Journal's shared media renderer currently emits native controls on video, and its `image_viewer_enabled` option governs images only. Gallery/Artwork sound policy is a separate concern. Do not infer global playback-control uniformity or add a second media playback implementation.
 
 ## Deletion and cleanup
 
