@@ -37,7 +37,10 @@ function fixture() {
     }));
     const listeners = new Map();
     const root = {
-        querySelectorAll: () => images,
+        querySelectorAll: (selector) => {
+            assert.equal(selector, '.artwork-card__image');
+            return images;
+        },
         addEventListener: (type, callback) => { listeners.set(type, callback); },
         dispatch: (type, image) => listeners.get(type)?.({ type, target: image }),
     };

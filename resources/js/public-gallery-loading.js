@@ -53,7 +53,7 @@ function initializeArtworkDetailImage(root) {
 
 export function initializeGalleryImageLoading(root = document) {
     const disposeDetail = initializeArtworkDetailImage(root);
-    const images = Array.from(root.querySelectorAll('[data-gallery-image-buffer] .artwork-card__image'));
+    const images = Array.from(root.querySelectorAll('.artwork-card__image'));
     if (images.length === 0) return disposeDetail;
 
     const lifetime = new AbortController();
