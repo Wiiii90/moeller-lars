@@ -428,6 +428,7 @@ Do not fix a central geometry problem with multiple page-local pixel patches.
 Important current shared/admin modules include:
 
 - `base.css`;
+- `primitives.css`;
 - `layouts.css`;
 - `forms.css`;
 - `data-workspace.css`;
@@ -472,8 +473,8 @@ Large admin visualization/editorial surfaces use one shared outer geometry.
 
 Authorities:
 
-- `resources/css/admin.css` owns `--admin-visual-stage-height`;
-- `resources/css/admin/stage.css` consumes that height and owns shared divider geometry;
+- `resources/css/admin/primitives.css` defines the single `--admin-visual-stage-height` token;
+- `resources/css/admin/stage.css` consumes that height and owns shared divider geometry and `--admin-stage-orbit-size`;
 - `resources/css/admin/data-workspace.css` owns the stage-to-follow-up rhythm;
 - feature modules own only their internal composition.
 

@@ -98,7 +98,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 
 ## Visual Stages
 
-**Stage geometry is centrally owned by [stage.css](../../resources/css/admin/stage.css):** the stage height uses `--admin-visual-stage-height` and common orbit graphics use `--admin-stage-orbit-size`. Both remain canonical across responsive states; do not redefine those tokens in a breakpoint or add page-local alternative stage-height/orbit-size tokens without an explicit accepted contract change. Change component visibility/composition, not the central stage height. This does not authorize generic narrow vertical stacking.
+**Stage geometry has one shared token owner and one consuming component:** [primitives.css](../../resources/css/admin/primitives.css) defines `--admin-visual-stage-height`; [stage.css](../../resources/css/admin/stage.css) uses that height and defines `--admin-stage-orbit-size` for the common orbit. Both remain canonical across responsive states; do not redefine those tokens in a breakpoint or add page-local alternative stage-height/orbit-size tokens without an explicit accepted contract change. Change component visibility/composition, not the central stage height. This does not authorize generic narrow vertical stacking.
 
 Shared desktop stage geometry does not imply shared narrow composition.
 
