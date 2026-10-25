@@ -770,3 +770,18 @@ it('rejects an invalid image replacement at the mounted field without mutation o
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe(0);
 });
+
+it('keeps centered Image placement in the canonical component schema', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Centered image', 'centered-image');
+    $settings->update(['blocks' => [[
+        'type' => 'image', 'published' => false, 'media_asset_id' => null,
+        'image_decorative' => false, 'image_alignment' => 'center',
+    ]]]);
+    $image = $settings->fresh()->components()[0];
+    expect($image['image_alignment'])->toBe('center')
+        ->and(CustomPageSetting::imageAlignment($image))->toBe('center');
+
+    Livewire::test(CustomPageWorkspace::class, ['page' => $section->getKey()])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
+        ->assertActionDataSet(['image_alignment' => 'center']);
+});

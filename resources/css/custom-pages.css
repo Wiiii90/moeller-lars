@@ -60,6 +60,9 @@
 .custom-page__image--align-right {
     margin-left: auto;
 }
+.custom-page__image--align-center {
+    margin-inline: auto;
+}
 /* Native float, not a manufactured second column or breakpoint.
    Lines flow around the image until there is not enough room, then continue
    beneath it. The parent's formatting context ends the effect explicitly. */
@@ -74,6 +77,11 @@
 .custom-page__image--wrapped.custom-page__image--align-right {
     float: right;
     margin: 0 0 0 clamp(.8rem, 3vw, 1.6rem);
+}
+.custom-page__image--wrapped.custom-page__image--align-center {
+    float: none;
+    width: min(100%, var(--custom-page-image-width, 28rem));
+    margin-inline: auto;
 }
 
 .custom-page__media :is(img, video) {

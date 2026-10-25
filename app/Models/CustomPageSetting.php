@@ -28,7 +28,7 @@ final class CustomPageSetting extends Model
     /** One shared allowlist for Image children in persistence, editing and sorting. */
     public const IMAGE_CHILD_TYPES = ['text', 'list', 'divider', 'contact', 'legal_disclaimer'];
 
-    public const IMAGE_ALIGNMENTS = ['left', 'right'];
+    public const IMAGE_ALIGNMENTS = ['left', 'center', 'right'];
 
     public const CONTACT_CHILD_TYPES = [
         'public_email',
@@ -95,7 +95,9 @@ final class CustomPageSetting extends Model
     /** Historical images default to left without storing a redundant value. */
     public static function imageAlignment(array $block): string
     {
-        return ($block['image_alignment'] ?? 'left') === 'right' ? 'right' : 'left';
+        $alignment = $block['image_alignment'] ?? 'left';
+
+        return is_string($alignment) && in_array($alignment, self::IMAGE_ALIGNMENTS, true) ? $alignment : 'left';
     }
 
     public static function componentPublished(array $block): bool
@@ -181,7 +183,7 @@ final class CustomPageSetting extends Model
                     'published' => $published,
                     'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
                     'image_decorative' => (bool) ($block['image_decorative'] ?? false),
-                    ...($this->validatedImageAlignment($block) === 'right' ? ['image_alignment' => 'right'] : []),
+                    ...($this->validatedImageAlignment($block) !== 'left' ? ['image_alignment' => $this->validatedImageAlignment($block)] : []),
                     ...$this->normalizedImageScale($block),
                     ...$this->normalizedImageChildren($block),
                 ],
@@ -220,7 +222,7 @@ final class CustomPageSetting extends Model
     {
         $alignment = $block['image_alignment'] ?? 'left';
         if (! is_string($alignment) || ! in_array($alignment, self::IMAGE_ALIGNMENTS, true)) {
-            throw ValidationException::withMessages(['blocks' => 'Image alignment must be Left or Right.']);
+            throw ValidationException::withMessages(['blocks' => 'Image alignment must be Left, Center or Right.']);
         }
 
         return $alignment;

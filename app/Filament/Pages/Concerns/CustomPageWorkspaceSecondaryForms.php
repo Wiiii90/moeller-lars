@@ -106,10 +106,10 @@ trait CustomPageWorkspaceSecondaryForms
     {
         $alignment = $data['image_alignment'] ?? ($existing['image_alignment'] ?? 'left');
         if (! is_string($alignment) || ! in_array($alignment, CustomPageSetting::IMAGE_ALIGNMENTS, true)) {
-            throw ValidationException::withMessages(['image_alignment' => 'Choose Left or Right alignment.']);
+            throw ValidationException::withMessages(['image_alignment' => 'Choose Left, Center or Right alignment.']);
         }
 
-        return $alignment === 'left' ? [] : ['image_alignment' => 'right'];
+        return $alignment === 'left' ? [] : ['image_alignment' => $alignment];
     }
 
     /** @param array<string, mixed> $data
