@@ -66,15 +66,13 @@ Usual **direction of gated progress** is `dev → testing → docs → refactor 
 
 ## No exhaustive audit by default
 
+Workers must scope each request to the **smallest complete architectural owner and its direct consumers**. Do not scan all repository files, run broad inventories, read every manual or conduct a full test/generator sweep just to establish context. Use bounded batches, make a coherent change, stop and retain only actionable next steps. Whole-repository qualification is an explicit user-approved task or a final integration gate, not routine investigation.
+
 ## Codex and Continuous Integration resource policy
 
 Codex is a comparatively expensive execution capability: prefer scoped source inspection and small safe checks first, and **request/use Codex only when its actual execution or modification capability is needed and approved**, especially for isolated test runs or test-source changes in Refactor/Testing. Before an approved integration/merge, the responsible worker can request a concentrated final Codex/native qualification batch rather than repeatedly running exhaustive suites during daily edits. Any database-writing run must prove independent disposable database/file isolation before execution; do not touch protected Preview/Validation/Production data.
 
 Continuous Integration (CI) and GitHub Actions are **not globally banned**. Trigger, inspect or use them **only when the user specifically asks or authorizes that workflow** (for example a final integration gate). Because long-running CI polling and oversized job-log responses have exhausted chats, **never start indefinite status polling or stream entire logs into conversation**. Prefer a bounded check of the final run summary, failed job/step and narrowly relevant error excerpt; report that results are pending/unavailable when no bounded result exists. User approval for a merge does not automatically authorize unrelated CI, infrastructure or deployment actions.
-
-
-
-Workers must scope each request to the **smallest complete architectural owner and its direct consumers**. Do not scan all repository files, run broad inventories, read every manual or conduct a full test/generator sweep just to establish context. Use bounded batches, make a coherent change, stop and retain only actionable next steps. Whole-repository qualification is an explicit user-approved task or a final integration gate, not routine investigation.
 
 ## Knowledge and ownership
 

@@ -24,11 +24,11 @@ Use [architecture evidence](../../../docs/architecture/README.md) to investigate
 
 These are **judgment principles**, not a demand to add inheritance, design patterns, container bindings or interfaces everywhere. **No arbitrary lines-of-code threshold or one-file-per-function policy:** file length is a signal to investigate cohesion, not a refactoring goal. Split a class only when separate reasons to change, dependency boundaries or meaningful maintainability gains justify it; preserve useful grouping. Simplifying code must not erase necessary domain distinctions.
 
-## One canonical owner; no compatibility facades for new code## Detect and repair structural mistakes from other workers
+## Detect and repair structural mistakes from other workers
 
 Actively notice architecture gaps while working in the **bounded relevant area**, including recently introduced duplicate services, needless `fooWithThis` variants, misuse of inheritance, inconsistent module responsibilities, accidental aliases, parallel User Interface (UI) controls, dead adapters and redundant tests. Compare real implementation to the system's agreed architecture and reusable product contracts, not only a linter's suggestions. Correct behavior-preserving mistakes centrally on `refactor` and remove obsolete paths; **do not** scan the entire codebase without a specific authorized scope. A defect requiring product behavior changes goes back to Dev or to the user for a decision instead of being hidden inside a refactor.
 
-
+## One canonical owner; no compatibility facades for new code
 
 If `foo` already owns an operation, consider a cohesive extension of its parameters or composition, updating its callers, rather than inventing `fooWithThat`, `fooWithThis`, `fooV2` or a wrapper alias. PHP has no ordinary signature-based overloads; use a clear unified contract or a truly separate responsibility instead. Also avoid opposite overengineering: giant functions with unrelated boolean switches. Change the true owner; delete superseded classes, call sites, imports, styles, hooks and dead references **in the same bounded correction**.
 
