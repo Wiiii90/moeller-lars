@@ -1,6 +1,6 @@
 # Public rights, artwork protection and privacy — implementation plan
 
-Status: architectural contract and implementation criteria. Block A General/Legal Disclaimer has source changes authored; migrations, native tests, browser acceptance and legally reviewed owner details remain unverified in this docs workstream. The 15 October editorial/consent decisions and contact/analytics/map source flows are reconciled; no legal text or provider identity was invented. Source reviewed through dev@883ff5e0.
+**Scope and evidence:** This document owns accepted product constraints, rights/privacy integration requirements and remaining verification criteria. Its source observations include historical snapshots, most recently the stated `dev@434975e1bd09` B2 artifact checkpoint; they are not a blanket runtime or browser acceptance of the current `dev` branch. General Legal and media-rights implementation exists in source, but migrations, enabled rollout, current runtime behavior, the artist's legal copy and legal review must each be verified separately.
 
 ## Product boundaries and ownership
 
@@ -118,9 +118,9 @@ Acceptance: realistic browser image browsing and high-resolution viewer work unc
 
 **Slice 3 — Stop abusive extraction while preserving SEO.** Audit media request surface, implement ingress/application rate/bot-abuse control based on measured thresholds and verify Google Images, normal gallery and full-res viewer; evaluate hotlink and signed URLs only after evidence. Existing robots/TDM signals are only a partial start.
 
-**Slice 4 — Matomo/consent and privacy cutover.** Full technical gating + non-obstructing consent management + concrete, artist-supplied/legal-reviewed privacy disclosure + browser/network validation. Track deployment flag and server configuration separately, not with a guessed repo constant.
+**Slice 4 — Privacy verification; conditional analytics activation.** Verify actual browser Matomo configuration, access-log/import behavior, retention, anonymization, Contact and map data flows, and artist-supplied/legal-reviewed disclosures against the real environment. A new consent UI remains **deferred** by product decision; do not add a cookie banner or acceptance modal under this slice. If tracking requires consent, keep it disabled until a separately authorized single-owner consent solution is legally and technically verified. Check deployment flags and server configuration at the platform owner instead of assuming a repository default reflects production.
 
-These slices can be sequenced according to active public/admin work. This is a plan, not authorization for concurrent rewrites, CI access, server changes or deployment. Direct work remains on `dev` only, with HEAD lease/reconciliation. No CI interaction, no unrelated changes, and no unverified 'finished' claims.
+These slices are an ownership and acceptance sequence, not four claims of missing source implementation or an authorization to activate tracking, deploy, alter infrastructure or redo independently accepted work. Reconcile current `dev` source and existing verified evidence before treating any slice as outstanding or complete.
 
 ## Source verification / references
 
