@@ -311,7 +311,7 @@ Do not encode rejected or unreviewed presentation details into durable tests or 
 
 ## Admin theme enforcement
 
-[`docs/ADMIN-UI.md`](ui-skills.md) owns the admin presentation contract, accepted references,
+[`docs/ADMIN-UI.md`](docs/ADMIN-UI.md) owns the admin presentation contract, accepted references,
 shared primitives, CSS ownership and visual review checklist. Read it before UI work.
 Prompts must identify the exact reference files and workers must enumerate reused primitives
 and justify feature-local CSS. Review actual Blade/CSS changes for bypasses before reconciliation.
