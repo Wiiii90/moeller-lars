@@ -75,6 +75,8 @@ registered color extension.
 Paragraphs and headings support default, no spacing, compact, and relaxed
 spacing via one shared Tiptap attribute. The PHP and JavaScript extensions
 use the same fixed preset names; editorial and public styles match.
+A single shared `resources/css/rich-text-spacing.css` is imported by both the
+admin and public entries so spacing is visible when editing and publishing.
 
 ## Editor transport
 
