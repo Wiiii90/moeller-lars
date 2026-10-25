@@ -3,7 +3,7 @@
 This is an evidence checklist for the reviewed `P:/larsmoeller` source. It
 records observed legacy behaviour and the target decision; it does not make
 legacy defects compatibility requirements and does not duplicate the target
-specification in [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md).
+specification in [PUBLIC-IMPLEMENTATION-CONTRACT.md](../public/site.md).
 
 The comparison method for every row is: inspect the cited source, reproduce the
 route/query or rendered fixture from a read-only source snapshot, then compare

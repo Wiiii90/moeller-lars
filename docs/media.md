@@ -64,7 +64,7 @@ Video ingest creates a separate immutable WebP poster via FFmpeg without transco
 
 The current [Media ingest owner](../app/Domain/Media/MediaIngestService.php) uses **libvips for every new image thumbnail** (bounded to 960px, with a distinct `public-v2` transform profile for eligible high-resolution originals). FFmpeg produces the immutable `video-poster-v1` WebP preview of a supported video. `MediaPreviewVariant` is the common selector for both thumbnail profiles and video poster, shared across Admin, Gallery, Publication and Public. GD is retained only for historical variant regeneration; it is not a second pipeline for new uploads. The ingest lock spans derivative preparation, and authoritative capacity admission reserves original plus new preview bytes once, without double-counting existing variants. Unsupported, missing or corrupt required previews are failures, not permission to serve a different asset.
 
-Media rights-bearing image bytes are a **separate immutable artifact**: `MediaRightsArtifactService` prepares SHA-256/revision-addressed copies without rewriting originals or existing variants; `MediaRightsPublicationSelections` selects Working/checkpoint/LIVE versions under the Publication lock. Preparation and delivery are independently **opt-in** via `rights_preparation_enabled` and `rights_delivery_enabled`. The source contains optional preparation, revisioned serving and bounded orphan reclamation; presence of these services is not proof that Validation or Production enables them. See [Public rights and privacy](PUBLIC-RIGHTS-AND-PRIVACY.md) and the [Publication architecture](architecture/publication.md).
+Media rights-bearing image bytes are a **separate immutable artifact**: `MediaRightsArtifactService` prepares SHA-256/revision-addressed copies without rewriting originals or existing variants; `MediaRightsPublicationSelections` selects Working/checkpoint/LIVE versions under the Publication lock. Preparation and delivery are independently **opt-in** via `rights_preparation_enabled` and `rights_delivery_enabled`. The source contains optional preparation, revisioned serving and bounded orphan reclamation; presence of these services is not proof that Validation or Production enables them. See [Public rights and privacy](public/rights-privacy.md) and the [Publication architecture](architecture/publication.md).
 
 Artwork draft deletion and optional **delete original** are not the same operation. The Artwork/relationship change and eligible MediaAsset logical deletion are transactional and audited; physical bytes must be queued through the durable `PublicationMediaCleanupService` outbox, rechecked against Working/Committed/history references, and drained/retried separately. A successful logical transaction does **not** assert that physical files were synchronously removed. No persistent Validation data may be used as a cleanup test fixture.
 
@@ -83,7 +83,7 @@ Structured consumers include:
 
 Rich Text uses the **same canonical `MediaAsset` identifier** in both historical Markdown (`![](media:<id>)`) and current visual HTML. `RichTextDocument` converts legacy Markdown only when entering the visual editor; no compulsory database rewrite occurs. `RichTextMediaReference` discovers managed image references and `SafeRichTextRenderer` validates and safely renders both formats under the current media-eligibility and link policy. HTML rendering is not a separate image library or a general license to insert external assets. The visual editor selects available Storage assets through `MediaAssetSelect`, never uploads a second file through RichEditor; its defensive attachment provider rejects such uploads. Deleting an image node leaves the reusable Storage asset intact.
 
-Public image ALT uses canonical Storage metadata and a validated occurrence-specific override when allowed; captions are visible descriptions **not** substitutes for ALT. Existing external HTTP(S) content links and legacy media compatibility require `SafeLinkPolicy` and the Content Security Policy (CSP); editor URL acceptance does not prove a browser may load a remote image. See [Editorial Rich Text](EDITORIAL-RICH-TEXT.md) and [Public Security](architecture/public-security-privacy-boundaries.md).
+Public image ALT uses canonical Storage metadata and a validated occurrence-specific override when allowed; captions are visible descriptions **not** substitutes for ALT. Existing external HTTP(S) content links and legacy media compatibility require `SafeLinkPolicy` and the Content Security Policy (CSP); editor URL acceptance does not prove a browser may load a remote image. See [Editorial Rich Text](content/rich-text.md) and [Public Security](architecture/public-security-privacy-boundaries.md).
 
 Current Rich Text consumers include Blog body, Exhibition description, Custom Page Text/List rich text and Home rich text; historical CV-specific editor/table paths remain retired. Structured Journal Cover/Gallery media and inline images are independent consumer roles, with the same canonical Storage ownership.
 
@@ -136,7 +136,7 @@ Usage-specific overrides exist only where an explicit consumer contract supports
 
 Required public ALT is never manufactured from filenames/IDs at render time.
 
-Credit/copyright and the optional `file_creator`, `file_rights_holder`, `rights_usage_terms`, `license_inquiry_url` fields are editorial metadata; they do not alter immutable technical identity or determine authorship automatically. `MediaRightsProjection` feeds an opt-in immutable rights-artifact preparation system, which can select separate Working/Committed revisions under the Publication lock. Changing editorial text does not automatically prepare or publicly deliver new bytes. Delivery requires explicit configuration, migration and rights selection; see [rights and privacy](PUBLIC-RIGHTS-AND-PRIVACY.md#b-rights-metadata-across-storage-public-files-and-seo).
+Credit/copyright and the optional `file_creator`, `file_rights_holder`, `rights_usage_terms`, `license_inquiry_url` fields are editorial metadata; they do not alter immutable technical identity or determine authorship automatically. `MediaRightsProjection` feeds an opt-in immutable rights-artifact preparation system, which can select separate Working/Committed revisions under the Publication lock. Changing editorial text does not automatically prepare or publicly deliver new bytes. Delivery requires explicit configuration, migration and rights selection; see [rights and privacy](public/rights-privacy.md#b-rights-metadata-across-storage-public-files-and-seo).
 
 ## Editor selection
 
@@ -214,7 +214,7 @@ Storage list/reference rendering must remain bounded.
 
 Normal Storage navigation, library filtering, visualization selection and destination drilldown must not trigger an authoritative recursive filesystem walk. Production/local-preview startup warms the durable display snapshot; successful file ingest and physical cleanup refresh it at their mutation boundaries; the explicit `Refresh` action is the manual authoritative rescan/recovery path. A display-refresh failure must not roll back an otherwise successful file mutation; the stale display snapshot is discarded instead.
 
-Do not dismiss source-side media-reference/preload latency merely because local Docker amplifies it. See [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md).
+Do not dismiss source-side media-reference/preload latency merely because local Docker amplifies it. See [ADMIN-PERFORMANCE.md](admin/performance.md).
 
 ## Public delivery
 
@@ -239,4 +239,4 @@ Durable verification covers:
 - exclusive area accounting and non-exclusive concrete destination drilldown;
 - bounded Storage reference projection.
 
-`php artisan media:verify` is the release/recovery integrity check. See [RELEASE.md](RELEASE.md).
+`php artisan media:verify` is the release/recovery integrity check. See [RELEASE.md](operations/release.md).

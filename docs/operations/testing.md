@@ -23,7 +23,7 @@ Testing workers may keep their test branch aligned in advance while `dev` remain
 | JavaScript | `tests/js` | Node-based production frontend logic |
 | Browser | `tests/browser/component`, `e2e`, `profiling` | Chromium components, seeded Laravel E2E and representative performance evidence |
 
-The former separate Architecture suite is retired. Structural contracts belong in meaningful behavior tests; source-string matching is not proof of working software. `tests/Pest.php` and `phpunit.xml` own PHP discovery; `playwright.config.mjs` owns browser projects. **The suite currently integrated into `dev` is the documentation baseline.** The separately curated `testing` branch returns improvements to `dev` through an authorized integration; update this document and the [evidence matrix](architecture/completion-criteria.md) after that integration, not by routinely treating unmerged Testing changes as accepted. A source/branch comparison is not a passing-test result.
+The former separate Architecture suite is retired. Structural contracts belong in meaningful behavior tests; source-string matching is not proof of working software. `tests/Pest.php` and `phpunit.xml` own PHP discovery; `playwright.config.mjs` owns browser projects. **The suite currently integrated into `dev` is the documentation baseline.** The separately curated `testing` branch returns improvements to `dev` through an authorized integration; update this document and the [evidence matrix](../architecture/completion-criteria.md) after that integration, not by routinely treating unmerged Testing changes as accepted. A source/branch comparison is not a passing-test result.
 
 ## Running and discovering tests
 
@@ -82,6 +82,6 @@ The existing `release.yml` workflow will report the combined PHP app/ line-cover
 
 `release.yml` verifies dependencies, Vite build/manifest, the four current Pest suites, PHPStan, Pint and JS. `browser-profile.yml` verifies Chromium component, E2E and profiling paths. `runtime-image-smoke.yml` verifies its scoped container boot contract. Special multi-process concurrency is intentionally a separate isolated test boundary until a safe CI runner exists.
 
-During direct-`dev` work, development agents do not run, monitor, inspect or troubleshoot GitHub Actions. Updating CI source on `dev` does not authorize CI execution. Release qualification and `main` promotion are separate, explicitly authorized tasks described by `docs/RELEASE.md`.
+During direct-`dev` work, development agents do not run, monitor, inspect or troubleshoot GitHub Actions. Updating CI source on `dev` does not authorize CI execution. Release qualification and `main` promotion are separate, explicitly authorized tasks described by `docs/operations/release.md`.
 
 Migration/legacy tests are retained only until their documented cutover retirement condition. Remove obsolete Architecture/SitePages suite descriptions, obsolete runbooks, redundant regressions and replaced assertions. Keep the active `testing` curation aligned to the common architecture rather than establishing two incompatible permanent systems.

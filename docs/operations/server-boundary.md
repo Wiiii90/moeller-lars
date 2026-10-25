@@ -87,7 +87,7 @@ The platform contract must provide, at minimum:
 - monitoring for application/ingress/storage/backup health;
 - a controlled patching/maintenance process.
 
-Application security remains separately responsible for authentication, authorization, CSRF/session policy, MFA/account-recovery behavior, rate limiting, input/media validation and safe public/admin behavior. See [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md).
+Application security remains separately responsible for authentication, authorization, CSRF/session policy, MFA/account-recovery behavior, rate limiting, input/media validation and safe public/admin behavior. See [ADMIN-AUTHENTICATION.md](../admin/authentication.md).
 
 ## Persistence and recovery
 
@@ -98,7 +98,7 @@ Authoritative application state consists of:
 
 Generated media variants may be backed up conservatively but are conceptually rebuildable.
 
-Recovery must attach database and media from a consistent recoverable state to an explicitly identified application release and then run the application-level verification described in [RELEASE.md](RELEASE.md).
+Recovery must attach database and media from a consistent recoverable state to an explicitly identified application release and then run the application-level verification described in [RELEASE.md](release.md).
 
 A backup is not considered proven merely because files exist; the platform restore procedure and application integrity checks must be executable in an isolated recovery context.
 
@@ -108,4 +108,4 @@ A successful CI run or GHCR image publication does not authorize Production muta
 
 Before Production deployment/cutover, the exact candidate must pass the project release gates, including isolated Validation/browser acceptance where required and current platform backup/rollback readiness. When authentication mail changes, the target environment's reset-mail delivery must be exercised without leaking credentials/reset URLs into logs.
 
-See [RELEASE.md](RELEASE.md) and [MIGRATION-PLAN.md](MIGRATION-PLAN.md).
+See [RELEASE.md](release.md) and [MIGRATION-PLAN.md](../migration/plan.md).

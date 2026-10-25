@@ -93,7 +93,7 @@ The Publication bootstrap migration freezes the tracked tables and audit entity 
 
 Likewise, canonical Exhibition Cover/Gallery usage lives in `journal_entry_media`. The older `exhibition_media` table has no runtime model or writer and is retained only while the current Publication snapshot schema still needs that historical table shape. Its eventual physical drop is a Publication-schema cutover, not a normal runtime cleanup.
 
-The detailed rules are in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
+The detailed rules are in [MIGRATION-INVARIANTS.md](invariants.md).
 
 ## 5. Journal template retention
 
@@ -134,7 +134,7 @@ For the release-candidate line:
 
 Continue browser/editorial reconciliation while v0.4 acceptance remains open. A technically running candidate, green automated check or accepted earlier milestone does **not** establish acceptance of this candidate; the user explicitly decides when the product pass is complete.
 
-Detailed admin UI expectations are in [Admin UI contract](ADMIN-UI.md).
+Detailed admin UI expectations are in [Admin UI contract](../admin/ui.md).
 
 ## 8. Release-candidate validation
 

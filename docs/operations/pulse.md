@@ -7,7 +7,7 @@ The report exists for two use cases:
 - a compact Markdown snapshot that can be pasted into an issue or review chat without manually transcribing the Pulse UI;
 - a stable JSON snapshot for scripts, CI artifacts or later comparison tooling.
 
-It is deliberately an aggregate report, not a request tracer. Use the browser/Debugbar/Playwright workflow in [`ADMIN-PROFILING.md`](ADMIN-PROFILING.md) when one exact interaction needs root-cause attribution.
+It is deliberately an aggregate report, not a request tracer. Use the browser/Debugbar/Playwright workflow in [`docs/admin/performance.md`](../admin/performance.md) when one exact interaction needs root-cause attribution.
 
 ## Commands
 

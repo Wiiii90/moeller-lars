@@ -80,6 +80,6 @@ No legacy source tree, production database dump, authoritative production media 
 
 ## Retention of migration evidence
 
-`SOURCE-INVENTORY.md`, [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) and [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md) remain active only while migration/cutover/legacy-retirement evidence is required.
+`docs/migration/source-inventory.md`, [LEGACY-PUBLIC-CONTRACT.md](legacy-public.md) and [MIGRATION-INVARIANTS.md](invariants.md) remain active only while migration/cutover/legacy-retirement evidence is required.
 
 After explicit legacy retirement, review them in a dedicated cleanup and archive/remove details that no longer protect an operational or legal/product requirement.

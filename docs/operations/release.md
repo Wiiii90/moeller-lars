@@ -30,7 +30,7 @@ Tag existence alone is not release evidence. A deployable release candidate requ
 
 ## Browser reconciliation versus release
 
-The branch/review workflow is defined in [AGENTS.md](../AGENTS.md). Browser review uses an exact dev candidate and the existing lightweight local preview image.
+The branch/review workflow is defined in [AGENTS.md](../../AGENTS.md). Browser review uses an exact dev candidate and the existing lightweight local preview image.
 
 That loop is deliberately separate from release qualification:
 
@@ -115,7 +115,7 @@ npm run build
 
 Any agent or worker that changes PHP must treat Pint as a pre-push gate, not as a CI-only check. Before committing/pushing the final PHP diff, run `vendor/bin/pint --test`. If it fails, run Pint to fix the affected PHP formatting, inspect that formatting diff, and rerun `vendor/bin/pint --test` before pushing. Do not use the remote CI run as the first place where PHP formatting is discovered.
 
-`composer test` remains available for running all PHP tests together when a disposable test database context is already established. The durable layer ownership, placement rules and browser-testing direction are defined in [TESTING.md](TESTING.md).
+`composer test` remains available for running all PHP tests together when a disposable test database context is already established. The durable layer ownership, placement rules and browser-testing direction are defined in [TESTING.md](testing.md).
 
 Browser/product acceptance remains separate evidence.
 
@@ -157,13 +157,13 @@ The canonical media policy supports validated image/video/audio content. Consume
 
 ## Release notes and Dashboard announcements
 
-The [root Changelog index](../CHANGELOG.md) links technical release-note Markdown stored once under `resources/release-notes/versions/`; artist-facing pre-release/milestone Announcements live under `resources/release-notes/announcements/`. The existing Dashboard feed reads these code-owned files using a versioned `config/dashboard-feed.php` manifest and a shared safe Markdown renderer, **not** a second database text copy. Notification/Contact rows are separate Inbox data. Exact previous-to-candidate Git ranges and accepted issues inform the editorially reviewed final shipped behavior, not every intermediate correction. Major milestone Announcements link to their Changelog; patches require version notes but do not automatically require an Announcement. Historical v0.1–v0.3 milestone *completion dates* do **not** assert Production deployments or annotated Git release tags.
+The [root Changelog index](../../CHANGELOG.md) links technical release-note Markdown stored once under `resources/release-notes/versions/`; artist-facing pre-release/milestone Announcements live under `resources/release-notes/announcements/`. The existing Dashboard feed reads these code-owned files using a versioned `config/dashboard-feed.php` manifest and a shared safe Markdown renderer, **not** a second database text copy. Notification/Contact rows are separate Inbox data. Exact previous-to-candidate Git ranges and accepted issues inform the editorially reviewed final shipped behavior, not every intermediate correction. Major milestone Announcements link to their Changelog; patches require version notes but do not automatically require an Announcement. Historical v0.1–v0.3 milestone *completion dates* do **not** assert Production deployments or annotated Git release tags.
 
 Before **approving** a candidate, review the release version/date/SHA, manifest entry, actual notes and artist-facing Announcement, then verify the in-Dashboard link. Current source tests for manifest/file consistency are **authored, not executed here**, and a code-owned note becoming visible on Validation is not itself a Production release. No CI/cron release-note generator is specified by this document.
 
 ## Current media/appearance schema qualification for cutover
 
-The current `dev@434975e1bd09` sources introduce optional rights artifact registry/selections, Gallery sorting/captions/video sound and Public Appearance surface/header/frame migrations. They need explicit **forward-only compatibility review** against Working, Committed, historical checkpoints, originals, video posters and rights artifacts on an isolated restored copy before any separately approved protected Validation deployment. The artist is actively preparing cutover-relevant data on Validation; it must not be treated as disposable despite synthetic data in local development. This source-only docs update did not run migration, preview, CI, database export, application test or deployment. See [Migration invariants](MIGRATION-INVARIANTS.md) and [schema evolution](architecture/schema-evolution.md).
+The current `dev@434975e1bd09` sources introduce optional rights artifact registry/selections, Gallery sorting/captions/video sound and Public Appearance surface/header/frame migrations. They need explicit **forward-only compatibility review** against Working, Committed, historical checkpoints, originals, video posters and rights artifacts on an isolated restored copy before any separately approved protected Validation deployment. The artist is actively preparing cutover-relevant data on Validation; it must not be treated as disposable despite synthetic data in local development. This source-only docs update did not run migration, preview, CI, database export, application test or deployment. See [Migration invariants](../migration/invariants.md) and [schema evolution](../architecture/schema-evolution.md).
 
 ## Database migrations
 
@@ -174,7 +174,7 @@ The current `dev@434975e1bd09` sources introduce optional rights artifact regist
 
 Data migrations may be intentionally forward-only. Rollback can require restoring the matching recoverable database/media state rather than `migrate:rollback`.
 
-Current pre-cutover reconciliation includes forward canonicalization of Journal Rich Text media and Exhibition presentation/restore state. Admin authentication also requires the forward user-table migration that provides Filament app-authentication secret/recovery-code storage. See [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md) for migration/reconciliation rules and [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) for the auth contract.
+Current pre-cutover reconciliation includes forward canonicalization of Journal Rich Text media and Exhibition presentation/restore state. Admin authentication also requires the forward user-table migration that provides Filament app-authentication secret/recovery-code storage. See [MIGRATION-INVARIANTS.md](../migration/invariants.md) for migration/reconciliation rules and [ADMIN-AUTHENTICATION.md](../admin/authentication.md) for the auth contract.
 
 ## Persistent state
 
@@ -183,7 +183,7 @@ Authoritative non-reproducible state:
 - PostgreSQL application data;
 - canonical private MediaAsset originals.
 
-For the initial Production cutover, the approved and frozen **artist-curated protected Validation content plus matching originals** are the intended data source. Restore/reconstruct them independently into Production after explicit environment-specific sanitation and verify. Ordinary Validation preview deployments must not reset editorial work; old Legacy remains provenance rather than a new mandatory final import. See [MIGRATION-PLAN.md](MIGRATION-PLAN.md#6-protected-validation-and-editorial-authority) and [#209](https://github.com/Wiiii90/moeller-lars/issues/209).
+For the initial Production cutover, the approved and frozen **artist-curated protected Validation content plus matching originals** are the intended data source. Restore/reconstruct them independently into Production after explicit environment-specific sanitation and verify. Ordinary Validation preview deployments must not reset editorial work; old Legacy remains provenance rather than a new mandatory final import. See [MIGRATION-PLAN.md](../migration/plan.md#6-protected-validation-and-editorial-authority) and [#209](https://github.com/Wiiii90/moeller-lars/issues/209).
 
 Generated/rebuildable state:
 
@@ -198,7 +198,7 @@ Production requires normal Laravel/application values including APP_ENV/APP_KEY/
 
 Admin password recovery uses the normal Laravel mail interface. Production/Validation must inject the actual SMTP/runtime values (`MAIL_MAILER`, scheme/host/port, credentials where required, EHLO domain where required, and sender identity) through platform configuration. `.env.example` is the variable-name/default reference only and local development intentionally defaults to the log mailer. Concrete mail-server topology/credentials belong to `server-platform`, not this repository.
 
-Real secrets never belong in Git. See [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md).
+Real secrets never belong in Git. See [ADMIN-AUTHENTICATION.md](../admin/authentication.md).
 
 ## Matomo
 
@@ -219,7 +219,7 @@ No legacy admin credential is migrated/seeded and public admin registration is n
 php artisan admin:provision
 ```
 
-Password input remains interactive/hidden and is not accepted as a command-line argument. Newly provisioned administrators can use the panel without MFA enrollment and may enable TOTP/recovery codes later from the Account dialog. Provisioning, account password changes and password reset share the canonical policy in [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md). Password recovery is email-based and sends a reset link, never an existing password.
+Password input remains interactive/hidden and is not accepted as a command-line argument. Newly provisioned administrators can use the panel without MFA enrollment and may enable TOTP/recovery codes later from the Account dialog. Provisioning, account password changes and password reset share the canonical policy in [ADMIN-PASSWORD-POLICY.md](../admin/authentication.md). Password recovery is email-based and sends a reset link, never an existing password.
 
 ## Workers and scheduling
 
@@ -229,7 +229,7 @@ If a future feature requires workers/scheduler, update this document and `server
 
 ## Validation checks
 
-The [source-based application-runtime analysis](architecture/application-runtime-boundaries.md#release-marker-im-image-vs-öffentlich-erwarteter-pfad) distinguishes the SHA marker **inside the built image** from a publicly reachable `/app-release.json` URL: the Dockerfile currently writes `/app-release.json` outside Apache's public DocumentRoot and defines no corresponding Laravel route. HTTP delivery may be platform-owned and requires evidence from the actual ingress. Likewise, the [Matomo boot-guard flag difference](architecture/application-runtime-boundaries.md#matomo-tracking-flag-vs-entrypoint-guard) remains a source observation, not an executed failure. Neither observation relaxes the following acceptance requirements.
+The [source-based application-runtime analysis](../architecture/application-runtime-boundaries.md#release-marker-im-image-vs-öffentlich-erwarteter-pfad) distinguishes the SHA marker **inside the built image** from a publicly reachable `/app-release.json` URL: the Dockerfile currently writes `/app-release.json` outside Apache's public DocumentRoot and defines no corresponding Laravel route. HTTP delivery may be platform-owned and requires evidence from the actual ingress. Likewise, the [Matomo boot-guard flag difference](../architecture/application-runtime-boundaries.md#matomo-tracking-flag-vs-entrypoint-guard) remains a source observation, not an executed failure. Neither observation relaxes the following acceptance requirements.
 
 For an exact deployed candidate:
 
@@ -268,7 +268,7 @@ The application never rewrites the legacy application or automatically reruns so
 
 CI success, local preview success, image publication and Validation success do **not** authorize Production mutation.
 
-Production deployment/cutover remains an explicit operator/project action under [MIGRATION-PLAN.md](MIGRATION-PLAN.md).
+Production deployment/cutover remains an explicit operator/project action under [MIGRATION-PLAN.md](../migration/plan.md).
 
 ## CI evidence and release qualification
 

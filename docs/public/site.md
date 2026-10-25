@@ -2,7 +2,7 @@
 
 **Source reconciliation:** public presentation and media owners source-reviewed through `dev@2ad31502ea4eb352da2c9da4f8334a0d614f1b71` (2026-10-20). This is a source contract, not new browser/artist acceptance. A complete native generator rerun requires a coherent local source checkout.
 
-This document defines durable public behavior for the current application. Detailed legacy observations used for cutover comparison live separately in [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md).
+This document defines durable public behavior for the current application. Detailed legacy observations used for cutover comparison live separately in [LEGACY-PUBLIC-CONTRACT.md](../migration/legacy-public.md).
 
 
 ## Reading map
@@ -14,7 +14,7 @@ This document defines durable public behavior for the current application. Detai
 | Pages, artwork and editorial composition | [Home](#home-presentation), [Gallery](#gallery-delivery-and-loading), [Journal](#journals), [Custom Pages](#custom-pages-cv-and-contact) |
 | Rendering and delivery policies | [Rich Text](#rich-text-public-rendering), [public media](#public-media-delivery), [acceptance](#acceptance) |
 
-These are **one public behavior contract** with cross-cutting owners linked in context. The [system architecture](ARCHITECTURE.md) explains why these boundaries exist, while this document records actual accepted page/navigation/presentation behavior.
+These are **one public behavior contract** with cross-cutting owners linked in context. The [system architecture](../ARCHITECTURE.md) explains why these boundaries exist, while this document records actual accepted page/navigation/presentation behavior.
 
 ## Canonical route model
 
@@ -58,7 +58,7 @@ human access to high-quality Artwork Viewer originals. No additional
 footer, menu entry, visual copyright overlay or quality downgrade is part
 of this contract. Artist-authored texts may live on the About/Contact
 Custom Page; Matomo consent is owned by the website, not the artist's
-editable content. See `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`.
+editable content. See `docs/public/rights-privacy.md`.
 
 ## SEO and metadata
 
@@ -72,13 +72,13 @@ editable content. See `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`.
 
 ## Regional formatting and editorial language
 
-`RegionalFormats` separates three independent choices: administrator UI language (English or German per authenticated user), administrator date/number region (per user), and public date/number formats (General's separate region settings). Public prose remains artist-authored and the public language remains English; an administrator switching UI language does not translate published content. Exhibition dates and Public numbers use `RegionalFormats`, while legacy authored `date_text` and `opening_text` are preserved verbatim. See [Admin Localization](ADMIN-LOCALIZATION-CONTRACT.md) and [Exhibition Editorial](EXHIBITION-EDITORIAL-CONTRACT.md).
+`RegionalFormats` separates three independent choices: administrator UI language (English or German per authenticated user), administrator date/number region (per user), and public date/number formats (General's separate region settings). Public prose remains artist-authored and the public language remains English; an administrator switching UI language does not translate published content. Exhibition dates and Public numbers use `RegionalFormats`, while legacy authored `date_text` and `opening_text` are preserved verbatim. See [Admin Localization](../admin/ui.md) and [Exhibition Editorial](../content/exhibitions.md).
 
 ## Analytics boundary
 
 Public Matomo tracking is optional runtime config. Analytics failure does not block rendering/navigation/viewer/Contact.
 
-No form content, visitor email/name, admin IDs or secret values are emitted as analytics payload. See [ANALYTICS.md](ANALYTICS.md).
+No form content, visitor email/name, admin IDs or secret values are emitted as analytics payload. See [ANALYTICS.md](../operations/analytics.md).
 
 ## Public SPA transport and asset freshness
 
@@ -212,7 +212,7 @@ part of the global General editor. Menu remains globally owned by General.
 
 ## Appearance editor control presentation
 
-General's editor controls follow the [shared Admin control and table grammar](ADMIN-CONTROL-CONTRACT.md#public-appearance-controls-source-to-dev2ad31502ea4e); the public rendering and committed/Preview boundaries remain specified here.
+General's editor controls follow the [shared Admin control and table grammar](../admin/controls.md#public-appearance-controls-source-to-dev2ad31502ea4e); the public rendering and committed/Preview boundaries remain specified here.
 
 ## Public artist title gradient
 
@@ -391,7 +391,7 @@ A Blog Journal lists only public Posts belonging to it and satisfying lifecycle/
 
 An Exhibitions Journal lists public Exhibitions belonging to it.
 
-Exhibitions use one [canonical editorial contract](EXHIBITION-EDITORIAL-CONTRACT.md): title, independent `organizer` and physical `venue`, address (street/postal code/city/country), structured start/end dates, optional structured or preserved text vernissage, explicit `show_vernissage`, rich description, external URL, Gallery and Map. Structured opening display stops after its timestamp; hiding an opening never deletes its editorial details. The date-only chronology, organizer byline and geocoding responsibilities must not be inferred from one legacy `venue` string.
+Exhibitions use one [canonical editorial contract](../content/exhibitions.md): title, independent `organizer` and physical `venue`, address (street/postal code/city/country), structured start/end dates, optional structured or preserved text vernissage, explicit `show_vernissage`, rich description, external URL, Gallery and Map. Structured opening display stops after its timestamp; hiding an opening never deletes its editorial details. The date-only chronology, organizer byline and geocoding responsibilities must not be inferred from one legacy `venue` string.
 
 Street is stored/displayed separately from city/country; public address composition avoids duplication.
 
@@ -604,7 +604,7 @@ presentation service.
 
 Canonical Rich Text public rendering accepts validated **visual HTML** and historical Markdown through the one `SafeRichTextRenderer`. Visual input is sanitized on the server before rendering, with `RichTextDocument` handling legacy conversion only when editing; no second public renderer or unconditional backfill is introduced.
 
-Embedded Storage images resolve through canonical `MediaAsset` IDs in both historical `media:<id>` Markdown and current visual HTML. `ArtistImageLayout` owns the six inline/float placements and optional caption without changing ALT, permissions or shared file identity. `SafeRichTextRenderer` resolves the current media variant and canonical public ALT, never an editor-only image URL. The [Editorial Rich Text contract](EDITORIAL-RICH-TEXT.md) is the canonical owner of editor/layout formats; Public owns only permitted presentation and publication eligibility. Do not reintroduce a Markdown-only public rendering assumption.
+Embedded Storage images resolve through canonical `MediaAsset` IDs in both historical `media:<id>` Markdown and current visual HTML. `ArtistImageLayout` owns the six inline/float placements and optional caption without changing ALT, permissions or shared file identity. `SafeRichTextRenderer` resolves the current media variant and canonical public ALT, never an editor-only image URL. The [Editorial Rich Text contract](../content/rich-text.md) is the canonical owner of editor/layout formats; Public owns only permitted presentation and publication eligibility. Do not reintroduce a Markdown-only public rendering assumption.
 
 ## Custom Pages, CV and Contact
 
@@ -635,7 +635,7 @@ Only media valid for the requesting public consumer is exposed.
 
 Structured Journal Cover/Gallery runtime ALT uses canonical MediaAsset ALT. Legacy Journal usage overrides are not runtime public authority.
 
-See [MEDIA.md](MEDIA.md).
+See [MEDIA.md](../media.md).
 
 ## Deliberately not preserved
 

@@ -178,7 +178,7 @@ Historical migrations must preserve the schema/domain contract that existed when
 This rule keeps clean-database reconstruction deterministic without treating old migrations as runtime authority.
 
 **Known current violation (not an exception to the rule):** the historical
-[`2026_09_15_000001_add_restorable_publication_versions.php`](../database/migrations/2026_09_15_000001_add_restorable_publication_versions.php)
+[`2026_09_15_000001_add_restorable_publication_versions.php`](../../database/migrations/2026_09_15_000001_add_restorable_publication_versions.php)
 imports `App\Domain\Publication\PublicationSnapshot` and uses the
 mutable current `PublicationSnapshot::TABLES` in `up()`-time snapshot
 backfill, `schemaHash()` and `snapshotHash()`. The original Publication
@@ -190,7 +190,7 @@ that a particular `migrate:fresh` run failed. Do not patch historical
 tables on the `docs` workstream or change snapshot/hash values by
 guessing; a separately authorized and isolated migrated PostgreSQL
 reconstruction must establish the correct historical behavior first.
-See [schema evolution](architecture/schema-evolution.md#konkreter-quellenkonflikt-noch-nicht-bereinigt).
+See [schema evolution](../architecture/schema-evolution.md#konkreter-quellenkonflikt-noch-nicht-bereinigt).
 
 
 ## Legacy evidence and internal schema retirement
