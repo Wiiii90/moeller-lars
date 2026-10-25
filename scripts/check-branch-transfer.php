@@ -63,6 +63,7 @@ foreach (array_filter(explode("\n", $history)) as $sha) {
     $changed = git(['diff-tree', '--no-commit-id', '--name-only', '-r', $sha]);
     foreach (array_filter(explode("\n", $changed)) as $path) {
         if ($path === 'AGENTS.md'
+            || $path === '.agents/roster.md'
             || str_starts_with($path, '.agents/areas/')
             || str_starts_with($path, '.agents/workers/')
             || str_starts_with($path, '.agents/topics/')) {
@@ -74,6 +75,10 @@ foreach (array_filter(explode("\n", $history)) as $sha) {
 $files = git(['ls-tree', '-r', '--name-only', $candidate]);
 
 foreach (array_filter(explode("\n", $files)) as $path) {
+    if ($target === 'main' && $path === '.agents/roster.md') {
+        failure('Branch-local worker roster must not reach main.');
+    }
+
     if (str_starts_with($path, '.agents/areas/')) {
         if ($target === 'main' || $path !== ".agents/areas/{$target}.md") {
             failure("{$path} does not belong on {$target}.");
