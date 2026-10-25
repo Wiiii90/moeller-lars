@@ -1,10 +1,10 @@
 # Docs workstream — shared coordination
 
-**Next lease token:** 3
+**Next lease token:** 4
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Docs Worker 1 | 2 | active | Documentation structure, canonical ownership, source reconciliation and agent workflows | [docs-1](workers/docs-1.md) |
+| Docs Worker 1 | 3 | active | Documentation structure, canonical ownership, source reconciliation and agent workflows | [docs-1](workers/docs-1.md) |
 
 This roster owns **only registration, lease and claimed scope**. The worker's short [record](workers/docs-1.md) owns actual progress/next actions, and the reusable [documentation method](skills/docs/SKILL.md) owns how to work. Changes of owner, replacement, retirement and sign-out must follow the [single worker protocol](README.md) on this branch.
 

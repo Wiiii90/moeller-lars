@@ -1,6 +1,8 @@
 # Docs Worker 1 — active
 
-**Slot:** `docs-1` · lease **2** · [Docs roster](../roster.md). Current assignment: consolidate documentation and agent workflow, respecting user decisions and deleting obsolete structure.
+**Slot:** `docs-1` · lease **3** · [Docs roster](../roster.md). Current assignment: consolidate documentation and agent workflow, respecting user decisions and deleting obsolete structure.
+
+**Chat takeover (2026-10-25):** The user explicitly replaced the context-exhausted prior Docs Worker 1 chat with this chat, keeping the same worker slot. Lease 3 supersedes lease 2. Existing verified work and open tasks remain intact. The next task must be a finite documentation correction, not an automatic comprehensive audit.
 
 ## Rules and authority
 
