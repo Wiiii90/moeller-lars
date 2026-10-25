@@ -1,8 +1,8 @@
 # Branch-local worker protocol
 
-This is the reusable lifecycle procedure. **Every worker belongs to one working branch**, never to a global roster on `docs`. Only actual activation creates an individual record.
+This is the reusable lifecycle procedure. **Every worker belongs to one working branch**, never to a global roster on `docs`. Only actual activation creates an individual record. The four authoritative **role** methods are [Dev](skills/dev/SKILL.md), [Testing](skills/testing/SKILL.md), [Docs](skills/docs/SKILL.md), [Refactor](skills/refactor/SKILL.md). Admin/Public are **product topics** accessed from [the documentation index](../docs/README.md), not additional worker roles.
 
-**Actual active Docs coordination:** [roster](roster.md) and the numbered [Docs Worker 1 task record](workers/docs-1.md). The roster owns only assignments and lease tokens; the task record owns live progress; the [Documentation skill](skills/documentation/SKILL.md) owns the reusable method. No phantom Dev, Test or Refactor rosters are claimed. Other branches register a roster **only when a real numbered worker is activated there**, under that branch's own root `AGENTS.md`.
+**Actual active Docs coordination:** [roster](roster.md) and the numbered [Docs Worker 1 task record](workers/docs-1.md). The roster owns only assignments and lease tokens; the task record owns live progress; the [Docs skill](skills/docs/SKILL.md) owns the reusable method. No phantom Dev, Test or Refactor rosters are claimed. Other branches register a roster **only when a real numbered worker is activated there**, under that branch's own root `AGENTS.md`.
 
 ## Activation, takeover and sign-out
 
@@ -37,6 +37,10 @@ Usual **direction of gated progress** is `dev → testing → docs → refactor 
 - **Refactor and main:** Refactor may prepare concurrently but behavior-preserving changes are reconciled against the post-Test/Docs accepted baseline, verified and reviewed before selective integration. Promotion to `main` needs the user's explicit final approval and separate release/security checks. The stage order may change at the user's direction; an earlier stage is **never implicitly approved** by another stage's progress.
 
 **Structure and deletion rule for every worker:** before creating a module, file, tool, test fixture, document or index, ask whether an existing owner should instead be reorganized, renamed, moved or removed. Remove superseded implementations/references in the same scoped change. Do not install adapters/aliases/compatibility shims for incomplete pre-release source merely to avoid changing callers; preserve actually persisted database/migration/snapshot compatibility when essential, and explain any proposed exception to the user.
+
+## No exhaustive audit by default
+
+Workers must scope each request to the **smallest complete architectural owner and its direct consumers**. Do not scan all repository files, run broad inventories, read every manual or conduct a full test/generator sweep just to establish context. Use bounded batches, make a coherent change, stop and retain only actionable next steps. Whole-repository qualification is an explicit user-approved task or a final integration gate, not routine investigation.
 
 ## Knowledge and ownership
 

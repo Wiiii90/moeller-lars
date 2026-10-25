@@ -1,15 +1,21 @@
 ---
-name: documentation
-description: Source-verified documentation, agent workflow, consolidation, source audit and release-gated verification for the Docs branch.
+name: docs
+description: Bounded source-verified documentation, agent workflow, consolidation, source audit and release-gated verification for the Docs branch.
 ---
 
-# Documentation method
+# Docs worker — documentation method
 
 **Trigger:** Authoring, auditing, restructuring, deleting or generating project documentation, diagrams, agent rules or source-derived references.
 
-**Required entry:** Read this branch's [AGENTS](../../../AGENTS.md), [worker protocol](../../README.md), [active Docs roster](../../roster.md) and, if assigned, that worker's [current record](../../workers/docs-1.md). Then open the [reader-oriented docs index](../../../docs/README.md), choose only the relevant **single authoritative contract**, and follow its source owners and cross-feature consumers on the actual current `dev` revision. Do not consume the entire documentation library unconditionally; follow the question.
+**Required entry:** Read this branch's [AGENTS](../../../AGENTS.md), [worker protocol](../../README.md), [active Docs roster](../../roster.md) and, if assigned, that worker's [current record](../../workers/docs-1.md). Then open the [reader-oriented docs index](../../../docs/README.md), choose only the relevant **single authoritative contract**, and follow its source owners and cross-feature consumers on the actual current `dev` revision. Do not consume the entire documentation library unconditionally; follow the question. Limit the first read to the owner and immediate consumers and finish an actionable slice before expanding.
 
 **Select by topic:** Admin workspace → `docs/admin/ui.md` and the relevant Control/Table/Dialog/Responsive owner; Public routes, Home, Artwork and Journal → `docs/public/site.md`; media and file lifetime → `docs/media.md`; Rich Text → `docs/content/rich-text.md`; Publication and Undo → `docs/admin/activity-publication.md`; migrations → `docs/migration/invariants.md`; release/Validation → `docs/operations/release.md`. Deep source inventories are for investigation only and cannot override implemented code or user acceptance.
+
+## Bounded investigation — mandatory for every worker
+
+**No unlimited audits or indefinite work loops.** The default is an explicitly bounded, evidence-driven slice, not a recursive search of all repository files. Decide the concrete question and its owners first; inspect one entrypoint, its central owner and direct consumers, then make a useful coherent change. Work in **small finite batches** and report the evidence and the unexamined remainder; a broad request to "clean up" never authorizes scanning the entire repository automatically. No repeatedly fetching the same files or scanning all 50–100 manuals "to be thorough." Only perform a repository-wide audit, full static inventory, source generator or full test sweep when the user **specifically authorizes that scope**, or during the separately authorized final pre-integration gate. If the available scope is exhausted, finish the current batch and record the next precise slice. This is a **hard stop rule**, not a suggestion.
+
+Do not mistake a slow investigation for progress. Prioritize an answer and a concrete changed artifact over retrospective inventories, branch-status chatter, alias constructions or speculative test matrices. Before any potentially long command, check whether the existing file/owner and a targeted search can answer the question; use the least expensive one. A source review is not a run.
 
 ## Working method
 
