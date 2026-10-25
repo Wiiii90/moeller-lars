@@ -98,8 +98,8 @@ Exhibition Create and Edit use the same flat Filament schema with the shared
 admin dialog spacing. There are no Basics, Organizer & location, Text, Dates,
 Gallery or Map section wrappers. Organizer, Venue, Exhibition website and
 Street address each occupy a full row; City and Postal code share a row;
-Country occupies the next full row. Start/End dates, the date override, and Vernissage controls follow the cover
-field. Gallery presentation spans the full form width. Gallery media uses
+Country occupies the next full row. Start/End dates, the date override,
+and Vernissage controls follow the cover field. Gallery presentation spans the full form width. Gallery media uses
 the existing AdminTableRepeater table with visual Storage selection and native
 add/delete/order actions. Select changes and media list actions trigger the
 normal shared Edit autosave. Validation and publication behavior are unchanged;
