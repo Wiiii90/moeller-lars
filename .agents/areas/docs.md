@@ -1,10 +1,10 @@
 # Docs — coordination on the docs branch
 
-**Next lease token:** 2
+**Next lease token:** 3
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Docs Worker 1 | 1 | active | Project documentation structure, consolidation and docs workflows | [docs-1](../workers/docs-1.md) |
+| Docs Worker 1 | 2 | active | Project documentation structure, consolidation and docs workflows | [docs-1](../workers/docs-1.md) |
 
 All Docs worker activations, changes of owner, pauses, replacements and retirements must update **this roster on `docs`**. A retiring worker signs out and deletes its own numbered record after transferring any lasting decisions or unfinished tasks to the right owner. Follow the [branch-local worker protocol](../README.md). Other branches own their **own** coordination; there are no remote Dev/Testing/Refactor rosters here.
 

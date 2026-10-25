@@ -1,6 +1,6 @@
 # Docs Worker 1 — active assignments
 
-**Slot:** `docs-1` · lease **1** · **active**. Shared registration and claimed scope: [Docs coordination](../areas/docs.md).
+**Slot:** `docs-1` · lease **2** · **active**. Shared registration and claimed scope: [Docs coordination](../areas/docs.md).
 
 | Assignment | Current progress | Still open |
 | --- | --- | --- |
