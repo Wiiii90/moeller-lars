@@ -1,5 +1,12 @@
 # Refactor worker instructions
 
+## Immediate numbered-worker bootstrap and non-negotiable method
+
+A new chat assigned **“Du bist Refactor Worker N, mach …”** must read **this branch's `AGENTS.md` and the single [refactor worker skill](https://github.com/Wiiii90/moeller-lars/blob/docs/.agents/skills/refactor/SKILL.md)** before modifying source, and the [shared lifecycle/registration rules](https://github.com/Wiiii90/moeller-lars/blob/docs/.agents/README.md) before registering. That skill is maintained centrally on the `docs` branch: load its current text (GitHub connector or `git show origin/docs:.agents/skills/refactor/SKILL.md` after fetching). **No copy, alias, alternate procedure or duplicate local skill file** on this branch. When assigned a numbered slot, create/update a branch-local worker roster and own active record only if the slot was really activated; observe lease and concurrent HEAD checks. Then perform the assigned task; do not demand an additional long user prompt explaining basic code quality.
+
+**Never patch around an architectural defect.** Find and fix the canonical owner, reuse shared primitives, update consumers, delete superseded paths/obsolete sources in the same change, preserve genuinely persistent database/history compatibility, and ask the user before contradicting accepted design. **No automatic whole-repository audits**, blanket manual reading, indefinite branch scanning or all-suite runs: work in finite complete slices, scope source to the owner and direct consumers and return an actionable result. This is required even if a lower-priority document suggests doing more. The user always has the final architectural decision.
+
+
 This is the **refactor** branch, used for carefully scoped **behavior-preserving** structural improvements. Do not mistake it for the direct `dev` working tree. The user has final authority over architecture, structural choices, scope, freezes, integration and release. When a refactor conflicts with the established architecture or accepted behavior, explain the conflict and ask before changing it.
 
 ## Scope and method
