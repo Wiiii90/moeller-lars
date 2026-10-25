@@ -56,13 +56,6 @@ These remain relevant until the legacy site is explicitly retired:
 
 After successful cutover and explicit legacy retirement, legacy-only evidence can be archived/removed in a dedicated cleanup rather than kept indefinitely as active architecture.
 
-## Architecture decisions
-
-Accepted ADRs are historical decisions and are intentionally not rewritten to mirror every later implementation detail:
-
-- [ADR-0001: Application stack](adr/ADR-0001-APPLICATION-STACK.md)
-- [ADR-0002: Hosting cost baseline](adr/ADR-0002-HOSTING-COST-BASELINE.md)
-
 ## Repository policies
 
 - [Security policy](../SECURITY.md) — private vulnerability-reporting guidance and supported security scope
