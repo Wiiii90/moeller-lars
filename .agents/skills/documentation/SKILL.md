@@ -9,7 +9,7 @@ description: Source-verified documentation, agent workflow, consolidation, sourc
 
 **Required entry:** Read this branch's [AGENTS](../../../AGENTS.md), [worker protocol](../../README.md), [active Docs roster](../../roster.md) and, if assigned, that worker's [current record](../../workers/docs-1.md). Then open the [reader-oriented docs index](../../../docs/README.md), choose only the relevant **single authoritative contract**, and follow its source owners and cross-feature consumers on the actual current `dev` revision. Do not consume the entire documentation library unconditionally; follow the question.
 
-**Select by topic:** Admin workspace → `ADMIN-UI.md` and the relevant Control/Table/Dialog/Responsive owner; Public routes, Home, Artwork and Journal → `PUBLIC-IMPLEMENTATION-CONTRACT.md`; media and file lifetime → `MEDIA.md`; Rich Text → `EDITORIAL-RICH-TEXT.md`; Publication and Undo → `ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md`; migrations → `MIGRATION-INVARIANTS.md`; release/Validation → `RELEASE.md`. Deep source inventories are for investigation only and cannot override implemented code or user acceptance.
+**Select by topic:** Admin workspace → `docs/admin/ui.md` and the relevant Control/Table/Dialog/Responsive owner; Public routes, Home, Artwork and Journal → `docs/public/site.md`; media and file lifetime → `docs/media.md`; Rich Text → `docs/content/rich-text.md`; Publication and Undo → `docs/admin/activity-publication.md`; migrations → `docs/migration/invariants.md`; release/Validation → `docs/operations/release.md`. Deep source inventories are for investigation only and cannot override implemented code or user acceptance.
 
 ## Working method
 

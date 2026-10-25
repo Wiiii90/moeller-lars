@@ -9,13 +9,13 @@ The canonical UI behavior lives in the contracts below. No additional root UI sk
 
 ## Choose the exact authority
 
-- **Primary visual grammar:** [Admin UI](../../../docs/ADMIN-UI.md) (admin only). Read the relevant sections for the task, not the full contract for every small edit. The active code may already implement newer user-reviewed decisions.
-- **Controls:** [ADMIN-CONTROL-CONTRACT](../../../docs/ADMIN-CONTROL-CONTRACT.md); implementation in `app/Filament/Support/Controls/AdminControl.php`, reusable `resources/views/components/admin/` controls and `resources/css/admin/`.
-- **Tables:** [ADMIN-TABLE-CONTRACT](../../../docs/ADMIN-TABLE-CONTRACT.md); fixed role/order geometry, shared selection and row-actions. Page-local styling must not shadow the shared owner.
-- **Responsive task composition:** [ADMIN-RESPONSIVE-CONTRACT](../../../docs/ADMIN-RESPONSIVE-CONTRACT.md), covering shell, metrics, toolbars, tables and Visual Stages in **one** coherent contract. Shared primitive implementation stays with the Control/Table/Dialog contracts.
-- **Dialogs:** [ADMIN-DIALOG-CONTRACT](../../../docs/ADMIN-DIALOG-CONTRACT.md); native Filament modal lifecycle, shared sizes/controls, explicit autosave and notifications. Never introduce a second scroll-lock runtime.
-- **Activity/Undo/Commit:** [ADMIN-ACTIVITY-PUBLICATION-CONTRACT](../../../docs/ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md); domain save, append-only audit, Undo receipt, AdminNotifier and Working/LIVE are **separate** responsibilities.
-- **Browser acceptance process:** [ADMIN-BROWSER-WORKFLOW](../../../docs/ADMIN-BROWSER-WORKFLOW.md). Exact accepted browser state is authoritative over old worker/candidate commentary. Do not invent or memorialize unaccepted CSS values.
+- **Primary visual grammar:** [Admin UI](../../../docs/admin/ui.md) (admin only). Read the relevant sections for the task, not the full contract for every small edit. The active code may already implement newer user-reviewed decisions.
+- **Controls:** [ADMIN-CONTROL-CONTRACT](../../../docs/admin/controls.md); implementation in `app/Filament/Support/Controls/AdminControl.php`, reusable `resources/views/components/admin/` controls and `resources/css/admin/`.
+- **Tables:** [ADMIN-TABLE-CONTRACT](../../../docs/admin/tables.md); fixed role/order geometry, shared selection and row-actions. Page-local styling must not shadow the shared owner.
+- **Responsive task composition:** [ADMIN-RESPONSIVE-CONTRACT](../../../docs/admin/responsive.md), covering shell, metrics, toolbars, tables and Visual Stages in **one** coherent contract. Shared primitive implementation stays with the Control/Table/Dialog contracts.
+- **Dialogs:** [ADMIN-DIALOG-CONTRACT](../../../docs/admin/dialogs.md); native Filament modal lifecycle, shared sizes/controls, explicit autosave and notifications. Never introduce a second scroll-lock runtime.
+- **Activity/Undo/Commit:** [ADMIN-ACTIVITY-PUBLICATION-CONTRACT](../../../docs/admin/activity-publication.md); domain save, append-only audit, Undo receipt, AdminNotifier and Working/LIVE are **separate** responsibilities.
+- **Browser acceptance process:** [ADMIN-BROWSER-WORKFLOW](../../../docs/admin/browser-review.md). Exact accepted browser state is authoritative over old worker/candidate commentary. Do not invent or memorialize unaccepted CSS values.
 
 ## Source-first implementation order
 
