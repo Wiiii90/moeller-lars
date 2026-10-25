@@ -31,6 +31,25 @@ Start from the **purpose of the whole document**: audience, questions answered, 
 
 Prefer **replacing and condensing** old prose to continuously appending commit/SHA narratives. Keep architecture overview, domain specs, test model, deployment method and source inventories distinct but connected. Names and document boundaries must be justified by their content and reader needs, not by creating one new document for every small topic. If a proposed document is merely another index or duplicates the owner, consolidate first.
 
+## Documentation verification gate
+
+For any structural or link-affecting documentation commit:
+
+1. Read the fresh branch HEAD, own lease and claimed paths. Review the **complete net diff** for deletions of unique normative requirements, new duplicate owners, stale source claims and unexpected source/code changes.
+2. Resolve every changed local Markdown destination **and heading fragment**. The repository's canonical native check is:
+
+   ```sh
+   php scripts/check-documentation-links.php --self-test
+   php scripts/check-documentation-links.php --check
+   git diff --check
+   ```
+
+   Run these **only in an authorized isolated worktree** with PHP/Git and a coherent checkout. A remote GitHub inventory can inspect tracked paths and selected anchors, but it is not a native PHP run: report the exact remote coverage and missing blind spots rather than claiming `--check` passed.
+3. If moving historical evidence, retain the **original source revision and verification classification**. Update historical deep-link targets, or preserve old headings as navigation aliases; don't replace an old testfile link with a new test merely because the name is similar.
+4. Before a guarded commit, re-read the latest `docs` head and worker lease; create one linear commit on the checked tree and move the ref with an expected-head lease, never force. Afterward verify the actual branch head and affected files.
+
+Documentation structure is accepted only when a newcomer can find the owner without reading obsolete parallel versions **and** the reader can still find any unique evidence that was moved.
+
 ## Evidence and safety
 
 Differentiate source inspected, extracted graph, authored assertion, actually executed test, browser verification and user acceptance. For current coverage claims use the tests **already on `dev`**, until a curated Testing integration changes them; pin evidence to its actual branch/commit. Generated class imports are not runtime execution, Eloquent relations are not physical PostgreSQL foreign keys, and a code merge is not product approval.

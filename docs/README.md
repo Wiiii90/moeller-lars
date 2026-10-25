@@ -62,7 +62,7 @@ Retained architecture decisions: [application stack](adr/ADR-0001-APPLICATION-ST
 
 A document must earn its place by answering a specific question for a reader. Explain actual system connections, choices and behavior before enumerating source details; use substantial component, sequence, state or data diagrams when they reveal nontrivial cross-boundary relationships. Never turn one function into a decorative three-box graph. Consider the **entire purpose and structure** of an existing document before revising it.
 
-Consolidate superseded sections instead of appending source-diff histories. Identify and preserve each unique accepted constraint before removing a document. Current design, historical evidence and temporary tasks have distinct homes; only durable product, architecture and operating information belongs here. Documentation maintenance follows the owning feature and architecture contracts; temporary worker status does not belong in the project manual.
+Consolidate superseded sections instead of appending source-diff histories. For structural edits, use the [documentation verification gate](../.agents/procedures/documentation.md#documentation-verification-gate), including the native Markdown destination/fragment checker when the isolated checkout is available. Identify and preserve each unique accepted constraint before removing a document. Current design, historical evidence and temporary tasks have distinct homes; only durable product, architecture and operating information belongs here. Documentation maintenance follows the owning feature and architecture contracts; temporary worker status does not belong in the project manual.
 
 ## Repository policies
 

@@ -17,8 +17,8 @@ Make the project documentation and agent procedures **fast to navigate, coherent
 
 ## Still open / next actions
 
-1. Review remaining overlapping Admin/Public/Media/Rights normative prose. Merge only truly duplicated or misowned rules, and preserve unique accepted requirements.
-2. Remote inventory checked all 85 Markdown files for link destinations and found 14 stale test paths; historical file references were pinned to their verified original commits, current dialog E2E paths updated. Re-run the remote full-path check after this commit and the native full link/heading checker when authorized; no native run in this chat.
+1. Review remaining Admin/Public/Media/Rights prose **only when a concrete rule has competing owners**. A six-gram comparison of all 26 Admin UI sections against Table/Dialog/Control/Responsive/Browser found predominantly unique material; no destructive mass deletion is justified. Preserve accepted requirements.
+2. Remote inventory checked all 85 Markdown files for link destinations and found 14 stale test paths; historical file references were pinned to their verified original commits, current dialog E2E paths updated. After the 14 repairs, 11 touched manuals were rechecked against GitHub's exact branch tree (394 local destinations, zero missing). The repository-wide path scan covered 85 Markdown files in batches; the full native PHP link/**heading** checker has **not** been run here.
 3. Review dated source inventories against the current code **only where a concrete owner changed**; do not regenerate diagrams or label old assertions executed without evidence.
 4. Review the final clean documentation diff and propose a **path-filtered, authorized** export if requested. Never merge this worker-bearing branch history into `dev`.
 
