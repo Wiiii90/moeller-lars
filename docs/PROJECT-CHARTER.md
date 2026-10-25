@@ -159,6 +159,6 @@ Production deployment remains an explicit authorized platform action.
 
 ## Documentation ownership
 
-Current contracts live under `docs/` and are indexed by `docs/README.md`. Workflow rules live in root `AGENTS.md`; reusable admin UI rules in `ui-skills.md`; continuation-handoff rules in `followup-skill.md`.
+Current contracts live under `docs/` and are indexed by `docs/README.md`. Development rules live in root `AGENTS.md`; Admin UI rules live in `docs/ADMIN-UI.md` and their specialized contracts. Numbered workers continue from their own current task records; ad hoc tasks use a concise handoff only when needed.
 
 GitHub Issues/current browser review track unfinished work/acceptance. Legacy evidence is kept separate and retired only after explicit legacy retirement.
