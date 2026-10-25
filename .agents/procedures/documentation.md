@@ -2,6 +2,14 @@
 
 This is the Docs branch's reusable working method. The [Docs roster](../areas/docs.md) owns active coordination; individual `docs-N` files own only their **actual assignments and current progress**. This procedure is not another task diary.
 
+## Authority and structure
+
+The user is the ultimate product and architecture decision-maker. Describe `dev` code as the **currently implemented, provisionally intended** behavior; do not replace its semantics with speculative historical documentation. If user feedback conflicts with code or an existing rule, identify both and follow the user's current decision. If a proposed implementation conflicts with the architecture, state the conflict and ask the user to resolve it before accepting an unapproved deviation.
+
+Before introducing any document, index, generated artifact or diagram, review the existing structure **as a whole** and assess which older owner should be deleted, renamed or consolidated instead. Favor a smaller, coherent tree; remove obsolete targets and correct all incoming references atomically. A pre-release redirect, compatibility alias, extra entrypoint or duplicated archived report is not an acceptable compromise. **Only preserve proven persistent database/snapshot/migration compatibility**, or another exception explicitly authorized by the user.
+
+The documentation branch is the owner of general contracts, architectural guides and source-derived inventories. Dev feature workers maintain their **active living workstreams** and describe changes in handoffs, not routine general documentation or tests; Docs reconciles batches of accepted Dev commits without making the Dev workers repeat authoring work.
+
 ## Source and integration cycle
 
 1. Resolve fresh `dev` and `docs` heads. `dev` is the canonical application and currently integrated test source. Source synchronization to `docs` must preserve Docs-owned material and **exclude foreign branches' temporary worker records and ancestry** (see [worker/integration rules](../README.md)). Record a checked source baseline in the specific evidence owner when it matters, not as repetitive prose throughout every contract.
@@ -30,6 +38,12 @@ Start from the **purpose of the whole document**: audience, questions answered, 
 **Preserve substance while reducing volume:** Before consolidating or removing a file, inventory its unique accepted requirements, design decisions, source evidence, historical constraints and inbound links. Classify those into (1) current normative behavior, (2) current architecture explanation, (3) stable operating procedure, (4) source-versioned/historical evidence, (5) temporary task/investigation, or (6) unsupported/redundant prose. Move unique evidence to its correct owner **before deletion**, verify destinations/links, and retain history in Git. Never convert a source hypothesis into an accepted requirement or destroy a compatibility constraint because it looks unused.
 
 Prefer **replacing and condensing** old prose to continuously appending commit/SHA narratives. Keep architecture overview, domain specs, test model, deployment method and source inventories distinct but connected. Names and document boundaries must be justified by their content and reader needs, not by creating one new document for every small topic. If a proposed document is merely another index or duplicates the owner, consolidate first.
+
+## Preparation versus final transfer
+
+Work on Docs may overlap active Dev work. A source sync is preparatory; it does not mean the docs are current, generated inventories match the source, or any transfer has been approved. Track last reconciled Dev commit and review **all subsequent source changes**, including test updates accepted from Testing, cross-boundary impacts and existing generated inventory inputs.
+
+After the user freezes the integrated target revision and authorizes a Docs transfer, reconcile the **entire** current source; run relevant content/links/fragment checks and regenerate **only still-useful retained derived documentation** against the exact frozen source, using Codex or the existing native generators in the authorized isolated Docs checkout when required. Review diffs, provenance and outputs; delete stale duplicate generated files rather than maintaining compatibility copies. This is the **final pre-transfer batch**, not a standing generator loop after each Dev commit. If new source changes appear, reconcile and repeat affected validation. Do not transfer worker rosters/records or overwrite the destination's `AGENTS.md`.
 
 ## Documentation verification gate
 

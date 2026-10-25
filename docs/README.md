@@ -14,6 +14,8 @@ Start from **the current task**, not a full-document reading marathon.
 
 For shared Admin work, use the canonical [UI](ADMIN-UI.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [Notifications](ADMIN-NOTIFICATION-CONTRACT.md) and [Browser review](ADMIN-BROWSER-WORKFLOW.md) owners directly. Do not add a second overview or root skill.
 
+**User authority and branch coordination:** The user determines the accepted design and integration order. Current `dev` code is the descriptive baseline; routine Dev work maintains application code and active task/workstream notes, while the Test/Docs/Refactor workstreams may prepare in parallel. General documents are maintained here on `docs` and transferred only after reviewed reconciliation. The ordinary gated sequence is `dev → testing → docs → refactor → main`, but the user may vary it. See the existing [worker and integration protocol](../.agents/README.md#continuous-work-and-integration-gates), not a separate duplicated workflow file.
+
 ## Choose a starting point
 
 | You want to understand… | Start here | Follow into |

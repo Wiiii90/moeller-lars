@@ -18,6 +18,9 @@ Make project documentation and agent procedures **fast to navigate, coherent, cu
 - User explicitly required deletion rather than alias retention. `docs` removed the three obsolete root skills, the new dated audit dump and two copied temporary rights handoffs; references were updated. `dev` independently received the same root-file deletions, direct canonical Admin UI/Responsive contracts, and effective **Dev-no-test-authorship** policy at `dev@12c0efe4e7a331045d00bbe69f10c26ad9853bca` without touching application code or test source.
 - Repository-wide remote Markdown **path** scans covered all 79 files on `docs` and 45 on `dev`; stale relative paths found after deletion were corrected in the affected documents. This does not claim the native PHP heading validator was executed.
 
+- User-approved work model now documented in branch-local worker protocol, Docs method, testing method and canonical test strategy: owner-final authority; cumulative diffs; parallel preparation; freeze/source parity; final Codex checks before reviewed transfers. No large-scale semantic currency audit until this workflow/ADR cleanup concludes.
+- Unmaintained ADR directory (two files) deleted on Docs and Dev, together with public navigation links, due to private infrastructure/cost disclosure and lack of real ADR governance. Git history may still expose the prior contents; **deleting tracked files is not history sanitization**.
+
 ## Still open / next actions
 
 1. Review remaining Admin/Public/Media/Rights prose **only when a concrete rule has competing owners**. A six-gram comparison of all 26 Admin UI sections against Table/Dialog/Control/Responsive/Browser found predominantly unique material; no destructive mass deletion is justified. Preserve accepted requirements.

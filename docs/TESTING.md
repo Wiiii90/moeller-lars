@@ -4,6 +4,14 @@
 
 This is the current durable test strategy for `moeller-lars`. The suite protects observable product/domain/security behavior, persistence, publication and selected browser interaction. It must not preserve obsolete test taxonomies, source spellings or repair-round history.
 
+## Development batches and final Testing gate
+
+The user may run many implementation workers concurrently. A Test worker periodically checks the **cumulative diff** from the exact last integrated `dev` baseline to the newest `dev` revision and inspects the **current resulting code**, not only commit messages or the latest change. This is sufficient without Dev-authored tests, provided the source, interface changes, migrations, shared consumers and untested scenarios are all understood.
+
+Before editing test cases, map the affected behavior to the **existing test owners and layers**. Where a framework or shared domain architecture changed, rethink the suite's organization and fixtures *before* adding tests. Consolidate duplicates, remove obsolete regression-only or purely cosmetic markup tests, maintain meaningful scenarios, and do not introduce a second test runner or parallel test taxonomy.
+
+Testing workers may keep their test branch aligned in advance while `dev` remains active. **Do not claim final coverage or acceptance during preparatory sync.** At a **user-declared Dev freeze**, verify complete source parity with the precise frozen Dev commit (apart from testing-owned paths), check that Dev did not advance again, and then perform authorized, isolated final Codex/native test execution. Fix/restructure failed **test code** on Testing; if application behavior is actually broken, report the required product fix to Dev and repeat source parity and relevant checks after that change. Report exact suites executed, failures, skipped checks, source commit and the integration-ready state. Only then may reviewed Test results be selectively transferred; all branch-local worker records and unapproved scaffolding stay behind.
+
 ## Layers and ownership
 
 | Layer | Location | Purpose |
