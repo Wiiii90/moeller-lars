@@ -1919,13 +1919,6 @@ body.public-site--frame-plain #content {
     box-shadow: none;
 }
 
-/* Landscape content intentionally widens beyond the canonical menu shell.
- * Treat it as two coherent independent folio sheets instead of making
- * 640px menu shoulders appear glued onto an ~800px artwork page. */
-.site-header--divider-fine:has(+ #content.site-content--landscape-artwork) {
-    padding-bottom: var(--public-shell-gap);
-}
-
 .site-header--name-inside,
 .site-header--name-above,
 .site-header--name-outside {
