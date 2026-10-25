@@ -10,7 +10,7 @@ This document defines durable public behavior for the current application. Detai
 | Concern | Where to read |
 | --- | --- |
 | Content eligibility, routes and privacy | [Route model](#canonical-route-model), [publication](#publication-and-discoverability), [rights](#rights-and-privacy) |
-| Navigation and global visual composition | [Site navigation](#site-navigation), [appearance](#global-public-appearance-surfaces), [responsive composition](#responsiveartistic-presentation) |
+| SPA, navigation and global composition | [SPA transport](#public-spa-transport-and-asset-freshness), [Site navigation](#site-navigation), [paper/title/surfaces](#public-paper-title-and-surface-composition), [appearance](#global-public-appearance-surfaces), [responsive composition](#responsiveartistic-presentation) |
 | Pages, artwork and editorial composition | [Home](#home-presentation), [Gallery](#gallery-delivery-and-loading), [Journal](#journals), [Custom Pages](#custom-pages-cv-and-contact) |
 | Rendering and delivery policies | [Rich Text](#rich-text-public-rendering), [public media](#public-media-delivery), [acceptance](#acceptance) |
 
@@ -80,9 +80,7 @@ Public Matomo tracking is optional runtime config. Analytics failure does not bl
 
 No form content, visitor email/name, admin IDs or secret values are emitted as analytics payload. See [ANALYTICS.md](ANALYTICS.md).
 
-## Site navigation
-
-The persisted `menu_type` is validated by `PublicAppearance::menuType()`. Its sole supported value at this source boundary is `cyclic_inline` (artist-facing **Cyclic inline**); this is an explicit configuration axis, **not** permission to add a second navigation renderer. Existing one-row root/child cyclic-window behaviors below remain authoritative.
+## Public SPA transport and asset freshness
 
 **SPA asset build consistency (2026-10-17):** `AppServiceProvider` uses Laravel Vite's supported `createAssetPathsUsing` API and `manifestHash()` for the existing built JS/CSS URLs. The same `?id=<manifest hash>` query string is attached to every built Vite entry asset, preserving its hashed filename and the normal `@vite` `data-navigate-track` tags. Livewire only compares tracked query-string revisions, not changes to hashed asset filenames. A preview rebuild therefore causes a full reload on the **next internal SPA navigation**, rather than retaining outdated JS alongside newer CSS/Blade; this also applies to Vite-managed Admin assets without changing Filament's SPA implementation. Hot Vite and missing-manifest contexts are unaffected. No parallel loader, reload listener, polling or custom cache-buster is introduced. Existing public layout CSSOM handoff still needs real browser stress testing for repeated Gallery→Gallery transitions; static code review cannot prove the incident resolved.
 
@@ -108,28 +106,41 @@ layout CSS variables are reapplied from server-rendered metadata at the swap
 boundary, so new nonces cannot invalidate the artist's configured background
 or widths. The static contour presentation is independent of the SPA transport.
 
+## Site navigation
+
+The persisted `menu_type` is validated by `PublicAppearance::menuType()`. Its sole supported value at this source boundary is `cyclic_inline` (artist-facing **Cyclic inline**); this is an explicit configuration axis, **not** permission to add a second navigation renderer. Existing one-row root/child cyclic-window behaviors below remain authoritative.
+
+
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
+
+### Navigation-only groups and hover
+
+A Page of type Group Node has no public content route. It is the existing
+semantic solution for a navigation-only parent such as `Prints`, with Gallery
+children `Etchings & Lithography` and `Cyanotypes`. Ordinary Gallery parents
+retain their own content routes: no implicit redirect to the first child.
+The unnecessary per-Gallery child landing setting is retired.
+
+Pages → Settings still contains the optional desktop-pointer hover presentation
+(currently off by default, pending design approval). It uses the existing
+child-menu DOM. The shared click/keyboard/touch child navigation remains the
+canonical interaction; no second routing or child selection implementation is
+introduced.
+
+## Public paper, title and surface composition
 
 The Public paper outline is **static**. The server-rendered `public-paper-frame` encloses Header and Content without introducing a second scroll owner. Physically compatible, connected Menu/Page surfaces share the single decorative `public-paper-decoration` contour; separate or transparent surfaces use their existing individual sheet edges. Blade decides compatibility from the concrete header and page presentation; CSS owns the final shape. Both horizontal folio-edge outsets use the same Public design token, never page-specific artificial line matching. Header fit observes window/font changes and actual visible Menu geometry, not its own layout writes.
 
 The frame is an **intrinsically content-sized flex item** (`flex: 0 0 auto` in `resources/css/app.css`); the body, not the frame, fills the viewport's remaining height. Contour return uses the frame's actual content-paper height, trailing content padding and one shared return inset. Populated pages do not receive an artificial viewport-driven stretch. Empty/min-height page cases retain their own layout rules and need browser acceptance. There is **no** `public-paper-frame.js`, observer-driven measurement/writes, animation, timeout or duplicated frame engine. The six route-deterministic values retained in nonce-authorized layout metadata belong to the legacy separate-sheet geometry, not an active animation.
 
 
-Title Position offers **Beside menu**, **Inside menu**,
-**Above menu**, and **Below menu**. Beside is a true outer title column
-on the Global Background, while the Menu paper stays centered and aligned
-to the Content paper. Inside has a real reserved title width, so Left/Right
-have different positions; its Alignment dropdown intentionally omits Center.
-Above owns a permanent top title row **inside** the Menu paper, matching the
-responsive stacked composition. Both Inside and Beside move that same
-title into the Menu paper on their content-fit fallback and apply
-Responsive alignment (Left/Center/Right). Above and Below support the three
-desktop alignments; the 40rem narrow mode applies the configured responsive
-alignment. Below is still its own content-sized row outside Menu.
-The single public-header ResizeObserver observes actual visible Menu rail
-geometry for Beside rather than the now viewport-wide title-layout wrapper.
+The artist title uses one shared, HTML-escaped plain-text value (default `Lars Möller`) for its visible label, home anchor and accessibility text. Hiding it removes its reserved Menu column/row. An unset title color inherits contextual ink.
+
+**Title Position** presents **Beside menu** (`outside`), **Inside menu** (`inside`), **Above menu** (`above`) and **Below menu** (`below`), preserving their stored keys. Beside is a separate column on the Global Background while the Menu paper remains centered at Content width. Inside reserves genuine title space so Left and Right differ; its Alignment control intentionally omits Center. Above is a permanent row inside the Menu paper; Below remains a content-sized row outside it. Above/Below support all three desktop alignments. Inside and Beside stack into the Menu paper when content fit requires it; at the 40rem narrow boundary the configured responsive Left/Center/Right alignment applies. One public-header ResizeObserver measures the actual visible Menu rail, not the outer title-layout wrapper, and introduces no second scroll owner, animation or polling.
+
+The base Title size is 16–64px. Optional responsive reduction uses an independently editable 12–64px minimum (default 18px) and CSS `clamp(min(minimum, base), 5.4vw, base)`; without reduction the base size is retained and long text may wrap.
 
 The old `page_surface_full_width` option is retired: a width-independent
 paper surface made short and long layouts visually inconsistent. Content width
@@ -142,24 +153,6 @@ not available for Global or Menu backgrounds. Previously selected page
 gradients and colors remain in persistence to use again if the artist switches
 back.
 
-The artist title is globally configurable and can be entirely hidden
-without leaving an empty menu column or a blank title row. Its public anchor,
-home link and accessible label use the same edited plain-text title; the
-default is `Lars Möller`. The title is always HTML-escaped on output.
-The positions `inside`, `outside`, `above` and `below` are
-distinct Menu compositions; their existing stored values are preserved.
-Outside is a true non-paper title column, Above always has its own Menu
-row, Inside reserves space for meaningful Left/Right alignment, and Below
-remains its own content-sized row. On narrow Inside/Beside layouts the
-title stacks above the navigation **inside** the Menu paper. The base
-Title size is
-16–64px, with optional responsive reduction and an independently editable
-minimum of 12–64px (default 18px). The reduction uses CSS
-`clamp(min(minimum, base), 5.4vw, base)`; disabling it keeps the chosen base
-size and allows text wrapping. The single public-header ResizeObserver
-continues to measure fit for stacked versus horizontal composition; it never
-creates a second scroll area, animation or timer. A blank artist title color
-continues to use contextual ink.
 
 **Menu to page** supports five validated storage keys and the
 existing independent Divider color:
@@ -188,19 +181,6 @@ synchronizes exactly one server-defined frame style without page reload.
 These variants remain subject to real-browser visual acceptance across
 regular, landscape, narrow and long-page routes.
 
-### Navigation-only groups and hover
-
-A Page of type Group Node has no public content route. It is the existing
-semantic solution for a navigation-only parent such as `Prints`, with Gallery
-children `Etchings & Lithography` and `Cyanotypes`. Ordinary Gallery parents
-retain their own content routes: no implicit redirect to the first child.
-The unnecessary per-Gallery child landing setting is retired.
-
-Pages → Settings still contains the optional desktop-pointer hover presentation
-(currently off by default, pending design approval). It uses the existing
-child-menu DOM. The shared click/keyboard/touch child navigation remains the
-canonical interaction; no second routing or child selection implementation is
-introduced.
 
 ## Global public appearance surfaces
 
