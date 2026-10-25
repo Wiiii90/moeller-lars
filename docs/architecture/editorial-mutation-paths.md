@@ -28,7 +28,7 @@ Die geänderten Editorial-Oberflächen besitzen mindestens vier getrennte Zustä
 | `show_in_navigation=true`, `skip_home=true` | nein | separater Skip-Home-Resolver entscheidet Ziel/Fallback |
 | andere veröffentlichte SiteSection | eigene Publication-Bedingung | Home-Switch ohne Wirkung auf diesen Typ |
 
-**Negativbelege:** [`HomeRoutingSettingsTest.php`](../../tests/Feature/Public/Home/HomeRoutingSettingsTest.php) enthält No-op-/Audit-Prüfung, Skip-Toggle-Unabhängigkeit, Home-Root-Erreichbarkeit und einen Filament-Edit-Ablauf mit Notification-Zählung. Das sind **Testdefinitionen**, keine durch diesen Workstream durchgeführten Tests. Zusätzlich nötig: Toggle erst auf `true`, anschließend Skip Home im noch offenen Modal ändern; umgekehrte Reihenfolge; Browser-Close/Reopen; Preview/Site-Navigation; mögliche Doppelemission bei Livewire-Field-Update und späterem Gesamt-Save.
+**Negativbelege:** [`HomeRoutingSettingsTest.php`](https://github.com/Wiiii90/moeller-lars/blob/f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0/tests/Feature/Public/Home/HomeRoutingSettingsTest.php) enthält No-op-/Audit-Prüfung, Skip-Toggle-Unabhängigkeit, Home-Root-Erreichbarkeit und einen Filament-Edit-Ablauf mit Notification-Zählung. Das sind **Testdefinitionen**, keine durch diesen Workstream durchgeführten Tests. Zusätzlich nötig: Toggle erst auf `true`, anschließend Skip Home im noch offenen Modal ändern; umgekehrte Reihenfolge; Browser-Close/Reopen; Preview/Site-Navigation; mögliche Doppelemission bei Livewire-Field-Update und späterem Gesamt-Save.
 
 ## Custom Page: Image Selection im geöffneten Edit-Dialog
 
@@ -73,7 +73,7 @@ sequenceDiagram
 
 **Konkrete Race-/Fehlergrenze:** `componentAt()` und die Domain-`assertTarget()` kontrollieren beide **Index + Persistenztyp**, **keine stabile Komponentennummer oder Row-Revision**. Tauscht ein anderer Bearbeiter während eines geöffneten Dialogs zwei `image`-Blöcke, kann die Typprüfung den falschen Image-Block trotzdem akzeptieren. Ein transaktionaler DB-Lock verhindert dieses **stale semantic target**-Problem nicht. Der oben belegte `componentAt()`-Leseweg liegt außerdem vor dem Domain-Lock, dessen zweite Prüfung wiederum nur index+type kennt. Dieser Befund ist quellenbasiert; ein reproduzierender Zweifenster-Test bleibt erforderlich und die eigentliche Produktreparatur gehört zu `dev`.
 
-**Testquelle:** [`CustomPageWorkspaceTest.php`](../../tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php) definiert einen Livewire-Test, der den Bildwechsel im weiterhin geöffneten Modal, Erhalt von 50-%-Scale und Decorative, **eine** neue Audit-/Mailbox-Zeile, Header-Event und keine zweite Erfolgsmeldung beim anschließenden Action-Aufruf prüfen soll. Ohne lokalen Testlauf gilt die Ausführung **nicht** als bestanden.
+**Testquelle:** [`CustomPageWorkspaceTest.php`](https://github.com/Wiiii90/moeller-lars/blob/f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0/tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php) definiert einen Livewire-Test, der den Bildwechsel im weiterhin geöffneten Modal, Erhalt von 50-%-Scale und Decorative, **eine** neue Audit-/Mailbox-Zeile, Header-Event und keine zweite Erfolgsmeldung beim anschließenden Action-Aufruf prüfen soll. Ohne lokalen Testlauf gilt die Ausführung **nicht** als bestanden.
 
 ## Zusammenfassende Fehler- und Rückkopplungsgrenzen
 

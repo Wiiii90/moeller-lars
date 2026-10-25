@@ -108,7 +108,7 @@ Es werden **keine historischen Audit-Events und keine PublicationCheckpoints gel
 
 `PublicationService::commit()` prüft unter Lock erneut den fachlichen Working/LIVE-Diff. Nur bei Diff entstehen ein neuer Checkpoint, Snapshot-Manifest und die Zuordnung ungebundener Audit-Events zur neuen Publication-Generation. Bei Restore wird der neue Checkpoint mit `operation=restore` und `source_publication_checkpoint_id=<wiederhergestellte Version>` angelegt; bei Revert entsprechend `operation=revert` und Source = vorheriger LIVE-Checkpoint. Bei **keinem** verbleibenden Diff löscht `commit()` den Working-Kontext und gibt `null` zurück, ohne neuen Checkpoint.
 
-Die bestehenden [Publication-Versioning-Integrationstests](../../tests/Integration/Publication/PublicationVersioningTest.php) haben Quellfälle zu Reset ohne History-Verlust, Restore-plus-Commit, Revert-plus-Commit und FK-gerechter Medien-Reihenfolge. Diese Testdateien wurden geprüft, aber **nicht in dieser Runde ausgeführt**.
+Die bestehenden [Publication-Versioning-Integrationstests](https://github.com/Wiiii90/moeller-lars/blob/337da15bc7d4fcbae45f0bb3ed38a99fa4a5e4b7/tests/Integration/Publication/PublicationVersioningTest.php) haben Quellfälle zu Reset ohne History-Verlust, Restore-plus-Commit, Revert-plus-Commit und FK-gerechter Medien-Reihenfolge. Diese Testdateien wurden geprüft, aber **nicht in dieser Runde ausgeführt**.
 
 ### Qualitätssicherung und Grenzen
 

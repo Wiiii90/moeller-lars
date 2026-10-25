@@ -102,11 +102,11 @@ Quellstand erneut mit `dev@470f2daa900f2d68db9c7e5fe2b227db20e44bc7` verglichen;
    Typwechsel haben eigene Domain-Guards und dürfen nicht als erfolgreicher
    Regressionsfall deklariert werden.
 
-**Neue, separat korrekt besessene Page-Heading-Achse:** [`PageHeadingFields`](../../app/Filament/Support/PageHeadingFields.php) ist nun gemeinsames Add-/Edit-/Home-Schema für die **optionale sichtbare Content-Überschrift**, nicht für SiteSection-`title` oder `navigation_label`. Im Pages **Edit** ruft jedes `afterStateUpdated` gezielt `SiteSectionEditorialService::updatePageHeading()` auf (Row-Lock, validierte Field-Änderung, No-op ohne Audit); **Add** speichert diese Daten erst nach Anlage des neuen Nodes und nicht beim bloßen Ausfüllen. [`SitePageHeadingAutosaveTest.php`](../../tests/Feature/Admin/SitePages/SitePageHeadingAutosaveTest.php) beschreibt mehrere Livewire-Feldänderungen, anschließenden Action-No-op, Reopen und Public-Render, sowie das Home Heading bei Root-Route `/`. Diese neue Quelle ist **nicht** der fehlende Test für getrennte Title/Navigationlabels.
+**Neue, separat korrekt besessene Page-Heading-Achse:** [`PageHeadingFields`](../../app/Filament/Support/PageHeadingFields.php) ist nun gemeinsames Add-/Edit-/Home-Schema für die **optionale sichtbare Content-Überschrift**, nicht für SiteSection-`title` oder `navigation_label`. Im Pages **Edit** ruft jedes `afterStateUpdated` gezielt `SiteSectionEditorialService::updatePageHeading()` auf (Row-Lock, validierte Field-Änderung, No-op ohne Audit); **Add** speichert diese Daten erst nach Anlage des neuen Nodes und nicht beim bloßen Ausfüllen. [`SitePageHeadingAutosaveTest.php`](https://github.com/Wiiii90/moeller-lars/blob/81c12c836fdce03a478866ec3d147ebc818b24a6/tests/Feature/Admin/SitePages/SitePageHeadingAutosaveTest.php) beschreibt mehrere Livewire-Feldänderungen, anschließenden Action-No-op, Reopen und Public-Render, sowie das Home Heading bei Root-Route `/`. Diese neue Quelle ist **nicht** der fehlende Test für getrennte Title/Navigationlabels.
 
 **Home Edit neu integriert:** [`ManagesSitePageEditDialog::editHomeAction()`](../../app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php) kombiniert `HomeSettingsDialog` mit editierbarem **Name** und den absichtlich read-only Feldern **Public slug = /**, **Parent = Top level**, **Position = 1**. Der Save ruft `SiteSectionIdentityService::update($home, $name, null)` und danach `HomeSettingsDialog::save()` innerhalb der äußeren DB-Transaktion. Da der Identity-Service den fehlenden vierten `navigationLabel`-Parameter als `$name` interpretiert, gilt hier zusätzlich: Ein **von `title` abweichendes** explizites Home-`navigation_label` könnte schon bei ansonsten unverändertem Edit auf den Seitennamen zurückgesetzt werden. Das ist ein weiterführender **statischer Negativfall**. Der neue Home-Test prüft die unveränderliche Root-Route und wiederholten Save bei Standardzustand, **nicht** diese getrennte Label-Konstellation.
 
-**Bestehende Testgrenze:** [SiteSectionHierarchyTest](../../tests/Feature/Admin/SitePages/SiteSectionHierarchyTest.php)
+**Bestehende Testgrenze:** [SiteSectionHierarchyTest](https://github.com/Wiiii90/moeller-lars/blob/81c12c836fdce03a478866ec3d147ebc818b24a6/tests/Feature/Admin/SitePages/SiteSectionHierarchyTest.php)
 (Zeilen 825–875) testet Successive Edit, No-op und Invalid Slug **nur für
 anfangs identische** Titel/Labels. [JournalSettingsAutosaveTest](../../tests/Feature/Admin/Journal/JournalSettingsAutosaveTest.php)
 (Zeilen 71–105) bestätigt zwar das individuell gesetzte Journal-Label,
@@ -180,7 +180,7 @@ eine `ValidationException` mit Reload-Hinweis. Das erkennt fehlende Indizes und 
 auf einen anderen Typ**, garantiert aber keine stabile Identität bei einem
 Index, dessen nachfolgender Block denselben Typ wie der ursprüngliche hat.
 
-Der neue [CustomPageWorkspaceTest](../../tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php)
+Der neue [CustomPageWorkspaceTest](https://github.com/Wiiii90/moeller-lars/blob/81c12c836fdce03a478866ec3d147ebc818b24a6/tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php)
 (ungefähr Zeilen 463–493) montiert `editComponent` ausdrücklich auf Index
 2 einer `text/divider/text`-Sequenz und erwartet eine Änderung **nur des
 dritten Rich-Text-Blocks**. Der frühere fehlende Methodenpfad ist

@@ -73,7 +73,7 @@ Diese Feldoption ist am geprüften Stand explizit **im Custom-Page-Dialog**
 vorhanden. Der gemeinsame Public-Komponentenrenderer kann den
 Wert auch bei Home lesen; daraus folgt aber **nicht**, dass bereits
 eine entsprechende Home-Edit-Kontrolle eingebaut wurde. Der
-[Featuretest](../../tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php)
+[Featuretest](https://github.com/Wiiii90/moeller-lars/blob/81c12c836fdce03a478866ec3d147ebc818b24a6/tests/Feature/Admin/SitePages/CustomPageWorkspaceTest.php)
 prüft laut Quelltext Default, explizite 150 %, Rückkehr zum impliziten
 100-%-Zustand und No-op; dieser Test wurde hier nicht ausgeführt.
 

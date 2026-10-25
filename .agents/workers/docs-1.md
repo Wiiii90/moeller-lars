@@ -18,7 +18,7 @@ Make the project documentation and agent procedures **fast to navigate, coherent
 ## Still open / next actions
 
 1. Review remaining overlapping Admin/Public/Media/Rights normative prose. Merge only truly duplicated or misowned rules, and preserve unique accepted requirements.
-2. Verify repository-wide Markdown destinations and heading fragments (the native full-project checker has **not** been executed in this chat); repair proven link defects.
+2. Remote inventory checked all 85 Markdown files for link destinations and found 14 stale test paths; historical file references were pinned to their verified original commits, current dialog E2E paths updated. Re-run the remote full-path check after this commit and the native full link/heading checker when authorized; no native run in this chat.
 3. Review dated source inventories against the current code **only where a concrete owner changed**; do not regenerate diagrams or label old assertions executed without evidence.
 4. Review the final clean documentation diff and propose a **path-filtered, authorized** export if requested. Never merge this worker-bearing branch history into `dev`.
 
