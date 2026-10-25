@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use Livewire\Attributes\Session;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Domain\Admin\DashboardFeedPins;
@@ -21,6 +20,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Session;
 
 final class Dashboard extends Page
 {

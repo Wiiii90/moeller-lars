@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use Livewire\Attributes\Session;
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
@@ -12,6 +11,7 @@ use BackedEnum;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use UnitEnum;
+use Livewire\Attributes\Session;
 
 final class Analytics extends Page
 {

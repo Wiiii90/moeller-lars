@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use Livewire\Attributes\Session;
 use App\Domain\Content\DividerVariant;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceComponentActions;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceForms;
@@ -14,6 +13,7 @@ use App\Filament\Pages\Concerns\CustomPageWorkspaceTargetHelpers;
 use Filament\Pages\Page;
 use Filament\Facades\Filament;
 use App\Models\User;
+use Livewire\Attributes\Session;
 
 final class CustomPageWorkspace extends Page
 {

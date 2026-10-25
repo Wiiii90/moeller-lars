@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use Livewire\Attributes\Session;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\HomePresentationResolver;
@@ -29,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use UnitEnum;
+use Livewire\Attributes\Session;
 
 final class SitePages extends Page
 {
