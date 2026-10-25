@@ -38,7 +38,7 @@ For new `dev` rich-text/locale/public changes, update the **existing** normative
 2. Re-read remote `docs` HEAD before updating refs; reconcile concurrent commits and `dev` merges.
 3. For routine GitHub-only documentation edits, verify changed Markdown destinations against the remote Docs tree without executing local tools. The read-only native `php scripts/check-documentation-links.php --check` belongs **only** in rare, authorized Codex batch checks, never after each small commit merely because a worktree exists; it covers ordinary Markdown paths and heading fragments, not HTML/MDX/dynamic destinations. Do not claim this full-repo command ran if only GitHub source/tree comparisons were available.
 4. Report committed paths/SHA, what is proved, what is still not tested and any distinct product defect uncovered. Do not silently “fix” a runtime discrepancy on the documentation branch.
-5. A new chat resumes from `docs/agents/workers/docsworker.md` rather than repeating a full repository audit.
+5. A new chat may consult the current [Docs work-area state](../../../docs/agents/workers/docsworker.md) for context, but the user's **current request or question** governs the conversation. Do not automatically execute a previously recorded next action; no handoff file is needed.
 
 ## Current architecture index
 

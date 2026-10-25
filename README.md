@@ -75,7 +75,7 @@ Start with:
 - [Admin UI](docs/ADMIN-UI.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
 - [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
 - [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-vs-worker browser workflow, shared Visual Stage ownership and local preview loop
-- [Chat continuity](docs/agents/CONTINUITY.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
+- [Agent work areas](docs/agents/README.md) and [worker registry](docs/agents/WORKERS.md) — normal conversation or task-specific work backed by concise, continuously revised repository knowledge instead of separate handoff prompts
 
 Small browser defects may be fixed directly on `dev` when the user explicitly chooses that mode. Larger independent source passes may use workers. The active collaboration mode is part of the review state; do not silently switch modes during a continuation handoff.
 

@@ -1,32 +1,43 @@
-# Agent entrypoint and durable continuity
+# Agent workspaces and living project context
 
-This file is the **automatic role dispatcher** for agents working in `Wiiii90/moeller-lars`. Root `AGENTS.md` must direct new agents here. The user can say **"Du bist Devworker 1, arbeite."** without restating design principles, tool rules, or the previous task. The agent must read current repository state and its own durable work record **before deciding what to do**.
+This is the repository entry for any **worker role**, including implementation, documentation, testing, architecture and refactoring. Root `AGENTS.md` links here. **A role is not a Git branch, an automatic task queue, or a command to begin coding.** A chat may start with a request, a question, a review of earlier decisions or just a discussion.
 
-## Exact startup dispatch
+## How to start a conversation
 
-1. Read root `AGENTS.md` and current branch HEAD. Read this index, then [Worker registry](WORKERS.md).
-2. Normalize `Devworker 1`, `dev worker 1`, `worker 1` to `devworker-1` **when its role is unambiguous**. Read the record that registry points to. Do not infer a new task merely from the number.
-3. Follow the **active objective and next executable action** in that record; re-read source owners and changed HEAD before editing. Restore remaining constraints from the linked normative product contracts and [cross-feature architecture](../architecture/cross-feature-compositions.md), not from a repeated user prompt.
-4. On a valid active assignment, proceed without requesting instructions already recorded. On a missing, explicitly completed, conflicting or uninitialized assignment, **ask once for the missing initial assignment**; do not invent one. A role label alone cannot retrieve an unsaved chat.
-5. Before work expands or another worker shares an owner, inspect the registry and reconcile collisions with the current `dev` HEAD. A worker number does not create a Git branch, worktree, persistent ChatGPT context, scheduled background process, or permission to access another chat.
-6. At every meaningful implementation checkpoint and **before the chat becomes too long**, replace the worker's bounded state in its existing file in the **same authorized commit** (or an explicitly paired, HEAD-reconciled commit). This applies even if the user has not requested a handoff. Keep accepted/rejected user feedback, verified claims and known failures; drop superseded narratives and redundant logs. A new chat can then pick up the next action with no custom handoff prompt.
+A user may say `Du bist Dev Worker 1, arbeite`, `Du bist Docs Worker`, `Du bist Testing Worker`, `Wir müssen über das Refactoring sprechen`, or simply give a task. The agent must:
 
-## Document ownership
+1. Read the current root `AGENTS.md`, this index and [workspace registry](WORKERS.md). Resolve a named workspace only when that identity is actually registered or unambiguous; do not equate a generic `worker 1` with `Dev Worker 1` without context.
+2. Read that workspace's current **living subject/state**, if one exists, and the relevant [product contracts](../README.md) and [end-to-end architecture](../architecture/cross-feature-compositions.md). Check the target branch HEAD before making code claims. Do not read all documents indiscriminately.
+3. **Respond to the user's current message first.** A new request may change the focus; an exploratory question is not an authorization to execute backlog work. Never silently start the previous "next action" solely because a worker name was mentioned. If the user explicitly asks to continue previous work and that work is recorded, continue it.
+4. If no active subject is recorded, converse normally and use the information supplied in the message. Only ask for genuinely missing information. Do not fabricate details from a previous ChatGPT chat.
+5. Before edits, resolve the **authorized working branch** for the concrete request. The words `Dev`, `Docs`, `Testing` or `Refactor` can identify an area of work but do not independently create/authorize a branch, worktree, merge, deployment or destructive test. Different workers may legitimately read the same branch; a worker can coordinate across branches without writing to all of them.
 
-- **Core product architecture and requirements:** [Documentation index](../README.md) and [end-to-end compositions](../architecture/cross-feature-compositions.md). Do not copy whole requirements into a worker record.
-- **Shared Admin design and accepted behavior:** [Admin UI](../ADMIN-UI.md), [controls](../ADMIN-CONTROL-CONTRACT.md), [dialogs](../ADMIN-DIALOG-CONTRACT.md), [tables](../ADMIN-TABLE-CONTRACT.md).
-- **Testing and isolation:** [Agent testing procedure](TESTING.md), [test architecture](../TESTING.md) and current `tests/README.md`.
-- **Current Docs work:** [Docs worker state](workers/docsworker.md) and [Documentation procedure](DOCUMENTATION.md). Docs work normally uses GitHub; the local Docs worktree is only for rare expressly authorized Codex batches.
-- **Chat carryover:** [Continuity rules](CONTINUITY.md). Record progress; do not create chat-by-chat reports.
-- **Implementation state:** [Worker registry](WORKERS.md), pointing at exactly one current state file per active role. These records are *living*, not accepted product contracts.
+## Living knowledge, not handoff files
 
-## Mandatory non-regression gate
+Everything useful for continuing is maintained **as normal repository documents**:
 
-Before changing a shared component: identify all its consumers, enumerate user-accepted interactions, compare the proposed edit against each consumer, run narrow authorized checks and keep browser acceptance distinct from source/automated tests. If a supposedly simpler implementation changes root/child drag, dialogs, Gallery media, Rich Text context menus, responsive sheet geometry or Notification cardinality, **stop and reconcile the shared owner first**. Do not invent a second workaround owner.
+- **Normative product behavior and architecture** → the one existing owning contract; accepted/rejected UX decisions and non-regression constraints belong here.
+- **Current work and discussion** → the relevant existing topic/workspace record under [workers](workers/) (small, bounded, updated **in place**). May have open questions, alternatives under consideration and unresolved decisions; it does **not** need a current executable task.
+- **Worker roles and branch scopes** → [registry](WORKERS.md); this index changes only when a role or ownership changes.
+- **Verification claims and historical source snapshots** → [architecture evidence](../architecture/completion-criteria.md) and Git history, never an ever-growing session diary.
 
-**Standing restrictions:** Direct implementation only on existing `dev`; documentation only on existing `docs` until a separately authorized integration. No new worker branches, no CI interaction or release. Protect the artist's Validation data. Re-read HEAD immediately before any shared write and use a fast-forward expected-SHA update. Never run destructive tests on persistent Preview/Validation.
+At substantive milestones, update the **relevant files directly**, replacing superseded statements and preserving facts, decisions, known failures, and unresolved questions. Do not create a "handoff", "continuation prompt", "session report" or new skill document for every chat. A discussion that has not yet reached a durable decision need not generate a commit for every message; save material facts/choices before the conversation gets long or stops, when authorized to write.
 
-## Future Docs to dev integration (separately authorized)
+No mechanism can perfectly retain uncommitted chats, invisible reasoning or another unsaved browser session. A future chat can reliably reconstruct **what was actually persisted**; do not claim otherwise. The assistant should not require the user to repeat working rules already stored in the repository.
 
-Current `dev` retains active and more recent `AGENTS.md`, root Admin UI/handoff/testing legacy files and Rights workstate. Bringing this architecture to `dev` is **not** permission to replace them wholesale. Compare both branches under a fresh HEAD; preserve accepted `dev` product behavior and active Rights/worker state; transfer current `docs/` contracts and this agent entrypoint; update **`dev/AGENTS.md`** to load this directory automatically; redirect/decommission old root filenames **on dev only then**, with a reference search and a normal fast-forward shared-branch commit. No branch creation, force push, CI, deployment or local Docs worktree demand. Historical source-only generated inventories must not be mislabeled as new app-code proof.
+## Branches and work areas
 
+| Git branch | Current role | Boundary |
+| --- | --- | --- |
+| `dev` | Application integration, existing author-written tests and normal feature work | Direct development rules in the current `dev/AGENTS.md`; changes require an actual user task. |
+| `docs` | Normative architecture and living agent/project docs | Documentation writes only here until integration is authorized. Routine work is GitHub-only, not local Codex runs. |
+| `testing` | Existing historical branch ref; verify whether it has any distinct useful work before reuse | Test suites currently live on `dev`; calling oneself a Testing Worker does not automatically switch branches. |
+| `refactor` | **Proposed only**, not created | A separate refactoring lane is possible if explicitly authorized and given clear integration/ownership boundaries. |
+
+There must be no silent branch creation, new worktrees, CI interaction or unilateral integration. Protect artist-curated Validation and Production. Before shared commits, refresh branch HEAD and check concurrent owners and changed files. A future [Docs→dev integration](DOCUMENTATION.md#integration-boundary) should reconcile current `dev` working rules and living states, not clobber them with older snapshots.
+
+## Cross-feature regression protection
+
+Before modifying a shared primitive, consult [cross-feature compositions](../architecture/cross-feature-compositions.md) and the actual owning contract. Identify its consumers, verify previously accepted behavior, scope changes, and distinguish code inspection, authored tests, executed tests, real browser review and artist acceptance. Do not rename a regression into an accepted contract. Use [Admin UI](../ADMIN-UI.md), [Rich Text](../EDITORIAL-RICH-TEXT.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) and [Testing](TESTING.md) selectively.
+
+**The point of a worker name is contextual orientation, not automatic action.**

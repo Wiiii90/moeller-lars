@@ -1,6 +1,6 @@
 # Documentation
 
-This repository's documentation is organized around **one normative owner per feature**, end-to-end architectures and short replace-in-place agent work records. Start with [Agent entry](agents/README.md) for a fresh worker; a short role message resolves to the [worker registry](agents/WORKERS.md) and its current record. The user need not restate implementation rules or manually provide a chat transcript after a role has been assigned and its state persisted.
+This repository's documentation is organized around **one normative owner per feature**, end-to-end architectures and short replace-in-place agent work records. Start with [Agent entry](agents/README.md) for a fresh worker; a role name helps locate the relevant [work-area registry](agents/WORKERS.md) and living context. The **current user message controls the conversation**: a question is not an instruction to execute unfinished work, and a worker may discuss plans before implementing anything.
 
 ## Current source and architecture
 
@@ -10,7 +10,7 @@ This repository's documentation is organized around **one normative owner per fe
 - [Cross-feature compositions](architecture/cross-feature-compositions.md) — artist Edit → Working → Commit → Public, Journal/Exhibition and shared public runtime owners.
 - [Normative application contracts](#current-application-contracts) — precise Admin, Public, Media, Rights, schema and product requirements.
 - [Current Admin UI](ADMIN-UI.md) — accepted shared presentation/interaction grammar, with topic owners for Controls, Dialogs, Tables and Responsive.
-- [Agent entry and worker state](agents/README.md), [Documentation method](agents/DOCUMENTATION.md), [Tests and isolation](agents/TESTING.md), [Continuity](agents/CONTINUITY.md).
+- [Agent workspace entry](agents/README.md), [role registry](agents/WORKERS.md), [Documentation method](agents/DOCUMENTATION.md) and [Tests and isolation](agents/TESTING.md). Living workspace files replace separate session handoffs.
 
 ## Verification boundary
 
@@ -70,9 +70,9 @@ These describe the durable current application architecture and behavior. Browse
 
 These documents state current durable contracts. They are not chronological PR/worker diaries and should not encode every temporary reconciliation SHA.
 
-## Agent entry and continuity
+## Agent work areas and living knowledge
 
-[Agent entry](agents/README.md) resolves a short role message through the [worker registry](agents/WORKERS.md) and its **bounded, replace-in-place** state. The [continuity procedure](agents/CONTINUITY.md) makes handoffs persistent without requiring the user to repeat prompts. [Documentation procedure](agents/DOCUMENTATION.md), [Testing safety](agents/TESTING.md), and the complete [current Admin UI contract](ADMIN-UI.md) are task-specific stable references. Retired root handoff/skill documents are preserved in Git history, not kept as competing working policies.
+[Agent entry](agents/README.md) uses the [work-area registry](agents/WORKERS.md) to locate current topics, decisions, constraints and open questions when relevant. A worker does **not** automatically execute a previous next step. There is no separate handoff document or user-authored restart prompt. The living files are revised in place at meaningful milestones instead of appending chat diaries. [Documentation procedure](agents/DOCUMENTATION.md), [Testing safety](agents/TESTING.md), and the complete [current Admin UI contract](ADMIN-UI.md) are task-specific stable references. Retired root handoff/skill documents are preserved in Git history, not kept as competing working policies.
 
 For the later controlled integration to `dev`, [integration plan](agents/README.md#future-docs-to-dev-integration) explicitly protects the newer direct-`dev` root agent policy and existing active worker state. No automatic merge, CI or local Codex batch follows a routine Docs update.
 
@@ -112,7 +112,7 @@ Accepted ADRs are historical decisions and are intentionally not rewritten to mi
 
 - prefer present-tense contracts over implementation diaries;
 - do not duplicate `server-platform` topology, host paths, credentials or mutable runbooks here;
-- exact transient browser-candidate SHAs/ports belong in continuation prompts, not architecture docs, except where a temporary evidence record is explicitly required;
+- transient browser-candidate SHAs/ports are kept only in the relevant short-lived living work record when actually needed, not in durable architecture contracts;
 - do not turn closed issue/PR numbers into permanent architecture dependencies;
 - migration evidence may describe legacy names, but runtime docs use current domain language: **Gallery**, **Site Node**, **Journal**, **Custom Page**, **Navigation Node**, **Storage** and reusable **Contact component**;
 - database/model names may retain historical persistence terminology where renaming adds migration risk; document that boundary explicitly rather than exposing the old name as product language;
