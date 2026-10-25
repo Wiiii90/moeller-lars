@@ -1,124 +1,74 @@
-# Documentation
+# Project documentation
 
-This repository's documentation distinguishes the architectural design, authoritative feature contracts, operational procedures, versioned evidence and temporary agent state. Each behavior has **one normative owner**; obsolete and redundant descriptions must be consolidated. Start with [agent entry](../.agents/README.md) for a fresh worker; Dev, Docs, Testing and Refactor each have one [shared coordination file](../.agents/areas/dev.md), and each numbered worker has its own temporary living record. The **current user message controls the conversation**: a question is not an instruction to execute unfinished work, and a worker may discuss plans before implementing anything.
+This is the human entry to the **Lars Möller website application**. The public site, artist administration and publication system are a single Laravel application; `server-platform` supplies deployment/host operations. Start with the system architecture, then follow the question or change you are investigating. The goal is **comprehensive but layered explanation**, not a flat library of unrelated source excerpts.
 
-## Current source and architecture
+## Choose a starting point
 
-**Source checkout aligned (25 October 2026):** `dev@02004071` was integrated by two-parent merge into `docs@a9ac270a`; application, tests and runtime paths matched current `dev` at that snapshot. **Documentation content is not yet fully reconciled:** the most recent selective *semantic* source review covered changes through `dev@35163591`. Common rich-text colors, paragraph spacing, tables/links, Journal/Home shared viewer, Exhibition media table, Admin Stage and Livewire native session preferences, native Edit selection/save events and public first-paint image readiness are reconciled in the topic contracts. This is **source review**, not a new application/browser/native-generator test. The native documentation baseline remains `docs@317d255e` and is historically versioned.
+| You want to understand… | Start here | Follow into |
+| --- | --- | --- |
+| **How the entire application fits together** | [System architecture](ARCHITECTURE.md) | [Cross-feature source traces](architecture/README.md) |
+| **What the website and artist administration must do** | [Project charter](PROJECT-CHARTER.md) | [Public presentation](PUBLIC-IMPLEMENTATION-CONTRACT.md), [Admin interaction design](ADMIN-UI.md) |
+| **How editing, publishing, recovery and permissions work** | [System edit-to-public model](ARCHITECTURE.md#3-the-central-transaction-edit--audit--publication--read) | [Activity / Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Media](MEDIA.md), [History/concurrency evidence](architecture/publication-working-operations.md) |
+| **Where data and media live** | [Data model](DATA-MODEL.md) | [Media lifecycle](MEDIA.md), [component structure](architecture/structured-components.md), [schema evidence](architecture/schema-evolution.md) |
+| **How the public pages and shared frontend behave** | [Public implementation](PUBLIC-IMPLEMENTATION-CONTRACT.md) | [Exhibition editorial](EXHIBITION-EDITORIAL-CONTRACT.md), [Journal lifecycle](architecture/journal-content-lifecycle.md), [document navigation](architecture/public-spa-lifecycle.md) |
+| **How Admin controls, dialogs, tables and editors are shared** | [Admin UI design and interaction](ADMIN-UI.md) | [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Rich Text](EDITORIAL-RICH-TEXT.md) |
+| **What was actually verified or still requires a check** | [Test architecture](TESTING.md) | [Evidence and gaps](architecture/completion-criteria.md), [migration/cutover](MIGRATION-PLAN.md) |
+| **How agents/workers should collaborate** | [Worker protocol](../.agents/README.md) | [Docs coordination](../.agents/areas/docs.md), [Docs procedure](../.agents/procedures/documentation.md) |
 
-- [Application architecture](ARCHITECTURE.md) — existing architectural material pending coherent whole-document design review and consolidation; do not treat old generated component graphs or the current accumulation as complete system design.
-- [Architecture evidence index](architecture/README.md) — deeper lifecycles and versioned (sometimes historical) source inventories, not a second design authority.
-- [Cross-feature compositions](architecture/cross-feature-compositions.md) — artist Edit → Working → Commit → Public, Journal/Exhibition and shared public runtime owners.
-- [Normative application contracts](#current-application-contracts) — precise Admin, Public, Media, Rights, schema and product requirements.
-- [Current Admin UI](ADMIN-UI.md) — accepted shared presentation/interaction grammar, with topic owners for Controls, Dialogs, Tables and Responsive.
-- [Agent protocol](../.agents/README.md), [area coordination](../.agents/areas/docs.md), [Documentation method](../.agents/procedures/documentation.md) and [Tests and isolation](../.agents/procedures/testing.md). Numbered, bounded worker records replace separate chat handoffs.
+## Architecture, reference and historical evidence
 
-## Verification boundary
+[ARCHITECTURE.md](ARCHITECTURE.md) is the **current system design map**: scope, connected components, owner decisions, principal operational sequences, failure/rollback and trust boundaries. It is not a second copy of each feature contract. The [architecture evidence index](architecture/README.md) arranges deeper analyses by engineering question. Some generated relationship/route/source inventories are **historical artifacts** with older pinned source references; they are neither runtime traces nor evidence of current test success.
 
-The previous full source-only run on `docs@317d255e` checked 77 Markdown files, 1,221 local links, 199 heading references, five parser self-tests and eight generator checks using PHP 8.3.33; [technical evidence](architecture/completion-criteria.md#technischer-source-only-abschluss-19102026) owns exact provenance. Subsequent GitHub-only edits are not native-run proof. **Do not request a local Docs command for every change**: `P:\moeller-lars-docs` is reserved for rare, expressly authorized Codex batches. The artist-curated Validation data is not a test fixture and Continuous Integration must not be accessed.
+Before changing a shared service or UI primitive, follow its consumers across Admin, Public, Preview, publication, media and History. The [cross-feature impact reference](architecture/cross-feature-compositions.md) shows known seams. Document accepted behavior in the **owning feature contract**, not in each worker's short-lived notes.
 
-## Branch ownership for documentation
+## Current source and verification
 
-The **`docs`** branch remains the explicitly authorized documentation-only exception to ordinary direct-`dev` work; `main` remains the release branch. An earlier `testing` suite was **integrated into `dev`** (`dev@25bc40144`), but active curated test work subsequently resumed on `testing` (verified `testing@b7eee549`, 25 October 2026). The intended test architecture is singular, while `dev` carries interim tests and `testing` curates changes for a controlled return to `dev` before cutover. Read current `dev` source/tests, write **only `docs`**, and import coherent dev batches only with conflict-reviewed **genuine two-parent merges**. The user authorized `P:\moeller-lars-docs` only for rare, explicit Codex bulk checks. Routine source reconciliation uses the remote repository and requires no local command. The `refactor` branch was separately authorized and created from `dev@02004071`; no additional branches/worktrees or Continuous Integration (CI) interaction are authorized without a separate decision. The already-active `testing` branch remains independently maintained. See [AGENTS.md](../AGENTS.md).
+**Repository synchronization (25 October 2026):** `dev@0200407133ce4696817271d2141fceaca82f8aff` was imported into `docs` via the genuine two-parent merge `a9ac270a0553f822514dbb2e22d25efd3402bae3`. The Docs branch source, tests and runtime files matched that Dev snapshot. This is **not** a claim that all feature documents were updated or that tests were run. The last selective semantic documentation review preceding that merge covered `dev@35163591`. The remaining review of later Rich Text, Gallery, video and public image/layout changes is tracked in the active [Docs worker task state](../.agents/areas/docs.md).
+
+Historical documentation tool runs are reported with their actual input and date in [evidence](architecture/completion-criteria.md); old graph statistics must not be relabeled as current. Distinguish **source inspection, generated artifact, authored tests, actually executed tests, browser review and artist acceptance**.
 
 ## Normative ownership and conflict resolution
 
-Each behavior has **one normative owner**. `ARCHITECTURE.md` is the overview; `architecture/` contains versioned source evidence and test gaps, **not** replacement rules. An inspected `dev` implementation, authored `dev` test assertion or old generator is not an accepted product change; historically pinned `testing@...` links refer only to former source snapshots.
+There is one authoritative home for each requirement. A feature may participate in several system flows without becoming a second owner of shared behavior.
 
-| Responsibility | Contract owner | Scope boundary |
-| --- | --- | --- |
-| Admin controls, dialogs, table roles, responsiveness | [Control](ADMIN-CONTROL-CONTRACT.md), [Dialog](ADMIN-DIALOG-CONTRACT.md), [Table](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [admin UI grammar](ADMIN-UI.md) | [Editorial Rich Text](EDITORIAL-RICH-TEXT.md) owns the visual editor/picker and [Admin Localization](ADMIN-LOCALIZATION-CONTRACT.md) owns user language/regions; features do not restate shared behavior |
-| Admin messages and recipient-specific inbox | [Notification](ADMIN-NOTIFICATION-CONTRACT.md) | [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) owns audit, Undo and Commit state—not message delivery |
-| Working, LIVE, Commit, Restore and Revert | [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) | Publication protects history recovery roots; [Media](MEDIA.md) owns reference eligibility and physical deletion |
-| Media ingest, reference discovery and physical cleanup | [Media](MEDIA.md) | [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md) defines user-facing eligibility/presentation; [Rights](PUBLIC-RIGHTS-AND-PRIVACY.md) owns incomplete rights/privacy requirements |
-| Public navigation, Home, Gallery, Journal, SEO and viewer | [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md) | [Exhibition Editorial](EXHIBITION-EDITORIAL-CONTRACT.md) alone owns organizer, venue/visibility/opening; [Rich Text](EDITORIAL-RICH-TEXT.md) owns the edit/format pipeline |
-| Matomo tracking/reporting, event data and failure isolation | [Analytics](ANALYTICS.md) | [Public integration](PUBLIC-IMPLEMENTATION-CONTRACT.md#analytics-boundary) links here; [Rights](PUBLIC-RIGHTS-AND-PRIVACY.md#d-matomo-consent-and-real-privacy-data) owns deferred consent |
-| Static Dashboard announcements/changelog and release gates | [Release](RELEASE.md) | Code-owned Markdown is not a per-user Notification record |
-| Test layers/discovery/safe isolated DB and cutover | [Testing](TESTING.md), [Migration invariants](MIGRATION-INVARIANTS.md), [Migration plan](MIGRATION-PLAN.md), [Release](RELEASE.md), [platform boundary](SERVER-OPERATIONS-BASELINE.md) | [Completion matrix](architecture/completion-criteria.md) records evidence, not a second test/release contract |
+| Authority | Owns |
+| --- | --- |
+| [Public implementation](PUBLIC-IMPLEMENTATION-CONTRACT.md) and [Exhibition editorial](EXHIBITION-EDITORIAL-CONTRACT.md) | Public routing, viewer/navigation, Home/Gallery/Journal presentation; Exhibition-only venue, organizer, map and opening rules |
+| [Admin design](ADMIN-UI.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) | Shared admin design grammar and its canonical component implementations; page-specific forms should reuse them |
+| [Rich Text](EDITORIAL-RICH-TEXT.md) | Editor/render/picker, safe formatting and reusable media references across Home, Journal, Custom Page |
+| [Publication/Activity](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Notification](ADMIN-NOTIFICATION-CONTRACT.md) | Working versus committed, versioning, Undo, audit versus actor-scoped messaging |
+| [Media](MEDIA.md), [Rights/privacy](PUBLIC-RIGHTS-AND-PRIVACY.md), [Analytics](ANALYTICS.md) | Asset identity, ingest, eligibility, file lifetime, rights/consent versus tracking/reporting |
+| [Data model](DATA-MODEL.md), [Migration](MIGRATION-INVARIANTS.md) | Meaning of persistent identities/relations and forward-compatible migration |
+| [Testing](TESTING.md), [Release](RELEASE.md), [server operations boundary](SERVER-OPERATIONS-BASELINE.md) | Safe validation, qualification and application/platform responsibilities |
 
-**Historical norm/source differences:** The former Gallery 1-vs-2-eager conflict is superseded by the current [Gallery contract](PUBLIC-IMPLEMENTATION-CONTRACT.md#gallery-delivery-and-loading): two images are eager, only the first high priority. That supersedes the older `dev@11f7e101` source trace. Editor-valid external HTTPS images may violate strict [Public CSP `img-src`](architecture/public-security-privacy-boundaries.md#4-rich-text-url-validierung-vs-csp-ladefreigabe). Invalid *enabled* Matomo URL is distinct from an analytics network outage and has a [source-identified Contact-response risk](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen). These require product/test decisions, **not** silent documentation redefinition.
+Additional active Admin contracts remain in the repository—authentication, localization, password policy, performance/profiling, Notification transport, responsive shell/metrics/toolbar/tables/stages and browser-review method. Their content must be **reviewed for unique ownership and merged where redundant**, not arbitrarily deleted. The Admin collection is under explicit Docs Worker 1 consolidation.
 
-[Normative consolidation and derived-artifact classification](architecture/completion-criteria.md#normative-konsolidierung-konfliktstand-und-artefaktentscheidung) records the reconciliation, not a second normative contract.
+## Branch ownership for documentation
 
-## Current application contracts
+- **`dev`** is the implementation integration branch; it changes continuously and is authoritative for current application source.
+- **`docs`** is the reviewing/consolidating documentation branch. It regularly imports current `dev` into its source checkout and updates documentation-worthy facts *in place*. A Git merge proves code incorporation, **not** documentation correctness.
+- **`testing`** is actively curating the intended test suite; it imports newer `dev` changes while preserving its own test architecture. The live worker owns those edits.
+- **`refactor`** is a separately authorized branch initially based on `dev@02004071`, for behavior-preserving code cleanup. Refactor changes return to `dev` only after reviewed integration.
+- **`main`** is for separately authorized release/promotion.
 
-These describe the durable current application architecture and behavior. Browser/product milestone acceptance, release-candidate promotion and environment-specific evidence are tracked separately through the current review/release workflow:
-
-- [PROJECT-CHARTER.md](PROJECT-CHARTER.md) — product scope and public/admin principles
-- [ARCHITECTURE.md](ARCHITECTURE.md) — application boundaries, typed site structure and ownership
-- [DATA-MODEL.md](DATA-MODEL.md) — durable persistence/domain relationships
-- [TESTING.md](TESTING.md) — test layers, placement, discovery, naming, database safety and browser-testing direction
-- [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md) — public routing/publication/Home/Journal/media behavior
-- [EXHIBITION-EDITORIAL-CONTRACT.md](EXHIBITION-EDITORIAL-CONTRACT.md) — organizer versus venue/address, field visibility, vernissage and forward compatibility
-- [EDITORIAL-RICH-TEXT.md](EDITORIAL-RICH-TEXT.md) — canonical visual editor/Storage picker/inline links/captions and safe legacy/public bridge
-- [ADMIN-LOCALIZATION-CONTRACT.md](ADMIN-LOCALIZATION-CONTRACT.md) — authenticated English/German UI and independent public/admin date/number regions
-- [MEDIA.md](MEDIA.md) — media ingest/references, quota, guarded cleanup and explicitly local pre-release thumbnail consolidation; no Validation execution
-- [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary
-- [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and transactional-mail boundary
-- [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md) — shared environment-aware password policy and browser-local generator contract
-- [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
-- [ADMIN-PROFILING.md](ADMIN-PROFILING.md) — canonical local Debugbar/DevTools/request-classification and on-demand callgraph workflow
-- [PULSE-REPORT.md](PULSE-REPORT.md) — read-only Markdown/JSON export of retained Laravel Pulse aggregates, including schema, interpretation, privacy, retention and Validation usage
-- [ADMIN-CONTROL-CONTRACT.md](ADMIN-CONTROL-CONTRACT.md) — canonical admin form/control rendering and persistence semantics
-- [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md) — shared native Filament dialog types, chrome, lifecycle and edit/command semantics
-- [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection
-- [ADMIN-RESPONSIVE-CONTRACT.md](ADMIN-RESPONSIVE-CONTRACT.md) — task-specific Wide/Compact/Narrow/Minimal reference, split into shell, metrics, toolbars, tables and Visual Stages
-- [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Ticker feedback/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
-- [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) — append-only Activity, bounded Undo recovery, shared content-addressed history payloads, Working/LIVE Commit history and reset/restore/revert semantics
-- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct/worker browser-reconciliation modes, shared Visual Stage ownership, icon semantics and local preview loop
-- [RELEASE.md](RELEASE.md) — immutable image, preview, runtime, persistence and release contract
-- [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md) — application/platform ownership boundary; mutable operational implementation lives in `server-platform`
-
-These documents state current durable contracts. They are not chronological PR/worker diaries and should not encode every temporary reconciliation SHA.
-
-## Agent work areas and living knowledge
-
-[Agent entry](../.agents/README.md) resolves a numbered worker through its one shared [Dev](../.agents/areas/dev.md), [Docs](../.agents/areas/docs.md), [Testing](../.agents/areas/testing.md) or [Refactor](../.agents/areas/refactor.md) area file, then reads that worker's bounded live record. The current user request governs the conversation; only an **explicit replacement-and-continue request** resumes the old worker's persisted task. No separate handoff prompts or growing chat diaries are needed. Worker records are retired and removed after durable knowledge is preserved in its proper contract or shared area. [Documentation procedure](../.agents/procedures/documentation.md), [Testing safety](../.agents/procedures/testing.md), and the complete [current Admin UI contract](ADMIN-UI.md) are task-specific stable references. Retired root handoff/skill documents are preserved in Git history, not kept as competing working policies.
-
-For the later controlled integration to `dev`, [integration boundary](../.agents/procedures/documentation.md#integration-boundary) explicitly protects the newer direct-`dev` root agent policy and existing active worker state. No automatic merge, CI or local Codex batch follows a routine Docs update.
-
-## Live work and acceptance status
-
-GitHub Issues and the current browser/orchestration review are the source of truth for **unfinished work, browser acceptance and current blockers**.
-
-A source-reviewed or technically running reconciliation candidate is not automatically product accepted. A durable contract may be implemented on a temporary browser branch or directly on explicitly authorized `dev` before it reaches `main`; documentation should describe the intended/current contract without pretending that transient browser acceptance is complete.
-
-Browser feedback from the exact current candidate overrides stale acceptance wording. Once an exact `dev` candidate is browser/product accepted, stale issue history must not be treated as proof that already-resolved UI defects still exist; update/close the affected acceptance issues and promote that exact candidate through the `main`/release gates. Temporary candidate references and relevant acceptance state belong in concise, living worker/topic records when needed, not in timeless architecture contracts or standalone chat handoffs.
+The active working branch/permissions, coordination roster and scoped safety rules are described in [AGENTS.md](../AGENTS.md) and [agent protocol](../.agents/README.md). Docs writes do not authorize CI, release, protected Validation or Production changes.
 
 ## Migration and cutover evidence
 
-These remain relevant until the legacy site is explicitly retired:
+The following are deliberately **cutover-specific**, not the permanent application architecture: [migration plan](MIGRATION-PLAN.md), [migration invariants](MIGRATION-INVARIANTS.md), [source inventory](SOURCE-INVENTORY.md), [legacy public behavior](LEGACY-PUBLIC-CONTRACT.md). Keep unique migration/recovery facts until legacy retirement is actually approved, then archive or consolidate them in a deliberate cleanup.
 
-- [MIGRATION-PLAN.md](MIGRATION-PLAN.md) — remaining reconciliation, browser/editorial acceptance, Validation and cutover sequence
-- [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md) — source-to-target reconciliation guarantees, historical-migration self-containment and forward canonicalization rules
-- [SOURCE-INVENTORY.md](SOURCE-INVENTORY.md) — reviewed source systems/migration inputs
-- [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) — detailed legacy behavior evidence for browser/cutover comparison
+Retained architecture decisions: [application stack](adr/ADR-0001-APPLICATION-STACK.md) and [hosting cost baseline](adr/ADR-0002-HOSTING-COST-BASELINE.md).
 
-After successful cutover and explicit legacy retirement, legacy-only evidence can be archived/removed in a dedicated cleanup rather than kept indefinitely as active architecture.
+## Agent work areas and living knowledge
 
-## Architecture decisions
-
-Accepted ADRs are historical decisions and are intentionally not rewritten to mirror every later implementation detail:
-
-- [ADR-0001: Application stack](adr/ADR-0001-APPLICATION-STACK.md)
-- [ADR-0002: Hosting cost baseline](adr/ADR-0002-HOSTING-COST-BASELINE.md)
-
-## Repository policies
-
-- [Security policy](../SECURITY.md) — private vulnerability-reporting guidance and supported security scope
-- [Contribution policy](../CONTRIBUTING.md) — current external-contribution policy
-- [Pull request template](../.github/pull_request_template.md) — verification, browser acceptance, migration impact and release/Validation claims
+A worker is **registered only on actual activation** in its shared [Dev](../.agents/areas/dev.md), [Docs](../.agents/areas/docs.md), [Testing](../.agents/areas/testing.md) or [Refactor](../.agents/areas/refactor.md) coordination file. Its own numbered file primarily tracks **user assignments and progress**. When it retires, consolidate enduring results into this repository's owning documents and remove its roster entry and temporary file together. Separate handoff diaries are not part of the workflow.
 
 ## Documentation rules
 
-- prefer present-tense contracts over implementation diaries;
-- do not duplicate `server-platform` topology, host paths, credentials or mutable runbooks here;
-- transient browser-candidate SHAs/ports are kept only in the relevant short-lived living work record when actually needed, not in durable architecture contracts;
-- do not turn closed issue/PR numbers into permanent architecture dependencies;
-- migration evidence may describe legacy names, but runtime docs use current domain language: **Gallery**, **Site Node**, **Journal**, **Custom Page**, **Navigation Node**, **Storage** and reusable **Contact component**;
-- database/model names may retain historical persistence terminology where renaming adds migration risk; document that boundary explicitly rather than exposing the old name as product language;
-- distinguish `MediaAsset` being referenced from it being publicly deliverable;
-- keep the central Rich Text/media stack singular rather than documenting editor-specific parallel implementations;
-- shared admin geometry belongs to shared tokens/primitives; do not document page-local compensations as architecture;
-- security/account-recovery details belong in `ADMIN-AUTHENTICATION.md`; concrete SMTP topology/credentials remain platform-owned;
-- never include secret values, production dumps, private media or access tokens.
+A document must earn its place by answering a specific question for a reader. Explain actual system connections, choices and behavior before enumerating source details; use substantial component, sequence, state or data diagrams when they reveal nontrivial cross-boundary relationships. Never turn one function into a decorative three-box graph. Consider the **entire purpose and structure** of an existing document before revising it.
+
+Prefer consolidating and removing superseded sections to appending new date/commit sections. Keep technical evidence versioned but distinguish it visually and logically from current design. Changes to shared functionality must consider all consumers; source review alone is not live browser acceptance. Avoid undocumented new frameworks or parallel implementations.
+
+## Repository policies
+
+[Security](../SECURITY.md), [contribution](../CONTRIBUTING.md) and [pull-request template](../.github/pull_request_template.md) are repository policies, not additional design authorities. Server topology and secrets belong to the independently maintained `server-platform` project.

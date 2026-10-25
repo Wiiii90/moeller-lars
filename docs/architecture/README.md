@@ -1,104 +1,45 @@
-# Architektur: Quelleninventar und Modelle
+# Architecture evidence and investigation index
 
-Diese Sektion entsteht ausschließlich auf `docs`. Der Anwendungscode stammt aus `dev` (Public-/Media-/Gallery-/Rich-Text-/Exhibition-/Lokalisierungs-Teilflächen zuletzt selektiv auf `dev@b289a9102a3b` quellengeprüft); die Teststruktur liegt im Zwischenstand auf `dev` (`dev@fbc93f71`) und wird auf dem weiterhin aktiven Branch `testing` (`testing@b7eee549`, 25.10.2026) kuratiert. Ein früherer `testing`-Stand wurde integriert; beide aktuellen Branches sind erneut divergiert. Branch-SHAs sind Quellenbelege, keine Behauptung bestandener Tests. Relevante `dev`-Inhalte werden nach fachlicher Triage und konfliktgeprüftem echtem Zwei-Eltern-Merge auf `docs` integriert; docs-only-Quellaudits bleiben davon getrennt. Keine CI-Interaktion. [Kanonische Teststrategie](../TESTING.md) und [aktuelle `dev`-Assertions](completion-criteria.md#testabdeckung-eine-dev-testsuite-authored-assertions).
+Start with the **[system architecture](../ARCHITECTURE.md)**. It explains the running application as a single design: ownership, major domains, editing/publication, public reads, media, recovery and trust boundaries. This directory contains the **underlying focused traces, source inventories and verification limits**—not another independent architecture specification.
 
-**Selektiver aktueller Quellabgleich bis 25.10.2026:** Die neue Batch `dev@2ad31502` → `dev@74e629274ac2` (96 Commits, 146 geänderte Pfade) nach Fachowner aufgenommen; Rich Text, Admin-Locale/Regionalformat, Exhibition-Visibility, Journal-Bildviewer und gemeinsame Picker/Dialogs ergänzt; der native `docs@8c9bd0a0`-Inventarkatalog und `docs@317d255e`-Abschluss bleiben **historisch**. Ohne kontrollierten neuen `dev`-Import keine Aussage, dass generierte Diagramme das aktuelle `dev` vollständig darstellen.
+The useful entry point depends on the question. The historical generator figures further below have source-specific provenance; many predate the latest `dev` changes.
 
-**End-to-end- und Worker-Einstieg:** [Cross-feature-Kompositionen](cross-feature-compositions.md) und [Agent-Einstieg](../../.agents/README.md). Der schnelle Rollenstart liest nur die [gemeinsame Koordination des Arbeitsbereichs](../../.agents/areas/docs.md) und die betreffende nummerierte Worker-Datei; Architekturgraphen bleiben versionierte Quellbelege.
+## Understand the main behaviors
 
-## Einstieg
+| Engineering question | Source-based investigation |
+| --- | --- |
+| How does an editor change become publicly visible? | [Publication / committed reads](publication.md), [editorial mutation paths](editorial-mutation-paths.md), [public media eligibility and file lifetime](media-reference-and-cleanup.md) |
+| What happens when someone undoes, resets, restores or reverts while state changes? | [Activity and Undo](activity-undo-lifecycle.md), [working operations and lock ordering](publication-working-operations.md), [publication call sites](admin-publication-calls.md) |
+| How do Artwork/Gallery and Journal/Exhibition produce different public behavior? | [Artwork publication](artwork-gallery-publication.md), [Journal lifecycle](journal-content-lifecycle.md), [Exhibition Map](exhibition-map.md) |
+| How are Home, Custom Page, Rich Text and nested components interpreted? | [Structured component persistence/rendering](structured-components.md), [Admin mutation surfaces](ui-surfaces.md), [cross-feature impact map](cross-feature-compositions.md) |
+| How does a public page arrive and remain correct during navigation? | [Public Livewire/page lifecycle](public-spa-lifecycle.md), [runtime routes/middleware](runtime-entrypoints.md), [security, media and privacy boundaries](public-security-privacy-boundaries.md) |
+| What are the build, database and external runtime boundaries? | [Build and runtime](application-runtime-boundaries.md), [schema evolution and cutover](schema-evolution.md), [import/dependency boundary findings](import-boundaries.md) |
 
-**Für einen fachlichen Einstieg zuerst [Cross-feature compositions](cross-feature-compositions.md):** drei durchgehende Edit→Working→Commit→Public-, Exhibition/Journal-/Viewer- und SPA/Presentation-Flüsse. Die nachfolgenden Import-/Klassengraphen sind bewusst **versionierte Strukturbelege**, nicht 20 einzeln als Anwendungskomposition ausgegebene Klassenbilder. [Worker-/Regression-Gate](../../.agents/README.md) verlinkt Norm-Owner und konkrete Verbraucher.
+These are **explanations of focused systems**. A dependency in an import graph, an ORM relation or a static source trace does not automatically prove a runtime call, a physical database foreign key, a browser behavior or a completed test.
 
-1. [Bestandsaufnahme](inventory.md) — nachprüfbarer Quellcodekatalog mit Klassifikation, Abhängigkeiten und bekannten Abdeckungslücken.
-2. [PHP-Quellenkatalog](php-source-audit.md) — nativer Checkout-Lauf auf `docs@8c9bd0a0`: **249 Typdateien**, 218 Klassen / 24 Traits / 7 Enums und 896 interne Importdeklarationen. [PHP-Symbole](generated/php-symbols.json), [675 statische Beziehungen](generated/php-relationships.json) und [Modulbeziehungen](generated/module-relationships.mmd) sind reproduziert; der ältere 248/900-Importkatalog bleibt ausdrücklich historisch.
-3. [Klassen-Importdiagramme](class-import-diagrams.md) — 20 Modulansichten des eingefrorenen 900er-Importstands; nach dem Cleanup nicht vollständig regeneriert.
-4. [Importgrenzen und Artwork-Publish-Abweichung](import-boundaries.md) — Modulzyklus und konkret unterschiedliche Gallery-/Undo-Guards.
-5. [Eloquent-Relationen](eloquent-relations.md) — 26 Modeldateien und 48 Relationen, jetzt zusätzlich als [generierter JSON-Graph](generated/eloquent-relationships.json) und [Mermaid-Gesamtgraph](generated/eloquent-relationships.mmd).
-6. [Fachliche Lebenszyklen](lifecycles.md) — fünf eingefrorene Source-State-Machines (historisch 35 Kanten) **plus** quellengeprüfte Home-Achsen, Publication-Working/LIVE/Version-Kontexte und Journal-Blog/Exhibitions-Templatewechsel ohne Inhaltsmigration; Guards, No-op, Audits und Lock-Grenzen jeweils getrennt.
-7. [Admin-/Publication-Aufrufstellen](admin-publication-calls.md) — 21 belegte direkte Methodenaufrufe über 14 Klassen, mit separatem JSON/Diagramm und Source-Anchor-Check.
-8. [Publication und öffentlicher Lesezugriff](publication.md) — erster durchgehender Daten- und Ablaufgraph.
-9. [Restore, Revert und Reset](publication-working-operations.md) — Activity UI bis Working, mit drei Ablaufdiagrammen, [transaktionaler Lock-/Read-Matrix](publication-working-operations.md#serialisierungsgrenze-wer-bestimmt-welches-ziel-unter-lock) und [abgeschlossener Source-/Test-Zeitfenstermatrix](publication-working-operations.md#fachlicher-abschluss-bestätigtes-revert-ziel-locks-und-zweiphasiger-commit) zu UI-Zielidentität, vor-lockigem LIVE-Race und späterem Staging-Commit; Guards, No-op und Cleanup nach Commit ausdrücklich getrennt.
-10. [Strukturierte Komponenten](structured-components.md) — sechs persistierte JSON-Typen samt **dekorativen Image-`children[]`** als optionaler geordneter Komponentenebene (jetzt auch Divider), eigenständigem Left/Right-Image-Alignment; Model-Guards, eigene Edit-Actions/Parent- und Child-Zeilen, native Float-Darstellung und rekursive Media-Referenzlücke. [UI-Zielauflösung/gemischte Selection-Grenze](ui-surfaces.md#custom-page-image-children-komponentenaktionen-und-selektionsgrenze) und [native Cross-Level-Placement-Kette](ui-surfaces.md#native-hierarchie-placement-pages-und-custom-pages) getrennt. Contact/Legacy-List-Context/Image-Scale bleiben erklärt; [JSON-Typkatalog](structured-components.json) ist noch eingefroren.
-11. [Runtime-Einstiegspunkte](runtime-entrypoints.md) — 21 explizite HTTP-Routen mit [PHP-Quellprüfer](../../scripts/check-architecture-routes.php), Middleware, [Filament-Discovery-/Admin-Auth-/Preview-Grenze](runtime-entrypoints.md#source-abschluss-filament-discovery-admin-zugriff-und-public-preview-grenze) (`dev@78c82627`) und Public-JS.
-12. [Public-SPA-Dokumentlebenszyklus](public-spa-lifecycle.md) — Livewire-4-Navigation mit CSP-Nonce, Vite-Manifestversion, Dokument-Swap/Disposer, statischem, intrinsisch content-sized Public-Paper-Frame **ohne JS-Observer**, page-scoped Video-Playback und Gallery-Bildladepuffer; **zwei eager Gallery-Bilder sind nun normkonform**, ausschließlich das erste besitzt hohe Priorität.
-13. [Filament-/Livewire-Komposition und Neun-Workspace-Mutationsabschluss](ui-surfaces.md#abschlussaudit-neun-admin-workspaces-mutation-bis-feedback) — nativ regenerierter [UI-Katalog](generated/ui-surfaces.json): **34 Einheiten, 23 interne Trait-Kanten, 73 literale Actions** auf `docs@8c9bd0a0`; [Kompositionsgraph](generated/ui-composition.mmd) aktuell für diese Quelle. Die separat auf neueren `dev`-SHAs gelesenen fachlichen Traces bleiben eigene Belege.
-**Weitere aktuelle fachliche Pfade:** [Editorial-Mutationsketten](editorial-mutation-paths.md) — Home-Sichtbarkeit als eigenständiger Routing-/Menu-Guard und Custom-Page-Image-Select von Livewire-Ereignis über gesperrte Domaintransaktion, Audit, No-op, Projektion und Notification bis zur begrenzten Index+Typ-Stale-Target-Prüfung. Quelle `dev@f69e0e7e`; Tests nur gelesen.
+## Understand the code and stored data
 
-14. [Admin Notification transport, aggregiertes Action-Feedback und Dashboard Release Notes](admin-notification-transport.md) — Audit-/Inbox-/Header-Sequenz plus [separater code-owned Static-Feed](admin-notification-transport.md#code-owned-changelogannouncement-ist-keine-adminnotification) für Changelogs/Announcements, Safe-Markdown und internen Versionen-Link; Source, keine Runtime-Verifikation.
-15. [PostgreSQL-Schemaentwicklung und Validation-Cutover](schema-evolution.md) — Up-Migrationsbelege, Table/View-Unterschiede, historische Zustände, [geschützte artist-kuratierte Validation als v0.5-Cutover-Kandidat](schema-evolution.md#geschützter-validation-zustand-vs-v05-produktionsdaten) und [vier Medienrechte-Spalten](schema-evolution.md#aktuelle-media-rechte-schema-parität-migration-2026_10_15_180000); keine reale PostgreSQL-/Restore-Abnahme.
-16. [Exhibition Map und Edit-Autosave](exhibition-map.md) — UI–Domain–Geocoder–Persistenz-Kette samt Fehlpfaden; [Exhibition Editorial](../EXHIBITION-EDITORIAL-CONTRACT.md) ist der alleinige normative Owner für Organizer, Venue, Feldsichtbarkeit und Vernissage.
-17. [Media-Referenzen, Cleanup und Reclaim](media-reference-and-cleanup.md) — transactional-logische Löschung mit durablem Storage-Cleanup-Outbox, historischen Schutzreferenzen, lokal-only Altthumbnail-Cutover und libvips-/FFmpeg-Previewvarianten und optionalen Rights-Revisionsartefakten; [einzige Source-Coverage-Matrix](media-reference-and-cleanup.md#quellbasierte-medienreferenzmatrix) sowie [fachlicher Reader-/Test-Abschluss](media-reference-and-cleanup.md#fachlicher-abschluss-reader-symmetrie-zustandsfilter-und-schutzwurzeln) für Working, Storage, PublicMedia, Delete und LIVE-/History-Bytes, offene Child-/Home-List-/Top-Level-List-Guards; Variant-Reclaim/Rebuild getrennt.
-18. [Application-Build und Runtime-Plattformgrenzen](application-runtime-boundaries.md) — Docker Build/Entrypoint/Apache/X-Sendfile/Local Preview getrennt von Deployment/DB-Migration/Smoke; Source-Negativfälle zu Release-HTTP-Marker und Matomo-Schalter sowie [unverdrahtetem IPTC/XMP-Staging-Writer samt deklariertem ExifTool-13.55-Containerpin und nicht ausgeführten Bildtests](application-runtime-boundaries.md#offline-metadata-writer-ist-kein-public-runtime-owner).
-
-Diese Dokumente sind **beschreibende Architekturbelege**, keine zweite normative Quelle neben den bestehenden Fachverträgen. Maßgebliche Anforderungen bleiben vorläufig [ARCHITECTURE](../ARCHITECTURE.md), [DATA-MODEL](../DATA-MODEL.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Dialog](../ADMIN-DIALOG-CONTRACT.md) und [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Widersprüche werden explizit markiert und beim Neuschnitt auf genau einen Vertrags-Eigentümer reduziert.
-
-**[Journal-Content-Lifecycle](journal-content-lifecycle.md):** Blog Publish/Scheduled als zeitlicher **Query-Guard ohne Cron-Statuswechsel**, Exhibition Publish/Archive/Restore/Temporal/Map, JournalEntryMedia- und Delete-Wirkung, öffentliches Template/LIVE/Preview-Filtering; [Exhibition-Title-Disclosure und JournalMediaRenderer-Captions](journal-content-lifecycle.md#aktuelle-journal-präsentation-disclosure-und-medien-captions) als reine Renderprojektion, Browserabnahme offen.
-
-**[Gallery-/Artwork-Publication-Fluss](artwork-gallery-publication.md):** Einzel-Publish/No-op, **atomare Gallery-Batch-Transaktion**, öffentliche/Preview-Eligibility, gemeinsame Viewer-Reihenfolge und abweichende Undo-Inverse mit ALT-/Video-/Thumbnail-Grenzen. Die Norm-/Testmatrix bleibt beim bestehenden [Importgrenzen-Owner](import-boundaries.md).
-
-**Aktueller Public-Legal-Code (`dev@c33d7e9c`):** [Public-Security-Quellenfluss](public-security-privacy-boundaries.md#neue-general-public-legal-quelle-stand-devc33d7e9c) trennt bereits geschriebenen General-/Legal-Disclaimer-Code samt englischem UI von noch offenen Migrationen, Realtests, Consent und Media-Rights. [Admin-Tabellenvertrag](../ADMIN-TABLE-CONTRACT.md#component-sequences) besitzt nun auch das zentrale hierarchische Sort/Nest-Grenzmodell.
-
-**[Public-Sicherheits-, Rechte- und Privacy-Grenzen](public-security-privacy-boundaries.md):** [fachlich abgeschlossene Source-/Testmatrix](public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen) für GET/HEAD-LIVE, Preview/Contact/Media/SEO/TDM und Matomo-Konfigurationsfehler **nach** Contact-Persistenz. [Livewire-Head-/Nonce-Sourcegrenze](public-spa-lifecycle.md#public-head-und-nonce-über-den-dokumentwechsel); Runtime-/Browser-/Ingress-Abnahme offen. Produkt-/Umsetzungsplan bleibt [PUBLIC-RIGHTS-AND-PRIVACY](../PUBLIC-RIGHTS-AND-PRIVACY.md); Quellbelege sind keine Runtime-Verifikation.
-Die [Datenschutz-Quellmatrix](public-security-privacy-boundaries.md#6-public-datenschutz-getrennte-kontakt--tracking--und-kartendatenflüsse) trennt DB-Kontakt, privaten SMTP-Empfänger, Matomo-Browsertraffic, OSM-Tiles und bislang unbestätigte Server-/Log-/Retention-Realität.
-
-**[Activity/Undo-Lifecycle](activity-undo-lifecycle.md):** AuditEvent und individualisierbares, befristetes Undo-Receipt sind keine Publication-Version; Ordering-Nettozyklen, Snapshot-After-Guards, Media-Inverse, Lifecycle-Inverse, persönliche Receipt-Guards und das **nicht atomare** Activity-Selection-Batch sind als echte State-/Transaktionspfade beschrieben.
-
-**[Verbindliche Abdeckungs- und Abschlussmatrix](completion-criteria.md):** [endlicher 10-Flächen-Restlücken-Check](completion-criteria.md#endlicher-restlücken-check-quellenabschluss-gegen-runtime-produkt-backlog) bestätigt die [neun fachlich gesichteten Admin-Action-/Callback-Familien](ui-surfaces.md#abschlussaudit-neun-admin-workspaces-mutation-bis-feedback) und trennt Produkt-/Runtime-Grenzen; die vorgesehene einheitliche Testarchitektur wird auf dem aktiven `testing`-Branch kuratiert, während `dev` einen Zwischenstand enthält; der [vereinheitlichte Notification-Owner](admin-notification-transport.md#vereinheitlichter-dev-owner-ein-action-erfolg-mehrere-audit-referenzen) ist source-traced. Branchvergleiche sind datierte Provenienz und müssen vor Integration erneut erfolgen; `testing` und `dev` waren am 25.10.2026 divergiert. [Norm-Owner-Konsolidierung und A–D-Artefaktsichtung](completion-criteria.md#normative-konsolidierung-konfliktstand-und-artefaktentscheidung) erfassen nach dem nativen Abschluss **33 externe `.mmd` und zehn JSON**; die ursprünglichen 19 Architekturtexte sind eine **eingefrorene Ausgangsbasis**, keine aktuelle Gesamtsumme. Material ist kein fachlicher Vollständigkeitsbeweis. Die Matrix benennt die für einen endlichen Dokumentationsabschluss nötigen Quellflüsse, offene Inhalte, später isoliert ausführbare Verifikation und die Artefaktklassen für dauerhaft versus nur lokal benötigte Graphen. **Das native source-only Prüfpaket wurde am 19.10.2026 ausgeführt; DB-/App-/Browserabnahme bleibt getrennt.**
-
-## Quellen- und Abdeckungsregel
-
-- **Quellgeprüft**: konkrete Klasse, Methode, Konstante oder Route im bezeichneten Git-Commit gelesen; nur diese konkrete Aussage gilt als geprüft.
-- **Statisch inventarisiert**: aus Repositorypfaden oder Quelltext extrahiert; keine Aussage über dynamische Framework-Registrierung.
-- **Noch offen**: dynamische Auflösung, vollständige Datenbankschema-/FK-Prüfung oder tatsächliches Browserverhalten noch nicht verifiziert.
-- **Laufzeitverifiziert**: erst nach ausdrücklich ausgeführtem, sicherem Test oder Browsercheck; derzeit hier **keine** solche Behauptung.
-
-Dokumentierte Quellbelege beziehen sich auf den Ausgangsstand `82879135c0ab18dd88b07663c1e214a4ade0e45b`. Diese SHA ist **Belegstand, kein festzuhaltender Arbeits-HEAD**. Beim Einholen von `dev` werden betroffene Belege und Diagramme neu geprüft. Wo in den folgenden Dokumenten eine Klassenreferenz steht, verweist sie auf einen Repositorypfad; generierte Kataloge dürfen niemals vorgeben, die gesamte Laufzeitdynamik allein aus Imports abzuleiten.
-
-## Wiederholbare PHP-Quellinventur
-
-Am **19.10.2026 mit PHP 8.3.33** auf dem vollständigen `docs`-Worktree ausgeführt: Inventory-, Relations- und Eloquent-Selbsttests sowie alle acht Generator-`--check`-Läufe. Quellenbasis der neu extrahierten Inventare: **`8c9bd0a0f0fca46b1aa5637049372726d6970c4c`**; kein Import neuerer `dev`-Commits. Die [Abschlussmatrix](completion-criteria.md#technischer-source-only-abschluss-19102026) besitzt Ergebnisse, anfängliche Abweichungen und Artefaktentscheidungen.
-
-Die Generatoren lesen nur Quelltext/Manifeste; sie booten weder Laravel noch Datenbank. Die benötigte Reihenfolge ist:
-
-```sh
-php scripts/generate-architecture-inventory.php --write
-php scripts/generate-architecture-inventory.php --check
-php scripts/generate-architecture-relations.php --write
-php scripts/generate-architecture-relations.php --check
-```
-
-[php-symbols.json](generated/php-symbols.json) erfasst **249 App-PHP-Dateien/Typen, 26 Modeldateien und 76 Migrationsdateien**, außerdem Dateiimports und Deklarationszeilen. [php-relationships.json](generated/php-relationships.json) enthält **675 explizite interne Beziehungen**, keine übersprungenen Dateien: 171 Konstruktor-Typen, 48 Eloquent-Calls, 7 Vererbungen, 423 Service-Locator-Fundstellen und 26 Trait-Uses. [module-relationships.mmd](generated/module-relationships.mmd) aggregiert deren modulübergreifende Referenzen. Imports sind keine Runtime-Aufrufe; Konstruktor-Typen und globale `app()/resolve()`-Fundstellen beweisen keine tatsächliche Containerauflösung. Externe Frameworktypen, dynamische Targets und Dateien ohne eindeutigen Typ liegen außerhalb dieses Graphen.
-
-[Der historische Importkatalog](php-source-audit.md) und seine 20 [Klassendiagramme](class-import-diagrams.md) behalten ihren ursprünglichen `source_ref`. Ihr erfolgreicher Importdiagramm-`--check` bestätigt nur die Reproduktion aus dem eingefrorenen Audit, nicht Aktualität zu `docs` oder `dev`.
-
-### Vollständiger Eloquent-Modellgraph
-
-[generate-architecture-eloquent.php](../../scripts/generate-architecture-eloquent.php) wurde mit `--self-test`, `--write` und `--check` ausgeführt: **26 Modelle / 48 deklarierte Relationen**. [JSON](generated/eloquent-relationships.json) erhielt sieben aktualisierte Zeilenanker; der [Graph](generated/eloquent-relationships.mmd) blieb unverändert. Der enge Tokenizer erfasst öffentliche parameterlose Methoden mit passendem Rückgabetyp und direktem `return $this->relation(Model::class)`, auch mit Methodenchains und `self::class`. Kommentare, dynamische Targets und andere Syntaxformen werden nicht als bestätigte Relationen ausgegeben. Diese Methoden sind **keine physischen SQL-FKs**.
-
-### Physisches Datenbankschema (read-only)
-
-[`scripts/export-architecture-postgres.php`](../../scripts/export-architecture-postgres.php) liest nach einer **separaten, kontrollierten Migration in einer wegwerfbaren PostgreSQL-Datenbank** `pg_catalog` und `information_schema`. Der Exporter selbst führt **keine** Migrationen, Schemaänderungen oder Schreibabfragen aus; er verlangt explizit `ARCH_DOC_DB_DISPOSABLE=1`, eine `pgsql:`-DSN und verwendet eine Read-only-Transaktion. Er exportiert Tabellen/Views, Spalten, Constraints, Indizes und nutzerdefinierte Trigger nach `postgresql-catalog.json` sowie FK-Quellenkanten nach `postgresql-fk-graph.mmd`. Die FK-Pfeile behaupten bewusst noch keine Kardinalitäten.
-
-Der tatsächliche Datenbankexport wurde **noch nicht ausgeführt**, da in dieser Arbeitsumgebung keine migrierte PostgreSQL-Testinstanz vorhanden ist. Es gibt deshalb weiterhin **kein als vollständig behauptetes ERD**. Die vollständige Erhebung folgt erst nach sicherer Bereitstellung einer Wegwerf-DB; produktive und lokale persistente Vorschau-Datenbanken sind tabu.
-
-## Modellarten und Fertigstellung
-
-| Modell | Erste Quelle | Status |
+| Reference | Use it for | Evidence caveat |
 | --- | --- | --- |
-| PHP-Klassen, Interfaces, Enums, Traits und statische Abhängigkeiten | `app/**/*.php` | **249 Typen, 896 interne Dateiimports und 675 statische Beziehungen** auf `docs@8c9bd0a0` nativ extrahiert und geprüft; historische 248/900-Importgraphen separat erhalten |
-| Fachmodule und ihre Eintrittspunkte | `app/Domain`, `app/Http`, `app/Filament`, `app/Livewire` | Schwerpunktpfade quellengeprüft |
-| Physisches PostgreSQL-Schema und Constraints | ausgeführte, vollständige Migrationen in **isolierter Wegwerf-DB** | offen; Migrationsanzahl ist kein Schema |
-| Eloquent-Beziehungen | Relation-Methoden der Models | 26 Modelquellen / 48 explizite Kanten als JSON und Mermaid vorhanden; **physische FKs unabhängig offen** |
-| JSON-/Rich-Text-Komponenten | `CustomPageSetting`, Home-Editorial-Validatoren, Public Renderer | sechs persistierte Komponenten samt verschachtelten Feldregeln, Normalisierung und Public-Readiness quellenbelegt; **Runtime-/Import-Akzeptanz offen** |
-| Routes und Middleware | `routes/web.php`, `bootstrap/app.php`, Filament-Provider | Public-Routen und Read-Kontext geprüft, kompletter Runtime-Router offen |
-| Zustandsautomaten | Domain-Services und Guards | fünf aktuell untersuchte Modelle / 35 quellverankerte Kanten; weitere Zustände und indirekte Übergänge offen |
-| Ablauf-/Sequenzdiagramme | UI/Controller → Services → Persistenz/Events | Publication, Restore/Revert/Reset, Admin Notifications, Exhibition Map und Public SPA als getrennte statische Quellflüsse; **Runtime-Races/Browser nicht getestet** |
-| Browserinstanzen und -übergänge | Blade, Alpine/Livewire und `resources/js` | konkrete SPA-Disposer, Map/Viewer/Slideshow/Matomo-Pfade und historischen Folio-Animationspfad dokumentiert; aktuelle statische Kontur auf `dev@434975e1bd09` separat quellengeprüft; **dynamische Browser-/Accessibility-Abnahme offen** |
-| Deployment und externe Systeme | [Build-/Boot-/HTTP-Trace](application-runtime-boundaries.md), [Release-Vertrag](../RELEASE.md) und [Plattformgrenze](../SERVER-OPERATIONS-BASELINE.md) | Source-Guards, Health/Smoke und Preview-vs-Production-Migration dokumentiert; Host-/Ingress-/Restore-Laufzeit, Release-Marker-URL und Matomo-Flag-Negativfälle **offen** |
+| [Application inventory](inventory.md) and [PHP source audit](php-source-audit.md) | Finding modules/types and the extraction boundary | Old source snapshots; use fresh code for a current change |
+| [Class/import diagram catalog](class-import-diagrams.md) | Searching **structural** references or candidate cycles | Not a behavioral architecture and not proof of reachable code |
+| [Eloquent relationship catalog](eloquent-relations.md) | Exploring declared ORM relationships | Does not establish deployed PostgreSQL keys |
+| [Source-derived lifecycles](lifecycles.md) | Guards and transitions for specific entity families | Static extraction; review real domain methods |
+| [UI surfaces](ui-surfaces.md) | Finding Filament/Livewire components, actions and their domain targets | Old snapshots and source-discovered declarations may not match dynamic runtime |
+| [Full technical coverage and remaining evidence](completion-criteria.md) | Determining which areas have source evidence, which checks actually ran and what is still open | Historical evidence and cutover requirements must not be relabeled as current |
 
-### Reihenfolge der weiteren Arbeit
+For exact persistent domain meaning, [data model](../DATA-MODEL.md) and the relevant product/feature contract own current requirements; these catalogs are reference material.
 
-Das kuratierte [HTTP-Literalmanifest](runtime-entrypoints.json) ist am **15.10.2026** mit den **21** aktuellen `routes/web.php`-GET/POST-Deklarationen einschließlich TDM-Discovery und Quellzeilen (Quelle `dev@cbc3f5ad`) abgeglichen worden. [Dynamische und negative HTTP-Quellgrenzen](runtime-entrypoints.md#public-seo-discovery-und-dynamische-grenzen-stand-devcbc3f5ad) sind separat beschrieben. Der native Checker besteht auf `docs@8c9bd0a0` (21 Routen); `artisan route:list` und echte GET/HEAD-/Ingress-Tests bleiben offen.
+## Generated and historical material
 
-Der quellbasierte Dokumentationsabschluss ist technisch erfolgt; historische Inventare bleiben ausdrücklich eingefroren. Künftige Arbeit betrifft die getrennten Produkt-/DB-/Runtime-Abnahmen und gezielte Source-Triage bei neuen Änderungen, keine automatische Synchronisation mit `dev`. Siehe [Abschlussmatrix](completion-criteria.md#technischer-source-only-abschluss-19102026).
+The [generated directory](generated/) contains machine-extracted route, class/import, model-relation, lifecycle and UI artifacts. Many were built and checked against **older `docs` source**, notably `docs@8c9bd0a0` / `docs@317d255e` during 19 October 2026. Their source-specific numbers, limitations and reproduction evidence remain in [the completion/evidence matrix](completion-criteria.md) and [source audit](php-source-audit.md).
+
+**Current source checkout:** `dev@0200407133ce4696817271d2141fceaca82f8aff` was imported into `docs` with the two-parent commit `docs@a9ac270a` on 25 October 2026. This updated the application code used by the Docs branch. It did **not** regenerate the historic inventories, validate their dynamic behavior or reconcile every contract with the new code.
+
+The inventory tools live in [`scripts/`](../../scripts/) and are operated under the [Docs verification procedure](../../.agents/procedures/documentation.md). The PostgreSQL catalog exporter requires an **independently verified, disposable migrated database**; no production, protected Validation or persistent Preview database is a permissible test target. No physical schema export or full entity-relationship diagram is claimed here without real evidence.
+
+## How to extend this section
+
+Add a new study only when the existing system design and focused references cannot explain an actual cross-boundary behavior, failure mode or architecture decision. Link it from the **engineering question** it answers; keep one contract owner for any stable rule. Remove or consolidate stale studies after transferring their unique observations into the owning contract or historical evidence, and after verifying inbound references.
+
+For open documentation tasks and worker coordination, see [Docs area](../../.agents/areas/docs.md), **not** a historical inventory. Worker assignments do not belong in technical architecture files.
