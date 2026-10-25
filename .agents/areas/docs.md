@@ -1,17 +1,17 @@
 # Docs — shared coordination
 
-**Working branch:** `docs`. The existing Docs worktree may be used for separately agreed local/Codex batches. Routine review and documentation reconciliation can use remote GitHub source. This coordination file persists without requiring an activated numbered worker.
+**Working branch:** `docs`. Existing Docs worktree is for rare, agreed local/Codex batches; remote documentation/source reviews otherwise. This is a **shared worker roster and conflict coordination**, not a second job diary.
 
-**Next lease token:** 1
+**Next lease token:** 2
 
-| Worker | Lease | State | Current owned scope | Individual record |
+| Worker | Lease | State | Current claimed scope | Individual record |
 | --- | --- | --- | --- | --- |
-| *(none activated under this prototype)* | | | | |
+| Docs Worker 1 | 1 | **active** | Documentation system/information architecture, source alignment, worker procedures | [docs-1](../workers/docs-1.md) |
 
-**Area-wide responsibilities:** Docs is the **review and consolidation arm** of the project: identify documentation-worthy changes from current `dev` (and current `testing` when relevant), keep architecture and user-accepted behavior accurately documented, identify contradictions and duplicated owners, and continuously retire stale or purely temporary explanatory material. Prefer **one short, navigable design/architecture entry** with deep reference documents over a flat accumulation of contracts and post-hoc source audits.
+When work is paused or completed, update the status/claim here. **On retirement the exiting worker must consolidate durable findings, delete its own worker file and remove its row here in one commit**; free worker numbers may later be reused with a fresh lease. Before any edit to shared docs, another Docs worker checks this table for overlap and obtains a distinct ownership scope.
 
-**Current area-wide issue (not an individual worker's task):** audit the information architecture of `docs/`, in particular `ARCHITECTURE.md` versus `architecture/`, the large Admin/Public specifications, temporary evidence and generated diagrams. Classify each document as normative, design/architecture, operational procedure, historical evidence or removable duplicate **before** moving/deleting content. Keep unique source-backed detail until it is safely consolidated. [Documentation procedure](../procedures/documentation.md) defines the review method; [documentation index](../../docs/README.md) lists existing canonical owners.
+**Area responsibilities:** continually compare current `dev` source with `docs` and review current `testing` when appropriate; maintain accurate, usable, **cohesively designed** technical architecture; keep one owner per stable decision; eliminate misleading historical/temporary claims and redundant contracts after careful source/reference review. New facts should be integrated into the relevant existing document, not dropped as date-stamped fragments. [Documentation method](../procedures/documentation.md) owns the stable method, [Docs index](../../docs/README.md) identifies current content.
 
-**Cross-area context:** implementation on [Dev](dev.md), curated tests on [Testing](testing.md), and a possible future [Refactor](refactor.md) lane. The rights/media topic is retained as [temporary evidence](../topics/rights.md); verified enduring rules belong to [rights and privacy](../../docs/PUBLIC-RIGHTS-AND-PRIVACY.md). This prototype is not yet integrated into direct Dev or Testing chats.
+**Current cross-area dependencies:** active application development on [Dev](dev.md); active curated test cleanup on [Testing](testing.md); newly created [Refactor](refactor.md) from current `dev` at branch creation. The [rights workstream evidence](../topics/rights.md) remains temporary, pending classification against the [durable rights contract](../../docs/PUBLIC-RIGHTS-AND-PRIVACY.md). Do not copy other workers' task states into this shared file; use references and only the relevant external dependency.
 
-Worker allocation and retirement: [single protocol](../README.md).
+Worker registration, takeover, consolidation and retirement: [single protocol](../README.md).

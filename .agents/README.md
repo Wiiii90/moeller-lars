@@ -22,10 +22,12 @@ Each area maintains a **Next lease token**: a monotonically increasing number in
 
 ## Live ownership and writing
 
-- **Individual** `.agents/workers/<area>-N.md`: one worker's live question/task, scope, approved decisions, evidence and limitations, open issues and optional next action. It may contain a discussion without an action. Never put another worker's private task state into this file.
+- **Individual** `.agents/workers/<area>-N.md`: above all the **assignments actually given by the user**, current work status/progress, completed actions, next outstanding actions and blockers, plus decisions and evidence needed to resume. It is that worker's memory only; never mix another worker's task state into it. It may contain a discussion without an action. Never put another worker's private task state into this file.
 - **Shared** `.agents/areas/<area>.md`: current area-wide file/feature claims, worker number + lease token + lifecycle state, cross-worker dependencies and conflicts. No chat transcripts or repeated stable rules.
 - **Durable** `docs/`: accepted product design, canonical architecture and ownership, current system behavior, persistent workflows and reusable verification conclusions.
 - **Git history**: former states and retired worker files. Historical commits are not an automatically executable task queue.
+
+On each worker's **activation and exit**, update the matching shared area roster; retirement unregisters the worker and deletes its private file after knowledge consolidation. An individual worker does not silently remain listed after leaving.
 
 Before changing either code or coordination, the chat must recheck its worker lease token **in the canonical shared area and its own record**. If missing or changed, the chat is superseded: stop writing under that identity. Before an application-branch commit also recheck its current branch head and other workers' current scopes. Reconcile shared owners and overlapping edits; the area table is **not** a real cross-branch mutex.
 
@@ -42,4 +44,4 @@ Periodic cleanup should replace/update the canonical documents rather than appen
 
 ## Scope and rollout
 
-This version exists **only on `docs`**. `dev` is active implementation; `testing` is an active curated suite; `refactor` is still only a proposed branch. A worker role does not automatically create or authorize any Git branch. On a later approved rollout, every worker must reference the **same** shared coordination on `docs` rather than diverging copies in separate working branches. Keep existing live agents, worktrees, test isolation and implementation policy intact until rollout is verified.
+This version exists **only on `docs`**. `dev` is active implementation; `testing` is an active curated suite; `refactor` is now an existing branch initially based on current `dev` at its creation; no numbered Refactor Worker has been opened. A worker role does not automatically create or authorize any Git branch. On a later approved rollout, every worker must reference the **same** shared coordination on `docs` rather than diverging copies in separate working branches. Keep existing live agents, worktrees, test isolation and implementation policy intact until rollout is verified.

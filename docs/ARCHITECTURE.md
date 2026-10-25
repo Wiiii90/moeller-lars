@@ -18,37 +18,6 @@ Accepted stack: PHP 8.3+, Laravel 13, Blade public rendering, Filament 5 for `/a
 - legacy data is migration input, not runtime authority;
 - Production topology and secrets remain outside this repository.
 
-## System overview and architectural decisions
-
-```mermaid
-flowchart LR
-    Artist["Authenticated artist"] --> Admin["Filament / Livewire admin"]
-    Visitor["Public visitor"] --> Web["Blade / Livewire public"]
-    subgraph App["One Laravel application / deployable image"]
-        Admin --> Edit["Editorial domain services"]
-        Edit --> Pub["Publication domain"]
-        Web --> Read["Committed public read model"]
-        Web --> Policy["Public media eligibility"]
-    end
-    Edit --> Working[("PostgreSQL working state")]
-    Pub --> Working
-    Pub --> Committed[("PostgreSQL committed state")]
-    Read --> Committed
-    Policy --> Media[("Canonical media and immutable derivatives")]
-```
-
-This is a **logical architecture view**, not measured runtime calls or distinct physical application containers. The public and authenticated experiences are separate adapters inside **one deployable Laravel modular monolith**. Host ingress, platform secrets, backups, infrastructure placement and independently operated analytics are owned by the separate `server-platform` repository.
-
-| Design decision | Important consequence | Detailed owner |
-| --- | --- | --- |
-| Modular monolith | Shared domain operations, one deployment artifact; Admin and Public are adapters | [Cross-feature flows](architecture/cross-feature-compositions.md) |
-| Working versus committed publication | Editing does not publish; Public reads a committed view, while protected Preview has another eligibility boundary | [Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) |
-| Relational editorial state and separately managed binary media | Logical references, immutable delivered bytes, retention and recovery must be considered independently | [Media](MEDIA.md) |
-| Shared UI and rich-text/editor components | One logical interaction/persistence owner across consumers, not per-page forked systems | [Admin UI](ADMIN-UI.md), [Rich Text](EDITORIAL-RICH-TEXT.md) |
-| Separate runtime platform | Application-level contracts are distinct from host/deployment ownership | [Runtime](architecture/application-runtime-boundaries.md), [Release](RELEASE.md) |
-
-Detailed content types, styling controls and individual page settings are documented in their feature contracts. The [architecture evidence index](architecture/README.md) contains more detailed lifecycles and versioned source inventories; class-import graphs must not be mistaken for behavior diagrams.
-
 ## Site structure
 
 Public content-heading presentation is owned by `SitePageHeading` and the

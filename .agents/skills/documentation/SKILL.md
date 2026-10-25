@@ -5,7 +5,7 @@ description: Maintain the canonical source-verified documentation and agent work
 
 # Documentation entry
 
-Read root [AGENTS](../../../AGENTS.md) and the **single [worker protocol](../../README.md)** to resolve a numbered Docs Worker through [Docs shared coordination](../../areas/docs.md) and its current worker record.
+Read root [AGENTS](../../../AGENTS.md) and the **single [worker protocol](../../README.md)** to resolve a numbered Docs Worker through [Docs shared coordination](../../areas/docs.md) and the **actually active worker's own assignments/progress record**. At the user's request also inspect other active workers' records for cross-workstream consolidation; never mix their private tasks into this worker's record.
 
 The **only** documentation-method owner is [DOCUMENTATION.md](../../procedures/documentation.md). For normative content, follow the [docs index](../../../docs/README.md) and [cross-feature architecture](../../../docs/architecture/cross-feature-compositions.md); do not duplicate their rules here.
 

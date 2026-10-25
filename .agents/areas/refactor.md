@@ -1,15 +1,15 @@
-# Refactor — proposed coordination area
+# Refactor — shared coordination
 
-**Git branch:** `refactor` does not yet exist. If the user authorizes its creation, base the new branch on the **then-current, verified `dev` head**, not on `docs`, `testing` or a stale remembered source commit. No code branch is created by opening a Refactor Worker.
+**Working Git branch:** `refactor`, created 25 October 2026 **from exactly `dev@0200407133ce4696817271d2141fceaca82f8aff`**. This was the contemporaneous `dev` head. Subsequent commits on `dev` are **not** automatically present on `refactor`; check both HEADs before every reconciliation or source claim.
 
 **Next lease token:** 1
 
-| Worker | Lease | State | Current owned scope | Individual record |
+| Worker | Lease | State | Claimed scope | Individual record |
 | --- | --- | --- | --- | --- |
-| *(none activated)* | | | | |
+| *(none activated yet)* | | | | |
 
-**Intended purpose:** parallel behavior-preserving cleanup, simplification, dead-code removal, obsolete paths and structural weaknesses. No user-visible feature redesign, unrelated data migrations, destructive history cleanup or broad changes to accepted interactions. Before a removal, establish actual callers, framework-discovered entrypoints, runtime/feature gates, compatibility/undo/publication consumers and evidence that the code is unreachable or obsolete. Review tests and source together.
+Opening the branch did not create a Refactor Worker. When the user assigns one, create the lowest free `refactor-N` identity with a new lease token, and sign in here and in its own task file in the same guarded commit.
 
-**Synchronization:** `refactor` does not automatically receive new `dev` commits. Periodically reconcile incoming `dev` changes with reviewed conflicts; integrate coherent, separately verified refactor changes back to `dev` only after explicit agreement. Parallel Dev/Refactor workers must coordinate shared file ownership and avoid treating passing source-level checks as browser acceptance.
+**Mission:** behavior-preserving structural changes only: dead-code removal after proof, consolidation of duplicate implementations, simplification of unnecessarily complex dependencies, cleanup of obsolete paths and fragile architectures. Protect existing visible interaction, publication, Undo, media/historical retention and authorization semantics. Identify real framework-discovered entrypoints and consumers; absence of direct import alone is not evidence of dead code. Coordinate shared file ownership with [Dev](dev.md); [Testing](testing.md) reviews behavior regression and [Docs](docs.md) tracks durable design/owner changes.
 
-Other areas: [Dev](dev.md), [Testing](testing.md), [Docs](docs.md). Worker lifecycle: [single protocol](../README.md).
+**Branch model:** periodically bring new `dev` commits into `refactor`, resolve conflicts and revalidate affected behavior; integrate small coherent improvements *back to* `dev` only when separately reviewed/authorized. Do not overwrite ongoing feature work from older refactor files or merge unreviewed behavior changes. No extra branch/worktree created merely by a worker name. The [Refactor skill](../skills/refactoring/SKILL.md) describes the procedure. Sign-out/deletion follows [worker protocol](../README.md).

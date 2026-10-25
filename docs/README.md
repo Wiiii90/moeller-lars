@@ -6,7 +6,7 @@ This repository's documentation distinguishes the architectural design, authorit
 
 **Source review (25 October 2026):** the latest selective batch covers 25 new `dev` commits through `dev@35163591`. Common rich-text colors, paragraph spacing, tables/links, Journal/Home shared viewer, Exhibition media table, Admin Stage and Livewire native session preferences, native Edit selection/save events and public first-paint image readiness are reconciled in the topic contracts. This is **source review**, not a new application/browser/native-generator test. The native documentation baseline remains `docs@317d255e` and is historically versioned.
 
-- [Application architecture](ARCHITECTURE.md#system-overview-and-architectural-decisions) — top-level runtime, data flow, boundaries and design decisions.
+- [Application architecture](ARCHITECTURE.md) — existing architectural material pending coherent whole-document design review and consolidation; do not treat old generated component graphs or the current accumulation as complete system design.
 - [Architecture evidence index](architecture/README.md) — deeper lifecycles and versioned (sometimes historical) source inventories, not a second design authority.
 - [Cross-feature compositions](architecture/cross-feature-compositions.md) — artist Edit → Working → Commit → Public, Journal/Exhibition and shared public runtime owners.
 - [Normative application contracts](#current-application-contracts) — precise Admin, Public, Media, Rights, schema and product requirements.
