@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/js/admin-viz.js',
                 'resources/js/admin-password-tools.js',
                 'resources/js/artist-rich-image.js',
+                'resources/js/artist-rich-spacing.js',
             ],
             refresh: true,
         }),
