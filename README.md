@@ -87,7 +87,7 @@ A green CI run, a local browser candidate, a published preview image or a succes
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md). It separates current application contracts from migration evidence and historical architecture decisions.
+Start with [docs/README.md](docs/README.md). It separates current application contracts from migration and technical evidence.
 
 ## Security
 

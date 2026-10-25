@@ -56,7 +56,7 @@ Additional specialized Admin contracts cover authentication, localization, passw
 
 The following are deliberately **cutover-specific**, not the permanent application architecture: [migration plan](MIGRATION-PLAN.md), [migration invariants](MIGRATION-INVARIANTS.md), [source inventory](SOURCE-INVENTORY.md), [legacy public behavior](LEGACY-PUBLIC-CONTRACT.md). Keep unique migration/recovery facts until legacy retirement is actually approved, then archive or consolidate them in a deliberate cleanup.
 
-Retained architecture decisions: [application stack](adr/ADR-0001-APPLICATION-STACK.md) and [hosting cost baseline](adr/ADR-0002-HOSTING-COST-BASELINE.md).
+Architecture and product decisions are maintained only in the owning current [system architecture](ARCHITECTURE.md) and feature contracts; do not store server tariffs, prices, account details, access instructions or private infrastructure decisions in this public repository.
 
 ## Maintaining documentation
 
