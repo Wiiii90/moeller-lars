@@ -135,7 +135,7 @@ For the release-candidate line:
 
 Further local/protected browser-reconciliation cycles remain valid when a concrete regression or later milestone changes presentation, but they are not a standing blocker once the accepted milestone composition is complete. A technically running candidate still does not establish future browser/product acceptance by itself.
 
-Detailed admin UI expectations are in [`../ui-skills.md`](../ui-skills.md).
+Detailed admin UI expectations are in [Admin UI contract](ADMIN-UI.md).
 
 ## 8. Release-candidate validation
 

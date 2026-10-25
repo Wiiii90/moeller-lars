@@ -1,7 +1,7 @@
 # PUBLIC RIGHTS WORKSTREAM — living handoff (temporary)
 
 **ACTIVE · 2026-10-17 · `Wiiii90/moeller-lars` · `dev` only · slice B2.**
-This is a **consolidated operational state**, not an append-only log. Durable contracts: `AGENTS.md`, `ui-skills.md`, `followup-skill.md`, `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`, `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`. Accepted newer decisions below supersede stale proposed wording in older plans; reconcile durable docs at completion.
+This is a **consolidated operational state**, not an append-only log. Durable contracts: `AGENTS.md`, `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`, `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`. Accepted newer decisions below supersede stale proposed wording in older plans; reconcile durable docs at completion.
 
 ## 1. Working protocol and hard constraints
 
@@ -103,13 +103,13 @@ This is a **consolidated operational state**, not an append-only log. Durable co
 
 ## Verified testing baseline now merged into dev
 
-`TESTING_SKILL.md` documents the integrated `dev` regression: 740 tests passed, including 636 PHP, 62 JavaScript and 42 Chromium tests. ExifTool 13.55 runtime exercised six real-image cases (75 assertions) with independently verified disposable DB/filesystem. Existing original/thumbnail delivery, CSP, navigation, viewer and selected publication/concurrency flows passed in isolated environments. **These checks precede this Storage Preview/search change; no browser acceptance or test execution of that change is claimed.** New versioned public-rights artifact delivery has not been built.
+the historical integrated test record documents the integrated `dev` regression: 740 tests passed, including 636 PHP, 62 JavaScript and 42 Chromium tests. ExifTool 13.55 runtime exercised six real-image cases (75 assertions) with independently verified disposable DB/filesystem. Existing original/thumbnail delivery, CSP, navigation, viewer and selected publication/concurrency flows passed in isolated environments. **These checks precede this Storage Preview/search change; no browser acceptance or test execution of that change is claimed.** New versioned public-rights artifact delivery has not been built.
 
 ## 7. Acceptance and handoff
 
 - [ ] A and B1 migrations confirmed in the target local preview, rights-field Storage Preview/search browser reviewed, admin changed/no-op/one notification checked for the *new* fields; artist acceptance. Prior merged testing evidence covers A/B1 domain/General behaviors but does not establish this new UI acceptance.
 - [x] B2 local `moeller-lars-local-web` ExifTool **13.55** and writable `DataMining` advertised (user CLI, 2026-10-15). Build details not inspected.
-- [x] B2 real JPEG/PNG/WebP writer/readback tests passed in isolated ExifTool-13.55 runtime (6 cases, 75 assertions; see `TESTING_SKILL.md`).
+- [x] B2 real JPEG/PNG/WebP writer/readback tests passed in isolated ExifTool-13.55 runtime (6 cases, 75 assertions; see the historical integrated test record).
 - [ ] B2 new registry and isolated PostgreSQL/ExifTool runtime tests; offline preview/apply evidence; rights-only Pending/Commit/Undo tests; revisioned Public/Preview URLs, ETags and X-Sendfile browser validation; historical retention, cleanup, capacity, bounded backfill. **Source authored but not accepted or enabled.**
 - [ ] B SEO HTTP and Google Images indexing verified. C measured abuse handling verified. D consent/privacy when reauthorized. **NOT YET.**
 - [ ] Durable docs and tests absorb final architecture; delete this temporary file and pointer only upon complete workstream closure.

@@ -1,5 +1,6 @@
-# Admin UI skills and consistency contract
+# Admin UI — accepted shared presentation and interaction contract
 
+**Ownership:** This is the normative shared Admin presentation contract. [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md) and [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) own their detailed requirements. Keep accepted design here, source-specific evidence in its evidence owner, and avoid worker/task state in permanent product documents.
 This file is the reusable UI reference for the authenticated artist administration in `Wiiii90/moeller-lars`.
 
 It deliberately covers **admin UI only**. It does not define the public artist-site frontend.
@@ -41,6 +42,10 @@ For a normal primary admin workspace, use this vertical sequence when applicable
 Do not add a decorative kicker above the page heading.
 
 Do not interpret this as a requirement to add fake metrics or a fake toolbar to a page that does not need them.
+
+**Admin and public navigation are separate projections of the same site tree.** The Filament Sidebar is the editorial navigation: it includes existing draft and published pages in their persisted order. The public menu includes only published content; a published child of an unavailable editorial parent becomes a public root entry. Preview has its separate authenticated draft exception. Skip Home affects both projections, but does not remove other draft pages from the Admin Sidebar. Historical navigation-visibility columns retained for Publication restores do not define current visibility; the canonical domain services do.
+
+After a **successful persisted navigation change** (page creation/editing, publication, deletion, hierarchy/order or applicable Home/Pages settings), `SitePages::loadSections(navigationChanged: true)` emits Filament's existing `refresh-sidebar` event once. The native Sidebar re-queries `SiteNavigation`; filtering, paging, opening a modal, validation errors and no-ops must not trigger a refresh. This does not publish drafts and does not introduce a second JavaScript tree, polling, forced reload or duplicate state. The public counterpart is documented in the [Public implementation contract](PUBLIC-IMPLEMENTATION-CONTRACT.md).
 
 ## 3. Page/action control group
 
@@ -454,20 +459,7 @@ If two relevant reference surfaces use different geometry, tokens or behavior fo
 
 Do not turn transient pixel values from a current browser pass into a durable rule merely to resolve the conflict.
 
-### Visual worker prompt contract
-
-For browser/visual repairs, when the desired structure is already known, the worker prompt must describe the composition concretely rather than invite a fresh design interpretation.
-
-State, where applicable:
-
-- the order and slots of controls/content/actions;
-- which elements remain in the same row, stage, table or task surface;
-- what must be removed rather than restyled;
-- which shared primitives/tokens/reference structures must be used;
-- the breakpoint or condition under which responsive restructuring may begin;
-- which neighboring surfaces must remain unchanged.
-
-Do not give a worker free visual discretion over browser feedback that is already unambiguous. Implementation discretion is for technical realization inside the confirmed composition, not for reinterpreting the accepted/rejected layout.
+See [Admin browser workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review) for how to translate accepted reference geometry into task assignments and source review.
 
 ## 14. Theme and shared-primitive enforcement
 
@@ -506,29 +498,7 @@ Feature-local CSS is allowed for genuinely feature-specific surfaces, for exampl
 
 If the theme or shared primitive cannot express a needed shared pattern, fix or extend the shared authority deliberately. Do not fork it locally first and promise to centralize later.
 
-### Required implementation order
-
-For visual/admin work:
-
-1. read `ui-skills.md`;
-2. inspect the exact accepted Gallery/Storage reference code relevant to the requested geometry;
-3. inspect existing shared Blade primitives and theme tokens;
-4. compose the target page from those authorities;
-5. add feature-local CSS only for task-specific behavior that remains;
-6. explain every new shared-looking selector or token in the worker handoff.
-
-### Source-review gate
-
-A visual worker result is not source-coherent until the reviewer checks the changed Blade/CSS for theme bypasses.
-
-The reviewer should reject the change before reconciliation when a page recreates an existing shared primitive locally, even if the markup is functional and the worker claims visual consistency.
-
-The handoff for visual work must state:
-
-- which accepted reference files were inspected;
-- which shared primitives/tokens were reused;
-- which new CSS/classes were added;
-- why each new class is genuinely task-specific rather than a duplicate of the theme.
+Shared component/theme implementation must be reviewed against the [browser and source workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review). The central CSS and Blade ownership rules above remain binding.
 
 ## 15. Sections, kickers and information hierarchy
 
@@ -635,117 +605,7 @@ If the empty state is caused by active filters, distinguish it from a genuinely 
 
 ## 21. Responsive behavior
 
-Responsive behavior is content-driven and follows semantic width states rather than device labels: **Wide**, **Compact**, **Narrow** and **Minimal**. Exact thresholds come from browser fit/acceptance; admin task components should prefer available container/workspace width, while shell-level sidebar/topbar changes may remain viewport-driven.
-
-### Native select value readability
-
-- The central native/select grammar in `layouts.css` and `task-surfaces.css` reserves the picker-icon rail and uses a one-line ellipsis only as the final fallback. Do not shrink type or overlay an arrow on the selected value to accommodate an undersized column.
-- Give columns and toolbar filter tracks enough width for the longest ordinary selected label while the control is inline: Pages Template includes “Under Construction”; Activity Type includes “Archive / delete”. Pages gives Template the necessary width in Wide and removes that supportive column at its established Compact transition. Four-filter toolbars use the **same single filter-popover mechanism** when workspace width reaches 76rem; three-filter toolbars retain their 54rem switch. Never let longer labels force row wrapping or overlap the fixed action/Selection rail.
-- Check both Light/Dark native select renderings and narrow widths after changing option labels. Do not duplicate select state or reintroduce custom select JavaScript.
-
-### Shell/header geometry
-
-- Header controls use one shared equation: **1rem outer edge + 2rem circular control + 1rem separation to header content = 4rem control rail**.
-- Desktop/sidebar mode uses one globally centered horizontal workspace frame. Filament may center its internal page frame in the post-sidebar main area, but the visible admin workspace compensates that residual-area bias so its midpoint matches the **whole browser viewport** whenever Sidebar clearance permits. Sidebar participates only as a collision limit: as the viewport narrows, the centering shift reduces before the workspace could cross Sidebar + the canonical gutter.
-- The desktop User control owns a fixed 4rem viewport/header rail: 1rem outer gap + 2rem circular control + 1rem inner safety gap. The desktop Main reserves this rail as a real right content inset so the User badge never overlaps workspace content while the viewport contracts; the User rail is not a second centering origin. The visible Selection count keeps its fixed circular size when moving onto the terminal checkbox rail.
-- Desktop Header Notification is exactly as wide as the actual .admin-workspace content box, from its left to right edge, and never extends to the User rail or over the Sidebar. CSS anchor positioning (anchor-name: --admin-workspace-frame) makes the persistent Notification consume the real workspace geometry, including centered Main shifts and SPA navigation, instead of duplicating calculations in notifications.css or measuring it with JavaScript. The User badge stays outside the content frame.
-- Desktop .fi-layout uses the document scrollport width (100%), never 100vw; fixed header surfaces and page content must not live in different scrollbar coordinate systems.
-- In the burger shell, the desktop workspace frame is reset. Page content below the topbar uses only the canonical 1rem shell inset on both sides; Burger/User rails remain confined to the header.
-- Header Notification remains between Burger/User controls and may therefore use different horizontal insets from burger-mode page content below it.
-
-
-### Metrics
-
-- Wide keeps the accepted single-row strip where it fits cleanly.
-- Compact reduces non-essential detail before changing the grid.
-- Six-metric strips normally move to a three-column intermediate grid before the smallest retained two-column grid. Track count and semantic visibility switch atomically; six visible metrics in a three-column 3+3 intermediate state is invalid.
-- **Dashboard is an explicit exception:** Wide and Compact keep all six metrics; Narrow keeps exactly three semantic metrics (Visits, Published Artworks, Recent Changes); Minimal keeps exactly two (Visits, Published Artworks).
-- **General uses 6 / 6 / 3 / 2** across Wide / Compact / Narrow / Minimal. Narrow retains Public email + Contact delivery + Legal; Minimal retains Public email + Contact delivery. Like Dashboard, General may enter the 2-metric Minimal state **only after the sidebar has collapsed to the Burger shell and the workspace itself is <=38rem**; a narrow desktop/sidebar workspace remains the 3-metric Narrow state. The first visible metric is determined semantically, never from its original DOM nth-child position; only the actual left visual cell loses its leading inset.
-- **Pages, Gallery, Custom Page and Journal also use 6 / 6 / 3 / 2**, with semantic priorities:
-  - Pages: Published + Unpublished + Galleries -> Published + Unpublished.
-  - Pages Settings is an autosaving `AdminDialog::edit()`, like Dashboard Settings: Filament Toggle and Select values persist on discrete change events through `PagesSettingsDialog`, `HomeRoutingSettingsService`, `AdminSettingsService` and `SiteSectionOrderService`; the dialog stays open, has no save/commit button and closes through native X. Its toggles use the panel-wide `AdminControl` styling. With existing child pages, the irreversible flatten warning is shown **before** switching off `Allow nested pages`; the switch immediately flattens the hierarchy, and turning it on again cannot restore the former parents. The shared Home routing fields suppress redundant helper copy in Pages only; Home retains its existing descriptions.
-- The Home row's `Skip Home` / `Show Home` state button is a **one-click mutation**, never a dedicated Skip Home Action modal. It toggles routing through `HomeRoutingSettingsService`, checks for an eligible destination before enabling and refreshes the Pages table. The two-slot destination shortcut on the Home row is an inline action dropdown: its menu offers “Next page in order” and eligible published top-level targets, and persists directly through the same `HomeRoutingSettingsService`; it must never open the Home settings dialog. Skip Home retains its existing registered Skip icon; Show Home uses the standard Heroicon `no-symbol` (the crossed-circle/ban sign). **All semantic row-action icons** render at Filament `IconSize::Small` (1rem, fixed inline/flex geometry) in the one shared `row-action` component, so changing an action's state or SVG shape cannot enlarge a table row. Do not restore the removed custom Show Home SVG or add per-action icon sizing. The Home destination popover uses the common `admin-selection__menu` **surface**, but its owner is an ordinary table-row action (`admin-pages__redirect-target`), never the `admin-selection__anchor` toolbar container with its 2.5rem min-height; toggling Skip Home must not increase the Home row height. Target options are shared with the existing Home settings schema, not duplicated.
-  - Gallery: Artworks + Published + Visits -> Artworks + Published.
-  - Custom Page: Components + Visits + Views -> Components + Visits.
-  - Blog: Published + Scheduled + Draft -> Published + Draft.
-  - Exhibitions: Published + Current + Upcoming -> Current + Upcoming.
-  - Analytics: Visits + Unique visitors + Tracked actions -> Visits + Unique visitors.
-  - Storage: Original storage + Remaining + Files -> Original storage + Remaining.
-  - Activity: Changes + Pending + Commits -> Changes + Pending.
-  - Home Hero Artwork: Visits + Eligible Artworks + Candidate Group -> Visits + Eligible Artworks.
-  - Home Under Construction / Custom: Components + Images + Media References -> Components + Media References.
-  - Home follows Dashboard's state gating: the Narrow set is exact thirds across the full metric strip; the two-metric Minimal set is exact 50/50 and may engage only when the Burger shell is active and the workspace is <=38rem.
-- Dashboard uses four effective presentation states only: Wide, Compact, Narrow and Minimal. The burger/mobile shell is not an additional Dashboard state; shell collapse may force Narrow but must never create a parallel responsive composition.
-- Never reduce a metric strip to a one-column list.
-- Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/2 rule.
-- Metric importance is semantic; do not hide arbitrary nth children merely to fit.
-
-### Toolbars
-
-The canonical order is always **Query / Filter -> Task actions -> Selection**.
-
-- **Every toolbar is exactly one row at every supported responsive state. Two-row toolbars are not allowed.**
-- Search, filters and **Clear** stay in the Query/Filter region; Clear is not a task action. Filter-reset UI is always named **Clear**, never Reset, and uses the shared Clear icon/action primitive. While filters are inline, Clear remains inline. When the shared Filters overflow is active, the same reset action appears inside that panel and the inline Clear copy is hidden; Clear is never shown twice.
-- Selection stays the terminal, visually distinct bulk-action region. Selection triggers use the shared multi-selection icon before the Selected label. The shared trigger-label container centers its contents, so an icon-only multi-action state is centered inside the same control field on Dashboard, Home, Pages and every other Selection surface without page-local offsets.
-- Width pressure is solved inside that one row: redistribute ruler tracks, preserve readable filter controls, and compact task actions from full icon+label directly to icon-only or an explicit overflow action. **Hiding a label and leaving its old track width behind is invalid**: the same responsive rule must collapse that control/track so Search or adjacent content immediately receives the released space. Burger/sidebar collapse alone is not a task-action density trigger; reclaimed shell width may keep or restore complete labels until the actual control/table container is tight. Filter overflow is owned exclusively by `x-admin.controls`: three/four-filter toolbars move their existing filter controls into the shared Filters panel at Narrow pressure, two-filter toolbars do so only at Minimal pressure, and zero/one-filter toolbars remain inline. Consumers must not create page-local filter popovers.
-- Never abbreviate action labels into fragments such as `O…`, `P…` or other clipped pseudo-labels. A visible label is complete; otherwise it is hidden and the accessible icon action remains.
-- Filter popup placement is owned by the same Alpine controller in `x-admin.controls`: after the compact panel becomes visible, measure the actual panel content height and the free viewport space above/below its trigger; prefer a side that fits, otherwise use the side with more space, and limit the panel to the **actual** available height with its own scrolling. Also clamp the horizontal frame inside the document scrollport so it never overlaps the visible document scrollbar. No fixed-height guesses or page-specific positioning rules.
-- Gallery and Storage media lifecycle: a MediaAsset is a reusable Storage file and an Artwork is an editorial record. Deleting a Storage file unlinks **all** its usages, unpublishes any Artwork whose primary usage disappears and removes it from its Gallery within the **same** canonical MediaAssetEditorialService transaction; unrelated MediaAssets remain intact. Preserve unassigned Artwork records for history/metadata, never orphan a Gallery card and never create a Gallery-only secondary cleanup path. The Gallery admin may keep incomplete Draft artworks, but public and artist preview artwork-card queries may include only media-renderable records (exactly one available image/video primary, effective ALT description and thumbnail for images); never make PublicMedia silently swallow violated invariants. New Artworks are saved as Draft until explicitly published. Add Artwork ingests uploads into the reusable Storage library first and creates the Artwork, primary linkage and ALT override in one DB transaction; Edit follows the same boundary: ingestion happens outside any outer Artwork transaction, while metadata, primary linkage and artwork ALT update together inside it. A failed Artwork mutation never rolls back the Storage MediaAsset after its files were written, and failed linkage cannot leave an orphan Gallery Draft. An incomplete existing Draft may be repaired by selecting/uploading a new primary in Edit and specifying its ALT text. ALT text is authored per Artwork in Create/Edit/Batch via the existing ArtworkMedia.alt_text_override and MediaAssetEditorialService, without mutating the shared Storage file's ALT. Readiness and Publish must check the same effective ALT (override or asset), and Preview must not throw HTTP 500 for incomplete drafts. Regression coverage: Storage and Gallery primary deletion, shared asset use, add/edit ALT and draft-to-published transition.
-- The underlying Livewire filter fields remain the authoritative controls; presentation-only compaction must not send resize state to the server. The only Filters owner is `x-admin.controls`: the container query activates one popup layout with full-width, one-column shared fields and the same Clear action (no fake divider); when expanding back to inline mode, CSS *immediately* deactivates all popup properties and the existing resize handler closes the open state. Opening at Narrow then expanding must never reveal an additional Clear row or leave extra filter controls behind. Do not give child controls inline grid positions inside the popup or duplicate the filter inputs.
-- Icon-only actions keep accessible labels/tooltips and semantic DOM order.
-- Do not rely on uncontrolled flex wrapping to invent intermediate layouts.
-- Pages, Custom Page and Journal use elastic one-row toolbars: Search absorbs spare width down to one metric cell; filters and right-side utility controls consume only the width they need, with action labels collapsing to icons before data/filter controls are removed.
-- Gallery uses the same one-row principle in its custom toolbar; its Selection trigger still terminates on the shared Selection rail.
-- Analytics, Storage and Activity follow the same one-row rule. Analytics has Search + Report + Range and stays inline until Minimal pressure. Storage and Activity have four filters, so Narrow replaces those four inline controls plus inline Clear with the shared Filters trigger/panel; Search stays directly usable and View/Selection remain terminal. Their action labels collapse to icons before the row may wrap.
-- Home Hero Artwork, Under Construction and Custom use the same content-minimum one-row pressure model as Dashboard: Search is elastic, filter selects retain readable intrinsic widths, Clear is intrinsic, the active-template action group uses real content width, and Selection terminates on the checkbox axis. Filter and Selection headings are not rendered visually; the active template heading remains. Home Selection uses the same structure as Dashboard: multi-selection trigger and selected-count circle are separate siblings, with the count centered on the terminal table-checkbox rail. Settings + Add artwork/component + Preview and Selected compact as one density step under genuine workspace pressure; once compacted they stay compact through the Burger transition instead of re-expanding when the sidebar disappears. The three Home task icons are adjacent fixed control-height slots.
-
-### Tables and Selection
-
-- Ordinary admin tables do **not** use horizontal scrolling as a responsive strategy. Do not reserve horizontal-scrollbar space and do not merely hide a scrollbar over overflowing content.
-- Fit tables by semantic column priority: essential, supportive, optional. Merge supportive information into a primary cell/second line or remove optional columns before the table would overflow.
-- Tables may enter a narrower state earlier than metrics or stages because each component responds to its own available width.
-- **Metric separators are the preferred soft alignment grid.** On a page with a six-cell metric strip, toolbar regions and major table-column boundaries should align to the same 1/6 separators whenever semantics and fit allow. Deviate only when content needs it; do not invent arbitrary tracks while a clean metric boundary is available.
-- General Social Media `Edit profile` uses the shared autosaving `AdminDialog::edit()`, without a Save/Commit action or red required stars; it validates required fields on discrete change and preserves the last persisted value when invalid. Reorder must not retarget later field edits: a mounted Edit Action owns a stable platform identity and social rows have stable platform keys instead of mutable positional keys. `Add social link` remains a creation dialog with required markers and the default checkmark submit.
-- Pages `Add page` remains a creation dialog, whose submit icon is the same central `AdminIcon::Pages` as the Pages toolbar; other create tasks retain the shared default checkmark. Pages `Edit page` is an autosaving Edit dialog, and successful comparisons use the latest persisted row rather than an initial cached form-fill snapshot.
-- The header Notification has one accessible dismiss button to the right of timer and queued count, advancing only the existing FIFO presentation queue. It never removes durable Dashboard messages and remains usable above modal scrims without owning Filament modal lifecycle or creating a parallel Notification runtime.
-- General Social Media uses the same six-cell ruler at Wide/Compact: Position + Drag + Platform end on 2/6, Profile URL ends on 4/6, Actions owns the final two cells. Platform is a direct shared inline select and Profile URL is a direct shared inline text control; do not duplicate either value into responsive metadata. A separate Edit action immediately before Delete opens the shared autosaving Small dialog for Platform, Profile URL and Position, with no Save profile action. A stable platform identity prevents later edits after reordering from targeting the wrong row. It uses the canonical social-links persistence/validation path rather than a second editor state. The row action rail is the shared fixed four-axis Move up / Move down / Edit / Delete pattern: each semantic action owns one stable slot so icon axes stay vertically aligned across rows. The Actions cell has the same terminal edge inset as the leading Position cell; no dummy Selection column is added. Under table pressure those same slots compact to icons before either editable field is sacrificed; Position/Drag become the shared fixed rails while Platform and Profile URL remain directly editable.
-- Dashboard feed controls use real content minima rather than fixed state quotas: Search owns all remaining width; Type keeps only a readable intrinsic width; Clear is intrinsic and remains left of the Dashboard utility group. Dashboard keeps its heading, while Filter and Selection do not render redundant headings. Wide/Compact show Settings as gear + “Settings” and bulk Selection as multi-selection icon + “Selected”; at Burger/Narrow the two labels collapse and the Settings + Selection icons become one adjacent pair under Dashboard. The selected-count badge stays separately visible immediately after that pair and remains centered on the same terminal axis as the table select-all/row checkboxes. Invisible labels may not leave their former track widths behind.
-- Dashboard table priority is fixed by content pressure, not one magic width: row Actions keep complete readable labels in four fixed semantic slots with invariant icon axes across every row; Pin/Unpin and Read/Unread must never move neighboring icons, and Delete must never truncate. Sender yields only around a 50rem table; Type + Date + Time fold together around 44rem or at Burger. Burger keeps that folded metadata composition but continues to show the four complete action labels while the table is wider than 38rem; only genuine table pressure at roughly 38rem compacts the same four axes to icons. Position/Drag, Title, Actions and terminal Selection remain explicit.
-- The left Filament Sidebar is a native Livewire component with the built-in `refresh-sidebar` event. After a **successful persisted** Pages mutation (order, nesting, creation/deletion, publication, editing page identity/type, Pages settings or Skip Home), `SitePages::loadSections(navigationChanged: true)` sends that event once; the Sidebar re-queries the canonical `SiteNavigation` projection. Search, filters, pagination, modal opening, validation failures and no-ops do not cause sidebar refresh. The **Admin Sidebar is an editorial tree**: it contains every existing page in database order, including newly added unpublished drafts; the native `refresh-sidebar` event must make Add page visible immediately, without auto-publishing. The **public** menu includes every published site section without a second visibility toggle; published children whose editor parents are unavailable become public root entries. Unpublished pages are publicly unavailable, and public preview preserves its existing unpublished-page exception. The retired database column is kept solely for historical Publication schema/restore compatibility and never influences runtime navigation. Skip Home removes Home from both navigation trees while the other draft pages remain accessible in the Admin Sidebar and Pages. Do not introduce a separate JS navigation renderer, polling, forced SPA navigation or a second sidebar state source.
-- Pages/Custom Page hierarchies protect Position + Drag geometry centrally; their square position badges must never be clipped. Pages owns the Dashboard-style 6 / 6 / 3 / 2 metric state machine, with the final 2-metric state gated behind Burger + <=38rem workspace. Its one-row toolbar is Search -> Type -> Status -> Clear -> Pages actions -> Selection; Filter and Selection headings are omitted, Pages remains, the visible bulk label is “Selected”, and the count is a separate terminal circle on the hierarchy checkbox axis. Pages action and Selection labels compact together under genuine workspace pressure and stay compact after the Burger transition; removing the sidebar must never make labels reappear. In icon-only state the multi-action icon is centered in the same control-height square as the neighboring task icons. In the Pages hierarchy, Template yields first. Page type remains an explicit editable column at every supported table width; do not duplicate it as Name metadata. The five fixed action axes compact to icons before Page type is sacrificed, stay compact through Burger, and never overlap neighboring axes. Custom Page never folds the Component dropdown into Content: it retains distinct editable Component/Kind and Content columns through all responsive states. Shared Action rails compact first, with meaningful content ellipsis only when required.
-- Journal drops supportive media/publication/schedule columns before Status/Timing. Blog and Exhibitions keep their action rail icon-only before removing operational state.
-- Gallery remains a contact sheet rather than becoming a table; it moves 3 -> 2 -> 1 cards while its control bar stays one row.
-- Storage table drops Preview + Used in first; Type + Size fold into Media only at Minimal. Status, Actions and Selection remain explicit.
-- Activity event/commit tables drop Who + Publication first. Minimal event view then folds Area + Type into Change metadata while retaining Change + When + Target + Actions + Selection; commit view retains Commit + When + Summary + Actions + Selection.
-- Analytics detail tables remain fixed-layout/no-scroll and keep their report-specific six-cell distribution; identity cells absorb text pressure before numeric columns are removed.
-- While the surface remains tabular, toolbar Selected-count, header select-all and row checkboxes share one terminal Selection rail at every responsive state.
-- Preserve table semantics where practical; do not default narrow tables to card stacks.
-- Shared table pagination is always one row: Per page left, result range centered, Previous/Next right. Narrow states may tighten gaps/padding but never stack the range above the controls.
-- Do not reduce shared semantic font sizes merely to recover width.
-
-### Visual Stages
-
-Shared desktop stage geometry does not imply shared narrow composition.
-
-- Never automatically stack the existing desktop panes vertically as the generic responsive solution.
-- Every stage defines an intentional Narrow/Minimal composition for its own task.
-- Preserve required operations and domain state; optional/redundant charts, distribution visuals and parallel previews may disappear.
-- A narrow stage may become one focused surface and may use a small local presentation-only selector when equivalent views still need to be reachable.
-- Sidebar/burger collapse is monotonic for Pages, Gallery, Custom Page and Journal too: removing the sidebar must never make metrics, columns, labels or Gallery card density jump back to a wider state.
-- Analytics/Storage/Activity burger/sidebar collapse is monotonic as well: it must not reintroduce Geography, the Storage triptych, Activity Clock, wider table columns or denser Storage cards.
-- General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand the single Appearance controls pane across the full stage. Page width and Content padding are ordinary General Appearance fields in that same parent form/persistence path; they must not live in a nested Livewire bridge or a detached pseudo-footer. The bounded Appearance pane scrolls when necessary but keeps its scrollbar chrome hidden. General has one container-owned Narrow composition (up to 64rem workspace) rather than a second viewport/Burger copy; the preview therefore cannot reappear or partially revert when the sidebar collapses. Live Preview fitting responds immediately to its ResizeObserver and must not animate width/height between observer ticks.
-- General status metrics and the Appearance Stage share the same schema-backed stage block so only the canonical stage margin separates them; Filament schema gaps must not add a second vertical offset.
-- General Appearance's four small tabs reuse `x-admin.stage-switcher` / shared `admin-stage-tabs` without Filament chips. Tab selection is Alpine-only and must not issue Livewire requests or refresh the iframe. The icon-only More space / Less space action is an optional tool slot inside the shared stage switcher, separated from tabs by the same canonical toolbar separator used by Live Preview. Its label is a tooltip/accessible name only. The down-arrow icon rotates up when expanded. The tabbar is the fixed first row above the sole scrolling field pane. The single scroll container owns the four-tab CSS Grid, with scoped display:contents only on intervening Filament wrappers so all four panels occupy grid-area 1/1. Inactive panels are out of flow when collapsed; when expanded they remain hidden and inert but share one Grid track whose intrinsic height is the maximum of all four panels. This prevents cumulative rows or hidden-panel gaps. The action uses CSS max-content sizing with the shared normal Stage height as minimum; no ResizeObserver, JavaScript pixel heights or timer. The Preview may expand into the newly available space subject to a viewport-relative cap and its existing fit/aspect logic, but the iframe URL and DOM lifecycle stay unchanged by More space. Direct preview frame URLs remain stable across ordinary General component renders; persisted Appearance changes own explicit refresh. The left Stage tabs and the right Live Preview icons use one shared control grammar: the full-height, container-stretched `admin-control-separator` reaching the common lower border, `admin-action` icon surfaces and the same shared line-color token. Never shorten the separator by reserving padding beneath the toolbar's content row. The Live Preview heading is a separate row above `x-admin.stage-tool-row`; that row contains only right-aligned device, zoom and action icons. The zoom percentage remains a specialised inline control between its Zoom Out/In icons; no device-dimensions label appears in the tool row. Do not duplicate General-only toolbar CSS or place icons alongside the heading.
-- General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
-- General → Appearance → Global owns one Frame style selector: Layered paper, Layered paper · continuous contours, Contours only, Backing only and Plain. The common `public-paper-frame` decorative child owns joined Menu+Content paper lines as one physical element; independent sheets retain their own backing/contours. There is no page-specific fake line-matching CSS. Both left and right horizontal outsets share the one Public folio-edge token. The Menu divider options are No divider, Menu divider, Full-width divider, Separate surfaces, and Full-width divider and separate surfaces; gaps are sticky-header-owned. The joint frame is **intrinsically sized by its Header and Content** (`flex: 0 0 auto` on the frame); the body alone fills the viewport background. The contour return is anchored to the real Content-sheet end via existing padding and one shared CSS return inset, never to empty viewport space. Do not introduce DOM-measurement-to-layout feedback, Public CSS transitions, a secondary scroll owner or ambient animation. Header placement observes window resizing/font completion only, not its own mutated layout.
-- Analytics preserves its desktop Map (2 cells) + Geography (1 cell) composition through Narrow. Only Minimal removes Geography and lets Map occupy the full shared stage.
-- Storage preserves Upload + Capacity + Distribution as three equal stage cells through Narrow. Only Minimal becomes the compact full-width Upload + Used/Remaining/Allowance + Refresh/Reclaim composition; donut and Distribution disappear there.
-- Activity preserves Calendar + Clock + Next Publication as three stage cells through Narrow. Only Minimal becomes publication-first: Next Publication owns the full shared stage while Calendar + Clock yield; Pending/Preflight/current-live context and Review/Reset/Commit remain visible/reachable.
-- **Dashboard keeps Storage | Activity | Analytics as three simultaneous stage cells through Wide, Compact and Narrow. Only Minimal may switch to the local Storage / Activity / Analytics selector and show one stage cell at a time.** The one-cell Dashboard stage must not engage before the burger/sidebar shell has collapsed; shell collapse alone must not trigger it either.
-- Dashboard stage captions/facts remain visible and one-line through Narrow. Use deliberate compact labels/copy when needed; primary values and facts must not fall back to ellipsis. The Dashboard stage owns a smooth container-relative height; footer wrapping must never change graphic vertical position.
-- Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
-
-Browser review must continuously resize through transition regions, not only check named device presets.
+The shared [Admin responsive composition](ADMIN-RESPONSIVE-CONTRACT.md) owns accepted Wide/Compact/Narrow/Minimal behavior for selects, the shell, metrics, toolbars, tables, Selection and visual stages. Component pressure is distinct from the viewport and shared implementations stay centralized.
 
 ## 22. CSS ownership
 
@@ -790,46 +650,15 @@ Important shared Blade primitives include:
 
 ## 23. Browser acceptance and presentation reset
 
-Static source review, passing focused tests and a running container do not establish visual/product acceptance.
-
-The user's review of the current built candidate is authoritative for presentation. If the user rejects a layout, width, cards/panels, metrics treatment, toolbar, table geometry, typography or wording, that rejected presentation is not a preservation requirement merely because it already exists, passed a source review or is asserted by a temporary test.
-
-When the user names Gallery, Storage or another accepted current page as a visual reference, inspect the exact reference implementation and reuse its primitives/tokens for the dimensions named. “Keep it consistent” without reading the reference code is not sufficient.
-
-If a page has survived repeated visual repair passes while retaining the same rejected structure, stop layering patches onto it. Preserve valid domain behavior, persistence, safety guards and central technologies, but rebuild the presentation layer from the accepted reference/shared grammar when necessary.
-
-Do not create durable UI tests whose purpose is to memorialize a repair round, branch name, candidate chronology or unaccepted markup. Tests should protect stable functional/domain behavior; browser presentation becomes a durable reference after browser/product acceptance.
+A source review, a running container or passing focused tests is not browser/product acceptance. The accepted Gallery/Storage visual grammar must be tested against the **current built candidate**. Rejected presentations are not durable requirements. The [browser review workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review) owns the review and source-cleanup process.
 
 ## 24. Browser-review checklist
 
-For every admin slice, inspect at least:
-
-- page/action label geometry;
-- metric strip alignment/height;
-- Search/filter/Selection baseline;
-- selected-count badge aligned with the trailing table/hierarchy checkbox axis where Selection is tabular;
-- table/grid header alignment;
-- selection + drag geometry;
-- Position where applicable;
-- action order and stable slots;
-- parent/child alignment;
-- empty states;
-- dialog size/scroll/focus/popovers;
-- filtered reorder behavior;
-- obvious first-click/navigation latency;
-- whether an existing shared component was bypassed by a new local structure;
-- whether the page matches the accepted Gallery/Storage reference geometry where applicable;
-- whether page-local CSS duplicates an existing theme token or primitive.
-
-Browser acceptance is allowed to reject a technically correct implementation for poor/inconsistent UI. That feedback becomes the next source requirement.
+Use the [cross-workspace inspection checklist](ADMIN-BROWSER-WORKFLOW.md#visual-change-review), not a second page-local checklist.
 
 ## 25. Presentation cleanup gate
 
-Browser/product acceptance does not by itself complete UI work. After the accepted presentation is established and shared presentation dimensions are reconciled, audit source paths created or superseded by that change.
-
-Remove only safely-proven obsolete UI source: superseded page/view paths, dead Blade views/partials, unused CSS/selectors, obsolete presentation aliases/compatibility paths, duplicate presentation paths, stale implementation-specific UI tests, and imports/classes made unused. Reference-search every candidate before deletion and preserve still-required compatibility/domain behavior.
-
-Run final UI/source verification against the cleaned tree. Presentation acceptance and presentation-source cleanup are separate gates; passing one does not imply the other.
+After user acceptance, remove only **reference-proven obsolete** UI source. Browser acceptance and source-cleanup qualification are distinct steps; follow the [browser workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review).
 
 ## 26. Shared Visual Stage and semantic icon contract
 
@@ -858,26 +687,8 @@ If a browser pass shows one stage or separator at a different vertical position,
 
 Shared admin navigation/action semantics use `App\Filament\Support\AdminIcon`. Prefer semantic catalog entries over scattered Heroicon literals for meanings already represented by the catalog, and keep distinct meanings visually distinguishable rather than reusing one glyph for unrelated concepts.
 
-See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliation loop around these contracts.
-
-- **Minimal:** retain exactly two semantic metrics. The split is exact 50/50; hidden source siblings or original DOM position must never create a 1/3–2/3 layout.
-- Metric geometry is owned centrally by the shared `.admin-metrics` primitive: Narrow uses three equal tracks and container-owned dividers at 1/3 + 2/3; Minimal uses two equal tracks and one divider at 1/2. Feature CSS chooses which metrics remain visible but must not assign responsive `grid-column` spans or draw its own vertical metric dividers.
-- Analytics/Storage/Activity metric cells explicitly own their Narrow/Minimal columns and stretch to the full cell. Narrow is exact thirds with two dividers; Minimal is exact halves with one centered divider.
-
-- Stage collapse for Analytics/Storage/Activity happens only at Minimal (<= 38rem workspace, with the matching shell fallback). Wide/Compact/Narrow retain their multi-cell stage axes and the shared fixed `--admin-visual-stage-height`; switching state must not introduce extra divider axes.
+See [Admin browser workflow](ADMIN-BROWSER-WORKFLOW.md) for the direct/worker browser-reconciliation loop around these contracts.
 
 ### Gradient tables and dynamic Appearance Stage height
 
-Every global paint — Background, Title, Menu, Page and Menu-to-page
-Divider color — must share the same paint domain and ColorPicker. Solid uses
-one inline field beside the mode selector; only gradients use the actual
-`x-admin.table` representation. Use `x-admin.row-action` for table Delete,
-including its canonical trash icon, label and state. Do not hand-author
-a lookalike action or reuse the X-shaped Remove action.
-
-General's More Space toggles a content-sized Stage for **only the current
-tab**, not the tallest of all tabs. The inactive panels stay absolutely
-positioned and excluded from intrinsic sizing. Tab changes must resize
-the Stage automatically with CSS, while the preview retains its
-existing responsive fitting. Never calculate this by timers, panel-wide
-height constants or duplicate measuring subsystems.
+The [Admin control contract](ADMIN-CONTROL-CONTRACT.md#public-appearance-controls-source-to-dev2ad31502ea4e) owns the shared ColorPicker, gradient-stop validation and table adapter; the [table contract](ADMIN-TABLE-CONTRACT.md#general-appearance-color-stop-table) owns Add/Delete row presentation. [General Appearance Stage and Live Preview](ADMIN-RESPONSIVE-CONTRACT.md#general-appearance-stage-and-live-preview) owns active-tab-only More Space height and Preview sizing/lifecycle. These rules apply equally to Background, Title, Menu, Page and Divider color; no local alternate table, state or measurement system is introduced.

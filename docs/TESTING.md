@@ -1,5 +1,8 @@
 # Testing
 
+**Operating model:** `testing` is the curated test owner. Dev implements application changes **without writing tests**. Test workers periodically inspect the complete accumulated source diff, reevaluate the **whole affected test structure before adding cases**, and reconcile newer Dev code while work proceeds. **Only after the user declares Dev frozen** and Testing has verified full production source parity should the final Codex/native suite be run, corrected and rechecked in an isolated environment prior to reviewed promotion. New source changes invalidate that final gate.
+
+
 This is the current durable test strategy for `moeller-lars`. The suite protects observable product/domain/security behavior, persistence, publication and selected browser interaction. It must not preserve obsolete test taxonomies, source spellings or repair-round history.
 
 ## Layers and ownership

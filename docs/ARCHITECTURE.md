@@ -87,7 +87,7 @@ Navigation-only nodes do not get fake editors. Persistence Resource/model names 
 
 The canonical theme entrypoint is `resources/css/admin.css`, importing feature/shared modules from `resources/css/admin/`.
 
-The detailed admin-only UI grammar is maintained in [`../ui-skills.md`](../ui-skills.md). Durable shared principles include:
+The detailed admin-only UI grammar is maintained in [Admin UI contract](ADMIN-UI.md). Durable shared principles include:
 
 - one visible page heading per normal workspace;
 - no decorative kicker/eyebrow layer above that heading;
@@ -185,7 +185,7 @@ Ordered editorial records persist explicit position. Native Livewire sorting (`w
 
 Ordering Activity uses `AdminAuditService::recordOrdering()` with a stable domain scope and exact canonical before/after identity sequences. `AdminActivityOrderingProjector` groups a state-continuous sequence into one visible forensic Activity so routine sorting does not create hundreds of rows. The group remains visible regardless of whether its final order equals its starting order; identity only means there is no meaningful inverse to offer as Undo. Composition is publication-bounded and never timer-, debounce- or burst-based.
 
-Filtered/search projections do not silently become canonical reorder sequences. Ranked tables may expose a 1-based Position column as described in `ui-skills.md`.
+Filtered/search projections do not silently become canonical reorder sequences. Ranked tables may expose a 1-based Position column as described in `docs/ADMIN-UI.md`.
 
 ## Custom Pages and Contact
 

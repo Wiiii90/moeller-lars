@@ -1,6 +1,12 @@
 # Test suites — canonical testing branch
 
-Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. **`testing` is the authoritative curated suite**; `dev` carries ongoing features and provisional tests. The current production changes are periodically merged into `testing` while preserving canonical test deletions and refactors. Only an explicitly authorized, isolated qualification and user-directed promotion puts the curated suite back on `dev` before cutover; `main` is a separate release step.
+Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. **`testing` is the authoritative curated suite**; `dev` carries ongoing application features but Dev workers no longer create or maintain tests. The current production changes are periodically merged into `testing` while preserving canonical test deletions and refactors. Only an explicitly authorized, isolated qualification and user-directed promotion puts the curated suite back on `dev` before cutover; `main` is a separate release step.
+
+## Source reconciliation and final gate
+
+Review the cumulative `dev` source changes since the last accepted integration, including framework/library changes, shared components, migrations and test configuration. Reconsider and consolidate the whole affected suite rather than adding branch-specific regressions. Preparatory reconciliation may run in parallel with Dev.
+
+Final Codex/native test execution and corrections require **a user-declared Dev freeze**, exact non-test source parity, independent isolated database/filesystem checks, and final approval before selective transfer. A real application defect goes back to Dev; a new Dev commit requires a fresh source-parity check and affected test rerun. Do not infer browser/user acceptance from authored test code.
 
 ## Layers
 
