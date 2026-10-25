@@ -1,6 +1,6 @@
 # Admin UI — accepted shared presentation and interaction contract
 
-**Ownership:** This document consolidates the *current dev* Admin interface grammar at source `dev@671d8214`, preserving detailed previously accepted interactions. It is a **normative, replace-in-place contract**, not a worker diary or an invitation to append repair notes. Topic details remain owned by [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) and [Worker impact review](../.agents/README.md). On future consolidation, move a rule to its unique contract before deleting its last copy. Historical changes are in Git.
+**Ownership:** This is the normative shared Admin presentation contract. [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md) and [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) own their detailed requirements. Keep accepted design here, source-specific evidence in its evidence owner, and avoid worker/task state in permanent product documents.
 This file is the reusable UI reference for the authenticated artist administration in `Wiiii90/moeller-lars`.
 
 It deliberately covers **admin UI only**. It does not define the public artist-site frontend.
@@ -689,24 +689,6 @@ Shared admin navigation/action semantics use `App\Filament\Support\AdminIcon`. P
 
 See [Admin browser workflow](ADMIN-BROWSER-WORKFLOW.md) for the direct/worker browser-reconciliation loop around these contracts.
 
-- **Minimal:** retain exactly two semantic metrics. The split is exact 50/50; hidden source siblings or original DOM position must never create a 1/3–2/3 layout.
-- Metric geometry is owned centrally by the shared `.admin-metrics` primitive: Narrow uses three equal tracks and container-owned dividers at 1/3 + 2/3; Minimal uses two equal tracks and one divider at 1/2. Feature CSS chooses which metrics remain visible but must not assign responsive `grid-column` spans or draw its own vertical metric dividers.
-- Analytics/Storage/Activity metric cells explicitly own their Narrow/Minimal columns and stretch to the full cell. Narrow is exact thirds with two dividers; Minimal is exact halves with one centered divider.
-
-- Stage collapse for Analytics/Storage/Activity happens only at Minimal (<= 38rem workspace, with the matching shell fallback). Wide/Compact/Narrow retain their multi-cell stage axes and the shared fixed `--admin-visual-stage-height`; switching state must not introduce extra divider axes.
-
 ### Gradient tables and dynamic Appearance Stage height
 
-Every global paint — Background, Title, Menu, Page and Menu-to-page
-Divider color — must share the same paint domain and ColorPicker. Solid uses
-one inline field beside the mode selector; only gradients use the actual
-`x-admin.table` representation. Use `x-admin.row-action` for table Delete,
-including its canonical trash icon, label and state. Do not hand-author
-a lookalike action or reuse the X-shaped Remove action.
-
-General's More Space toggles a content-sized Stage for **only the current
-tab**, not the tallest of all tabs. The inactive panels stay absolutely
-positioned and excluded from intrinsic sizing. Tab changes must resize
-the Stage automatically with CSS, while the preview retains its
-existing responsive fitting. Never calculate this by timers, panel-wide
-height constants or duplicate measuring subsystems.
+The [Admin control contract](ADMIN-CONTROL-CONTRACT.md#public-appearance-controls-source-to-dev2ad31502ea4e) owns the shared ColorPicker, gradient-stop validation and table adapter; the [table contract](ADMIN-TABLE-CONTRACT.md#general-appearance-color-stop-table) owns Add/Delete row presentation. [General Appearance Stage and Live Preview](ADMIN-RESPONSIVE-CONTRACT.md#general-appearance-stage-and-live-preview) owns active-tab-only More Space height and Preview sizing/lifecycle. These rules apply equally to Background, Title, Menu, Page and Divider color; no local alternate table, state or measurement system is introduced.

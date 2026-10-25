@@ -112,62 +112,10 @@ Navigation is generated from the canonical Site Node tree and persisted order/pu
 
 Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
-The Public paper outline is **static**. The server-rendered `public-paper-frame` encloses Header and Content without introducing a second scroll owner. Physically compatible, connected Menu/Page surfaces share the single decorative `public-paper-decoration` contour; separate or transparent surfaces use their existing individual sheet edges. Blade decides compatibility from the concrete header and page presentation; CSS owns the final shape.
+The Public paper outline is **static**. The server-rendered `public-paper-frame` encloses Header and Content without introducing a second scroll owner. Physically compatible, connected Menu/Page surfaces share the single decorative `public-paper-decoration` contour; separate or transparent surfaces use their existing individual sheet edges. Blade decides compatibility from the concrete header and page presentation; CSS owns the final shape. Both horizontal folio-edge outsets use the same Public design token, never page-specific artificial line matching. Header fit observes window/font changes and actual visible Menu geometry, not its own layout writes.
 
 The frame is an **intrinsically content-sized flex item** (`flex: 0 0 max-content`); the body, not the frame, fills the viewport's remaining height. Contour return uses the frame's actual content-paper height, trailing content padding and one shared return inset. Populated pages do not receive an artificial viewport-driven stretch. Empty/min-height page cases retain their own layout rules and need browser acceptance. There is **no** `public-paper-frame.js`, observer-driven measurement/writes, animation, timeout or duplicated frame engine. The six route-deterministic values retained in nonce-authorized layout metadata belong to the legacy separate-sheet geometry, not an active animation.
 
-General's active-tab/More-Space contract is detailed below under the shared Appearance Stage. Live Preview remains a separate pane, without remounting or reloading solely because More/Less Space changed. This is a source/layout contract, not completed browser acceptance.
-
-Main and child navigation retain the same cyclic complete-item window,
-measured rail, keyboard behavior and selected state.
-
-General → Appearance reuses the established **admin-stage-tabs** and
-**admin-action** grammar from responsive Dashboard/Storage via the canonical
-`x-admin.stage-switcher`, never Filament Tabs/chips. Its toolbar and
-icon-only More/Less space action are a **fixed first row** above the
-**only scrolling field pane**; scrolling Appearance fields never moves the
-tabs. The General controls pane owns three explicitly sized rows: Appearance
-heading, fixed tabbar and one bounded scrolling field pane. This prevents
-the tabbar from absorbing the scrolling grid row.
-
-All four Appearance panels remain mounted as single Filament Groups and
-are selected locally via Alpine (no Livewire tab writes). The **Appearance
-scroll container itself** is the one CSS Grid owner. Because Filament inserts
-nested Group wrappers, only the wrapper ancestors of these panels are flattened
-with a scoped `:has(.general-appearance-stage__panel)` rule. The real panels
-therefore occupy the **same grid-area: 1 / 1**, instead of four sequential
-rows. Inactive panels remain visually hidden, inert, aria-hidden **and out of the layout flow** in both regular and expanded modes. Only the selected panel contributes to the active grid track and vertical scroll range; changing tabs can expand **and contract** the Stage. The fixed header/toolbar and responsive layout remain independent of inactive tab heights.
-No duplicated measurement DOM, ResizeObserver, JavaScript pixel height,
-animation, or timer is involved.
-
-The existing Stage divider follows the expanded Stage. Live Preview may
-stretch within that new space with a viewport-relative upper bound and its
-existing frame-fit/aspect-ratio logic; it is never remounted or given a new
-iframe URL for this purely local More/Less space action. The iframe refresh
-remains owned only by persisted Appearance-change events. The arrow is
-icon-only, with More/Less space in its tooltip and accessible name.
-
-**Global** owns Site icon/Background. **Title** uses paired rows for
-Title/visible Text, Position/Lettering, Alignment/Responsive alignment,
-Color/Size and Responsive size/Minimum size. **Menu** places Menu to page and
-Divider color in one row; its background selector reads **Menu background**.
-**Page** owns Content width, Content padding and **Page background**.
-The heading of Live Preview occupies its own Stage heading row; below it,
-the `x-admin.stage-tool-row` shared primitive places all controls flush
-right with the same underlining and full-control-height separator strokes as
-the Appearance tabs and the inline unit fields. Device icons (Desktop/Phone),
-the existing special Zoom Out/percentage/Zoom In group, Pan and Open preview
-retain their original behavior, disabled/selected states, tooltips and
-accessible labels. The redundant device-dimensions text is removed from
-the toolbar, not from the preview's internal device width/height dataset.
-The old General-specific icon and separator styling has been deleted;
-`primitives.css` and `stage.css` own the common look. Preview content
-begins after the same toolbar-to-content spacing as the Appearance pane.
-
-No duplicate forms, special responsive tabs, or independent CSS buttons are
-introduced. All actual Appearance changes still use the existing autosave
-methods and explicit `general-appearance-updated` iframe refresh event.
-Local tab switches and Stage expansion do not reload the preview.
 
 Title Position offers **Beside menu**, **Inside menu**,
 **Above menu**, and **Below menu**. Beside is a true outer title column

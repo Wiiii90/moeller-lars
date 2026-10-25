@@ -102,8 +102,6 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 
 Shared desktop stage geometry does not imply shared narrow composition.
 
-Shared desktop stage geometry does not imply shared narrow composition.
-
 - Never automatically stack the existing desktop panes vertically as the generic responsive solution.
 - Every stage defines an intentional Narrow/Minimal composition for its own task.
 - Preserve required operations and domain state; optional/redundant charts, distribution visuals and parallel previews may disappear.
@@ -112,15 +110,65 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - Analytics/Storage/Activity burger/sidebar collapse is monotonic as well: it must not reintroduce Geography, the Storage triptych, Activity Clock, wider table columns or denser Storage cards.
 - General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand the single Appearance controls pane across the full stage. Page width and Content padding are ordinary General Appearance fields in that same parent form/persistence path; they must not live in a nested Livewire bridge or a detached pseudo-footer. The bounded Appearance pane scrolls when necessary but keeps its scrollbar chrome hidden. General has one container-owned Narrow composition (up to 64rem workspace) rather than a second viewport/Burger copy; the preview therefore cannot reappear or partially revert when the sidebar collapses. Live Preview fitting responds immediately to its ResizeObserver and must not animate width/height between observer ticks.
 - General status metrics and the Appearance Stage share the same schema-backed stage block so only the canonical stage margin separates them; Filament schema gaps must not add a second vertical offset.
-- General Appearance's four small tabs reuse `x-admin.stage-switcher` / shared `admin-stage-tabs` without Filament chips. Tab selection is Alpine-only and must not issue Livewire requests or refresh the iframe. The icon-only More space / Less space action is an optional tool slot inside the shared stage switcher, separated from tabs by the same canonical toolbar separator used by Live Preview. Its label is a tooltip/accessible name only. The down-arrow icon rotates up when expanded. The tabbar is the fixed first row above the sole scrolling field pane. The single scroll container owns the four-tab CSS Grid, with scoped display:contents only on intervening Filament wrappers so all four panels occupy grid-area 1/1. Inactive panels are out of flow when collapsed; when expanded they remain hidden and inert but share one Grid track whose intrinsic height is the maximum of all four panels. This prevents cumulative rows or hidden-panel gaps. The action uses CSS max-content sizing with the shared normal Stage height as minimum; no ResizeObserver, JavaScript pixel heights or timer. The Preview may expand into the newly available space subject to a viewport-relative cap and its existing fit/aspect logic, but the iframe URL and DOM lifecycle stay unchanged by More space. Direct preview frame URLs remain stable across ordinary General component renders; persisted Appearance changes own explicit refresh. The left Stage tabs and the right Live Preview icons use one shared control grammar: the full-height, container-stretched `admin-control-separator` reaching the common lower border, `admin-action` icon surfaces and the same shared line-color token. Never shorten the separator by reserving padding beneath the toolbar's content row. The Live Preview heading is a separate row above `x-admin.stage-tool-row`; that row contains only right-aligned device, zoom and action icons. The zoom percentage remains a specialised inline control between its Zoom Out/In icons; no device-dimensions label appears in the tool row. Do not duplicate General-only toolbar CSS or place icons alongside the heading.
+- General Appearance reuses the shared Stage switcher and has one active-tab-only expansion behavior; the fixed controls, Preview lifecycle and details are defined in [General Appearance Stage and Live Preview](#general-appearance-stage-and-live-preview).
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
-- General → Appearance → Global owns one Frame style selector: Layered paper, Layered paper · continuous contours, Contours only, Backing only and Plain. The common `public-paper-frame` decorative child owns joined Menu+Content paper lines as one physical element; independent sheets retain their own backing/contours. There is no page-specific fake line-matching CSS. Both left and right horizontal outsets share the one Public folio-edge token. The Menu divider options are No divider, Menu divider, Full-width divider, Separate surfaces, and Full-width divider and separate surfaces; gaps are sticky-header-owned. The joint frame is **intrinsically sized by its Header and Content** (`flex: 0 0 auto` on the frame); the body alone fills the viewport background. The contour return is anchored to the real Content-sheet end via existing padding and one shared CSS return inset, never to empty viewport space. Do not introduce DOM-measurement-to-layout feedback, Public CSS transitions, a secondary scroll owner or ambient animation. Header placement observes window resizing/font completion only, not its own mutated layout.
+- General → Appearance → Global exposes one Frame style selector, and Menu exposes the five Menu-to-page options. Their rendered paper/contour semantics are owned by [Public navigation and frame](PUBLIC-IMPLEMENTATION-CONTRACT.md#site-navigation) and [global public appearance](PUBLIC-IMPLEMENTATION-CONTRACT.md#global-public-appearance-surfaces), not by an Admin responsive breakpoint.
 - Analytics preserves its desktop Map (2 cells) + Geography (1 cell) composition through Narrow. Only Minimal removes Geography and lets Map occupy the full shared stage.
 - Storage preserves Upload + Capacity + Distribution as three equal stage cells through Narrow. Only Minimal becomes the compact full-width Upload + Used/Remaining/Allowance + Refresh/Reclaim composition; donut and Distribution disappear there.
 - Activity preserves Calendar + Clock + Next Publication as three stage cells through Narrow. Only Minimal becomes publication-first: Next Publication owns the full shared stage while Calendar + Clock yield; Pending/Preflight/current-live context and Review/Reset/Commit remain visible/reachable.
 - **Dashboard keeps Storage | Activity | Analytics as three simultaneous stage cells through Wide, Compact and Narrow. Only Minimal may switch to the local Storage / Activity / Analytics selector and show one stage cell at a time.** The one-cell Dashboard stage must not engage before the burger/sidebar shell has collapsed; shell collapse alone must not trigger it either.
 - Dashboard stage captions/facts remain visible and one-line through Narrow. Use deliberate compact labels/copy when needed; primary values and facts must not fall back to ellipsis. The Dashboard stage owns a smooth container-relative height; footer wrapping must never change graphic vertical position.
 - Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
+
+### General Appearance Stage and Live Preview
+
+General → Appearance reuses the established **admin-stage-tabs** and
+**admin-action** grammar from responsive Dashboard/Storage via the canonical
+`x-admin.stage-switcher`, never Filament Tabs/chips. Its toolbar and
+icon-only More/Less space action are a **fixed first row** above the
+**only scrolling field pane**; scrolling Appearance fields never moves the
+tabs. The General controls pane owns three explicitly sized rows: Appearance
+heading, fixed tabbar and one bounded scrolling field pane. This prevents
+the tabbar from absorbing the scrolling grid row.
+
+All four Appearance panels remain mounted as single Filament Groups and
+are selected locally via Alpine (no Livewire tab writes). The **Appearance
+scroll container itself** is the one CSS Grid owner. Because Filament inserts
+nested Group wrappers, only the wrapper ancestors of these panels are flattened
+with a scoped `:has(.general-appearance-stage__panel)` rule. The real panels
+therefore occupy the **same grid-area: 1 / 1**, instead of four sequential
+rows. Inactive panels remain visually hidden, inert, aria-hidden **and out of the layout flow** in both regular and expanded modes. Only the selected panel contributes to the active grid track and vertical scroll range; changing tabs can expand **and contract** the Stage. The fixed header/toolbar and responsive layout remain independent of inactive tab heights.
+No duplicated measurement DOM, ResizeObserver, JavaScript pixel height,
+animation, or timer is involved.
+
+The existing Stage divider follows the expanded Stage. Live Preview may
+stretch within that new space with a viewport-relative upper bound and its
+existing frame-fit/aspect-ratio logic; it is never remounted or given a new
+iframe URL for this purely local More/Less space action. The iframe refresh
+remains owned only by persisted Appearance-change events. The arrow is
+icon-only, with More/Less space in its tooltip and accessible name.
+
+**Global** owns Site icon/Background. **Title** uses paired rows for
+Title/visible Text, Position/Lettering, Alignment/Responsive alignment,
+Color/Size and Responsive size/Minimum size. **Menu** places Menu to page and
+Divider color in one row; its background selector reads **Menu background**.
+**Page** owns Content width, Content padding and **Page background**.
+The heading of Live Preview occupies its own Stage heading row; below it,
+the `x-admin.stage-tool-row` shared primitive places all controls flush
+right with the same underlining and full-control-height separator strokes as
+the Appearance tabs and the inline unit fields. Device icons (Desktop/Phone),
+the existing special Zoom Out/percentage/Zoom In group, Pan and Open preview
+retain their original behavior, disabled/selected states, tooltips and
+accessible labels. The redundant device-dimensions text is removed from
+the toolbar, not from the preview's internal device width/height dataset.
+The old General-specific icon and separator styling has been deleted;
+`primitives.css` and `stage.css` own the common look. Preview content
+begins after the same toolbar-to-content spacing as the Appearance pane.
+
+No duplicate forms, special responsive tabs, or independent CSS buttons are
+introduced. All actual Appearance changes still use the existing autosave
+methods and explicit `general-appearance-updated` iframe refresh event.
+Local tab switches and Stage expansion do not reload the preview.
 
 Browser review must continuously resize through transition regions, not only check named device presets.
 
