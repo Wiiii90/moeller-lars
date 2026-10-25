@@ -20,6 +20,8 @@ Each area maintains a **Next lease token**: a monotonically increasing number in
 
 **Allocation/replacement must be one concurrency-checked commit on canonical `docs`**, updating the shared area and the individual file together. Read the current remote `docs` head and available worker paths immediately before creating the commit; use an expected-head, non-forced ref update. If a competing writer advances the branch, reread and reconcile; do not create the same identity twice. No other branch's stale copy determines occupancy.
 
+Every work report identifies its registered worker role and number (for example, Docs Worker 1).
+
 ## Live ownership and writing
 
 - **Individual** `.agents/workers/<area>-N.md`: above all the **assignments actually given by the user**, current work status/progress, completed actions, next outstanding actions and blockers, plus decisions and evidence needed to resume. It is that worker's memory only; never mix another worker's task state into it. It may contain a discussion without an action. Never put another worker's private task state into this file.

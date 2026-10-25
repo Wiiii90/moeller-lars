@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | *(none activated under this prototype)* | | | | |
 
-**Cross-area source gap observed 25 October 2026:** `testing@b7eee549b86ac35eaa6a064ac78ef226182c170e` was 12 commits behind `dev@0200407133ce4696817271d2141fceaca82f8aff`, while 21 independently curated Testing commits were ahead. The active Testing worker must reconcile the newer `dev` changes into its maintained tests without losing existing work; this Docs review did **not** merge into or execute tests on `testing`. Refresh heads before action. This is a shared dependency, not the private task state of a numbered Testing Worker.
+**Current source alignment:** `testing` has now imported `dev@02004071` (zero commits behind, 22 ahead at last check). The previously noted 12-commit gap is resolved. The active Testing worker retains ownership of test curation and later updates.
 
 The existing Testing chat is running **outside the new numbered-worker system**; it has not yet been assigned a numbered identity. Do not invent its private task state or reserve a number for it. After the user activates a Testing Worker, allocate the lowest free positive ID and read that worker's real conversation/task where available.
 
