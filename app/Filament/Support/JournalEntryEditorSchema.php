@@ -147,7 +147,7 @@ final class JournalEntryEditorSchema
 
     private static function exhibitionGalleryFields(): array
     {
-        $images = self::galleryImages();
+        $images = self::galleryImages(table: true);
         $images
             ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
             ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled'));
@@ -230,8 +230,24 @@ final class JournalEntryEditorSchema
         ]);
     }
 
-    private static function galleryImages(): Repeater
+    private static function galleryImages(bool $table = false): Repeater
     {
+        if (! $table) {
+            return Repeater::make('gallery_images')
+                ->label(__('Gallery media'))
+                ->schema([
+                    MediaAssetSelect::makeId(
+                        'media_asset_id',
+                        __('Image or video'),
+                        allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
+                    )->required(),
+                ])
+                ->addActionLabel(__('Add media'))
+                ->reorderableWithButtons()
+                ->reorderableWithDragAndDrop(false)
+                ->columnSpanFull();
+        }
+
         return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
             ->hiddenLabel()
