@@ -37,6 +37,8 @@
         ? 'site-content--portrait-artwork'
         : ''))
 
+@section('artwork_header_divider', $presentation::artworkPageDividerOverride($category) ?? '')
+
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', $artwork->description ?: $artwork->title.' — Lars Möller')
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))

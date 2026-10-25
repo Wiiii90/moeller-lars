@@ -3,6 +3,9 @@
     $publicStyleNonce = request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE);
     // URL-keyed corner positions are available before the first render.
     $folioSeed = hexdec(substr(hash('sha256', '/'.ltrim(request()->path(), '/')), 0, 8));
+    $artworkHeaderDivider = trim($__env->yieldContent('artwork_header_divider', ''));
+    $effectiveHeaderDivider = in_array($artworkHeaderDivider, ['fine', 'separate'], true)
+        ? $artworkHeaderDivider : $publicHeaderDivider;
     $folioPlacement = [
         'leftTop' => (16 + (($folioSeed >> 1) % 11)).'px',
         'leftBottom' => (46 + (($folioSeed >> 5) % 19)).'px',
@@ -53,7 +56,7 @@
             data-public-layout-title-gradient="{{ $publicHeaderGradientCss ?? '' }}"
             data-public-layout-title-size="{{ $publicHeaderSize }}"
             data-public-layout-title-min-size="{{ $publicHeaderMinSize }}"
-            data-public-layout-divider-mode="{{ $publicHeaderDivider }}"
+            data-public-layout-divider-mode="{{ $effectiveHeaderDivider }}"
             data-public-layout-divider-color="{{ $publicHeaderDividerColor ?? '' }}"
             data-public-layout-divider-gradient="{{ $publicHeaderDividerGradientCss ?? '' }}"
             data-folio-left-top="{{ $folioPlacement['leftTop'] }}"
@@ -84,11 +87,11 @@
             $paperCompatible = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
                 && ! $publicPageTransparent
                 && ! str_contains($__env->yieldContent('content_class'), 'landscape-artwork');
-            $paperConnected = $paperCompatible && in_array($publicHeaderDivider, ['fine', 'menu', 'full'], true);
+            $paperConnected = $paperCompatible && in_array($effectiveHeaderDivider, ['fine', 'menu', 'full'], true);
         @endphp
         <div class="public-paper-frame @if ($paperCompatible) public-paper-frame--compatible @endif @if ($paperConnected) public-paper-frame--connected @endif">
             <div class="public-paper-decoration" aria-hidden="true"></div>
-        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $publicHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
+        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $effectiveHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
             @if ($publicHeaderVisible && ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation')))
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
             @endif

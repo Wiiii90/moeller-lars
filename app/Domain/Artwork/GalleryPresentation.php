@@ -86,6 +86,33 @@ final class GalleryPresentation
 
     public const EDGE_MODES = [self::EDGE_DISABLED, self::EDGE_HIDDEN, self::EDGE_CYCLIC];
 
+    public const ARTWORK_SURFACE_INHERIT = 'inherit';
+    public const ARTWORK_SURFACE_JOINED = 'joined';
+    public const ARTWORK_SURFACE_SEPARATE = 'separate';
+
+    public const ARTWORK_SURFACE_OPTIONS = [
+        self::ARTWORK_SURFACE_INHERIT => 'Follow General',
+        self::ARTWORK_SURFACE_JOINED => 'No gap',
+        self::ARTWORK_SURFACE_SEPARATE => 'Separate Surface',
+    ];
+
+    public static function artworkPageSurfaceMode(ArtworkCategory $gallery): string
+    {
+        $value = $gallery->getAttribute('artwork_page_surface_mode');
+
+        return is_string($value) && array_key_exists($value, self::ARTWORK_SURFACE_OPTIONS)
+            ? $value : self::ARTWORK_SURFACE_INHERIT;
+    }
+
+    public static function artworkPageDividerOverride(ArtworkCategory $gallery): ?string
+    {
+        return match (self::artworkPageSurfaceMode($gallery)) {
+            self::ARTWORK_SURFACE_JOINED => 'fine',
+            self::ARTWORK_SURFACE_SEPARATE => 'separate',
+            default => null,
+        };
+    }
+
     public const DIVIDER_NONE = 'none';
 
     public const DIVIDER_OPTIONS = [self::DIVIDER_NONE => 'None', ...DividerVariant::LABELS];
@@ -122,6 +149,13 @@ final class GalleryPresentation
                 throw ValidationException::withMessages(['sort_mode' => 'Choose a supported Gallery order.']);
             }
             $values['sort_mode'] = $data['sort_mode'];
+        }
+        if (array_key_exists('artwork_page_surface_mode', $data)) {
+            $mode = $data['artwork_page_surface_mode'];
+            if (! is_string($mode) || ! array_key_exists($mode, self::ARTWORK_SURFACE_OPTIONS)) {
+                throw ValidationException::withMessages(['artwork_page_surface_mode' => 'Choose how Artwork pages relate to the Menu surface.']);
+            }
+            $values['artwork_page_surface_mode'] = $mode;
         }
         if (array_key_exists('portrait_detail_enabled', $data)) {
             $enabled = $data['portrait_detail_enabled'];
