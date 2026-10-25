@@ -15,11 +15,27 @@ export default () => {
     const selectedImage = editor => {
         if (!editor || editor.isDestroyed) return null;
         const selection = editor.state.selection;
-        const direct = selection instanceof NodeSelection && selection.node?.type.name === 'image'
-            ? selection.from : null;
-        const pos = direct ?? selectedImages.get(editor);
-        const node = Number.isInteger(pos) ? editor.state.doc.nodeAt(pos) : null;
-        return node?.type.name === 'image' ? { pos, node } : null;
+        const candidates = [];
+        if (selection instanceof NodeSelection && selection.node?.type.name === 'image') {
+            candidates.push(selection.from);
+        }
+        const $from = selection.$from;
+        if ($from?.nodeAfter?.type.name === 'image') {
+            candidates.push($from.pos);
+        }
+        if ($from?.nodeBefore?.type.name === 'image') {
+            candidates.push($from.pos - $from.nodeBefore.nodeSize);
+        }
+        candidates.push(selectedImages.get(editor));
+        for (const pos of candidates) {
+            if (!Number.isInteger(pos)) continue;
+            const node = editor.state.doc.nodeAt(pos);
+            if (node?.type.name === 'image') {
+                selectedImages.set(editor, pos);
+                return { pos, node };
+            }
+        }
+        return null;
     };
 
     // Mutation acts on a selected image node, not on the toolbar's focus or
@@ -46,9 +62,15 @@ export default () => {
         setCaption: (editor, value) => updateSelectedImage(
             editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
         ),
-        setPlacement: (editor, value) => updateSelectedImage(
-            editor, { artistPlacement: placements.has(value) ? value : 'inline' },
-        ),
+        setPlacement: (editor, value) => {
+            const changed = updateSelectedImage(
+                editor, { artistPlacement: placements.has(value) ? value : 'inline' },
+            );
+            if (changed) {
+                editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-image-changed', { bubbles: true }));
+            }
+            return changed;
+        },
     };
     const { Decoration, DecorationSet } = tiptap.pmView;
     const placements = new Set(['inline', 'left', 'center', 'right', 'float-left', 'float-right']);

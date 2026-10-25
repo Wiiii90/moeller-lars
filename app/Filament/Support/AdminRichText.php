@@ -344,7 +344,7 @@ final class AdminRichText
                                 if (this.colorOpen) { this.colorOpen = false; return }
                                 const selection = editor.state.selection
                                 const current = editor.getAttributes('textColor')['data-color']
-                                this.colorEditor = editor
+                                window.Alpine.raw(this).colorEditor = editor
                                 this.colorSelection = { from: selection.from, to: selection.to }
                                 this.colorValue = /^#[0-9a-f]{6}$/i.test(current ?? '') ? current : '#333333'
                                 this.colorOpen = true
@@ -358,7 +358,7 @@ final class AdminRichText
                                 })
                             },
                             applyTextColor(clear = false) {
-                                const editor = window.Alpine?.raw?.(this.colorEditor) ?? this.colorEditor
+                                const editor = window.Alpine.raw(this).colorEditor
                                 if (!editor || editor.isDestroyed || !this.colorSelection) return
                                 let chain = editor.chain().focus().setTextSelection(this.colorSelection)
                                 if (this.colorSelection.from === this.colorSelection.to) {
@@ -368,6 +368,7 @@ final class AdminRichText
                                     : chain.setTextColor({ color: this.colorValue }).run()
                                 if (changed) {
                                     this.colorOpen = false
+                                    window.Alpine.raw(this).colorEditor = null
                                     this.commitEditorChange()
                                 }
                             },
@@ -375,7 +376,7 @@ final class AdminRichText
                                 const editor = window.Alpine?.raw?.(event.detail?.editor) ?? event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
                                 if (this.spacingOpen) { this.spacingOpen = false; return }
-                                this.spacingEditor = editor
+                                window.Alpine.raw(this).spacingEditor = editor
                                 this.spacingValue = editor.getAttributes(
                                     editor.isActive('heading') ? 'heading' : 'paragraph'
                                 ).artistSpacing ?? 'default'
@@ -390,13 +391,14 @@ final class AdminRichText
                                 })
                             },
                             applySpacing() {
-                                const editor = window.Alpine?.raw?.(this.spacingEditor) ?? this.spacingEditor
+                                const editor = window.Alpine.raw(this).spacingEditor
                                 if (!editor || editor.isDestroyed) return
                                 const node = editor.isActive('heading') ? 'heading' : 'paragraph'
                                 if (editor.chain().focus().updateAttributes(node, {
                                     artistSpacing: this.spacingValue
                                 }).run()) {
                                     this.spacingOpen = false
+                                    window.Alpine.raw(this).spacingEditor = null
                                     this.commitEditorChange()
                                 }
                             },
