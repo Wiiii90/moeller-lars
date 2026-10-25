@@ -450,6 +450,16 @@ Individual Artwork detail pages have one Gallery-specific **Expand landscape Art
 
 The shared `artwork-navigation.blade.php` keeps the Gallery name centered and both Artwork arrow targets on General's normal artwork-width track, even when a larger landscape image is displayed. Per-Gallery sequence-end choices remain **Disabled** (default), **Hidden**, or **Cyclic**; the latter wraps between first/last only when two or more Artworks exist. The original Artwork Viewer navigation is a separate interaction and remains unchanged. The responsive **main menu and submenu** arrows are distinct from Artwork arrows: on overflow their CSS grid reserves at least 44px for each arrow hit rail, preventing the buttons from being squeezed beyond the clickable area on smartphones. Whole-item cyclic stack behavior and no-overflow alignment remain owned by existing `public-navigation.js`.
 
+Custom Pages offer Left / Center / Right for standalone Image components.
+Center aligns the whole media component within the configured Content width;
+for a decorative Image with nested text, Center disables floating and places
+the nested content below the image. Existing default Left remains unchanged.
+The same shared component policy also offers optional native video playback
+controls for inline Home and Custom Page media, enabled by default for
+non-decorative videos. Disabling them preserves existing muted, looping
+inline playback; it does not change the independent fullscreen Artwork
+Viewer player or Gallery's sound permission.
+
 Gallery Settings now also offer `Fit portrait Artwork pages to screen height`,
 defaulting to OFF, independently of landscape expansion. Server-side public
 thumbnail dimensions distinguish portraits from landscape and square works
