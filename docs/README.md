@@ -1,71 +1,67 @@
-# Project documentation
+# Documentation
 
-This is the human entry to the **Lars Möller website application**. The public site, artist administration and publication system are a single Laravel application; `server-platform` supplies deployment/host operations. Start with the system architecture, then follow the question or change you are investigating. The goal is **comprehensive but layered explanation**, not a flat library of unrelated source excerpts.
+The Lars Möller website is one Laravel application with a public site, an editorial administration and a publication/history system. This guide is for **reading and understanding the application**. It is not a log of coding sessions or a list of every class.
 
-## Fast path for agents and maintainers
+## Understand the project
 
-Start from **the current task**, not a full-document reading marathon.
+Start with three complementary views:
 
-1. **Establish scope:** current branch and exact `dev` source revision; the user's most recent accepted behavior; the entrypoint/component/domain actually affected. Use the branch's own root `AGENTS.md` and worker registration where applicable.
-2. **Locate one canonical owner:** use the table below for the relevant product contract, then inspect its concrete implementation and consumers. UI adapters, domain services, publication, database migrations and server infrastructure have different owners; a similarly named component is not automatically authoritative.
-3. **Make a small, coherent change:** preserve unchanged cross-feature invariants; prefer the existing central primitive or service over local duplication. No task-log prose, source-SHA chronology or copied test report in a normative contract.
-4. **Verify the right claim:** distinguish inspected code, authored assertions, an executed isolated test, a rebuilt browser candidate, user acceptance and release qualification. Record exact evidence and outstanding checks where it belongs.
-5. **Close the loop:** update the **existing** affected contract, reconcile links/anchors and remove proven obsolete text. Record still-open tasks only in the active worker/task owner, never in multiple knowledge files.
+1. **[Project charter](PROJECT-CHARTER.md)** — what the artist-facing website is for, editorial priorities and product boundaries.
+2. **[System architecture](ARCHITECTURE.md)** — how Public, Admin, Media, Publication and the database interact; the most useful first technical read.
+3. **[Data model](DATA-MODEL.md)** — the meaning of persistent records and the Working/Committed boundary.
 
-For shared Admin work, use the canonical [UI](admin/ui.md), [Controls](admin/controls.md), [Dialogs](admin/dialogs.md), [Tables](admin/tables.md), [Responsive](admin/responsive.md), [Notifications](admin/notifications.md) and [Browser review](admin/browser-review.md) owners directly. Do not add a second overview or root skill.
+For a concrete change, follow the topic below to **one owning document**, then inspect the implementation. Some detailed references describe older source snapshots; they do not override current `dev` or the user's latest decision.
 
-**User authority and branch coordination:** The user determines the accepted design and integration order. Current `dev` code is the descriptive baseline; routine Dev work maintains application code and active task/workstream notes, while the Test/Docs/Refactor workstreams may prepare in parallel. General documents are maintained here on `docs` and transferred only after reviewed reconciliation. The ordinary gated sequence is `dev → testing → docs → refactor → main`, but the user may vary it. See the existing [worker and integration protocol](../.agents/README.md#continuous-work-and-integration-gates), not a separate duplicated workflow file.
+## Product and editorial behavior
 
-## Choose a starting point
-
-| You want to understand… | Start here | Follow into |
-| --- | --- | --- |
-| **How the entire application fits together** | [System architecture](ARCHITECTURE.md) | [Cross-feature source traces](architecture/README.md) |
-| **What the website and artist administration must do** | [Project charter](PROJECT-CHARTER.md) | [Public presentation](public/site.md), [Admin interaction design](admin/ui.md) |
-| **How editing, publishing, recovery and permissions work** | [System edit-to-public model](ARCHITECTURE.md#3-the-central-transaction-edit--audit--publication--read) | [Activity / Publication](admin/activity-publication.md), [Media](media.md), [History/concurrency evidence](architecture/publication-working-operations.md) |
-| **Where data and media live** | [Data model](DATA-MODEL.md) | [Media lifecycle](media.md), [component structure](architecture/structured-components.md), [schema evidence](architecture/schema-evolution.md) |
-| **How the public pages and shared frontend behave** | [Public implementation](public/site.md) | [Exhibition editorial](content/exhibitions.md), [Journal lifecycle](architecture/journal-content-lifecycle.md), [document navigation](architecture/public-spa-lifecycle.md) |
-| **How Admin controls, dialogs, tables and editors are shared** | [Admin UI design and interaction](admin/ui.md) | [Controls](admin/controls.md), [Dialogs](admin/dialogs.md), [Tables](admin/tables.md), [Rich Text](content/rich-text.md) |
-| **What was actually verified or still requires a check** | [Test architecture](operations/testing.md) | [Concise architecture evidence map](architecture/completion-criteria.md), [migration/cutover](migration/plan.md) |
-
-## Architecture, reference and historical evidence
-
-[ARCHITECTURE.md](ARCHITECTURE.md) is the **current system design map**: scope, connected components, owner decisions, principal operational sequences, failure/rollback and trust boundaries. It is not a second copy of each feature contract. The [architecture evidence index](architecture/README.md) arranges deeper analyses by engineering question. Some generated relationship/route/source inventories are **historical artifacts** with older pinned source references; they are neither runtime traces nor evidence of current test success. The former dated source-review dumps are not tracked as active documentation; only source-pinned references and current owners remain. Superseded historical prose is available in Git history.
-
-Before changing a shared service or UI primitive, follow its consumers across Admin, Public, Preview, publication, media and History. The [cross-feature impact reference](architecture/cross-feature-compositions.md) shows known seams. Document accepted behavior in the **owning feature contract**, not in each worker's short-lived notes.
-
-## Evidence and freshness
-
-The implementation source on current `dev` is the baseline for documenting application behavior and currently integrated tests. Detailed source audits and generated diagrams may be pinned to an **older** commit; their explicit provenance remains in [the evidence index](architecture/README.md) and [verification matrix](architecture/completion-criteria.md). Do not mistake authored tests for executed checks or browser acceptance. Integrating newer source into `docs` is not the same as reviewing and correcting every affected document.
-
-## Normative ownership and conflict resolution
-
-There is one authoritative home for each requirement. A feature may participate in several system flows without becoming a second owner of shared behavior.
-
-| Authority | Owns |
+| Question | Read |
 | --- | --- |
-| [Public implementation](public/site.md) and [Exhibition editorial](content/exhibitions.md) | Public routing, viewer/navigation, Home/Gallery/Journal presentation; Exhibition-only venue, organizer, map and opening rules |
-| [Admin design](admin/ui.md), [Controls](admin/controls.md), [Dialogs](admin/dialogs.md), [Tables](admin/tables.md), [Responsive](admin/responsive.md) | Shared admin design grammar and its canonical component implementations; page-specific forms should reuse them |
-| [Rich Text](content/rich-text.md) | Editor/render/picker, safe formatting and reusable media references across Home, Journal, Custom Page |
-| [Publication/Activity](admin/activity-publication.md), [Notification](admin/notifications.md) | Working versus committed, versioning, Undo, audit versus actor-scoped messaging |
-| [Media](media.md), [Rights/privacy](public/rights-privacy.md), [Analytics](operations/analytics.md) | Asset identity, ingest, eligibility, file lifetime, rights/consent versus tracking/reporting |
-| [Data model](DATA-MODEL.md), [Migration](migration/invariants.md) | Meaning of persistent identities/relations and forward-compatible migration |
-| [Testing](operations/testing.md), [Release](operations/release.md), [server operations boundary](operations/server-boundary.md) | Safe validation, qualification and application/platform responsibilities |
+| How do navigation, Home, Galleries, Artworks, Journals and pages appear publicly? | [Public website](public/site.md) |
+| What may become publicly visible? What about image rights, legal text and privacy? | [Rights and privacy](public/rights-privacy.md) |
+| How are reusable images, videos, audio, references, variants and deletion handled? | [Media](media.md) |
+| How are exhibition venues, organizers, dates, visibility and maps edited? | [Exhibition editorial](content/exhibitions.md) |
+| How do the shared editor, embedded images, formatting and safe rendering work? | [Rich Text](content/rich-text.md) |
 
-Additional specialized Admin contracts cover authentication, localization, password policy, performance, notifications and browser review. Their unique requirements remain valid until checked against current owners and consolidated; no independent page contract may redefine a shared primitive.
+## Artist administration
 
-## Migration and cutover evidence
+Start with **[Admin workspace design](admin/ui.md)** for the overall interaction vocabulary. Then choose the component or responsibility being changed:
 
-The following are deliberately **cutover-specific**, not the permanent application architecture: [migration plan](migration/plan.md), [migration invariants](migration/invariants.md), [source inventory](migration/source-inventory.md), [legacy public behavior](migration/legacy-public.md). Keep unique migration/recovery facts until legacy retirement is actually approved, then archive or consolidate them in a deliberate cleanup.
+| Responsibility | Owner |
+| --- | --- |
+| Inputs, picker controls and shared styling | [Controls](admin/controls.md) |
+| Tabular views, actions, selection, ordering and pagination | [Tables](admin/tables.md) |
+| Form dialogs, focus, edit lifecycle and scroll behavior | [Dialogs](admin/dialogs.md) |
+| Shell sizing, toolbars, grids, compact states and responsive geometry | [Responsive composition](admin/responsive.md) |
+| Working changes, Activity, Undo, audit and publication | [Activity and publication](admin/activity-publication.md) |
+| Notification delivery, messaging and Dashboard inbox | [Notifications](admin/notifications.md) |
+| Authentication, passwords, account recovery and account security | [Authentication](admin/authentication.md) |
+| Responsiveness and performance budgets; diagnosing slow interactions | [Performance and profiling](admin/performance.md) |
+| Browser-based interaction review, source cleanup and acceptance | [Browser review](admin/browser-review.md) |
 
-Architecture and product decisions are maintained only in the owning current [system architecture](ARCHITECTURE.md) and feature contracts; do not store server tariffs, prices, account details, access instructions or private infrastructure decisions in this public repository.
+A page may depend on several of these contracts, but each **shared rule** has only one implementation owner. The Admin rules do not control the independent visual design of the public site.
 
-## Maintaining documentation
+## Running, measuring and releasing
 
-A document must earn its place by answering a specific question for a reader. Explain actual system connections, choices and behavior before enumerating source details; use substantial component, sequence, state or data diagrams when they reveal nontrivial cross-boundary relationships. Never turn one function into a decorative three-box graph. Consider the **entire purpose and structure** of an existing document before revising it.
+| Topic | Read |
+| --- | --- |
+| Application tests and safe isolated validation | [Testing](operations/testing.md) |
+| Release qualification, snapshots, migrations and cutover | [Release](operations/release.md) |
+| Application versus external infrastructure responsibilities | [Server boundary](operations/server-boundary.md) |
+| Privacy-conscious analytics and reporting | [Analytics](operations/analytics.md) |
+| Internal Laravel Pulse metrics and report export | [Pulse](operations/pulse.md) |
 
-Consolidate superseded sections instead of appending source-diff histories. For structural edits, use the [documentation verification gate](../.agents/skills/documentation/SKILL.md#documentation-verification-gate), including the native Markdown destination/fragment checker when the isolated checkout is available. Identify and preserve each unique accepted constraint before removing a document. Current design, historical evidence and temporary tasks have distinct homes; only durable product, architecture and operating information belongs here. Documentation maintenance follows the owning feature and architecture contracts; temporary worker status does not belong in the project manual.
+**Migration and pre-release history:** [Plan](migration/plan.md), [invariants](migration/invariants.md), [source inventory](migration/source-inventory.md) and [legacy public behavior](migration/legacy-public.md) exist for concrete cutover questions. They are **not** a second description of today's application.
 
-## Repository policies
+## Technical reference and source evidence
 
-[Security](../SECURITY.md), [contribution](../CONTRIBUTING.md) and [pull-request template](../.github/pull_request_template.md) are repository policies, not additional design authorities. Server topology and secrets belong to the independently maintained `server-platform` project.
+The [engineering evidence index](architecture/README.md) is for tracing a specific implementation boundary: Admin mutation paths, Public navigation, media cleanup, database relations, generated source inventories and historical investigations. Read it **when you have a technical question**, not as a prerequisite to understanding the product. [Coverage and evidence classification](architecture/completion-criteria.md) distinguishes extracted source, written tests, executed checks and unverified runtime/artist acceptance.
+
+Generated inventories may reflect an older pinned revision. Regenerate retained artifacts **only at the authorized final Docs integration gate** after reconciling the frozen source. Do not interpret diagrams or declarations as executed runtime evidence.
+
+## Contributing to documentation
+
+A good document answers a reader's question, describes how parts fit together and links to the code where necessary. Prefer updating, consolidating, renaming or **removing** a document over accumulating adjacent manuals. Do not preserve aliases for deleted pre-release documents. Never put private hosting configuration, access details, prices or credentials in this public repository.
+
+[Docs branch instructions](../AGENTS.md), the [documentation skill and maintenance method](../.agents/skills/documentation/SKILL.md) and the [branch-local worker protocol](../.agents/README.md) describe how agents identify the right owner, verify current code and make safely reviewable changes. They do **not** replace the product documentation above. General Docs and Test ownership is separate from everyday `dev` implementation.
+
+[Security policy](../SECURITY.md) and [contribution guidelines](../CONTRIBUTING.md) remain the repository policy sources. Decisions about release and repository-history cleanup are owned by the [release contract](operations/release.md), not hidden in temporary worker records.
