@@ -1,6 +1,6 @@
 # Docs Worker 1 — active
 
-**Slot:** `docs-1` · lease **2** · [Docs roster](../areas/docs.md). Current assignment: consolidate documentation and agent workflow, respecting user decisions and deleting obsolete structure.
+**Slot:** `docs-1` · lease **2** · [Docs roster](../roster.md). Current assignment: consolidate documentation and agent workflow, respecting user decisions and deleting obsolete structure.
 
 ## Rules and authority
 
@@ -13,7 +13,7 @@
 
 - `ui-skills.md`, `followup-skill.md` and `TESTING_SKILL.md` deleted from `docs` and `dev` (and later from `testing`/`refactor`). Canonical Admin UI/Responsive contracts and direct links replace them.
 - Documentation navigation and browser process consolidated; architecture coverage index shortened; dated audit dump and copied rights handoffs removed. Historical source revisions remain in Git history.
-- User-directed staged workflow now recorded in this branch's [worker protocol](../README.md#continuous-work-and-integration-gates), [Docs method](../procedures/documentation.md#preparation-versus-final-transfer) and [Testing contract](../../docs/TESTING.md#development-batches-and-final-testing-gate): parallel preparation, cumulative changes, user freeze, final isolated Codex verification/generation, reviewed transfer.
+- User-directed staged workflow now recorded in this branch's [worker protocol](../README.md#continuous-work-and-integration-gates), [Docs method](../skills/documentation/SKILL.md#preparation-versus-final-transfer) and [Testing contract](../../docs/TESTING.md#development-batches-and-final-testing-gate): parallel preparation, cumulative changes, user freeze, final isolated Codex verification/generation, reviewed transfer.
 - Two unmaintained ADR files containing public infrastructure/cost details deleted from the **tip trees** of `docs`, `dev`, `testing` and `refactor`. Their links were updated. `main` remains blocked by protected-branch pull-request/required-check policy. **History is not sanitized** by these deletions.
 - Branch-specific, concise Testing/Refactor `AGENTS.md` replace inherited Dev manuals on their branches; current application and test-source files were not changed by this Docs workflow action.
 - Remote local-Markdown-target checks found no remaining missing path for changed Docs/Dev files; Testing/Refactor tree sweeps checked all branch Markdown paths. Native `php scripts/check-documentation-links.php --check`, generated docs validation and actual tests/browser were **not** executed here.
