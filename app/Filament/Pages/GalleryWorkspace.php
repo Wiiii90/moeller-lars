@@ -93,6 +93,10 @@ final class GalleryWorkspace extends Page
 
     public function mount(int|string $gallery): void
     {
+        $this->statusFilter = in_array($this->statusFilter, ['any', 'published', 'draft'], true) ? $this->statusFilter : 'any';
+        $this->readinessFilter = in_array($this->readinessFilter, ['any', 'ready', 'needs-attention'], true)
+            ? $this->readinessFilter
+            : 'any';
         $this->loadGallery((int) $gallery);
         $this->loadMoveTargets();
         $this->loadGalleryDataset();

@@ -83,6 +83,10 @@ final class Dashboard extends Page
 
     public function mount(): void
     {
+        $this->feedType = array_key_exists($this->feedType, DashboardFeed::types()) ? $this->feedType : 'all';
+        $this->feedPageSize = in_array($this->feedPageSize, self::PAGE_SIZES, true)
+            ? $this->feedPageSize
+            : self::DEFAULT_PAGE_SIZE;
         $filter = auth()->user()?->getAttribute('dashboard_notification_filter');
         $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
             ? $filter

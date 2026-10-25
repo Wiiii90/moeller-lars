@@ -86,6 +86,9 @@ final class Analytics extends Page
 
     public function mount(): void
     {
+        $this->range = in_array($this->range, ['today', '7d', '30d', '12m'], true) ? $this->range : '30d';
+        $this->detailReport = array_key_exists($this->detailReport, self::DETAIL_REPORTS) ? $this->detailReport : 'content';
+        $this->detailPageSize = in_array($this->detailPageSize, self::DETAIL_PAGE_SIZES, true) ? $this->detailPageSize : 25;
         $this->loadRange();
     }
 

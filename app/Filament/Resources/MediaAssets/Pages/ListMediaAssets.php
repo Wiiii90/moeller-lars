@@ -112,6 +112,9 @@ final class ListMediaAssets extends Page
 
     public function mount(): void
     {
+        $this->pageSize = $this->normalizePageSize($this->pageSize);
+        $this->size = in_array($this->size, ['all', 'under-1-mb', '1-5-mb', '5-20-mb', '20-mb-plus'], true) ? $this->size : 'all';
+        $this->state = in_array($this->state, ['available', 'all', 'quarantined', 'deleted'], true) ? $this->state : 'available';
         $storedView = request()->cookie(self::VIEW_COOKIE);
         $this->viewMode = is_string($storedView) && in_array($storedView, self::VIEW_MODES, true)
             ? $storedView
