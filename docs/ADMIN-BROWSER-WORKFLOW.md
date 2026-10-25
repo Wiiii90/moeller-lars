@@ -8,7 +8,7 @@ This document records the durable working rules that emerged from the current ad
 
 All normal source work occurs on `dev`, including work by separate scoped coding chats. Start from the exact current HEAD and inspect the confirmed browser symptom and responsible source. Fix the canonical owner rather than applying page-local patches; protect accepted adjacent pages. Reconcile concurrent `dev` advances before writing. Build once for a coherent set of changes and repeat browser review; do not infer acceptance from source review or a healthy container.
 
-There is no active side-branch/worktree worker-orchestration mode, and no CI/Actions involvement during direct development. A separate coding session follows the same `dev` ownership and concurrency rules. Validation/release requires explicit authorization.
+Application editing remains on `dev` and must coordinate concurrent coding work through its current branch-owned source/worker procedures. The separate `docs`, `testing` and `refactor` workstreams are not substitutes for direct development. No CI/Actions or release is authorized by an ordinary browser-repair task.
 
 ## Source of truth during browser repair
 
@@ -56,6 +56,14 @@ The current smaller desktop stage is intentional. Do not reintroduce an older/ta
 Use the catalog instead of scattering equivalent Heroicon literals across pages/resources. A semantic catalog entry should remain unambiguous; do not reuse the same symbol for unrelated meanings merely because the icon is visually convenient.
 
 Feature-specific icons are allowed when no shared semantic exists, but shared navigation/action meanings should stay centralized.
+
+## Visual change review
+
+The browser review is evidence against **one current built candidate**. Begin with the actual reference page when the user names an accepted Gallery, Storage or other design. Describe the control/content/action composition concretely; identify same-row groupings, shared tokens, responsive collapse conditions and neighboring surfaces that must remain unchanged. Do not convert unaccepted proposals, arbitrary pixel measurements or a previous repair attempt into normative UI requirements.
+
+At representative Wide, Compact, Narrow and Minimal content widths, inspect the workspace header, metric strip, search/filter/Selection baseline, count badge, table/grid roles and alignment, drag/Position rails, stable action order, nested parent/child geometry, empty states, dialogs/popovers, scroll/focus, and apparent first-click/navigation latency. Compare to the accepted reference **only for shared dimensions**, preserving each feature's distinct task model. Check responsive content pressure and whether page-local CSS bypasses an existing shared primitive.
+
+**After browser acceptance**, inspect changed Blade, CSS and JavaScript. Record the shared primitives/tokens reused and justify genuinely feature-specific new selectors. Remove only reference-proven abandoned page partials, duplicate theme rules, obsolete controls/aliases, unused CSS/JS and stale implementation-specific tests, while preserving domain/history and compatibility paths. Recheck the resulting implementation. A visually accepted surface can still require source cleanup; neither step implies the other.
 
 ## Local preview browser loop
 
@@ -110,6 +118,6 @@ mixed selection and other representative edit surfaces. Test execution
 and browser acceptance must be reported separately; source-only work must
 not claim either.
 
-## Handoff rule
+## Worker task checkpoints
 
-A continuation records exact current `dev` SHA, local preview status if verified, current browser/product acceptance, changes not yet browser-reviewed, parallel chats' file ownership, and the next concrete action. The current workflow is direct `dev`, no CI or release; do not reintroduce obsolete branch-worker procedures.
+The currently active Dev worker's **own temporary task file**, when the branch-local system is available, records the actual user assignment and remaining actions, confirmed current source SHA, observed preview/browser acceptance and verification limitations. File ownership shared with parallel Dev workers belongs in their **Dev area coordination**, not in another worker's private task note. No separate chat-handoff prompt/document is needed; the branch-local worker lifecycle, once integrated into `dev`, governs registration and retirement.

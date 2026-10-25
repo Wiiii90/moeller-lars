@@ -4,6 +4,18 @@
 
 This document defines durable public behavior for the current application. Detailed legacy observations used for cutover comparison live separately in [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md).
 
+
+## Reading map
+
+| Concern | Where to read |
+| --- | --- |
+| Content eligibility, routes and privacy | [Route model](#canonical-route-model), [publication](#publication-and-discoverability), [rights](#rights-and-privacy) |
+| Navigation and global visual composition | [Site navigation](#site-navigation), [appearance](#global-public-appearance-surfaces), [responsive composition](#responsiveartistic-presentation) |
+| Pages, artwork and editorial composition | [Home](#home-presentation), [Gallery](#gallery-delivery-and-loading), [Journal](#journals), [Custom Pages](#custom-pages-cv-and-contact) |
+| Rendering and delivery policies | [Rich Text](#rich-text-public-rendering), [public media](#public-media-delivery), [acceptance](#acceptance) |
+
+These are **one public behavior contract** with cross-cutting owners linked in context. The [system architecture](ARCHITECTURE.md) explains why these boundaries exist, while this document records actual accepted page/navigation/presentation behavior.
+
 ## Canonical route model
 
 Public routing is driven by persisted typed Site Nodes rather than hard-coded legacy page/category names.
@@ -47,6 +59,26 @@ footer, menu entry, visual copyright overlay or quality downgrade is part
 of this contract. Artist-authored texts may live on the About/Contact
 Custom Page; Matomo consent is owned by the website, not the artist's
 editable content. See `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`.
+
+## SEO and metadata
+
+- indexable pages have canonical HTTPS URLs;
+- Empty Public Gallery, Exhibitions, Blog, Custom and Home surfaces are visually blank: public views do not output editorial placeholders such as “No artwork available” or “No exhibitions published”. Availability and publication filters remain unchanged; configured page headings remain independent content when enabled.
+- sitemap follows current public model and excludes admin/preview/drafts/navigation-only nodes;
+- `robots.txt` does not advertise private/admin/preview content;
+- stable Artwork/content slugs support sharing;
+- deliberate path changes may create redirect records;
+- titles/favicon/meaningful ALT remain part of acceptance.
+
+## Regional formatting and editorial language
+
+`RegionalFormats` separates three independent choices: administrator UI language (English or German per authenticated user), administrator date/number region (per user), and public date/number formats (General's separate region settings). Public prose remains artist-authored and the public language remains English; an administrator switching UI language does not translate published content. Exhibition dates and Public numbers use `RegionalFormats`, while legacy authored `date_text` and `opening_text` are preserved verbatim. See [Admin Localization](ADMIN-LOCALIZATION-CONTRACT.md) and [Exhibition Editorial](EXHIBITION-EDITORIAL-CONTRACT.md).
+
+## Analytics boundary
+
+Public Matomo tracking is optional runtime config. Analytics failure does not block rendering/navigation/viewer/Contact.
+
+No form content, visitor email/name, admin IDs or secret values are emitted as analytics payload. See [ANALYTICS.md](ANALYTICS.md).
 
 ## Site navigation
 
@@ -222,6 +254,113 @@ child-menu DOM. The shared click/keyboard/touch child navigation remains the
 canonical interaction; no second routing or child selection implementation is
 introduced.
 
+## Global public appearance surfaces
+
+General is the authoritative global editor for three public background
+surfaces — **Background** (outer viewport), **Menu** (both navigation
+levels) and **Page** (content backing) — plus a fourth, independent
+**Title** text paint. All four share PublicAppearance's validated
+Solid/Linear/Radial/Conic configuration, each optionally repeating with
+2–12 positioned color stops. Linear uses the shared numeric/rotary popover control; Conic has a start angle and
+center; Radial has a center and circle/ellipse shape. Repeating uses an
+explicit span (pixels for Linear/Radial, degrees for Conic) so repetition is
+visible. Missing JSON stop lists preserve the legacy two-color appearance.
+The existing Page width and Content padding remain separate layout parameters.
+Frame style is a separate validated presentation option; gradients remain
+independent of that exterior edge treatment.
+
+The `PublicAppearance` domain validates and projects all four paint definitions.
+`PublicSiteContext` uses the existing committed-versus-preview content read
+context; the public layout injects only normalized CSS custom properties into
+the nonce-protected style block. Absent Menu/Page settings keep the original
+white presentation. These surfaces must not introduce a second CSS-injection
+pipeline, new UI color picker, uncommitted public state or browser timers.
+
+The shared global CSS custom property `--public-content-background` provides
+the default for every page. A future Pages editor may supply an optional
+per-page override at the page content boundary, falling back to the General
+value whenever unset; do not add those controls or per-page persistence as
+part of the global General editor. Menu remains globally owned by General.
+
+## Appearance editor control presentation
+
+The artist-facing General Stage retains its concise two-column appearance
+grammar: Background/Menu/Page selection beside Primary color, and Linear/Conic
+angle beside Secondary color. The shared AdminAngleControl exposes one inline
+numeric degree value and opens a rotary dial only on focus/click, analogous to
+the shared ColorPicker. Both input methods commit through the same validated
+General appearance field. The dial is teleported outside the scrollable Stage
+to avoid clipping.
+
+All global paint surfaces use the shared Solid ColorPicker inline beside
+their mode Select. Linear, Radial and Conic use one canonical x-admin.table
+with 2–12 Color/Position rows. The
+central AdminTableRepeater replaces only Filament 5.7's embedded table
+presentation, retaining its item schemas, ColorPicker, validation and
+add/delete actions. The markup reuses the same table and Add-row components
+as Social Media; no parallel table chrome or duplicate color picker. Numeric
+positions determine stop order, including coincident stops for hard edges.
+Opening General never writes the legacy two-color values as JSON.
+
+## Public artist title gradient
+
+Title is a **text paint**, not another panel background. Its previously
+supported `header_name_color` remains authoritative for Solid. Null mode
+continues to use the existing CSS `--public-title-default` inherited color
+in each title-placement context. Only an explicitly selected gradient emits
+`--public-title-paint` into the same nonce-protected public layout style and
+activates `site-header--gradient-title`; the artist-name anchor clips that
+validated CSS gradient to glyphs. No gradient-specific layout, polling, or
+separate editor/normalizer is permitted. Every public title placement uses the
+same shared rule, and forced-colors accessibility falls back to plain text.
+The new title settings exist in both Working and Committed schemas.
+
+## Menu-to-page divider paint
+
+The existing `header_divider_mode` selects **whether** and **where** the
+separator is drawn (none, Menu-width, full-width, separate backing, etc.).
+In General → Appearance → Menu, **Divider color** is listed below Menu
+background and uses the **same** Solid/Linear/Radial/Conic + Repeating editor
+and canonical color-stop table as the other global appearance paints.
+
+The existing `header_divider_color` column is the **sole Solid color**.
+The independent `header_divider_paint_mode` and validated
+`header_divider_paint_gradient_*` fields describe optional gradient
+painting without introducing a second solid-color record.
+Unconfigured gradient mode retains the previous public divider color.
+For gradients, `PublicSiteContext` emits only validated CSS variables
+within the existing nonce-protected public style. Menu-width dividers
+paint the existing navigation border; full-width dividers use their
+existing single pseudo-element line. No additional DOM separator or
+alternate public styling pipeline may be introduced.
+
+General's More Space state is owned by the shared Stage grid and must
+size solely to the **active** appearance panel's intrinsic content; no hidden tab may increase the active scroll range.
+Inactive panels remain out of flow. The preview retains its grid pane
+and adjusts to available space with the existing resize observer,
+including when switching tabs or desktop/mobile preview.
+
+## Responsive/artistic presentation
+
+The public site preserves the currently accepted Lars Möller visual character: artwork-first presentation, typography, spacing and restrained header/navigation/content treatment. Legacy breakpoint values are historical evidence only and are not target layout authorities.
+
+Responsive behavior is content-driven across **Wide**, **Compact**, **Narrow** and **Minimal** states. Exact thresholds are chosen where the current composition would otherwise stop fitting cleanly rather than from named device classes.
+
+- preserve the accepted wide/desktop composition unless current browser feedback requires a presentation change;
+- keep navigation usable by pointer, touch and keyboard through narrow phones;
+- keep artwork media and authored metadata legible without horizontal page overflow;
+- prefer progressive composition changes over shrinking typography or reproducing legacy breakpoint mechanics;
+- feature-specific Journal, Custom Page, Contact and Exhibition content follows the same responsive system while preserving its own semantics;
+- Public pages use native document scrolling and a `position: sticky` header; the root document owns the single full-viewport scrollbar with no mirrored gutter reservation, so the header and content share the same centered shell axis. The fullscreen Artwork Viewer reserves only the original scrollbar side while root scrolling is locked to avoid layout jumps. There is no independently scrolling `.site-scroll-region`. The same derived `--public-content-inset` defines navigation and content interior widths, while `--public-shell-gap` sets equal, positive margins above and below the content at every viewport width. Artwork Viewer root scroll-lock retains the reserved gutter to prevent horizontal layout shifts. Public presentation CSS alone owns responsive public padding.
+- Artwork metadata and its adjacent category/detail navigation remain on one horizontal footer row at Narrow and Minimal widths; text may reflow within a control, but the controls themselves do not stack simply because of a viewport breakpoint.
+- The configured Public artwork maximum and shell width jointly determine a single fluid `--public-content-inset`: it never falls below the mobile minimum or exceeds the authored padding, and reduces continuously as the shell approaches the artwork width. Navigation rails and content padding consume that same value. Narrowing the viewport must not make an existing rail or artwork area wider, increase the number of visible pages through a geometry reset, or remove necessary overflow arrows. The 46rem threshold belongs only to feature content whose actual composition changes there; it must not independently resize the shared navigation controls, header title or shell padding.
+- The Public shell and its responsive navigation rail continue to derive horizontal geometry from General's `Page width` and `Content padding` settings. This cleanup does not silently change those saved values, add responsive controls, or introduce another breakpoint-specific geometry owner.
+- Populated Public sheets size intrinsically to actual content rather than forcing a viewport-dependent or `15rem` minimum on every route. Only a genuinely empty Gallery, Exhibitions, Blog or Custom section **without an enabled page heading** expands its white content surface to the bottom of the viewport, leaving `--public-shell-gap` above and below without an unnecessary scrollbar on adequately tall viewports. This is detected from existing rendered child elements; no controller-side duplicate empty-state flags or separate render path are introduced. Longer content retains natural document scrolling. Its vertical inset (`2rem`) and the equal external page margins (`.75rem`) do not vary with viewport width. Header title area (`4.7rem`) and type (`1.75rem`) retain a stable vertical footprint; only the established left-to-center title composition switch remains.
+- Gallery and Artwork spacing is a single `3.55rem` token, without the old Minimal breakpoint collapse. CV-specific presentation rules live exclusively in `custom-pages.css`; generic Rich Text semantics stay in `public-content.css`. Feature-specific responsive composition remains local to its component stylesheet.
+- browser acceptance includes continuous resizing through intermediate widths, not only fixed desktop/tablet/mobile presets.
+
+Reliability/accessibility/responsive improvements must not replace the artist-specific composition with generic portfolio/card templates.
+
 ## Home presentation
 
 Home content uses one of three templates:
@@ -248,12 +387,6 @@ published enabled Contact Form belongs to an active, non-skipped Home
 presentation or an eligible published Custom Page. Home and Custom media
 references (including List media and child Rich Text) use the canonical
 MediaAsset reference/publication contracts.
-
-## First-paint Artwork image readiness and shared viewer (source `dev@671d8214e060`)
-
-The canonical Artwork image is hidden until the real thumbnail has successfully decoded; only then is its media frame revealed. This covers eager Gallery images, deferred Gallery images, Artwork detail and Home/other Artwork cards consistently rather than relying on a late scroll listener or briefly rendering broken intrinsic-width ALT text. `public-gallery-loading.js` owns page-scoped `data-gallery-image-state` and Artwork-detail decode/error transitions and is disposed at Livewire navigation. Deliberate image load errors retain visible failure/ALT feedback; image hiding is **not** permission to mask missing-media integrity failures. `public-spa.js` reconciles the saved Appearance presentation before showing initialized navigation; no default-style flash or second observer/polling engine should be added.
-
-`PublicImageViewer` is the **single public image-to-viewer adapter** for permitted Home and Journal image occurrences. It safely renders Rich Text through the canonical `SafeRichTextRenderer` *before* decorating images with scoped viewer attributes. Journal structured Cover/Gallery and Rich Text use the same content viewer scope; image-only navigation is limited to that content context. Videos stay inline and a Journal image viewer must not expose Gallery Artwork detail-action links. The main Gallery Artwork Viewer retains its existing distinct Artwork/navigation context. Each content consumer has an explicit opt-in for enlargement; never globally make all images clickable merely because a viewer exists.
 
 ## Gallery delivery and loading
 
@@ -300,6 +433,12 @@ Gallery presentation uses persisted Artwork `position` as authoritative order.
 
 Viewer previous/next follows the same public Gallery order.
 
+## First-paint Artwork image readiness and shared viewer (source `dev@671d8214e060`)
+
+The canonical Artwork image is hidden until the real thumbnail has successfully decoded; only then is its media frame revealed. This covers eager Gallery images, deferred Gallery images, Artwork detail and Home/other Artwork cards consistently rather than relying on a late scroll listener or briefly rendering broken intrinsic-width ALT text. `public-gallery-loading.js` owns page-scoped `data-gallery-image-state` and Artwork-detail decode/error transitions and is disposed at Livewire navigation. Deliberate image load errors retain visible failure/ALT feedback; image hiding is **not** permission to mask missing-media integrity failures. `public-spa.js` reconciles the saved Appearance presentation before showing initialized navigation; no default-style flash or second observer/polling engine should be added.
+
+`PublicImageViewer` is the **single public image-to-viewer adapter** for permitted Home and Journal image occurrences. It safely renders Rich Text through the canonical `SafeRichTextRenderer` *before* decorating images with scoped viewer attributes. Journal structured Cover/Gallery and Rich Text use the same content viewer scope; image-only navigation is limited to that content context. Videos stay inline and a Journal image viewer must not expose Gallery Artwork detail-action links. The main Gallery Artwork Viewer retains its existing distinct Artwork/navigation context. Each content consumer has an explicit opt-in for enlargement; never globally make all images clickable merely because a viewer exists.
+
 ## Artwork presentation/media/viewer
 
 Public Artwork exposes approved authored metadata and valid media.
@@ -325,26 +464,6 @@ Gallery Settings also expose an optional **Between Artworks** divider, defaultin
 Gallery Settings expose the single landscape expansion toggle and sequence-end mode without extra visible helper paragraphs. Both are persisted and audited in the existing Gallery editorial workflow and included in the Working/Committed publication lifecycle. The previous `landscape_detail_scale` column is retained solely as inert database history for compatibility with existing publication version schemas; no public or admin code reads/writes it, and no width form field exists. The former `public-folio-motion.js` is removed. The static `public-paper-frame.js`/shared frame markup own the unified public paper contours across header and content; no separate contour animation, timer, doubled stroke or image upscaling is introduced.
 
 The image viewer supports close/Escape, visible zoom, wheel/trackpad zoom, touch pinch/pan where supported, pointer pan when enlarged, previous/next with boundaries, viewport recalculation, loading/error state and correct accessibility/focus behavior. The top-right **Open artwork page** action uses the existing inline-SVG `arrow-right` from the shared public icon component, consistent across desktop and mobile. The distinct `external-link` icon remains only for links to external destinations such as exhibition sites and OpenStreetMap. Unused legacy double-chevron icon variants are removed rather than kept as alternative glyph implementations.
-
-## Rich Text public rendering
-
-Canonical Rich Text public rendering accepts validated **visual HTML** and historical Markdown through the one `SafeRichTextRenderer`. Visual input is sanitized on the server before rendering, with `RichTextDocument` handling legacy conversion only when editing; no second public renderer or unconditional backfill is introduced.
-
-Embedded Storage images resolve through canonical `MediaAsset` IDs in both historical `media:<id>` Markdown and current visual HTML. `ArtistImageLayout` owns the six inline/float placements and optional caption without changing ALT, permissions or shared file identity. `SafeRichTextRenderer` resolves the current media variant and canonical public ALT, never an editor-only image URL. The [Editorial Rich Text contract](EDITORIAL-RICH-TEXT.md) is the canonical owner of editor/layout formats; Public owns only permitted presentation and publication eligibility. Do not reintroduce a Markdown-only public rendering assumption.
-
-## Custom Pages, CV and Contact
-
-Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita uses ordinary Image, List, Divider, Contact and Legal Disclaimer components, not a separate runtime widget. Root components and Image children remain independently publishable and reorderable through the same Admin row structure.
-
-An Image marked `image_decorative` can own one ordered level of children: Text, List (without another image), Divider, Contact details (Email and Social links, not Form), and Legal Disclaimer. The Image editor controls media, size, independent Left/Right alignment and the Decorative flag; it never edits child content. Every child has the same complete Position, Type, Content, five Actions and Selection as a root component. Storage uses `image.children` solely for the parent relationship. Validation forbids child images, nested Contact Forms, image-bearing Lists and second-level nested content; the Legal Disclaimer remains unique across the page. Divider children are supported by the same persistence, Parent selector and native group-sorting contract.
-
-The public image and its children share ONE native float formatting context. The selected Left/Right alignment controls the float side, independently of the Decorative flag; for a standalone Image it controls the image position without enabling text wrap. Children flow alongside the floated image while width permits and continue underneath. Following root components start after the Image group. The Custom Page renderer owns ONE `--custom-page-component-gap` rule between adjacent components at both root and child levels: no type-specific trailing padding, no extra Divider margins and no special last-child spacing. Floated Images reserve horizontal clearance but **no bottom float margin**; the Image group's height and the standard following sibling gap supply the vertical clearance. This keeps top/bottom Divider clearance and Contact/Legal headings consistent without inserting blank spacer components.
-
-The generic List presents each entry as a local two-column description-left/context-right row, allowing each column to wrap within its own width. The heading-to-first-entry separation is stronger than inter-entry spacing, and Contact details use compact shared label/value rows. Contact's platform selection reuses the existing Admin Toggle controls for each configured General profile; the old chip-based multi-select is removed. Visibility is still explicitly controlled by each Contact component, so adding a new General platform does not silently publish it. Deleting a General social profile cascades in the same transaction to all Custom Page and Home Contact selections, including nested Image children; the deleted platform is removed from stored selections and is not automatically restored when re-added. Hiding a configured General profile does not erase its existing Contact selection. Newly selected platforms must be available in General. An undated entry spans the available row. List Details and publication filters remain generic. Contact is one reusable Custom Page/Home component with full-width, vertically stacked Name, Email and Message inputs; form security and delivery behavior remain unchanged. The Legal Disclaimer remains General-owned legal text with shared editorial heading typography; the component never invents legal copy.
-
-Public Contact workflow uses English fixed UI labels and plain-text notification labels, CSRF middleware, a single named limiter with 5/minute/IP, 6/hour per HMAC-hashed sender address and 60/hour across the site (shared cache required), server-side validation (name 160, email RFC/320, message 5000 characters), and a hidden company honeypot. It accepts submissions only while an eligible published Contact Form is enabled, stores each received message, attempts delivery to the private recipient from the configured sender with the visitor's email as Reply-To, and returns a safe acknowledgement even if delivery fails. **180-day retention for database ContactMessage rows is implemented in source** using `ContactMessageRetentionService`, `contact:purge` (preview unless `--apply`) and a daily Laravel Scheduler registration. It deletes by submission creation time in bounded batches, including read, unread and mail-failed records. Mailbox copies, backup archives and their separately defined retention remain untouched. **Running scheduler/production execution and local tests are not verified**; activation requires checking the standard `schedule:run` operator, without deploying/altering server configuration in this workstream. The distributed-source quota limits total throughput, not bot identity, and can temporarily lock out legitimate messages; proxy trust, shared cache and production mail protection still require deployment review.
-
-General owns public email/visibility, social links, favicon, private Contact recipient and truly global legal/public text. SMTP/DKIM/TLS remain runtime/platform secrets.
 
 ## Journals
 
@@ -571,6 +690,26 @@ until Publication schema compatibility allows its coordinated removal.
 The Admin's existing map preview still consumes the canonical Exhibition map
 presentation service.
 
+## Rich Text public rendering
+
+Canonical Rich Text public rendering accepts validated **visual HTML** and historical Markdown through the one `SafeRichTextRenderer`. Visual input is sanitized on the server before rendering, with `RichTextDocument` handling legacy conversion only when editing; no second public renderer or unconditional backfill is introduced.
+
+Embedded Storage images resolve through canonical `MediaAsset` IDs in both historical `media:<id>` Markdown and current visual HTML. `ArtistImageLayout` owns the six inline/float placements and optional caption without changing ALT, permissions or shared file identity. `SafeRichTextRenderer` resolves the current media variant and canonical public ALT, never an editor-only image URL. The [Editorial Rich Text contract](EDITORIAL-RICH-TEXT.md) is the canonical owner of editor/layout formats; Public owns only permitted presentation and publication eligibility. Do not reintroduce a Markdown-only public rendering assumption.
+
+## Custom Pages, CV and Contact
+
+Custom Pages are ordered structured components validated by `CustomPageSetting`. CV/Vita uses ordinary Image, List, Divider, Contact and Legal Disclaimer components, not a separate runtime widget. Root components and Image children remain independently publishable and reorderable through the same Admin row structure.
+
+An Image marked `image_decorative` can own one ordered level of children: Text, List (without another image), Divider, Contact details (Email and Social links, not Form), and Legal Disclaimer. The Image editor controls media, size, independent Left/Right alignment and the Decorative flag; it never edits child content. Every child has the same complete Position, Type, Content, five Actions and Selection as a root component. Storage uses `image.children` solely for the parent relationship. Validation forbids child images, nested Contact Forms, image-bearing Lists and second-level nested content; the Legal Disclaimer remains unique across the page. Divider children are supported by the same persistence, Parent selector and native group-sorting contract.
+
+The public image and its children share ONE native float formatting context. The selected Left/Right alignment controls the float side, independently of the Decorative flag; for a standalone Image it controls the image position without enabling text wrap. Children flow alongside the floated image while width permits and continue underneath. Following root components start after the Image group. The Custom Page renderer owns ONE `--custom-page-component-gap` rule between adjacent components at both root and child levels: no type-specific trailing padding, no extra Divider margins and no special last-child spacing. Floated Images reserve horizontal clearance but **no bottom float margin**; the Image group's height and the standard following sibling gap supply the vertical clearance. This keeps top/bottom Divider clearance and Contact/Legal headings consistent without inserting blank spacer components.
+
+The generic List presents each entry as a local two-column description-left/context-right row, allowing each column to wrap within its own width. The heading-to-first-entry separation is stronger than inter-entry spacing, and Contact details use compact shared label/value rows. Contact's platform selection reuses the existing Admin Toggle controls for each configured General profile; the old chip-based multi-select is removed. Visibility is still explicitly controlled by each Contact component, so adding a new General platform does not silently publish it. Deleting a General social profile cascades in the same transaction to all Custom Page and Home Contact selections, including nested Image children; the deleted platform is removed from stored selections and is not automatically restored when re-added. Hiding a configured General profile does not erase its existing Contact selection. Newly selected platforms must be available in General. An undated entry spans the available row. List Details and publication filters remain generic. Contact is one reusable Custom Page/Home component with full-width, vertically stacked Name, Email and Message inputs; form security and delivery behavior remain unchanged. The Legal Disclaimer remains General-owned legal text with shared editorial heading typography; the component never invents legal copy.
+
+Public Contact workflow uses English fixed UI labels and plain-text notification labels, CSRF middleware, a single named limiter with 5/minute/IP, 6/hour per HMAC-hashed sender address and 60/hour across the site (shared cache required), server-side validation (name 160, email RFC/320, message 5000 characters), and a hidden company honeypot. It accepts submissions only while an eligible published Contact Form is enabled, stores each received message, attempts delivery to the private recipient from the configured sender with the visitor's email as Reply-To, and returns a safe acknowledgement even if delivery fails. **180-day retention for database ContactMessage rows is implemented in source** using `ContactMessageRetentionService`, `contact:purge` (preview unless `--apply`) and a daily Laravel Scheduler registration. It deletes by submission creation time in bounded batches, including read, unread and mail-failed records. Mailbox copies, backup archives and their separately defined retention remain untouched. **Running scheduler/production execution and local tests are not verified**; activation requires checking the standard `schedule:run` operator, without deploying/altering server configuration in this workstream. The distributed-source quota limits total throughput, not bot identity, and can temporarily lock out legitimate messages; proxy trust, shared cache and production mail protection still require deployment review.
+
+General owns public email/visibility, social links, favicon, private Contact recipient and truly global legal/public text. SMTP/DKIM/TLS remain runtime/platform secrets.
+
 ## Public media delivery
 
 At the source-reviewed `dev@434975e1bd09` boundary, `MediaPreviewVariant` is the single selector for immutable image thumbnails (`public-v1`/`public-v2`) and video poster previews (`video-poster-v1`). New image previews use bounded libvips; new video posters are created with FFmpeg. Historical GD recovery remains separate. Publication/readiness may reject missing or corrupt required previews; it must not silently fabricate eligibility. These facts are source-only: no Validation/Production media, browser or migration was touched by this documentation pass.
@@ -587,47 +726,6 @@ Only media valid for the requesting public consumer is exposed.
 Structured Journal Cover/Gallery runtime ALT uses canonical MediaAsset ALT. Legacy Journal usage overrides are not runtime public authority.
 
 See [MEDIA.md](MEDIA.md).
-
-## SEO and metadata
-
-- indexable pages have canonical HTTPS URLs;
-- Empty Public Gallery, Exhibitions, Blog, Custom and Home surfaces are visually blank: public views do not output editorial placeholders such as “No artwork available” or “No exhibitions published”. Availability and publication filters remain unchanged; configured page headings remain independent content when enabled.
-- sitemap follows current public model and excludes admin/preview/drafts/navigation-only nodes;
-- `robots.txt` does not advertise private/admin/preview content;
-- stable Artwork/content slugs support sharing;
-- deliberate path changes may create redirect records;
-- titles/favicon/meaningful ALT remain part of acceptance.
-
-## Regional formatting and editorial language
-
-`RegionalFormats` separates three independent choices: administrator UI language (English or German per authenticated user), administrator date/number region (per user), and public date/number formats (General's separate region settings). Public prose remains artist-authored and the public language remains English; an administrator switching UI language does not translate published content. Exhibition dates and Public numbers use `RegionalFormats`, while legacy authored `date_text` and `opening_text` are preserved verbatim. See [Admin Localization](ADMIN-LOCALIZATION-CONTRACT.md) and [Exhibition Editorial](EXHIBITION-EDITORIAL-CONTRACT.md).
-
-## Analytics boundary
-
-Public Matomo tracking is optional runtime config. Analytics failure does not block rendering/navigation/viewer/Contact.
-
-No form content, visitor email/name, admin IDs or secret values are emitted as analytics payload. See [ANALYTICS.md](ANALYTICS.md).
-
-## Responsive/artistic presentation
-
-The public site preserves the currently accepted Lars Möller visual character: artwork-first presentation, typography, spacing and restrained header/navigation/content treatment. Legacy breakpoint values are historical evidence only and are not target layout authorities.
-
-Responsive behavior is content-driven across **Wide**, **Compact**, **Narrow** and **Minimal** states. Exact thresholds are chosen where the current composition would otherwise stop fitting cleanly rather than from named device classes.
-
-- preserve the accepted wide/desktop composition unless current browser feedback requires a presentation change;
-- keep navigation usable by pointer, touch and keyboard through narrow phones;
-- keep artwork media and authored metadata legible without horizontal page overflow;
-- prefer progressive composition changes over shrinking typography or reproducing legacy breakpoint mechanics;
-- feature-specific Journal, Custom Page, Contact and Exhibition content follows the same responsive system while preserving its own semantics;
-- Public pages use native document scrolling and a `position: sticky` header; the root document owns the single full-viewport scrollbar with no mirrored gutter reservation, so the header and content share the same centered shell axis. The fullscreen Artwork Viewer reserves only the original scrollbar side while root scrolling is locked to avoid layout jumps. There is no independently scrolling `.site-scroll-region`. The same derived `--public-content-inset` defines navigation and content interior widths, while `--public-shell-gap` sets equal, positive margins above and below the content at every viewport width. Artwork Viewer root scroll-lock retains the reserved gutter to prevent horizontal layout shifts. Public presentation CSS alone owns responsive public padding.
-- Artwork metadata and its adjacent category/detail navigation remain on one horizontal footer row at Narrow and Minimal widths; text may reflow within a control, but the controls themselves do not stack simply because of a viewport breakpoint.
-- The configured Public artwork maximum and shell width jointly determine a single fluid `--public-content-inset`: it never falls below the mobile minimum or exceeds the authored padding, and reduces continuously as the shell approaches the artwork width. Navigation rails and content padding consume that same value. Narrowing the viewport must not make an existing rail or artwork area wider, increase the number of visible pages through a geometry reset, or remove necessary overflow arrows. The 46rem threshold belongs only to feature content whose actual composition changes there; it must not independently resize the shared navigation controls, header title or shell padding.
-- The Public shell and its responsive navigation rail continue to derive horizontal geometry from General's `Page width` and `Content padding` settings. This cleanup does not silently change those saved values, add responsive controls, or introduce another breakpoint-specific geometry owner.
-- Populated Public sheets size intrinsically to actual content rather than forcing a viewport-dependent or `15rem` minimum on every route. Only a genuinely empty Gallery, Exhibitions, Blog or Custom section **without an enabled page heading** expands its white content surface to the bottom of the viewport, leaving `--public-shell-gap` above and below without an unnecessary scrollbar on adequately tall viewports. This is detected from existing rendered child elements; no controller-side duplicate empty-state flags or separate render path are introduced. Longer content retains natural document scrolling. Its vertical inset (`2rem`) and the equal external page margins (`.75rem`) do not vary with viewport width. Header title area (`4.7rem`) and type (`1.75rem`) retain a stable vertical footprint; only the established left-to-center title composition switch remains.
-- Gallery and Artwork spacing is a single `3.55rem` token, without the old Minimal breakpoint collapse. CV-specific presentation rules live exclusively in `custom-pages.css`; generic Rich Text semantics stay in `public-content.css`. Feature-specific responsive composition remains local to its component stylesheet.
-- browser acceptance includes continuous resizing through intermediate widths, not only fixed desktop/tablet/mobile presets.
-
-Reliability/accessibility/responsive improvements must not replace the artist-specific composition with generic portfolio/card templates.
 
 ## Deliberately not preserved
 
@@ -649,89 +747,3 @@ parallel JavaScript drag engine, hover overlay, floating "Move out" button,
 nested content repeater in Image Edit, redundant child counter or special
 child-row design. Existing Image children remain independently editable
 and selected, and are shown with the canonical full six-column row.
-
-## Global public appearance surfaces
-
-General is the authoritative global editor for three public background
-surfaces — **Background** (outer viewport), **Menu** (both navigation
-levels) and **Page** (content backing) — plus a fourth, independent
-**Title** text paint. All four share PublicAppearance's validated
-Solid/Linear/Radial/Conic configuration, each optionally repeating with
-2–12 positioned color stops. Linear uses the shared numeric/rotary popover control; Conic has a start angle and
-center; Radial has a center and circle/ellipse shape. Repeating uses an
-explicit span (pixels for Linear/Radial, degrees for Conic) so repetition is
-visible. Missing JSON stop lists preserve the legacy two-color appearance.
-The existing Page width and Content padding remain separate layout parameters.
-Frame style is a separate validated presentation option; gradients remain
-independent of that exterior edge treatment.
-
-The `PublicAppearance` domain validates and projects all four paint definitions.
-`PublicSiteContext` uses the existing committed-versus-preview content read
-context; the public layout injects only normalized CSS custom properties into
-the nonce-protected style block. Absent Menu/Page settings keep the original
-white presentation. These surfaces must not introduce a second CSS-injection
-pipeline, new UI color picker, uncommitted public state or browser timers.
-
-The shared global CSS custom property `--public-content-background` provides
-the default for every page. A future Pages editor may supply an optional
-per-page override at the page content boundary, falling back to the General
-value whenever unset; do not add those controls or per-page persistence as
-part of the global General editor. Menu remains globally owned by General.
-
-## Appearance editor control presentation
-
-The artist-facing General Stage retains its concise two-column appearance
-grammar: Background/Menu/Page selection beside Primary color, and Linear/Conic
-angle beside Secondary color. The shared AdminAngleControl exposes one inline
-numeric degree value and opens a rotary dial only on focus/click, analogous to
-the shared ColorPicker. Both input methods commit through the same validated
-General appearance field. The dial is teleported outside the scrollable Stage
-to avoid clipping.
-
-All global paint surfaces use the shared Solid ColorPicker inline beside
-their mode Select. Linear, Radial and Conic use one canonical x-admin.table
-with 2–12 Color/Position rows. The
-central AdminTableRepeater replaces only Filament 5.7's embedded table
-presentation, retaining its item schemas, ColorPicker, validation and
-add/delete actions. The markup reuses the same table and Add-row components
-as Social Media; no parallel table chrome or duplicate color picker. Numeric
-positions determine stop order, including coincident stops for hard edges.
-Opening General never writes the legacy two-color values as JSON.
-
-## Public artist title gradient
-
-Title is a **text paint**, not another panel background. Its previously
-supported `header_name_color` remains authoritative for Solid. Null mode
-continues to use the existing CSS `--public-title-default` inherited color
-in each title-placement context. Only an explicitly selected gradient emits
-`--public-title-paint` into the same nonce-protected public layout style and
-activates `site-header--gradient-title`; the artist-name anchor clips that
-validated CSS gradient to glyphs. No gradient-specific layout, polling, or
-separate editor/normalizer is permitted. Every public title placement uses the
-same shared rule, and forced-colors accessibility falls back to plain text.
-The new title settings exist in both Working and Committed schemas.
-
-## Menu-to-page divider paint
-
-The existing `header_divider_mode` selects **whether** and **where** the
-separator is drawn (none, Menu-width, full-width, separate backing, etc.).
-In General → Appearance → Menu, **Divider color** is listed below Menu
-background and uses the **same** Solid/Linear/Radial/Conic + Repeating editor
-and canonical color-stop table as the other global appearance paints.
-
-The existing `header_divider_color` column is the **sole Solid color**.
-The independent `header_divider_paint_mode` and validated
-`header_divider_paint_gradient_*` fields describe optional gradient
-painting without introducing a second solid-color record.
-Unconfigured gradient mode retains the previous public divider color.
-For gradients, `PublicSiteContext` emits only validated CSS variables
-within the existing nonce-protected public style. Menu-width dividers
-paint the existing navigation border; full-width dividers use their
-existing single pseudo-element line. No additional DOM separator or
-alternate public styling pipeline may be introduced.
-
-General's More Space state is owned by the shared Stage grid and must
-size solely to the **active** appearance panel's intrinsic content; no hidden tab may increase the active scroll range.
-Inactive panels remain out of flow. The preview retains its grid pane
-and adjusts to available space with the existing resize observer,
-including when switching tabs or desktop/mobile preview.

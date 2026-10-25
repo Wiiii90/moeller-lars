@@ -459,20 +459,7 @@ If two relevant reference surfaces use different geometry, tokens or behavior fo
 
 Do not turn transient pixel values from a current browser pass into a durable rule merely to resolve the conflict.
 
-### Visual worker prompt contract
-
-For browser/visual repairs, when the desired structure is already known, the worker prompt must describe the composition concretely rather than invite a fresh design interpretation.
-
-State, where applicable:
-
-- the order and slots of controls/content/actions;
-- which elements remain in the same row, stage, table or task surface;
-- what must be removed rather than restyled;
-- which shared primitives/tokens/reference structures must be used;
-- the breakpoint or condition under which responsive restructuring may begin;
-- which neighboring surfaces must remain unchanged.
-
-Do not give a worker free visual discretion over browser feedback that is already unambiguous. Implementation discretion is for technical realization inside the confirmed composition, not for reinterpreting the accepted/rejected layout.
+See [Admin browser workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review) for how to translate accepted reference geometry into task assignments and source review.
 
 ## 14. Theme and shared-primitive enforcement
 
@@ -511,29 +498,7 @@ Feature-local CSS is allowed for genuinely feature-specific surfaces, for exampl
 
 If the theme or shared primitive cannot express a needed shared pattern, fix or extend the shared authority deliberately. Do not fork it locally first and promise to centralize later.
 
-### Required implementation order
-
-For visual/admin work:
-
-1. read `docs/ADMIN-UI.md`;
-2. inspect the exact accepted Gallery/Storage reference code relevant to the requested geometry;
-3. inspect existing shared Blade primitives and theme tokens;
-4. compose the target page from those authorities;
-5. add feature-local CSS only for task-specific behavior that remains;
-6. explain every new shared-looking selector or token in the current implementation review.
-
-### Source-review gate
-
-A visual worker result is not source-coherent until the reviewer checks the changed Blade/CSS for theme bypasses.
-
-The reviewer should reject the change before reconciliation when a page recreates an existing shared primitive locally, even if the markup is functional and the worker claims visual consistency.
-
-The implementation review for visual work must state:
-
-- which accepted reference files were inspected;
-- which shared primitives/tokens were reused;
-- which new CSS/classes were added;
-- why each new class is genuinely task-specific rather than a duplicate of the theme.
+Shared component/theme implementation must be reviewed against the [browser and source workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review). The central CSS and Blade ownership rules above remain binding.
 
 ## 15. Sections, kickers and information hierarchy
 
@@ -685,46 +650,15 @@ Important shared Blade primitives include:
 
 ## 23. Browser acceptance and presentation reset
 
-Static source review, passing focused tests and a running container do not establish visual/product acceptance.
-
-The user's review of the current built candidate is authoritative for presentation. If the user rejects a layout, width, cards/panels, metrics treatment, toolbar, table geometry, typography or wording, that rejected presentation is not a preservation requirement merely because it already exists, passed a source review or is asserted by a temporary test.
-
-When the user names Gallery, Storage or another accepted current page as a visual reference, inspect the exact reference implementation and reuse its primitives/tokens for the dimensions named. “Keep it consistent” without reading the reference code is not sufficient.
-
-If a page has survived repeated visual repair passes while retaining the same rejected structure, stop layering patches onto it. Preserve valid domain behavior, persistence, safety guards and central technologies, but rebuild the presentation layer from the accepted reference/shared grammar when necessary.
-
-Do not create durable UI tests whose purpose is to memorialize a repair round, branch name, candidate chronology or unaccepted markup. Tests should protect stable functional/domain behavior; browser presentation becomes a durable reference after browser/product acceptance.
+A source review, a running container or passing focused tests is not browser/product acceptance. The accepted Gallery/Storage visual grammar must be tested against the **current built candidate**. Rejected presentations are not durable requirements. The [browser review workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review) owns the review and source-cleanup process.
 
 ## 24. Browser-review checklist
 
-For every admin slice, inspect at least:
-
-- page/action label geometry;
-- metric strip alignment/height;
-- Search/filter/Selection baseline;
-- selected-count badge aligned with the trailing table/hierarchy checkbox axis where Selection is tabular;
-- table/grid header alignment;
-- selection + drag geometry;
-- Position where applicable;
-- action order and stable slots;
-- parent/child alignment;
-- empty states;
-- dialog size/scroll/focus/popovers;
-- filtered reorder behavior;
-- obvious first-click/navigation latency;
-- whether an existing shared component was bypassed by a new local structure;
-- whether the page matches the accepted Gallery/Storage reference geometry where applicable;
-- whether page-local CSS duplicates an existing theme token or primitive.
-
-Browser acceptance is allowed to reject a technically correct implementation for poor/inconsistent UI. That feedback becomes the next source requirement.
+Use the [cross-workspace inspection checklist](ADMIN-BROWSER-WORKFLOW.md#visual-change-review), not a second page-local checklist.
 
 ## 25. Presentation cleanup gate
 
-Browser/product acceptance does not by itself complete UI work. After the accepted presentation is established and shared presentation dimensions are reconciled, audit source paths created or superseded by that change.
-
-Remove only safely-proven obsolete UI source: superseded page/view paths, dead Blade views/partials, unused CSS/selectors, obsolete presentation aliases/compatibility paths, duplicate presentation paths, stale implementation-specific UI tests, and imports/classes made unused. Reference-search every candidate before deletion and preserve still-required compatibility/domain behavior.
-
-Run final UI/source verification against the cleaned tree. Presentation acceptance and presentation-source cleanup are separate gates; passing one does not imply the other.
+After user acceptance, remove only **reference-proven obsolete** UI source. Browser acceptance and source-cleanup qualification are distinct steps; follow the [browser workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review).
 
 ## 26. Shared Visual Stage and semantic icon contract
 
