@@ -5,7 +5,7 @@ description: Review and perform behavior-preserving cleanup of the moeller-lars 
 
 # Refactoring workflow
 
-Entry: root [AGENTS](../../../AGENTS.md), shared [Refactor coordination](../../areas/refactor.md), then the **actually activated** numbered worker's current task record under [workers](../../workers/). General worker allocation/replacement is owned by [one protocol](../../README.md).
+Entry: root [AGENTS](../../../AGENTS.md), then the **Refactor branch's own** shared coordination and active numbered worker record, when available. General allocation/retirement is described in the [branch-local protocol](../../README.md). This Docs copy is a reusable method draft, **not** the Refactor worker registry; integration to the Refactor branch must preserve its local agent scope.
 
 The `refactor` branch starts from `dev` and periodically reconciles newer `dev` commits. Never assume the two HEADs are identical; check before touching code. The task must remain behavior-preserving, narrowly scoped and coordinated with active Dev ownership.
 

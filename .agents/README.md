@@ -1,49 +1,45 @@
-# Worker coordination
+# Branch-local worker protocol
 
-The root [AGENTS.md](../AGENTS.md) is the always-on entry. This file owns **only** worker lifecycle and shared coordination. Stable domain/architecture requirements belong in [docs](../docs/README.md); task-specific procedures belong in [skills](skills/) and [procedures](procedures/). There are no chat handoffs or automatic backlog actions.
+This is the reusable lifecycle procedure. **Every worker belongs to one working branch**, never to a global roster on `docs`. Only actual activation creates an individual record.
 
-## Open a worker
+| Branch | Area/roster | Individual worker records |
+| --- | --- | --- |
+| `dev` | `.agents/areas/dev.md` | `.agents/workers/dev-N.md` |
+| `docs` | `.agents/areas/docs.md` | `.agents/workers/docs-N.md` |
+| `testing` | `.agents/areas/testing.md` | `.agents/workers/testing-N.md` |
+| `refactor` | `.agents/areas/refactor.md` | `.agents/workers/refactor-N.md` |
+| `main` | **None** | **None** |
 
-Read the relevant shared [Dev](areas/dev.md), [Docs](areas/docs.md), [Testing](areas/testing.md) or [Refactor](areas/refactor.md) area file. Resolve the user message as follows:
+The relevant files are on **that branch**, not read/written remotely on another branch. Rollout is incomplete until the receiving branch actually has its corresponding workflow files; do not pretend a phrase alone bootstraps a branch without repository access. Root `AGENTS.md` and the current branch's implementation/test safety rules remain in force.
 
-| Request | Action |
-| --- | --- |
-| `Du bist ein Dev Worker` | Allocate the **lowest positive free** `dev-N` slot: a number is free if there is no live `.agents/workers/dev-N.md` on canonical `docs`. Analogously for other areas. |
-| `Du bist Dev Worker 2` | Select that identity; create its file only if absent. Do not execute an old task merely from the greeting. If another chat already owns it, do not silently replace it. |
-| `Ersetze Dev Worker 2` | Keep that numbered file and its documented context, but issue a **new lease token** and supersede the previous chat. Continue old work only when explicitly requested (for example, `... und mach weiter`). |
-| A conversation about the worker system | Discuss normally. Do **not** allocate an identity or invent a task. |
-| `Dev Worker 2 kann weg` | Follow the retirement procedure below; the number becomes free only when its file is actually deleted. |
+## Activation, takeover and sign-out
 
-**Allocate only on actual activation.** Do not pre-register placeholder worker files for old chats, hypothetical workers or an area with no workers. The shared area file always exists, even if its active-worker table is empty.
+1. On `Du bist ein neuer Testing Worker` or `Du bist ein Testing Worker`, select the **lowest positive unoccupied** number on `testing` and register it. The same rule applies to the other branches. A free number has no active `.agents/workers/<area>-N.md`.
+2. `Du bist Testing Worker 1` selects or initializes slot 1 on `testing`; this may register an **already-running chat** using its own real current assignments and progress. It must not fabricate past tasks or automatically restart an old task. A second chat cannot silently take over an occupied slot.
+3. `Ersetze Testing Worker 1` deliberately supersedes that slot's current chat. Increment the **monotonic lease token** in the area file and worker file together. Continue previous work **only** on an explicit continuation instruction.
+4. **Sign in:** create the own task/progress record and a corresponding active area-roster row in one concurrency-checked commit on the **working branch**. Record the actual user assignments, status, completed steps, current evidence, blockers and outstanding actions, not a chat transcript. Do not store another worker's private tasks in this file.
+5. **Sign out:** when a worker explicitly ends/retires, first consolidate verified durable findings into their owning product document or common workflow, and transfer any still-owned unfinished action to an explicitly identified owner. Then **delete the temporary worker file and remove its roster row/claims in one guarded commit**. Its number becomes free. A paused worker keeps its file and row until resumed or explicitly replaced/retired.
+6. If a chat reaches its context limit without sign-out, the user can deliberately assign a replacement chat to the **same numbered slot**. It reads only the persisted task state and current Git source; unsaved chat details cannot be recovered.
 
-Each area maintains a **Next lease token**: a monotonically increasing number independent of the reusable worker ID. On **every** allocation and replacement, consume that token for the worker record and area row, then increment the counter. Thus deleting `dev-1` and later reusing number 1 cannot make an old chat with a former lease appear current. Never reset the lease counter merely because the area is empty.
+Each area owns its independent **next lease token**. A new allocation or replacement consumes this token (then increments it) even when a previously retired *number* is reused. A stale chat must reread its current branch's shared roster and personal lease token **before each write**, stopping if they no longer match. Reread the branch HEAD, compare other claims, and commit with an expected-head non-forced update; retry from fresh state on a race. This is optimistic concurrency control, not a physical Git lock.
 
-**Allocation/replacement must be one concurrency-checked commit on canonical `docs`**, updating the shared area and the individual file together. Read the current remote `docs` head and available worker paths immediately before creating the commit; use an expected-head, non-forced ref update. If a competing writer advances the branch, reread and reconcile; do not create the same identity twice. No other branch's stale copy determines occupancy.
+**Every substantive worker report starts with its exact registered identity** (e.g., “Docs Worker 1”). A named role or saved next step does not itself authorize code changes, tests, merges or automatic task execution.
 
-Every work report identifies its registered worker role and number (for example, Docs Worker 1).
+## Knowledge and ownership
 
-## Live ownership and writing
+- Personal record: **this worker's actual assignments and progress**. Keep it short and replace superseded text at milestones.
+- Area file: sign-in/sign-out, claimed file/feature scopes and coordination among workers **on this branch**. Do not copy entire assignments into a second file.
+- Durable `docs/` and project procedures: accepted design, system behavior, architectural decisions, testing method and reusable process. A worker promotes verified lasting findings to the existing owning document; it does not preserve useful knowledge only in disposable memory.
+- Git history: previous records are recoverable within the originating branch, but are **not** a substitute for current tasks or an automatically runnable handoff.
 
-- **Individual** `.agents/workers/<area>-N.md`: above all the **assignments actually given by the user**, current work status/progress, completed actions, next outstanding actions and blockers, plus decisions and evidence needed to resume. It is that worker's memory only; never mix another worker's task state into it. It may contain a discussion without an action. Never put another worker's private task state into this file.
-- **Shared** `.agents/areas/<area>.md`: current area-wide file/feature claims, worker number + lease token + lifecycle state, cross-worker dependencies and conflicts. No chat transcripts or repeated stable rules.
-- **Durable** `docs/`: accepted product design, canonical architecture and ownership, current system behavior, persistent workflows and reusable verification conclusions.
-- **Git history**: former states and retired worker files. Historical commits are not an automatically executable task queue.
+## Branch integration — prevent temporary files from escaping
 
-On each worker's **activation and exit**, update the matching shared area roster; retirement unregisters the worker and deletes its private file after knowledge consolidation. An individual worker does not silently remain listed after leaving.
+**Never merge a worker-bearing branch into another branch using an unrestricted Git merge.** A deletion before merge removes the file from the final tree **but not from the merged commit ancestry**. `.gitignore`, a normal `.gitattributes` setting or a last-minute cleanup commit do not provide historical isolation.
 
-Before changing either code or coordination, the chat must recheck its worker lease token **in the canonical shared area and its own record**. If missing or changed, the chat is superseded: stop writing under that identity. Before an application-branch commit also recheck its current branch head and other workers' current scopes. Reconcile shared owners and overlapping edits; the area table is **not** a real cross-branch mutex.
+- Bring newer `dev` application changes into `docs`, `testing` and `refactor` through an owner-reviewed source synchronization. If `dev` already contains private Dev-worker commits, use a **filtered source transfer** rather than a full ancestry merge; verify actual source parity, not a misleading ahead/behind count.
+- Bring completed `docs` changes back to `dev` with a **reviewed, path-filtered commit built on the current `dev` HEAD**, retaining `dev` code, active Dev-worker state and root branch policy. Import only approved *durable* documentation and appropriate shared skill/procedure changes. Do **not** merge `docs` history into `dev`.
+- Likewise, return verified `testing` tests and `refactor` code to `dev` as curated changes without importing their rosters, individual notes or unrelated branch policies/history.
+- For `dev` → `main` cutover, use the same filtered release/export gate and **verify that the resulting tree and imported ancestry contain no worker records or branch-local rosters**. Do not treat a full `dev` ancestry merge as privacy-safe merely because a file was deleted.
+- **Allowed to cross branches** only after review: permanent feature/architecture documentation, shared procedures and skills which are valid for the destination, and accepted application/test changes. **Must remain local:** `.agents/areas/`, `.agents/workers/`, branch-specific `AGENTS.md` and temporary `.agents/topics/`/investigation notes. Docs-only helpers also need an explicit justification before export.
 
-Write meaningful state changes at milestones and before a likely context limit, replacing superseded text. A new chat can recover only what was saved. An uncommitted conversation, external browser session or hidden reasoning cannot be recovered from the worker name.
-
-## Consolidate and retire
-
-1. Resolve a worker's completed or durable **decisions and facts into their own record first** while work continues; propagate the stable results into their **one owning contract or procedure** when confirmed. Transfer genuinely shared dependencies into the area's coordination file. Move unresolved work into the proper active owner or a deliberately maintained topic; do not drop it or copy it into another worker's private file.
-2. At retirement, verify there is no ongoing chat/writer relying on that identity, no unresolved information existing solely in its temporary record and no current file ownership claims. A paused worker **retains** its file and still occupies its number.
-3. In one expected-head commit remove the area row/claims and **delete** its individual file from `docs`. The lowest now-unused positive number is available for the next allocation; the area's lease counter only increases.
-4. Remove outdated references and obsolete topic/procedure fragments at the same consolidation boundary. Git retains the old file version; no separate archive or handoff file is created.
-
-Periodic cleanup should replace/update the canonical documents rather than append dated source-diff sections. Do not delete historical migrations, accepted behavior or unique open evidence solely for cosmetic tidiness.
-
-## Scope and rollout
-
-This version exists **only on `docs`**. `dev` is active implementation; `testing` is an active curated suite; `refactor` is now an existing branch initially based on current `dev` at its creation; no numbered Refactor Worker has been opened. A worker role does not automatically create or authorize any Git branch. On a later approved rollout, every worker must reference the **same** shared coordination on `docs` rather than diverging copies in separate working branches. Keep existing live agents, worktrees, test isolation and implementation policy intact until rollout is verified.
+Implement the integration as an explicit reviewed Git diff/commit, check tracked paths and target branch tree before advancing the ref, and keep the target's own agent scope unchanged. No automatic branch promotion or CI interaction is authorized by this protocol.

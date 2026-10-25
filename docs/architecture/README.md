@@ -36,10 +36,9 @@ The [generated directory](generated/) contains machine-extracted route, class/im
 
 **Current source checkout:** `dev@0200407133ce4696817271d2141fceaca82f8aff` was imported into `docs` with the two-parent commit `docs@a9ac270a` on 25 October 2026. This updated the application code used by the Docs branch. It did **not** regenerate the historic inventories, validate their dynamic behavior or reconcile every contract with the new code.
 
-The inventory tools live in [`scripts/`](../../scripts/) and are operated under the [Docs verification procedure](../../.agents/procedures/documentation.md). The PostgreSQL catalog exporter requires an **independently verified, disposable migrated database**; no production, protected Validation or persistent Preview database is a permissible test target. No physical schema export or full entity-relationship diagram is claimed here without real evidence.
+The inventory tools live in [`scripts/`](../../scripts/); their reproducibility and input/source limits are described in the [technical evidence matrix](completion-criteria.md). The PostgreSQL catalog exporter requires an **independently verified, disposable migrated database**; no production, protected Validation or persistent Preview database is a permissible test target. No physical schema export or full entity-relationship diagram is claimed here without real evidence.
 
 ## How to extend this section
 
 Add a new study only when the existing system design and focused references cannot explain an actual cross-boundary behavior, failure mode or architecture decision. Link it from the **engineering question** it answers; keep one contract owner for any stable rule. Remove or consolidate stale studies after transferring their unique observations into the owning contract or historical evidence, and after verifying inbound references.
 
-For open documentation tasks and worker coordination, see [Docs area](../../.agents/areas/docs.md), **not** a historical inventory. Worker assignments do not belong in technical architecture files.

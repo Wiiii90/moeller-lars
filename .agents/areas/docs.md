@@ -1,21 +1,15 @@
-# Docs — shared coordination
-
-**Working branch:** `docs`. Existing Docs worktree is for rare, agreed local/Codex batches; remote documentation/source reviews otherwise. This is a **shared worker roster and conflict coordination**, not a second job diary.
+# Docs — coordination on the docs branch
 
 **Next lease token:** 2
 
-| Worker | Lease | State | Current claimed scope | Individual record |
-| --- | --- | --- | --- | --- |
-| Docs Worker 1 | 1 | **active** | Documentation system/information architecture, source alignment, worker procedures | [docs-1](../workers/docs-1.md) |
+| Worker | Lease | State | Claimed work | Own task record |
+| --- | ---: | --- | --- | --- |
+| Docs Worker 1 | 1 | active | Project documentation structure, consolidation and docs workflows | [docs-1](../workers/docs-1.md) |
 
-When work is paused or completed, update the status/claim here. **On retirement the exiting worker must consolidate durable findings, delete its own worker file and remove its row here in one commit**; free worker numbers may later be reused with a fresh lease. Before any edit to shared docs, another Docs worker checks this table for overlap and obtains a distinct ownership scope.
+All Docs worker activations, changes of owner, pauses, replacements and retirements must update **this roster on `docs`**. A retiring worker signs out and deletes its own numbered record after transferring any lasting decisions or unfinished tasks to the right owner. Follow the [branch-local worker protocol](../README.md). Other branches own their **own** coordination; there are no remote Dev/Testing/Refactor rosters here.
 
-**Source alignment:** `docs@a9ac270a` imported application/tests/runtime from `dev@02004071` in an actual two-parent merge (source now fully aligned at that snapshot, documentation semantics still being reconciled). The user expects continued frequent review and real `dev` integration, not simply reading a stale branch.
+**Docs mission:** review implementation changes already integrated into `dev` and keep the permanent project documentation clear, complete, useful and nonredundant. Import the actual current `dev` source to Docs with explicit file/history boundaries, then reconcile changed system behavior and accepted decisions into existing documents rather than appending status prose. When Testing or Refactor changes are **returned to `dev`**, inspect the resulting `dev` delta for required updates to test strategy, architecture, behavior and evidence. Don't continuously process branches still being independently edited.
 
-**Area responsibilities:** continually compare current `dev` source with `docs` and review current `testing` when appropriate; maintain accurate, usable, **cohesively designed** technical architecture; keep one owner per stable decision; eliminate misleading historical/temporary claims and redundant contracts after careful source/reference review. New facts should be integrated into the relevant existing document, not dropped as date-stamped fragments. [Documentation method](../procedures/documentation.md) owns the stable method, [Docs index](../../docs/README.md) identifies current content.
+**Current shared documentation debt:** consolidate remaining overlapping Admin/Public contracts, classify historical source inventories and the temporary rights investigation, remove obsolete cross-branch state claims and repair documentation navigation **without losing unique accepted behavior**. See [Docs procedure](../procedures/documentation.md) and [human documentation index](../../docs/README.md). The assigned detailed steps/status belong only to the active worker's record.
 
-**Sources:** Current `dev` is the implementation baseline imported into `docs`; current `testing` is the independently curated verification/test-architecture evidence. Docs keeps both in view and consolidates accepted changes into the owning system/feature/test documents. A Testing-only code diff is not automatically a product change and is not merged into Docs without ownership review.
-
-**Current cross-area dependencies:** active application development on [Dev](dev.md); active curated test cleanup on [Testing](testing.md); newly created [Refactor](refactor.md) from current `dev` at branch creation. The [rights workstream evidence](../topics/rights.md) remains temporary, pending classification against the [durable rights contract](../../docs/PUBLIC-RIGHTS-AND-PRIVACY.md). Do not copy other workers' task states into this shared file; use references and only the relevant external dependency.
-
-Worker registration, takeover, consolidation and retirement: [single protocol](../README.md).
+**Integration boundary:** `docs` → `dev` exports **reviewed permanent documents**. This coordination file and all individual Docs worker files remain on `docs`; a normal full branch merge is not safe for historical isolation.
