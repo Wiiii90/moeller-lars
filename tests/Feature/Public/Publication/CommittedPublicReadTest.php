@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Admin\AdminSettingsService;
+use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\General;
@@ -189,8 +190,7 @@ it('publishes Artwork surface overrides only for their own Gallery detail pages'
 
     $previewArtwork = $this->get('/preview'.$artworkAUrl)->assertOk()->getContent();
     expect($previewArtwork)
-        ->toContain('data-public-layout-divider-mode="separate"')
-;
+        ->toContain('data-public-layout-divider-mode="separate"');
 
     expect($this->get('/preview/'.$first->slug)->assertOk()->getContent())
         ->toContain('data-public-layout-divider-mode="fine"');
