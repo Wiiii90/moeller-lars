@@ -121,19 +121,26 @@ final class AdminControl
             // Edit dialogs are filled from persisted state, so they cannot fall
             // back to a selectable "Select an option" branch.
             $field->selectablePlaceholder(fn (): bool => ! $field->isRequired());
-            $field->extraAlpineAttributes([
-                'x-init' => <<<'JS'
-                    $watch('state', (value, previous) => {
-                        if (value === previous || ! $el.closest('.admin-dialog--edit')) return
-                        $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })))
-                    })
-                    JS,
-            ], merge: true);
+            self::bridgeEditStateChange($field);
+        } elseif ($field instanceof DateTimePicker && ! $field->isNative()) {
+            self::bridgeEditStateChange($field);
         }
 
         return $field->extraFieldWrapperAttributes([
             'class' => self::WRAPPER_CLASS,
             'data-admin-control' => $field->getName(),
+        ], merge: true);
+    }
+
+    private static function bridgeEditStateChange(Select|DateTimePicker $field): void
+    {
+        $field->extraAlpineAttributes([
+            'x-init' => <<<'JS'
+                $watch('state', (value, previous) => {
+                    if (value === previous || ! $el.closest('.admin-dialog--edit')) return
+                    $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })))
+                })
+                JS,
         ], merge: true);
     }
 
