@@ -15,11 +15,32 @@ Read `testing/AGENTS.md`, [the worker lifecycle](../../README.md), the existing 
 4. Protect real persistence/Working-versus-Committed behavior, security/authorization, immutable media, atomic audit/Undo/rollback, exactly-one success notification per real change, no-op and failure feedback, HTTP/session lifecycle and justified concurrency. Test meaningful public outcomes, not ephemeral repair rounds or implementation spelling.
 5. Keep preparation bounded. Reconcile source on testing without claiming qualification. Only after the **user freezes dev** verify exact non-test source parity and run authorized full/relevant Codex/native suites as the last pre-integration gate. Fix erroneous tests **on testing**; true production defects return to Dev. Reconcile and recheck if Dev changed, then seek explicit transfer approval.
 
+## Curate the suite, do not accumulate regression debris
+
+The separate `testing` branch prepares the **eventual authoritative test suite** for all cumulative Dev changes. The suite currently on Dev may be transitional; it is not an immutable collection of cases to copy blindly. Test workers actively **refactor test architecture**: remove obsolete tests, merge related cases, simplify fixtures and reassign scenarios to their meaningful layer. Protect important invariants, not the filenames or implementation details used by past repair rounds.
+
+**A finite reconciliation batch has these steps:**
+
+1. Establish exact last reconciled Dev source and newest Dev commit. Inspect the **cumulative affected source diff**, including relevant shared consumers, migrations, configuration, services and feature flows; don't reason from commit messages or one bug report alone.
+2. Match the changed behavior to existing test owners and layers. Decide first whether a current case can be modified or consolidated. New test files, fixtures or runners need a **distinct responsibility**, not just a new regression anecdote.
+3. Choose durable user/domain guarantees: persisted edits and reload, validation, authorization, Working versus Committed, Preview exceptions, history/Undo/rollback, media reference lifetime, audit/notification boundaries, negative and true no-op behavior, or an actual concurrent race when relevant.
+4. Remove tests that only check an incidental button location, CSS property, source spelling, class name, private method call, harmless markup reshuffle or one-off incident implementation. UI tests should assert **observable interaction** (focus, accessibility, navigation, state, modal lifecycle), not arbitrary geometry constants.
+5. Share canonical setup and fixtures; don't add another test framework, runner or layer unless the current suite demonstrably cannot express the verified scenario. Avoid excessive mocking that bypasses the mutation or storage behavior being claimed.
+6. Review net test changes for duplicate assertions, flakiness, vacuous passes and obsolete expectations. A genuine application defect goes back to Dev with precise reproduction; **never bend assertions just to make the suite green**.
+
+**Layer selection is deliberate:** pure logic to Unit, persisted domain/file/transaction behavior to Integration, user-facing HTTP/Filament/Livewire behavior and permission checks to Feature, real cutover contracts to Migration, JavaScript state/lifecycle to JavaScript, browser-only interactions to Chromium. Special Publication and Session races require their dedicated **real multi-process PostgreSQL** runners and positive isolation; ordinary in-memory feature tests cannot claim that coverage. Do not duplicate the same scenario at every layer just to increase counts.
+
+**Timing:** preparatory work may continue in small batches as Dev evolves. Repeated full-suite runs during that stage are wasteful and are not acceptance. Only the user-approved **Dev freeze** triggers exact non-test source parity verification and permitted final exhaustive qualification, followed by reviewed selective transfer. A test count or assertion count is never a source-coverage percentage and never a substitute for a demonstrated product behavior.
+
 ## Mandatory isolation
 
 Database-writing tests and seeded browser tests require verified, **independently disposable PostgreSQL 17**, dedicated database/user/loopback port, temporary storage, no persistent volumes and an initially empty schema. Verify actual PDO/database/user/version identity, not just an environment flag. Clear inherited `DB_URL` and config cache; isolate upload/media directories, sessions, cache, views, logs and system temporary files; preserve `LocalPreviewDatabaseGuard`. Never wipe persistent Preview/Validation/Production or the user's Compose data volumes. Specifically, the persistent local Compose database `moeller_lars_testing` and named volume `moeller-lars_postgres_data` are **not disposable test targets**, despite the database name: never invoke `migrate:fresh`, `reset` or `db:wipe` against them. Before allowing any destructive test/reset, verify the actual SQL/PDO environment and independently owned ephemeral storage. Preserve unknown stashes/files; clean up only verifiably owned disposable test resources. A zero exit code does not prove containment.
 
 The dedicated runners `tests/Support/RunPublicationConcurrency.ps1` and `tests/Support/RunPublicSessionConcurrency.ps1` must be invoked only on authorized, separately isolated Windows environments when qualifying their scenarios. Normal in-memory Pest sessions **do not** prove database-backed HTTP session races.
+
+## Retain testing lessons outside short-lived worker records
+
+When the user corrects recurring test design, isolation, scope or execution mistakes, update this **same-branch role method** or the canonical [test contract](../../../docs/operations/testing.md) in its authorized owner, not a bug-specific appendix, duplicate suite or personal task diary. Distill a reusable rule with a concrete test-design consequence, check whether it contradicts older instructions and explain the conflict before changing accepted behavior. Testing owns test sources on `testing`; shared workflow revisions are reviewed for eventual publication on `dev` without importing another branch's worker files. User reports may identify real gaps but may misdiagnose their cause: verify source and runtime evidence rather than agreeing reflexively.
 
 ## Evidence, privacy and transfer
 
