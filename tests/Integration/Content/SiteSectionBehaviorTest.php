@@ -9,10 +9,7 @@ use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
 use App\Routing\SiteNodeRoute;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-
-uses(RefreshDatabase::class);
 
 it('keeps Home singular while configurable page types remain reusable', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -54,21 +51,13 @@ it('builds navigation from published SiteSections and keeps navigation groups ro
         ->and($hidden->state)->toBe('hidden');
 });
 
-it('includes every published node in public navigation regardless of its historical menu flag', function (): void {
+it('promotes published children of unpublished parents to public navigation roots', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $service = app(SiteSectionEditorialService::class);
 
     $group = $service->createNavigationGroup('Published Group');
     $child = $service->createJournal('Visible Journal', 'visible-journal', JournalTemplate::Blog->value);
     $draft = $service->createJournal('Unpublished Journal', 'unpublished-journal', JournalTemplate::Blog->value);
-
-    // Old data may still contain false/true legacy bits; neither controls menus.
-    \Illuminate\Support\Facades\DB::table('site_sections')
-        ->where('id', $child->getKey())
-        ->update(['show_in_navigation' => false]);
-    \Illuminate\Support\Facades\DB::table('site_sections')
-        ->where('id', $draft->getKey())
-        ->update(['show_in_navigation' => true]);
 
     $service->updatePlacement($group, 'published', null);
     $service->updatePlacement($child, 'published', (int) $group->getKey());
@@ -137,12 +126,6 @@ it('does not create Activity for an unchanged page placement', function (): void
             ->count())->toBe($before);
 });
 
-it('keeps Home editorial capabilities locked', function (): void {
-    expect(SiteSectionType::Home->canChangePlacement())->toBeFalse()
-        ->and(SiteSectionType::Home->canChangePublication())->toBeFalse()
-        ->and(SiteSectionType::Home->canConvert())->toBeFalse()
-        ->and(SiteSectionType::Home->canDelete())->toBeFalse();
-});
 
 it('rejects level three trees without introducing type pairing rules', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');

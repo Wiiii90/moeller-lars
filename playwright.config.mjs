@@ -21,9 +21,8 @@ export default defineConfig({
     navigationTimeout: 15_000,
   },
   projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+    { name: 'component-chromium', testMatch: '**/component/**/*.spec.mjs', use: { ...devices['Desktop Chrome'] } },
+    { name: 'e2e-chromium', testMatch: '**/e2e/**/*.spec.mjs', use: { ...devices['Desktop Chrome'] } },
+    { name: 'profiling-chromium', testMatch: '**/profiling/**/*.spec.mjs', use: { ...devices['Desktop Chrome'] } },
   ],
 });

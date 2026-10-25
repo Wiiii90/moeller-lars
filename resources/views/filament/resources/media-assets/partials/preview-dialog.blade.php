@@ -34,7 +34,7 @@
             @else
                 disabled
             @endif
-        >Previous</button>
+        >{{ __('Previous') }}</button>
         <span>
             @if ($resultPosition !== null)
                 {{ $resultPosition }} of {{ $resultTotal }} filtered results
@@ -50,7 +50,7 @@
             @else
                 disabled
             @endif
-        >Next</button>
+        >{{ __('Next') }}</button>
     </nav>
 
     <div class="media-file-dialog__details media-file-dialog__metadata">
@@ -58,22 +58,29 @@
             <h3 id="media-dialog-metadata-{{ $asset['id'] }}">Metadata</h3>
             <dl class="media-file-dialog__metadata-grid">
                 <div><dt>File</dt><dd>{{ $asset['filename'] }}</dd></div>
-                <div><dt>Type</dt><dd>{{ $asset['type_label'] }} · {{ $asset['mime'] }}</dd></div>
+                <div><dt>{{ __('Type') }}</dt><dd>{{ $asset['type_label'] }} · {{ $asset['mime'] }}</dd></div>
                 <div><dt>Dimensions</dt><dd>{{ $asset['dimensions'] }}</dd></div>
-                <div><dt>Size</dt><dd>{{ $asset['size'] }}</dd></div>
-                <div><dt>Status</dt><dd>{{ ucfirst($asset['state']) }}</dd></div>
+                <div><dt>{{ __('Size') }}</dt><dd>{{ $asset['size'] }}</dd></div>
+                <div><dt>{{ __('Status') }}</dt><dd>{{ ucfirst($asset['state']) }}</dd></div>
                 <div><dt>Created</dt><dd>{{ $asset['created'] }}</dd></div>
                 <div><dt>ALT text</dt><dd>{{ $asset['alt_text'] !== '' ? $asset['alt_text'] : '—' }}</dd></div>
                 <div><dt>Credit</dt><dd>{{ $asset['credit'] !== '' ? $asset['credit'] : '—' }}</dd></div>
-                <div><dt>Copyright</dt><dd>{{ $asset['copyright_notice'] !== '' ? $asset['copyright_notice'] : '—' }}</dd></div>
+                <div><dt>{{ __('Copyright') }}</dt><dd>{{ $asset['copyright_notice'] !== '' ? $asset['copyright_notice'] : '—' }}</dd></div>
                 <div><dt>Copyright source</dt><dd>{{ $asset['copyright_source'] }}</dd></div>
+                @if ($asset['kind'] === 'image')
+                    <div><dt>Photographer / file creator</dt><dd>{{ $asset['file_creator'] !== '' ? $asset['file_creator'] : '—' }}</dd></div>
+                    <div><dt>Photo rights holder</dt><dd>{{ $asset['file_rights_holder'] !== '' ? $asset['file_rights_holder'] : '—' }}</dd></div>
+                    <div><dt>Specific usage terms</dt><dd>{{ $asset['rights_usage_terms'] !== '' ? $asset['rights_usage_terms'] : '—' }}</dd></div>
+                    <div><dt>License / rights inquiry URL</dt><dd>{{ $asset['license_inquiry_url'] !== '' ? $asset['license_inquiry_url'] : '—' }}</dd></div>
+                    <div><dt>Embedded rights file</dt><dd>{{ $asset['rights_file_status'] ?? '—' }}</dd></div>
+                @endif
             </dl>
         </section>
     </div>
 
     <div class="media-file-dialog__details media-file-dialog__usage">
         <section aria-labelledby="media-dialog-usage-{{ $asset['id'] }}">
-            <h3 id="media-dialog-usage-{{ $asset['id'] }}">Used in</h3>
+            <h3 id="media-dialog-usage-{{ $asset['id'] }}">{{ __('Used in') }}</h3>
             @if ($asset['references'] === [])
                 <p class="media-file-dialog__empty">No canonical references.</p>
             @else

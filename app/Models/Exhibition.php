@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\SafeLinkPolicy;
+use App\Domain\Content\RegionalFormats;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -14,11 +15,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'postal_code', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'organizer', 'venue', 'city', 'country', 'location_text', 'postal_code', 'show_organizer', 'show_venue', 'show_external_url', 'show_location_text', 'show_postal_code', 'show_city', 'show_country', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'show_vernissage', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
     use HasFactory;
+
+    public const PUBLIC_VISIBILITY_FIELDS = ['organizer', 'venue', 'external_url', 'location_text', 'postal_code', 'city', 'country'];
 
     protected function casts(): array
     {
@@ -29,7 +32,16 @@ class Exhibition extends Model
             'geocoded_at' => 'datetime',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'show_vernissage' => 'boolean',
+            'show_organizer' => 'boolean',
+            'show_venue' => 'boolean',
+            'show_external_url' => 'boolean',
+            'show_location_text' => 'boolean',
+            'show_postal_code' => 'boolean',
+            'show_city' => 'boolean',
+            'show_country' => 'boolean',
             'gallery_enabled' => 'boolean',
+            'image_viewer_enabled' => 'boolean',
             'map_enabled' => 'boolean',
             'migrated_at' => 'datetime',
             'published_at' => 'datetime',
@@ -84,20 +96,119 @@ class Exhibition extends Model
         $start = CarbonImmutable::instance($starts);
         $ends = $this->getAttribute('ends_on');
         if (! $ends instanceof CarbonInterface || $start->isSameDay($ends)) {
-            return $start->format('j M Y');
+            return RegionalFormats::publicDate($start);
         }
         $end = CarbonImmutable::instance($ends);
 
-        return $start->year === $end->year
-            ? $start->format('j M').' – '.$end->format('j M Y')
-            : $start->format('j M Y').' – '.$end->format('j M Y');
+        return RegionalFormats::publicDateRange($start, $end);
+    }
+
+    public function publicFieldVisible(string $field): bool
+    {
+        if (! in_array($field, self::PUBLIC_VISIBILITY_FIELDS, true)) {
+            throw new \InvalidArgumentException('Unknown exhibition visibility field.');
+        }
+
+        return $this->getAttribute('show_'.$field) !== false;
+    }
+
+    public function publicAddress(): ?string
+    {
+        if ($this->streetAddress() === null) {
+            return null;
+        }
+
+        $postal = $this->publicFieldVisible('postal_code') ? trim((string) ($this->getAttribute('postal_code') ?? '')) : '';
+        $city = $this->publicFieldVisible('city') ? trim((string) ($this->getAttribute('city') ?? '')) : '';
+        $postalCity = trim($postal.' '.$city);
+
+        $parts = collect([
+            $this->publicFieldVisible('location_text') ? $this->streetAddress() : null,
+            $postalCity !== '' ? $postalCity : null,
+            $this->publicFieldVisible('country') ? $this->getAttribute('country') : null,
+        ])->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->map(static fn (string $value): string => trim($value))
+            ->unique(static fn (string $value): string => mb_strtolower(preg_replace('/\s+/u', ' ', $value) ?? $value));
+
+        $address = $parts->implode(', ');
+
+        return $address !== '' ? $address : null;
+    }
+
+    /** Public bylines prioritize the organizer and never append an unrelated city. */
+    public function summaryAttribution(): ?string
+    {
+        $organizer = trim((string) ($this->getAttribute('organizer') ?? ''));
+        if ($organizer !== '') {
+            return $this->publicFieldVisible('organizer') ? $organizer : null;
+        }
+
+        $venue = trim((string) ($this->getAttribute('venue') ?? ''));
+
+        return $venue !== '' && $this->publicFieldVisible('venue') ? $venue : null;
+    }
+
+    public function publicVenue(): ?string
+    {
+        if (! $this->publicFieldVisible('venue')) {
+            return null;
+        }
+
+        $venue = trim((string) ($this->getAttribute('venue') ?? ''));
+        $organizer = trim((string) ($this->getAttribute('organizer') ?? ''));
+
+        if ($venue === '' || $organizer === '') {
+            return null;
+        }
+
+        if ($this->publicFieldVisible('organizer') && $organizer === $venue) {
+            return null;
+        }
+
+        return $venue;
+    }
+
+    /** The map identifies the physical place, not the organizing institution. */
+    public function mapLocationLabel(): ?string
+    {
+        $location = collect([
+            $this->publicFieldVisible('venue') ? $this->getAttribute('venue') : null,
+            $this->publicFieldVisible('city') ? $this->getAttribute('city') : null,
+            $this->publicFieldVisible('country') ? $this->getAttribute('country') : null,
+        ])
+            ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->map(static fn (string $value): string => trim($value))
+            ->unique()
+            ->implode(' · ');
+
+        return $location !== '' ? $location : null;
+    }
+
+    public function shouldShowPublicVernissage(?CarbonInterface $date = null): bool
+    {
+        if (! (bool) $this->getAttribute('show_vernissage') || $this->vernissageDisplay() === null) {
+            return false;
+        }
+
+        $date ??= now();
+        if ($this->temporalState($date) === 'past') {
+            return false;
+        }
+
+        $vernissage = $this->getAttribute('vernissage_at');
+        if ($vernissage instanceof CarbonInterface) {
+            return ! CarbonImmutable::instance($date)->isAfter($vernissage);
+        }
+
+        // Historical free-text openings have no reliable timestamp.
+        return $this->temporalState($date) === 'upcoming';
     }
 
     public function vernissageDisplay(): ?string
     {
         $normalized = $this->getAttribute('vernissage_at');
         if ($normalized instanceof CarbonInterface) {
-            return CarbonImmutable::instance($normalized)->format('j M Y · H:i');
+            return RegionalFormats::publicDateTime($normalized);
         }
 
         $legacy = trim((string) ($this->getAttribute('opening_text') ?? ''));

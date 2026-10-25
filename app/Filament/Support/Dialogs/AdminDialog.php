@@ -44,7 +44,10 @@ final class AdminDialog
             ->after(static function (Action $action): void {
                 $action->halt();
             })
-            ->extraModalWindowAttributes(['wire:change' => 'callMountedAction'], merge: true);
+            ->extraModalWindowAttributes([
+                'wire:change' => 'callMountedAction',
+                'x-on:admin-edit-list-updated.window' => 'if ($el.closest(".fi-modal.fi-modal-open")) $wire.call("callMountedAction")',
+            ], merge: true);
 
         if ($windowAttributes instanceof Closure || $windowAttributes !== []) {
             $action->extraModalWindowAttributes($windowAttributes, merge: true);
@@ -66,12 +69,23 @@ final class AdminDialog
             ->iconButton()
             ->color($role->isDangerAction() ? 'danger' : 'gray')
             ->extraAttributes(['class' => 'admin-dialog__header-action'.($role->isDangerAction() ? ' is-danger' : '')])
-            ->action($handler);
+            ->action($handler)
+            // Filament auto-unmounts completed nested actions. A regular
+            // move/publication control must retain its parent editor. Halt
+            // only the child action after its domain mutation; a Delete
+            // action still transfers to the confirmation/completion flow.
+            ->after(static function (Action $action) use ($role): void {
+                // Nested modal actions normally partially render the action
+                // itself. The workspace behind it must reflect moves and
+                // publication changes in the same Livewire response.
+                $action->getLivewire()->forceRender();
+                if (! $role->isDangerAction()) $action->halt();
+            });
     }
 
     public static function command(
         Action $action,
-        string $submitLabel,
+        string|Closure $submitLabel,
         AdminDialogSize $size = AdminDialogSize::Small,
     ): Action {
         return self::committedTask($action, AdminDialogType::Command, $submitLabel, $size);
@@ -116,7 +130,7 @@ final class AdminDialog
     private static function committedTask(
         Action $action,
         AdminDialogType $type,
-        string $submitLabel,
+        string|Closure $submitLabel,
         AdminDialogSize $size,
         ?AdminIcon $submitIcon = null,
     ): Action {

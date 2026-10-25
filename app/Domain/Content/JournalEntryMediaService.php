@@ -9,6 +9,7 @@ use App\Models\BlogPost;
 use App\Models\Exhibition;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -351,14 +352,17 @@ final class JournalEntryMediaService
         $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
         if (! $asset instanceof MediaAsset
             || $asset->getAttribute('state') !== 'available'
-            || ! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))) {
-            throw ValidationException::withMessages([$field => 'Journal images must reference an available image in Storage.']);
+            || (! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))
+                && ! MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type')))) {
+            throw ValidationException::withMessages([$field => 'Journal media must reference an available image or video in Storage.']);
         }
         try {
             $this->publicMedia->altTextForAsset($asset);
-            $this->publicMedia->thumbnailVariantForAsset($asset);
+            if (MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))) {
+                $this->publicMedia->thumbnailVariantForAsset($asset);
+            }
         } catch (LogicException) {
-            throw ValidationException::withMessages([$field => 'Journal images require ALT text and an available public image variant.']);
+            throw ValidationException::withMessages([$field => 'Journal media requires ALT text; images also need a public thumbnail.']);
         }
     }
 
@@ -366,7 +370,7 @@ final class JournalEntryMediaService
     {
         $id = filter_var($value, FILTER_VALIDATE_INT);
         if ($id === false || $id <= 0) {
-            throw ValidationException::withMessages([$field => 'Choose an image from Storage.']);
+            throw ValidationException::withMessages([$field => 'Choose an image or video from Storage.']);
         }
 
         return (int) $id;

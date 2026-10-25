@@ -34,6 +34,7 @@ final class HomePresentationEditorialService
             ],
             HomeTemplate::UnderConstruction->value => [
                 'public_site_gate' => false,
+                'image_viewer_enabled' => false,
                 'components' => [
                     [
                         'type' => 'image',
@@ -48,6 +49,7 @@ final class HomePresentationEditorialService
                 ],
             ],
             HomeTemplate::Custom->value => [
+                'image_viewer_enabled' => false,
                 'components' => [],
             ],
         ];
@@ -112,6 +114,13 @@ final class HomePresentationEditorialService
                 $configuration[HomeTemplate::Artwork->value]['manual_include_ids'] = $this->positiveIntList($input['manual_include_ids']);
                 $artworkSettingsChanged = true;
             }
+            if (in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)
+                && array_key_exists('image_viewer_enabled', $input)) {
+                if (! is_bool($input['image_viewer_enabled'])) {
+                    throw ValidationException::withMessages(['image_viewer_enabled' => 'Choose whether Home images can be enlarged.']);
+                }
+                $configuration[$template->value]['image_viewer_enabled'] = $input['image_viewer_enabled'];
+            }
             if (array_key_exists('public_site_gate', $input) && $input['public_site_gate'] !== null) {
                 $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] = (bool) $input['public_site_gate'];
             }
@@ -149,9 +158,13 @@ final class HomePresentationEditorialService
         int $index,
         string $expectedType,
         array $component,
+        ?array $expectedComponent = null,
     ): bool {
-        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $component): array {
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $component, $expectedComponent): array {
             $this->assertTarget($components, $index, $expectedType);
+            if ($expectedComponent !== null && AdminOrderingState::fingerprints([$components[$index]]) !== AdminOrderingState::fingerprints([$expectedComponent])) {
+                throw ValidationException::withMessages(['component' => 'This Home component changed. Reopen the editor.']);
+            }
             if (($component['type'] ?? null) !== $expectedType) {
                 throw ValidationException::withMessages([
                     'component' => 'The component type changed while it was being edited.',
@@ -585,7 +598,9 @@ final class HomePresentationEditorialService
             || ! is_array($manualIds)
             || ! array_is_list($manualIds)
             || ! $this->isPositiveIntList($manualIds)
-            || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)) {
+            || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)
+            || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['image_viewer_enabled'] ?? null)
+            || ! is_bool($configuration[HomeTemplate::Custom->value]['image_viewer_enabled'] ?? null)) {
             throw ValidationException::withMessages([
                 'configuration' => 'Home presentation settings are invalid.',
             ]);
@@ -761,7 +776,8 @@ final class HomePresentationEditorialService
     /** @param array{scope:string,before:list<string>,after:list<string>}|null $orderingState */
     private function save(HomePresentationSetting $settings, ?array $orderingState = null): bool
     {
-        if (! $settings->isDirty(['template', 'configuration'])) {
+        if ($settings->getAttribute('template') === $settings->getOriginal('template')
+            && AdminOrderingState::fingerprints([$settings->getAttribute('configuration')]) === AdminOrderingState::fingerprints([$settings->getOriginal('configuration')])) {
             return false;
         }
 

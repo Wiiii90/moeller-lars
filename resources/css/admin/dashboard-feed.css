@@ -60,30 +60,19 @@
     font-size: .68rem;
 }
 
-/* Read is neutral. Unread is a quiet attention state. Pinned is a warm sticky
- * state. Selection deliberately wins over both. Cell backgrounds are used
- * because the shared table surface paints its own cells. */
-.admin-dashboard__feed-row > td { background: var(--admin-surface); }
-.admin-dashboard__feed-row.is-unread > td { background: color-mix(in srgb, var(--admin-accent) 6%, var(--admin-surface)); }
-.admin-dashboard__feed-row.is-pinned > td { background: color-mix(in srgb, #d6a52f 15%, var(--admin-surface)); }
-.admin-dashboard__feed-row:hover > td { background: var(--admin-subtle); }
-.admin-dashboard__feed-row.is-unread:hover > td { background: color-mix(in srgb, var(--admin-accent) 9%, var(--admin-surface)); }
-.admin-dashboard__feed-row.is-pinned:hover > td { background: color-mix(in srgb, #d6a52f 20%, var(--admin-surface)); }
-
-.admin-dashboard__feed-row.is-selected > td,
-.admin-dashboard__feed-row.is-selected:hover > td {
+/* Paint the state once on the whole row, behind the shared cell borders.
+ * Cell backgrounds obscured collapsed borders unevenly, causing alternating
+ * gold/gray fragments in pinned separators. There is one neutral divider;
+ * selection wins over pin/unread without additional inset stripes. */
+.admin-dashboard__feed-row { background: var(--admin-surface); }
+.admin-dashboard__feed-row.is-unread { background: color-mix(in srgb, var(--admin-accent) 6%, var(--admin-surface)); }
+.admin-dashboard__feed-row.is-pinned { background: color-mix(in srgb, #d6a52f 15%, var(--admin-surface)); }
+.admin-dashboard__feed-row:hover { background: var(--admin-subtle); }
+.admin-dashboard__feed-row.is-unread:hover { background: color-mix(in srgb, var(--admin-accent) 9%, var(--admin-surface)); }
+.admin-dashboard__feed-row.is-pinned:hover { background: color-mix(in srgb, #d6a52f 20%, var(--admin-surface)); }
+.admin-dashboard__feed-row.is-selected,
+.admin-dashboard__feed-row.is-selected:hover {
     background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-surface));
-    box-shadow: inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
-}
-
-.admin-dashboard__feed-row.is-selected > td:first-child,
-.admin-dashboard__feed-row.is-selected:hover > td:first-child {
-    box-shadow: inset 2px 0 0 var(--admin-accent), inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
-}
-
-.admin-dashboard__feed-row.is-selected > td:last-child,
-.admin-dashboard__feed-row.is-selected:hover > td:last-child {
-    box-shadow: inset -2px 0 0 var(--admin-accent), inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
 }
 
 .admin-dashboard__priority-position {

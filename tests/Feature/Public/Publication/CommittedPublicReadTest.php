@@ -6,6 +6,7 @@ use App\Filament\Pages\General;
 use App\Models\PublicContentSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
@@ -41,9 +42,6 @@ it('keeps public on Committed while Preview and admin use Working until Commit',
 
     $committed = '#C9C3C3';
     $working = '#0F19FA';
-    $committedCss = 'linear-gradient(2deg, #555555, #C9C3C3) fixed';
-    $workingCss = 'linear-gradient(2deg, #555555, #0F19FA) fixed';
-
     expect(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
@@ -59,14 +57,16 @@ it('keeps public on Committed while Preview and admin use Working until Commit',
         ->and((string) PublicContentSetting::general()->getAttribute('background_gradient_end'))->toBe($working)
         ->and(app(PublicationService::class)->hasPendingChanges())->toBeTrue();
 
+    Auth::guard('web')->logout();
     $this->get('/')
         ->assertOk()
-        ->assertSee('--public-page: '.$committedCss.';', false)
+        ->assertSee($committed, false)
         ->assertDontSee($working, false);
 
+    $this->actingAs($this->actor, 'web');
     $this->get('/preview')
         ->assertOk()
-        ->assertSee('--public-page: '.$workingCss.';', false)
+        ->assertSee($working, false)
         ->assertDontSee($committed, false)
         ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
 
@@ -78,11 +78,13 @@ it('keeps public on Committed while Preview and admin use Working until Commit',
     Livewire::test(General::class)
         ->assertSet('data.background_secondary_color', $nextWorking);
 
+    Auth::guard('web')->logout();
     $this->get('/')
         ->assertOk()
         ->assertSee($committed, false)
         ->assertDontSee($nextWorking, false);
 
+    $this->actingAs($this->actor, 'web');
     $checkpoint = app(PublicationService::class)->commit($this->actor);
 
     expect($checkpoint)->not->toBeNull()
@@ -91,6 +93,7 @@ it('keeps public on Committed while Preview and admin use Working until Commit',
             ->where('scope', PublicContentSetting::SCOPE_GENERAL)
             ->value('background_gradient_end'))->toBe($nextWorking);
 
+    Auth::guard('web')->logout();
     $this->get('/')
         ->assertOk()
         ->assertSee($nextWorking, false)

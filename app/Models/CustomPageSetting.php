@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Content\SafeLinkPolicy;
 use App\Domain\Content\SafeRichTextRenderer;
+use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -27,7 +28,7 @@ final class CustomPageSetting extends Model
     /** One shared allowlist for Image children in persistence, editing and sorting. */
     public const IMAGE_CHILD_TYPES = ['text', 'list', 'divider', 'contact', 'legal_disclaimer'];
 
-    public const IMAGE_ALIGNMENTS = ['left', 'right'];
+    public const IMAGE_ALIGNMENTS = ['left', 'center', 'right'];
 
     public const CONTACT_CHILD_TYPES = [
         'public_email',
@@ -94,7 +95,14 @@ final class CustomPageSetting extends Model
     /** Historical images default to left without storing a redundant value. */
     public static function imageAlignment(array $block): string
     {
-        return ($block['image_alignment'] ?? 'left') === 'right' ? 'right' : 'left';
+        $alignment = $block['image_alignment'] ?? 'left';
+
+        return is_string($alignment) && in_array($alignment, self::IMAGE_ALIGNMENTS, true) ? $alignment : 'left';
+    }
+
+    public static function videoControls(array $block): bool
+    {
+        return ($block['video_controls_enabled'] ?? true) !== false;
     }
 
     public static function componentPublished(array $block): bool
@@ -153,7 +161,7 @@ final class CustomPageSetting extends Model
     }
 
     /** @return list<array<string, mixed>> */
-    private function normalizedBlocks(): array
+    public function normalizedBlocks(): array
     {
         $blocks = $this->getAttribute('blocks');
         if (! is_array($blocks) || ! array_is_list($blocks)) {
@@ -180,7 +188,8 @@ final class CustomPageSetting extends Model
                     'published' => $published,
                     'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
                     'image_decorative' => (bool) ($block['image_decorative'] ?? false),
-                    ...($this->validatedImageAlignment($block) === 'right' ? ['image_alignment' => 'right'] : []),
+                    ...($this->validatedImageAlignment($block) !== 'left' ? ['image_alignment' => $this->validatedImageAlignment($block)] : []),
+                    ...(self::videoControls($block) ? [] : ['video_controls_enabled' => false]),
                     ...$this->normalizedImageScale($block),
                     ...$this->normalizedImageChildren($block),
                 ],
@@ -219,7 +228,7 @@ final class CustomPageSetting extends Model
     {
         $alignment = $block['image_alignment'] ?? 'left';
         if (! is_string($alignment) || ! in_array($alignment, self::IMAGE_ALIGNMENTS, true)) {
-            throw ValidationException::withMessages(['blocks' => 'Image alignment must be Left or Right.']);
+            throw ValidationException::withMessages(['blocks' => 'Image alignment must be Left, Center or Right.']);
         }
 
         return $alignment;
@@ -363,6 +372,9 @@ final class CustomPageSetting extends Model
     private function validateImageComponent(array $block, bool $requirePublicMedia): void
     {
         $this->validatedImageAlignment($block);
+        if (array_key_exists('video_controls_enabled', $block) && ! is_bool($block['video_controls_enabled'])) {
+            throw ValidationException::withMessages(['blocks' => 'Video playback controls must be enabled or disabled.']);
+        }
         $scale = $block['image_scale_percent'] ?? self::DEFAULT_IMAGE_SCALE_PERCENT;
         if (! is_int($scale) || $scale < self::MIN_IMAGE_SCALE_PERCENT || $scale > self::MAX_IMAGE_SCALE_PERCENT) {
             throw ValidationException::withMessages(['blocks' => 'Image size must be a whole percentage between 25 and 200.']);
@@ -371,20 +383,22 @@ final class CustomPageSetting extends Model
         $mediaId = $block['media_asset_id'] ?? null;
         if ($mediaId === null) {
             if ($requirePublicMedia) {
-                throw ValidationException::withMessages(['blocks' => 'Published image components must reference an image from Media.']);
+                throw ValidationException::withMessages(['blocks' => 'Published media components must reference an image or video from Storage.']);
             }
 
             return;
         }
 
         if (filter_var($mediaId, FILTER_VALIDATE_INT) === false) {
-            throw ValidationException::withMessages(['blocks' => 'Image components must reference an image from Media.']);
+            throw ValidationException::withMessages(['blocks' => 'Media components must reference an image or video from Storage.']);
         }
 
         /** @var MediaAsset|null $asset */
         $asset = MediaAsset::query()->find((int) $mediaId);
-        if (! $asset instanceof MediaAsset || ! str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')) {
-            throw ValidationException::withMessages(['blocks' => 'Image components must reference an image from Media.']);
+        if (! $asset instanceof MediaAsset
+            || (! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))
+                && ! MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type')))) {
+            throw ValidationException::withMessages(['blocks' => 'Media components must reference an image or video from Storage.']);
         }
         if (! is_bool($block['image_decorative'] ?? false)) {
             throw ValidationException::withMessages(['blocks' => 'Image presentation settings must be boolean.']);
@@ -396,10 +410,14 @@ final class CustomPageSetting extends Model
         $decorative = (bool) ($block['image_decorative'] ?? false);
         $alt = $asset->getAttribute('alt_text');
         if ((string) $asset->getAttribute('state') !== 'available') {
-            throw ValidationException::withMessages(['blocks' => 'Published custom-page images must be available.']);
+            throw ValidationException::withMessages(['blocks' => 'Published custom-page media must be available.']);
         }
         if (! $decorative && (! is_string($alt) || trim($alt) === '')) {
-            throw ValidationException::withMessages(['blocks' => 'Published non-decorative images must have canonical ALT text in Media.']);
+            throw ValidationException::withMessages(['blocks' => 'Published non-decorative media must have canonical ALT text in Storage.']);
+        }
+        if (MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))
+            && \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset) === null) {
+            throw ValidationException::withMessages(['blocks' => 'Published Custom Page images require one available public thumbnail.']);
         }
     }
 

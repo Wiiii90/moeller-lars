@@ -194,11 +194,11 @@
                         </div>
 
                         <div class="activity-calendar__legend" aria-hidden="true">
-                            <span>Less</span>
+                            <span>{{ __('Less') }}</span>
                             @foreach (range(0, 4) as $level)
                                 <i class="activity-calendar__day is-level-{{ $level }}"></i>
                             @endforeach
-                            <span>More</span>
+                            <span>{{ __('More') }}</span>
                         </div>
                     </div>
 
@@ -217,11 +217,11 @@
 
                 <aside class="activity-publication admin-visual-stage__pane" data-admin-stage-pane="publication" data-admin-stage-slot="3" aria-label="Next publication">
                     <header class="activity-publication__header">
-                        <strong>Next publication</strong>
+                        <strong>{{ __('Next publication') }}</strong>
                     </header>
 
                     <div class="activity-publication__staged">
-                        <span>Pending changes</span>
+                        <span>{{ __('Pending changes') }}</span>
                         <strong>{{ number_format($publicationContext['staged']) }}</strong>
                         <small>
                             Working state compared with the current live snapshot
@@ -233,7 +233,7 @@
 
                     @if ($visiblePublicationGroups !== [])
                         <div class="activity-publication__recent activity-publication__groups">
-                            <span>What will publish</span>
+                            <span>{{ __('What will publish') }}</span>
                             @foreach ($visiblePublicationGroups as $group)
                                 <article>
                                     <div>
@@ -250,7 +250,7 @@
                     @endif
 
                     <div class="activity-publication__readiness is-{{ $publicationContext['preflight']['status'] }}">
-                        <span>Preflight</span>
+                        <span>{{ __('Preflight') }}</span>
                         <strong>{{ $publicationContext['preflight']['label'] }}</strong>
                         @foreach (array_slice($publicationContext['preflight']['blockers'], 0, 2) as $blocker)
                             <small>{{ $blocker }}</small>
@@ -259,15 +259,15 @@
 
                     @if ($liveCommit)
                         <div class="activity-publication__latest">
-                            <span>Current live version</span>
+                            <span>{{ __('Current live version') }}</span>
                             <strong>{{ $liveCommit['short_hash'] ?? '#'.$liveCommit['id'] }} · {{ $liveCommit['when'] }}</strong>
                             <small>{{ number_format($liveCommit['change_count']) }} changes · {{ $liveCommit['timestamp'] }}</small>
                             <p title="{{ $liveCommit['message'] ?? 'No commit message' }}">{{ $liveCommit['message'] ?? 'No commit message' }}</p>
                         </div>
                     @else
                         <div class="activity-publication__latest is-empty">
-                            <span>Current live version</span>
-                            <strong>No commits yet</strong>
+                            <span>{{ __('Current live version') }}</span>
+                            <strong>{{ __('No commits yet') }}</strong>
                         </div>
                     @endif
 
@@ -276,11 +276,11 @@
                             @if ($publicationContext['staged'] > 0)
                                 <button class="admin-action admin-action--with-icon" type="button" wire:click="openPublicationReview">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Review changes</span>
+                                    <span class="admin-action__label">{{ __('Review changes') }}</span>
                                 </button>
                                 <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('resetStagedChanges')">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Reset</span>
+                                    <span class="admin-action__label">{{ __('Reset') }}</span>
                                 </button>
                             @endif
                             <button
@@ -291,7 +291,7 @@
                                 @disabled($publicationContext['staged'] < 1 || $publicationContext['preflight']['status'] !== 'ready')
                             >
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Commit->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Commit</span>
+                                <span class="admin-action__label">{{ __('Commit') }}</span>
                             </button>
                         </x-admin.toolbar>
                     </div>
@@ -302,7 +302,7 @@
                 <x-admin.controls class="activity-workspace__controls admin-data-controls--dashboard-responsive" aria-label="Activity controls" metric-grid :filter-count="4" :search-span="2">
                     <x-slot:search>
                         <label class="admin-data-field activity-control--search">
-                            <span>Search</span>
+                            <span>{{ __('Search') }}</span>
                             <x-admin.search-input
                                 model="search"
                                 name="search"
@@ -313,25 +313,25 @@
 
                     <x-slot:filters>
                         <label class="admin-data-field activity-control--area">
-                            <span>Area</span>
+                            <span>{{ __('Area') }}</span>
                             <select wire:model.live="areaFilter">
-                                <option value="">All areas</option>
+                                <option value="">{{ __('All areas') }}</option>
                                 @foreach ($areaOptions as $value => $label)
                                     <option value="{{ $value }}" @selected($area === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </label>
                         <label class="admin-data-field activity-control--type">
-                            <span>Type</span>
+                            <span>{{ __('Type') }}</span>
                             <select wire:model.live="familyFilter">
-                                <option value="">All changes</option>
+                                <option value="">{{ __('All changes') }}</option>
                                 @foreach ($familyOptions as $value => $label)
                                     <option value="{{ $value }}" @selected($family === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </label>
                         <label class="admin-data-field activity-control--date">
-                            <span>Date</span>
+                            <span>{{ __('Date') }}</span>
                             <input
                                 type="date"
                                 wire:model.live="dateFilter"
@@ -340,9 +340,9 @@
                             >
                         </label>
                         <label class="admin-data-field activity-control--time">
-                            <span>Time</span>
+                            <span>{{ __('Time') }}</span>
                             <select wire:model.live="hourFilter">
-                                <option value="">All times</option>
+                                <option value="">{{ __('All times') }}</option>
                                 @foreach (range(0, 23) as $hour)
                                     <option value="{{ $hour }}" @selected($activeHour === $hour)>{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}:00–{{ str_pad((string) (($hour + 1) % 24), 2, '0', STR_PAD_LEFT) }}:00</option>
                                 @endforeach
@@ -352,17 +352,17 @@
 
                     <x-slot:reset>
                         <div class="admin-data-control-group activity-control--reset">
-                            <span class="admin-data-control-label">Filter</span>
+                            <span class="admin-data-control-label">{{ __('Filter') }}</span>
                             <a class="admin-action admin-action--with-icon" href="{{ $resetUrl }}" wire:navigate aria-label="Clear activity filters">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Clear</span>
+                                <span class="admin-action__label">{{ __('Clear') }}</span>
                             </a>
                         </div>
                     </x-slot:reset>
 
                     <x-slot:actions>
                         <div class="admin-data-control-group activity-control--view">
-                            <span class="admin-data-control-label">View</span>
+                            <span class="admin-data-control-label">{{ __('View') }}</span>
                             <div class="admin-toolbar admin-editorial-actions" role="group" aria-label="Activity table view">
                                 <button
                                     class="admin-action admin-action--with-icon {{ $viewMode === 'activity' ? 'is-primary' : '' }}"
@@ -374,7 +374,7 @@
                                     aria-pressed="{{ $viewMode === 'activity' ? 'true' : 'false' }}"
                                 >
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Activity->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Activity</span>
+                                    <span class="admin-action__label">{{ __('Activity') }}</span>
                                 </button>
                                 <button
                                     class="admin-action admin-action--with-icon {{ $viewMode === 'commits' ? 'is-primary' : '' }}"
@@ -386,7 +386,7 @@
                                     aria-pressed="{{ $viewMode === 'commits' ? 'true' : 'false' }}"
                                 >
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Commit->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Commits</span>
+                                    <span class="admin-action__label">{{ __('Commits') }}</span>
                                 </button>
                             </div>
                         </div>
@@ -399,7 +399,7 @@
                             x-on:click.outside="open = false"
                             x-on:keydown.escape.window="open = false"
                         >
-                            <span class="admin-data-control-label">Selection</span>
+                            <span class="admin-data-control-label">{{ __('Selection') }}</span>
                             <div class="admin-selection__anchor">
                                 <button
                                     class="admin-action admin-selection__trigger"
@@ -410,11 +410,11 @@
                                     aria-label="Selected {{ $viewMode === 'commits' ? 'commits' : 'activity events' }}: {{ $selectedCount }}"
                                     @disabled($selectedCount === 0)
                                 >
-                                    <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
+                                    <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                                 </button>
 
                                 <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="openSelectedDetails" x-on:click="open = false" @disabled($selectedCount !== 1)>Details selected</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="openSelectedDetails" x-on:click="open = false" @disabled($selectedCount !== 1)>{{ __('Details selected') }}</button>
 
                                     @if ($viewMode === 'activity')
                                         <button
@@ -424,7 +424,7 @@
                                             wire:click="mountAction('undoSelectedActivity')"
                                             x-on:click="open = false"
                                             @disabled($selectedActivityUndoCount === 0)
-                                        >Undo selected</button>
+                                        >{{ __('Undo selected') }}</button>
                                     @else
                                         <button
                                             class="admin-action"
@@ -433,7 +433,7 @@
                                             wire:click="mountAction('restoreSelectedCommit')"
                                             x-on:click="open = false"
                                             @disabled(! $selectedCommitCanRestore)
-                                        >Restore selected</button>
+                                        >{{ __('Restore selected') }}</button>
                                         <button
                                             class="admin-action"
                                             type="button"
@@ -441,10 +441,10 @@
                                             wire:click="mountAction('revertSelectedCommit')"
                                             x-on:click="open = false"
                                             @disabled(! $selectedCommitCanRevert)
-                                        >Revert selected</button>
+                                        >{{ __('Revert selected') }}</button>
                                     @endif
 
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="clearSelection" x-on:click="open = false" @disabled($selectedCount === 0)>Clear selection</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="clearSelection" x-on:click="open = false" @disabled($selectedCount === 0)>{{ __('Clear selection') }}</button>
                                 </div>
                             </div>
                             <span class="admin-selection__count" aria-label="{{ $selectedCount }} selected">{{ $selectedCount }}</span>
@@ -470,14 +470,14 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th scope="col" class="activity-col--change">Change</th>
-                            <th scope="col" class="activity-col--who admin-table__yield--compact">Who</th>
-                            <th scope="col" class="activity-col--when">When</th>
-                            <th scope="col" class="activity-col--target">Target</th>
-                            <th scope="col" class="activity-col--area admin-table__yield--minimal">Area</th>
-                            <th scope="col" class="activity-col--type admin-table__yield--minimal">Type</th>
-                            <th scope="col" class="activity-col--publication admin-table__yield--compact">Publication</th>
-                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
+                            <th scope="col" class="activity-col--change">{{ __('Change') }}</th>
+                            <th scope="col" class="activity-col--who admin-table__yield--compact">{{ __('Who') }}</th>
+                            <th scope="col" class="activity-col--when">{{ __('When') }}</th>
+                            <th scope="col" class="activity-col--target">{{ __('Target') }}</th>
+                            <th scope="col" class="activity-col--area admin-table__yield--minimal">{{ __('Area') }}</th>
+                            <th scope="col" class="activity-col--type admin-table__yield--minimal">{{ __('Type') }}</th>
+                            <th scope="col" class="activity-col--publication admin-table__yield--compact">{{ __('Publication') }}</th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -516,11 +516,11 @@
                                 <td class="activity-publication-cell activity-col--publication admin-table__yield--compact">
                                     @if ($event['publication_status'] === 'committed')
                                         <div class="activity-publication-cell__stack" title="Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}{{ $event['checkpoint_message'] ? ' · '.$event['checkpoint_message'] : '' }}">
-                                            <span class="admin-status is-published">Committed</span>
+                                            <span class="admin-status is-published">{{ __('Committed') }}</span>
                                             <code>{{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }}</code>
                                         </div>
                                     @elseif ($event['publication_status'] === 'staged')
-                                        <span class="admin-status" title="Current Activity; closes with the next Commit">Staged</span>
+                                        <span class="admin-status" title="Current Activity; closes with the next Commit">{{ __('Staged') }}</span>
                                     @else
                                         <span class="activity-publication-cell__empty" aria-label="No publication state">—</span>
                                     @endif
@@ -529,7 +529,7 @@
                                     <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--two-static activity-row-actions">
                                         <button class="admin-action" type="button" wire:click="mountAction('activityDetails', { id: {{ $event['id'] }} })">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
-                                            <span class="admin-action__label">Details</span>
+                                            <span class="admin-action__label">{{ __('Details') }}</span>
                                         </button>
                                         @if (is_array($event['undo'] ?? null))
                                             <button
@@ -538,12 +538,12 @@
                                                 wire:click="mountAction('undoActivity', { id: {{ $event['id'] }} })"
                                             >
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
-                                                <span class="admin-action__label">Undo</span>
+                                                <span class="admin-action__label">{{ __('Undo') }}</span>
                                             </button>
                                         @else
                                             <button class="admin-action" type="button" disabled aria-label="Undo unavailable">
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
-                                                <span class="admin-action__label">Undo</span>
+                                                <span class="admin-action__label">{{ __('Undo') }}</span>
                                             </button>
                                         @endif
                                     </x-admin.toolbar>
@@ -562,7 +562,7 @@
                                 <td class="admin-table__empty-cell" colspan="9">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching activity" minimal>
-                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}" wire:navigate>Clear filters</a></x-slot:actions>
+                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}" wire:navigate>{{ __('Clear filters') }}</a></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No activity yet" minimal />
@@ -603,12 +603,12 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th scope="col" class="activity-commit-col--commit">Commit</th>
-                            <th scope="col" class="activity-commit-col--who admin-table__yield--compact">Who</th>
-                            <th scope="col" class="activity-commit-col--when">When</th>
-                            <th scope="col" class="activity-commit-col--summary">Summary</th>
-                            <th scope="col" class="activity-commit-col--publication admin-table__yield--compact">Publication</th>
-                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
+                            <th scope="col" class="activity-commit-col--commit">{{ __('Commit') }}</th>
+                            <th scope="col" class="activity-commit-col--who admin-table__yield--compact">{{ __('Who') }}</th>
+                            <th scope="col" class="activity-commit-col--when">{{ __('When') }}</th>
+                            <th scope="col" class="activity-commit-col--summary">{{ __('Summary') }}</th>
+                            <th scope="col" class="activity-commit-col--publication admin-table__yield--compact">{{ __('Publication') }}</th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -634,7 +634,7 @@
                                 <td class="activity-commit-cell activity-commit-col--commit">
                                     <div class="activity-commit-cell__heading">
                                         <code>{{ $commit['short_hash'] }}</code>
-                                        @if ($commit['live'])<span class="admin-status is-published">LIVE</span>@endif
+                                        @if ($commit['live'])<span class="admin-status is-published">{{ __('LIVE') }}</span>@endif
                                     </div>
                                 </td>
                                 <td class="activity-who-cell activity-commit-col--who admin-table__yield--compact"><strong>{{ $commit['actor'] }}</strong></td>
@@ -662,7 +662,7 @@
                                     <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--three-static activity-row-actions">
                                         <button class="admin-action" type="button" wire:click="openCommitDetails({{ $commit['id'] }})">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
-                                            <span class="admin-action__label">Details</span>
+                                            <span class="admin-action__label">{{ __('Details') }}</span>
                                         </button>
                                         @if ($commit['can_restore'])
                                             <button
@@ -671,12 +671,12 @@
                                                 wire:click="mountAction('restoreVersion', { id: {{ $commit['id'] }} })"
                                             >
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
-                                                <span class="admin-action__label">Restore</span>
+                                                <span class="admin-action__label">{{ __('Restore') }}</span>
                                             </button>
                                         @else
                                             <button class="admin-action" type="button" disabled aria-label="Restore unavailable">
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
-                                                <span class="admin-action__label">Restore</span>
+                                                <span class="admin-action__label">{{ __('Restore') }}</span>
                                             </button>
                                         @endif
                                         @if ($commit['can_revert'])
@@ -686,12 +686,12 @@
                                                 wire:click="mountAction('revertCurrentCommit', { id: {{ $commit['id'] }} })"
                                             >
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
-                                                <span class="admin-action__label">Revert</span>
+                                                <span class="admin-action__label">{{ __('Revert') }}</span>
                                             </button>
                                         @else
                                             <button class="admin-action" type="button" disabled aria-label="Revert unavailable">
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
-                                                <span class="admin-action__label">Revert</span>
+                                                <span class="admin-action__label">{{ __('Revert') }}</span>
                                             </button>
                                         @endif
                                     </x-admin.toolbar>
@@ -710,7 +710,7 @@
                                 <td class="admin-table__empty-cell" colspan="7">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching commits" minimal>
-                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}" wire:navigate>Clear filters</a></x-slot:actions>
+                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}" wire:navigate>{{ __('Clear filters') }}</a></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No commits yet" minimal />

@@ -7,9 +7,6 @@ use App\Models\PublicationCheckpoint;
 use App\Models\PublicationCheckpointEvent;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 it('filters Activity by time without requiring a date', function (): void {
     $actor = User::factory()->admin()->create();
@@ -115,3 +112,52 @@ it('uses the shared Activity page-size contract for activity and commit history'
         ->and($history['paginator']->perPage())->toBe(100)
         ->and($clampedHistory['paginator']->perPage())->toBe(100);
 });
+
+
+it('combines actor search area family date and hour across pagination and refreshes the real page filters', function (): void {
+    $actor = User::factory()->admin()->create(['name' => 'Website filter editor']);
+    $other = User::factory()->admin()->create(['name' => 'Media filter editor']);
+    $this->actingAs($actor, 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+    $day = CarbonImmutable::today()->subDay();
+    $ids = [];
+    foreach (range(1, 26) as $index) {
+        $ids[] = AuditEvent::query()->create([
+            'admin_user_id' => $actor->id, 'action' => 'public_content_setting.updated',
+            'entity_type' => 'public_content_setting', 'entity_id' => 1, 'occurred_at' => $day->setTime(14, 15),
+        ])->id;
+    }
+    AuditEvent::query()->create([
+        'admin_user_id' => $other->id, 'action' => 'media.ingested',
+        'entity_type' => 'media_asset', 'entity_id' => 1, 'occurred_at' => $day->setTime(13, 15),
+    ]);
+    $feed = app(AdminActivityFeed::class);
+    $filters = ['area' => 'Website', 'family' => 'settings', 'search' => 'Website filter editor', 'date' => $day->toDateString(), 'hour' => 14];
+    $page = $feed->page(...[...$filters, 'perPage' => 25, 'page' => 2, 'actor' => $actor]);
+    expect($feed->overview(...$filters)['total'])->toBe(26)
+        ->and($page['paginator']->total())->toBe(26)
+        ->and(array_column($page['activity'], 'id'))->toBe([$ids[0]])
+        ->and($page['activity'][0]['action_key'])->toBe('public_content_setting.updated');
+    \Livewire\Livewire::test(\App\Filament\Pages\Activity::class)
+        ->set('activityPage', 2)->set('selectedActivityIds', [$ids[0]])
+        ->set('areaFilter', 'Website')
+        ->assertSet('activityPage', 1)->assertSet('selectedActivityIds', [])
+        ->assertSee('Website filter editor')->assertDontSee('Media filter editor')
+        ->set('familyFilter', 'settings')->set('hourFilter', '14')
+        ->set('dateFilter', $day->toDateString())
+        ->assertSee('Website filter editor')->assertNotDispatched('admin-header-notification');
+});
+
+it('rejects already mounted Activity requests after administrative access is lost', function (string $mode, bool $guest): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+    $component = \Livewire\Livewire::test(\App\Filament\Pages\Activity::class)->call('setViewMode', $mode);
+    if ($guest) { \Illuminate\Support\Facades\Auth::guard('web')->logout(); }
+    else { $actor->forceFill(['is_admin' => false])->save(); }
+    $component->set('search', 'Protected history')->assertForbidden();
+    expect(AuditEvent::query()->count())->toBe(0)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+})->with(['activity', 'commits'])->with(['guest' => true, 'revoked admin' => false]);

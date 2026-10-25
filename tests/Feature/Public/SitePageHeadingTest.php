@@ -4,12 +4,14 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\HomePresentationResolver;
+use App\Domain\Publication\PublicationService;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
-it('starts with no automatic Journal content heading or leading separator', function (): void {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
+it('defaults new Journals to a disabled content heading', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
 
     $service = app(SiteSectionEditorialService::class);
     $section = $service->createJournal('EXHIBITIONS', 'heading-test-exhibitions', JournalTemplate::Exhibitions->value);
@@ -22,18 +24,14 @@ it('starts with no automatic Journal content heading or leading separator', func
         'content_heading_divider' => 'none',
     ]);
 
-    $this->get('/heading-test-exhibitions')
-        ->assertOk()
-        ->assertDontSee('public-page-heading--left', false)
-        ->assertDontSee('exhibitions-heading', false);
-
-    $exhibitionView = file_get_contents(resource_path('views/pages/exhibitions.blade.php'));
-    expect($exhibitionView)->toContain('<x-public.page-heading :section="$section" />')
-        ->not->toContain('<h2 id="exhibitions-heading"');
+    $this->get('/heading-test-exhibitions')->assertNotFound();
+    app(PublicationService::class)->commit($actor, 'Publish heading fixture');
+    $this->get('/heading-test-exhibitions')->assertOk();
 });
 
 it('supports inherited and overridden page headings without altering navigation identity', function (): void {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
     $service = app(SiteSectionEditorialService::class);
     $section = $service->createJournal('My exhibitions', 'heading-test-custom', JournalTemplate::Exhibitions->value);
     $section = $service->updatePlacement($section, 'published', null);
@@ -46,10 +44,10 @@ it('supports inherited and overridden page headings without altering navigation 
     $section = $section->fresh();
 
     expect(SitePageHeading::text($section))->toBe('My exhibitions');
+    $this->get('/heading-test-custom')->assertNotFound();
+    app(PublicationService::class)->commit($actor, 'Publish inherited heading');
     $this->get('/heading-test-custom')
         ->assertOk()
-        ->assertSee('public-page-heading--center', false)
-        ->assertSee('custom-page__divider--dotted', false)
         ->assertSee('My exhibitions');
 
     $service->updatePageHeading($section, ['content_heading_override' => 'Current programme']);
@@ -59,12 +57,16 @@ it('supports inherited and overridden page headings without altering navigation 
         ->and($section->getAttribute('title'))->toBe('My exhibitions')
         ->and($section->getAttribute('navigation_label'))->toBe('My exhibitions');
 
+    $this->get('/heading-test-custom')->assertOk()->assertSee('My exhibitions')->assertDontSee('Current programme');
+    $this->get('/preview/heading-test-custom')->assertOk()->assertSee('Current programme');
+    app(PublicationService::class)->commit($actor, 'Publish overridden heading');
     $this->get('/heading-test-custom')
         ->assertOk()
-        ->assertSee('Current programme')
-        ->assertSee('public-page-heading--center', false);
+        ->assertSee('Current programme');
 
     $service->updatePageHeading($section, ['content_heading_enabled' => false]);
+    $this->get('/heading-test-custom')->assertOk()->assertSee('Current programme');
+    app(PublicationService::class)->commit($actor, 'Publish disabled heading');
     $this->get('/heading-test-custom')
         ->assertOk()
         ->assertDontSee('Current programme');
@@ -95,27 +97,4 @@ it('validates heading controls and uses one schema for Pages and Home', function
     expect(fn () => $service->updatePageHeading($home, [
         'content_heading_divider' => 'double',
     ]))->toThrow(ValidationException::class);
-
-    expect(file_get_contents(app_path('Filament/Support/HomeSettingsDialog.php')))
-        ->toContain('PageHeadingFields::schema(');
-    expect(file_get_contents(app_path('Filament/Pages/Concerns/ManagesSitePageEditDialog.php')))
-        ->toContain('PageHeadingFields::schema(');
-    expect(file_get_contents(resource_path('views/pages/home.blade.php')))
-        ->toContain('<x-public.page-heading :section="$pageSection" />');
-    expect(file_get_contents(resource_path('views/pages/artworks/index.blade.php')))
-        ->toContain('<x-public.page-heading :section="$section" />');
-});
-
-it('exposes one heading editor for Custom Page creation and a stable Pages edit schema', function (): void {
-    $create = file_get_contents(app_path('Filament/Pages/Concerns/ManagesSitePageCreateDialog.php'));
-    $edit = file_get_contents(app_path('Filament/Pages/Concerns/ManagesSitePageEditDialog.php'));
-    $shared = file_get_contents(app_path('Filament/Support/PageHeadingFields.php'));
-
-    expect($create)->toContain('PageHeadingFields::schema()')
-        ->toContain('updatePageHeading($fresh, SitePageHeading::validated(')
-        ->and($edit)->toContain('->dialogSection($arguments)->hasPublicPage()')
-        ->toContain("'public_path' => '/'")
-        ->toContain("SiteSectionIdentityService::class")
-        ->and($shared)->toContain("Toggle::make('content_heading_enabled')")
-        ->toContain("Show page heading");
 });

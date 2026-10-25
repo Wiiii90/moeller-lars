@@ -9,6 +9,7 @@ use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaIngestService;
+use Closure;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -18,7 +19,6 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -47,12 +47,12 @@ final class ArtworkEditDialog
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
             'work_year' => $artwork->getAttribute('work_year'),
             'work_date' => $artwork->getAttribute('work_date'),
-            'featured_on_home' => (bool) $artwork->getAttribute('featured_on_home'),
+            'exclude_from_home' => (int) (bool) $artwork->getAttribute('exclude_from_home'),
         ];
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -82,11 +82,19 @@ final class ArtworkEditDialog
                             ->options(static fn (): array => ArtworkCategory::query()->orderBy('name')->pluck('name', 'id')->all())
                             ->nullable()
                             ->searchable()
-                            ->preload()
-                            ->helperText('An unpublished artwork may remain unassigned. Unpublish before removing it from a Gallery.'),
+                            ->preload(),
                     ] : []),
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
+                    DatePicker::make('work_date')->label('Exact date')->nullable(),
+                    Select::make('exclude_from_home')
+                        ->label('Home eligibility')
+                        ->options([
+                            0 => __('Follow Gallery setting'),
+                            1 => __('Exclude this Artwork from Home'),
+                        ])
+                        ->default(0)
+                        ->columnSpanFull(),
                 ])->columns(['md' => 2]),
             AdminForm::section('Dimensions')->schema([
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
@@ -112,18 +120,31 @@ final class ArtworkEditDialog
                         'Existing Media File',
                         allowedMimeTypes: self::primaryMimeTypes(),
                     )
-                        ->placeholder('No primary media')
+                        ->placeholder(__('No primary media'))
                         ->nullable()
+                        ->disabled($primaryReadOnly)
+                        ->selectablePlaceholder(! $primaryReadOnly)
+                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
+                            'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
+                        ] : [])
                         ->live()
-                        ->afterStateUpdated(static function (callable $set): void {
-                            // ALT belongs to the chosen Media File, not the previous primary.
+                        ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
+                            // Gallery Edit persists this discrete Media File choice at
+                            // the field boundary, not through a bubbled modal change.
+                            // Create and the standalone EditRecord keep their existing
+                            // full-form submission lifecycle.
+                            if ($onPrimaryMediaChanged instanceof Closure) {
+                                $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
+                            }
+
+                            // ALT belongs to the newly chosen file, not the old primary.
                             $set('primary_alt_text', null);
                         })
-                        ->helperText('Images and videos only.')
                         ->columnSpanFull(),
-                    FileUpload::make('primary_upload')
+                    ...(! $autosave ? [FileUpload::make('primary_upload')
                         ->label('Or upload new primary media')
                         ->storeFiles(false)
+                        ->disabled($primaryReadOnly)
                         ->acceptedFileTypes(self::primaryMimeTypes())
                         ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
                         ->live()
@@ -132,25 +153,60 @@ final class ArtworkEditDialog
                                 $set('primary_alt_text', null);
                             }
                         })
-                        ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
-                        ->columnSpanFull(),
+                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
+                            'title' => 'Unpublish this Artwork before uploading a different primary file.',
+                        ] : [])
+                        ->columnSpanFull()] : []),
                     Textarea::make('primary_alt_text')
                         ->label('Primary media ALT text')
                         ->maxLength(500)
                         ->nullable()
-                        ->helperText('Description for screen readers. Leave blank to inherit the Storage Media File ALT text.')
                         ->columnSpanFull(),
-                ])->columns(['md' => 2]),
-            AdminForm::section('Presentation')->schema([
-                    DatePicker::make('work_date')->label('Exact date')->nullable(),
-                    Toggle::make('featured_on_home')->label('Feature on home when newest year is shared')->default(false),
                 ])->columns(['md' => 2]),
         ];
     }
 
-    /** @param array<string, mixed> $data */
-    public function save(Artwork $artwork, array $data, bool $allowGalleryAssignment = false): bool
+    /**
+     * Persist one primary Media File selection using the existing audited
+     * primary-usage owner. Storage originals are never overwritten or deleted.
+     */
+    public function changePrimaryMedia(Artwork $artwork, ?int $assetId): bool
     {
+        $artwork = Artwork::query()->findOrFail($artwork->getKey());
+        $primary = $artwork->artworkMedia()->where('role', 'primary')->first();
+        $currentId = $primary === null ? null : (int) $primary->getAttribute('media_asset_id');
+        if ($currentId === $assetId) {
+            return false;
+        }
+
+        if ((string) $artwork->getAttribute('state') !== 'draft') {
+            throw ValidationException::withMessages([
+                'primary_media_asset_id' => 'Unpublish this Artwork before changing or removing its primary Media File.',
+            ]);
+        }
+
+        $service = app(ArtworkPrimaryMediaService::class);
+        if ($assetId === null) {
+            return $service->detachPrimary($artwork);
+        }
+
+        /** @var MediaAsset $asset */
+        $asset = MediaAsset::query()->findOrFail($assetId);
+        if ($primary === null) {
+            $service->attachAsset($artwork, $asset);
+        } else {
+            $service->replaceAsset($artwork, $asset);
+        }
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $data */
+    public function save(Artwork $artwork, array $data, bool $allowGalleryAssignment = false, bool $savePrimaryMedia = true): bool
+    {
+        // Services below persist fresh models rather than updating the caller's
+        // instance. Compare against persisted state, including on repeated saves.
+        $artwork = Artwork::query()->findOrFail($artwork->getKey());
         $currentPrimary = $artwork->artworkMedia()->where('role', 'primary')->first();
         $currentAssetId = $currentPrimary === null ? 0 : (int) $currentPrimary->getAttribute('media_asset_id');
         $before = [
@@ -180,11 +236,18 @@ final class ArtworkEditDialog
         // before the Artwork database transaction so a later editorial failure
         // cannot roll back the MediaAsset while leaving its files on disk.
         // The successfully ingested file remains reusable in Storage.
-        $uploadedAsset = $upload instanceof TemporaryUploadedFile
-            ? app(MediaIngestService::class)->ingest($upload)
-            : null;
+        try {
+            $uploadedAsset = $upload instanceof TemporaryUploadedFile
+                ? app(MediaIngestService::class)->ingest($upload)
+                : null;
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages([
+                'primary_upload' => collect($exception->errors())->flatten()->first()
+                    ?? 'The selected image or video could not be processed.',
+            ]);
+        }
 
-        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentAssetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment): void {
+        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
                 $assignments = app(ArtworkGalleryAssignmentService::class);
                 if ($requestedGalleryId === null) {
@@ -206,12 +269,10 @@ final class ArtworkEditDialog
                 $currentPrimary === null
                     ? $primaryMedia->attachAsset($artwork, $uploadedAsset, recordIngest: true)
                     : $primaryMedia->replaceAsset($artwork, $uploadedAsset, recordIngest: true);
-            } elseif ($assetId > 0 && $assetId !== $currentAssetId) {
-                /** @var MediaAsset $asset */
-                $asset = MediaAsset::query()->findOrFail($assetId);
-                $currentPrimary === null
-                    ? $primaryMedia->attachAsset($artwork, $asset)
-                    : $primaryMedia->replaceAsset($artwork, $asset);
+            } elseif ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
+                // Gallery autosave persists this field in afterStateUpdated.
+                // This full-form path remains for standalone EditRecord.
+                $this->changePrimaryMedia($artwork, $assetId > 0 ? $assetId : null);
             }
 
             $primary = $artwork->artworkMedia()->where('role', 'primary')->first();

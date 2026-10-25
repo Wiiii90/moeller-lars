@@ -3,27 +3,110 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
-use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
-use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Hidden;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
-use Throwable;
 
 trait GalleryWorkspaceArtworkActions
 {
     /** @var array<int, array<string, mixed>> */
     private array $artworkPreviewDialogDataCache = [];
+
+    public function deleteArtworkAction(): Action
+    {
+        $action = Action::make('deleteArtwork')
+            ->label('Delete artwork')
+            ->color('danger')
+            ->fillForm(fn (array $arguments): array => [
+                'delete_media_file' => false,
+                'reference_snapshot' => $this->primaryMediaReferenceSnapshot($arguments),
+            ])
+            ->schema(fn (array $arguments): array => [
+                Checkbox::make('delete_media_file')
+                    ->label('Also delete the original media file from Storage')
+                    ->disabled($this->availablePrimaryMediaAsset($arguments) === null),
+                Hidden::make('reference_snapshot'),
+            ])
+            ->modalContent(function (array $arguments): View {
+                $asset = $this->availablePrimaryMediaAsset($arguments);
+
+                return view('filament.resources.artworks.partials.delete-dialog', [
+                    'asset' => $asset,
+                    'references' => $asset instanceof MediaAsset ? $this->primaryMediaReferences($asset) : [],
+                ]);
+            })
+            ->action(function (array $data, array $arguments): void {
+                $artwork = $this->actionArtwork($arguments)->fresh();
+                $deleteFile = ($data['delete_media_file'] ?? false) === true;
+                $asset = $this->availablePrimaryMediaAsset($arguments);
+
+                if ($deleteFile && (! $asset instanceof MediaAsset
+                    || ! hash_equals($this->primaryMediaReferenceSnapshot($arguments), (string) ($data['reference_snapshot'] ?? '')))) {
+                    throw ValidationException::withMessages([
+                        'delete_media_file' => 'The file or its references changed. Reopen Delete to review all affected content.',
+                    ]);
+                }
+
+                try {
+                    if ($deleteFile && $asset instanceof MediaAsset) {
+                        // One media-domain transaction owns both the optional
+                        // original deletion and the Gallery Artwork removal.
+                        app(MediaAssetEditorialService::class)->delete($asset, $artwork);
+                    } else {
+                        app(ArtworkDraftService::class)->delete($artwork);
+                    }
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Artwork was not deleted', $exception);
+
+                    return;
+                } catch (\Throwable $exception) {
+                    // Physical file cleanup can fail *after* a successful DB
+                    // commit; distinguish that from an earlier failed mutation.
+                    if ($deleteFile && $asset instanceof MediaAsset
+                        && ! Artwork::query()->whereKey($artwork->getKey())->exists()
+                        && (string) $asset->fresh()?->getAttribute('state') === 'deleted') {
+                        report($exception);
+                        $this->refreshWorkspaceAfterMutation();
+                        app(AdminNotifier::class)->notification(
+                            title: 'Artwork deleted; file cleanup incomplete',
+                            body: 'The file is marked deleted and its references were removed, but physical Storage cleanup needs attention.',
+                            status: 'danger',
+                        );
+
+                        return;
+                    }
+
+                    throw $exception;
+                }
+
+                $this->refreshWorkspaceAfterMutation();
+                app(AdminNotifier::class)->notification(
+                    title: $deleteFile ? 'Artwork and file deleted' : 'Artwork deleted',
+                    status: 'success',
+                );
+            });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete artwork?',
+            'Delete the Artwork slot. Optionally delete its independent Storage file and every remaining reference.',
+            'Delete artwork',
+            danger: true,
+        );
+    }
 
     public function removeArtworkAction(): Action
     {
@@ -68,82 +151,6 @@ trait GalleryWorkspaceArtworkActions
         return AdminDialog::viewer($action, AdminDialogSize::Large);
     }
 
-    public function deletePrimaryMediaAction(): Action
-    {
-        $action = Action::make('deletePrimaryMedia')
-            ->label('Delete media file')
-            ->color('danger')
-            ->modalContent(fn (array $arguments): View => view(
-                'filament.resources.media-assets.partials.delete-dialog',
-                ['references' => $this->primaryMediaReferences($this->primaryMediaAsset($arguments))],
-            ))
-            ->action(function (array $arguments): void {
-                $asset = $this->primaryMediaAsset($arguments);
-                try {
-                    app(MediaAssetEditorialService::class)->delete($asset);
-                } catch (Throwable $exception) {
-                    if (! $exception instanceof ValidationException) {
-                        report($exception);
-                    }
-
-                    $fresh = $asset->fresh();
-                    if ($fresh instanceof MediaAsset && $fresh->getAttribute('state') === 'deleted') {
-                        $this->refreshWorkspaceAfterMutation();
-                        $actor = auth()->user();
-                        if ($actor instanceof User) {
-                            try {
-                                app(AdminNotifier::class)->notification(
-                                    user: $actor,
-                                    sourceId: 'media-cleanup:asset-'.(int) $asset->getKey(),
-                                    title: 'File cleanup failed',
-                                    body: 'The file was removed from Storage, but stored file cleanup could not be completed.',
-                                    status: 'danger',
-                                    context: [
-                                        'type' => 'media.cleanup_failure',
-                                        'action_url' => MediaAssetResource::getUrl('index'),
-                                        'action_label' => 'Open Storage',
-                                        'entity_type' => 'media_asset',
-                                        'entity_id' => (int) $asset->getKey(),
-                                    ],
-                                );
-                            } catch (Throwable $notificationException) {
-                                report($notificationException);
-                            }
-                        }
-
-                        return;
-                    }
-
-                    if ($exception instanceof ValidationException) {
-                        $this->notifyValidationFailure('Media file was not deleted', $exception);
-
-                        return;
-                    }
-
-                    app(AdminNotifier::class)->notification(
-                        title: 'Media file was not deleted',
-                        body: 'The file could not be deleted.',
-                        status: 'danger',
-                    );
-
-                    return;
-                }
-
-                $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->notification(
-                    title: 'File deleted',
-                    status: 'success',
-                );
-            });
-
-        return AdminDialog::confirm(
-            $action,
-            'Delete file?',
-            submitLabel: 'Delete media file',
-            danger: true,
-        );
-    }
-
     public function publishArtworkAction(): Action
     {
         return Action::make('publishArtwork')
@@ -179,27 +186,27 @@ trait GalleryWorkspaceArtworkActions
 
     public function unpublishArtworkAction(): Action
     {
-        $action = Action::make('unpublishArtwork')
+        return Action::make('unpublishArtwork')
             ->label('Unpublish')
             ->action(function (array $arguments): void {
-                $artwork = $this->actionArtwork($arguments);
-                $previousState = (string) $artwork->getAttribute('state');
-                $updated = app(ArtworkPublicationService::class)->unpublish($artwork);
-                $this->refreshWorkspaceAfterMutation();
-                if ($previousState !== (string) $updated->getAttribute('state')) {
-                    app(AdminNotifier::class)->notification(
-                        title: 'Artwork unpublished',
-                        status: 'success',
-                    );
-                }
+                $this->unpublishArtworkInGallery((int) ($arguments['artwork'] ?? 0));
             });
+    }
 
-        return AdminDialog::confirm(
-            $action,
-            'Unpublish artwork?',
-            submitLabel: 'Unpublish',
-            icon: AdminIcon::Unpublish,
-        );
+    /** Reused by the Gallery row Action and the Edit header Action. */
+    private function unpublishArtworkInGallery(int $id): void
+    {
+        $artwork = $this->actionArtwork(['artwork' => $id])->fresh();
+        $previousState = (string) $artwork->getAttribute('state');
+        $updated = app(ArtworkPublicationService::class)->unpublish($artwork);
+        $this->refreshWorkspaceAfterMutation();
+
+        if ($previousState !== (string) $updated->getAttribute('state')) {
+            app(AdminNotifier::class)->notification(
+                title: 'Artwork unpublished',
+                status: 'success',
+            );
+        }
     }
 
     /** @return array<string, mixed> */
@@ -316,35 +323,37 @@ trait GalleryWorkspaceArtworkActions
                 );
             });
 
-        if (is_array($data['primaryMedia'])) {
-            $actions[] = Action::make('previewDeletePrimaryMedia')
-                ->label('Delete media file')
-                ->icon(AdminIcon::Delete->value)
-                ->iconButton()
-                ->color('danger')
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-danger'])
-                ->action(function () use ($artworkId): void {
-                    $this->replaceMountedAction('deletePrimaryMedia', ['artwork' => $artworkId]);
-                });
-        }
+        $actions[] = Action::make('previewDeleteArtwork')
+            ->label('Delete artwork')
+            ->icon(AdminIcon::Delete->value)
+            ->iconButton()
+            ->color('danger')
+            ->disabled($published)
+            ->extraAttributes(['class' => 'admin-dialog__header-action is-danger'])
+            ->action(function () use ($artworkId): void {
+                $this->replaceMountedAction('deleteArtwork', ['artwork' => $artworkId]);
+            });
 
         return $actions;
     }
 
-    private function primaryMediaAsset(array $arguments): MediaAsset
+    private function availablePrimaryMediaAsset(array $arguments): ?MediaAsset
     {
-        $artwork = $this->actionArtwork($arguments);
-        $usage = $artwork->artworkMedia()
+        $usage = $this->actionArtwork($arguments)->artworkMedia()
             ->where('role', 'primary')
             ->with('mediaAsset')
             ->first();
         $asset = $usage?->getRelationValue('mediaAsset');
 
-        if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
-            throw ValidationException::withMessages(['media' => 'This artwork has no available primary Media File to delete.']);
-        }
+        return $asset instanceof MediaAsset && $asset->getAttribute('state') === 'available' ? $asset : null;
+    }
 
-        return $asset;
+    private function primaryMediaReferenceSnapshot(array $arguments): string
+    {
+        $asset = $this->availablePrimaryMediaAsset($arguments);
+        $references = $asset instanceof MediaAsset ? $this->primaryMediaReferences($asset) : [];
+
+        return hash('sha256', json_encode($references, JSON_THROW_ON_ERROR));
     }
 
     /** @return list<array{type:string,label:string,url:?string}> */

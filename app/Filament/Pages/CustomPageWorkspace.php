@@ -11,9 +11,19 @@ use App\Filament\Pages\Concerns\CustomPageWorkspaceProjectionState;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceSecondaryForms;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceTargetHelpers;
 use Filament\Pages\Page;
+use Filament\Facades\Filament;
+use App\Models\User;
+use Livewire\Attributes\Session;
 
 final class CustomPageWorkspace extends Page
 {
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
+
     use CustomPageWorkspaceComponentActions;
     use CustomPageWorkspaceForms;
     use CustomPageWorkspaceLifecycle;
@@ -28,7 +38,7 @@ final class CustomPageWorkspace extends Page
 
     /** @var array<string, string> */
     private const COMPONENT_LABELS = [
-        'image' => 'Image',
+        'image' => 'Image / Video',
         'text' => 'Rich Text',
         'list' => 'List',
         'divider' => 'Divider',
@@ -86,6 +96,7 @@ final class CustomPageWorkspace extends Page
 
     public string $componentSearch = '';
 
+    #[Session]
     public string $componentType = 'any';
 
     /** @var list<string> */
@@ -93,6 +104,7 @@ final class CustomPageWorkspace extends Page
 
     public int $page = 1;
 
+    #[Session]
     public int $pageSize = self::DEFAULT_PAGE_SIZE;
 
     public int $total = 0;
@@ -103,6 +115,6 @@ final class CustomPageWorkspace extends Page
     {
         $title = trim($this->pageTitle);
 
-        return $title !== '' ? $title : 'Custom Page';
+        return $title !== '' ? $title : __('Custom Page');
     }
 }

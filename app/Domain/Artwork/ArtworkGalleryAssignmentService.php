@@ -141,7 +141,7 @@ final class ArtworkGalleryAssignmentService
         });
     }
 
-    private function normalizeGalleryPositions(int $categoryId): void
+    public function normalizeGalleryPositions(int $categoryId): void
     {
         /** @var Collection<int, Artwork> $artworks */
         $artworks = Artwork::query()

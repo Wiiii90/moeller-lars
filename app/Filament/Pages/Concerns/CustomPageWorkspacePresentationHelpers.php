@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Content\SiteSectionType;
+use App\Domain\Content\SocialLinks;
 use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
@@ -153,16 +154,29 @@ trait CustomPageWorkspacePresentationHelpers
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
     }
 
-    /** @return list<string> */
-    private function validatedSocialPlatforms(mixed $platforms): array
+    /**
+     * New selections must be visible in General. An existing selection may
+     * remain while its General profile is hidden, but never after deletion.
+     *
+     * @param list<mixed> $previousPlatforms
+     * @return list<string>
+     */
+    private function validatedSocialPlatforms(mixed $platforms, array $previousPlatforms = []): array
     {
         if (! is_array($platforms)) {
             return [];
         }
+
+        $configured = array_column(
+            SocialLinks::configured(PublicContentSetting::general()->getAttribute('social_links')),
+            'platform',
+        );
         $selected = [];
         foreach ($platforms as $platform) {
-            if (! is_string($platform) || ! array_key_exists($platform, $this->availableSocialPlatforms)) {
-                throw ValidationException::withMessages(['social_platforms' => 'Choose only social links currently available in General.']);
+            if (! is_string($platform)
+                || (! array_key_exists($platform, $this->availableSocialPlatforms)
+                    && (! in_array($platform, $previousPlatforms, true) || ! in_array($platform, $configured, true)))) {
+                throw ValidationException::withMessages(['social_platforms' => 'Choose only social links still configured in General.']);
             }
             $selected[] = $platform;
         }

@@ -10,6 +10,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
+use Illuminate\Validation\ValidationException;
+use Livewire\Component;
 
 /** Shared form schema for the Pages Edit dialog and Home settings. */
 final class PageHeadingFields
@@ -24,14 +26,14 @@ final class PageHeadingFields
                     ->label('Show page heading')
                     ->default(false)
                     ->live()
-                    ->afterStateUpdated(fn (mixed $state) => self::persist($persist, 'content_heading_enabled', (bool) $state, $successTitle))
+                    ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_enabled', (bool) $state, $successTitle))
                     ->columnSpanFull(),
                 TextInput::make('content_heading_override')
                     ->label('Heading text')
                     ->placeholder('Use page name')
                     ->maxLength(160)
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn (mixed $state) => self::persist($persist, 'content_heading_override', $state, $successTitle))
+                    ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_override', $state, $successTitle))
                     ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled'))
                     ->columnSpanFull(),
                 Select::make('content_heading_alignment')
@@ -41,7 +43,7 @@ final class PageHeadingFields
                     ->native()
                     ->required()
                     ->live()
-                    ->afterStateUpdated(fn (mixed $state) => self::persist($persist, 'content_heading_alignment', $state, $successTitle))
+                    ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_alignment', $state, $successTitle))
                     ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
                 Select::make('content_heading_divider')
                     ->label('Divider below heading')
@@ -50,7 +52,7 @@ final class PageHeadingFields
                     ->native()
                     ->required()
                     ->live()
-                    ->afterStateUpdated(fn (mixed $state) => self::persist($persist, 'content_heading_divider', $state, $successTitle))
+                    ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_divider', $state, $successTitle))
                     ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
             ]);
     }
@@ -59,12 +61,24 @@ final class PageHeadingFields
      * Heading fields have one autosave owner. A no-op never produces a second
      * Notification, even when the containing Edit modal also receives change.
      */
-    private static function persist(?Closure $persist, string $field, mixed $value, string $title): void
+    private static function persist(Component $livewire, ?Closure $persist, string $field, mixed $value, string $title): void
     {
-        // Add Page has no persisted SiteSection until submit. Its fields are
-        // saved once by createPageFromDialog; Edit continues using autosave.
-        if ($persist === null || $persist($field, $value) !== true) {
-            return;
+        if ($persist === null) {
+            return; // Add Page persists heading fields only after creation.
+        }
+        $schemaName = $livewire->getMountedActionSchemaName();
+        $path = $livewire->{$schemaName}->getStatePath();
+        $livewire->resetErrorBag($path.'.'.$field);
+        try {
+            if ($persist($field, $value) !== true) {
+                return;
+            }
+        } catch (ValidationException $exception) {
+            $errors = [];
+            foreach ($exception->errors() as $key => $messages) {
+                $errors[$path.'.'.$key] = $messages;
+            }
+            throw ValidationException::withMessages($errors);
         }
 
         app(AdminNotifier::class)->notification(title: $title, status: 'success');

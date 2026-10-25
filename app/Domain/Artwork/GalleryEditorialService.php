@@ -195,6 +195,9 @@ final class GalleryEditorialService
         $freshGallery = ArtworkCategory::query()->findOrFail($gallery->getKey());
         /** @var Collection<int, Artwork> $freshArtworks */
         $freshArtworks = $freshGallery->artworks()->get();
+        if (GalleryPresentation::sortMode($freshGallery) !== GalleryPresentation::SORT_MANUAL) {
+            throw ValidationException::withMessages(['sort_mode' => 'Switch the Gallery to Manual ordering to move Artworks.']);
+        }
         $this->validateArtworkIds($artworkIds, $freshArtworks);
 
         DB::transaction(function () use ($freshGallery, $artworkIds, $actor): void {
@@ -276,6 +279,7 @@ final class GalleryEditorialService
         $validated = [
             'name' => $name,
             'description' => $description,
+            ...GalleryPresentation::validateSettings($data),
         ];
 
         if (array_key_exists('show_on_home', $data)) {

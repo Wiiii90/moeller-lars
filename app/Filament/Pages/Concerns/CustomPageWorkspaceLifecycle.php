@@ -15,6 +15,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceLifecycle
 {
@@ -197,11 +198,11 @@ trait CustomPageWorkspaceLifecycle
                             ->label('Navigation parent')
                             ->options(fn (): array => $this->parentOptions())
                             ->nullable()
-                            ->placeholder('Top level')
+                            ->placeholder(__('Top level'))
                             ->visible(fn (): bool => PublicContentSetting::navigationNestingEnabled()),
                     ]),
             ])
-            ->modalHeading('Page settings')
+            ->modalHeading(__('Page settings'))
             ->action(function (array $data): void {
                 $before = $this->section()->only([
                     'title',
@@ -212,22 +213,30 @@ trait CustomPageWorkspaceLifecycle
                     'position',
                 ]);
 
-                DB::transaction(function () use ($data): void {
-                    $service = app(SiteSectionEditorialService::class);
-                    $section = $service->updateCustomPageIdentity(
-                        $this->section(),
-                        (string) ($data['title'] ?? ''),
-                        is_string($data['navigation_label'] ?? null) ? $data['navigation_label'] : null,
-                        (string) ($data['slug'] ?? ''),
-                    );
+                try {
+                    DB::transaction(function () use ($data): void {
+                        $service = app(SiteSectionEditorialService::class);
+                        $section = $service->updateCustomPageIdentity(
+                            $this->section(),
+                            (string) ($data['title'] ?? ''),
+                            is_string($data['navigation_label'] ?? null) ? $data['navigation_label'] : null,
+                            (string) ($data['slug'] ?? ''),
+                        );
 
-                    $service->updatePlacement(
-                        $section,
-                        ($data['publication_state'] ?? 'unpublished') === 'published' ? 'published' : 'hidden',
-                        PublicContentSetting::navigationNestingEnabled() && is_numeric($data['parent_id'] ?? null)
-                            ? (int) $data['parent_id'] : null,
-                    );
-                });
+                        $service->updatePlacement(
+                            $section,
+                            ($data['publication_state'] ?? 'unpublished') === 'published' ? 'published' : 'hidden',
+                            PublicContentSetting::navigationNestingEnabled() && is_numeric($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null,
+                        );
+                    });
+                } catch (ValidationException $exception) {
+                    $path = $this->getMountedActionSchema()->getStatePath();
+                    $errors = [];
+                    foreach ($exception->errors() as $field => $messages) {
+                        $errors[$path.'.'.$field] = $messages;
+                    }
+                    throw ValidationException::withMessages($errors);
+                }
 
                 $section = $this->section()->fresh();
                 $changed = $section instanceof SiteSection
@@ -243,6 +252,7 @@ trait CustomPageWorkspaceLifecycle
                 $this->loadAnalyticsSnapshot($section);
                 $this->reloadWorkspace();
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Page settings saved',
                         status: 'success',

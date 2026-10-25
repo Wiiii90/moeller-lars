@@ -16,7 +16,7 @@
                     @if ($currentArtwork && $currentArtwork['thumbnail_url'])
                         <img src="{{ $currentArtwork['thumbnail_url'] }}" alt="" loading="eager" decoding="async">
                     @else
-                        <span>No Hero Artwork</span>
+                        <span>{{ __('No Hero Artwork') }}</span>
                     @endif
                 </div>
 
@@ -62,7 +62,7 @@
 
                                     @if ($heroGroupSource === 'manual' && $heroDisplayStrategy === 'random')
                                         <label class="home-hero-weight">
-                                            <span>Chance</span>
+                                            <span>{{ __('Chance') }}</span>
                                             <span class="home-hero-weight__input">
                                                 <input
                                                     type="number"
@@ -82,19 +82,19 @@
                                         <div class="home-hero-candidate__actions admin-toolbar">
                                             <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork({{ $row['id'] }}, 'up')" @disabled(! $row['can_move_up']) aria-label="Move {{ $row['title'] }} up">↑</button>
                                             <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork({{ $row['id'] }}, 'down')" @disabled(! $row['can_move_down']) aria-label="Move {{ $row['title'] }} down">↓</button>
-                                            <button class="admin-action is-danger" type="button" wire:click="removeHeroArtwork({{ $row['id'] }})" @disabled(count($manualHeroGroup) === 1)>Remove</button>
+                                            <button class="admin-action is-danger" type="button" wire:click="removeHeroArtwork({{ $row['id'] }})" @disabled(count($manualHeroGroup) === 1)>{{ __('Remove') }}</button>
                                         </div>
                                     @endif
                                 </article>
                             @endforeach
                         </div>
                     @else
-                        <div class="home-hero-rail__empty">No eligible Hero Artwork</div>
+                        <div class="home-hero-rail__empty">{{ __('No eligible Hero Artwork') }}</div>
                     @endif
 
                     @if ($heroGroupSource === 'manual')
                         <div class="home-hero-rail__add">
-                            <x-admin.add-row wire:click="mountAction('addHeroArtwork')">Add artwork</x-admin.add-row>
+                            <x-admin.add-row wire:click="mountAction('addHeroArtwork')">{{ __('Add artwork') }}</x-admin.add-row>
                         </div>
                     @endif
 
@@ -115,44 +115,44 @@
             <x-admin.controls class="home-artwork-source-controls admin-data-controls--dashboard-responsive" :metric-grid="true" :search-span="2" aria-label="Gallery source controls">
                 <x-slot:search>
                     <label class="admin-data-field">
-                        <span>Search</span>
+                        <span>{{ __('Search') }}</span>
                         <x-admin.search-input model="sourceSearch" placeholder="Gallery" />
                     </label>
                 </x-slot:search>
 
                 <x-slot:filters>
                     <label class="admin-data-field">
-                        <span>Status</span>
+                        <span>{{ __('Status') }}</span>
                         <select wire:model.live="sourceStatusFilter">
-                            <option value="any">Any</option>
-                            <option value="published">Published</option>
-                            <option value="unpublished">Unpublished</option>
+                            <option value="any">{{ __('Any') }}</option>
+                            <option value="published">{{ __('Published') }}</option>
+                            <option value="unpublished">{{ __('Unpublished') }}</option>
                         </select>
                     </label>
                     <label class="admin-data-field">
                         <span>Source</span>
                         <select wire:model.live="sourceHomeFilter">
-                            <option value="any">Any</option>
-                            <option value="enabled">Enabled</option>
-                            <option value="disabled">Unavailable / Disabled</option>
+                            <option value="any">{{ __('Any') }}</option>
+                            <option value="enabled">{{ __('Enabled') }}</option>
+                            <option value="disabled">{{ __('Unavailable / Disabled') }}</option>
                         </select>
                     </label>
                 </x-slot:filters>
 
                 <x-slot:reset>
                     <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Filter</span>
+                        <span class="admin-data-control-label">{{ __('Filter') }}</span>
                         <x-admin.clear-filters wire:click="resetSourceFilters" :disabled="! $sourceFiltersActive" />
                     </div>
                 </x-slot:reset>
 
                 <x-slot:actions>
                     <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Hero Artwork</span>
+                        <span class="admin-data-control-label">{{ __('Hero Artwork') }}</span>
                         <div class="admin-toolbar admin-editorial-actions home-workspace-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Settings</span>
+                                <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
                             <button
                                 class="admin-action admin-action--with-icon"
@@ -162,11 +162,11 @@
                                 title="{{ $heroGroupSource === 'manual' ? 'Add artwork to the manual Hero group' : 'Switch Hero source to Manual to add artworks directly' }}"
                             >
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Add artwork</span>
+                                <span class="admin-action__label">{{ __('Add artwork') }}</span>
                             </button>
                             <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Preview</span>
+                                <span class="admin-action__label">{{ __('Preview') }}</span>
                             </a>
                         </div>
                     </div>
@@ -174,19 +174,19 @@
 
                 <x-slot:selection>
                     <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
-                        <span class="admin-data-control-label">Selection</span>
+                        <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">
                             <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedSourceIds === [])>
-                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
+                                <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                                 <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Enable</span>
+                                    <span class="admin-action__label">{{ __('Enable') }}</span>
                                 </button>
                                 <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(false)" x-on:click="open = false">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Disable</span>
+                                    <span class="admin-action__label">{{ __('Disable') }}</span>
                                 </button>
                             </div>
                         </div>
@@ -208,12 +208,12 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th scope="col">Gallery</th>
-                            <th scope="col" class="home-source-table__candidates">Candidates</th>
-                            <th scope="col" class="home-source-table__status">Status</th>
-                            <th scope="col" class="home-source-table__artworks">Artworks</th>
-                            <th scope="col" class="home-source-table__year">Newest Year</th>
-                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
+                            <th scope="col">{{ __('Gallery') }}</th>
+                            <th scope="col" class="home-source-table__candidates">{{ __('Candidates') }}</th>
+                            <th scope="col" class="home-source-table__status">{{ __('Status') }}</th>
+                            <th scope="col" class="home-source-table__artworks">{{ __('Artworks') }}</th>
+                            <th scope="col" class="home-source-table__year">{{ __('Newest Year') }}</th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -291,7 +291,7 @@
                                 <td class="admin-table__empty-cell" colspan="7">
                                     @if ($sourceHasRecords)
                                         <x-admin.empty-state title="No matching Galleries" minimal>
-                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">Clear filters</button></x-slot:actions>
+                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">{{ __('Clear filters') }}</button></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No Gallery sources" minimal />
@@ -313,8 +313,8 @@
                     />
                     <span class="admin-pager__range">{{ $sourceRows->firstItem() ?? 0 }}–{{ $sourceRows->lastItem() ?? 0 }} of {{ $sourceRows->total() }}</span>
                     <div class="admin-pager__actions admin-toolbar">
-                        <button class="admin-action" type="button" wire:click="goToSourcePage({{ $sourceRows->currentPage() - 1 }})" @disabled($sourceRows->onFirstPage())>Previous</button>
-                        <button class="admin-action" type="button" wire:click="goToSourcePage({{ $sourceRows->currentPage() + 1 }})" @disabled(! $sourceRows->hasMorePages())>Next</button>
+                        <button class="admin-action" type="button" wire:click="goToSourcePage({{ $sourceRows->currentPage() - 1 }})" @disabled($sourceRows->onFirstPage())>{{ __('Previous') }}</button>
+                        <button class="admin-action" type="button" wire:click="goToSourcePage({{ $sourceRows->currentPage() + 1 }})" @disabled(! $sourceRows->hasMorePages())>{{ __('Next') }}</button>
                     </div>
                 </footer>
             @endif
@@ -331,16 +331,16 @@
             <x-admin.controls class="home-component-controls admin-data-controls--dashboard-responsive" :metric-grid="true" :search-span="3" aria-label="Home component controls">
                 <x-slot:search>
                     <label class="admin-data-field">
-                        <span>Search</span>
+                        <span>{{ __('Search') }}</span>
                         <x-admin.search-input model="componentSearch" placeholder="Components" />
                     </label>
                 </x-slot:search>
 
                 <x-slot:filters>
                     <label class="admin-data-field">
-                        <span>Type</span>
+                        <span>{{ __('Type') }}</span>
                         <select wire:model.live="componentType">
-                            <option value="any">Any</option>
+                            <option value="any">{{ __('Any') }}</option>
                             @foreach ($componentTypeOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
                         </select>
                     </label>
@@ -348,7 +348,7 @@
 
                 <x-slot:reset>
                     <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Filter</span>
+                        <span class="admin-data-control-label">{{ __('Filter') }}</span>
                         <x-admin.clear-filters wire:click="resetComponentFilters" :disabled="! $componentFiltersActive" />
                     </div>
                 </x-slot:reset>
@@ -359,15 +359,15 @@
                         <div class="admin-toolbar admin-editorial-actions home-workspace-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Settings</span>
+                                <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addComponent')">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Add component</span>
+                                <span class="admin-action__label">{{ __('Add component') }}</span>
                             </button>
                             <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Preview</span>
+                                <span class="admin-action__label">{{ __('Preview') }}</span>
                             </a>
                         </div>
                     </div>
@@ -375,17 +375,17 @@
 
                 <x-slot:selection>
                     <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
-                        <span class="admin-data-control-label">Selection</span>
+                        <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">
                             <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($homeSelectionCount === 0)>
-                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
+                                <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected up</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected down</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(true)" x-on:click="open = false">Publish selected</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(false)" x-on:click="open = false">Unpublish selected</button>
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false">Delete selected</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>{{ __('Move selected up') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>{{ __('Move selected down') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(true)" x-on:click="open = false">{{ __('Publish selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(false)" x-on:click="open = false">{{ __('Unpublish selected') }}</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false">{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ $homeSelectionCount }} selected">{{ $homeSelectionCount }}</span>
@@ -395,19 +395,19 @@
 
             @include('filament.pages.partials.home-component-sequence')
 
-            <x-admin.add-row wire:click="mountAction('addComponent')">Add component</x-admin.add-row>
+            <x-admin.add-row wire:click="mountAction('addComponent')">{{ __('Add component') }}</x-admin.add-row>
 
         @elseif ($template === 'skip_home')
             <div class="home-skip-tools admin-data-control-group" aria-label="Skip Home actions">
-                <span class="admin-data-control-label">Skip Home</span>
+                <span class="admin-data-control-label">{{ __('Skip Home') }}</span>
                 <div class="admin-toolbar admin-editorial-actions home-workspace-actions">
                     <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">Settings</span>
+                        <span class="admin-action__label">{{ __('Settings') }}</span>
                     </button>
                     <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">Preview</span>
+                        <span class="admin-action__label">{{ __('Preview') }}</span>
                     </a>
                 </div>
             </div>
@@ -415,7 +415,7 @@
                 <div class="home-workspace__skip-row">
                     <div><strong>{{ $skipTarget['label'] }}</strong><span>{{ $skipTarget['type'] }} · {{ $skipTarget['path'] }}</span></div>
                     <div class="home-workspace__redirect-expression" aria-label="Current Home redirect"><code>/</code><span aria-hidden="true">→</span><code>{{ $skipTarget['path'] }}</code></div>
-                    <a class="admin-action" href="{{ $skipTarget['url'] }}" target="_blank" rel="noopener">Open target</a>
+                    <a class="admin-action" href="{{ $skipTarget['url'] }}" target="_blank" rel="noopener">{{ __('Open target') }}</a>
                 </div>
             @else
                 <x-admin.empty-state title="No redirect target" minimal />

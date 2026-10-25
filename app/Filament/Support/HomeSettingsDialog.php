@@ -9,6 +9,7 @@ use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
+use App\Domain\Content\PublicImageViewer;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SitePageHeading;
 use App\Filament\Support\Controls\AdminControl;
@@ -22,6 +23,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 final class HomeSettingsDialog
 {
@@ -47,7 +49,10 @@ final class HomeSettingsDialog
             'show_details' => $hero['show_details'],
             'show_gallery_link' => $hero['show_gallery_link'],
             'show_navigation' => $hero['show_navigation'],
+            'video_sound_enabled' => $hero['video_sound_enabled'],
             'enable_viewer' => $hero['enable_viewer'],
+            'custom_image_viewer_enabled' => (bool) $configuration[HomeTemplate::Custom->value]['image_viewer_enabled'],
+            'construction_image_viewer_enabled' => (bool) $configuration[HomeTemplate::UnderConstruction->value]['image_viewer_enabled'],
             'group_source' => $hero['group_source'],
             'display_strategy' => $hero['display_strategy'],
             'newest_by' => $hero['newest_by'],
@@ -73,7 +78,7 @@ final class HomeSettingsDialog
                 ->schema([
                     Select::make('template')
                         ->label('Template')
-                        ->options(HomeTemplate::options())
+                        ->options(array_map('__', HomeTemplate::options()))
                         ->required()
                         ->live(),
                     ...$this->routingDialog->schema(),
@@ -90,7 +95,7 @@ final class HomeSettingsDialog
                         }),
                     Select::make('group_source')
                         ->label('Group source')
-                        ->options(['automatic' => 'Automatic', 'manual' => 'Manual'])
+                        ->options(['automatic' => __('Automatic'), 'manual' => __('Manual')])
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
@@ -103,12 +108,12 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
                     Select::make('newest_by')
                         ->label('Newest by')
-                        ->options(['artwork_date' => 'Artwork date', 'added' => 'Added'])
+                        ->options(['artwork_date' => __('Artwork date'), 'added' => __('Added')])
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
                     Select::make('pool_rule')
                         ->label('Candidate filter')
-                        ->options(['all' => 'All eligible', 'year' => 'Specific Year'])
+                        ->options(['all' => __('All eligible'), 'year' => __('Specific Year')])
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
@@ -124,7 +129,7 @@ final class HomeSettingsDialog
                         ->columnSpanFull(),
                     Select::make('display_strategy')
                         ->label('Display strategy')
-                        ->options(['ordered' => 'Ordered', 'random' => 'Random', 'sequential' => 'Sequential'])
+                        ->options(['ordered' => __('Ordered'), 'random' => __('Random'), 'sequential' => __('Sequential')])
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
@@ -136,13 +141,18 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
                     Select::make('rotation_interval_unit')
                         ->label('Interval unit')
-                        ->options(['days' => 'Days', 'weeks' => 'Weeks'])
+                        ->options(['days' => __('Days'), 'weeks' => __('Weeks')])
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
                     $this->heroDisplayToggle('show_details', 'Show artwork information', $persistHeroToggle),
                     $this->heroDisplayToggle('show_gallery_link', 'Show Gallery link for single Hero', $persistHeroToggle),
                     $this->heroDisplayToggle('show_navigation', 'Navigate Hero group', $persistHeroToggle),
-                    $this->heroDisplayToggle('enable_viewer', 'Open artwork viewer', $persistHeroToggle),
+                    $this->heroDisplayToggle('video_sound_enabled', 'Allow visitors to unmute looping Home videos', $persistHeroToggle),
+                    $this->heroDisplayToggle('enable_viewer', PublicImageViewer::TOGGLE_LABEL, $persistHeroToggle),
+                    AdminControl::toggle('custom_image_viewer_enabled', PublicImageViewer::TOGGLE_LABEL)
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
+                    AdminControl::toggle('construction_image_viewer_enabled', PublicImageViewer::TOGGLE_LABEL)
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
                     Toggle::make('public_site_gate')
                         ->label('Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
@@ -159,6 +169,12 @@ final class HomeSettingsDialog
     /** @param array<string, mixed> $data */
     public function save(array $data): bool
     {
+        return DB::transaction(fn (): bool => $this->saveSettings($data));
+    }
+
+    /** @param array<string, mixed> $data */
+    private function saveSettings(array $data): bool
+    {
         $settings = $this->resolver->settings();
         $changed = false;
         $template = HomeTemplate::tryFrom((string) ($data['template'] ?? ''));
@@ -173,6 +189,7 @@ final class HomeSettingsDialog
                 'show_details' => $data['show_details'] ?? $current['show_details'],
                 'show_gallery_link' => $data['show_gallery_link'] ?? $current['show_gallery_link'],
                 'show_navigation' => $data['show_navigation'] ?? $current['show_navigation'],
+                'video_sound_enabled' => $data['video_sound_enabled'] ?? $current['video_sound_enabled'],
                 'enable_viewer' => $data['enable_viewer'] ?? $current['enable_viewer'],
                 'group_source' => $groupSource,
                 'display_strategy' => $data['display_strategy'] ?? $current['display_strategy'],
@@ -197,7 +214,9 @@ final class HomeSettingsDialog
 
             $changed = $this->heroConfiguration->updateArtworkSettings($settings, $input);
         } else {
-            $input = [];
+            $current = $this->editorial->configuration($settings)[$template->value];
+            $field = $template === HomeTemplate::Custom ? 'custom_image_viewer_enabled' : 'construction_image_viewer_enabled';
+            $input = ['image_viewer_enabled' => (bool) ($data[$field] ?? $current['image_viewer_enabled'])];
             if ($template === HomeTemplate::UnderConstruction) {
                 $input['public_site_gate'] = (bool) ($data['public_site_gate'] ?? false);
             }
@@ -285,13 +304,13 @@ final class HomeSettingsDialog
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
             ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
-            ->searchPrompt('Search eligible Hero Artworks')
-            ->noSearchResultsMessage('No matching eligible artworks');
+            ->searchPrompt(__('Search eligible Hero Artworks'))
+            ->noSearchResultsMessage(__('No matching eligible artworks'));
 
         if ($multiple) {
             $select
                 ->multiple()
-                ->placeholder('No additional artworks')
+                ->placeholder(__('No additional artworks'))
                 ->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
         } else {
             $select->getOptionLabelUsing(fn (mixed $value): ?string => $this->heroArtworkOptionLabel($value));

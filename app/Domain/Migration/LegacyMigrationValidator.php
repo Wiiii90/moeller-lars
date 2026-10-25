@@ -2,8 +2,7 @@
 
 namespace App\Domain\Migration;
 
-use App\Domain\Artwork\PublicArtworkQuery;
-use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaIntegrityService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -17,7 +16,6 @@ final class LegacyMigrationValidator
 {
     public function __construct(
         private readonly MediaIntegrityService $mediaIntegrityService,
-        private readonly PublicArtworkQuery $publicArtworkQuery,
         private readonly LegacyPublicCvImporter $cvImporter,
     ) {}
 
@@ -135,15 +133,19 @@ final class LegacyMigrationValidator
             $errors[] = 'Target contains a different number of migrated original media assets than the manifest.';
         }
 
-        $targetHomeSlug = null;
-        try {
-            $targetHomeSlug = $this->publicArtworkQuery->latestForHome()?->getAttribute('slug');
-            if ($targetHomeSlug !== null && is_string($targetHomeSlug) === false) {
-                $errors[] = 'Public home query returned an invalid artwork slug.';
-                $targetHomeSlug = null;
-            }
-        } catch (\Throwable $exception) {
-            $errors[] = 'Public home query failed: '.$exception->getMessage();
+        // This comparison verifies the source manifest migration marker,
+        // not the Home Hero. Public Home is resolved exclusively by the
+        // configured HomeHeroResolver and never uses featured_on_home.
+        $importedFeaturedSlugs = Artwork::query()
+            ->where('migration_batch_id', $batch)
+            ->where('featured_on_home', true)
+            ->pluck('slug')
+            ->all();
+        $targetHomeSlug = count($importedFeaturedSlugs) === 1
+            ? (string) $importedFeaturedSlugs[0]
+            : null;
+        if (count($importedFeaturedSlugs) > 1) {
+            $errors[] = 'Imported artworks contain more than one legacy home marker.';
         }
 
         if ($expectedHomeSlug !== null && $targetHomeSlug !== $expectedHomeSlug) {
@@ -285,13 +287,8 @@ final class LegacyMigrationValidator
             $errors[] = "Media integrity failure for {$source}#{$legacyId}: {$issue}.";
         }
 
-        $publicThumbnailCount = $asset->variants()
-            ->where('state', 'available')
-            ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-            ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
-            ->count();
-        if ($publicThumbnailCount !== 1) {
-            $errors[] = "Media for {$source}#{$legacyId} does not have exactly one available public-v1 thumbnail.";
+        if (MediaPreviewVariant::imageThumbnail($asset) === null) {
+            $errors[] = "Media for {$source}#{$legacyId} does not have exactly one available public thumbnail.";
         }
     }
 

@@ -15,6 +15,7 @@ final class PublicationService
         private readonly PublicationMediaCleanupService $mediaCleanup,
         private readonly PublicationSchemaGuard $schemaGuard,
         private readonly PublicationVersionService $versions,
+        private readonly MediaRightsPublicationSelections $rightsSelections,
     ) {}
 
     public function hasPendingChanges(): bool
@@ -52,6 +53,16 @@ final class PublicationService
             $total += $count;
         }
 
+        $rightsCount = $this->rightsSelections->pendingCount($this->versions->currentLiveCheckpoint());
+        if ($rightsCount > 0) {
+            $groups[] = [
+                'area' => 'Storage',
+                'entity' => 'Image rights files',
+                'count' => $rightsCount,
+            ];
+            $total += $rightsCount;
+        }
+
         usort($groups, static fn (array $left, array $right): int => [$left['area'], $left['entity']] <=> [$right['area'], $right['entity']]);
 
         return ['total' => $total, 'groups' => $groups];
@@ -72,11 +83,8 @@ final class PublicationService
 
         foreach (PublicationSnapshot::TABLES as $table) {
             $remaining = $limit - count($rows);
-            if ($remaining < 1) {
-                $truncated = true;
-                break;
-            }
-
+            // When full, look for one actual further change before declaring
+            // truncation; later tables may contain no differences at all.
             $changes = DB::select(
                 "SELECT COALESCE(working.id, committed.id)::text AS row_key, CASE WHEN working.id IS NULL THEN 'removed' WHEN committed.id IS NULL THEN 'added' ELSE 'changed' END AS change_kind, to_jsonb(working)::text AS working_payload, to_jsonb(committed)::text AS committed_payload FROM public.{$table} AS working FULL OUTER JOIN committed.{$table} AS committed USING (id) WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL.' ORDER BY COALESCE(working.id, committed.id) LIMIT ?',
                 [$remaining + 1],
@@ -111,6 +119,30 @@ final class PublicationService
             }
         }
 
+        if (! $truncated) {
+            $remaining = $limit - count($rows);
+            $changes = $this->rightsSelections->pendingDetails(
+                $this->versions->currentLiveCheckpoint(),
+                $remaining + 1,
+            );
+            if (count($changes) > $remaining) {
+                $changes = array_slice($changes, 0, $remaining);
+                $truncated = true;
+            }
+
+            foreach ($changes as $change) {
+                $rows[] = [
+                    'area' => 'Storage',
+                    'entity' => 'Image rights files',
+                    'table' => 'media_rights_artifact_selections',
+                    'row_key' => (string) $change->role.':'.(string) $change->source_id,
+                    'label' => ((string) $change->role === 'thumbnail' ? 'Thumbnail' : 'Original').' #'.$change->source_id,
+                    'change' => (string) $change->change_kind,
+                    'fields' => ['rights_artifact'],
+                ];
+            }
+        }
+
         return ['rows' => $rows, 'truncated' => $truncated];
     }
 
@@ -136,6 +168,7 @@ final class PublicationService
 
         try {
             $this->schemaGuard->assertParity();
+            $this->rightsSelections->assertWorkingReady();
         } catch (\Throwable $exception) {
             return [
                 'status' => 'blocked',
@@ -180,6 +213,10 @@ final class PublicationService
                 return null;
             }
 
+            // The UI preflight alone is not authoritative. Validate the
+            // selected file rights again under the existing commit lock.
+            $this->rightsSelections->assertWorkingReady();
+
             $stagedAuditEventIds = AuditEvent::query()
                 ->whereDoesntHave('publicationCheckpointEvent')
                 ->orderBy('id')
@@ -223,6 +260,9 @@ final class PublicationService
                 is_string($operation) ? $operation : 'commit',
                 $source,
             );
+            // Same publication transaction and lock: immutable media choices
+            // follow exactly the committed snapshot without changing its hash.
+            $this->rightsSelections->captureCheckpoint($checkpoint);
 
             if ($stagedAuditEventIds !== []) {
                 $createdAt = now();

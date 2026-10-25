@@ -148,3 +148,28 @@ it('notifies once when publishing a mixed Home component and Contact child selec
     expect(AuditEvent::query()->count())->toBe($activityCount)
         ->and(AdminNotification::query()->count())->toBe($notificationCount);
 });
+
+it('renders a saved Home heading immediately and repeats without audit or feedback', function (): void {
+    $settings = homeNotificationSettings([['type' => 'text', 'title' => 'Original heading', 'body' => null]]);
+    $before = AuditEvent::query()->count();
+    $editor = Livewire::test(HomePresentation::class)->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
+        ->set('mountedActions.0.data.title', 'Saved heading')->callMountedAction()->assertHasNoFormErrors()->assertSee('Saved heading');
+    expect(app(HomePresentationEditorialService::class)->configuration($settings->fresh())['custom']['components'][0]['title'])->toBe('Saved heading')
+        ->and(AuditEvent::query()->count())->toBe($before + 1)->and(AdminNotification::query()->count())->toBe(1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+    $editor->callMountedAction()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($before + 1)->and(AdminNotification::query()->count())->toBe(1);
+});
+
+it('rejects a stale Home component editor without overwriting the current record', function (): void {
+    $settings = homeNotificationSettings([['type' => 'text', 'title' => 'Original heading', 'body' => null]]);
+    $editor = Livewire::test(HomePresentation::class)->mountAction('editComponent', ['index' => 0, 'type' => 'text']);
+    app(HomePresentationEditorialService::class)->updateComponent($settings, HomeTemplate::Custom, 0, 'text',
+        ['type' => 'text', 'title' => 'Concurrent heading', 'body' => null]);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = AuditEvent::query()->count();
+    $editor->set('mountedActions.0.data.title', 'Stale heading')->callMountedAction()
+        ->assertHasFormErrors(['editor_kind'])->assertNotDispatched('admin-header-notification');
+    expect(app(HomePresentationEditorialService::class)->configuration($settings->fresh())['custom']['components'][0]['title'])->toBe('Concurrent heading')
+        ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
+});

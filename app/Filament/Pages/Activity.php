@@ -7,6 +7,7 @@ use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Publication\PublicationService;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Publication\PublicationVersionService;
 use App\Filament\Support\ActivityClockProjection;
 use App\Filament\Support\AdminActivityFeed;
@@ -16,10 +17,12 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
+use App\Models\User;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,6 +40,11 @@ final class Activity extends Page
     protected static ?string $navigationLabel = 'Activity';
 
     protected static ?string $title = 'Activity';
+
+    public function getTitle(): string
+    {
+        return __('Activity');
+    }
 
     protected static ?int $navigationSort = 45;
 
@@ -95,6 +103,13 @@ final class Activity extends Page
 
     /** @var array<int, array<string, mixed>|null> */
     private array $commitDetailsCache = [];
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
 
     public function mount(): void
     {
@@ -640,7 +655,7 @@ final class Activity extends Page
         return AdminDialog::viewer(
             Action::make('publicationReview')
                 ->label('Review changes')
-                ->modalHeading('Review changes')
+                ->modalHeading(__('Review changes'))
                 ->modalContent(fn (): View => view(
                     'filament.pages.partials.activity-publication-review-dialog',
                     ['publication' => $this->publicationReview()],
@@ -826,7 +841,7 @@ final class Activity extends Page
             ['label' => 'Committed changes', 'value' => number_format((int) ($commitSummary->changed_rows ?? 0)), 'description' => 'Rows in matching commits'],
             ['label' => 'Active days', 'value' => number_format($overview['active_days']), 'description' => 'Days with matching activity'],
             ['label' => 'Pending', 'value' => number_format((int) $publicationContext['staged']), 'description' => 'Working changes not LIVE yet'],
-            ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt?->format('Y-m-d H:i') ?? 'No matching activity'],
+            ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($latestAt) : null ?? 'No matching activity'],
         ];
 
         $timeline = $this->timelinePresentation(
@@ -943,7 +958,7 @@ final class Activity extends Page
 
             $calendarDays[] = [
                 'date' => $dateKey,
-                'label' => $date->format('D, M j'),
+                'label' => RegionalFormats::adminDate($date),
                 'count' => $count,
                 'level' => $level,
                 'selected' => $date->isSameDay($selectedDate),
@@ -969,7 +984,7 @@ final class Activity extends Page
             'calendarActiveDays' => count(array_filter($calendarDaily, static fn (int $count): bool => $count > 0)),
             'calendarMaximum' => $calendarMaximum,
             'selectedCalendarDate' => $selectedDate->format('Y-m-d'),
-            'selectedCalendarLabel' => $selectedDate->format('M j, Y'),
+            'selectedCalendarLabel' => RegionalFormats::adminDate($selectedDate),
             'timelineItemLabel' => 'changes',
         ];
     }

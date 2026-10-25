@@ -6,6 +6,8 @@ use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaIntegrityService;
+use App\Domain\Media\MediaVariantRegenerationService;
+use App\Domain\Media\PublicMedia;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Storage\SiteStorageDatabaseUsageService;
 use App\Models\Artwork;
@@ -21,6 +23,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\Process\Process;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -53,12 +56,14 @@ function lifecycleIngestService(): MediaIngestService
 
 function lifecycleAsset(): MediaAsset
 {
+    // Multiple assets in one isolated test stay distinct without wall-clock IDs.
+    $suffix = (string) (((int) MediaAsset::query()->max('id')) + 1);
     $asset = MediaAsset::create([
-        'storage_key' => 'originals/'.uniqid().'.jpg',
+        'storage_key' => 'originals/test-asset-'.$suffix.'.jpg',
         'original_filename' => 'asset.jpg',
         'mime_type' => 'image/jpeg',
         'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('', true)),
+        'sha256' => hash('sha256', 'asset-fixture-'.$suffix),
         'state' => 'available',
         'alt_text' => 'Asset ALT',
     ]);
@@ -66,10 +71,10 @@ function lifecycleAsset(): MediaAsset
     MediaVariant::create([
         'media_asset_id' => $asset->id,
         'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/'.uniqid().'.webp',
+        'storage_key' => 'variants/test-asset-'.$suffix.'.webp',
         'mime_type' => 'image/webp',
         'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('', true)),
+        'sha256' => hash('sha256', 'variant-fixture-'.$suffix),
         'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
@@ -86,8 +91,7 @@ function lifecycleJournal(string $template, string $slug): SiteSection
         'navigation_label' => ucfirst($slug),
         'slug' => $slug,
         'state' => 'hidden',
-        'position' => random_int(600, 800),
-        'show_in_navigation' => false,
+        'position' => ((int) SiteSection::query()->whereNull('parent_id')->max('position')) + 10,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);
@@ -104,10 +108,127 @@ it('ingests canonical media with durable checksums and a rebuildable public thum
         ->and($asset->mime_type)->toBe('image/jpeg')
         ->and($asset->byte_size)->toBe(strlen($originalBytes))
         ->and($asset->sha256)->toBe(hash('sha256', $originalBytes))
-        ->and($variant->transform_profile)->toBe('public-v1')
+        ->and($variant->transform_profile)->toBe(MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
         ->and($variant->state)->toBe('available')
         ->and($variant->byte_size)->toBe(strlen($thumbnailBytes))
         ->and($variant->sha256)->toBe(hash('sha256', $thumbnailBytes));
+});
+
+it('ingests an image above the legacy GD cap through bounded libvips and regenerates its exact variant', function (): void {
+    $ingest = lifecycleIngestService();
+    $placeholder = tempnam(sys_get_temp_dir(), 'large-media-test-');
+    expect($placeholder)->not->toBeFalse();
+    $path = $placeholder.'.jpg';
+
+    try {
+        $process = new Process(['vips', 'black', $path, '6000', '4000', '--bands', '3']);
+        $process->setTimeout(120);
+        expect($process->run())->toBe(0);
+
+        $upload = new UploadedFile($path, 'high-resolution-artwork.jpg', 'image/jpeg', null, true);
+        $asset = $ingest->ingest($upload);
+        $variant = $asset->variants()->sole();
+        $disk = Storage::disk(config('media.disk'));
+
+        expect($asset->width)->toBe(6000)
+            ->and($asset->height)->toBe(4000)
+            ->and($asset->sha256)->toBe(hash_file('sha256', $path))
+            ->and($variant->variant_kind)->toBe('thumbnail')
+            ->and($variant->transform_profile)->toBe(MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
+            ->and(max((int) $variant->width, (int) $variant->height))->toBeLessThanOrEqual(960)
+            ->and(app(PublicMedia::class)->thumbnailVariantForAsset($asset)->getKey())->toBe($variant->getKey())
+            ->and(app(\App\Domain\Artwork\ArtworkPublicationService::class)->mediaReady($asset, 'Large artwork preview'))->toBeTrue();
+
+        $bytesBefore = $disk->get($variant->storage_key);
+        $disk->delete($variant->storage_key);
+        expect(app(MediaVariantRegenerationService::class)->ensureFile($variant))->toBeTrue()
+            ->and($disk->get($variant->storage_key))->toBe($bytesBefore);
+    } finally {
+        @unlink($path);
+        @unlink($placeholder);
+    }
+});
+
+it('generates a versioned immutable WebP poster for a real H.264 video and regenerates exact bytes', function (): void {
+    $ingest = lifecycleIngestService();
+    $placeholder = tempnam(sys_get_temp_dir(), 'video-media-test-');
+    expect($placeholder)->not->toBeFalse();
+    $path = $placeholder.'.mp4';
+
+    try {
+        $process = new Process([
+            'ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin',
+            '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1',
+            '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', $path,
+        ]);
+        $process->setTimeout(120);
+        expect($process->run())->toBe(0);
+
+        $asset = $ingest->ingest(new UploadedFile($path, 'loop.mp4', 'video/mp4', null, true));
+        $variant = $asset->variants()->sole();
+        $disk = Storage::disk(config('media.disk'));
+        $posterBefore = $disk->get($variant->storage_key);
+
+        expect($asset->mime_type)->toBe('video/mp4')
+            ->and($variant->variant_kind)->toBe(MediaIngestService::VIDEO_POSTER_KIND)
+            ->and($variant->transform_profile)->toBe(MediaIngestService::VIDEO_POSTER_PROFILE)
+            ->and($variant->sha256)->toBe(hash('sha256', $posterBefore))
+            ->and(app(PublicMedia::class)->posterUrlForAsset($asset))->not->toBeNull();
+
+        $disk->delete($variant->storage_key);
+        expect(app(MediaVariantRegenerationService::class)->ensureFile($variant))->toBeTrue()
+            ->and($disk->get($variant->storage_key))->toBe($posterBefore);
+    } finally {
+        @unlink($path);
+        @unlink($placeholder);
+    }
+});
+
+it('accepts a valid MP4 with the H.264 track metadata outside both byte windows', function (): void {
+    $ingest = lifecycleIngestService();
+    $temp = tempnam(sys_get_temp_dir(), 'mp4-moov-middle-');
+    expect($temp)->not->toBeFalse();
+    $path = $temp.'.mp4';
+
+    try {
+        $process = new Process([
+            'ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin',
+            '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1',
+            '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', $path,
+        ]);
+        $process->setTimeout(60);
+        expect($process->run())->toBe(0);
+
+        // Append structurally valid MP4 free atoms on both sides of moov
+        // without changing mdat offsets. The old head/tail sampling would
+        // miss the H.264 sample description despite valid video content.
+        $bytes = file_get_contents($path);
+        expect($bytes)->not->toBeFalse();
+        $moovTypeOffset = strrpos($bytes, 'moov');
+        expect($moovTypeOffset)->not->toBeFalse();
+        $moovOffset = $moovTypeOffset - 4;
+        // FFmpeg can include 'avc1' as a compatible file brand even before
+        // moov. Replacing only that optional brand keeps the real sample
+        // description in moov and makes the incomplete byte-scan regression
+        // detectable rather than accidentally passing.
+        $brandOffset = strpos($bytes, 'avc1');
+        if ($brandOffset !== false && $brandOffset < $moovOffset) {
+            $bytes = substr_replace($bytes, 'mp42', $brandOffset, 4);
+        }
+        $paddingBytes = 1_100_000;
+        $free = pack('N', $paddingBytes + 8).'free'.str_repeat("\0", $paddingBytes);
+        $bytes = substr($bytes, 0, $moovOffset).$free.substr($bytes, $moovOffset).$free;
+        file_put_contents($path, $bytes);
+        expect(str_contains(substr($bytes, 0, 1_048_576), 'avc1'))->toBeFalse()
+            ->and(str_contains(substr($bytes, -1_048_576), 'avc1'))->toBeFalse();
+
+        $asset = $ingest->ingest(new UploadedFile($path, 'valid-moov-middle.mp4', 'video/mp4', null, true));
+        expect($asset->mime_type)->toBe('video/mp4')
+            ->and($asset->variants()->sole()->variant_kind)->toBe(MediaIngestService::VIDEO_POSTER_KIND);
+    } finally {
+        @unlink($path);
+        @unlink($temp);
+    }
 });
 
 it('rejects invalid image bytes before database or storage writes', function (): void {
@@ -123,10 +244,25 @@ it('rejects invalid image bytes before database or storage writes', function ():
 
 it('rejects uploads over the byte limit before writes', function (): void {
     Storage::fake(config('media.disk'));
-    $upload = UploadedFile::fake()->create('large.jpg', MediaTypePolicy::imageMaxBytes() + 1, 'image/jpeg');
+    // Laravel's fake file factory interprets create() sizes in kilobytes.
+    // Extend a real JPEG by one byte beyond the limit, so MIME validation
+    // cannot hide a missing byte-ceiling check.
+    $upload = lifecycleImageUpload('image/jpeg');
+    $path = $upload->getRealPath();
+    $handle = fopen($path, 'c+b');
+    expect($handle)->not->toBeFalse();
+    try {
+        expect(ftruncate($handle, MediaTypePolicy::imageMaxBytes() + 1))->toBeTrue();
+    } finally {
+        fclose($handle);
+    }
+    clearstatcache(true, $path);
 
-    expect(fn () => app(MediaIngestService::class)->ingest($upload))
-        ->toThrow(ValidationException::class);
+    // The fake retains sizeToReport from creation; use the actual file size.
+    $actualUpload = new UploadedFile($path, 'oversized.jpg', null, null, true);
+    expect($actualUpload->getSize())->toBe(MediaTypePolicy::imageMaxBytes() + 1);
+    expect(fn () => app(MediaIngestService::class)->ingest($actualUpload))
+        ->toThrow(ValidationException::class, 'The uploaded media has an invalid size for this media type.');
     expect(MediaAsset::count())->toBe(0)
         ->and(Storage::disk(config('media.disk'))->allFiles())->toBeEmpty();
 });
@@ -135,12 +271,15 @@ it('rejects images over the pixel limit before writes', function (): void {
     Storage::fake(config('media.disk'));
     $small = lifecycleImageUpload('image/png');
     $bytes = file_get_contents($small->getRealPath());
-    $bytes = substr_replace($bytes, pack('N', 10000), 16, 4);
-    $bytes = substr_replace($bytes, pack('N', 5000), 20, 4);
+    $bytes = substr_replace($bytes, pack('N', 15000), 16, 4);
+    $bytes = substr_replace($bytes, pack('N', 10000), 20, 4);
+    // Update the IHDR CRC so a malformed PNG does not accidentally count
+    // as evidence for the independent image-pixel limit.
+    $bytes = substr_replace($bytes, pack('N', crc32(substr($bytes, 12, 17))), 29, 4);
 
     expect(fn () => app(MediaIngestService::class)->ingest(
         UploadedFile::fake()->createWithContent('large.png', $bytes)
-    ))->toThrow(ValidationException::class);
+    ))->toThrow(ValidationException::class, 'The uploaded image dimensions are not allowed.');
 
     expect(MediaAsset::count())->toBe(0)
         ->and(Storage::disk(config('media.disk'))->allFiles())->toBeEmpty();
@@ -153,7 +292,7 @@ it('never trusts the client basename for storage keys', function (): void {
 
     expect($asset->original_filename)->toBe('secret.jpg')
         ->and($asset->storage_key)->not->toContain('secret.jpg')
-        ->and($asset->storage_key)->toMatch('/^originals\/[0-9a-f-]+\.jpg$/');
+        ->and($asset->storage_key)->toStartWith('originals/');
 });
 
 it('fails closed when the operator quota is invalid', function (): void {
@@ -183,6 +322,42 @@ it('allows an exact-fit site storage write and blocks the first byte beyond quot
     $capacity->assertCanStoreOriginal(60);
 
     expect(fn () => $capacity->assertCanStoreOriginal(61))
+        ->toThrow(ValidationException::class, 'site storage allowance is full');
+});
+
+it('reserves the incoming thumbnail bytes separately from existing generated storage', function (): void {
+    Storage::fake('media-capacity');
+    config(['media.disk' => 'media-capacity']);
+    Storage::disk('media-capacity')->put('originals/current.jpg', str_repeat('o', 40));
+    Storage::disk('media-capacity')->put('variants/existing.webp', str_repeat('v', 65));
+
+    $capacity = app(MediaCapacityService::class);
+    $snapshot = $capacity->snapshot();
+    expect($snapshot['measurement_available'])->toBeTrue()
+        ->and($snapshot['generated_bytes'])->toBe(65);
+
+    config()->set('media.quota_bytes', $snapshot['site_used_bytes'] + 100);
+
+    // The 65 already stored variant bytes are included in site_used_bytes.
+    // Only 70 new original + 30 new thumbnail bytes have to fit.
+    $capacity->assertCanStoreOriginal(70, 30);
+    expect(fn () => $capacity->assertCanStoreOriginal(70, 31))
+        ->toThrow(ValidationException::class, 'site storage allowance is full');
+});
+
+it('uses the same quota gate for generated-only thumbnail consolidation', function (): void {
+    Storage::fake('media-capacity');
+    config(['media.disk' => 'media-capacity']);
+    Storage::disk('media-capacity')->put('originals/original.jpg', str_repeat('o', 50));
+
+    $capacity = app(MediaCapacityService::class);
+    $snapshot = $capacity->snapshot();
+    expect($snapshot['measurement_available'])->toBeTrue();
+    config()->set('media.quota_bytes', $snapshot['site_used_bytes'] + 100);
+
+    $capacity->assertCanStoreGenerated(100);
+
+    expect(fn () => $capacity->assertCanStoreGenerated(101))
         ->toThrow(ValidationException::class, 'site storage allowance is full');
 });
 

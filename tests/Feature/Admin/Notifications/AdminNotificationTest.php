@@ -3,46 +3,12 @@
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Models\AdminNotification;
+use App\Models\AuditEvent;
+use App\Models\PublicContentSetting;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\File;
-use Livewire\Component;
 use Livewire\Livewire;
+use Tests\Feature\Admin\Notifications\AdminHeaderNotificationProbe;
 
-uses(RefreshDatabase::class);
-
-final class AdminHeaderNotificationProbe extends Component
-{
-    public function emitNotification(): void
-    {
-        app(AdminNotifier::class)->notification(
-            title: 'Changes saved',
-            body: 'Background gradient updated.',
-            status: 'success',
-        );
-    }
-
-    public function emitIdempotent(int $userId): void
-    {
-        app(AdminNotifier::class)->notification(
-            user: $userId,
-            sourceId: 'media-cleanup:asset-72',
-            title: 'File cleanup failed',
-            body: 'Stored file cleanup could not be completed.',
-            status: 'danger',
-            context: [
-                'type' => 'media.cleanup_failure',
-                'entity_type' => 'media_asset',
-                'entity_id' => 72,
-            ],
-        );
-    }
-
-    public function render(): string
-    {
-        return '<div></div>';
-    }
-}
 
 it('persists an authenticated admin Notification and projects it into the header', function (): void {
     $user = User::factory()->admin()->create();
@@ -67,6 +33,35 @@ it('persists an authenticated admin Notification and projects it into the header
         ->and($notification->getAttribute('body'))->toBe('Background gradient updated.')
         ->and($notification->getAttribute('status'))->toBe('success')
         ->and((string) $notification->getAttribute('source_id'))->toStartWith('notification:');
+});
+
+
+it('sends one action Notification for two persisted setting changes while retaining both audits', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+    $auditsBefore = AuditEvent::query()->count();
+
+    Livewire::test(AdminHeaderNotificationProbe::class)
+        ->call('emitCombinedSettings')
+        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
+            return $event === 'admin-header-notification'
+                && ($params['notification']['title'] ?? null) === 'Contact settings saved'
+                && ($params['notification']['status'] ?? null) === 'success';
+        });
+
+    $changes = AuditEvent::query()->where('action', 'public_content_setting.updated')
+        ->orderBy('id')->pluck('id')->map(static fn ($id): int => (int) $id)->all();
+    $notice = AdminNotification::query()->where('user_id', $actor->getKey())->sole();
+
+    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('studio@example.invalid')
+        ->and(PublicContentSetting::general()->getAttribute('contact_recipient_email'))->toBe('private@example.invalid')
+        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
+        ->and(count($changes))->toBe(2)
+        ->and($notice->getAttribute('title'))->toBe('Contact settings saved')
+        ->and($notice->getAttribute('status'))->toBe('success')
+        ->and($notice->getAttribute('source_id'))->toBe('activity:'.$changes[1])
+        ->and((int) $notice->getAttribute('audit_event_id'))->toBe($changes[1])
+        ->and($notice->getAttribute('metadata'))->toBe(['audit_event_ids' => $changes]);
 });
 
 it('persists structured Notifications without requiring a browser session', function (): void {
@@ -174,40 +169,4 @@ it('keeps Dashboard Notification reads isolated to the authenticated user', func
     expect($page['total'])->toBe(1)
         ->and($page['items'][0]['notification_id'])->toBe($first->getKey())
         ->and(app(DashboardFeed::class)->entry('notification:'.$second->getKey()))->toBeNull();
-});
-
-it('owns Notification delivery without framework notification objects or parallel notifier APIs', function (): void {
-    $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
-    $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
-
-    expect($provider)
-        ->toContain('PanelsRenderHook::BODY_END')
-        ->toContain("view('filament.partials.admin-header-notification')")
-        ->not->toContain('PanelsRenderHook::TOPBAR_START')
-        ->and($notifier)
-        ->toContain("dispatch('admin-header-notification'")
-        ->not->toContain('Filament\\Notifications')
-        ->not->toContain('public function inbox(')
-        ->not->toContain('public function both(');
-
-    foreach (File::allFiles(app_path()) as $file) {
-        $source = file_get_contents($file->getRealPath());
-
-        expect($source)
-            ->not->toContain('Notification::make()')
-            ->not->toContain('->transient()');
-    }
-});
-
-
-it('forbids legacy notification methods at every current application callsite', function (): void {
-    foreach (File::allFiles(app_path()) as $file) {
-        if ($file->getExtension() !== 'php') {
-            continue;
-        }
-
-        $source = File::get($file->getRealPath());
-        expect(preg_match('/app\s*\(\s*AdminNotifier::class\s*\)\s*->\s*(?:both|inbox)\s*\(/', $source))
-            ->toBe(0, 'Removed AdminNotifier API in '.$file->getRelativePathname());
-    }
 });

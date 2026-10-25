@@ -37,7 +37,6 @@ use App\Routing\SiteNodeRoute;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -46,7 +45,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Session;
 use Livewire\WithFileUploads;
 
 final class HomePresentation extends Page
@@ -57,6 +58,11 @@ final class HomePresentation extends Page
     protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $title = 'Home';
+
+    public function getTitle(): string
+    {
+        return __('Home');
+    }
 
     protected static ?string $slug = 'pages/home';
 
@@ -74,6 +80,9 @@ final class HomePresentation extends Page
     public int $settingsId = 0;
 
     public int $homeSectionId = 0;
+
+    #[\Livewire\Attributes\Locked]
+    public ?array $editingHomeComponentOriginal = null;
 
 
     public bool $artworkShowDetails = true;
@@ -130,12 +139,15 @@ final class HomePresentation extends Page
 
     public string $sourceSearch = '';
 
+    #[Session]
     public string $sourceStatusFilter = 'any';
 
+    #[Session]
     public string $sourceHomeFilter = 'any';
 
     public int $sourcePage = 1;
 
+    #[Session]
     public int $sourcePerPage = 10;
 
     /** @var list<int|string> */
@@ -149,7 +161,7 @@ final class HomePresentation extends Page
 
     /** @var array<string,string> */
     public array $componentTypeOptions = [
-        'image' => 'Image',
+        'image' => 'Image / Video',
         'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
@@ -160,7 +172,7 @@ final class HomePresentation extends Page
 
     /** @var array<string,string> */
     public array $newComponentOptions = [
-        'image' => 'Image',
+        'image' => 'Image / Video',
         'heading' => 'Heading',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
@@ -171,6 +183,7 @@ final class HomePresentation extends Page
 
     public string $componentSearch = '';
 
+    #[Session]
     public string $componentType = 'any';
 
     /** @var list<string> */
@@ -320,7 +333,7 @@ final class HomePresentation extends Page
         $action = Action::make('settings')
             ->label('Settings')
             ->modalHeading('Home settings')
-            ->fillForm(fn (): array => $this->homeSettingsFormState())
+            ->fillForm(fn (): array => $dialog->fill())
             ->schema(fn (): array => $dialog->schema(
                 fn (string $field, bool $value) => $this->persistHeroDisplayToggle($field, $value),
             ))
@@ -341,7 +354,7 @@ final class HomePresentation extends Page
 
     private function persistHeroDisplayToggle(string $field, bool $value): void
     {
-        if (! in_array($field, ['show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer'], true)) {
+        if (! in_array($field, ['show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer', 'video_sound_enabled'], true)) {
             throw new \InvalidArgumentException('Unsupported Hero display setting.');
         }
 
@@ -463,11 +476,13 @@ final class HomePresentation extends Page
                         ->required(fn (callable $get): bool => $get('kind') === 'heading')
                         ->visible(fn (callable $get): bool => $get('kind') === 'heading'),
                     ...$this->homeRichTextFields('kind', 'rich_text', required: true),
-                    MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
+                    MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES])
                         ->required(fn (callable $get): bool => $get('kind') === 'image')
                         ->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Toggle::make('image_decorative')->label('Decorative image')
                         ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
+                    Toggle::make('video_controls_enabled')->label('Show video playback controls')
+                        ->default(true)->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
                         ->default('thin')->required(fn (callable $get): bool => $get('kind') === 'divider')
                         ->visible(fn (callable $get): bool => $get('kind') === 'divider'),
@@ -491,6 +506,7 @@ final class HomePresentation extends Page
                     'type' => 'image',
                     'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                     'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                    'video_controls_enabled' => (bool) ($data['video_controls_enabled'] ?? true),
                 ],
                 'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
                 'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
@@ -528,6 +544,7 @@ final class HomePresentation extends Page
         $action = Action::make($actionName)->label('Edit')
             ->fillForm(function (array $arguments): array {
                 $component = $this->componentFromArguments($arguments);
+                $this->editingHomeComponentOriginal = $component;
 
                 return [
                     'type' => $component['type'],
@@ -536,6 +553,7 @@ final class HomePresentation extends Page
                     'body' => $component['body'] ?? null,
                     'media_asset_id' => $component['media_asset_id'] ?? null,
                     'image_decorative' => (bool) ($component['image_decorative'] ?? false),
+                    'video_controls_enabled' => CustomPageSetting::videoControls($component),
                     'variant' => $component['variant'] ?? 'thin',
                     'list_title' => $component['title'] ?? null,
                     'list_media_asset_id' => $component['media_asset_id'] ?? null,
@@ -572,11 +590,13 @@ final class HomePresentation extends Page
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
                 ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
+                MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES])
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'image')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Toggle::make('image_decorative')->label('Decorative image')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
+                Toggle::make('video_controls_enabled')->label('Show video playback controls')
+                    ->default(true)->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'divider')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'divider'),
@@ -607,6 +627,7 @@ final class HomePresentation extends Page
                         'type' => 'image',
                         'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                         'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                        'video_controls_enabled' => (bool) ($data['video_controls_enabled'] ?? ($current['video_controls_enabled'] ?? true)),
                     ],
                     'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
                     'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
@@ -616,11 +637,23 @@ final class HomePresentation extends Page
                     'legal_disclaimer' => ['type' => 'legal_disclaimer'],
                     default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
                 };
-                $changed = app(HomePresentationEditorialService::class)->updateComponent(
-                    $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, [...$current, ...$component],
-                );
+                try {
+                    $changed = app(HomePresentationEditorialService::class)->updateComponent(
+                        $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, [...$current, ...$component],
+                        $this->editingHomeComponentOriginal,
+                    );
+                } catch (ValidationException $exception) {
+                    $path = $this->getMountedActionSchema()->getStatePath();
+                    $errors = [];
+                    foreach ($exception->errors() as $field => $messages) {
+                        $errors[$path.'.'.($field === 'component' ? 'editor_kind' : $field)] = $messages;
+                    }
+                    throw ValidationException::withMessages($errors);
+                }
                 $this->reloadWorkspace();
+                $this->editingHomeComponentOriginal = $this->componentFromArguments($arguments);
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Home component saved',
                         status: 'success',
@@ -897,21 +930,23 @@ final class HomePresentation extends Page
         if ($ids === []) {
             return;
         }
-        /** @var EloquentCollection<int,ArtworkCategory> $galleries */
-        $galleries = ArtworkCategory::query()->whereIn('id', $ids)->get();
-        foreach ($galleries as $gallery) {
-            if ((bool) $gallery->getAttribute('show_on_home') === $enabled) {
-                continue;
+        $changed = DB::transaction(function () use ($ids, $enabled): int {
+            $galleries = ArtworkCategory::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+            $changed = 0;
+            foreach ($galleries as $gallery) {
+                if ((bool) $gallery->getAttribute('show_on_home') === $enabled) {
+                    continue;
+                }
+                $updated = app(GalleryEditorialService::class)->update($gallery, [
+                    'name' => (string) $gallery->getAttribute('name'),
+                    'description' => $gallery->getAttribute('description'),
+                    'show_on_home' => $enabled,
+                ]);
+                $changed += (int) $updated->wasChanged('show_on_home');
             }
-            app(GalleryEditorialService::class)->update($gallery, [
-                'name' => (string) $gallery->getAttribute('name'),
-                'description' => $gallery->getAttribute('description'),
-                'show_on_home' => $enabled,
-            ]);
-        }
-        $changed = $galleries
-            ->filter(static fn (ArtworkCategory $gallery): bool => (bool) $gallery->getAttribute('show_on_home') !== $enabled)
-            ->count();
+
+            return $changed;
+        });
 
         $this->clearSourceSelection();
         $this->reloadWorkspace();
@@ -1041,30 +1076,6 @@ final class HomePresentation extends Page
             HomeTemplate::SkipHome => $this->loadSkipWorkspace(),
         };
         $this->refreshMetrics();
-    }
-
-    /** @return array<string, mixed> */
-    private function homeSettingsFormState(): array
-    {
-        return [
-            'template' => $this->template,
-            'show_details' => $this->artworkShowDetails,
-            'show_gallery_link' => $this->artworkShowGalleryLink,
-            'show_navigation' => $this->artworkShowNavigation,
-            'enable_viewer' => $this->artworkEnableViewer,
-            'group_source' => $this->heroGroupSource,
-            'display_strategy' => $this->heroDisplayStrategy,
-            'newest_by' => $this->heroNewestBy,
-            'group_size' => $this->heroGroupSize,
-            'pool_rule' => $this->heroPoolRule,
-            'pool_year' => $this->heroPoolYear,
-            'manual_include_ids' => $this->manualHeroCandidateIds,
-            'rotation_interval_count' => $this->rotationIntervalCount,
-            'rotation_interval_unit' => $this->rotationIntervalUnit,
-            'public_site_gate' => $this->publicSiteGate,
-            'skip_home' => $this->skipHome,
-            'skip_target_section_id' => $this->skipTargetSectionId,
-        ];
     }
 
     private function loadArtworkWorkspace(HomePresentationSetting $settings): void
@@ -1226,7 +1237,7 @@ final class HomePresentation extends Page
                 'children' => $this->homeChildProjection($component, $index),
                 'search_text' => Str::lower(implode(' ', [$typeLabel, $primary, $secondary, $title, $body,
                     $type === 'list' ? collect($component['items'] ?? [])
-                        ->filter('is_array')
+                        ->filter(static fn (mixed $item): bool => is_array($item))
                         ->flatMap(static fn (array $item): array => array_filter([
                             $item['title'] ?? null, CustomPageSetting::listItemContext($item),
                             CustomPageSetting::listItemDetails($item),
@@ -1315,7 +1326,7 @@ final class HomePresentation extends Page
     /** @return array<string,mixed> */
     private function artworkRow(Artwork $artwork): array
     {
-        return [...$this->candidateRow($artwork), 'featured' => (bool) $artwork->getAttribute('featured_on_home'), 'preview_url' => route('preview.artworks.show', ['slug' => $artwork->getAttribute('slug')])];
+        return [...$this->candidateRow($artwork), 'preview_url' => route('preview.artworks.show', ['slug' => $artwork->getAttribute('slug')])];
     }
 
     /** @return array<string,mixed> */
@@ -1397,12 +1408,9 @@ final class HomePresentation extends Page
     /** @return list<mixed> */
     private function homeRichTextFields(string $stateField, string $stateValue, bool $required = false): array
     {
-        $fields = AdminRichText::schema('body', 'Rich Text', 20000);
-        foreach ($fields as $index => $field) {
+        $fields = AdminRichText::schema('body', 'Rich Text', 20000, required: $required);
+        foreach ($fields as $field) {
             $field->visible(fn (callable $get): bool => $get($stateField) === $stateValue);
-            if ($required && $index === 0 && $field instanceof MarkdownEditor) {
-                $field->required(fn (callable $get): bool => $get($stateField) === $stateValue);
-            }
         }
 
         return $fields;

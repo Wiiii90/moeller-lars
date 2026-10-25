@@ -20,7 +20,7 @@ function b2Raster(string $path, string $mime): void
     $image = imagecreatetruecolor(23, 17);
     for ($y = 0; $y < 17; $y++) {
         for ($x = 0; $x < 23; $x++) {
-            imagesetpixel($image, $x, $y, imagecolorallocate($image, $x * 9, $y * 13, ($x + $y) * 7));
+            imagesetpixel($image, $x, $y, imagecolorallocate($image, $x * 9, $y * 13, ($x + $y) * 6));
         }
     }
     match ($mime) {
@@ -134,6 +134,91 @@ it('writes real JPEG, PNG and WebP rights metadata without changing original byt
     'PNG' => ['image/png', 'png'],
     'WebP' => ['image/webp', 'webp'],
 ]);
+
+it('stages actual WebP thumbnails with their own hashes and the original asset rights', function (): void {
+    $dir = sys_get_temp_dir().'/b2-thumb-'.bin2hex(random_bytes(12));
+    mkdir($dir, 0700);
+    $source = "$dir/thumbnail.webp";
+    $staged = "$dir/staged.webp";
+
+    try {
+        b2Raster($source, 'image/webp');
+        $sourceHash = hash_file('sha256', $source);
+        $asset = new MediaAsset;
+        $asset->setRawAttributes([
+            'id' => 142,
+            'mime_type' => 'image/jpeg',
+            'file_creator' => 'Authorized Photographer',
+            'file_rights_holder' => 'Photo Studio',
+            'copyright_notice_mode' => MediaAsset::COPYRIGHT_OVERRIDE,
+            'copyright_notice' => 'Copyright Photo Studio',
+        ], true);
+        $variant = new \App\Models\MediaVariant;
+        $variant->setRawAttributes([
+            'id' => 247,
+            'media_asset_id' => 142,
+            'variant_kind' => \App\Domain\Media\PublicMedia::THUMBNAIL_KIND,
+            'transform_profile' => \App\Domain\Media\PublicMedia::PUBLIC_TRANSFORM_PROFILE,
+            'state' => 'available',
+            'mime_type' => 'image/webp',
+            'byte_size' => filesize($source),
+            'sha256' => $sourceHash,
+        ], true);
+
+        $writer = new MediaIptcXmpWriter(new MediaRightsProjection);
+        $metadata = $writer->stageVariantCopy($asset, $variant, $source, $staged);
+        $tags = json_decode(b2Exif(['-j', '-s', '-G1', '-XMP:all', $staged]), true, 512, JSON_THROW_ON_ERROR)[0];
+        expect($metadata['sha256'])->toBe(hash_file('sha256', $staged))
+            ->and($metadata['mime_type'])->toBe('image/webp')
+            ->and(hash_file('sha256', $source))->toBe($sourceHash)
+            ->and(b2DecodedPixels($staged, 'image/webp'))->toBe(b2DecodedPixels($source, 'image/webp'))
+            ->and($tags['XMP-dc:Creator'] ?? null)->toBe('Authorized Photographer')
+            ->and($tags['XMP-plus:CopyrightOwnerName'] ?? null)->toBe('Photo Studio');
+
+        $variant->setAttribute('media_asset_id', 143);
+        expect(fn () => $writer->stageVariantCopy($asset, $variant, $source, "$dir/rejected.webp"))
+            ->toThrow(RuntimeException::class)
+            ->and(file_exists("$dir/rejected.webp"))->toBeFalse();
+    } finally {
+        foreach (glob("$dir/*") ?: [] as $file) {
+            unlink($file);
+        }
+        rmdir($dir);
+    }
+});
+
+it('rejects inherited contradictory rights without rewriting archive claims', function (): void {
+    $dir = sys_get_temp_dir().'/b2-rights-conflict-'.bin2hex(random_bytes(12));
+    mkdir($dir, 0700);
+    $source = "$dir/source.jpg";
+    $staged = "$dir/staged.jpg";
+
+    try {
+        b2Raster($source, 'image/jpeg');
+        b2Exif(['-overwrite_original', '-XMP-dc:Rights=Existing photographer claim', $source]);
+        $sourceHash = hash_file('sha256', $source);
+
+        $asset = new MediaAsset;
+        $asset->setRawAttributes([
+            'mime_type' => 'image/jpeg',
+            'byte_size' => filesize($source),
+            'sha256' => $sourceHash,
+            'copyright_notice_mode' => MediaAsset::COPYRIGHT_NONE,
+        ], true);
+        expect(fn () => (new MediaIptcXmpWriter(new MediaRightsProjection))
+            ->stageCopy($asset, $source, $staged))->toThrow(
+                RuntimeException::class,
+                'Original XMP rights conflict',
+            );
+        expect(hash_file('sha256', $source))->toBe($sourceHash)
+            ->and(file_exists($staged))->toBeFalse();
+    } finally {
+        foreach (glob("$dir/*") ?: [] as $file) {
+            unlink($file);
+        }
+        rmdir($dir);
+    }
+});
 
 it('refuses corrupt source checksums without creating a staged copy', function (): void {
     $dir = sys_get_temp_dir().'/b2-integrity-'.bin2hex(random_bytes(12));

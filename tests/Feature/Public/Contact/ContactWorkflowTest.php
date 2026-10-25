@@ -7,12 +7,9 @@ use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\Mail;
-
-uses(RefreshDatabase::class);
 
 function commitContactWorkingState(): void
 {
@@ -44,7 +41,6 @@ function enablePublishedContactForm(): void
         'slug' => 'contact-test-page',
         'state' => 'published',
         'position' => $position,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);
@@ -245,6 +241,71 @@ it('rate limits repeated contact submissions', function (): void {
     expect(ContactMessage::query()->count())->toBe(5);
 });
 
+it('does not use an uncommitted private Contact recipient for public submissions', function (): void {
+    config([
+        'contact.recipient' => 'fallback@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+        'mail.from.name' => 'Lars Möller Website',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    PublicContentSetting::general()->update([
+        'contact_recipient_email' => 'private-working@example.test',
+    ]);
+
+    $this->post('/contact', contactPayload(['message' => 'Before recipient Commit']))
+        ->assertRedirect()
+        ->assertSessionHas('contact_success');
+
+    Mail::assertSent(WebsiteContactMessage::class, 1);
+    Mail::assertSent(WebsiteContactMessage::class, fn (WebsiteContactMessage $mail): bool => $mail->hasTo('fallback@example.test'));
+
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload(['message' => 'After recipient Commit']))
+        ->assertRedirect()
+        ->assertSessionHas('contact_success');
+
+    Mail::assertSent(WebsiteContactMessage::class, 2);
+    Mail::assertSent(WebsiteContactMessage::class, fn (WebsiteContactMessage $mail): bool => $mail->hasTo('private-working@example.test'));
+
+    expect(ContactMessage::query()->count())->toBe(2);
+});
+
+it('keeps accepting public Contact submissions until disabling the form is committed', function (): void {
+    config([
+        'contact.recipient' => 'artist@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    $settings = CustomPageSetting::query()
+        ->whereHas('siteSection', fn ($query) => $query->where('slug', 'contact-test-page'))
+        ->sole();
+    $settings->update(['blocks' => contactComponentBlocks(formPublished: false)]);
+
+    // The editor has removed the form from Working, but public submissions
+    // still use the already committed component configuration.
+    $this->post('/contact', contactPayload(['message' => 'Still enabled in Committed']))
+        ->assertRedirect()
+        ->assertSessionHas('contact_success');
+
+    expect(ContactMessage::query()->count())->toBe(1);
+    Mail::assertSent(WebsiteContactMessage::class, 1);
+
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload(['message' => 'Disabled after Commit']))
+        ->assertNotFound();
+
+    expect(ContactMessage::query()->count())->toBe(1);
+    Mail::assertSent(WebsiteContactMessage::class, 1);
+});
+
 it('requires an enabled Contact component on a published Custom Page', function (): void {
     Mail::fake();
 
@@ -258,7 +319,6 @@ it('requires an enabled Contact component on a published Custom Page', function 
         'slug' => 'private-contact',
         'state' => 'hidden',
         'position' => 901,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);
@@ -277,4 +337,58 @@ it('requires an enabled Contact component on a published Custom Page', function 
     $this->post('/contact', contactPayload())->assertNotFound();
 
     expect(ContactMessage::query()->count())->toBe(0);
+});
+
+it('limits repeated contact submissions across distinct client IP addresses', function (): void {
+    config([
+        'contact.recipient' => 'artist@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    // Every source stays below the existing five-per-minute IP threshold.
+    // A new sender on each request keeps the sender quota independent.
+    foreach (range(1, 60) as $attempt) {
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.'.(($attempt % 200) + 1)])
+            ->post('/contact', contactPayload([
+                'email' => "visitor{$attempt}@example.test",
+                'message' => "Distributed attempt {$attempt}",
+            ]))->assertRedirect();
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+        ->post('/contact', contactPayload([
+            'email' => 'next-visitor@example.test',
+            'message' => 'Should be blocked by site quota',
+        ]))->assertTooManyRequests();
+
+    expect(ContactMessage::query()->count())->toBe(60);
+});
+
+it('limits one sender across changing addresses without a plain-text email cache key', function (): void {
+    config([
+        'contact.recipient' => 'artist@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    foreach (range(1, 6) as $attempt) {
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.'.($attempt + 100)])
+            ->post('/contact', contactPayload([
+                'email' => 'One.Sender@example.test',
+                'message' => "Sender attempt {$attempt}",
+            ]))->assertRedirect();
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.100'])
+        ->post('/contact', contactPayload([
+            'email' => 'one.sender@EXAMPLE.test',
+            'message' => 'Over sender limit',
+        ]))->assertTooManyRequests();
+
+    expect(ContactMessage::query()->count())->toBe(6);
 });

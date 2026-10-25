@@ -7,6 +7,7 @@
                     :artwork="$heroArtwork"
                     :media="$media"
                     :show-details="$showDetails"
+                    :allow-video-sound="$allowVideoSound"
                     :show-category-link="$showGalleryLink || $navigableHero"
                     :hero-navigation="$navigableHero"
                     :enable-viewer="$enableViewer"

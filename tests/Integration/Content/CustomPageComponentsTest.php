@@ -4,6 +4,8 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\CustomPageSetting;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
+use Illuminate\Validation\ValidationException;
 use App\Models\User;
 
 beforeEach(function (): void {
@@ -12,7 +14,7 @@ beforeEach(function (): void {
 
 function customPageComponentAsset(string $suffix): MediaAsset
 {
-    return MediaAsset::query()->create([
+    $asset = MediaAsset::query()->create([
         'storage_key' => 'originals/custom-page-component-'.$suffix.'.jpg',
         'original_filename' => 'custom-page-component-'.$suffix.'.jpg',
         'mime_type' => 'image/jpeg',
@@ -23,7 +25,38 @@ function customPageComponentAsset(string $suffix): MediaAsset
         'width' => 2,
         'height' => 2,
     ]);
+
+    MediaVariant::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'variant_kind' => 'thumbnail',
+        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
+        'storage_key' => 'variants/custom-page-component-'.$suffix.'.webp',
+        'mime_type' => 'image/webp',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'custom-preview-'.$suffix),
+        'state' => 'available',
+        'width' => 2,
+        'height' => 2,
+    ]);
+
+    return $asset;
 }
+
+it('rejects publishing a Custom Page image without a canonical thumbnail', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Missing preview page', 'missing-preview-page');
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = customPageComponentAsset('without-preview');
+    $asset->variants()->delete();
+    $settings->update(['blocks' => [[
+        'type' => 'image',
+        'published' => true,
+        'media_asset_id' => $asset->getKey(),
+        'image_decorative' => true,
+    ]]]);
+
+    expect(fn () => $settings->fresh()->assertReadyForPublic())
+        ->toThrow(ValidationException::class, 'public thumbnail');
+});
 
 it('persists ordered Custom Page components across add remove and reorder changes', function (): void {
     $section = app(SiteSectionEditorialService::class)->createCustomPage('Component page', 'component-persistence-page');
@@ -113,6 +146,7 @@ it('stores ordered decorative Image children and rejects incompatible nested com
             ['title' => 'Lives and works in Hamburg', 'context' => null],
         ]],
         ['type' => 'text', 'title' => 'Practice', 'body' => 'My work'],
+        ['type' => 'divider', 'variant' => 'thin'],
         ['type' => 'contact', 'title' => 'Contact', 'children' => [
             ['type' => 'public_email', 'published' => true],
             ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
@@ -123,13 +157,12 @@ it('stores ordered decorative Image children and rejects incompatible nested com
         'media_asset_id' => $asset->getKey(), 'children' => $children,
     ]]]);
     $saved = $settings->fresh()->components()[0];
-    expect(array_column($saved['children'], 'type'))->toBe(['list', 'text', 'contact'])
+    expect(array_column($saved['children'], 'type'))->toBe(['list', 'text', 'divider', 'contact'])
         ->and(CustomPageSetting::listItemContext($saved['children'][0]['items'][1]))->toBeNull();
     $settings->fresh()->assertReadyForPublic();
 
     foreach ([
         [['type' => 'image', 'media_asset_id' => $asset->getKey()]],
-        [['type' => 'divider', 'variant' => 'thin']],
         [['type' => 'list', 'media_asset_id' => $asset->getKey(), 'items' => []]],
         [['type' => 'contact', 'children' => [['type' => 'contact_form', 'published' => true]]]],
     ] as $invalid) {

@@ -182,12 +182,6 @@
     margin-top: var(--admin-section-gap);
 }
 
-.general-separator {
-    width: 100%;
-    border: 0;
-    border-top: 1px solid var(--admin-line);
-}
-
 .admin-favicon-control .fi-input-wrp,
 .admin-favicon-control .fi-select-input-btn {
     min-height: 4.5rem;
@@ -443,15 +437,18 @@
 }
 
 .admin-help__popover {
-    position: absolute;
-    z-index: 1000;
-    top: calc(100% + .35rem);
-    right: 0;
-    width: min(18rem, 72vw);
+    /* The single shared help component positions its portal in the viewport,
+       clear of modal scroll clipping and all four screen edges. */
+    position: fixed;
+    z-index: 100000;
+    width: min(18rem, calc(100dvw - 24px));
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overflow-wrap: anywhere;
     padding: .55rem .65rem;
-    border: 1px solid var(--admin-line-strong);
-    background: var(--admin-control-popover-surface, var(--admin-surface));
-    color: var(--admin-text);
+    border: 1px solid var(--admin-line-strong, #999);
+    background: var(--admin-control-popover-surface, var(--admin-surface, #fff));
+    color: var(--admin-text, #222);
     box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
     font-size: .72rem;
     font-weight: 450;
@@ -466,80 +463,226 @@
     font-size: .7rem;
 }
 
-.admin-rich-text-insert-control {
-    display: grid;
-    justify-items: start;
-    gap: .4rem;
-}
-
-.admin-rich-text-image-trigger {
-    min-height: var(--admin-control-height);
-}
-
-.admin-rich-text-image-insert {
-    display: grid;
-    width: min(100%, 34rem);
-    gap: .55rem;
-    margin-top: -.35rem;
-    padding: .65rem;
+/* Canonical artist Rich Text surface — shared by all editorial dialogs.
+   Filament/Tiptap owns selection, focus, history and floating toolbars. */
+.admin-rich-text--visual .fi-fo-rich-editor {
     border: 1px solid var(--admin-line);
-    background: var(--admin-subtle);
-}
-
-.admin-rich-text-image-insert__content,
-.admin-rich-text-image-insert__external {
-    display: grid;
-    gap: .45rem;
-}
-
-.admin-rich-text-image-insert__sources {
-    display: flex;
-    gap: .25rem;
-}
-
-.admin-rich-text-image-insert__source {
-    min-height: 1.9rem;
-    padding: .28rem .55rem;
-    border: 1px solid var(--admin-line);
+    border-radius: var(--admin-radius, .35rem);
     background: var(--admin-surface);
-    color: var(--admin-muted);
-    font-size: .72rem;
-    font-weight: 600;
-    line-height: 1;
-    cursor: pointer;
-}
-
-.admin-rich-text-image-insert__source:hover,
-.admin-rich-text-image-insert__source:focus-visible,
-.admin-rich-text-image-insert__source.is-active {
-    border-color: var(--admin-line-strong);
     color: var(--admin-text);
 }
 
-.admin-rich-text-image-insert__external-label {
+.admin-rich-text--visual .fi-fo-rich-editor-toolbar {
+    display: flex;
+    align-items: center;
+    background: var(--admin-subtle);
+    border-bottom: 1px solid var(--admin-line);
+    padding: .25rem .35rem;
+    gap: .25rem .375rem;
+}
+
+.admin-rich-text--visual .fi-fo-rich-editor-toolbar-group {
+    display: inline-flex;
+    align-items: center;
+    gap: .125rem;
+}
+
+.admin-rich-text--visual .fi-fo-rich-editor-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 2rem;
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+    padding: 0;
+    border-radius: .2rem;
     color: var(--admin-muted);
-    font-size: .7rem;
+    transition: color 120ms ease, background-color 120ms ease;
+}
+
+.admin-rich-text--visual .fi-fo-rich-editor-tool svg {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+}
+
+.admin-rich-text--visual .fi-fo-rich-editor-tool-with-label {
+    flex-basis: auto;
+    width: auto;
+    padding-inline: .375rem;
+}
+
+.admin-rich-text-editor-shell {
+    position: relative;
+}
+
+.admin-rich-text-storage-dropdown {
+    position: absolute;
+    z-index: 40;
+    width: min(38rem, calc(100% - 1rem));
+    padding: .65rem;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    border: 1px solid var(--admin-line);
+    border-radius: var(--admin-radius, .35rem);
+    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
+}
+
+.admin-rich-text-storage-dropdown__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-bottom: .5rem;
+    color: var(--admin-text);
+    font-size: .78rem;
     font-weight: 600;
 }
 
-.admin-rich-text-image-insert__external-row {
+.admin-rich-text-storage-dropdown__close {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: .4rem;
-    align-items: center;
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: var(--admin-radius, .35rem);
+    background: transparent;
+    color: var(--admin-muted);
+    cursor: pointer;
 }
 
-.admin-rich-text-image-insert__external-input {
+.admin-rich-text-storage-dropdown__close:is(:hover, :focus-visible) {
+    color: var(--admin-text);
+    background: var(--admin-subtle);
+}
+
+.admin-rich-text-storage-dropdown__close svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.admin-rich-text--visual .fi-fo-rich-editor-tool:is(:hover, :focus-visible, .fi-active) {
+    color: var(--admin-text);
+    background: var(--admin-subtle);
+}
+
+.admin-rich-text--visual .fi-fo-rich-editor-content {
+    min-height: 11rem;
+    line-height: 1.6;
+}
+
+.admin-rich-text--visual .tiptap {
+    color: var(--admin-text);
+    overflow-wrap: anywhere;
+}
+
+.admin-rich-text--visual .tiptap img {
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Tiptap image arrangement is saved as canonical document metadata. */
+.admin-rich-text--visual .tiptap img[data-artist-placement="left"] { display: block; margin-inline: 0 auto; }
+.admin-rich-text--visual .tiptap img[data-artist-placement="center"] { display: block; margin-inline: auto; }
+.admin-rich-text--visual .tiptap img[data-artist-placement="right"] { display: block; margin-inline: auto 0; }
+.admin-rich-text--visual .tiptap img[data-artist-placement="float-left"] { float: left; margin: 0 1rem .75rem 0; }
+.admin-rich-text--visual .tiptap img[data-artist-placement="float-right"] { float: right; margin: 0 0 .75rem 1rem; }
+.admin-rich-text--visual .tiptap::after { content: ''; display: table; clear: both; }
+.admin-artist-image-caption { display: block; font-size: .75rem; line-height: 1.5; color: var(--admin-muted); }
+
+/* In-editor link entry: stays inside the owning Edit dialog, never a nested modal. */
+.admin-rich-text-link-dropdown {
+    position: absolute;
+    z-index: 45;
+    width: min(20rem, 100%);
+    padding: .75rem;
+    border: 1px solid var(--admin-line);
+    border-radius: var(--admin-radius, .35rem);
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
+}
+.admin-rich-text-link-dropdown__form { display: grid; gap: .65rem; }
+.admin-rich-text-link-dropdown__label { display: grid; gap: .25rem; font-size: .8125rem; font-weight: 500; }
+.admin-rich-text-link-dropdown__input {
+    display: block;
+    width: 100%;
     min-width: 0;
+    border: 1px solid var(--admin-line);
+    border-radius: .25rem;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    padding: .45rem .6rem;
+    font: inherit;
+    font-weight: 400;
+}
+.admin-rich-text-link-dropdown__input:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+}
+.admin-rich-text-link-dropdown__input[aria-invalid="true"] { border-color: var(--admin-danger, #b33); }
+.admin-rich-text-link-dropdown__checkbox { display: flex; align-items: center; gap: .45rem; font-size: .8125rem; }
+.admin-rich-text-link-dropdown__error { font-size: .75rem; color: var(--admin-danger, #b33); }
+.admin-rich-text-link-dropdown__actions { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
+.admin-rich-text-link-dropdown__button {
+    padding: .4rem .6rem;
+    border: 1px solid var(--admin-line);
+    border-radius: .25rem;
+    font-size: .8125rem;
+}
+.admin-rich-text-link-dropdown__button--apply { background: var(--admin-subtle); font-weight: 600; }
+.admin-rich-text-link-dropdown__button--remove { margin-right: auto; }
+
+.admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-y: auto;
 }
 
-.admin-rich-text-image-insert__error {
-    margin: 0;
-    color: var(--admin-danger);
-    font-size: .7rem;
+.admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar .fi-fo-rich-editor-tool:not(:disabled) {
+    color: var(--admin-text);
 }
 
-.admin-rich-text-media-picker {
-    margin: 0 !important;
+.admin-rich-text-image-caption-dropdown {
+    position: absolute;
+    z-index: 46;
+    width: min(20rem, 100%);
+    padding: .75rem;
+    border: 1px solid var(--admin-line);
+    border-radius: var(--admin-radius, .35rem);
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
 }
 
+.admin-rich-text-color-input {
+    display: block;
+    width: 100%;
+    height: var(--admin-control-height);
+    padding: .2rem;
+    border: 1px solid var(--admin-line);
+    border-radius: 0;
+    background: var(--admin-surface);
+    cursor: pointer;
+}
+
+.admin-rich-text--visual .tiptap table {
+    width: 100%;
+    margin-block: .75rem;
+    border-collapse: collapse;
+}
+.admin-rich-text--visual .tiptap :is(th, td) {
+    min-width: 0;
+    padding: .45em .65em;
+    border: 1px solid var(--admin-line);
+    vertical-align: top;
+}
+.admin-rich-text--visual .tiptap th {
+    font-weight: 600;
+}

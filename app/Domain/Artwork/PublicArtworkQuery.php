@@ -6,7 +6,7 @@ use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
-use DateTimeInterface;
+use App\Models\ArtworkCategory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -19,15 +19,20 @@ class PublicArtworkQuery
     /** @return Collection<int, Artwork> */
     public function category(string $slug): Collection
     {
+        /** @var ArtworkCategory|null $gallery */
+        $gallery = ArtworkCategory::query()->where('slug', $slug)->first();
+        if (! $gallery instanceof ArtworkCategory) {
+            return new Collection;
+        }
+
         /** @var Collection<int, Artwork> $artworks */
-        $artworks = $this->publicQuery()
+        $artworks = GalleryPresentation::orderArtworks($this->publicQuery()
             ->whereHas('category.siteSection', function (Builder $query) use ($slug): void {
                 $query->where('slug', $slug);
                 if (! $this->preview->active()) {
                     $query->where('state', 'published');
                 }
-            })
-            ->orderBy('position')
+            }), $gallery)
             ->get();
 
         $positions = $artworks
@@ -39,60 +44,6 @@ class PublicArtworkQuery
         }
 
         return $artworks;
-    }
-
-    public function latestForHome(): ?Artwork
-    {
-        $latestYear = $this->homeQuery()->max('work_year');
-        if ($latestYear === null) {
-            return null;
-        }
-
-        /** @var Collection<int, Artwork> $candidates */
-        $candidates = $this->homeQuery()->where('work_year', $latestYear)->get();
-        if ($candidates->count() === 1) {
-            /** @var Artwork $artwork */
-            $artwork = $candidates->first();
-
-            return $artwork;
-        }
-
-        $exactDates = $candidates->map(
-            static function (Artwork $artwork): ?string {
-                $date = $artwork->getAttribute('work_date');
-
-                return $date instanceof DateTimeInterface ? $date->format('Y-m-d') : null;
-            },
-        );
-
-        if ($exactDates->contains(null)) {
-            return $this->explicitHomeSelection(
-                $candidates,
-                'The newest eligible home year contains artwork without an exact comparable date.',
-            );
-        }
-
-        /** @var string $latestDate */
-        $latestDate = $exactDates->max();
-        $latest = $candidates->filter(
-            static function (Artwork $artwork) use ($latestDate): bool {
-                $date = $artwork->getAttribute('work_date');
-
-                return $date instanceof DateTimeInterface && $date->format('Y-m-d') === $latestDate;
-            },
-        )->values();
-
-        if ($latest->count() === 1) {
-            /** @var Artwork $artwork */
-            $artwork = $latest->first();
-
-            return $artwork;
-        }
-
-        return $this->explicitHomeSelection(
-            $latest,
-            "The newest eligible home date {$latestDate} is ambiguous.",
-        );
     }
 
     /** @return Collection<int, Artwork> */
@@ -311,7 +262,7 @@ class PublicArtworkQuery
         return $artworks;
     }
 
-    /** @return array{eligible:int,newest_year:?int,newest_year_candidates:int,explicit_tie_breakers:int} */
+    /** @return array{eligible:int,newest_year:?int,newest_year_candidates:int} */
     public function homeCandidateStatistics(): array
     {
         $query = $this->homeQuery()->withoutEagerLoads();
@@ -319,7 +270,6 @@ class PublicArtworkQuery
         $summary = (clone $query)
             ->selectRaw('COUNT(*) AS eligible_count')
             ->selectRaw('MAX(work_year) AS newest_year')
-            ->selectRaw('SUM(CASE WHEN featured_on_home THEN 1 ELSE 0 END) AS explicit_tie_breakers')
             ->first();
         $newestYear = $summary?->getAttribute('newest_year');
         $newestYear = is_numeric($newestYear) ? (int) $newestYear : null;
@@ -330,7 +280,6 @@ class PublicArtworkQuery
             'newest_year_candidates' => $newestYear === null
                 ? 0
                 : (clone $query)->where('work_year', $newestYear)->count(),
-            'explicit_tie_breakers' => (int) ($summary?->getAttribute('explicit_tie_breakers') ?? 0),
         ];
     }
 
@@ -349,23 +298,6 @@ class PublicArtworkQuery
                 }
             })
             ->first();
-    }
-
-    /** @param Collection<int, Artwork> $candidates */
-    private function explicitHomeSelection(Collection $candidates, string $message): Artwork
-    {
-        $featured = $candidates->filter(
-            static fn (Artwork $artwork): bool => (bool) $artwork->getAttribute('featured_on_home'),
-        )->values();
-
-        if ($featured->count() !== 1) {
-            throw new LogicException($message.' Exactly one explicit featured_on_home selection is required.');
-        }
-
-        /** @var Artwork $artwork */
-        $artwork = $featured->first();
-
-        return $artwork;
     }
 
     /**
@@ -459,6 +391,7 @@ class PublicArtworkQuery
 
         /** @var Builder<Artwork> $result */
         $result = $query
+            ->where('exclude_from_home', false)
             ->whereHas('category', function (Builder $query): void {
                 $query->where('show_on_home', true)
                     ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'));
@@ -492,7 +425,11 @@ class PublicArtworkQuery
                                         $images->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)
                                             ->whereHas('variants', fn (Builder $variants) => $variants
                                                 ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-                                                ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
+                                                ->whereIn('transform_profile', [
+                                                    MediaIngestService::TRANSFORM_PROFILE,
+                                                    MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
+                                                ])
+                                                ->where('mime_type', 'image/webp')
                                                 ->where('state', 'available'), '=', 1);
                                     });
                             });

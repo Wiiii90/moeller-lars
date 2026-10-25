@@ -23,16 +23,24 @@ function fixture() {
         enter(...images) { this.callback(images.map(target => ({ target, isIntersecting: true }))); }
         exit(...images) { this.callback(images.map(target => ({ target, isIntersecting: false }))); }
     };
-    const images = Array.from({ length: 5 }, (_, index) => ({
+    const images = Array.from({ length: 6 }, (_, index) => ({
         loading: index < 2 ? 'eager' : 'lazy',
+        src: index < 2 ? '/media/' + index : '',
         complete: false,
         naturalWidth: 0,
-        dataset: {},
-        getBoundingClientRect: () => ({ top: 700 + index * 600, bottom: 1200 + index * 600 }),
+        fetchPriority: index === 0 ? 'high' : 'low',
+        hidden: index >= 2,
+        dataset: index >= 2
+            ? { gallerySrc: '/media/' + index, galleryImageState: 'deferred' }
+            : { galleryImageState: 'pending' },
+        getBoundingClientRect: () => ({ top: 600 + index * 600, bottom: 1100 + index * 600 }),
     }));
     const listeners = new Map();
     const root = {
-        querySelectorAll: () => images,
+        querySelectorAll: (selector) => {
+            assert.equal(selector, '.artwork-card__image');
+            return images;
+        },
         addEventListener: (type, callback) => { listeners.set(type, callback); },
         dispatch: (type, image) => listeners.get(type)?.({ type, target: image }),
     };
@@ -42,54 +50,168 @@ function fixture() {
     };
 }
 
-test('viewport distance prioritizes in-view and nearer gallery items', () => {
+test('viewport distance prioritizes visible and near items', () => {
     const image = (top, bottom) => ({ getBoundingClientRect: () => ({ top, bottom }) });
     assert.equal(galleryImageDistance(image(50, 650), 800), 0);
     assert.equal(galleryImageDistance(image(1000, 1400), 800), 200);
     assert.equal(galleryImageDistance(image(-500, -50), 800), 50);
 });
 
-test('Gallery promotes at most two nearby images and advances after completion', () => {
+test('Gallery requests at most two speculative images, nearest first, then replenishes', () => {
     const scene = fixture();
     try {
         const dispose = initializeGalleryImageLoading(scene.root);
-        const observer = scene.observers[0];
-        assert.equal(observer.options.rootMargin, GALLERY_PREFETCH_MARGIN);
-        assert.equal(observer.observed.size, 3);
-        assert.equal(scene.images[0].loading, 'eager');
-        assert.equal(scene.images[1].loading, 'eager');
-        observer.enter(scene.images[4], scene.images[3], scene.images[2]);
-        assert.equal(scene.images.slice(2).filter(image => image.loading === 'eager').length, GALLERY_PREFETCH_LIMIT);
-        assert.equal(scene.images[2].loading, 'eager');
-        assert.equal(scene.images[3].loading, 'eager');
-        assert.equal(scene.images[4].loading, 'lazy');
+        const [buffer, visible] = scene.observers;
+        assert.equal(buffer.options.rootMargin, GALLERY_PREFETCH_MARGIN);
+        assert.equal(visible.options.rootMargin, '0px');
+        assert.equal(buffer.observed.size, 4);
+        assert.equal(scene.images.slice(2).every(image => !image.hidden), true);
+        assert.equal(scene.images.slice(2).every(image => image.src === ''), true);
+
+        buffer.enter(scene.images[5], scene.images[4], scene.images[3], scene.images[2]);
+        assert.equal(scene.images.slice(2).filter(image => image.src !== '').length, GALLERY_PREFETCH_LIMIT);
+        assert.equal(scene.images[2].src, '/media/2');
+        assert.equal(scene.images[3].src, '/media/3');
+        assert.equal(scene.images[4].src, '');
+        assert.equal(scene.images[2].fetchPriority, 'low');
+
         scene.images[2].complete = true;
-        scene.images[2].naturalWidth = 1200;
+        scene.images[2].naturalWidth = 960;
         scene.root.dispatch('load', scene.images[2]);
         assert.equal(scene.images[2].dataset.galleryImageState, 'ready');
-        assert.equal(scene.images[4].loading, 'eager');
+        assert.equal(scene.images[4].src, '/media/4');
         scene.root.dispatch('error', scene.images[4]);
         assert.equal(scene.images[4].dataset.galleryImageState, 'error');
         dispose();
-        assert.equal(observer.disconnected, true);
+        assert.equal(buffer.disconnected, true);
+        assert.equal(visible.disconnected, true);
     } finally {
         scene.restore();
     }
 });
 
-test('out-of-buffer candidates and abandoned SPA pages are not promoted', () => {
+test('a newly visible image bypasses the prefetch budget without starting distant images', () => {
     const scene = fixture();
     try {
         const dispose = initializeGalleryImageLoading(scene.root);
-        const observer = scene.observers[0];
-        observer.enter(scene.images[2], scene.images[3], scene.images[4]);
-        observer.exit(scene.images[4]);
-        scene.root.dispatch('load', scene.images[2]);
-        assert.equal(scene.images[4].loading, 'lazy');
+        const [buffer, visible] = scene.observers;
+        buffer.enter(scene.images[2], scene.images[3], scene.images[4], scene.images[5]);
+        assert.equal(scene.images[5].src, '');
+        visible.enter(scene.images[5]);
+        assert.equal(scene.images[5].src, '/media/5');
+        assert.equal(scene.images[5].fetchPriority, 'high');
+        assert.equal(scene.images[4].src, '');
         dispose();
-        observer.enter(scene.images[4]);
-        scene.root.dispatch('load', scene.images[4]);
-        assert.equal(scene.images[4].loading, 'lazy');
+    } finally {
+        scene.restore();
+    }
+});
+
+test('out-of-buffer candidates and SPA-disposed pages remain unrequested', () => {
+    const scene = fixture();
+    try {
+        const dispose = initializeGalleryImageLoading(scene.root);
+        const [buffer, visible] = scene.observers;
+        buffer.enter(scene.images[2], scene.images[3], scene.images[4]);
+        buffer.exit(scene.images[4]);
+        scene.root.dispatch('load', scene.images[2]);
+        assert.equal(scene.images[4].src, '');
+        dispose();
+        visible.enter(scene.images[4]);
+        buffer.enter(scene.images[4]);
+        scene.root.dispatch('load', scene.images[3]);
+        assert.equal(scene.images[4].src, '');
+    } finally {
+        scene.restore();
+    }
+});
+
+test('without IntersectionObserver every image falls back to native lazy loading', () => {
+    const scene = fixture();
+    try {
+        globalThis.IntersectionObserver = undefined;
+        initializeGalleryImageLoading(scene.root);
+        assert.equal(scene.images.slice(2).every(image => !image.hidden), true);
+        assert.equal(scene.images.slice(2).every(image => image.src.startsWith('/media/')), true);
+        assert.equal(scene.images.slice(2).every(image => image.loading === 'lazy'), true);
+    } finally {
+        scene.restore();
+    }
+});
+
+test('Artwork detail image displays only when loaded, and exposes a real media failure', () => {
+    const makeImage = (complete = false, naturalWidth = 0) => {
+        const image = new EventTarget();
+        image.complete = complete;
+        image.naturalWidth = naturalWidth;
+        image.dataset = { artworkImageState: 'pending' };
+        return image;
+    };
+    const setup = (image) => ({
+        querySelector: () => image,
+        querySelectorAll: () => [],
+    });
+
+    const loading = makeImage();
+    const stop = initializeGalleryImageLoading(setup(loading));
+    assert.equal(loading.dataset.artworkImageState, 'pending');
+    loading.naturalWidth = 960;
+    loading.dispatchEvent(new Event('load'));
+    assert.equal(loading.dataset.artworkImageState, 'ready');
+    stop();
+
+    const broken = makeImage();
+    initializeGalleryImageLoading(setup(broken));
+    broken.dispatchEvent(new Event('error'));
+    assert.equal(broken.dataset.artworkImageState, 'error');
+
+    const cached = makeImage(true, 960);
+    initializeGalleryImageLoading(setup(cached));
+    assert.equal(cached.dataset.artworkImageState, 'ready');
+
+    const disposed = makeImage();
+    initializeGalleryImageLoading(setup(disposed))();
+    disposed.naturalWidth = 960;
+    disposed.dispatchEvent(new Event('load'));
+    assert.equal(disposed.dataset.artworkImageState, 'pending');
+});
+
+test('initial Gallery images decode before display and retain a visible failure', async () => {
+    const scene = fixture();
+    try {
+        const original = scene.root.querySelectorAll;
+        scene.root.querySelectorAll = () => original().slice(0, 2);
+        let finish;
+        const image = scene.images[0];
+        image.decode = () => new Promise(resolve => { finish = resolve; });
+        const dispose = initializeGalleryImageLoading(scene.root);
+        assert.equal(scene.observers.length, 0);
+        image.naturalWidth = 850;
+        image.complete = true;
+        scene.root.dispatch('load', image);
+        assert.equal(image.dataset.galleryImageState, 'pending');
+        finish();
+        await Promise.resolve();
+        assert.equal(image.dataset.galleryImageState, 'ready');
+        scene.root.dispatch('error', scene.images[1]);
+        assert.equal(scene.images[1].dataset.galleryImageState, 'error');
+        dispose();
+        image.dataset.galleryImageState = 'pending';
+        scene.root.dispatch('load', image);
+        assert.equal(image.dataset.galleryImageState, 'pending');
+    } finally {
+        scene.restore();
+    }
+});
+
+test('cached initial Gallery images are ready without waiting for an event', () => {
+    const scene = fixture();
+    try {
+        scene.images[0].complete = true;
+        scene.images[0].naturalWidth = 1200;
+        const dispose = initializeGalleryImageLoading(scene.root);
+        assert.equal(scene.images[0].dataset.galleryImageState, 'ready');
+        dispose();
     } finally {
         scene.restore();
     }

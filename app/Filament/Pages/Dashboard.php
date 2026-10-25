@@ -15,9 +15,12 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Session;
 
 final class Dashboard extends Page
 {
@@ -40,6 +43,11 @@ final class Dashboard extends Page
 
     protected static ?string $title = 'Dashboard';
 
+    public function getTitle(): string
+    {
+        return __('Dashboard');
+    }
+
     protected static string|\UnitEnum|null $navigationGroup = null;
 
     protected static ?int $navigationSort = -100;
@@ -50,10 +58,12 @@ final class Dashboard extends Page
 
     public string $feedSearch = '';
 
+    #[Session]
     public string $feedType = 'all';
 
     public int $feedPage = 1;
 
+    #[Session]
     public int $feedPageSize = self::DEFAULT_PAGE_SIZE;
 
     public string $notificationFilter = 'all';
@@ -64,8 +74,19 @@ final class Dashboard extends Page
     /** @var array<string, array<string, mixed>> */
     private array $feedEntryCache = [];
 
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
+
     public function mount(): void
     {
+        $this->feedType = array_key_exists($this->feedType, DashboardFeed::types()) ? $this->feedType : 'all';
+        $this->feedPageSize = in_array($this->feedPageSize, self::PAGE_SIZES, true)
+            ? $this->feedPageSize
+            : self::DEFAULT_PAGE_SIZE;
         $filter = auth()->user()?->getAttribute('dashboard_notification_filter');
         $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
             ? $filter
@@ -142,7 +163,7 @@ final class Dashboard extends Page
 
     public function openRelatedFeedEntry(string $key): void
     {
-        $entry = app(DashboardFeed::class)->entry($key);
+        $entry = app(DashboardFeed::class)->openEntry($key);
         abort_unless(is_array($entry) && ($entry['type'] ?? null) === 'changelog', 404);
 
         $this->feedEntryCache[$key] = $entry;
@@ -177,20 +198,22 @@ final class Dashboard extends Page
 
     public function markFeedRead(string $key): void
     {
-        if ($this->mutableFeedEntry($key) !== null) {
+        if ($this->readableFeedEntry($key) !== null) {
             app(DashboardFeed::class)->openEntry($key);
         }
     }
 
     public function markFeedUnread(string $key): void
     {
-        $entry = $this->mutableFeedEntry($key);
+        $entry = $this->readableFeedEntry($key);
         if ($entry === null) {
             return;
         }
 
         $feed = app(DashboardFeed::class);
-        if (is_int($entry['contact_id'] ?? null)) {
+        if (in_array($entry['type'], ['announcement', 'changelog'], true)) {
+            $feed->markReleaseUnread($key);
+        } elseif (is_int($entry['contact_id'] ?? null)) {
             $feed->markContactUnread($entry['contact_id']);
         } elseif (is_int($entry['notification_id'] ?? null)) {
             $feed->markNotificationUnread($entry['notification_id']);
@@ -204,7 +227,7 @@ final class Dashboard extends Page
             return;
         }
 
-        $this->deleteProjectedFeedEntry($entry);
+        DB::transaction(fn () => $this->deleteProjectedFeedEntry($entry));
         $this->selectedFeedKeys = array_values(array_diff($this->selectedFeedKeys, [$key]));
         $this->feedPage = $this->feedPagination()['page'];
     }
@@ -226,26 +249,30 @@ final class Dashboard extends Page
 
     public function bulkMarkRead(): void
     {
-        if (! $this->selectionAllMutable()) {
+        if (! $this->selectionAllReadable()) {
             return;
         }
 
-        foreach ($this->selectedFeedKeys as $key) {
-            app(DashboardFeed::class)->openEntry($key);
-        }
+        DB::transaction(function (): void {
+            foreach ($this->selectedFeedKeys as $key) {
+                app(DashboardFeed::class)->openEntry($key);
+            }
+        });
 
         $this->selectedFeedKeys = [];
     }
 
     public function bulkMarkUnread(): void
     {
-        if (! $this->selectionAllMutable()) {
+        if (! $this->selectionAllReadable()) {
             return;
         }
 
-        foreach ($this->selectedFeedKeys as $key) {
-            $this->markFeedUnread($key);
-        }
+        DB::transaction(function (): void {
+            foreach ($this->selectedFeedKeys as $key) {
+                $this->markFeedUnread($key);
+            }
+        });
 
         $this->selectedFeedKeys = [];
     }
@@ -256,12 +283,14 @@ final class Dashboard extends Page
             return;
         }
 
-        foreach ($this->selectedFeedKeys as $key) {
-            $entry = $this->mutableFeedEntry($key);
-            if ($entry !== null) {
-                $this->deleteProjectedFeedEntry($entry);
+        DB::transaction(function (): void {
+            foreach ($this->selectedFeedKeys as $key) {
+                $entry = $this->mutableFeedEntry($key);
+                if ($entry !== null) {
+                    $this->deleteProjectedFeedEntry($entry);
+                }
             }
-        }
+        });
 
         $this->selectedFeedKeys = [];
         $this->feedPage = $this->feedPagination()['page'];
@@ -269,25 +298,22 @@ final class Dashboard extends Page
 
     public function markContactUnread(int $contactMessageId): void
     {
-        app(DashboardFeed::class)->markContactUnread($contactMessageId);
-
-        app(AdminNotifier::class)->notification(
-            title: 'Contact message marked unread',
-            status: 'success',
-        );
+        // Inbox read state uses the same silent owner as row and bulk actions.
+        $this->markFeedUnread('contact:'.$contactMessageId);
     }
 
     public function deleteContactMessage(int $contactMessageId): void
     {
-        app(DashboardFeedPins::class)->forget('contact:'.$contactMessageId);
-        app(DashboardFeed::class)->deleteContact($contactMessageId);
+        $key = 'contact:'.$contactMessageId;
+        if ($this->mutableFeedEntry($key) === null) {
+            return;
+        }
+        $this->deleteFeedEntry($key);
 
         app(AdminNotifier::class)->notification(
             title: 'Contact message deleted',
             status: 'success',
         );
-
-        $this->feedPage = $this->feedPagination()['page'];
     }
 
     public function markNotificationUnread(int $notificationId): void
@@ -297,9 +323,7 @@ final class Dashboard extends Page
 
     public function deleteNotification(int $notificationId): void
     {
-        app(DashboardFeedPins::class)->forget('notification:'.$notificationId);
-        app(DashboardFeed::class)->deleteNotification($notificationId);
-        $this->feedPage = $this->feedPagination()['page'];
+        $this->deleteFeedEntry('notification:'.$notificationId);
     }
 
     public function dashboardSettingsAction(): Action
@@ -324,8 +348,10 @@ final class Dashboard extends Page
             $changed = $user->isDirty();
 
             if ($changed) {
-                $user->save();
-                app(DashboardNotificationRetention::class)->pruneFor($user);
+                DB::transaction(function () use ($user): void {
+                    $user->save();
+                    app(DashboardNotificationRetention::class)->pruneFor($user);
+                });
             }
 
             $this->refreshFeedFromFirstPage();
@@ -337,7 +363,7 @@ final class Dashboard extends Page
         return AdminDialog::edit(
             Action::make('dashboardSettings')
                 ->label('Settings')
-                ->modalHeading('Dashboard settings')
+                ->modalHeading(__('Dashboard settings'))
                 ->fillForm(function (): array {
                     $user = auth()->user();
 
@@ -408,7 +434,7 @@ final class Dashboard extends Page
                     ['entry' => $this->feedEntry($arguments)],
                 ))
                 ->extraModalFooterActions(fn (array $arguments): array => $this->feedEntryHeaderActions($arguments)),
-            AdminDialogSize::Default,
+            AdminDialogSize::Large,
         );
     }
 
@@ -508,7 +534,7 @@ final class Dashboard extends Page
             ->all();
     }
 
-    /** @return array{has_selection:bool,all_mutable:bool} */
+    /** @return array{has_selection:bool,all_mutable:bool,all_readable:bool} */
     private function selectionCapabilities(): array
     {
         $feed = app(DashboardFeed::class);
@@ -528,6 +554,9 @@ final class Dashboard extends Page
 
         return [
             'has_selection' => $entries !== [],
+            'all_readable' => $entries !== [] && collect($entries)->every(
+                fn (array $entry): bool => $this->isReadableFeedEntry($entry),
+            ),
             'all_mutable' => $entries !== [] && collect($entries)->every(
                 fn (array $entry): bool => $this->isMutableFeedEntry($entry),
             ),
@@ -537,6 +566,26 @@ final class Dashboard extends Page
     private function selectionAllMutable(): bool
     {
         return $this->selectionCapabilities()['all_mutable'];
+    }
+
+    private function selectionAllReadable(): bool
+    {
+        return $this->selectionCapabilities()['all_readable'];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function readableFeedEntry(string $key): ?array
+    {
+        $entry = app(DashboardFeed::class)->entry($key);
+
+        return is_array($entry) && $this->isReadableFeedEntry($entry) ? $entry : null;
+    }
+
+    /** @param array<string, mixed> $entry */
+    private function isReadableFeedEntry(array $entry): bool
+    {
+        return in_array($entry['type'] ?? null, ['announcement', 'changelog'], true)
+            || $this->isMutableFeedEntry($entry);
     }
 
     /** @return array<string, mixed>|null */
@@ -593,7 +642,7 @@ final class Dashboard extends Page
     private function feedEntryHeaderActions(array $arguments): array
     {
         $entry = $this->feedEntry($arguments);
-        if (! $this->isMutableFeedEntry($entry)) {
+        if (! $this->isReadableFeedEntry($entry)) {
             return [];
         }
 
@@ -619,12 +668,17 @@ final class Dashboard extends Page
             ->action(function () use ($isRead, $key): void {
                 if ($isRead) {
                     $this->markFeedUnread($key);
-
-                    return;
+                } else {
+                    $this->markFeedRead($key);
                 }
 
-                $this->markFeedRead($key);
+                unset($this->feedEntryCache[$key]);
+                $this->replaceMountedAction('feedEntry', ['key' => $key]);
             });
+
+        if (! $this->isMutableFeedEntry($entry)) {
+            return [$pinAction, $readAction];
+        }
 
         $deleteAction = Action::make('deleteDialogEntry')
             ->label('Delete')

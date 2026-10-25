@@ -153,15 +153,15 @@
 
             <aside class="analytics-stage-rail admin-visual-stage__pane" aria-label="Geography">
                 <div class="analytics-stage-rail__heading">
-                    <strong>Geography</strong>
+                    <strong>{{ __('Geography') }}</strong>
                 </div>
 
                 @if ($rankedCountries !== [])
                     <div class="analytics-stage-ranking">
                         <div class="analytics-stage-ranking__head" aria-hidden="true">
-                            <span>Country</span>
-                            <span>Share</span>
-                            <span>Visits</span>
+                            <span>{{ __('Country') }}</span>
+                            <span>{{ __('Share') }}</span>
+                            <span>{{ __('Visits') }}</span>
                         </div>
 
                         <div class="analytics-stage-ranking__scroll" tabindex="0" aria-label="Country ranking">
@@ -222,7 +222,7 @@
             <x-admin.controls class="admin-data-controls--dashboard-responsive" :metric-grid="true" :filter-count="2" :search-span="4" aria-label="Analytics report controls">
                 <x-slot:search>
                     <label class="admin-data-field">
-                        <span>Search</span>
+                        <span>{{ __('Search') }}</span>
                         <x-admin.search-input
                             model="search"
                             placeholder="Search current report"
@@ -232,7 +232,7 @@
 
                 <x-slot:filters>
                     <label class="admin-data-field">
-                        <span>Report</span>
+                        <span>{{ __('Report') }}</span>
                         <select wire:model.live="detailReport">
                             @foreach ($detailReportOptions as $report => $label)
                                 <option value="{{ $report }}">{{ $label }}</option>
@@ -241,7 +241,7 @@
                     </label>
 
                     <label class="admin-data-field">
-                        <span>Range</span>
+                        <span>{{ __('Range') }}</span>
                         <select wire:change="setRange($event.target.value)" aria-label="Analytics date range">
                             @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
                                 <option value="{{ $preset }}" @selected($range === $preset)>{{ $label }}</option>
@@ -331,7 +331,7 @@
                                         <x-admin.empty-state :title="$detailEmptyTitle" minimal>
                                             @if (trim($search) !== '')
                                                 <x-slot:actions>
-                                                    <button class="admin-action" type="button" wire:click="$set('search', '')">Clear search</button>
+                                                    <button class="admin-action" type="button" wire:click="$set('search', '')">{{ __('Clear search') }}</button>
                                                 </x-slot:actions>
                                             @endif
                                         </x-admin.empty-state>

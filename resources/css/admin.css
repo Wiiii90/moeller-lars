@@ -3,6 +3,7 @@
 @import './admin/layouts.css';
 @import './admin/notifications.css';
 @import './admin/forms.css';
+@import './rich-text-spacing.css';
 @import './admin/data-workspace.css';
 @import './admin/controls.css';
 @import './admin/dialog-contract.css';

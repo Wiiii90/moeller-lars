@@ -143,3 +143,36 @@ it('fails closed when the shared Nominatim lock is already held', function (): v
         $lock->release();
     }
 });
+
+
+it('rejects invalid geocoder coordinates without caching the failure as a successful lookup', function (): void {
+    $clock = 0;
+    $sleeps = [];
+    useFakeNominatimThrottle($clock, $sleeps);
+
+    Http::fakeSequence()
+        ->push([[
+            'lat' => '91.0',
+            'lon' => '9.992477',
+            'display_name' => 'Invalid location',
+        ]], 200)
+        ->push([[
+            'lat' => '53.550341',
+            'lon' => '9.992477',
+            'display_name' => 'Hamburg, Deutschland',
+        ]], 200);
+
+    $geocoder = app(ExhibitionGeocodingService::class);
+    expect(fn () => $geocoder->locate('Hamburg'))
+        ->toThrow(ExhibitionGeocodingUnavailable::class, 'Nominatim returned invalid coordinates.');
+
+    $retry = $geocoder->locate('Hamburg');
+    expect($retry)->not->toBeNull()
+        ->and($retry['latitude'])->toBe(53.550341)
+        ->and($retry['longitude'])->toBe(9.992477);
+    Http::assertSentCount(2);
+
+    // Once the retry has succeeded, its cached result needs no third request.
+    expect($geocoder->locate('Hamburg'))->toBe($retry);
+    Http::assertSentCount(2);
+});

@@ -17,6 +17,8 @@ use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
+use App\Models\User;
+use Filament\Facades\Filament;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -26,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use UnitEnum;
+use Livewire\Attributes\Session;
 
 final class SitePages extends Page
 {
@@ -38,6 +41,11 @@ final class SitePages extends Page
     protected static ?string $navigationLabel = 'Pages';
 
     protected static ?string $title = 'Pages';
+
+    public function getTitle(): string
+    {
+        return __('Pages');
+    }
 
     protected static ?string $slug = 'pages';
 
@@ -70,8 +78,10 @@ final class SitePages extends Page
 
     public string $search = '';
 
+    #[Session]
     public string $typeFilter = '';
 
+    #[Session]
     public string $statusFilter = '';
 
     public bool $filtersActive = false;
@@ -92,6 +102,7 @@ final class SitePages extends Page
 
     public string $newPageParent = '';
 
+    #[Session]
     public int $perPage = 25;
 
     public int $pageNumber = 1;
@@ -105,6 +116,13 @@ final class SitePages extends Page
     public int $rangeEnd = 0;
 
     private ?SiteSectionOrderService $orderService = null;
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
 
     public function mount(): void
     {
@@ -262,7 +280,7 @@ final class SitePages extends Page
         return AdminDialog::edit(
             Action::make('editPlacement')
                 ->label('Edit')
-                ->modalHeading('Page placement')
+                ->modalHeading(__('Page placement'))
                 ->fillForm(function (array $arguments): array {
                     /** @var SiteSection $section */
                     $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));

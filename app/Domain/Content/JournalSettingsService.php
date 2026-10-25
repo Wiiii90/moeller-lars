@@ -14,7 +14,7 @@ final class JournalSettingsService
     ) {}
 
     /** @param array<string, mixed> $data */
-    public function update(SiteSection $section, array $data): SiteSection
+    public function update(SiteSection $section, array $data, ?array $expectedOriginal = null): SiteSection
     {
         if ($section->nodeType() !== SiteSectionType::Journal) {
             throw ValidationException::withMessages(['section' => 'Only Journal pages have Journal settings.']);
@@ -39,20 +39,27 @@ final class JournalSettingsService
             $navigationLabel = $title;
         }
 
-        // Use Pages' existing identity and template owners. The outer
-        // transaction keeps redirects, title/label, and template atomic.
-        return DB::transaction(function () use ($section, $title, $navigationLabel, $templateValue, $data): SiteSection {
+        // Keep the mounted-dialog snapshot check and all canonical identity /
+        // template mutations under the same row lock and transaction.
+        return DB::transaction(function () use ($section, $templateValue, $title, $navigationLabel, $data, $expectedOriginal): SiteSection {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if ($fresh->nodeType() !== SiteSectionType::Journal) {
+                throw ValidationException::withMessages(['section' => 'This page is no longer a Journal.']);
+            }
+            if ($expectedOriginal !== null && $fresh->only(array_keys($expectedOriginal)) !== $expectedOriginal) {
+                throw ValidationException::withMessages(['title' => 'This Journal changed. Reopen the settings dialog.']);
+            }
+
             $updated = $this->identity->update(
-                $section,
+                $fresh,
                 $title,
                 is_string($data['slug'] ?? null) ? $data['slug'] : null,
                 $navigationLabel,
             );
-
             if ((string) $updated->getAttribute('template') !== $templateValue) {
                 $updated = $this->sections->updateJournalTemplate($updated, $templateValue);
             }
-
             return $updated;
         });
     }

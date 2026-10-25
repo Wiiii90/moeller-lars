@@ -6,7 +6,9 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -160,4 +162,59 @@ it('aborts a selected download when an asset is no longer available', function (
 
     $this->get(route('admin.media.download-selected', ['ids' => [$available->id, $unavailable->id]]))
         ->assertStatus(409);
+});
+
+it('rejects original, thumbnail and bulk downloads for guests and non-administrators', function (): void {
+    $asset = storageRouteDownloadAsset('access-protected.jpg', 'private-original');
+    $variantKey = 'variants/access-protected.webp';
+    Storage::disk(config('media.disk'))->put($variantKey, 'private-thumbnail');
+
+    $variant = MediaVariant::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'variant_kind' => 'thumbnail',
+        'storage_key' => $variantKey,
+        'mime_type' => 'image/webp',
+        'byte_size' => strlen('private-thumbnail'),
+        'sha256' => hash('sha256', 'private-thumbnail'),
+        'transform_profile' => 'public-v1',
+        'state' => 'available',
+    ]);
+
+    $protectedRoutes = [
+        route('admin.media.original', ['mediaAsset' => $asset]),
+        route('admin.media.variant', ['mediaVariant' => $variant]),
+        route('admin.media.download', ['mediaAsset' => $asset]),
+        route('admin.media.download-selected', ['ids' => [$asset->getKey()]]),
+    ];
+
+    $this->actingAs(User::factory()->create(), 'web');
+    foreach ($protectedRoutes as $url) {
+        $this->get($url)->assertForbidden();
+    }
+
+    Auth::guard('web')->logout();
+    foreach ($protectedRoutes as $url) {
+        $this->get($url)->assertForbidden();
+    }
+
+    Storage::disk(config('media.disk'))->assertExists($asset->storage_key);
+    Storage::disk(config('media.disk'))->assertExists($variantKey);
+});
+
+it('does not return a partial download when bulk selection contains missing or malformed identifiers', function (): void {
+    $available = storageRouteDownloadAsset('bulk-validation.jpg', 'bulk-contents');
+
+    $this->get(route('admin.media.download-selected', ['ids' => [$available->getKey(), 999999999]]))
+        ->assertStatus(409);
+    $this->get(route('admin.media.download-selected', ['ids' => ['invalid']]))
+        ->assertStatus(422);
+    $this->get(route('admin.media.download-selected', ['ids' => [$available->getKey(), 'invalid']]))
+        ->assertStatus(422);
+    $this->get(route('admin.media.download-selected', ['ids' => [$available->getKey(), ['nested' => 'not-an-id']]]))
+        ->assertStatus(422);
+    $this->get(route('admin.media.download-selected', ['ids' => [['nested' => 'not-an-id']]]))
+        ->assertStatus(422);
+
+    expect(MediaAsset::query()->whereKey($available->getKey())->exists())->toBeTrue();
+    Storage::disk(config('media.disk'))->assertExists($available->storage_key);
 });

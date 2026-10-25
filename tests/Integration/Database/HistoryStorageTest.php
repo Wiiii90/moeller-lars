@@ -2,10 +2,7 @@
 
 use App\Domain\Publication\PublicationService;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-
-uses(RefreshDatabase::class);
 
 it('deduplicates unchanged publication payloads while retaining complete commit manifests', function (): void {
     $actor = User::factory()->admin()->create();

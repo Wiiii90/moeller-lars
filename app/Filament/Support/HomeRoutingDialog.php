@@ -53,7 +53,7 @@ final class HomeRoutingDialog
             Select::make('skip_target_section_id')
                 ->label('Skip to')
                 ->options(fn (): array => $this->targetOptions())
-                ->placeholder('Next page in order')
+                ->placeholder(__('Next page in order'))
                 ->visible(fn (callable $get): bool => (bool) $get('skip_home'))
                 ->native()
                 ->nullable(),

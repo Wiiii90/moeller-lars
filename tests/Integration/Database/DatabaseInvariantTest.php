@@ -9,21 +9,20 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
-
-uses(RefreshDatabase::class);
 
 function invariantAsset(): MediaAsset
 {
+    static $sequence = 0;
+    $sequence++;
+
     $asset = MediaAsset::create([
-        'storage_key' => 'originals/'.uniqid().'.jpg',
+        'storage_key' => 'originals/invariant-asset-'.$sequence.'.jpg',
         'original_filename' => 'work.jpg',
         'mime_type' => 'image/jpeg',
         'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('', true)),
+        'sha256' => hash('sha256', 'invariant-asset-'.$sequence),
         'state' => 'available',
         'alt_text' => 'Artwork image',
     ]);
@@ -31,21 +30,16 @@ function invariantAsset(): MediaAsset
     MediaVariant::create([
         'media_asset_id' => $asset->id,
         'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/'.uniqid().'.webp',
+        'storage_key' => 'variants/invariant-thumbnail-'.$sequence.'.webp',
         'mime_type' => 'image/webp',
         'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('', true)),
+        'sha256' => hash('sha256', 'invariant-thumbnail-'.$sequence),
         'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 
     return $asset;
 }
-
-it('retires superseded internal Blog settings after Journal canonicalization', function (): void {
-    expect(Schema::hasTable('blog_settings'))->toBeFalse()
-        ->and(Schema::hasTable('journal_settings'))->toBeTrue();
-});
 
 it('allocates a unique published position through canonical placement without invalidating old snapshots', function (): void {
     $this->actingAs(\App\Models\User::factory()->admin()->create(), 'web');

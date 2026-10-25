@@ -17,6 +17,8 @@ final class DashboardFeedPins
             return [];
         }
 
+        $this->initializeLatestReleasePins();
+
         $search = trim($search);
         $rows = DB::table('dashboard_feed_pins')
             ->where('user_id', $userId)
@@ -131,17 +133,18 @@ final class DashboardFeedPins
                 ->delete();
 
             $this->normalize($userId);
+            app(DashboardFeedReleaseState::class)->clearAutomaticPins($keys);
         });
     }
 
-    public function move(string $key, int $position): void
+    public function move(string $key, int $position, bool $manual = true): void
     {
         $userId = $this->userId();
         if ($userId === null) {
             return;
         }
 
-        DB::transaction(function () use ($userId, $key, $position): void {
+        DB::transaction(function () use ($userId, $key, $position, $manual): void {
             $rows = DB::table('dashboard_feed_pins')
                 ->where('user_id', $userId)
                 ->orderBy('position')
@@ -159,6 +162,10 @@ final class DashboardFeedPins
             array_splice($ordered, $target, 0, [$key]);
 
             $idsByKey = $rows->mapWithKeys(static fn (object $row): array => [(string) $row->entry_key => (int) $row->id]);
+            if ($manual) {
+                app(DashboardFeedReleaseState::class)->clearAutomaticPins([$key]);
+            }
+
             foreach ($ordered as $index => $entryKey) {
                 $id = $idsByKey->get($entryKey);
                 if (! is_int($id)) {
@@ -178,6 +185,63 @@ final class DashboardFeedPins
     public function forget(string $key): void
     {
         $this->unpinMany([$key]);
+    }
+
+    /** New versions receive default pins once per admin; explicit unpin is preserved. */
+    private function initializeLatestReleasePins(): void
+    {
+        $userId = $this->userId();
+        if ($userId === null) {
+            return;
+        }
+
+        $latest = $this->feed->latestReleaseKeys();
+        $wanted = array_values($latest);
+        $states = app(DashboardFeedReleaseState::class);
+        if (! $states->needsPinReconciliation($wanted)) {
+            return;
+        }
+
+        DB::transaction(function () use ($userId, $latest, $wanted, $states): void {
+            $oldAutomatic = array_diff($states->automaticallyPinnedKeys(), $wanted);
+            if ($oldAutomatic !== []) {
+                $this->unpinMany(array_values($oldAutomatic));
+            }
+
+            $currentlyPinned = DB::table('dashboard_feed_pins')
+                ->where('user_id', $userId)
+                ->pluck('entry_key')
+                ->map(static fn (mixed $key): string => (string) $key)
+                ->all();
+
+            $new = [];
+            // pinMany prepends each invocation; process changelog first, then announcement.
+            foreach (array_reverse($wanted) as $key) {
+                if ($states->claimAutomaticPin($key, in_array($key, $currentlyPinned, true))) {
+                    $new[] = $key;
+                }
+            }
+
+            if ($new === []) {
+                return;
+            }
+
+            foreach ($new as $key) {
+                $this->pinMany([$key]);
+            }
+
+            if (isset($latest['announcement'])) {
+                $this->move($latest['announcement'], 0, false);
+            }
+            if (isset($latest['changelog'])) {
+                $hasPinnedAnnouncement = isset($latest['announcement'])
+                    && DB::table('dashboard_feed_pins')
+                        ->where('user_id', $userId)
+                        ->where('entry_key', $latest['announcement'])
+                        ->exists();
+                $this->move($latest['changelog'], $hasPinnedAnnouncement ? 1 : 0, false);
+            }
+        });
     }
 
     private function normalize(int $userId): void

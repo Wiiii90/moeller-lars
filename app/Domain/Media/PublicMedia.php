@@ -27,7 +27,10 @@ class PublicMedia
 
     public const PUBLIC_TRANSFORM_PROFILE = 'public-v1';
 
-    public function __construct(private readonly SitePreviewContext $preview) {}
+    public function __construct(
+        private readonly SitePreviewContext $preview,
+        private readonly \App\Domain\Publication\MediaRightsPublicationSelections $rightsSelections,
+    ) {}
 
     public function isPublicAsset(MediaAsset $asset): bool
     {
@@ -194,18 +197,28 @@ class PublicMedia
     public function thumbnailVariantForAsset(MediaAsset $asset): MediaVariant
     {
         $this->assertAvailable($asset);
-        $asset->loadMissing('variants');
-        $matching = $asset->getRelationValue('variants')->filter(
-            fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === self::THUMBNAIL_KIND
-                && $variant->getAttribute('transform_profile') === self::PUBLIC_TRANSFORM_PROFILE
-                && $variant->getAttribute('state') === 'available',
-        )->values();
-
-        if ($matching->count() !== 1) {
+        $variant = MediaPreviewVariant::imageThumbnail($asset);
+        if (! $variant instanceof MediaVariant) {
             throw new LogicException('Public media requires exactly one available public thumbnail.');
         }
 
-        return $matching->first();
+        return $variant;
+    }
+
+    /**
+     * A missing poster is normal for legacy video assets. Never synthesize
+     * a thumbnail from the original at request time or mutate the registry.
+     */
+    public function posterUrlForAsset(MediaAsset $asset): ?string
+    {
+        if (! MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'))) {
+            return null;
+        }
+
+        $this->assertAvailable($asset);
+        $poster = MediaPreviewVariant::videoPoster($asset);
+
+        return $poster instanceof MediaVariant ? $this->variantUrl($poster) : null;
     }
 
     public function thumbnailUrlForAsset(MediaAsset $asset): string
@@ -215,18 +228,32 @@ class PublicMedia
 
     public function variantUrl(MediaVariant $variant): string
     {
-        return $this->preview->active()
-            ? route('preview.media.variant', ['mediaVariant' => $variant])
-            : route('media.variant', $variant);
+        $artifact = $this->preview->active()
+            ? $this->rightsSelections->selectedForWorking($variant)
+            : $this->rightsSelections->selectedForPublic($variant);
+        $parameters = ['mediaVariant' => $variant];
+        if ($artifact !== null) {
+            $parameters['revision'] = $artifact->getAttribute('revision');
+        }
+
+        return route($this->preview->active() ? 'preview.media.variant' : 'media.variant', $parameters);
     }
 
     public function originalUrlForAsset(MediaAsset $asset): string
     {
         $this->assertAvailable($asset);
 
-        return $this->preview->active()
-            ? route('preview.media.original', ['mediaAsset' => $asset])
-            : route('media.original', $asset);
+        $parameters = ['mediaAsset' => $asset];
+        if (MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))) {
+            $artifact = $this->preview->active()
+                ? $this->rightsSelections->selectedForWorking($asset)
+                : $this->rightsSelections->selectedForPublic($asset);
+            if ($artifact !== null) {
+                $parameters['revision'] = $artifact->getAttribute('revision');
+            }
+        }
+
+        return route($this->preview->active() ? 'preview.media.original' : 'media.original', $parameters);
     }
 
     private function publishedCustomPageReferencesAsset(int $mediaAssetId): bool

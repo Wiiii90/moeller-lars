@@ -3,12 +3,24 @@
 namespace App\Filament\Auth;
 
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Auth\Pages\Login as BaseLogin;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Support\Htmlable;
 
 class Login extends BaseLogin
 {
+    public function authenticate(): ?LoginResponse
+    {
+        $response = parent::authenticate();
+
+        if ($response !== null) {
+            $this->clearRateLimiter(method: 'authenticate');
+        }
+
+        return $response;
+    }
+
     public function getHeading(): string|Htmlable|null
     {
         if (filled($this->userUndertakingMultiFactorAuthentication)) {

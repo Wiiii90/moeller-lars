@@ -14,25 +14,15 @@
             && $variant->getAttribute('state') === 'available';
     });
     $directPreviewUrl = route('preview.home');
-    $previewUrl = route('preview.home', ['appearance' => now()->timestamp]);
     $previewHost = parse_url($directPreviewUrl, PHP_URL_HOST) ?: 'preview';
     $previewPath = parse_url($directPreviewUrl, PHP_URL_PATH) ?: '/preview';
-    $device = isset($generalPage) && $generalPage instanceof \App\Filament\Pages\General
-        ? $generalPage->previewDevice
-        : 'desktop';
-    $previewWidth = $device === 'mobile' ? 390 : 1280;
-    $previewHeight = $device === 'mobile' ? 844 : 720;
-    $previewLabel = $device === 'mobile' ? 'iPhone · 390 × 844' : 'Desktop · 1280 × 720';
 @endphp
 
 <aside
     class="general-appearance-stage__preview admin-visual-stage__pane"
     aria-label="Live public preview"
     x-data="{
-        refreshTimer: null,
         resizeObserver: null,
-        zoomHudTimer: null,
-        zoomHudVisible: false,
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -55,19 +45,10 @@
             })
         },
         destroy() {
-            window.clearTimeout(this.refreshTimer)
-            window.clearTimeout(this.zoomHudTimer)
             this.resizeObserver?.disconnect()
         },
         zoomPercent() {
             return `${Math.round(this.zoom * 100)}%`
-        },
-        showZoomHud() {
-            window.clearTimeout(this.zoomHudTimer)
-            this.zoomHudVisible = true
-            this.zoomHudTimer = window.setTimeout(() => {
-                this.zoomHudVisible = false
-            }, 900)
         },
         fitPreview() {
             const viewport = this.$refs.viewport
@@ -143,7 +124,6 @@
             this.panMode = false
             this.spacePan = false
             this.applyPreviewTransform()
-            this.showZoomHud()
         },
         changeZoom(step) {
             const page = this.$refs.page
@@ -166,7 +146,6 @@
             this.zoom = nextZoom
             this.clampPan()
             this.applyPreviewTransform()
-            this.showZoomHud()
         },
         togglePanMode() {
             if (this.zoom <= this.minZoom) return
@@ -255,12 +234,14 @@
             this.endPan(null)
         },
         refreshPreview() {
-            window.clearTimeout(this.refreshTimer)
-            this.refreshTimer = window.setTimeout(() => {
-                const url = new URL(this.$refs.frame.src, window.location.origin)
-                url.searchParams.set('_appearance', Date.now().toString())
-                this.$refs.frame.src = url.toString()
-            }, 700)
+            const frame = this.$refs.frame
+            if (! frame) return
+
+            // An already-persisted Appearance change must not wait on a
+            // timeout that can be cancelled when Livewire morphs this pane.
+            const url = new URL(frame.src, window.location.origin)
+            url.searchParams.set('_appearance', Date.now().toString())
+            frame.src = url.toString()
         },
     }"
     x-on:general-appearance-updated.window="refreshPreview()"
@@ -268,34 +249,34 @@
     x-on:keyup.window="handleSpaceUp($event)"
     x-on:blur.window="cancelSpacePan()"
 >
-    <div class="general-live-preview__toolbar">
-        <h2 class="admin-section__kicker general-live-preview__title">Live preview</h2>
-
-        <div class="general-live-preview__toolbar-meta">
-            <span class="general-live-preview__preset">{{ $previewLabel }}</span>
-            <div class="general-live-preview__modes" role="group" aria-label="Preview device">
+    <h2 class="admin-section__kicker general-live-preview__title admin-visual-stage__heading">Live preview</h2>
+    <x-admin.stage-tool-row label="Live preview controls">
+        <div class="admin-stage-tool-group" role="group" aria-label="Preview device">
                 <button
-                    class="general-live-preview__mode {{ $device === 'desktop' ? 'is-active' : '' }}"
+                    class="admin-action admin-stage-tool-icon"
                     type="button"
-                    wire:click="setPreviewDevice('desktop')"
-                    aria-pressed="{{ $device === 'desktop' ? 'true' : 'false' }}"
+                    x-on:click="previewDevice = 'desktop'; $nextTick(() => fitPreview())"
+                    x-bind:class="{ 'is-primary': previewDevice === 'desktop' }"
+                    x-bind:aria-pressed="(previewDevice === 'desktop').toString()"
                     title="Desktop preview"
                 >
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()" />
                 </button>
                 <button
-                    class="general-live-preview__mode {{ $device === 'mobile' ? 'is-active' : '' }}"
+                    class="admin-action admin-stage-tool-icon"
                     type="button"
-                    wire:click="setPreviewDevice('mobile')"
-                    aria-pressed="{{ $device === 'mobile' ? 'true' : 'false' }}"
+                    x-on:click="previewDevice = 'mobile'; $nextTick(() => fitPreview())"
+                    x-bind:class="{ 'is-primary': previewDevice === 'mobile' }"
+                    x-bind:aria-pressed="(previewDevice === 'mobile').toString()"
                     title="Phone preview"
                 >
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()" />
                 </button>
-            </div>
-            <span class="general-live-preview__tool-divider" aria-hidden="true"></span>
+        </div>
+        <span class="admin-control-separator" aria-hidden="true"></span>
+        <div class="admin-stage-tool-group" role="group" aria-label="Preview zoom">
             <button
-                class="general-live-preview__mode general-live-preview__tool"
+                class="admin-action admin-stage-tool-icon"
                 type="button"
                 x-on:click="changeZoom(-0.25)"
                 x-bind:disabled="zoom <= minZoom"
@@ -315,7 +296,7 @@
                 x-text="zoomPercent()"
             ></button>
             <button
-                class="general-live-preview__mode general-live-preview__tool"
+                class="admin-action admin-stage-tool-icon"
                 type="button"
                 x-on:click="changeZoom(0.25)"
                 x-bind:disabled="zoom >= maxZoom"
@@ -324,11 +305,14 @@
             >
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Inspect->mini()" />
             </button>
+        </div>
+        <span class="admin-control-separator" aria-hidden="true"></span>
+        <div class="admin-stage-tool-group" role="group" aria-label="Preview actions">
             <button
-                class="general-live-preview__mode general-live-preview__tool"
+                class="admin-action admin-stage-tool-icon"
                 type="button"
                 x-on:click="togglePanMode()"
-                x-bind:class="{ 'is-active': panMode }"
+                x-bind:class="{ 'is-primary': panMode }"
                 x-bind:disabled="zoom <= minZoom"
                 x-bind:aria-pressed="panMode.toString()"
                 title="Pan preview (or hold Space and drag)"
@@ -337,7 +321,7 @@
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewPan->mini()" />
             </button>
             <a
-                class="general-live-preview__mode general-live-preview__tool"
+                class="admin-action admin-stage-tool-icon"
                 href="{{ $directPreviewUrl }}"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -347,14 +331,17 @@
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" />
             </a>
         </div>
-    </div>
+    </x-admin.stage-tool-row>
 
     <div x-ref="viewport" class="general-live-preview__viewport">
         <div
             x-ref="device"
-            class="general-live-preview__device is-{{ $device }}"
-            data-preview-width="{{ $previewWidth }}"
-            data-preview-height="{{ $previewHeight }}"
+            class="general-live-preview__device is-desktop"
+            x-bind:class="previewDevice === 'mobile' ? 'is-mobile' : 'is-desktop'"
+            data-preview-width="1280"
+            data-preview-height="720"
+            x-bind:data-preview-width="previewDevice === 'mobile' ? 390 : 1280"
+            x-bind:data-preview-height="previewDevice === 'mobile' ? 844 : 720"
         >
             <div x-ref="browser" class="general-live-preview__browser" aria-hidden="true">
                 <span class="general-live-preview__browser-dots">
@@ -383,7 +370,8 @@
             >
                 <iframe
                     x-ref="frame"
-                    src="{{ $previewUrl }}"
+                    wire:ignore
+                    src="{{ $directPreviewUrl }}"
                     title="Interactive live preview of the public homepage"
                     loading="eager"
                     tabindex="0"
@@ -404,14 +392,6 @@
                     x-on:wheel.prevent.stop
                 ></div>
 
-                <div
-                    class="general-live-preview__zoom-hud"
-                    x-show="zoomHudVisible"
-                    x-transition.opacity.duration.120ms
-                    x-cloak
-                    aria-hidden="true"
-                    x-text="zoomPercent()"
-                ></div>
             </div>
         </div>
     </div>

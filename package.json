@@ -7,7 +7,10 @@
         "build": "npm run generate:analytics-map && vite build",
         "dev": "npm run generate:analytics-map && vite",
         "test:js": "node --test tests/js/*.test.mjs",
-        "test:browser:profile": "playwright test --config=playwright.config.mjs"
+        "test:browser": "playwright test --config=playwright.config.mjs",
+    "test:browser:component": "playwright test --config=playwright.config.mjs --project=component-chromium",
+    "test:browser:e2e": "playwright test --config=playwright.config.mjs --project=e2e-chromium",
+    "test:browser:profile": "playwright test --config=playwright.config.mjs --project=profiling-chromium"
     },
     "devDependencies": {
         "@playwright/test": "^1.63.0",

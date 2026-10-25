@@ -100,7 +100,8 @@ function normalizeItem(element) {
     const title = element.dataset.viewerTitle;
     const page = element.dataset.viewerPage;
 
-    if (!key || !analyticsKey || !src || alt === undefined || !title || !page) {
+    const content = ['journal', 'content'].includes(element.dataset.viewerScope);
+    if (!key || !src || alt === undefined || !title || (!content && (!analyticsKey || !page))) {
         throw new Error('Artwork viewer item is missing required canonical data.');
     }
 
@@ -166,7 +167,7 @@ export function initializeArtworkViewer(root = document) {
 
     const resumeAttention = () => {
         const item = currentItem();
-        if (!item || !mediaVisible() || !dialog.open || document.visibilityState === 'hidden') return;
+        if (!item?.analyticsKey || !mediaVisible() || !dialog.open || document.visibilityState === 'hidden') return;
         if (attentionKey !== item.analyticsKey) {
             resetAttention();
             attentionKey = item.analyticsKey;
@@ -208,6 +209,13 @@ export function initializeArtworkViewer(root = document) {
         PAN_OVERSCROLL,
     );
 
+    const preserveControlFocus = () => {
+        // Controls can disable themselves at zoom and sequence boundaries.
+        // Keep keyboard input in the native dialog on an enabled control.
+        const focused = document.activeElement;
+        if ([previous, next, zoomOut, zoomIn, reset].includes(focused) && focused.disabled) close.focus();
+    };
+
     const updateTransform = () => {
         if (!currentIsImage() || image.hidden) return;
 
@@ -223,6 +231,7 @@ export function initializeArtworkViewer(root = document) {
         zoomOut.disabled = state.scale <= MIN_SCALE;
         zoomIn.disabled = state.scale >= MAX_SCALE;
         reset.disabled = state.scale === MIN_SCALE && state.x === 0 && state.y === 0;
+        preserveControlFocus();
         reset.textContent = state.scale === 1 ? '100%' : `${Math.round(state.scale * 100)}%`;
     };
 
@@ -248,10 +257,9 @@ export function initializeArtworkViewer(root = document) {
     const clearMedia = () => {
         image.removeAttribute('src');
         image.hidden = true;
-        image.style.removeProperty('width');
-        image.style.removeProperty('height');
-        image.style.removeProperty('max-width');
-        image.style.removeProperty('max-height');
+        // The viewer owns all image styles. Do not leave even an empty style
+        // attribute or the last transform in a subsequent HTML snapshot.
+        image.removeAttribute('style');
 
         video.pause();
         video.removeAttribute('src');
@@ -274,10 +282,12 @@ export function initializeArtworkViewer(root = document) {
         title.textContent = item.title;
         previous.disabled = adjacentIndex(index, -1, items.length) === null;
         next.disabled = adjacentIndex(index, 1, items.length) === null;
-        pageLink.hidden = false;
-        pageLink.href = item.page;
-        // The link is populated on demand, after initial SPA link discovery.
-        pageLink.setAttribute('wire:navigate', '');
+        preserveControlFocus();
+        pageLink.hidden = !item.page;
+        if (item.page) pageLink.href = item.page;
+        else pageLink.removeAttribute('href');
+        // The existing public SPA delegation handles this on-demand href.
+        // Adding wire:navigate after Alpine initialization would not bind it.
         expectedSrc = item.src;
         clearMedia();
         missing.hidden = true;
@@ -310,7 +320,7 @@ export function initializeArtworkViewer(root = document) {
         zoomTracked.clear();
         resetAttention();
         showItem(start);
-        trackMatomoEvent('Artwork', 'artwork_open', normalized[start].analyticsKey, null, root);
+        if (normalized[start].analyticsKey) trackMatomoEvent('Artwork', 'artwork_open', normalized[start].analyticsKey, null, root);
         dialog.showModal();
         close.focus();
         return true;
@@ -318,7 +328,7 @@ export function initializeArtworkViewer(root = document) {
 
     const trackZoomIfNeeded = () => {
         const item = currentItem();
-        if (!item || item.kind !== 'image' || state.scale <= MIN_SCALE || zoomTracked.has(item.analyticsKey)) return;
+        if (!item?.analyticsKey || item.kind !== 'image' || state.scale <= MIN_SCALE || zoomTracked.has(item.analyticsKey)) return;
         zoomTracked.add(item.analyticsKey);
         trackMatomoEvent('Artwork', 'artwork_zoom_used', item.analyticsKey, null, root);
     };
@@ -337,7 +347,7 @@ export function initializeArtworkViewer(root = document) {
         video.pause();
         showItem(destination);
         const item = currentItem();
-        trackMatomoEvent('Artwork', action, item?.analyticsKey ?? null, null, root);
+        if (item?.analyticsKey) trackMatomoEvent('Artwork', action, item.analyticsKey, null, root);
     };
 
     const stagePoint = (event) => {
@@ -354,6 +364,15 @@ export function initializeArtworkViewer(root = document) {
         if (!source) return;
         const sequence = source.closest('[data-artwork-viewer-sequence]');
         if (sequence && open(source, sequence)) event.preventDefault();
+    }, { signal: lifetime.signal });
+
+    root.addEventListener('keydown', (event) => {
+        if ((event.key !== 'Enter' && event.key !== ' ') || !event.target.matches?.('img[data-artwork-viewer-trigger]')) return;
+        const source = event.target;
+        const sequence = source.closest('[data-artwork-viewer-sequence]');
+        if (!sequence) return;
+        event.preventDefault();
+        open(source, sequence);
     }, { signal: lifetime.signal });
 
     close.addEventListener('click', () => dialog.close());
@@ -528,7 +547,15 @@ export function initializeArtworkViewer(root = document) {
     return () => {
         lifetime.abort();
         if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
-        if (dialog.open) flushAttention();
-        video.pause();
+        if (dialog.open) {
+            flushAttention();
+            dialog.close();
+        }
+        // Disposal precedes Livewire's snapshot. Close events are asynchronous,
+        // so clear owned media and the initialization marker synchronously.
+        clearMedia();
+        expectedSrc = '';
+        pointers.clear();
+        delete dialog.dataset.viewerInitialized;
     };
 }

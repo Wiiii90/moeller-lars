@@ -31,14 +31,14 @@ final class AdminPasswordField
                     ->icon(AdminIcon::GeneratePassword->value)
                     ->iconButton()
                     ->color('gray')
-                    ->tooltip('Generate secure password')
+                    ->tooltip(__('Generate secure password'))
                     ->alpineClickHandler("window.AdminPasswordTools.generate({$scopeJson}, \$event.currentTarget)"),
                 Action::make('copyPassword'.$actionSuffix)
                     ->label('Copy password')
                     ->icon(AdminIcon::Copy->value)
                     ->iconButton()
                     ->color('gray')
-                    ->tooltip('Copy password')
+                    ->tooltip(__('Copy password'))
                     ->alpineClickHandler("window.AdminPasswordTools.copy({$scopeJson}, \$event.currentTarget)"),
             ]);
     }

@@ -1,7 +1,12 @@
 <?php
 
+use App\Domain\Media\PublicMedia;
 use App\Http\Middleware\SecurityHeaders;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Symfony\Component\HttpFoundation\Response;
 
 it('uses a Pulse-specific CSP without weakening the public CSP', function (): void {
@@ -38,6 +43,45 @@ it('uses a Pulse-specific CSP without weakening the public CSP', function (): vo
         ->not->toContain("'unsafe-eval'");
 });
 
+it('enforces non-frameable public pages and same-origin administrator Preview with fresh strict CSP nonces', function (): void {
+    $public = $this->get('/')
+        ->assertOk()
+        ->assertHeader('X-Frame-Options', 'DENY');
+    $publicCsp = (string) $public->headers->get('Content-Security-Policy');
+
+    expect($publicCsp)
+        ->toContain("frame-ancestors 'none'")
+        ->not->toContain("'unsafe-inline'")
+        ->not->toContain("'unsafe-eval'");
+
+    $this->get('/preview')->assertNotFound();
+    $this->actingAs(User::factory()->create(), 'web')
+        ->get('/preview')
+        ->assertNotFound();
+
+    $admin = User::factory()->admin()->create();
+    $preview = $this->actingAs($admin, 'web')
+        ->get('/preview')
+        ->assertOk()
+        ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    $previewCsp = (string) $preview->headers->get('Content-Security-Policy');
+
+    expect($previewCsp)
+        ->toContain("frame-ancestors 'self'")
+        ->not->toContain("'unsafe-inline'")
+        ->not->toContain("'unsafe-eval'");
+
+    $publicNonceMatch = preg_match("/style-src 'self' 'nonce-([^']+)'/", $publicCsp, $publicNonce);
+    $previewNonceMatch = preg_match("/style-src 'self' 'nonce-([^']+)'/", $previewCsp, $previewNonce);
+
+    expect($publicNonceMatch)->toBe(1)
+        ->and($previewNonceMatch)->toBe(1)
+        ->and($previewNonce[1])->not->toBe($publicNonce[1])
+        ->and($previewCsp)->toContain("'nonce-{$previewNonce[1]}'")
+        ->and((string) $preview->getContent())->toContain('nonce="'.$previewNonce[1].'"');
+});
+
 it('emits TDM rights reservation for public HTML and media without affecting admin CSP', function (): void {
     $middleware = app(SecurityHeaders::class);
     foreach (['/', '/artworks/example', '/media/original/9', '/media/variant/9'] as $path) {
@@ -50,7 +94,8 @@ it('emits TDM rights reservation for public HTML and media without affecting adm
     }
 });
 
-it('serves the public CSP-safe Livewire script without changing the Admin runtime configuration', function (): void {
+it('serves the public CSP-safe Livewire script without changing the Admin runtime configuration', function (bool $debug): void {
+    config()->set('app.debug', $debug);
     $before = config('livewire.csp_safe', false);
 
     $response = $this->get(route('public.livewire.csp'));
@@ -58,33 +103,15 @@ it('serves the public CSP-safe Livewire script without changing the Admin runtim
     $response->assertOk();
     expect($response->headers->get('Content-Type'))->toContain('javascript')
         ->and(config('livewire.csp_safe', false))->toBe($before);
-});
-
-it('renders authored image width through nonce-authorized CSS rather than blocked inline styles', function (): void {
-    $source = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
-    $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
-    $styles = file_get_contents(resource_path('css/custom-pages.css'));
-
-    expect($source)
-        ->toContain("@push('public-component-styles')")
-        ->toContain('SecurityHeaders::STYLE_NONCE_ATTRIBUTE')
-        ->toContain('#custom-page-image-{{ $blockIndex }}')
-        ->toContain('--custom-page-image-width: {{ 28 * $imageScale }}rem;')
-        ->not->toContain('style="--custom-page-image-width')
-        ->and($layout)->toContain("@stack('public-component-styles')")
-        ->and($styles)
-        ->toContain('var(--custom-page-image-width, 28rem)')
-        ->not->toContain('var(--custom-page-image-width-narrow, 20rem)');
-});
-
+})->with([true, false]);
 
 it('renders 50 percent Custom Page image size as CSP-authorized rules in Blade', function (): void {
-    $asset = new \App\Models\MediaAsset;
+    $asset = new MediaAsset;
     $asset->setRawAttributes(['id' => 140, 'state' => 'available'], true);
-    $variant = new \App\Models\MediaVariant;
+    $variant = new MediaVariant;
     $variant->setRawAttributes(['id' => 240], true);
 
-    $media = \Mockery::mock(\App\Domain\Media\PublicMedia::class);
+    $media = Mockery::mock(PublicMedia::class);
     $media->shouldReceive('thumbnailVariantForAsset')->once()->with($asset)->andReturn($variant);
     $media->shouldReceive('variantUrl')->once()->with($variant)->andReturn('/media/variants/240');
 
@@ -101,7 +128,7 @@ it('renders 50 percent Custom Page image size as CSP-authorized rules in Blade',
     $isPreview = false;
     request()->attributes->set(SecurityHeaders::STYLE_NONCE_ATTRIBUTE, 'image-size-test-nonce');
 
-    $rendered = \Illuminate\Support\Facades\Blade::render(
+    $rendered = Blade::render(
         "@include('pages.partials.component-sequence') @stack('public-component-styles')",
         compact('blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
     );

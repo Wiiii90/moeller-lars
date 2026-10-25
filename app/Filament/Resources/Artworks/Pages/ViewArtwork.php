@@ -45,9 +45,9 @@ class ViewArtwork extends ViewRecord
                     $primary = $artworkMedia->firstWhere('role', 'primary');
                     $asset = $primary?->getRelationValue('mediaAsset');
                     /** @var MediaVariant|null $variant */
-                    $variant = $asset?->variants->first(fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === PublicMedia::THUMBNAIL_KIND
-                        && $variant->getAttribute('transform_profile') === PublicMedia::PUBLIC_TRANSFORM_PROFILE
-                        && $variant->getAttribute('state') === 'available');
+                    $variant = $asset instanceof \App\Models\MediaAsset
+                        ? \App\Domain\Media\MediaPreviewVariant::preview($asset)
+                        : null;
 
                     return $variant && app(PublicMedia::class)->isPublicVariant($variant) ? route('media.variant', $variant) : null;
                 }),

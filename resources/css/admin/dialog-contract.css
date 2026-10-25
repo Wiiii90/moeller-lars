@@ -14,6 +14,16 @@ html.fi {
     --admin-dialog-layer-padding-inline: 1rem;
 }
 
+.fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay,
+.fi-modal:not(.fi-modal-click-through) > .fi-modal-window-ctn {
+    z-index: 60;
+}
+
+.fi-modal.fi-modal-open ~ .fi-modal.fi-modal-open:not(.fi-modal-click-through) > .fi-modal-close-overlay,
+.fi-modal.fi-modal-open ~ .fi-modal.fi-modal-open:not(.fi-modal-click-through) > .fi-modal-window-ctn {
+    z-index: 70;
+}
+
 .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     position: fixed;
     inset: 0 !important;
@@ -31,8 +41,7 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
 
 .fi-modal:not(.fi-modal-click-through) > .fi-modal-window-ctn {
     position: fixed;
-    inset-block: var(--admin-dialog-layer-block-start) 0 !important;
-    inset-inline: var(--admin-dialog-layer-inline-start) var(--admin-dialog-layer-inline-end) !important;
+    inset: 0 !important;
     box-sizing: border-box;
     min-height: 0 !important;
     /* Filament's 1fr/auto/3fr tracks center an auto-height window by its
@@ -42,8 +51,8 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     grid-template-rows: 0 auto minmax(0, 1fr) !important;
     overflow: hidden !important;
     overscroll-behavior: contain;
-    padding-block: 1rem !important;
-    padding-inline: var(--admin-dialog-layer-padding-inline) !important;
+    padding-block: calc(var(--admin-dialog-layer-block-start) + 1rem) 1rem !important;
+    padding-inline: calc(var(--admin-dialog-layer-inline-start) + var(--admin-dialog-layer-padding-inline)) calc(var(--admin-dialog-layer-inline-end) + var(--admin-dialog-layer-padding-inline)) !important;
 }
 
 .fi-modal:not(.fi-modal-click-through) > .fi-modal-window-ctn > .fi-modal-window {
@@ -153,7 +162,7 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
 
 @media (max-width: 46rem) {
     .fi-modal:not(.fi-modal-click-through) > .fi-modal-window-ctn {
-        padding-block: .5rem !important;
+        padding-block: calc(var(--admin-dialog-layer-block-start) + .5rem) .5rem !important;
     }
 
     .fi-modal:not(.fi-modal-click-through) > .fi-modal-window-ctn > .fi-modal-window {
@@ -513,18 +522,93 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
 
 
 @media (max-width: 34rem) {
-    .admin-detail-dialog__meta {
+    /* The original three-fact Viewer retains its single-column layout.
+     * Four-fact Viewers use the content-width responsive rules below. */
+    .admin-detail-dialog__meta:not(.admin-detail-dialog__meta--four) {
         grid-template-columns: 1fr;
     }
 
-    .admin-detail-dialog__meta > div {
+    .admin-detail-dialog__meta:not(.admin-detail-dialog__meta--four) > div {
         padding: .65rem 0;
         border-left: 0 !important;
         border-top: 0;
         border-bottom: 1px solid var(--admin-line);
     }
 
-    .admin-detail-dialog__meta > div:last-child {
+    .admin-detail-dialog__meta:not(.admin-detail-dialog__meta--four) > div:last-child {
+        border-bottom: 0;
+    }
+}
+
+/* Shared four-fact Viewer metadata variant. The modal size is owned by
+ * AdminDialogSize; the fact grid responds to the actual content width and
+ * never creates a fifth or wrapped phantom metric cell. */
+.admin-detail-dialog {
+    container-type: inline-size;
+}
+
+.admin-detail-dialog__meta--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-detail-dialog__meta--four > div:nth-child(n) {
+    padding: .75rem .85rem;
+    border: 0;
+}
+
+.admin-detail-dialog__meta--four > div:nth-child(4n + 1) {
+    padding-left: 0;
+}
+
+.admin-detail-dialog__meta--four > div:nth-child(4n) {
+    padding-right: 0;
+}
+
+.admin-detail-dialog__meta--four > div:not(:nth-child(4n + 1)) {
+    border-left: 1px solid var(--admin-line);
+}
+
+.admin-detail-dialog__meta--four > div:nth-child(n + 5) {
+    border-top: 1px solid var(--admin-line);
+}
+
+@container (max-width: 42rem) {
+    .admin-detail-dialog__meta--four {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-child(n) {
+        padding: .7rem .75rem;
+        border: 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-child(2n + 1) {
+        padding-left: 0;
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-child(2n) {
+        padding-right: 0;
+        border-left: 1px solid var(--admin-line);
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-last-child(-n + 2) {
+        border-bottom: 0;
+    }
+}
+
+@container (max-width: 25rem) {
+    .admin-detail-dialog__meta--four {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-detail-dialog__meta--four > div:nth-child(n) {
+        padding: .65rem 0;
+        border: 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-detail-dialog__meta--four > div:last-child {
         border-bottom: 0;
     }
 }

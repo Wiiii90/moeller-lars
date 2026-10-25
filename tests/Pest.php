@@ -18,8 +18,6 @@ pest()->extend(TestCase::class)
     ->group('feature')
     ->in('Feature');
 
-pest()->group('architecture')->in('Architecture');
-
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->group('migration')
@@ -45,7 +43,6 @@ function testGallerySection(ArtworkCategory $category, array $overrides = []): S
         'navigation_label' => (string) $category->getAttribute('name'),
         'slug' => (string) $category->getAttribute('slug'),
         'state' => 'published',
-        'show_in_navigation' => false,
         'parent_id' => $parentId,
         'artwork_category_id' => (int) $category->getKey(),
     ], $overrides));

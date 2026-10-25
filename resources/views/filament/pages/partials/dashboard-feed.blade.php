@@ -16,14 +16,14 @@
     >
         <x-slot:search>
             <label class="admin-data-field">
-                <span>Search</span>
+                <span>{{ __('Search') }}</span>
                 <x-admin.search-input model="feedSearch" placeholder="Title, sender or message" />
             </label>
         </x-slot:search>
 
         <x-slot:filters>
             <label class="admin-data-field">
-                <span>Type</span>
+                <span>{{ __('Type') }}</span>
                 <select wire:model.live="feedType">
                     @foreach ($feedTypes as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
@@ -40,10 +40,10 @@
 
         <x-slot:actions>
             <div class="admin-data-control-group">
-                <span class="admin-data-control-label">Dashboard</span>
+                <span class="admin-data-control-label">{{ __('Dashboard') }}</span>
                 <button class="admin-action admin-action--with-icon admin-dashboard__settings-trigger" type="button" wire:click="mountAction('dashboardSettings')" aria-label="Dashboard settings">
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">Settings</span>
+                    <span class="admin-action__label">{{ __('Settings') }}</span>
                 </button>
             </div>
         </x-slot:actions>
@@ -60,17 +60,17 @@
                         aria-label="Selection actions; {{ $selectedCount }} selected"
                         @disabled($selectedCount === 0)
                     >
-                        <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
+                        <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                     </button>
                     <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
-                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkPin" @disabled(! $selectionCapabilities['has_selection'])>Pin selected</button>
-                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpin" @disabled(! $selectionCapabilities['has_selection'])>Unpin selected</button>
-                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkRead" @disabled(! $selectionCapabilities['all_mutable'])>Mark read</button>
-                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkUnread" @disabled(! $selectionCapabilities['all_mutable'])>Mark unread</button>
+                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkPin" @disabled(! $selectionCapabilities['has_selection'])>{{ __('Pin selected') }}</button>
+                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpin" @disabled(! $selectionCapabilities['has_selection'])>{{ __('Unpin selected') }}</button>
+                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkRead" @disabled(! $selectionCapabilities['all_readable'])>{{ __('Mark read') }}</button>
+                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkUnread" @disabled(! $selectionCapabilities['all_readable'])>{{ __('Mark unread') }}</button>
                         @if ($deleteWithoutConfirmation)
-                            <button class="admin-action is-danger" type="button" role="menuitem" wire:click="bulkDelete" @disabled(! $selectionCapabilities['all_mutable'])>Delete selected</button>
+                            <button class="admin-action is-danger" type="button" role="menuitem" wire:click="bulkDelete" @disabled(! $selectionCapabilities['all_mutable'])>{{ __('Delete selected') }}</button>
                         @else
-                            <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelected')" @disabled(! $selectionCapabilities['all_mutable'])>Delete selected</button>
+                            <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelected')" @disabled(! $selectionCapabilities['all_mutable'])>{{ __('Delete selected') }}</button>
                         @endif
                     </div>
                 </div>
@@ -94,13 +94,13 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
-                    <th scope="col" class="admin-dashboard__col-type">Type</th>
-                    <th scope="col" class="admin-dashboard__col-date">Date</th>
-                    <th scope="col" class="admin-dashboard__col-time">Time</th>
-                    <th scope="col" class="admin-dashboard__col-title">Title</th>
-                    <th scope="col" class="admin-dashboard__col-sender">Sender</th>
-                    <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
+                    <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">{{ __('Position') }}</th>
+                    <th scope="col" class="admin-dashboard__col-type">{{ __('Type') }}</th>
+                    <th scope="col" class="admin-dashboard__col-date">{{ __('Date') }}</th>
+                    <th scope="col" class="admin-dashboard__col-time">{{ __('Time') }}</th>
+                    <th scope="col" class="admin-dashboard__col-title">{{ __('Title') }}</th>
+                    <th scope="col" class="admin-dashboard__col-sender">{{ __('Sender') }}</th>
+                    <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                     <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                         <input
                             type="checkbox"
@@ -141,7 +141,7 @@
             @if ($feedHasRecords)
                 <x-admin.empty-state title="No matching feed entries" minimal>
                     <x-slot:actions>
-                        <button class="admin-action" type="button" wire:click="resetFeed">Clear filters</button>
+                        <button class="admin-action" type="button" wire:click="resetFeed">{{ __('Clear filters') }}</button>
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else

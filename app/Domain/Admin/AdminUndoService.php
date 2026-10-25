@@ -3,6 +3,7 @@
 namespace App\Domain\Admin;
 
 use App\Domain\Artwork\ArtworkEditorialService;
+use App\Domain\Publication\PublicationSnapshot;
 use App\Models\AdminActionReceipt;
 use App\Models\AdminActivityOrderingEvent;
 use App\Models\AdminActivityOrderingProjection;
@@ -40,6 +41,10 @@ final class AdminUndoService
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($receiptId, $actor): array {
+            // Commit/reclaim acquire this lock before touching receipts and
+            // publication tables. Undo must follow the same lock order.
+            DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
+
             /** @var AdminActionReceipt|null $receipt */
             $receipt = AdminActionReceipt::query()->whereKey($receiptId)->lockForUpdate()->first();
             if (! $receipt) {

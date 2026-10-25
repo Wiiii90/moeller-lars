@@ -13,32 +13,32 @@
 <div class="admin-detail-dialog admin-detail-dialog--activity">
     <dl class="admin-detail-dialog__meta">
         <div>
-            <dt>Area</dt>
+            <dt>{{ __('Area') }}</dt>
             <dd>{{ $event['area'] }}</dd>
         </div>
         <div>
-            <dt>Type</dt>
+            <dt>{{ __('Type') }}</dt>
             <dd>{{ $event['type'] }}</dd>
         </div>
         <div>
-            <dt>Actor</dt>
+            <dt>{{ __('Actor') }}</dt>
             <dd>{{ $event['actor'] }}</dd>
         </div>
     </dl>
 
     <div class="admin-detail-dialog__field">
-        <span>Details</span>
+        <span>{{ __('Details') }}</span>
         <p>{{ $event['details'] ?? '—' }}</p>
     </div>
 
     <div class="admin-detail-dialog__field">
-        <span>Target</span>
+        <span>{{ __('Target') }}</span>
         <p>{{ $event['target'] }}</p>
     </div>
 
     @if (is_array($orderingProjection) && ($orderingProjection['event_count'] ?? 1) > 1)
         <div class="admin-detail-dialog__field">
-            <span>Ordering sequence</span>
+            <span>{{ __('Ordering sequence') }}</span>
             <p>{{ $orderingProjection['event_count'] }} raw reorder operations grouped as one Activity.</p>
             @if (($orderingProjection['started_at'] ?? null) && ($orderingProjection['ended_at'] ?? null))
                 <small>{{ $orderingProjection['started_at'] }} → {{ $orderingProjection['ended_at'] }}</small>
@@ -48,7 +48,7 @@
 
     @if (is_array($changeSummary) && ($changeSummary['items'] ?? []) !== [])
         <div class="admin-detail-dialog__field">
-            <span>Changed values</span>
+            <span>{{ __('Changed values') }}</span>
             <dl class="admin-detail-dialog__meta">
                 @foreach ($changeSummary['items'] as $change)
                     <div>
@@ -64,7 +64,7 @@
     @endif
 
     <div class="admin-detail-dialog__field">
-        <span>Publication</span>
+        <span>{{ __('Publication') }}</span>
         <p>{{ $publicationLabel }}</p>
         @if (($event['publication_status'] ?? null) === 'committed')
             <small>Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}</small>
@@ -76,7 +76,7 @@
 
     @if ($metadata !== [])
         <div class="admin-detail-dialog__field">
-            <span>Event details</span>
+            <span>{{ __('Event details') }}</span>
             <dl class="admin-detail-dialog__meta">
                 @foreach ($metadata as $key => $value)
                     <div>

@@ -17,6 +17,7 @@ trait CustomPageWorkspaceSecondaryForms
         if (($block['type'] ?? null) === 'image') {
             $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
             $data['image_alignment'] = CustomPageSetting::imageAlignment($block);
+            $data['video_controls_enabled'] = CustomPageSetting::videoControls($block);
         }
         if (($block['type'] ?? null) === 'list') {
             $data['items'] = array_map(static fn (array $item): array => [
@@ -35,6 +36,10 @@ trait CustomPageWorkspaceSecondaryForms
             $data['contact_social_enabled'] = is_array($social) && CustomPageSetting::contactChildPublished($social);
             $data['contact_form_enabled'] = is_array($form) && CustomPageSetting::contactChildPublished($form);
             $data['contact_social_platforms'] = is_array($social) ? ($social['social_platforms'] ?? []) : [];
+            $data['contact_social_selected'] = collect($this->availableSocialPlatforms)
+                ->mapWithKeys(fn (string $label, string $platform): array => [
+                    $platform => in_array($platform, $data['contact_social_platforms'], true),
+                ])->all();
             $data['contact_form_state'] = is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled';
             $data['contact_status_text'] = is_array($form) ? ($form['status_text'] ?? null) : null;
         }
@@ -63,6 +68,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
                 ...$this->imageAlignmentPayload($data, $existing),
+                ...$this->videoControlsPayload($data, $existing),
                 ...$this->imageScalePayload($data, $existing),
                 ...$this->imageChildrenPayload($data, $existing),
             ],
@@ -102,10 +108,20 @@ trait CustomPageWorkspaceSecondaryForms
     {
         $alignment = $data['image_alignment'] ?? ($existing['image_alignment'] ?? 'left');
         if (! is_string($alignment) || ! in_array($alignment, CustomPageSetting::IMAGE_ALIGNMENTS, true)) {
-            throw ValidationException::withMessages(['image_alignment' => 'Choose Left or Right alignment.']);
+            throw ValidationException::withMessages(['image_alignment' => 'Choose Left, Center or Right alignment.']);
         }
 
-        return $alignment === 'left' ? [] : ['image_alignment' => 'right'];
+        return $alignment === 'left' ? [] : ['image_alignment' => $alignment];
+    }
+
+    private function videoControlsPayload(array $data, ?array $existing): array
+    {
+        $enabled = $data['video_controls_enabled'] ?? ($existing['video_controls_enabled'] ?? true);
+        if (! is_bool($enabled)) {
+            throw ValidationException::withMessages(['video_controls_enabled' => 'Choose whether to show video playback controls.']);
+        }
+
+        return $enabled ? [] : ['video_controls_enabled' => false];
     }
 
     /** @param array<string, mixed> $data
@@ -142,8 +158,19 @@ trait CustomPageWorkspaceSecondaryForms
         $children = $existing !== null ? $this->settings()->contactChildren($existing) : [];
         $social = collect($children)->firstWhere('type', 'social_links');
         $form = collect($children)->firstWhere('type', 'contact_form');
-        $platforms = $data['contact_social_platforms']
-            ?? (is_array($social) ? ($social['social_platforms'] ?? []) : array_keys($this->availableSocialPlatforms));
+        $previousPlatforms = is_array($social) ? ($social['social_platforms'] ?? []) : [];
+        $selection = $data['contact_social_selected'] ?? null;
+        $platforms = is_array($selection)
+            ? [
+                ...array_keys(array_filter($selection, static fn (mixed $selected): bool => $selected === true)),
+                // General may hide a configured profile without deleting it.
+                // Deletions are cascaded centrally and are never preserved.
+                ...array_values(array_filter($previousPlatforms,
+                    fn (mixed $platform): bool => is_string($platform)
+                        && ! array_key_exists($platform, $this->availableSocialPlatforms))),
+            ]
+            : ($data['contact_social_platforms'] ?? ($existing !== null
+                ? $previousPlatforms : array_keys($this->availableSocialPlatforms)));
         $formState = $data['contact_form_state']
             ?? (is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled');
         $statusText = $data['contact_status_text']
@@ -158,7 +185,7 @@ trait CustomPageWorkspaceSecondaryForms
                 [
                     'type' => 'social_links',
                     'published' => (bool) ($data['contact_social_enabled'] ?? true),
-                    'social_platforms' => $this->validatedSocialPlatforms($platforms),
+                    'social_platforms' => $this->validatedSocialPlatforms($platforms, $previousPlatforms),
                 ],
                 [
                     'type' => 'contact_form',

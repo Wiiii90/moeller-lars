@@ -25,21 +25,13 @@
                     progress: 0,
                     fileCount: 0,
                     result: '',
-                    resultTimer: null,
                     showResult(message) {
-                        window.clearTimeout(this.resultTimer)
                         this.result = message
                         this.phase = 'result'
-                        this.resultTimer = window.setTimeout(() => {
-                            this.phase = 'idle'
-                            this.progress = 0
-                            this.fileCount = 0
-                            this.result = ''
-                        }, 3800)
                     },
                 }"
                 x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-                x-on:livewire-upload-start="window.clearTimeout(resultTimer); phase = 'uploading'; progress = 0; result = ''"
+                x-on:livewire-upload-start="phase = 'uploading'; progress = 0; result = ''"
                 x-on:livewire-upload-progress="progress = $event.detail.progress"
                 x-on:livewire-upload-finish="
                     progress = 100
@@ -56,7 +48,7 @@
                     wire:model="directPrimaryMedia"
                     x-on:change="fileCount = $event.target.files.length"
                     x-bind:disabled="phase === 'uploading' || phase === 'processing'"
-                    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+                    accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
                     aria-label="Upload primary images or videos for new artworks"
                     multiple
                 >
@@ -71,8 +63,8 @@
                                         ? result
                                         : 'Drop images or videos here or choose from your device'
                         "
-                    >Drop images or videos here or choose from your device</strong>
-                    <span x-show="phase === 'idle'">JPEG, PNG, WebP, MP4 or WebM.</span>
+                    >{{ __('Drop images or videos here or choose from your device') }}</strong>
+                    <span x-show="phase === 'idle'">JPEG, PNG, WebP · max {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB · {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · max {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB.</span>
                 </div>
                 <div
                     class="admin-gallery-upload__progress"
@@ -91,69 +83,69 @@
             </div>
         </div>
 
-        @php($reorderEnabled = trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
+        @php($reorderEnabled = ($galleryContext['sort_mode'] ?? 'manual') === 'manual' && trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
 
         <div class="gallery-workspace__result-surface">
             <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
                 <x-slot:search>
                     <label class="admin-data-field">
-                        <span>Search</span>
+                        <span>{{ __('Search') }}</span>
                         <x-admin.search-input model="search" placeholder="Title, material, dimensions" />
                     </label>
                 </x-slot:search>
 
                 <x-slot:filters>
                     <label class="admin-data-field">
-                        <span>Status</span>
+                        <span>{{ __('Status') }}</span>
                         <select wire:model.live="statusFilter">
-                            <option value="any">Any</option>
-                            <option value="published">Published</option>
-                            <option value="draft">Draft</option>
+                            <option value="any">{{ __('Any') }}</option>
+                            <option value="published">{{ __('Published') }}</option>
+                            <option value="draft">{{ __('Draft') }}</option>
                         </select>
                     </label>
 
                     <label class="admin-data-field">
-                        <span>Readiness</span>
+                        <span>{{ __('Readiness') }}</span>
                         <select wire:model.live="readinessFilter">
-                            <option value="any">Any</option>
-                            <option value="ready">Ready</option>
-                            <option value="needs-attention">Needs attention</option>
+                            <option value="any">{{ __('Any') }}</option>
+                            <option value="ready">{{ __('Ready') }}</option>
+                            <option value="needs-attention">{{ __('Needs attention') }}</option>
                         </select>
                     </label>
                 </x-slot:filters>
 
                 <x-slot:reset>
                     <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Filter</span>
+                        <span class="admin-data-control-label">{{ __('Filter') }}</span>
                         <x-admin.clear-filters wire:click="resetFilters" />
                     </div>
                 </x-slot:reset>
 
                 <x-slot:actions>
                     <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Gallery</span>
+                        <span class="admin-data-control-label">{{ __('Gallery') }}</span>
                         <div class="admin-toolbar admin-editorial-actions gallery-workspace__gallery-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('gallerySettings')" aria-label="Gallery settings">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Settings</span>
+                                <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addArtwork')" aria-label="Add artwork">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Artwork->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Add artwork</span>
+                                <span class="admin-action__label">{{ __('Add artwork') }}</span>
                             </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('materialPresets')" aria-label="Materials">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Materials->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Materials</span>
+                                <span class="admin-action__label">{{ __('Materials') }}</span>
                             </button>
-                            @if ($galleryContext['public_url'])
-                                <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
+                            @if ($galleryContext['preview_url'])
+                                <a class="admin-action admin-action--with-icon" href="{{ $galleryContext['preview_url'] }}" target="_blank" rel="noopener" aria-label="Preview Gallery">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Preview</span>
+                                    <span class="admin-action__label">{{ __('Preview') }}</span>
                                 </a>
                             @else
-                                <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish the Gallery to open its public URL" aria-label="Preview Gallery">
+                                <button class="admin-action admin-action--with-icon" type="button" disabled title="A preview URL is unavailable for this Gallery" aria-label="Preview Gallery">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Preview</span>
+                                    <span class="admin-action__label">{{ __('Preview') }}</span>
                                 </button>
                             @endif
                         </div>
@@ -162,7 +154,7 @@
 
                 <x-slot:selection>
                     <div class="admin-data-control-group admin-selection admin-selection--free-count" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
-                        <span class="admin-data-control-label">Selection</span>
+                        <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">
                             <button
                                 class="admin-action admin-selection__trigger"
@@ -172,18 +164,18 @@
                                 aria-haspopup="menu"
                                 @disabled(count($selectedArtworkIds) === 0)
                             >
-                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
+                                <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" x-show="open" x-cloak x-on:click.outside="open = false" role="menu">
                                 @if ($moveTargets !== [])
-                                    <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('moveSelectedToGallery')">Move to Gallery…</button>
+                                    <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('moveSelectedToGallery')">{{ __('Move to Gallery…') }}</button>
                                 @endif
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('up')" @disabled(! $reorderEnabled)>Move selected up</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $reorderEnabled)>Move selected down</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')">Publish selected</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')">Unpublish selected</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')">Remove selected</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')">Delete selected</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('up')" @disabled(! $reorderEnabled)>{{ __('Move selected up') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $reorderEnabled)>{{ __('Move selected down') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')">{{ __('Publish selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')">{{ __('Unpublish selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')">{{ __('Remove selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')">{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ count($selectedArtworkIds) }} selected">{{ count($selectedArtworkIds) }}</span>
@@ -207,6 +199,7 @@
                             <button
                                 class="admin-gallery-grid__image gallery-workspace__visual"
                                 type="button"
+                                wire:key="gallery-artwork-media-{{ $artwork['id'] }}-{{ $artwork['primary_media_asset_id'] ?? 'empty' }}-{{ $artwork['primary_variant_id'] ?? 'none' }}"
                                 wire:click="mountAction('previewArtwork', { artwork: {{ $artwork['id'] }} })"
                                 aria-label="Preview {{ $artwork['title'] }}"
                             >
@@ -215,7 +208,7 @@
                                 @elseif ($artwork['primary_kind'] === 'video' && $artwork['primary_original_url'])
                                     <video src="{{ $artwork['primary_original_url'] }}" preload="metadata" muted playsinline aria-label="Video preview for {{ $artwork['title'] }}" draggable="false"></video>
                                 @else
-                                    <span>No primary media</span>
+                                    <span>{{ __('No primary media') }}</span>
                                 @endif
                                 <span class="admin-gallery-grid__sequence">{{ str_pad((string) $artwork['sequence'], 2, '0', STR_PAD_LEFT) }}</span>
                             </button>
@@ -335,8 +328,8 @@
                                     </div>
                                     <span>
                                         @if ($artwork['year']){{ $artwork['year'] }}@endif
-                                        @if ($artwork['medium']){{ $artwork['year'] ? ' · ' : '' }}{{ $artwork['medium'] }}@endif
-                                        @if ($artwork['dimensions']){{ ($artwork['year'] || $artwork['medium']) ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
+                                        @if ($artwork['dimensions']){{ $artwork['year'] ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
+                                        @if ($artwork['medium']){{ ($artwork['year'] || $artwork['dimensions']) ? ' · ' : '' }}{{ $artwork['medium'] }}@endif
                                     </span>
                                     <small class="admin-gallery-grid__analytics">
                                         @if ($artwork['analytics']['available'])
@@ -361,7 +354,7 @@
                                         value="{{ $artwork['id'] }}"
                                         wire:model.live="selectedArtworkIds"
                                     >
-                                    <span>Select</span>
+                                    <span>{{ __('Select') }}</span>
                                 </label>
                                 <div class="gallery-workspace__card-actions">
                                     <button
@@ -373,6 +366,17 @@
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
                                     </button>
+                                    @if ($artwork['state'] === 'draft')
+                                        <button
+                                            class="gallery-workspace__icon-action"
+                                            type="button"
+                                            wire:click="mountAction('uploadArtworkPrimaryMedia', { artwork: {{ $artwork['id'] }} })"
+                                            title="Replace primary image or video"
+                                            aria-label="Replace primary media for {{ $artwork['title'] }}"
+                                        >
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Upload->mini()" />
+                                        </button>
+                                    @endif
                                     <button
                                         class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
@@ -404,10 +408,10 @@
                                     <button
                                         class="gallery-workspace__icon-action"
                                         type="button"
-                                        wire:click="mountAction('deletePrimaryMedia', { artwork: {{ $artwork['id'] }} })"
-                                        @disabled(! $artwork['primary_original_url'])
-                                        title="{{ $artwork['primary_original_url'] ? 'Delete media file' : 'No primary media file to delete' }}"
-                                        aria-label="{{ $artwork['primary_original_url'] ? 'Delete primary Media File for '.$artwork['title'] : 'No primary Media File to delete for '.$artwork['title'] }}"
+                                        wire:click="mountAction('deleteArtwork', { artwork: {{ $artwork['id'] }} })"
+                                        @disabled($artwork['state'] !== 'draft')
+                                        title="{{ $artwork['state'] === 'draft' ? 'Delete artwork' : 'Unpublish artwork before deleting' }}"
+                                        aria-label="Delete artwork {{ $artwork['title'] }}"
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
                                     </button>
@@ -419,13 +423,13 @@
             @elseif ($unfilteredArtworkCount > 0)
                 <x-admin.empty-state title="No matching artworks" minimal>
                     <x-slot:actions>
-                        <button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button>
+                        <button class="admin-action" type="button" wire:click="resetFilters">{{ __('Clear filters') }}</button>
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else
                 <x-admin.empty-state title="No artworks added to this Gallery" minimal>
                     <x-slot:actions>
-                        <button class="admin-action" type="button" wire:click="mountAction('addArtwork')">Add artwork</button>
+                        <button class="admin-action" type="button" wire:click="mountAction('addArtwork')">{{ __('Add artwork') }}</button>
                     </x-slot:actions>
                 </x-admin.empty-state>
             @endif

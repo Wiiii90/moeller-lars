@@ -31,12 +31,13 @@ final class CustomPageEditorialService
     }
 
     /** @param array<string, mixed> $block */
-    public function updateBlock(CustomPageSetting $settings, int $index, string $expectedType, array $block): bool
+    public function updateBlock(CustomPageSetting $settings, int $index, string $expectedType, array $block, ?array $expectedBlock = null): bool
     {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $block): bool {
+        return DB::transaction(function () use ($settings, $index, $expectedType, $block, $expectedBlock): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertTarget($blocks, $index, $expectedType);
+            $this->assertUnchangedBlock($blocks[$index], $expectedBlock);
 
             if (($block['type'] ?? null) !== $expectedType) {
                 throw ValidationException::withMessages(['component' => 'The component type changed while it was being edited.']);
@@ -48,6 +49,13 @@ final class CustomPageEditorialService
         });
     }
 
+    private function assertUnchangedBlock(array $block, ?array $expectedBlock): void
+    {
+        if ($expectedBlock !== null && AdminOrderingState::fingerprints([$block]) !== AdminOrderingState::fingerprints([$expectedBlock])) {
+            throw ValidationException::withMessages(['type' => 'This component changed since the editor was opened. Reopen the editor.']);
+        }
+    }
+
     /**
      * Move an existing prose component under a decorative Image without
      * copying, dropping, or reauthoring its content. The source disappears
@@ -56,12 +64,13 @@ final class CustomPageEditorialService
      * @param array<string,mixed> $image
      */
     public function updateImageAndNest(
-        CustomPageSetting $settings, int $imageIndex, array $image, int $sourceIndex,
+        CustomPageSetting $settings, int $imageIndex, array $image, int $sourceIndex, ?array $expectedBlock = null,
     ): bool {
-        return DB::transaction(function () use ($settings, $imageIndex, $image, $sourceIndex): bool {
+        return DB::transaction(function () use ($settings, $imageIndex, $image, $sourceIndex, $expectedBlock): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertUnchangedBlock($blocks[$imageIndex], $expectedBlock);
             if (($image['type'] ?? null) !== 'image' || ! ($image['image_decorative'] ?? false)) {
                 throw ValidationException::withMessages(['image_children' => 'Only a decorative image can own text.']);
             }
@@ -95,10 +104,10 @@ final class CustomPageEditorialService
 
     /** Persist edited component values together with a Parent change. */
     public function updateAndNestBlock(
-        CustomPageSetting $settings, int $sourceIndex, string $type, array $updated, int $imageIndex,
+        CustomPageSetting $settings, int $sourceIndex, string $type, array $updated, int $imageIndex, ?array $expectedBlock = null,
     ): bool {
-        return DB::transaction(function () use ($settings, $sourceIndex, $type, $updated, $imageIndex): bool {
-            $saved = $this->updateBlock($settings, $sourceIndex, $type, $updated);
+        return DB::transaction(function () use ($settings, $sourceIndex, $type, $updated, $imageIndex, $expectedBlock): bool {
+            $saved = $this->updateBlock($settings, $sourceIndex, $type, $updated, $expectedBlock);
             $nested = $this->nestBlock($settings, $sourceIndex, $type, $imageIndex);
             return $saved || $nested;
         });
@@ -204,9 +213,9 @@ final class CustomPageEditorialService
 
     /** Mutate one nested prose component without ever moving it into the Image
      * editor. The child remains an independently authored page component. */
-    public function updateImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, array $updated): bool
+    public function updateImageChild(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, array $updated, ?array $expectedBlock = null): bool
     {
-        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $updated): bool {
+        return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $updated, $expectedBlock): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertTarget($blocks, $imageIndex, 'image');
@@ -214,6 +223,7 @@ final class CustomPageEditorialService
             if (($children[$childIndex]['type'] ?? null) !== $type || ($updated['type'] ?? null) !== $type) {
                 throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
             }
+            $this->assertUnchangedBlock($children[$childIndex], $expectedBlock);
             $children[$childIndex] = $updated;
             $blocks[$imageIndex]['children'] = $children;
             return $this->persist($fresh, $blocks);
@@ -311,6 +321,7 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $sourceIndex, $sourceChild, $expectedType, $parent, $position): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
+            $beforeOrder = AdminOrderingState::fingerprints($blocks);
             if ($sourceChild === null) {
                 $this->assertTarget($blocks, $sourceIndex, $expectedType);
                 if ($parent === $sourceIndex) {
@@ -356,7 +367,12 @@ final class CustomPageEditorialService
                 array_splice($children, max(0, min($position, count($children))), 0, [$item]);
                 $blocks[$parent]['children'] = $children;
             }
-            return $this->persist($fresh, $blocks);
+            return $this->persist($fresh, $blocks, $sourceChild === null && $parent === null ? [
+                'action' => 'site_section.page_components_reordered',
+                'scope' => 'page-components:'.(int) $fresh->getAttribute('site_section_id'),
+                'before' => $beforeOrder,
+                'after' => AdminOrderingState::fingerprints($blocks),
+            ] : null);
         });
     }
 
@@ -801,8 +817,11 @@ final class CustomPageEditorialService
      */
     private function persist(CustomPageSetting $settings, array $blocks, ?array $orderingState = null): bool
     {
+        $before = AdminOrderingState::fingerprints($settings->components());
         $settings->fill(['blocks' => $blocks]);
-        if (! $settings->isDirty()) {
+        $settings->setAttribute('blocks', $settings->normalizedBlocks());
+        $settings->assertEditableComponents();
+        if ($before === AdminOrderingState::fingerprints($settings->components())) {
             return false;
         }
 

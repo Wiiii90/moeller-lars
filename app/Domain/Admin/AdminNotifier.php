@@ -43,22 +43,49 @@ final class AdminNotifier
             $activityMessages = $this->notificationContext->consumeRecorded();
 
             if ($activityMessages !== []) {
-                foreach ($activityMessages as $activityMessage) {
-                    $auditEventId = (int) ($activityMessage['audit_event_id'] ?? 0);
-                    $activityType = is_string($context['type'] ?? null) && trim((string) $context['type']) !== ''
-                        ? trim((string) $context['type'])
-                        : 'activity';
+                $activityType = is_string($context['type'] ?? null) && trim((string) $context['type']) !== ''
+                    ? trim((string) $context['type'])
+                    : 'activity';
 
+                if (count($activityMessages) === 1) {
+                    // Preserve the canonical Activity presentation for one audit.
+                    $message = $activityMessages[0];
+                    $auditEventId = (int) $message['audit_event_id'];
                     $this->recordAndSurface(
                         recipientId: $recipientId,
-                        sourceId: $auditEventId > 0 ? 'activity:'.$auditEventId : null,
-                        title: (string) $activityMessage['change'],
-                        body: $activityMessage['details'] ?? null,
+                        sourceId: 'activity:'.$auditEventId,
+                        title: (string) $message['change'],
+                        body: $message['details'] ?? null,
                         status: 'success',
                         context: [
                             ...$context,
                             'type' => $activityType,
-                            'audit_event_id' => $auditEventId > 0 ? $auditEventId : ($context['audit_event_id'] ?? null),
+                            'audit_event_id' => $auditEventId,
+                        ],
+                    );
+                } else {
+                    // Multiple append-only audits still represent ONE submitted
+                    // editorial action. Link the action's single Notification to
+                    // the latest audit and retain the other references as context.
+                    $auditEventIds = array_map(
+                        static fn (array $message): int => (int) $message['audit_event_id'],
+                        $activityMessages,
+                    );
+                    $lastAuditEventId = $auditEventIds[count($auditEventIds) - 1];
+                    $this->recordAndSurface(
+                        recipientId: $recipientId,
+                        sourceId: $sourceId ?? 'activity:'.$lastAuditEventId,
+                        title: $title,
+                        body: $body,
+                        status: 'success',
+                        context: [
+                            ...$context,
+                            'type' => $activityType,
+                            'audit_event_id' => $lastAuditEventId,
+                            'metadata' => [
+                                ...(is_array($context['metadata'] ?? null) ? $context['metadata'] : []),
+                                'audit_event_ids' => $auditEventIds,
+                            ],
                         ],
                     );
                 }
@@ -93,9 +120,9 @@ final class AdminNotifier
             return [];
         }
 
-        return array_values(array_filter(
-            $pending,
-            static fn (mixed $message): bool => is_array($message),
+        return array_values(array_map(
+            static fn (array $message): array => self::translatedSurfaceMessage($message),
+            array_filter($pending, static fn (mixed $message): bool => is_array($message)),
         ));
     }
 
@@ -165,13 +192,23 @@ final class AdminNotifier
             $component = app(LivewireManager::class)->current();
 
             if ($component instanceof Component) {
-                $component->dispatch('admin-header-notification', notification: $message);
+                $component->dispatch('admin-header-notification', notification: self::translatedSurfaceMessage($message));
 
                 return;
             }
         }
 
         $this->storePendingNotification($message);
+    }
+
+    /** Visible translation only; the original notification is persisted in English. */
+    private static function translatedSurfaceMessage(array $message): array
+    {
+        return [
+            ...$message,
+            'title' => __((string) ($message['title'] ?? '')),
+            'body' => is_string($message['body'] ?? null) ? __($message['body']) : null,
+        ];
     }
 
     private function recipientId(User|int|null $user): ?int

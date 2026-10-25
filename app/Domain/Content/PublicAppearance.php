@@ -12,10 +12,163 @@ final class PublicAppearance
     public const MODE_SOLID = 'solid';
 
     public const MODE_GRADIENT = 'gradient';
+    public const MODE_RADIAL = 'radial';
+    public const MODE_CONIC = 'conic';
+    public const MODE_TRANSPARENT = 'transparent';
+    public const MAX_STOPS = 12;
+    public const DEFAULT_REPEAT_SPAN = 120;
 
     public const DEFAULT_PAGE_COLOR = '#777777';
+    public const DEFAULT_SURFACE_COLOR = '#FFFFFF';
+    public const SURFACE_PREFIXES = ['background', 'menu_background', 'page_background', 'header_name', 'header_divider_paint'];
+
+    public const DEFAULT_DIVIDER_COLOR = '#D8D5D2';
+
+    // Title is a text paint rather than a panel background.
+    public const DEFAULT_TITLE_GRADIENT_COLOR = '#E5E9E6';
 
     public const DEFAULT_GRADIENT_ANGLE = 180;
+
+    public const HEADER_POSITIONS = ['outside' => 'Beside menu', 'inside' => 'Inside menu', 'above' => 'Above menu', 'below' => 'Below menu'];
+    public const HEADER_CAPS = ['small-caps' => 'Small caps', 'normal' => 'Original case'];
+    public const HEADER_ALIGNMENT = ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'];
+
+    public static function headerAlignmentOptions(string $position): array
+    {
+        return in_array($position, ['inside', 'outside'], true)
+            ? ['left' => 'Left', 'right' => 'Right']
+            : self::HEADER_ALIGNMENT;
+    }
+
+    public static function presentedHeaderAlignment(mixed $value, mixed $position): string
+    {
+        $alignment = self::headerAlignment($value);
+
+        return in_array(self::headerPosition($position), ['inside', 'outside'], true) && $alignment === 'center'
+            ? 'left'
+            : $alignment;
+    }
+    public const DEFAULT_HEADER_TEXT = 'Lars Möller';
+
+    public static function headerText(mixed $value): string
+    {
+        $value ??= self::DEFAULT_HEADER_TEXT;
+        if (! is_string($value) || trim($value) === '' || mb_strlen(trim($value)) > 100) {
+            throw ValidationException::withMessages(['header_name_text' => 'Enter a title of up to 100 characters.']);
+        }
+
+        return trim($value);
+    }
+
+    public static function headerAlignment(mixed $value, string $field = 'header_name_alignment'): string
+    {
+        $value ??= $field === 'header_name_mobile_alignment' ? 'center' : 'left';
+        if (! is_string($value) || ! array_key_exists($value, self::HEADER_ALIGNMENT)) {
+            throw ValidationException::withMessages([$field => 'Choose Left, Center or Right.']);
+        }
+
+        return $value;
+    }
+    public const FRAME_STYLES = [
+        'layered' => 'Layered paper',
+        'continuous' => 'Layered paper · continuous contours',
+        'contours' => 'Contours only',
+        'backing' => 'Backing only',
+        'plain' => 'Plain',
+    ];
+
+    public static function frameStyle(mixed $value): string
+    {
+        $value ??= 'layered';
+        if (! is_string($value) || ! array_key_exists($value, self::FRAME_STYLES)) {
+            throw ValidationException::withMessages(['frame_style' => 'Choose a supported frame style.']);
+        }
+
+        return $value;
+    }
+
+    /** Currently implemented public navigation presentation. */
+    public const MENU_TYPES = [
+        'cyclic_inline' => 'Cyclic inline',
+    ];
+
+    public static function menuType(mixed $value): string
+    {
+        $value ??= 'cyclic_inline';
+        if (! is_string($value) || ! array_key_exists($value, self::MENU_TYPES)) {
+            throw ValidationException::withMessages(['menu_type' => 'Choose a supported menu type.']);
+        }
+
+        return $value;
+    }
+
+    public const HEADER_DIVIDERS = [
+        'fine' => 'No divider',
+        'menu' => 'Menu divider',
+        'full' => 'Full-width divider',
+        'separate' => 'Separate surfaces',
+        'full_gap' => 'Full-width divider and separate surfaces',
+    ];
+
+    public static function headerDivider(mixed $value): string
+    {
+        $value ??= 'fine';
+        if (! is_string($value) || ! array_key_exists($value, self::HEADER_DIVIDERS)) {
+            throw ValidationException::withMessages(['header_divider_mode' => 'Choose a supported menu-to-page transition.']);
+        }
+
+        return $value;
+    }
+
+    public static function headerPosition(mixed $value): string
+    {
+        $value ??= 'inside';
+        if (! is_string($value) || ! array_key_exists($value, self::HEADER_POSITIONS)) {
+            throw ValidationException::withMessages(['header_name_position' => 'Choose a supported name position.']);
+        }
+
+        return $value;
+    }
+
+    public static function headerCaps(mixed $value): string
+    {
+        $value ??= 'small-caps';
+        if (! is_string($value) || ! array_key_exists($value, self::HEADER_CAPS)) {
+            throw ValidationException::withMessages(['header_name_caps' => 'Choose a supported letter style.']);
+        }
+
+        return $value;
+    }
+
+    public const DEFAULT_TITLE_SIZE = 25;
+    public const DEFAULT_TITLE_MIN_SIZE = 18;
+    public const MIN_RESPONSIVE_TITLE_SIZE = 12;
+    public const MIN_TITLE_SIZE = 16;
+    public const MAX_TITLE_SIZE = 64;
+
+    public static function normalizeTitleSize(mixed $value): int
+    {
+        return self::normalizeDimension(
+            $value,
+            self::DEFAULT_TITLE_SIZE,
+            self::MIN_TITLE_SIZE,
+            self::MAX_TITLE_SIZE,
+            'header_name_size',
+            'Artist name size',
+        );
+    }
+
+    public static function normalizeTitleMinSize(mixed $value): int
+    {
+        return self::normalizeDimension(
+            $value,
+            self::DEFAULT_TITLE_MIN_SIZE,
+            self::MIN_RESPONSIVE_TITLE_SIZE,
+            self::MAX_TITLE_SIZE,
+            'header_name_min_size',
+            'Minimum artist name size',
+        );
+    }
 
     public const DEFAULT_PAGE_WIDTH = 800;
 
@@ -36,18 +189,20 @@ final class PublicAppearance
             self::MODE_DEFAULT => 'Default',
             self::MODE_SOLID => 'Solid color',
             self::MODE_GRADIENT => 'Linear gradient',
+            self::MODE_RADIAL => 'Radial gradient',
+            self::MODE_CONIC => 'Conic gradient',
         ];
     }
 
-    public static function normalizeMode(mixed $value): ?string
+    public static function normalizeMode(mixed $value, string $field = 'background_mode'): ?string
     {
         if ($value === null || $value === '' || $value === self::MODE_DEFAULT) {
             return null;
         }
 
-        if (! is_string($value) || ! in_array($value, [self::MODE_SOLID, self::MODE_GRADIENT], true)) {
+        if (! is_string($value) || ! in_array($value, [self::MODE_SOLID, self::MODE_GRADIENT, self::MODE_RADIAL, self::MODE_CONIC, ...($field === 'page_background_mode' ? [self::MODE_TRANSPARENT] : [])], true)) {
             throw ValidationException::withMessages([
-                'background_mode' => 'Choose Default, Solid color, or Linear gradient.',
+                $field => 'Choose Solid, Linear, Radial or Conic gradient.',
             ]);
         }
 
@@ -76,7 +231,7 @@ final class PublicAppearance
         return $candidate;
     }
 
-    public static function normalizeAngle(mixed $value): ?int
+    public static function normalizeAngle(mixed $value, string $field = 'background_gradient_angle'): ?int
     {
         if ($value === null || $value === '') {
             return null;
@@ -84,14 +239,14 @@ final class PublicAppearance
 
         if (filter_var($value, FILTER_VALIDATE_INT) === false) {
             throw ValidationException::withMessages([
-                'background_gradient_angle' => 'Gradient angle must be a whole number from 0 to 360.',
+                $field => 'Gradient angle must be a whole number from 0 to 360.',
             ]);
         }
 
         $angle = (int) $value;
         if ($angle < 0 || $angle > 360) {
             throw ValidationException::withMessages([
-                'background_gradient_angle' => 'Gradient angle must be between 0 and 360 degrees.',
+                $field => 'Gradient angle must be between 0 and 360 degrees.',
             ]);
         }
 
@@ -124,25 +279,201 @@ final class PublicAppearance
 
     public static function backgroundCss(PublicContentSetting $settings): ?string
     {
-        $mode = self::normalizeMode($settings->getAttribute('background_mode'));
+        return self::surfaceCss($settings, 'background');
+    }
 
+    public static function titleGradientCss(PublicContentSetting $settings): ?string
+    {
+        $mode = self::normalizeMode($settings->getAttribute('header_name_mode'), 'header_name_mode');
+
+        return self::isGradient($mode) ? self::surfaceCss($settings, 'header_name') : null;
+    }
+
+    public static function dividerGradientCss(PublicContentSetting $settings): ?string
+    {
+        $mode = self::normalizeMode($settings->getAttribute('header_divider_paint_mode'), 'header_divider_paint_mode');
+
+        return self::isGradient($mode) ? self::surfaceCss($settings, 'header_divider_paint') : null;
+    }
+
+    // Keep the established Solid divider color in one authoritative column.
+    public static function solidColorField(string $surface): string
+    {
+        return $surface === 'header_divider_paint' ? 'header_divider_color' : $surface.'_color';
+    }
+
+    /**
+     * The same validated paint contract owns all global public surfaces.
+     * Null preserves the existing CSS defaults. Future page overrides can
+     * shadow the Page CSS custom property without modifying this record.
+     */
+    public static function isGradient(?string $mode): bool
+    {
+        return in_array($mode, [self::MODE_GRADIENT, self::MODE_RADIAL, self::MODE_CONIC], true);
+    }
+
+    /** @return list<array{color:string,position:int}> */
+    public static function stops(PublicContentSetting $settings, string $surface): array
+    {
+        $current = $settings->getAttribute($surface.'_gradient_stops');
+        if (is_array($current)) {
+            return self::normalizeStops($current, $surface.'_gradient_stops');
+        }
+
+        $fallback = match ($surface) {
+            'background' => self::DEFAULT_PAGE_COLOR,
+            'header_name' => self::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color')
+                ?? self::DEFAULT_TITLE_GRADIENT_COLOR,
+            'header_divider_paint' => self::normalizeColor($settings->getAttribute('header_divider_color'), 'header_divider_color')
+                ?? self::DEFAULT_DIVIDER_COLOR,
+            default => self::DEFAULT_SURFACE_COLOR,
+        };
+        return [
+            ['color' => self::normalizeColor($settings->getAttribute($surface.'_gradient_start'), $surface.'_gradient_start') ?? $fallback, 'position' => 0],
+            ['color' => self::normalizeColor($settings->getAttribute($surface.'_gradient_end'), $surface.'_gradient_end') ?? $fallback, 'position' => 100],
+        ];
+    }
+
+    /**
+     * @return list<array{color:string,position:int}>|null
+     */
+    public static function normalizeStops(mixed $value, string $field): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (! is_array($value) || count($value) < 2 || count($value) > self::MAX_STOPS) {
+            throw ValidationException::withMessages([$field => 'Choose between 2 and '.self::MAX_STOPS.' color stops.']);
+        }
+
+        $result = [];
+        foreach (array_values($value) as $stop) {
+            if (! is_array($stop) || ! array_key_exists('position', $stop)) {
+                throw ValidationException::withMessages([$field => 'Each stop needs a color and position.']);
+            }
+            $color = self::normalizeColor($stop['color'] ?? null, $field);
+            $position = filter_var($stop['position'], FILTER_VALIDATE_INT);
+            if ($color === null || $position === false || $position < 0 || $position > 100) {
+                throw ValidationException::withMessages([$field => 'Color stops require a color and a position between 0 and 100 percent.']);
+            }
+            $result[] = ['color' => $color, 'position' => $position];
+        }
+
+        // Position, rather than insertion order, defines the color sequence.
+        // Stable order for identical positions preserves deliberate hard edges.
+        usort($result, static fn (array $a, array $b): int => $a['position'] <=> $b['position']);
+
+        return $result;
+    }
+
+    public static function normalizeRepeating(mixed $value, string $field): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+        if (! in_array($value, [true, false, 0, 1, '0', '1'], true)) {
+            throw ValidationException::withMessages([$field => 'Repeating must be enabled or disabled.']);
+        }
+        return (bool) $value;
+    }
+
+    public static function normalizeRepeatSpan(mixed $value, string $field): int
+    {
+        return self::normalizeInteger($value, 120, 16, 360, $field, 'Repeat span');
+    }
+
+    public static function normalizeCenter(mixed $value, string $field): int
+    {
+        return self::normalizeInteger($value, 50, 0, 100, $field, 'Center');
+    }
+
+    public static function normalizeShape(mixed $value, string $field): string
+    {
+        if ($value === null || $value === '') {
+            return 'circle';
+        }
+        if (! is_string($value) || ! in_array($value, ['circle', 'ellipse'], true)) {
+            throw ValidationException::withMessages([$field => 'Choose circle or ellipse.']);
+        }
+        return $value;
+    }
+
+    private static function normalizeInteger(mixed $value, int $default, int $min, int $max, string $field, string $label): int
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+        $number = filter_var($value, FILTER_VALIDATE_INT);
+        if ($number === false || $number < $min || $number > $max) {
+            throw ValidationException::withMessages([$field => $label.' must be between '.$min.' and '.$max.'.']);
+        }
+        return $number;
+    }
+
+    public static function surfaceCss(PublicContentSetting $settings, string $surface): ?string
+    {
+        if (! in_array($surface, self::SURFACE_PREFIXES, true)) {
+            throw new \InvalidArgumentException('Unsupported public appearance surface.');
+        }
+
+        $modeField = $surface.'_mode';
+        $mode = self::normalizeMode($settings->getAttribute($modeField), $modeField);
         if ($mode === null) {
             return null;
         }
 
+        $fallback = match ($surface) {
+            'background' => self::DEFAULT_PAGE_COLOR,
+            'header_name' => self::normalizeColor($settings->getAttribute('header_name_color'), 'header_name_color')
+                ?? self::DEFAULT_TITLE_GRADIENT_COLOR,
+            'header_divider_paint' => self::normalizeColor($settings->getAttribute('header_divider_color'), 'header_divider_color')
+                ?? self::DEFAULT_DIVIDER_COLOR,
+            default => self::DEFAULT_SURFACE_COLOR,
+        };
+        if ($mode === self::MODE_TRANSPARENT) {
+            return 'transparent';
+        }
         if ($mode === self::MODE_SOLID) {
-            return self::normalizeColor($settings->getAttribute('background_color'), 'background_color')
-                ?? self::DEFAULT_PAGE_COLOR;
+            $colorField = self::solidColorField($surface);
+
+            return self::normalizeColor($settings->getAttribute($colorField), $colorField) ?? $fallback;
         }
 
-        $start = self::normalizeColor($settings->getAttribute('background_gradient_start'), 'background_gradient_start')
-            ?? self::DEFAULT_PAGE_COLOR;
-        $end = self::normalizeColor($settings->getAttribute('background_gradient_end'), 'background_gradient_end')
-            ?? self::DEFAULT_PAGE_COLOR;
-        $angle = self::normalizeAngle($settings->getAttribute('background_gradient_angle'))
+        $repeating = self::normalizeRepeating($settings->getAttribute($surface.'_gradient_repeating'), $surface.'_gradient_repeating');
+        $span = self::normalizeRepeatSpan($settings->getAttribute($surface.'_gradient_repeat_span'), $surface.'_gradient_repeat_span');
+        $angle = self::normalizeAngle($settings->getAttribute($surface.'_gradient_angle'), $surface.'_gradient_angle')
             ?? self::DEFAULT_GRADIENT_ANGLE;
+        $centerX = self::normalizeCenter($settings->getAttribute($surface.'_gradient_center_x'), $surface.'_gradient_center_x');
+        $centerY = self::normalizeCenter($settings->getAttribute($surface.'_gradient_center_y'), $surface.'_gradient_center_y');
+        $shape = self::normalizeShape($settings->getAttribute($surface.'_gradient_shape'), $surface.'_gradient_shape');
+        $stops = self::stops($settings, $surface);
+        $parts = array_map(static function (array $stop) use ($repeating, $span, $mode): string {
+            $position = $stop['position'];
+            if ($repeating) {
+                $value = ($position * $span) / 100;
+                $unit = $mode === self::MODE_CONIC ? 'deg' : 'px';
+                $point = rtrim(rtrim(sprintf('%.2f', $value), '0'), '.').$unit;
+            } else {
+                $point = $position.'%';
+            }
+            return $stop['color'].' '.$point;
+        }, $stops);
 
-        return sprintf('linear-gradient(%ddeg, %s, %s) fixed', $angle, $start, $end);
+        // Keep old two-color gradients byte-identical until a stop list is
+        // edited, so existing publication checkpoints remain stable.
+        if (! $repeating && $settings->getAttribute($surface.'_gradient_stops') === null) {
+            $parts = array_column($stops, 'color');
+        }
+
+        $prefix = $repeating ? 'repeating-' : '';
+        $css = match ($mode) {
+            self::MODE_GRADIENT => $prefix.'linear-gradient('.$angle.'deg, '.implode(', ', $parts).')',
+            self::MODE_RADIAL => $prefix.'radial-gradient('.$shape.' at '.$centerX.'% '.$centerY.'%, '.implode(', ', $parts).')',
+            self::MODE_CONIC => $prefix.'conic-gradient(from '.$angle.'deg at '.$centerX.'% '.$centerY.'%, '.implode(', ', $parts).')',
+            default => throw new \LogicException('Unexpected gradient mode.'),
+        };
+
+        return $surface === 'background' ? $css.' fixed' : $css;
     }
 
     /** @return array{shell:string,art:string,padding:string} */

@@ -42,29 +42,102 @@
 }
 
 .general-appearance-stage[data-preview-device="desktop"] {
+    --admin-stage-divider-axis: 50%;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
 .general-appearance-stage[data-preview-device="mobile"] {
+    --admin-stage-divider-axis: 66.666667%;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) !important;
 }
 
 .general-appearance-stage__controls {
     grid-column: 1;
     grid-row: 1;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
     height: 100%;
+    min-height: 0;
     padding-right: var(--admin-stage-pane-space);
-    padding-bottom: .2rem;
+    overflow: hidden;
+}
+
+/* One stable header, one scroll owner. The tabbar and optional Stage tool
+ * never leave view when the Appearance fields are scrolled. */
+.general-appearance-stage__controls > .fi-sc {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-content: stretch;
+    height: 100%;
+    min-height: 0;
+    gap: 0 !important;
+    overflow: hidden;
+}
+
+.general-appearance-stage__toolbar {
+    min-height: 0;
+    align-self: start;
+}
+
+/* The Appearance field area itself is the ONE layout/scroll owner.
+ * Filament Group wrappers between this area and the four panels are
+ * flattened below; only real field descendants retain their native grids. */
+.general-appearance-stage__scroll {
+    display: grid;
+    position: relative;
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: max-content;
+    align-content: start;
+    gap: 0;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    padding-block: var(--admin-section-gap) .2rem;
     overflow-x: hidden;
     overflow-y: auto;
-    scrollbar-gutter: auto;
     scrollbar-width: none;
 }
 
-.general-appearance-stage__controls::-webkit-scrollbar {
+.general-appearance-stage__scroll::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
+}
+
+/* Filament inserts one or more wrappers around Group children. They are
+ * NOT grid items: flatten precisely those ancestors carrying the four
+ * appearance panels, leaving each panel's own field schema untouched. */
+.general-appearance-stage__scroll :not(.general-appearance-stage__panel):has(.general-appearance-stage__panel) {
+    display: contents !important;
+}
+
+/* All panels share a single grid cell. Only the active panel ever
+ * contributes to the expanded track; inactive panels remain absolute.
+ * Switching tabs recalculates intrinsic height through normal CSS layout. */
+.general-appearance-stage__panel {
+    grid-area: 1 / 1;
+    position: absolute;
+    inset: 0 auto auto 0;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Invisible absolute panels otherwise still enlarge scrollable overflow.
+ * Exclude them from layout AND overflow; the active panel alone owns extent. */
+.general-appearance-stage__panel:not(.is-active) {
+    display: none !important;
+}
+
+.general-appearance-stage__panel.is-active {
+    position: relative;
+    inset: auto;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .general-appearance-stage__preview {
@@ -72,38 +145,43 @@
     grid-column: 2;
     grid-row: 1;
     height: 100%;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: .25rem;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 0;
     padding-left: var(--admin-stage-pane-space);
     overflow: hidden;
 }
 
-/* General changes only the divider axis with preview mode. Its vertical inset
- * is the same shared inset used by every other Visual Stage. */
-.general-appearance-stage::after {
-    position: absolute;
-    z-index: 8;
-    top: var(--admin-stage-divider-inset);
-    bottom: var(--admin-stage-divider-inset);
-    width: 1px;
-    background: var(--admin-line);
-    content: "";
-    pointer-events: none;
+/* The active panel alone determines height; the Stage minimum stays intact.
+ * The Preview must never contribute its fitted device height to this track. */
+.general-appearance-stage.admin-visual-stage--expanded {
+    height: max-content;
+    min-height: var(--admin-visual-stage-height);
+    grid-template-rows: minmax(var(--admin-visual-stage-height), max-content) !important;
 }
 
-.general-appearance-stage[data-preview-device="desktop"]::after {
-    left: 50%;
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls {
+    height: auto !important;
+    align-self: start;
+    grid-template-rows: max-content;
 }
 
-.general-appearance-stage[data-preview-device="mobile"]::after {
-    left: 66.666667%;
-}
-
-/* Group::extraAttributes() lives on the Group wrapper; the embedded child
- * schema itself is the direct `.fi-sc` element in Filament 4. */
-.general-appearance-stage__controls > .fi-sc {
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls > .fi-sc {
+    height: auto;
+    grid-template-rows: auto auto max-content;
     align-content: start;
-    gap: var(--admin-section-gap) !important;
+}
+
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__scroll {
+    height: auto;
+    overflow: visible;
+}
+
+/* The Preview consumes the height chosen by the active panel but does
+ * not feed its previously fitted size back into intrinsic track sizing. */
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__preview {
+    contain: size;
+    height: 100%;
+    align-self: stretch;
 }
 
 .general-stage-kicker,
@@ -223,20 +301,23 @@
     min-width: 0;
 }
 
-/* Semantic 2 x 2 order is supplied by the schema:
- * Background | Primary color
- * Angle      | Secondary color
- */
-.general-background-row > .fi-sc {
+/* One vertical paint-editor owner. Nested semantic rows use the same two
+ * columns, including the Angle/Shape + Repeating and Center X + Center Y pairs. */
+.general-background-row > .fi-sc,
+.general-appearance-gradient-fields > .fi-sc {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-flow: row !important;
+    gap: .65rem !important;
+}
+.general-appearance-mode-row > .fi-sc,
+.general-appearance-parameter-row > .fi-sc,
+.general-appearance-center-row > .fi-sc {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-auto-flow: row !important;
+    align-items: start !important;
     gap: .65rem var(--admin-stage-pane-space) !important;
-}
-
-.general-background-row > .fi-sc > * {
-    grid-column: span 1 !important;
-    min-width: 0;
 }
 
 .general-layout-row > .fi-sc {
@@ -330,86 +411,12 @@
     }
 }
 
-/* Preview toolbar */
-.general-live-preview__toolbar {
-    display: flex;
-    min-width: 0;
-    min-height: 1.75rem;
-    gap: .65rem;
-    align-items: flex-start;
-    justify-content: space-between;
-}
-
+/* Preview header shares the exact heading and tool-row grammar with the
+ * Appearance side. Icon geometry and separator strokes live in stage.css
+ * and primitives.css, while the zoom percentage retains its specialised
+ * shared zoom-value control in general-interactions.css. */
 .general-live-preview__title {
-    flex: 0 0 auto;
-}
-
-.general-live-preview__toolbar-meta {
-    display: flex;
     min-width: 0;
-    gap: .2rem;
-    align-items: center;
-    margin-left: auto;
-}
-
-.general-live-preview__preset {
-    min-width: 0;
-    margin-right: .3rem;
-    overflow: hidden;
-    color: var(--admin-faint);
-    font-size: .62rem;
-    font-variant-numeric: tabular-nums;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.general-live-preview__modes {
-    display: flex;
-    flex: 0 0 auto;
-    gap: .2rem;
-    align-items: center;
-}
-
-.general-live-preview__tool-divider {
-    width: 1px;
-    height: 1.15rem;
-    margin: 0 .2rem;
-    flex: 0 0 1px;
-    background: var(--admin-line-strong);
-}
-
-.general-live-preview__mode {
-    display: grid;
-    width: 2rem;
-    height: 1.75rem;
-    padding: 0;
-    place-items: center;
-    border: 1px solid transparent;
-    border-radius: .2rem;
-    background: transparent;
-    color: var(--admin-muted);
-    line-height: 1;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.general-live-preview__mode svg {
-    width: 1rem;
-    height: 1rem;
-}
-
-.general-live-preview__mode:hover,
-.general-live-preview__mode:focus-visible,
-.general-live-preview__mode.is-active {
-    border-color: var(--admin-line-strong);
-    background: var(--admin-subtle);
-    color: var(--admin-text);
-    outline: none;
-}
-
-.general-live-preview__mode:disabled {
-    opacity: .34;
-    cursor: default;
 }
 
 /* Preview frame */
@@ -418,8 +425,10 @@
     display: grid;
     min-width: 0;
     min-height: 0;
-    padding: .35rem 0;
-    place-items: center;
+    /* Same toolbar-to-content rhythm as the adjacent Appearance form.
+     * Keep the fitted browser top-aligned as More space enlarges its viewport. */
+    padding: calc(var(--admin-section-gap) + .5rem) 0 .35rem;
+    place-items: start center;
     overflow: hidden;
     background: transparent;
 }
@@ -439,7 +448,6 @@
     outline-offset: -2px;
     background: var(--admin-surface);
     box-shadow: 0 .18rem .5rem color-mix(in srgb, #000 9%, transparent);
-    transition: border-radius .18s ease;
 }
 
 .general-live-preview__device.is-desktop {
@@ -528,21 +536,6 @@
     pointer-events: auto;
 }
 
-.general-live-preview__page.is-zoomed {
-    cursor: grab;
-    touch-action: none;
-    user-select: none;
-}
-
-.general-live-preview__page.is-zoomed.is-dragging {
-    cursor: grabbing;
-}
-
-.general-live-preview__page.is-zoomed iframe {
-    pointer-events: none !important;
-    user-select: none;
-}
-
 .general-live-preview__device.is-mobile .general-live-preview__browser {
     grid-row: 2;
     grid-template-columns: minmax(0, 1fr);
@@ -616,6 +609,8 @@
         --admin-row-actions-width: var(--admin-row-actions-move-edit-delete-compact-width);
     }
 }
+
+
 
 
 

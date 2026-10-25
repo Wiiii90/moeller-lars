@@ -38,7 +38,13 @@ class ArtworkResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components(app(ArtworkEditDialog::class)->schema(includeGalleryAssignment: true));
+        /** @var Artwork|null $record */
+        $record = $schema->getRecord();
+
+        return $schema->components(app(ArtworkEditDialog::class)->schema(
+            includeGalleryAssignment: true,
+            primaryReadOnly: $record instanceof Artwork && (string) $record->getAttribute('state') === 'published',
+        ));
     }
 
     public static function getRelations(): array
@@ -74,10 +80,7 @@ class ArtworkResource extends Resource
         }
 
         /** @var MediaVariant|null $variant */
-        $variant = $asset->getRelationValue('variants')
-            ->first(fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
-                && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                && $candidate->getAttribute('state') === 'available');
+        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
 
         return $variant === null ? null : route('admin.media.variant', $variant);
     }

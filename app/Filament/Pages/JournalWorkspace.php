@@ -9,7 +9,9 @@ use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SiteSectionType;
+use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -22,6 +24,8 @@ use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
+use App\Models\User;
+use Filament\Facades\Filament;
 use App\Routing\SiteNodeRoute;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
@@ -35,12 +39,26 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Session;
 use Livewire\Attributes\Locked;
 use Throwable;
 
 final class JournalWorkspace extends Page
 {
+    #[Locked]
+    public array $journalSettingsOriginal = [];
+
+    #[Locked]
+    public array $entryEditorOriginal = [];
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
 
     private const PAGE_SIZES = [25, 50, 100];
 
@@ -61,6 +79,8 @@ final class JournalWorkspace extends Page
     public string $journalTitle = 'Journal';
 
     public ?string $journalPublicUrl = null;
+
+    public ?string $journalPreviewUrl = null;
 
     public string $journalSlug = '';
 
@@ -84,6 +104,7 @@ final class JournalWorkspace extends Page
 
     public int $page = 1;
 
+    #[Session]
     public int $pageSize = self::DEFAULT_PAGE_SIZE;
 
     public int $total = 0;
@@ -113,7 +134,7 @@ final class JournalWorkspace extends Page
     {
         $title = trim($this->journalTitle);
 
-        return $title !== '' ? $title : 'Journal';
+        return $title !== '' ? $title : __('Journal');
     }
 
     public function updatedSearch(): void
@@ -181,7 +202,7 @@ final class JournalWorkspace extends Page
 
     public function sortPost(int|string $id, int $position): void
     {
-        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Blog) {
+        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Blog || ! $this->validSortEntryId($id)) {
             return;
         }
         $post = $this->post((int) $id);
@@ -196,7 +217,7 @@ final class JournalWorkspace extends Page
 
     public function sortExhibition(int|string $id, int $position): void
     {
-        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Exhibitions) {
+        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Exhibitions || ! $this->validSortEntryId($id)) {
             return;
         }
         $entry = $this->exhibition((int) $id);
@@ -207,6 +228,11 @@ final class JournalWorkspace extends Page
             );
         }
         $this->loadExhibitions(false);
+    }
+
+    private function validSortEntryId(int|string $id): bool
+    {
+        return (is_int($id) || ctype_digit($id)) && (int) $id > 0;
     }
 
     public function togglePostSelection(int $id): void
@@ -299,7 +325,7 @@ final class JournalWorkspace extends Page
             if ($direction === 'down') {
                 $records = $records->reverse();
             }
-            [$ok, $failed] = $this->bestEffort($records, fn (BlogPost $post): bool => app(BlogEditorialService::class)->move($post, $direction));
+            [$ok, $failed] = $this->runEntryBatch($records, fn (BlogPost $post): bool => app(BlogEditorialService::class)->move($post, $direction));
             $this->notifyBatch('posts reordered', $ok, $failed);
             $this->loadPosts(false);
 
@@ -309,7 +335,7 @@ final class JournalWorkspace extends Page
         if ($direction === 'down') {
             $records = $records->reverse();
         }
-        [$ok, $failed] = $this->bestEffort($records, fn (Exhibition $entry): bool => app(ExhibitionEditorialService::class)->move($entry, $direction));
+        [$ok, $failed] = $this->runEntryBatch($records, fn (Exhibition $entry): bool => app(ExhibitionEditorialService::class)->move($entry, $direction));
         $this->notifyBatch('exhibitions reordered', $ok, $failed);
         $this->loadExhibitions(false);
     }
@@ -369,7 +395,7 @@ final class JournalWorkspace extends Page
             ->fillForm(function (): array {
                 $section = $this->section();
 
-                return [
+                return $this->journalSettingsOriginal = [
                     'template' => (string) $section->getAttribute('template'),
                     'title' => $section->getAttribute('title'),
                     'navigation_label' => $section->getAttribute('navigation_label'),
@@ -378,18 +404,24 @@ final class JournalWorkspace extends Page
             })
             ->schema([
                 Grid::make()->columns(['md' => 2])->schema([
-                    Select::make('template')->label('Template')->options(JournalTemplate::options())->required(),
+                    Select::make('template')->label('Template')->options(array_map('__', JournalTemplate::options()))->required(),
                     TextInput::make('title')->label('Journal title')->required()->maxLength(160),
                     TextInput::make('navigation_label')->label('Navigation label')->maxLength(160),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                 ]),
             ])
-            ->modalHeading('Journal settings')
-            ->action(function (Action $action, array $data): void {
+            ->modalHeading(__('Journal settings'))
+            ->action(function (Schema $schema, array $data): void {
                 $section = $this->section();
                 $before = $section->only(['template', 'title', 'navigation_label', 'slug']);
-                $updated = app(JournalSettingsService::class)->update($section, $data);
+                try {
+                    $updated = app(JournalSettingsService::class)->update($section, $data, $this->journalSettingsOriginal);
+                } catch (ValidationException $exception) {
+                    $this->throwMountedValidation($exception);
+                }
+                $this->journalSettingsOriginal = $updated->only(array_keys($this->journalSettingsOriginal));
+                $schema->partialRawState($this->journalSettingsOriginal);
                 $template = $updated->journalTemplate();
                 abort_unless($template instanceof JournalTemplate, 404);
                 $templateChanged = $before['template'] !== $template->value;
@@ -405,6 +437,7 @@ final class JournalWorkspace extends Page
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
                 if ($before !== $updated->only(['template', 'title', 'navigation_label', 'slug'])) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Journal settings saved',
                         status: 'success',
@@ -419,7 +452,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('addPost')->label('Add post')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
-            ->modalHeading('Add post')
+            ->modalHeading(__('Add post'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try {
@@ -446,26 +479,26 @@ final class JournalWorkspace extends Page
             ->fillForm(function (array $arguments): array {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
 
+                $this->entryEditorOriginal = $this->journalEntryMutationState($post);
                 return [...$post->attributesToArray(), ...app(JournalEntryEditorState::class)->for($post)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
-            ->modalHeading('Edit post')
+            ->modalHeading(__('Edit post'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'post'))
             ->action(function (Action $action, array $data, array $arguments): void {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
                 $before = $this->journalEntryMutationState($post);
                 $data = [...$data, 'site_section_id' => $this->sectionId, 'state' => $post->getAttribute('state'), 'position' => $post->getAttribute('position'), 'published_at' => $post->getAttribute('published_at'), 'scheduled_at' => $post->getAttribute('scheduled_at')];
                 try {
-                    $updated = app(BlogEditorialService::class)->update($post, $data);
+                    $updated = $this->saveEditedEntry($post, $data);
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Post unchanged', $exception);
-                    $action->halt();
-
-                    return;
+                    $this->throwMountedValidation($exception);
                 }
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadPosts(false);
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Post saved',
                         status: 'success',
@@ -480,7 +513,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('schedulePost')->label('Schedule publication')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema([DateTimePicker::make('scheduled_at')->label('Publish at')->seconds(false)->required()])
-            ->modalHeading('Schedule publication')
+            ->modalHeading(__('Schedule publication'))
             ->action(function (Action $action, array $data, array $arguments): void {
                 try {
                     app(BlogEditorialService::class)->schedule($this->post((int) ($arguments['post'] ?? 0)), $data['scheduled_at'] ?? null);
@@ -495,6 +528,9 @@ final class JournalWorkspace extends Page
                     title: 'Publication scheduled',
                     status: 'success',
                 );
+                if (($arguments['returnToEditor'] ?? false) === true) {
+                    $this->replaceMountedAction('editPost', ['post' => (int) $arguments['post']]);
+                }
             });
 
         return AdminDialog::command($action, 'Schedule publication');
@@ -504,7 +540,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('addExhibition')->label('Add exhibition')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Add exhibition')
+            ->modalHeading(__('Add exhibition'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try {
@@ -525,23 +561,46 @@ final class JournalWorkspace extends Page
         return AdminDialog::create($action, 'Create exhibition', AdminDialogSize::Large);
     }
 
+    public function setExhibitionFieldVisibility(int $id, string $field, bool $visible): void
+    {
+        abort_unless($this->journalTemplate() === JournalTemplate::Exhibitions, 404);
+        $exhibition = $this->exhibition($id);
+        if (! app(ExhibitionEditorialService::class)->setPublicFieldVisibility($exhibition, $field, $visible)) {
+            return;
+        }
+
+        $saved = $exhibition->fresh()->getAttributes();
+        $this->entryEditorOriginal['record']['show_'.$field] = $saved['show_'.$field];
+        $this->entryEditorOriginal['record']['updated_at'] = $saved['updated_at'];
+
+        $this->loadExhibitions(false);
+        app(AdminNotifier::class)->notification(
+            title: __('Exhibition visibility updated'),
+            status: 'success',
+        );
+    }
+
     public function editExhibitionAction(): Action
     {
         $action = Action::make('editExhibition')->label('Edit')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->fillForm(function (array $arguments): array {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
 
+                $this->entryEditorOriginal = $this->journalEntryMutationState($entry);
                 return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
             })
-            ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Edit exhibition')
+            ->schema(fn (Schema $schema, array $arguments): Schema => JournalEntryEditorSchema::exhibition(
+                $schema,
+                $this->exhibition((int) ($arguments['exhibition'] ?? 0)),
+            ))
+            ->modalHeading(__('Edit exhibition'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->journalEditHeaderActions($arguments, 'exhibition'))
             ->action(function (Action $action, Schema $schema, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
                 $before = $this->journalEntryMutationState($entry);
                 $data['site_section_id'] = $this->sectionId;
                 try {
-                    $updated = app(ExhibitionEditorialService::class)->update($entry, $data);
+                    $updated = $this->saveEditedEntry($entry, $data);
                 } catch (ValidationException $exception) {
                     // A rejected map toggle must not remain visually enabled
                     // merely because Alpine updated its local switch state.
@@ -554,9 +613,7 @@ final class JournalWorkspace extends Page
                         'geocoded_at' => $saved->getAttribute('geocoded_at')?->toIso8601String(),
                     ]);
                     $this->notifyValidationFailure('Exhibition unchanged', $exception);
-                    $action->halt();
-
-                    return;
+                    $this->throwMountedValidation($exception);
                 }
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 // Domain geocoding owns coordinate changes. Keep the mounted
@@ -569,6 +626,7 @@ final class JournalWorkspace extends Page
                 ]);
                 $this->loadExhibitions(false);
                 if ($changed) {
+                    $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Exhibition saved',
                         status: 'success',
@@ -658,7 +716,7 @@ final class JournalWorkspace extends Page
         )->disabled($state === 'archived');
 
         $actions[] = AdminDialog::headerAction('dialogSchedulePost', AdminRowAction::Schedule, function () use ($target): void {
-            $this->replaceMountedAction('schedulePost', $target);
+            $this->replaceMountedAction('schedulePost', [...$target, 'returnToEditor' => true]);
         })->disabled(! in_array($state, ['draft', 'unpublished'], true));
 
         $archived = $state === 'archived';
@@ -732,7 +790,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('deleteSelectedPosts')->label('Delete selected')->color('danger')
             ->action(function (): void {
-                [$ok, $failed] = $this->bestEffort($this->selectedPosts(), fn (BlogPost $post): bool => tap(true, fn () => app(BlogEditorialService::class)->delete($post)));
+                [$ok, $failed] = $this->runEntryBatch($this->selectedPosts(), fn (BlogPost $post): bool => tap(true, fn () => app(BlogEditorialService::class)->delete($post)));
                 $this->selectedPostIds = [];
                 $this->notifyBatch('posts deleted', $ok, $failed);
                 $this->loadPosts();
@@ -751,7 +809,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('deleteSelectedExhibitions')->label('Delete selected')->color('danger')
             ->action(function (): void {
-                [$ok, $failed] = $this->bestEffort($this->selectedExhibitions(), fn (Exhibition $entry): bool => tap(true, fn () => app(ExhibitionEditorialService::class)->delete($entry)));
+                [$ok, $failed] = $this->runEntryBatch($this->selectedExhibitions(), fn (Exhibition $entry): bool => tap(true, fn () => app(ExhibitionEditorialService::class)->delete($entry)));
                 $this->selectedExhibitionIds = [];
                 $this->notifyBatch('exhibitions deleted', $ok, $failed);
                 $this->loadExhibitions();
@@ -778,6 +836,7 @@ final class JournalWorkspace extends Page
         $this->journalTitle = (string) $section->getAttribute('title');
         $this->journalSlug = (string) $section->getAttribute('slug');
         $this->journalPublicUrl = $section->getAttribute('state') === 'published' ? app(SiteNodeRoute::class)->url($section) : null;
+        $this->journalPreviewUrl = app(SitePreviewContext::class)->previewUrlFor($section);
     }
 
     private function loadPosts(bool $refreshMetrics = true): void
@@ -810,8 +869,8 @@ final class JournalWorkspace extends Page
             $published = $post->getAttribute('published_at');
             $scheduled = $post->getAttribute('scheduled_at');
             $publication = match (true) {
-                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => $scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
-                $published instanceof DateTimeInterface => $published->format('M j, Y'),
+                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => RegionalFormats::adminDateTime($scheduled),
+                $published instanceof DateTimeInterface => RegionalFormats::adminDate($published),
                 default => null,
             };
             $rank = ((int) ($ranks[(int) $post->getKey()] ?? 0)) + 1;
@@ -854,7 +913,7 @@ final class JournalWorkspace extends Page
         $term = trim($this->search);
         if ($term !== '') {
             $query->where(function (Builder $search) use ($term): void {
-                $search->where('title', 'ilike', '%'.$term.'%')->orWhere('venue', 'ilike', '%'.$term.'%')
+                $search->where('title', 'ilike', '%'.$term.'%')->orWhere('organizer', 'ilike', '%'.$term.'%')->orWhere('venue', 'ilike', '%'.$term.'%')
                     ->orWhere('location_text', 'ilike', '%'.$term.'%')->orWhere('postal_code', 'ilike', '%'.$term.'%')->orWhere('city', 'ilike', '%'.$term.'%')
                     ->orWhere('country', 'ilike', '%'.$term.'%')->orWhere('date_text', 'ilike', '%'.$term.'%');
             });
@@ -874,14 +933,14 @@ final class JournalWorkspace extends Page
             $internalState = (string) $entry->getAttribute('state');
             $state = $internalState === 'published' ? 'published' : 'unpublished';
             $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
-            $location = collect([$entry->getAttribute('venue'), $entry->getAttribute('city')])->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')->map(fn (string $value): string => trim($value))->unique()->implode(' · ');
+            $location = $entry->summaryAttribution();
 
             // The admin table displays structured dates, not the public-facing
             // free-text display override (which may use different separators).
             $startsOn = $entry->getAttribute('starts_on');
             $endsOn = $entry->getAttribute('ends_on');
-            $dateStart = $startsOn instanceof CarbonInterface ? $startsOn->format('d.m.Y') : null;
-            $dateEnd = $endsOn instanceof CarbonInterface ? $endsOn->format('d.m.Y') : null;
+            $dateStart = $startsOn instanceof CarbonInterface ? RegionalFormats::adminDate($startsOn) : null;
+            $dateEnd = $endsOn instanceof CarbonInterface ? RegionalFormats::adminDate($endsOn) : null;
             // Display structured dates as one consistent range, independent of
             // the public-facing free-text date override.
             $dateRange = match (true) {
@@ -892,11 +951,11 @@ final class JournalWorkspace extends Page
             };
             $vernissageAt = $entry->getAttribute('vernissage_at');
             $vernissage = $vernissageAt instanceof CarbonInterface
-                ? $vernissageAt->format('d.m.Y, H:i')
+                ? RegionalFormats::adminDateTime($vernissageAt)
                 : (filled($entry->getAttribute('opening_text')) ? trim((string) $entry->getAttribute('opening_text')) : null);
 
             return [
-                'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
+                'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location,
                 'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $vernissage,
                 'date_range' => $dateRange,
                 'thumbnail_url' => $this->coverThumbnailUrl($entry),
@@ -1010,7 +1069,7 @@ final class JournalWorkspace extends Page
         if (! $asset instanceof MediaAsset) {
             return null;
         }
-        $variant = $asset->getRelationValue('variants')->first(fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === PublicMedia::THUMBNAIL_KIND && $candidate->getAttribute('transform_profile') === PublicMedia::PUBLIC_TRANSFORM_PROFILE && $candidate->getAttribute('state') === 'available');
+        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
 
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
     }
@@ -1084,30 +1143,32 @@ final class JournalWorkspace extends Page
 
     private function runPostBatch(string $label, callable $action): void
     {
-        [$ok, $failed] = $this->bestEffort($this->selectedPosts(), $action);
+        [$ok, $failed] = $this->runEntryBatch($this->selectedPosts(), $action);
         $this->selectedPostIds = [];
         $this->notifyBatch($label, $ok, $failed);
         $this->loadPosts();
     }
 
-    private function bestEffort(iterable $records, callable $action): array
+    private function runEntryBatch(iterable $records, callable $action): array
     {
-        $changed = 0;
-        $failed = 0;
-        foreach ($records as $record) {
-            try {
-                if ($action($record) !== false) {
-                    $changed++;
+        try {
+            return DB::transaction(function () use ($records, $action): array {
+                $changed = 0;
+                foreach ($records as $record) {
+                    if ($action($record) !== false) {
+                        $changed++;
+                    }
                 }
-            } catch (ValidationException) {
-                $failed++;
-            } catch (Throwable $exception) {
-                report($exception);
-                $failed++;
-            }
-        }
 
-        return [$changed, $failed];
+                return [$changed, 0];
+            });
+        } catch (ValidationException) {
+            return [0, 1];
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [0, 1];
+        }
     }
 
     private function notifyBatch(string $label, int $changed, int $failed): void
@@ -1123,9 +1184,25 @@ final class JournalWorkspace extends Page
         );
     }
 
-    /**
-     * @return array{record:array<string,mixed>,media:list<array<string,mixed>>}
-     */
+    /** @param array<string, mixed> $data */
+    private function saveEditedEntry(BlogPost|Exhibition $entry, array $data): BlogPost|Exhibition
+    {
+        $updated = DB::transaction(function () use ($entry, $data): BlogPost|Exhibition {
+            $locked = $entry->newQuery()->whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
+            if ($this->journalEntryMutationState($locked) !== $this->entryEditorOriginal) {
+                throw ValidationException::withMessages(['title' => 'This entry changed. Reopen the editor.']);
+            }
+
+            return $locked instanceof BlogPost
+                ? app(BlogEditorialService::class)->update($locked, $data)
+                : app(ExhibitionEditorialService::class)->update($locked, $data);
+        });
+        $this->entryEditorOriginal = $this->journalEntryMutationState($updated);
+
+        return $updated;
+    }
+
+    /** @return array{record:array<string,mixed>,media:list<array<string,mixed>>} */
     private function journalEntryMutationState(BlogPost|Exhibition $entry): array
     {
         $fresh = $entry instanceof BlogPost
@@ -1143,6 +1220,16 @@ final class JournalWorkspace extends Page
             'record' => $fresh->getAttributes(),
             'media' => $media,
         ];
+    }
+
+    private function throwMountedValidation(ValidationException $exception): never
+    {
+        $path = $this->getMountedActionSchema()->getStatePath();
+        $errors = [];
+        foreach ($exception->errors() as $field => $messages) {
+            $errors[$path.'.'.$field] = $messages;
+        }
+        throw ValidationException::withMessages($errors);
     }
 
     private function notifyValidationFailure(string $title, ValidationException $exception): void

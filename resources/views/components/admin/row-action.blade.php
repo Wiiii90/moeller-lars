@@ -9,7 +9,7 @@
     $rowAction = $action instanceof \App\Filament\Support\AdminRowAction
         ? $action
         : \App\Filament\Support\AdminRowAction::from((string) $action);
-    $resolvedLabel = $label ?? $rowAction->label();
+    $resolvedLabel = __($label ?? $rowAction->label());
     $actionAttributes = $attributes->merge([
         'title' => $resolvedLabel,
         'aria-label' => $resolvedLabel,

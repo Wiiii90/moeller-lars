@@ -12,7 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 final class ArtworkDraftService
 {
-    public function __construct(private readonly AdminAuditService $audit) {}
+    public function __construct(
+        private readonly AdminAuditService $audit,
+        private readonly ArtworkGalleryAssignmentService $assignments,
+    ) {}
 
     /** @param array<string, mixed> $data */
     public function create(array $data): Artwork
@@ -52,7 +55,23 @@ final class ArtworkDraftService
 
             $this->audit->record($actor, 'artwork.created', 'artwork', $artwork->getKey());
 
-            return $artwork;
+            if (GalleryPresentation::sortMode($gallery) === GalleryPresentation::SORT_MANUAL && $maxPosition !== null) {
+                // Use the existing audited Gallery ordering owner; avoid a
+                // competing position-shift algorithm for newly created slots.
+                $ids = $gallery->artworks()
+                    ->whereKeyNot($artwork->getKey())
+                    ->orderBy('position')
+                    ->orderBy('id')
+                    ->pluck('id')
+                    ->map(static fn (mixed $id): int => (int) $id)
+                    ->all();
+                app(GalleryEditorialService::class)->reorderArtworks(
+                    $gallery,
+                    [(int) $artwork->getKey(), ...$ids],
+                );
+            }
+
+            return $artwork->fresh();
         });
     }
 
@@ -102,8 +121,14 @@ final class ArtworkDraftService
             }
 
             $artworkId = (int) $fresh->getKey();
+            $galleryId = $fresh->getAttribute('artwork_category_id');
             $fresh->artworkMedia()->delete();
             $fresh->delete();
+            if (is_numeric($galleryId)) {
+                // The existing Gallery assignment service owns canonical
+                // position compaction for detach, move AND draft deletion.
+                $this->assignments->normalizeGalleryPositions((int) $galleryId);
+            }
             $this->audit->record($actor, 'artwork.deleted', 'artwork', $artworkId);
         });
     }
@@ -123,7 +148,7 @@ final class ArtworkDraftService
             'description',
             'work_date',
             'work_year',
-            'featured_on_home',
+            'exclude_from_home',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
 
@@ -142,7 +167,7 @@ final class ArtworkDraftService
             'description' => ['nullable', 'string', 'max:10000'],
             'work_date' => ['nullable', 'date'],
             'work_year' => ['nullable', 'integer', 'min:1000', 'max:9999'],
-            'featured_on_home' => ['boolean'],
+            'exclude_from_home' => ['sometimes', 'boolean'],
         ]);
         $validator->validate();
 

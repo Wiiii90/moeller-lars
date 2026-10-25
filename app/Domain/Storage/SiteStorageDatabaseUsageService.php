@@ -38,6 +38,7 @@ final class SiteStorageDatabaseUsageService
         'cache',
         'cache_locks',
         'dashboard_feed_pins',
+        'dashboard_feed_release_states',
         'failed_jobs',
         'job_batches',
         'jobs',

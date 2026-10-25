@@ -1,4 +1,4 @@
-/* Public shell/layout geometry and approved non-animated folio fallback. */
+/* Public shell/layout geometry and static folio contours. */
 
 :root {
     --public-shell-max: 800px;
@@ -13,6 +13,7 @@
         min(var(--public-content-padding), calc((100% - var(--public-art-max)) / 2))
     );
     --public-content-block-inset: 2rem;
+    --public-paper-return-inset: .75rem;
     --public-shell-gap: .75rem;
     --public-short-page-min-height: 15rem;
     --public-section-gap: 3.55rem;
@@ -20,17 +21,15 @@
     /* Shared reference offset for Menu and Content backing papers. */
     --public-folio-sheet-x: -3px;
     --public-folio-sheet-y: 4px;
-    /* Neutral presentation surfaces; no tinted 'paper' treatment. */
-    --public-surface: #fff;
-    --public-plaque-surface: #fff;
-    --public-plaque-rule: rgba(88, 74, 56, .24);
-    --public-plaque-border: rgba(88, 74, 56, .19);
-    --public-label-handwriting: "Segoe Print", "Bradley Hand", "Segoe Script", cursive;
-    --public-label-ink: #28394b;
-    --public-ink-strong: #30291f;
+    --public-folio-edge-outset: 6px;
+    /* Independent global Menu and Page surfaces; both initially white. */
+    --public-menu-background: #fff;
+    --public-content-background: #fff;
     --public-typeface: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --public-index-typeface: Georgia, "Times New Roman", serif;
     --public-index-ink: #444640;
+    --public-title-size: 25px;
+    --public-title-min-size: 18px;
     --public-index-rule: rgba(65, 70, 65, .22);
     /* One neutral contour palette; individual surfaces vary the pressure. */
     --public-folio-light: rgba(255, 255, 255, .34);
@@ -56,35 +55,26 @@ body {
     margin: 0;
     overflow-x: clip;
     background: var(--public-page);
+    background-attachment: fixed;
     color: var(--public-ink);
     font-family: var(--public-typeface);
     font-size: 14px;
 }
 
-/* Header geometry only. Document scroll and sticky positioning live in app.css. */
+/* Header geometry only. Document scroll and sticky positioning live in app.css.
+ * The base Menu has no implicit lower line: the selected Menu to page mode
+ * alone owns any divider. */
 .site-header {
+    position: relative;
     z-index: 40;
     display: flex;
     width: 100%;
-    max-width: none;
     min-width: 0;
     margin: 0;
     padding: 0;
     flex-direction: column;
     background: var(--public-page);
-    /* A light, asymmetrically modulated WHITE separator. No grey middle
-       pigment, hard midpoint, or new band on the artist's background. */
-    border-bottom: 2px solid transparent;
-    border-image: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, .55) 0%,
-        rgba(255, 255, 255, .79) 13%,
-        rgba(255, 255, 255, .92) 36%,
-        rgba(255, 255, 255, .64) 57%,
-        rgba(255, 255, 255, .88) 76%,
-        rgba(255, 255, 255, .73) 91%,
-        rgba(255, 255, 255, .49) 100%
-    ) 1;
+    background-attachment: fixed;
 }
 
 /* Header navigation and page content share one centered shell geometry. */
@@ -93,28 +83,23 @@ body {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
     min-width: 0;
     margin-inline: auto;
-    background: var(--public-surface);
 }
 
 /* The connected Menu backing and Content shadow use the same base offsets.
    The L-shape allows the menu to remain top-connected without an extra plane. */
-@property --public-menu-sheet-x {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: -3px;
-}
-@property --public-menu-sheet-y {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 4px;
-}
 .site-navigation {
     position: relative;
     order: 1;
     --public-menu-sheet-x: var(--public-folio-sheet-x);
     --public-menu-sheet-y: var(--public-folio-sheet-y);
-    box-shadow: inset 0 -1px 0 var(--public-index-rule);
+    background: var(--public-menu-background);
 }
+@media (scripting: enabled) {
+    .site-navigation[data-site-navigation]:not([data-navigation-ready]) {
+        visibility: hidden;
+    }
+}
+
 .site-navigation::before,
 .site-navigation::after {
     position: absolute;
@@ -127,8 +112,8 @@ body {
 .site-navigation::before {
     top: 0;
     bottom: var(--public-menu-left-bottom, 40%);
-    left: -6px;
-    width: 6px;
+    left: calc(-1 * var(--public-folio-edge-outset));
+    width: var(--public-folio-edge-outset);
     border-left: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -137,8 +122,8 @@ body {
 .site-navigation::after {
     top: 0;
     bottom: var(--public-menu-right-bottom, 9%);
-    right: -5.5px;
-    width: 5.5px;
+    right: calc(-1 * var(--public-folio-edge-outset));
+    width: var(--public-folio-edge-outset);
     border-right: 1px solid var(--public-folio-light);
     border-bottom: 1px solid var(--public-folio-soft);
 }
@@ -155,7 +140,18 @@ body {
         minmax(0, min(calc(100% - 2 * var(--public-content-inset)), var(--public-art-max)))
         minmax(0, 1fr);
     align-items: stretch;
-    background: var(--public-surface);
+    background: var(--public-menu-background);
+}
+
+/* The main and child navigation use real 44px hit rails in overflow
+   mode. Flexible gutters previously collapsed below the icon width on
+   phones, placing the arrow outside its reliably clickable area. */
+.site-navigation__rail.is-overflowing,
+.site-navigation__submenu.is-overflowing {
+    grid-template-columns:
+        minmax(2.75rem, 1fr)
+        minmax(0, min(calc(100% - 5.5rem), var(--public-art-max)))
+        minmax(2.75rem, 1fr);
 }
 
 /* One CSS-drawn paper on the visible rail OR submenu. The pseudo only
@@ -268,7 +264,6 @@ body {
     text-decoration: none;
     text-transform: none;
     white-space: nowrap;
-    transition: color .14s ease;
 }
 
 /* Real opaque ink renders cleanly on Windows and under font antialiasing;
@@ -287,7 +282,6 @@ body {
     content: "";
     background: rgba(54, 60, 56, .7);
     opacity: 0;
-    transition: opacity .14s ease;
 }
 
 .site-navigation__primary > :is(a, button, span) {
@@ -380,7 +374,6 @@ body {
     letter-spacing: 0;
     line-height: 1.15;
     cursor: pointer;
-    transition: color .14s ease;
 }
 
 .site-navigation__back > .public-icon {
@@ -400,7 +393,6 @@ body {
     text-decoration-color: transparent;
     text-decoration-thickness: 1px;
     text-underline-offset: .42em;
-    transition: text-decoration-color .14s ease;
 }
 
 .site-navigation__back:hover,
@@ -433,9 +425,9 @@ body {
     position: relative;
     z-index: 5;
     display: grid;
-    width: 2.5rem;
+    width: min(100%, 3rem);
     height: 100%;
-    min-height: 2.95rem;
+    min-height: 3rem;
     margin: 0;
     padding: 0;
     grid-row: 1;
@@ -459,15 +451,6 @@ body {
     width: 1.2rem;
     height: 1.2rem;
     stroke-width: 1.3;
-    transition: transform .16s ease-out;
-}
-@media (hover: hover) and (pointer: fine) {
-    .site-navigation__control:hover > .public-icon {
-        transform: scale(1.13);
-    }
-}
-.site-navigation__control:focus-visible > .public-icon {
-    transform: scale(1.13);
 }
 /* Active rules remain visible when the system forces colors. */
 @media (forced-colors: active) {
@@ -481,21 +464,93 @@ body {
     flex: 0 0 auto;
 }
 
+.site-header {
+    --public-title-default: #e5e9e6;
+}
+
 .site-header h1 {
     position: relative;
     order: 2;
     width: 100%;
-    min-height: 4.7rem;
+    min-height: 0;
     margin: 0;
     padding: 0;
-    color: #fff;
+    color: var(--public-title-color, var(--public-title-default));
     font-family: var(--public-index-typeface);
-    font-size: 2.05rem;
+    font-size: var(--public-title-size);
     font-weight: 400;
-    letter-spacing: .055em;
+    letter-spacing: .04em;
     line-height: 1.1;
     text-transform: none;
     white-space: nowrap;
+}
+
+/* The artist-name text uses the same validated gradient configuration as
+ * global backgrounds. Only an explicit gradient enables glyph clipping. */
+.site-header--gradient-title .site-title {
+    background-image: var(--public-title-paint);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+@media (forced-colors: active) {
+    .site-header--gradient-title .site-title {
+        background-image: none;
+        color: CanvasText;
+        -webkit-text-fill-color: currentColor;
+    }
+}
+
+.site-header--title-fluid h1 {
+    font-size: clamp(min(var(--public-title-min-size), var(--public-title-size)), 5.4vw, var(--public-title-size));
+}
+
+/* Below Menu keeps one content-sized title row in the same centered
+ * shell geometry as Menu/Page. No fixed 4.7rem reserve or absolute title:
+ * the full sticky header responds naturally to text size and wrapping. */
+.site-header--name-below > .site-name-heading {
+    box-sizing: border-box;
+    order: 2;
+    display: flex;
+    width: min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max));
+    min-height: 0;
+    height: auto;
+    margin-inline: auto;
+    padding-block: .42rem .48rem;
+    align-items: center;
+}
+
+.site-header--name-below > .site-name-heading > .site-title {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.site-header--name-below.site-header--title-align-left .site-title { text-align: left; }
+.site-header--name-below.site-header--title-align-center .site-title { text-align: center; }
+.site-header--name-below.site-header--title-align-right .site-title { text-align: right; }
+
+/* Below uses the configured narrow-screen alignment on phones. The
+ * integrated variants use that same setting whenever their existing width
+ * calculation places the name in a full-width row above the navigation. */
+@media (max-width: 40rem) {
+    .site-header--name-below.site-header--mobile-title-align-left .site-title { text-align: left; }
+    .site-header--name-below.site-header--mobile-title-align-center .site-title { text-align: center; }
+    .site-header--name-below.site-header--mobile-title-align-right .site-title { text-align: right; }
+}
+
+/* With title hidden, the menu is the only header sheet; no empty title
+ * grid column, reserved row, or detached outer outline remains. */
+.site-header.site-header--title-hidden .site-navigation {
+    display: block;
+}
+.site-header.site-header--title-hidden :is(.site-navigation__rail, .site-navigation__submenu) {
+    width: 100%;
 }
 
 .site-title {
@@ -503,34 +558,11 @@ body {
     bottom: 1rem;
     left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
     display: block;
+    width: max-content;
+    max-width: calc(100% - 2 * var(--public-gutter));
     color: inherit;
     text-decoration: none;
-    transition: opacity .14s ease;
 }
-
-.site-title__first,
-.site-title__last {
-    position: absolute;
-    bottom: 0;
-    /* Etched light across each letter rather than a flat white fill.
-       The lettering and the name's established position stay intact. */
-    color: #e5e9e6;
-    background-image: linear-gradient(
-        162deg,
-        #fff 4%,
-        #f1f4f0 29%,
-        #d3d9d4 54%,
-        #fafbf8 78%,
-        #e5e9e6 100%
-    );
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 1px 0 rgba(27, 34, 29, .43));
-}
-
-.site-title__first { right: .16em; }
-.site-title__last { left: .16em; }
 
 .site-title:hover,
 .site-title:focus-visible {
@@ -548,13 +580,12 @@ body {
 #content {
     position: relative;
     min-height: var(--public-short-page-min-height);
-    margin-block: var(--public-shell-gap);
-    background: var(--public-surface);
+    margin-block: 0 var(--public-shell-gap);
+    background: var(--public-content-background);
     box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
 }
-/* The original TWO attached edge contours remain separate pseudo-element
-   animation targets. Each white sheet uses only ONE external backing shadow;
-   no extra layers are generated during navigation. */
+/* The original TWO attached static edge contours remain on the Content sheet.
+   Each white sheet uses only ONE external backing shadow. */
 #content::before,
 #content::after {
     position: absolute;
@@ -565,8 +596,8 @@ body {
 #content::before {
     top: var(--public-folio-left-top, 20px);
     bottom: var(--public-folio-left-bottom, 55px);
-    left: -7px;
-    width: 7px;
+    left: calc(-1 * var(--public-folio-edge-outset));
+    width: var(--public-folio-edge-outset);
     border-left: 1px solid var(--public-folio-light);
     border-top: 1px solid var(--public-folio-soft);
     border-bottom: 1px solid var(--public-folio-soft);
@@ -574,10 +605,10 @@ body {
 }
 #content::after {
     top: var(--public-folio-right-top, 55px);
-    right: -6px;
-    width: 6px;
+    right: calc(-1 * var(--public-folio-edge-outset));
+    width: var(--public-folio-edge-outset);
     bottom: var(--public-folio-right-bottom, 18px);
-    border-right: 1px solid rgba(255, 255, 255, .32);
+    border-right: 1px solid var(--public-folio-light);
     border-top: 1px solid var(--public-folio-soft);
     border-bottom: 1px solid var(--public-folio-light);
     transform: skewY(.7deg);
@@ -596,14 +627,82 @@ body {
     flex: 1 0 auto;
 }
 
+/* Transparent Page keeps the original geometry without a backing sheet.
+ * The configured site Background shows through, with no artificial height. */
+#content.site-content--transparent {
+    background: transparent;
+    box-shadow: none;
+}
+#content.site-content--transparent::before,
+#content.site-content--transparent::after {
+    display: none;
+}
+
 .site-content {
     padding-block: var(--public-content-block-inset);
     padding-inline: var(--public-content-inset);
     border: 0;
     overflow-wrap: break-word;
 }
-/* The structural inner flow alone gets transient height/clip on navigation.
-   Outer #content remains overflow-visible for its original paper contours. */
+
+/* Landscape Artwork details use the originally reviewed envelope:
+   up to 1000px paper and 960px image. General's global artwork width
+   also limits expansion; viewport geometry is always the final bound. */
+#content.site-content--landscape-artwork {
+    width: min(
+        calc(100% - 2 * var(--public-gutter)),
+        max(var(--public-shell-max), min(1000px, calc(var(--public-art-max) * 1.5 + 3.5rem)))
+    );
+    padding-inline: clamp(var(--public-mobile-inset), 2.5vw, 2rem);
+}
+
+.site-content--landscape-artwork .artwork-detail {
+    width: min(100%, max(var(--public-art-max), min(960px, calc(var(--public-art-max) * 1.5))));
+}
+
+/* The image determines the width of the landscape media group. A block
+   with min-content collapses the responsive img to almost zero when its
+   max-width is percentage-based. fit-content preserves the image's natural
+   width (up to available space) and never enlarges a small thumbnail.
+   Excluding the caption from intrinsic sizing prevents long titles from
+   expanding that group beyond the actual image. */
+.site-content--landscape-artwork .artwork-detail__media {
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+}
+.site-content--landscape-artwork .artwork-detail__image {
+    width: auto;
+    max-width: 100%;
+}
+.site-content--landscape-artwork .artwork-detail__footer {
+    width: 0;
+    min-width: 100%;
+}
+
+.site-content--portrait-artwork .artwork-detail__media {
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+}
+.site-content--portrait-artwork .artwork-detail__image {
+    width: auto;
+    max-width: 100%;
+    max-height: max(12rem, calc(100dvh - 14rem));
+    object-fit: contain;
+}
+.site-content--portrait-artwork .artwork-detail__footer {
+    width: 0;
+    min-width: 100%;
+}
+
+/* Artwork arrows remain on the original centered General-width track,
+   independent of the landscape media's own size. */
+.artwork-detail .artwork-folio {
+    width: min(100%, var(--public-art-max));
+    margin-inline: auto;
+}
+/* The structural inner flow owns content width while #content keeps its static paper contours. */
 .public-content-reveal {
     display: flow-root;
     min-width: 0;
@@ -677,6 +776,16 @@ body {
     width: 100%;
 }
 
+/* Divided Galleries keep the ordinary total artwork-to-artwork rhythm,
+   splitting it symmetrically around each canonical divider. No leading or
+   trailing separator, and no doubled card margin at row boundaries. */
+.artwork-list--divided > .artwork-card {
+    margin-bottom: 0;
+}
+.artwork-list--divided > .artwork-list__divider {
+    margin-block: calc(var(--public-section-gap) / 2);
+}
+
 .artwork-card,
 .artwork-detail {
     margin-bottom: var(--public-section-gap);
@@ -701,22 +810,20 @@ body {
     cursor: default;
 }
 
-/* A tiny gallery-only light response; the unmodified Artwork Viewer, Hero
-   and original assets retain their source-faithful presentation. */
-@media (hover: hover) and (pointer: fine) {
-    .artwork-list .artwork-card__image {
-        transition: filter .28s ease-out;
-    }
-    .artwork-list .artwork-card__link:hover .artwork-card__image,
-    .artwork-list .artwork-card__link:focus-visible .artwork-card__image {
-        filter: contrast(1.018) saturate(1.028) brightness(1.006);
+/* A gated Gallery image is hidden in HTML so <noscript> can render the
+   native fallback. JS reveals it before observation; width/height reserve
+   its stable aspect ratio while the source is still deferred. */
+.artwork-card__image[hidden] {
+    display: none;
+}
+@media (scripting: enabled) {
+    .artwork-card__image[data-gallery-image-state="deferred"],
+    .artwork-card__image[data-gallery-image-state="pending"],
+    .artwork-detail__image[data-artwork-image-state="pending"] {
+        visibility: hidden;
     }
 }
-@media (prefers-reduced-motion: reduce) {
-    .artwork-list .artwork-card__image {
-        transition: none;
-    }
-}
+
 
 /* Hidden Hero members are rendered once and remain out of layout and the
  * accessibility tree until the active member changes. */
@@ -737,125 +844,87 @@ body {
     box-shadow: none;
 }
 
-/* The exhibition slip is not a navigation container. */
+/* Shared unboxed caption, aligned to the artwork's right image edge.
+ * Quiet editorial type rather than a separate card or form-like label. */
 .artwork-card__footer,
 .artwork-detail__footer {
-    margin-top: .88rem;
+    margin-top: .7rem;
+    text-align: right;
 }
 
-.artwork-label-trigger,
-.artwork-detail__footer > .artwork-label {
-    width: min(100%, 15.5rem);
-    min-width: 0;
-    max-width: 15.5rem;
-    justify-self: start;
-}
-.artwork-label-trigger {
+.artwork-caption-link {
     display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
 }
 
-/* A compact, preprinted gallery slip: a ruled title and medium, followed
-   by a short shared year/size line. The irregular field rhythm belongs to
-   the artist's actual data, not a four-row CMS form. */
-.artwork-label {
-    display: grid;
-    width: 100%;
-    min-width: 0;
-    padding: .44rem .6rem .48rem;
-    gap: .11rem;
-    border: 1px solid var(--public-plaque-border);
-    border-radius: 0;
-    background: var(--public-plaque-surface);
-    color: var(--public-ink-strong);
-    font-family: var(--public-typeface);
-    line-height: 1.4;
-    transition: border-color .14s ease;
-}
-.artwork-label-trigger:hover .artwork-label,
-.artwork-label-trigger:focus-visible .artwork-label {
-    border-color: var(--public-artwork-line-hover);
-}
-.artwork-label-trigger:focus-visible {
+.artwork-caption-link:focus-visible {
     outline: 1px dotted var(--public-artwork-line-hover);
-    outline-offset: 3px;
+    outline-offset: 4px;
 }
-/* Each handwritten line starts shortly after its own printed prompt.
-   Align the first text baselines, not the top edges of two different fonts. */
-.artwork-label__field {
-    display: flex;
-    min-width: 0;
-    align-items: baseline;
-    gap: .45rem;
-}
-.artwork-label__prompt {
+
+.artwork-caption {
     display: block;
-    flex: 0 0 auto;
-    color: #746a5e;
-    font-size: .56rem;
-    font-weight: 500;
-    letter-spacing: .045em;
-    line-height: 1.27rem;
-    text-transform: uppercase;
-}
-.artwork-label__writing {
-    display: block;
-    flex: 1 1 0%;
     min-width: 0;
-    min-height: 1.27rem;
-    padding-inline: .12rem;
-    background-image: linear-gradient(
-        to bottom,
-        transparent calc(100% - 1px),
-        var(--public-plaque-rule) calc(100% - 1px)
-    );
-    background-size: 100% 1.27rem;
-    line-height: 1.27rem;
+    text-align: right;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
 }
-.artwork-label__entry {
-    color: var(--public-label-ink);
-    font-family: var(--public-label-handwriting);
-    font-size: .71rem;
+
+.artwork-caption__primary {
+    display: block;
+    color: #423b35;
+    font-family: var(--public-index-typeface);
+    font-size: .94rem;
     font-weight: 400;
-    letter-spacing: 0;
-    line-height: inherit;
-    overflow-wrap: break-word;
+    line-height: 1.35;
 }
-.artwork-label__field--title .artwork-label__entry {
-    font-size: .77rem;
+
+.artwork-caption__title {
+    font-style: italic;
 }
-.artwork-label__tail {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: .1rem .65rem;
-}
-.artwork-label__tail .artwork-label__field {
-    flex: 1 0 max-content;
-    min-width: max-content;
-}
-.artwork-label__tail .artwork-label__writing,
-.artwork-label__tail .artwork-label__entry {
+
+.artwork-caption__year {
+    font-style: normal;
     white-space: nowrap;
-    overflow-wrap: normal;
 }
-.artwork-label__entry--numeric {
+
+.artwork-caption__secondary {
+    display: block;
+    margin-top: .12rem;
+    color: var(--public-muted);
+    font-family: var(--public-typeface);
+    font-size: .74rem;
+    font-weight: 400;
     font-variant-numeric: tabular-nums;
+    letter-spacing: .018em;
+    line-height: 1.45;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .artwork-caption-link:hover .artwork-caption__title {
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: .2em;
+    }
 }
 
 /* The image-width folio is a three-part navigation, not a caption toolbar.
-   Equal flexible outer columns put the category at the real horizontal center.
-   No viewport-only breakpoint: long names yield to arrows and truncate, never
-   cause horizontal overflow or displace the image width. */
+   Equal flexible outer columns keep the category truly centered. Generous,
+   inset 50px arrow targets serve touch and narrow viewports without changing
+   the shared layout or letting long titles push the arrows out of view. */
 .artwork-folio {
     display: grid;
     width: 100%;
     min-width: 0;
-    min-height: 2.65rem;
-    margin-bottom: .45rem;
-    grid-template-columns: minmax(2.5rem, 1fr) minmax(0, max-content) minmax(2.5rem, 1fr);
+    min-height: 3.125rem;
+    margin-bottom: .5rem;
+    padding-inline: clamp(.4rem, 1.4vw, .7rem);
+    grid-template-columns: minmax(3.125rem, 1fr) minmax(0, max-content) minmax(3.125rem, 1fr);
     align-items: center;
     gap: 0;
     color: #55504b;
@@ -905,9 +974,9 @@ body {
 }
 .artwork-folio__step {
     display: inline-flex;
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: .55rem;
+    width: 3.125rem;
+    height: 3.125rem;
+    padding: 0;
     align-items: center;
     justify-content: center;
     appearance: none;
@@ -917,16 +986,20 @@ body {
     color: #514b45;
     text-decoration: none;
     cursor: pointer;
-    transition: color .14s ease;
 }
 .artwork-folio__step > .public-icon {
     width: 1.2rem;
     height: 1.2rem;
     stroke-width: 1.45;
 }
-.artwork-folio__step:hover,
+.artwork-folio__step:hover:not(:disabled),
 .artwork-folio__step:focus-visible {
     color: #191714;
+}
+.artwork-folio__step:disabled {
+    color: #b2ada8;
+    opacity: .55;
+    cursor: default;
 }
 .artwork-folio__step:focus-visible,
 .artwork-folio__gallery:focus-visible {
@@ -957,6 +1030,13 @@ body {
     color: #7a7a7a;
     font-size: .64rem;
     line-height: 1.45;
+}
+
+/* The optional wider Artwork sheet must also provide its full text track
+   to the description divider and credits. The default editorial 36rem
+   measure stays unchanged everywhere else, including portrait details. */
+.site-content--landscape-artwork :is(.artwork-detail__narrative, .artwork-detail__credits) {
+    max-width: 100%;
 }
 
 .contact-details {
@@ -1609,27 +1689,6 @@ body {
     }
 }
 
-/* Compact: preserve the desktop composition but simplify title geometry before
- * the content shell itself needs to recompose. */
-@media (max-width: 64rem) {
-    .site-title {
-        right: 0;
-        left: 0;
-        width: max-content;
-        margin: auto;
-    }
-
-    .site-title__first,
-    .site-title__last {
-        position: static;
-    }
-
-    .site-title__first::after {
-        content: " ";
-        white-space: pre;
-    }
-}
-
 /* The shared 46rem shell transition does not own Exhibition geometry.
    Its chronology responds to the measured content width above. */
 
@@ -1644,21 +1703,6 @@ body {
 }
 
 /* Artwork and page content do not shift when decorative paper edges move. */
-@media (prefers-reduced-motion: reduce) {
-    .site-header nav,
-    .site-navigation__control > .public-icon {
-        transition: none !important;
-    }
-
-    .site-navigation__control:hover > .public-icon,
-    .site-navigation__control:focus-visible > .public-icon {
-        transform: none;
-    }
-
-    .site-navigation__label::after {
-        transition: none;
-    }
-}
 
 html:has(.artwork-viewer[open]) {
     /* Reserve the original scrollbar side only while the viewer locks scroll. */
@@ -1715,4 +1759,447 @@ html:has(.artwork-viewer[open]) {
     .artwork-viewer__stage {
         inset: 3.8rem .55rem 4.25rem;
     }
+}
+
+
+
+/* Artist-configurable name composition. The menu and its child navigation
+ * remain one real measured rail, with exactly one public title element. */
+.site-header--caps-small-caps .site-title {
+    font-variant-caps: small-caps;
+}
+
+/* No divider: truly no line across menu or viewport. The canonical Menu
+ * outline and Content edge may be continuous when their surfaces align. */
+.site-header--divider-fine .site-navigation {
+    border-bottom: 0;
+}
+
+.site-header--divider-full::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1px;
+    content: "";
+    pointer-events: none;
+    background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
+}
+
+/* Menu divider is a stroke within the connected Menu/Page paper, not
+ * a separating gap. The actual Menu sheet is the stroke owner. */
+.site-header--divider-menu .site-navigation {
+    border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
+    border-image-source: var(--public-separator-gradient, none);
+    border-image-slice: 1;
+}
+
+/* Gap belongs to sticky header so scrolling content cannot erase it. */
+.site-header--divider-separate {
+    padding-bottom: var(--public-shell-gap);
+}
+
+.site-header--divider-full_gap {
+    padding-bottom: calc(2 * var(--public-shell-gap));
+}
+
+.site-header--divider-full_gap::after {
+    position: absolute;
+    top: calc(100% - var(--public-shell-gap));
+    right: 0;
+    left: 0;
+    height: 1px;
+    content: "";
+    pointer-events: none;
+    background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
+}
+
+/* Connected paper is a structural layout, not two CSS strokes made to
+ * happen to meet. Header and Content share a single decoration owner in
+ * the Public frame. Independent sheets retain their own contour primitives. */
+.public-paper-decoration {
+    position: absolute;
+    /* The document-scroll line must also remain visible across the sticky
+     * header's opaque background (whose established z-index is 40). */
+    z-index: 41;
+    display: none;
+    top: 0;
+    /* Backing continues below the contour return to the end of the sheet. */
+    bottom: var(--public-shell-gap);
+    left: 50%;
+    width: min(calc(100% - 2 * var(--public-gutter)), var(--public-shell-max));
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+/* One static pair of contours: no observed layout measurements, no
+ * frame-by-frame inline CSS writes and no self-triggering resize loops. */
+.public-paper-decoration::before,
+.public-paper-decoration::after {
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    height: max(0px, calc(
+        100% - var(--public-content-block-inset) - var(--public-paper-return-inset)
+    ));
+    max-height: 100%;
+    box-sizing: border-box;
+    width: calc(var(--public-folio-edge-outset) + 1.35rem);
+    content: "";
+    pointer-events: none;
+    border-bottom: 1px solid var(--public-folio-soft);
+}
+
+.public-paper-decoration::before {
+    left: calc(-1 * var(--public-folio-edge-outset));
+    border-left: 1px solid var(--public-folio-light);
+}
+
+.public-paper-decoration::after {
+    right: calc(-1 * var(--public-folio-edge-outset));
+    border-right: 1px solid var(--public-folio-light);
+}
+
+/* Connected Menu/Page is a single physical paper. A separate page-title,
+ * transparent Page or landscape artwork is never marked compatible by Blade. */
+body:is(.public-site--frame-layered, .public-site--frame-continuous, .public-site--frame-contours, .public-site--frame-backing)
+.public-paper-frame--connected > .public-paper-decoration,
+body.public-site--frame-continuous
+.public-paper-frame--compatible > .public-paper-decoration {
+    display: block;
+}
+
+/* Remove all old component strokes when one outer frame owns them. */
+.public-paper-frame--connected .site-navigation::before,
+.public-paper-frame--connected .site-navigation::after,
+.public-paper-frame--connected .site-navigation__rail::before,
+.public-paper-frame--connected .site-navigation__submenu::before,
+.public-paper-frame--connected #content::before,
+.public-paper-frame--connected #content::after {
+    display: none;
+}
+
+.public-paper-frame--connected #content {
+    box-shadow: none;
+}
+
+/* A continuous outline across otherwise separate Menu/Page sheets suppresses
+ * ONLY the local white contours; each sheet keeps its own gray backing. */
+body.public-site--frame-continuous
+.public-paper-frame--compatible:not(.public-paper-frame--connected) .site-navigation::before,
+body.public-site--frame-continuous
+.public-paper-frame--compatible:not(.public-paper-frame--connected) .site-navigation::after,
+body.public-site--frame-continuous
+.public-paper-frame--compatible:not(.public-paper-frame--connected) #content::before,
+body.public-site--frame-continuous
+.public-paper-frame--compatible:not(.public-paper-frame--connected) #content::after {
+    display: none;
+}
+
+/* One gray backing plane on joined paper, independent ones when separate. */
+body:is(.public-site--frame-layered, .public-site--frame-continuous, .public-site--frame-backing)
+.public-paper-frame--connected > .public-paper-decoration {
+    box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
+}
+
+/* Frame components can be toggled without changing surface backgrounds or
+ * adding duplicate DOM decorations. */
+body.public-site--frame-contours .site-navigation__rail::before,
+body.public-site--frame-contours .site-navigation__submenu::before {
+    display: none;
+}
+
+body.public-site--frame-contours #content {
+    box-shadow: none;
+}
+
+body.public-site--frame-backing .site-navigation::before,
+body.public-site--frame-backing .site-navigation::after,
+body.public-site--frame-backing #content::before,
+body.public-site--frame-backing #content::after,
+body.public-site--frame-backing .public-paper-decoration::before,
+body.public-site--frame-backing .public-paper-decoration::after {
+    display: none;
+}
+
+body.public-site--frame-plain .site-navigation::before,
+body.public-site--frame-plain .site-navigation::after,
+body.public-site--frame-plain .site-navigation__rail::before,
+body.public-site--frame-plain .site-navigation__submenu::before,
+body.public-site--frame-plain #content::before,
+body.public-site--frame-plain #content::after {
+    display: none;
+}
+
+body.public-site--frame-plain #content {
+    box-shadow: none;
+}
+
+.site-header--name-inside,
+.site-header--name-above,
+.site-header--name-outside {
+    --public-title-default: var(--public-index-ink);
+}
+
+.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+}
+
+.site-header--name-inside:not(.is-title-stacked) .site-navigation {
+    /* A real alignment rail wider than the title itself: Left and Right
+     * must be visibly distinct rather than sharing a max-content column. */
+    grid-template-columns: minmax(15rem, 32%) minmax(0, 1fr);
+}
+
+.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation > h1 {
+    z-index: 1;
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    width: auto;
+    min-width: 0;
+    min-height: 2.95rem;
+    height: 100%;
+    padding: 0 .85rem;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-title {
+    position: static;
+    max-width: none;
+}
+
+.site-header:is(.site-header--name-inside, .site-header--name-outside) :is(.site-navigation__rail, .site-navigation__submenu) {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+/* Above menu is a stable two-row Menu composition. It is not the
+ * responsive fallback state of another position. */
+.site-header--name-above .site-navigation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+}
+
+.site-header--name-above .site-navigation > h1 {
+    position: relative;
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: .45rem max(var(--public-gutter), var(--public-mobile-inset));
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.site-header--name-above .site-title {
+    position: static;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.site-header--name-above :is(.site-navigation__rail, .site-navigation__submenu) {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.site-header--name-above.site-header--title-align-left .site-navigation > h1 { justify-content: flex-start; }
+.site-header--name-above.site-header--title-align-center .site-navigation > h1 { justify-content: center; }
+.site-header--name-above.site-header--title-align-right .site-navigation > h1 { justify-content: flex-end; }
+
+@media (max-width: 40rem) {
+    .site-header--name-above.site-header--mobile-title-align-left .site-navigation > h1 { justify-content: flex-start; }
+    .site-header--name-above.site-header--mobile-title-align-center .site-navigation > h1 { justify-content: center; }
+    .site-header--name-above.site-header--mobile-title-align-right .site-navigation > h1 { justify-content: flex-end; }
+}
+
+/* Desktop alignment in the reserved title area of either integrated mode. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-left .site-navigation > h1 {
+    justify-content: flex-start;
+}
+.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-center .site-navigation > h1 {
+    justify-content: center;
+}
+.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-right .site-navigation > h1 {
+    justify-content: flex-end;
+}
+
+/* Once either name no longer fits, the menu becomes a two-row sheet.
+ * Both the artist name and the navigation inherit the same Menu background
+ * and share exactly the same static outer frame. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-navigation {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-navigation > h1 {
+    position: relative;
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    padding: .45rem max(var(--public-gutter), var(--public-mobile-inset));
+}
+
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-title {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked :is(.site-navigation__rail, .site-navigation__submenu) {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+/* Stacked mode is responsive regardless of whether its trigger was the
+ * actual title width, menu width or browser width. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-left .site-navigation > h1 {
+    justify-content: flex-start;
+}
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-center .site-navigation > h1 {
+    justify-content: center;
+}
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-right .site-navigation > h1 {
+    justify-content: flex-end;
+}
+
+/* Page without navigation still owns one independent real title row. */
+.site-header:not(:has(.site-navigation)) {
+    --public-title-default: #e5e9e6;
+}
+
+/* The optional hover presentation reuses the existing child-level DOM and
+   its links. Click, ArrowDown, Escape, and touch retain the standard rail. */
+.site-navigation__submenu.is-hover-preview {
+    position: absolute;
+    z-index: 5;
+    top: 100%;
+    left: 50%;
+    display: block;
+    width: max-content;
+    min-width: 13rem;
+    max-width: min(22rem, calc(100vw - 2 * var(--public-gutter)));
+    padding: .35rem;
+    transform: translateX(-50%);
+    background: var(--public-menu-background);
+    border: 1px solid var(--public-index-rule);
+    box-shadow: 0 5px 13px rgba(0, 0, 0, .12);
+}
+
+.site-navigation__submenu.is-hover-preview::before,
+.site-navigation__submenu.is-hover-preview > .site-navigation__control,
+.site-navigation__submenu.is-hover-preview .site-navigation__back,
+.site-navigation__submenu.is-hover-preview .site-navigation__breadcrumb-separator {
+    display: none;
+}
+
+.site-navigation__submenu.is-hover-preview .site-navigation__content,
+.site-navigation__submenu.is-hover-preview .site-navigation__content > nav {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.site-navigation__submenu.is-hover-preview .site-navigation__item {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+}
+
+.site-navigation__submenu.is-hover-preview .site-navigation__primary {
+    justify-content: flex-start;
+}
+
+.site-header .site-navigation__submenu.is-hover-preview nav a {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: .65rem .75rem;
+    justify-content: flex-start;
+    white-space: normal;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.site-header .site-navigation__submenu.is-hover-preview nav a:hover,
+.site-header .site-navigation__submenu.is-hover-preview nav a:focus-visible {
+    background: rgba(120, 120, 120, .08);
+}
+
+
+/* Artwork video transport controls follow the existing quiet folio grammar. */
+.public-video__controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: .35rem;
+}
+.public-video__sound {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    padding: .25rem;
+    border: 1px solid var(--public-artwork-line-hover);
+    border-radius: 0;
+    background: transparent;
+    color: var(--public-ink);
+    cursor: pointer;
+}
+.public-video__sound .public-icon {
+    width: 1rem;
+    height: 1rem;
+}
+.public-video__sound:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+.public-video__sound [hidden] {
+    display: none;
+}
+
+
+/* Both footer texts share the available image width from their
+ * intrinsic minimums. Their first text baselines align while longer
+ * content wraps inside its own side of the row. */
+.artwork-card__footer--with-rights {
+    display: flex;
+    align-items: baseline;
+    gap: .65rem;
+}
+.artwork-card__rights {
+    min-width: 0;
+    flex: 1 1 min-content;
+    color: var(--public-muted);
+    font-family: var(--public-typeface);
+    font-size: .74rem;
+    font-weight: 400;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+.artwork-card__footer--with-rights .artwork-caption-link {
+    min-width: 0;
+    flex: 1 1 min-content;
+    width: auto;
+    margin-inline: 0;
+}
+.artwork-card__footer--rights-right {
+    flex-direction: row-reverse;
+}
+.artwork-card__footer--rights-right .artwork-card__rights {
+    text-align: right;
+}
+.artwork-card__footer--rights-right .artwork-caption {
+    text-align: left;
 }

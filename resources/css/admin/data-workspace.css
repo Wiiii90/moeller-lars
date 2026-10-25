@@ -270,7 +270,7 @@
     vertical-align: middle;
 }
 
-.admin-table:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap) tbody tr:last-child td {
+.admin-table:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap) tbody:last-of-type tr:last-child td {
     border-bottom: 0;
 }
 

@@ -62,7 +62,7 @@
         />
         <x-admin.row-action
             :action="\App\Filament\Support\AdminRowAction::Edit"
-            wire:click="mountAction('{{ $isChild ? 'editImageChild' : ($type === 'list' ? 'editListComponent' : 'editComponent') }}', {{ $args }})"
+            wire:click="mountAction('{{ $isChild ? ($type === 'list' ? 'editImageChild' : 'editImageChildInstant') : ($type === 'list' ? 'editListComponent' : 'editComponent') }}', {{ $args }})"
             :disabled="! $row['editable']"
         />
         <x-admin.row-action

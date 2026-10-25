@@ -6,7 +6,7 @@ and displayed in the Dashboard. This index does not duplicate their content.
 ## Historical pre-release milestones
 
 - [v0.3.0 — Admin and editorial foundation](resources/release-notes/versions/v0.3.0.md) — completed **2026-09-18**
-- [v0.2.0 — Artwork presentation and curation](resources/release-notes/versions/v0.2.0.md) — completed **2026-08-20**
+- [v0.2.0 — Galleries, viewer and media management](resources/release-notes/versions/v0.2.0.md) — completed **2026-08-20**
 - [v0.1.0 — Application and media foundations](resources/release-notes/versions/v0.1.0.md) — completed **2026-08-16**
 
 These dates are the latest closing dates of issues assigned to each milestone.

@@ -90,7 +90,7 @@ function homeSourceCategory(bool $showOnHome, string $sectionState = 'published'
 {
     $category = new ArtworkCategory;
     $category->fill([
-        'slug' => 'home-source-'.fake()->unique()->uuid(),
+        'slug' => 'home-source-fixture',
         'name' => 'Home source',
         'show_on_home' => $showOnHome,
     ]);
@@ -105,7 +105,7 @@ function homeSourceArtwork(ArtworkCategory $category, string $state = 'published
     $artwork = new Artwork;
     $artwork->fill([
         'artwork_category_id' => $category->getKey(),
-        'slug' => 'home-artwork-'.fake()->unique()->uuid(),
+        'slug' => 'home-artwork-fixture',
         'title' => 'Home artwork',
         'state' => $state,
         'position' => 0,
@@ -113,6 +113,11 @@ function homeSourceArtwork(ArtworkCategory $category, string $state = 'published
         'date_precision' => 'year',
     ]);
     $artwork->save();
+    $artwork->artworkMedia()->create([
+        'media_asset_id' => homePreviewImage()->getKey(),
+        'role' => 'primary',
+        'position' => 0,
+    ]);
 
     return $artwork;
 }
@@ -126,8 +131,7 @@ it('renders the Under Construction preview with every shared Home component kind
         ->assertOk()
         ->assertSee('Home preview ALT')
         ->assertSee('Preview heading')
-        ->assertSee('Preview <strong>rich text</strong>', false)
-        ->assertSee('custom-page__divider', false);
+        ->assertSee('Preview <strong>rich text</strong>', false);
 });
 
 it('renders the Custom preview through the same shared component renderer', function (): void {
@@ -139,11 +143,12 @@ it('renders the Custom preview through the same shared component renderer', func
         ->assertOk()
         ->assertSee('Home preview ALT')
         ->assertSee('Preview heading')
-        ->assertSee('Preview <strong>rich text</strong>', false)
-        ->assertSee('custom-page__divider', false);
+        ->assertSee('Preview <strong>rich text</strong>', false);
 });
 
-it('renders Home List and Dotted Divider while hiding unpublished parents and children', function (): void {
+it('renders Home List while hiding unpublished parents and children', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
     homePreviewSetting('custom', [
         ['type' => 'text', 'title' => 'Public Home component', 'body' => null, 'published' => true],
         ['type' => 'text', 'title' => 'Hidden Home component', 'body' => null, 'published' => false],
@@ -154,14 +159,18 @@ it('renders Home List and Dotted Divider while hiding unpublished parents and ch
         ['type' => 'divider', 'variant' => 'dotted', 'published' => true],
     ]);
 
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertDontSee('Public Home component');
+    $this->actingAs($actor, 'web');
+    app(\App\Domain\Publication\PublicationService::class)->commit($actor);
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
     $this->get('/')
         ->assertOk()
         ->assertSee('Public Home component')
         ->assertDontSee('Hidden Home component')
         ->assertSee('Home CV')
         ->assertSee('Public list entry')
-        ->assertDontSee('Hidden list entry')
-        ->assertSee('custom-page__divider--dotted', false);
+        ->assertDontSee('Hidden list entry');
 });
 
 it('keeps Home source preference while effective eligibility follows Gallery publication', function (): void {

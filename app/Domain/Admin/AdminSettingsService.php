@@ -2,27 +2,47 @@
 
 namespace App\Domain\Admin;
 
+use App\Domain\Content\ContactSocialProfileCascade;
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\SocialLinks;
 use App\Models\JournalSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 final class AdminSettingsService
 {
     public function __construct(private readonly AdminAuditService $audit) {}
 
-    public function updatePublicContent(PublicContentSetting $setting, array $data): PublicContentSetting
+    /** @param array<string,mixed> $expected Expected original values for optimistic editor concurrency. */
+    public function updatePublicContent(PublicContentSetting $setting, array $data, array $expected = []): PublicContentSetting
     {
-        /** @var PublicContentSetting $updated */
-        $updated = $this->update(
-            $setting,
-            $this->normalizePublicContent($data),
-            'public_content_setting.updated',
-            'public_content_setting',
-        );
+        $normalized = $this->normalizePublicContent($data);
+        if (! array_key_exists('social_links', $normalized)) {
+            /** @var PublicContentSetting $updated */
+            $updated = $this->update($setting, $normalized, 'public_content_setting.updated', 'public_content_setting', $expected);
 
-        return $updated;
+            return $updated;
+        }
+
+        // General owns the profile identity. A removal must clear every
+        // dependent Contact selection in the same transaction as General.
+        return DB::transaction(function () use ($setting, $normalized, $expected): PublicContentSetting {
+            $before = PublicContentSetting::query()->whereKey($setting->getKey())->lockForUpdate()->firstOrFail();
+            $previous = array_column(SocialLinks::configured($before->getAttribute('social_links')), 'platform');
+
+            /** @var PublicContentSetting $updated */
+            $updated = $this->update($setting, $normalized, 'public_content_setting.updated', 'public_content_setting', $expected);
+            $current = array_column(SocialLinks::configured($updated->getAttribute('social_links')), 'platform');
+            $removed = array_values(array_diff($previous, $current));
+
+            if ($removed !== []) {
+                app(ContactSocialProfileCascade::class)->removePlatforms($removed);
+            }
+
+            return $updated;
+        });
     }
 
     public function updateJournal(JournalSetting $setting, array $data): JournalSetting
@@ -39,20 +59,72 @@ final class AdminSettingsService
      */
     private function normalizePublicContent(array $data): array
     {
-        if (array_key_exists('background_mode', $data)) {
-            $data['background_mode'] = PublicAppearance::normalizeMode($data['background_mode']);
+        foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+            $mode = $surface.'_mode';
+            if (array_key_exists($mode, $data)) {
+                $data[$mode] = PublicAppearance::normalizeMode($data[$mode], $mode);
+            }
+            foreach (['_gradient_start', '_gradient_end'] as $suffix) {
+                $field = $surface.$suffix;
+                if (array_key_exists($field, $data)) {
+                    $data[$field] = PublicAppearance::normalizeColor($data[$field], $field);
+                }
+            }
+            $colorField = PublicAppearance::solidColorField($surface);
+            if (array_key_exists($colorField, $data)) {
+                $data[$colorField] = PublicAppearance::normalizeColor($data[$colorField], $colorField);
+            }
+            $angle = $surface.'_gradient_angle';
+            if (array_key_exists($angle, $data)) {
+                $data[$angle] = PublicAppearance::normalizeAngle($data[$angle], $angle);
+            }
+            foreach ([
+                '_gradient_stops' => 'normalizeStops',
+                '_gradient_repeating' => 'normalizeRepeating',
+                '_gradient_repeat_span' => 'normalizeRepeatSpan',
+                '_gradient_center_x' => 'normalizeCenter',
+                '_gradient_center_y' => 'normalizeCenter',
+                '_gradient_shape' => 'normalizeShape',
+            ] as $suffix => $method) {
+                $field = $surface.$suffix;
+                if (array_key_exists($field, $data)) {
+                    $data[$field] = PublicAppearance::$method($data[$field], $field);
+                }
+            }
         }
-        if (array_key_exists('background_color', $data)) {
-            $data['background_color'] = PublicAppearance::normalizeColor($data['background_color'], 'background_color');
+        if (array_key_exists('frame_style', $data)) {
+            $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style']);
         }
-        if (array_key_exists('background_gradient_start', $data)) {
-            $data['background_gradient_start'] = PublicAppearance::normalizeColor($data['background_gradient_start'], 'background_gradient_start');
+        if (array_key_exists('menu_type', $data)) {
+            $data['menu_type'] = PublicAppearance::menuType($data['menu_type']);
         }
-        if (array_key_exists('background_gradient_end', $data)) {
-            $data['background_gradient_end'] = PublicAppearance::normalizeColor($data['background_gradient_end'], 'background_gradient_end');
+        if (array_key_exists('header_divider_mode', $data)) {
+            $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode']);
         }
-        if (array_key_exists('background_gradient_angle', $data)) {
-            $data['background_gradient_angle'] = PublicAppearance::normalizeAngle($data['background_gradient_angle']);
+        if (array_key_exists('header_name_color', $data)) {
+            $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'], 'header_name_color');
+        }
+        if (array_key_exists('header_name_text', $data)) {
+            $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text']);
+        }
+        foreach (['header_name_alignment', 'header_name_mobile_alignment'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = PublicAppearance::headerAlignment($data[$field], $field);
+            }
+        }
+        if (array_key_exists('header_name_visible', $data)) {
+            $data['header_name_visible'] = (bool) $data['header_name_visible'];
+        }
+        if (array_key_exists('header_name_size', $data)) {
+            $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size']);
+        }
+        if (array_key_exists('header_name_min_size', $data)) {
+            $data['header_name_min_size'] = PublicAppearance::normalizeTitleMinSize($data['header_name_min_size']);
+        }
+        foreach (['header_name_auto_scale'] as $toggle) {
+            if (array_key_exists($toggle, $data)) {
+                $data[$toggle] = (bool) $data[$toggle];
+            }
         }
         if (array_key_exists('public_page_width', $data)) {
             $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width']);
@@ -64,14 +136,19 @@ final class AdminSettingsService
         return $data;
     }
 
-    private function update(Model $record, array $data, string $action, string $entityType): Model
+    private function update(Model $record, array $data, string $action, string $entityType, array $expected = []): Model
     {
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($record, $data, $action, $entityType, $actor): Model {
+        return DB::transaction(function () use ($record, $data, $action, $entityType, $actor, $expected): Model {
             $class = $record::class;
             /** @var Model $fresh */
             $fresh = $class::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
+            foreach ($expected as $field => $value) {
+                if ($this->comparisonValue($fresh->getAttribute($field)) !== $this->comparisonValue($value)) {
+                    throw ValidationException::withMessages([$field => 'This setting changed since the editor was opened. Reopen the editor.']);
+                }
+            }
             $fresh->fill($data);
 
             if ($fresh->isDirty()) {
@@ -81,5 +158,19 @@ final class AdminSettingsService
 
             return $fresh;
         });
+    }
+
+    // JSONB object key order is immaterial; list order and scalar types remain significant.
+    private function comparisonValue(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+        $value = array_map($this->comparisonValue(...), $value);
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
     }
 }

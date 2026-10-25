@@ -51,12 +51,40 @@ export function initializePublicSpaLinks(root = document) {
 export function applyPublicLayoutFromMeta() {
     const config = document.querySelector('meta[data-public-layout]');
     if (!config) return;
+    // Exactly one current frame variant after Livewire navigation. The
+    // rendering owner remains server-side; this merely replays meta state.
+    const frameStyles = ['layered', 'continuous', 'contours', 'backing', 'plain'];
+    const frameStyle = frameStyles.includes(config.dataset.publicLayoutFrameStyle)
+        ? config.dataset.publicLayoutFrameStyle : 'layered';
+    for (const candidate of frameStyles) {
+        document.body.classList.toggle('public-site--frame-' + candidate, candidate === frameStyle);
+    }
+    // Livewire history can restore a cached header with the preceding page's
+    // divider class. Reconcile it with the destination's server-owned mode.
+    const dividerModes = ['fine', 'menu', 'full', 'separate', 'full_gap'];
+    const header = document.querySelector('.site-header');
+    const dividerMode = config.dataset.publicLayoutDividerMode;
+    if (header && dividerModes.includes(dividerMode)) {
+        for (const candidate of dividerModes) {
+            header.classList.toggle('site-header--divider-' + candidate, candidate === dividerMode);
+        }
+    }
+    // Update the nonce-authorized rule itself. Element.style becomes a style
+    // attribute in Livewire's HTML snapshots and CSP rejects it on restore.
+    const sheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
+    const rule = [...(sheet?.cssRules ?? [])].find((entry) => entry.selectorText === ':root');
+    if (!rule) return;
 
     const declarations = {
         '--public-page': config.dataset.publicLayoutBackground || '#777',
+        '--public-menu-background': config.dataset.publicLayoutMenuBackground,
+        '--public-content-background': config.dataset.publicLayoutContentBackground,
+        '--public-title-paint': config.dataset.publicLayoutTitleGradient,
         '--public-shell-max': config.dataset.publicLayoutShell,
         '--public-art-max': config.dataset.publicLayoutArt,
         '--public-content-padding': config.dataset.publicLayoutPadding,
+        '--public-title-size': config.dataset.publicLayoutTitleSize,
+        '--public-title-min-size': config.dataset.publicLayoutTitleMinSize,
         '--public-folio-left-top': config.dataset.folioLeftTop,
         '--public-folio-left-bottom': config.dataset.folioLeftBottom,
         '--public-folio-right-top': config.dataset.folioRightTop,
@@ -65,6 +93,25 @@ export function applyPublicLayoutFromMeta() {
         '--public-menu-right-bottom': config.dataset.folioMenuRightBottom,
     };
     for (const [name, value] of Object.entries(declarations)) {
-        if (value) document.documentElement.style.setProperty(name, value);
+        if (value) rule.style.setProperty(name, value);
+        else rule.style.removeProperty(name);
+    }
+    if (config.dataset.publicLayoutDividerColor) {
+        rule.style.setProperty('--public-separator-color', config.dataset.publicLayoutDividerColor);
+    } else {
+        rule.style.removeProperty('--public-separator-color');
+    }
+    // SPA document swaps must replay the currently rendered divider paint.
+    if (config.dataset.publicLayoutDividerGradient) {
+        rule.style.setProperty('--public-separator-gradient', config.dataset.publicLayoutDividerGradient);
+        rule.style.setProperty('--public-separator-paint', config.dataset.publicLayoutDividerGradient);
+    } else {
+        rule.style.removeProperty('--public-separator-gradient');
+        rule.style.removeProperty('--public-separator-paint');
+    }
+    if (config.dataset.publicLayoutTitleColor) {
+        rule.style.setProperty('--public-title-color', config.dataset.publicLayoutTitleColor);
+    } else {
+        rule.style.removeProperty('--public-title-color');
     }
 }

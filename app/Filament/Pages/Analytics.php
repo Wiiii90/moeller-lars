@@ -6,9 +6,12 @@ use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Filament\Support\AdminIcon;
+use App\Models\User;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use UnitEnum;
+use Livewire\Attributes\Session;
 
 final class Analytics extends Page
 {
@@ -19,6 +22,11 @@ final class Analytics extends Page
     protected static ?string $navigationLabel = 'Analytics';
 
     protected static ?string $title = 'Analytics';
+
+    public function getTitle(): string
+    {
+        return __('Analytics');
+    }
 
     protected static ?int $navigationSort = 40;
 
@@ -38,14 +46,17 @@ final class Analytics extends Page
     /** @var list<int> */
     private const DETAIL_PAGE_SIZES = [25, 50, 100];
 
+    #[Session]
     public string $range = '30d';
 
     public string $search = '';
 
+    #[Session]
     public string $detailReport = 'content';
 
     public int $detailPage = 1;
 
+    #[Session]
     public int $detailPageSize = 25;
 
     /** @var array<string, mixed> */
@@ -66,8 +77,18 @@ final class Analytics extends Page
     /** @var array<int, array{label:string,value:string,detail:string}> */
     public array $audienceHighlights = [];
 
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && $user->canAccessPanel(Filament::getCurrentPanel());
+    }
+
     public function mount(): void
     {
+        $this->range = in_array($this->range, ['today', '7d', '30d', '12m'], true) ? $this->range : '30d';
+        $this->detailReport = array_key_exists($this->detailReport, self::DETAIL_REPORTS) ? $this->detailReport : 'content';
+        $this->detailPageSize = in_array($this->detailPageSize, self::DETAIL_PAGE_SIZES, true) ? $this->detailPageSize : 25;
         $this->loadRange();
     }
 

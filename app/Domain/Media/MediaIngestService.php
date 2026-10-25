@@ -10,11 +10,18 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Symfony\Component\Process\Process;
 use Throwable;
 
 class MediaIngestService
 {
-    public const MAX_PIXELS = 16_000_000;
+    // All newly ingested images use bounded libvips. GD is retained only in
+    // MediaVariantRegenerationService for historical immutable thumbnails.
+    public const MAX_PIXELS = 120_000_000;
+    public const LEGACY_MAX_PIXELS = 16_000_000;
+    public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
+    public const VIDEO_POSTER_KIND = 'poster';
+    public const VIDEO_POSTER_PROFILE = 'video-poster-v1';
 
     public const THUMBNAIL_MAX_EDGE = 960;
 
@@ -22,7 +29,7 @@ class MediaIngestService
 
     public const TRANSFORM_PROFILE = 'public-v1';
 
-    private const INGEST_LOCK_SECONDS = 120;
+    private const INGEST_LOCK_SECONDS = 240;
 
     private const MEDIA_PROBE_BYTES = 1024 * 1024;
 
@@ -46,17 +53,12 @@ class MediaIngestService
         $lock = $this->acquireIngestLock();
 
         try {
-            $prepared = $this->prepareForIngest($upload);
-            $duplicate = MediaAsset::query()
-                ->where('state', 'available')
-                ->where('sha256', $prepared['sha256'])
-                ->where('byte_size', $prepared['size'])
-                ->first();
-
+            $duplicate = $this->findReusableOriginal($upload);
             if ($duplicate instanceof MediaAsset) {
                 return ['asset' => $duplicate, 'duplicate' => true];
             }
 
+            $prepared = $this->prepareForIngest($upload);
             $asset = $this->storePreparedLocked($upload, $prepared);
             $this->refreshCapacitySnapshot();
 
@@ -69,6 +71,33 @@ class MediaIngestService
         }
     }
 
+    private function findReusableOriginal(UploadedFile $upload): ?MediaAsset
+    {
+        $path = $upload->getRealPath();
+        $size = $upload->getSize();
+        if (! $upload->isValid() || ! is_string($path) || ! is_file($path) || ! is_int($size) || $size <= 0) {
+            return null;
+        }
+        $sha = @hash_file('sha256', $path);
+        if (! is_string($sha) || strlen($sha) !== 64) {
+            return null;
+        }
+        $asset = MediaAsset::query()->with('variants')
+            ->where('state', 'available')->where('sha256', $sha)->where('byte_size', $size)->first();
+        if (! $asset instanceof MediaAsset
+            || $size > MediaTypePolicy::maxBytesFor((string) $asset->getAttribute('mime_type'))
+            || ! Storage::disk((string) config('media.disk'))->exists((string) $asset->getAttribute('storage_key'))) {
+            return null;
+        }
+        $mime = (string) $asset->getAttribute('mime_type');
+        if (MediaTypePolicy::isImage($mime) && MediaPreviewVariant::imageThumbnail($asset) === null) {
+            return null;
+        }
+        if (MediaTypePolicy::isVideo($mime) && MediaPreviewVariant::videoPoster($asset) === null) {
+            return null;
+        }
+        return $asset;
+    }
     private function acquireIngestLock(): mixed
     {
         $lock = Cache::lock('media-ingest', self::INGEST_LOCK_SECONDS);
@@ -116,7 +145,10 @@ class MediaIngestService
     private function storePreparedLocked(UploadedFile $upload, array $prepared): MediaAsset
     {
         try {
-            app(MediaCapacityService::class)->assertCanStoreOriginal($prepared['size']);
+            app(MediaCapacityService::class)->assertCanStoreOriginal(
+                $prepared['size'],
+                $prepared['thumbnail_bytes'] !== null ? strlen($prepared['thumbnail_bytes']) : 0,
+            );
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
@@ -131,9 +163,14 @@ class MediaIngestService
         $disk = Storage::disk(config('media.disk'));
         $uuid = (string) Str::uuid();
         $originalKey = 'originals/'.$uuid.'.'.$extension;
+        $isVideo = MediaTypePolicy::isVideo($prepared['mime']);
+        $variantKind = $isVideo ? self::VIDEO_POSTER_KIND : self::THUMBNAIL_KIND;
+        $transformProfile = $isVideo
+            ? self::VIDEO_POSTER_PROFILE
+            : self::LARGE_IMAGE_TRANSFORM_PROFILE;
         $thumbnailKey = $prepared['thumbnail_bytes'] === null
             ? null
-            : 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
+            : 'variants/'.$uuid.'-'.$variantKind.'.webp';
         $storageKeys = [$originalKey];
         if ($thumbnailKey !== null) {
             $storageKeys[] = $thumbnailKey;
@@ -163,7 +200,7 @@ class MediaIngestService
                 throw new RuntimeException('Unable to write media thumbnail.');
             }
 
-            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey): MediaAsset {
+            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey, $variantKind, $transformProfile): MediaAsset {
                 $asset = new MediaAsset;
                 $asset->fill([
                     'storage_key' => $originalKey,
@@ -180,12 +217,12 @@ class MediaIngestService
 
                 if ($thumbnailKey !== null && $prepared['thumbnail_bytes'] !== null) {
                     $asset->variants()->create([
-                        'variant_kind' => self::THUMBNAIL_KIND,
+                        'variant_kind' => $variantKind,
                         'storage_key' => $thumbnailKey,
                         'mime_type' => 'image/webp',
                         'byte_size' => strlen($prepared['thumbnail_bytes']),
                         'sha256' => hash('sha256', $prepared['thumbnail_bytes']),
-                        'transform_profile' => self::TRANSFORM_PROFILE,
+                        'transform_profile' => $transformProfile,
                         'state' => 'available',
                         'width' => $prepared['thumbnail_width'],
                         'height' => $prepared['thumbnail_height'],
@@ -258,8 +295,14 @@ class MediaIngestService
 
         if (MediaTypePolicy::isVideo($mime)) {
             $this->validateVideoContainer($path, $mime, $size);
+            $poster = app(MediaDerivativeGenerator::class)->videoPoster($path);
 
-            return $this->nonImagePrepared($mime, $path, $size, $sha256);
+            return [
+                ...$this->nonImagePrepared($mime, $path, $size, $sha256),
+                'thumbnail_bytes' => $poster['bytes'],
+                'thumbnail_width' => $poster['width'],
+                'thumbnail_height' => $poster['height'],
+            ];
         }
 
         if (MediaTypePolicy::isAudio($mime)) {
@@ -279,18 +322,10 @@ class MediaIngestService
             throw $this->validationFailure('The uploaded image dimensions are not allowed.');
         }
 
-        $originalImage = $this->decode($path, $mime);
-        $thumbnailImage = null;
-
-        try {
-            $thumbnailImage = $this->makeThumbnail($originalImage, $width, $height);
-            $thumbnailWidth = imagesx($thumbnailImage);
-            $thumbnailHeight = imagesy($thumbnailImage);
-            $thumbnailBytes = $this->encode($thumbnailImage, 'image/webp', 85);
-        } finally {
-            $this->destroyImage($thumbnailImage);
-            $this->destroyImage($originalImage);
-        }
+        $preview = app(MediaDerivativeGenerator::class)->imageThumbnail($path);
+        $thumbnailBytes = $preview['bytes'];
+        $thumbnailWidth = $preview['width'];
+        $thumbnailHeight = $preview['height'];
 
         return [
             'mime' => $mime,
@@ -348,7 +383,10 @@ class MediaIngestService
         $probe = $head.$tail;
 
         if ($this->isMp4Container($head)) {
-            if ($this->hasH264Track($probe)) {
+            // The real stream can be anywhere in the MP4 container; a
+            // compatible brand or an arbitrary sampled 'avc1' string does
+            // not establish an H.264 track.
+            if ($this->probeVideoStream($path) !== null) {
                 return 'video/mp4';
             }
 
@@ -379,30 +417,70 @@ class MediaIngestService
 
     private function validateVideoContainer(string $path, string $mime, int $size): void
     {
-        [$head, $tail] = $this->mediaProbe($path, $size);
-        $probe = $head.$tail;
+        // The H.264/VP8/VP9/AV1 description can live anywhere in the
+        // container, including an MP4 moov atom beyond both fixed probes.
+        // FFprobe, bundled with FFmpeg for poster extraction, parses the
+        // actual video stream instead of guessing from arbitrary byte slices.
+        $stream = $this->probeVideoStream($path);
+        $codec = $stream['codec'] ?? null;
 
         if ($mime === 'video/mp4') {
-            if (! $this->isMp4Container($head) || ! $this->hasH264Track($probe)) {
-                throw $this->validationFailure('MP4 uploads must use a browser-native H.264 video track.');
+            [$head] = $this->mediaProbe($path, min($size, 12));
+            if (! $this->isMp4Container($head) || $codec !== 'h264') {
+                throw $this->validationFailure('MP4 uploads must contain a browser-native H.264 video stream.');
             }
 
             return;
         }
 
         if ($mime === 'video/webm') {
-            $isWebm = str_starts_with($head, "\x1A\x45\xDF\xA3");
-            $hasSupportedVideo = str_contains($probe, 'V_VP8')
-                || str_contains($probe, 'V_VP9')
-                || str_contains($probe, 'V_AV1');
-            if (! $isWebm || ! $hasSupportedVideo) {
-                throw $this->validationFailure('WebM uploads must use a browser-native VP8, VP9 or AV1 video track.');
+            [$head] = $this->mediaProbe($path, min($size, 4));
+            if (! str_starts_with($head, "\x1A\x45\xDF\xA3")
+                || ! in_array($codec, ['vp8', 'vp9', 'av1'], true)) {
+                throw $this->validationFailure('WebM uploads must contain a browser-native VP8, VP9 or AV1 video stream.');
             }
 
             return;
         }
 
         throw $this->validationFailure('The uploaded video type is not allowed.');
+    }
+
+    /** @return array{codec:string,width:int,height:int}|null */
+    private function probeVideoStream(string $path): ?array
+    {
+        $process = new Process([
+            'ffprobe', '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=codec_name,width,height',
+            '-of', 'json',
+            $path,
+        ]);
+        $process->setTimeout(30);
+
+        try {
+            if ($process->run() !== 0) {
+                return null;
+            }
+        } catch (\Symfony\Component\Process\Exception\ProcessTimedOutException) {
+            return null;
+        }
+
+        $decoded = json_decode($process->getOutput(), true);
+        $stream = is_array($decoded) ? ($decoded['streams'][0] ?? null) : null;
+        if (! is_array($stream)) {
+            return null;
+        }
+
+        $codec = $stream['codec_name'] ?? null;
+        $width = $stream['width'] ?? null;
+        $height = $stream['height'] ?? null;
+
+        return is_string($codec)
+            && is_int($width) && $width > 0
+            && is_int($height) && $height > 0
+            ? ['codec' => $codec, 'width' => $width, 'height' => $height]
+            : null;
     }
 
     private function validateAudioContainer(string $path, string $mime, int $size): void
@@ -463,11 +541,6 @@ class MediaIngestService
     private function isMp4Container(string $head): bool
     {
         return strlen($head) >= 12 && substr($head, 4, 4) === 'ftyp';
-    }
-
-    private function hasH264Track(string $probe): bool
-    {
-        return str_contains($probe, 'avc1') || str_contains($probe, 'avc3');
     }
 
     private function hasMp4AudioTrack(string $probe): bool
@@ -592,87 +665,9 @@ class MediaIngestService
         return intdiv($coefficient * $bitRate, $sampleRate) + $padding;
     }
 
-    private function decode(string $path, string $mime): \GdImage
-    {
-        $image = match ($mime) {
-            'image/jpeg' => @imagecreatefromjpeg($path),
-            'image/png' => @imagecreatefrompng($path),
-            'image/webp' => @imagecreatefromwebp($path),
-            default => false,
-        };
-
-        if (! $image instanceof \GdImage) {
-            throw $this->validationFailure('The uploaded image could not be decoded.');
-        }
-
-        return $image;
-    }
-
-    private function encode(\GdImage $image, string $mime, int $quality): string
-    {
-        $this->configureAlpha($image, $mime);
-        ob_start();
-
-        try {
-            $encoded = match ($mime) {
-                'image/jpeg' => imagejpeg($image, null, $quality),
-                'image/png' => imagepng($image, null, $quality),
-                'image/webp' => imagewebp($image, null, $quality),
-            };
-            $bytes = ob_get_clean();
-        } catch (Throwable $exception) {
-            ob_end_clean();
-            throw $exception;
-        }
-
-        if ($encoded !== true || ! is_string($bytes) || $bytes === '') {
-            throw $this->validationFailure('The uploaded image could not be encoded.');
-        }
-
-        return $bytes;
-    }
-
-    private function makeThumbnail(\GdImage $image, int $width, int $height): \GdImage
-    {
-        $scale = min(1, self::THUMBNAIL_MAX_EDGE / max($width, $height));
-        $thumbnailWidth = max(1, (int) round($width * $scale));
-        $thumbnailHeight = max(1, (int) round($height * $scale));
-        $thumbnail = imagecreatetruecolor($thumbnailWidth, $thumbnailHeight);
-        if (! $thumbnail instanceof \GdImage) {
-            throw $this->validationFailure('The thumbnail could not be created.');
-        }
-
-        $this->configureAlpha($thumbnail, 'image/webp');
-        if (! imagecopyresampled($thumbnail, $image, 0, 0, 0, 0, $thumbnailWidth, $thumbnailHeight, $width, $height)) {
-            imagedestroy($thumbnail);
-            throw $this->validationFailure('The thumbnail could not be created.');
-        }
-
-        return $thumbnail;
-    }
-
-    private function configureAlpha(\GdImage $image, string $mime): void
-    {
-        if ($mime === 'image/jpeg') {
-            return;
-        }
-
-        imagealphablending($image, false);
-        imagesavealpha($image, true);
-    }
-
     private function basename(string $filename): string
     {
         return basename(str_replace('\\', '/', $filename));
-    }
-
-    private function destroyImage(mixed &$image): void
-    {
-        if ($image instanceof \GdImage) {
-            imagedestroy($image);
-        }
-
-        $image = null;
     }
 
     private function validationFailure(string $message, ?Throwable $previous = null): ValidationException

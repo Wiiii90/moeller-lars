@@ -40,7 +40,7 @@
             <x-admin.controls class="admin-data-controls--dashboard-responsive" aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}" metric-grid :filter-count="$isBlog ? 1 : 2" :search-span="$isBlog ? 3 : 2">
                 <x-slot:search>
                     <label class="admin-data-field">
-                        <span>Search</span>
+                        <span>{{ __('Search') }}</span>
                         <x-admin.search-input
                             model="search"
                             placeholder="{{ $isBlog ? 'Title or excerpt' : 'Title, venue, place or date' }}"
@@ -50,31 +50,31 @@
 
                 <x-slot:filters>
                     <label class="admin-data-field">
-                        <span>Status</span>
+                        <span>{{ __('Status') }}</span>
                         <select wire:model.live="statusFilter">
-                            <option value="any">Any</option>
+                            <option value="any">{{ __('Any') }}</option>
                             @if ($isBlog)
-                                <option value="draft">Draft</option>
-                                <option value="scheduled">Scheduled</option>
-                                <option value="published">Published</option>
-                                <option value="unpublished">Unpublished</option>
-                                <option value="archived">Archived</option>
+                                <option value="draft">{{ __('Draft') }}</option>
+                                <option value="scheduled">{{ __('Scheduled') }}</option>
+                                <option value="published">{{ __('Published') }}</option>
+                                <option value="unpublished">{{ __('Unpublished') }}</option>
+                                <option value="archived">{{ __('Archived') }}</option>
                             @else
-                                <option value="published">Published</option>
-                                <option value="unpublished">Unpublished</option>
+                                <option value="published">{{ __('Published') }}</option>
+                                <option value="unpublished">{{ __('Unpublished') }}</option>
                             @endif
                         </select>
                     </label>
 
                     @unless ($isBlog)
                         <label class="admin-data-field">
-                            <span>Timing</span>
+                            <span>{{ __('Timing') }}</span>
                             <select wire:model.live="timingFilter">
-                                <option value="any">Any</option>
-                                <option value="upcoming">Upcoming</option>
-                                <option value="current">Current</option>
-                                <option value="past">Past</option>
-                                <option value="unknown">Unknown</option>
+                                <option value="any">{{ __('Any') }}</option>
+                                <option value="upcoming">{{ __('Upcoming') }}</option>
+                                <option value="current">{{ __('Current') }}</option>
+                                <option value="past">{{ __('Past') }}</option>
+                                <option value="unknown">{{ __('Unknown') }}</option>
                             </select>
                         </label>
                     @endunless
@@ -82,32 +82,32 @@
 
                 <x-slot:reset>
                     <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Filter</span>
+                        <span class="admin-data-control-label">{{ __('Filter') }}</span>
                         <x-admin.clear-filters wire:click="resetFilters" />
                     </div>
                 </x-slot:reset>
 
                 <x-slot:actions>
                     <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Journal</span>
+                        <span class="admin-data-control-label">{{ __('Journal') }}</span>
                         <div class="admin-toolbar admin-editorial-actions">
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('journalSettings')" aria-label="Journal settings">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">Settings</span>
+                                <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')" aria-label="Add {{ $entryLabelSingular }}">
                                 <x-filament::icon :icon="$isBlog ? \App\Filament\Support\AdminIcon::BlogPost->mini() : \App\Filament\Support\AdminIcon::Exhibition->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Add {{ $entryLabelSingular }}</span>
                             </button>
-                            @if ($journalPublicUrl)
-                                <a class="admin-action admin-action--with-icon" href="{{ $journalPublicUrl }}" target="_blank" rel="noopener" aria-label="Preview Journal">
+                            @if ($journalPreviewUrl)
+                                <a class="admin-action admin-action--with-icon" href="{{ $journalPreviewUrl }}" target="_blank" rel="noopener" aria-label="Preview Journal">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Preview</span>
+                                    <span class="admin-action__label">{{ __('Preview') }}</span>
                                 </a>
                             @else
-                                <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish this Journal in Pages before previewing it" aria-label="Preview Journal">
+                                <button class="admin-action admin-action--with-icon" type="button" disabled title="A preview URL is unavailable for this Journal" aria-label="Preview Journal">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Preview</span>
+                                    <span class="admin-action__label">{{ __('Preview') }}</span>
                                 </button>
                             @endif
                         </div>
@@ -116,7 +116,7 @@
 
                 <x-slot:selection>
                     <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
-                        <span class="admin-data-control-label">Selection</span>
+                        <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">
                             <button
                                 class="admin-action admin-selection__trigger"
@@ -126,18 +126,18 @@
                                 aria-haspopup="menu"
                                 @disabled($selectedIds === [])
                             >
-                                <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
+                                <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak x-on:click.outside="open = false">
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false">Move selected up</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false">Move selected down</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false">{{ __('Move selected up') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false">{{ __('Move selected down') }}</button>
                                 @if ($isBlog)
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false">Publish selected</button>
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false">Unpublish selected</button>
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="archiveSelectedPosts" x-on:click="open = false">Archive selected</button>
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="restoreSelectedPosts" x-on:click="open = false">Restore selected to draft</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false">{{ __('Publish selected') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false">{{ __('Unpublish selected') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="archiveSelectedPosts" x-on:click="open = false">{{ __('Archive selected') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="restoreSelectedPosts" x-on:click="open = false">{{ __('Restore selected to draft') }}</button>
                                 @endif
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('{{ $isBlog ? 'deleteSelectedPosts' : 'deleteSelectedExhibitions' }}')" x-on:click="open = false">Delete selected</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('{{ $isBlog ? 'deleteSelectedPosts' : 'deleteSelectedExhibitions' }}')" x-on:click="open = false">{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ count($selectedIds) }} selected">{{ count($selectedIds) }}</span>
@@ -167,20 +167,20 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
-                            <th scope="col" class="journal-visual journal-col--visual">Image</th>
+                            <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">{{ __('Position') }}</th>
+                            <th scope="col" class="journal-visual journal-col--visual">{{ __('Image') }}</th>
                             <th scope="col" class="journal-col--identity">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
                             @if ($isBlog)
-                                <th scope="col" class="journal-col--publication-date admin-table__yield--narrow">Date</th>
-                                <th scope="col" class="journal-col--status admin-table__split-only">Status</th>
+                                <th scope="col" class="journal-col--publication-date admin-table__yield--narrow">{{ __('Date') }}</th>
+                                <th scope="col" class="journal-col--status admin-table__split-only">{{ __('Status') }}</th>
                             @else
                                 <th scope="col" class="journal-col--date admin-table__yield--narrow">
-                                    <span class="admin-table__split-label">Date</span>
-                                    <span class="admin-table__folded-only">Dates</span>
+                                    <span class="admin-table__split-label">{{ __('Date') }}</span>
+                                    <span class="admin-table__folded-only">{{ __('Dates') }}</span>
                                 </th>
-                                <th scope="col" class="journal-col--timing admin-table__split-only">Status</th>
+                                <th scope="col" class="journal-col--timing admin-table__split-only">{{ __('Status') }}</th>
                             @endif
-                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
+                            <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
@@ -381,7 +381,7 @@
                                 <td class="admin-table__empty-cell" colspan="8">
                                     @if ($unfilteredEntryCount > 0)
                                         <x-admin.empty-state :title="'No matching '.$entryLabel" minimal>
-                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button></x-slot:actions>
+                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">{{ __('Clear filters') }}</button></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state :title="'No '.$entryLabel.' added to this Journal'" minimal>
@@ -406,8 +406,8 @@
                 />
                 <span class="admin-pager__range">@if ($total === 0)0 of 0 @else{{ $resultStart }}–{{ $resultEnd }} of {{ $total }}@endif</span>
                 <x-admin.toolbar class="admin-pager__actions">
-                    <button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>Previous</button>
-                    <button class="admin-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>Next</button>
+                    <button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>{{ __('Previous') }}</button>
+                    <button class="admin-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>{{ __('Next') }}</button>
                 </x-admin.toolbar>
             </footer>
         </x-admin.section>

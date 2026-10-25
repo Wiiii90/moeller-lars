@@ -108,6 +108,7 @@ final class HomePresentationResolver
                 'showDetails' => $heroConfiguration['show_details'],
                 'showGalleryLink' => $heroConfiguration['show_gallery_link'],
                 'showNavigation' => $heroConfiguration['show_navigation'],
+                'allowVideoSound' => $heroConfiguration['video_sound_enabled'],
                 'enableViewer' => $heroConfiguration['enable_viewer'],
                 'heroGroup' => $heroResolution['group'],
                 'gateActive' => false,
@@ -116,11 +117,13 @@ final class HomePresentationResolver
                 $template,
                 $settings->components(HomeTemplate::UnderConstruction),
                 (bool) $configuration['under_construction']['public_site_gate'],
+                (bool) $configuration['under_construction']['image_viewer_enabled'],
             ),
             HomeTemplate::Custom => $this->componentPresentation(
                 $template,
                 $settings->components(HomeTemplate::Custom),
                 false,
+                (bool) $configuration['custom']['image_viewer_enabled'],
             ),
             HomeTemplate::SkipHome => throw new LogicException('Legacy Skip Home must normalize to a content template.'),
         };
@@ -225,7 +228,7 @@ final class HomePresentationResolver
     /** @param list<array<string, mixed>> $components
      * @return array<string, mixed>
      */
-    private function componentPresentation(HomeTemplate $template, array $components, bool $gateActive): array
+    private function componentPresentation(HomeTemplate $template, array $components, bool $gateActive, bool $enableImageViewer): array
     {
         $ids = collect($components)
             ->filter(fn (array $component): bool => in_array($component['type'] ?? null, ['image', 'list'], true)
@@ -247,6 +250,8 @@ final class HomePresentationResolver
             'assets' => $assets,
             'media' => $this->media,
             'richText' => $this->richText,
+            'imageViewer' => app(PublicImageViewer::class),
+            'enableImageViewer' => $enableImageViewer,
             'generalSettings' => PublicContentSetting::general(),
             'isPreview' => $this->preview->active(),
             'gateActive' => $gateActive && ! $this->preview->active(),

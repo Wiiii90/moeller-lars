@@ -692,7 +692,60 @@
 
 
 
+/* Empty nested Pages lists used to win root reorders through SortableJS's
+ * proximity-based emptyInsertThreshold, even when they had no actual box.
+ * Give empty children a real, bounded native landing seam inside the parent
+ * row, away from Position/Drag. Its negative margin cancels its own height,
+ * so enabling the destination never shifts sibling rows or inserts gaps.
+ * The empty-group threshold is disabled in the view; no second drag owner. */
+.admin-hierarchy--pages .admin-pages__empty-child-parent {
+    padding-block-end: 0;
+}
+.admin-hierarchy--pages .admin-pages__empty-child-rows {
+    --admin-pages-empty-child-seam: .75rem;
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+    height: var(--admin-pages-empty-child-seam);
+    margin-block-start: calc(-1 * var(--admin-pages-empty-child-seam));
+    margin-inline-start: calc(var(--admin-hierarchy-position-column) + var(--admin-hierarchy-drag-column));
+    pointer-events: none;
+}
+body.sorting .admin-hierarchy--pages .admin-pages__empty-child-rows {
+    pointer-events: auto;
+}
+
+/* During native Pages sorting, a root-level placeholder is the definitive
+ * sibling-placement signal. Its ghost is opacity-hidden by Alpine Sortable,
+ * so draw the existing-style divider on the preceding ROOT group instead.
+ * No divider is added for a placeholder inside a child list, and this
+ * changes no hit areas, sortable membership, dimensions or drag handlers. */
+body.sorting .admin-hierarchy--pages .admin-pages__root-rows
+    > .admin-hierarchy__group:has(+ .sortable-ghost)::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    border-bottom: 1px solid var(--admin-line-strong);
+    pointer-events: none;
+}
+/* Also cover the first insertion position, which has no preceding group. */
+body.sorting .admin-hierarchy--pages .admin-pages__root-rows:has(> .sortable-ghost:first-child) {
+    position: relative;
+}
+body.sorting .admin-hierarchy--pages .admin-pages__root-rows:has(> .sortable-ghost:first-child)::before {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    left: 0;
+    border-top: 1px solid var(--admin-line-strong);
+    pointer-events: none;
+}
+
 /* Native Sortable owns both sibling and inter-level drag gestures. */
 .admin-hierarchy--pages .admin-hierarchy__group { position: relative; }
 .admin-hierarchy__header { position: relative; }
-

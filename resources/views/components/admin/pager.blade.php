@@ -8,11 +8,11 @@
     'pageSizeOptions' => [25, 50, 100],
     'pageSizeWireModel' => null,
     'pageSizeWireAction' => null,
-    'pageSizeLabel' => 'Per page',
-    'pageSizeAriaLabel' => 'Items per page',
+    'pageSizeLabel' => __('Per page'),
+    'pageSizeAriaLabel' => __('Items per page'),
     'previousWireAction' => null,
     'nextWireAction' => null,
-    'ariaLabel' => 'Pagination',
+    'ariaLabel' => __('Pagination'),
 ])
 
 @php
@@ -36,9 +36,9 @@
 
     <span class="admin-pager__range">
         @if ((int) $total === 0)
-            0 of 0
+            0 {{ __('of') }} 0
         @else
-            {{ (int) $start }}–{{ (int) $end }} of {{ (int) $total }}
+            {{ (int) $start }}–{{ (int) $end }} {{ __('of') }} {{ (int) $total }}
         @endif
     </span>
 
@@ -50,7 +50,7 @@
                 wire:click="{{ $previousWireAction }}"
             @endif
             @disabled($previousDisabled || ! $hasPreviousAction)
-        >Previous</button>
+        >{{ __('Previous') }}</button>
 
         <button
             class="admin-action"
@@ -59,6 +59,6 @@
                 wire:click="{{ $nextWireAction }}"
             @endif
             @disabled($nextDisabled || ! $hasNextAction)
-        >Next</button>
+        >{{ __('Next') }}</button>
     </div>
 </footer>

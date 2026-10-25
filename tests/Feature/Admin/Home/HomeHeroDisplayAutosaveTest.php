@@ -59,9 +59,13 @@ it('persists every Hero display toggle from the real live Edit dialog and restor
     }
 });
 
-it('does not produce duplicate notifications or audit records when the autosaving dialog commits again', function (): void {
+it('preserves the stored Home menu choice without duplicate feedback when a Hero autosave commits again', function (bool $visible): void {
     $settings = app(HomePresentationResolver::class)->settings();
+    $section = $settings->siteSection()->firstOrFail();
+    app(\App\Domain\Content\SiteSectionEditorialService::class)->updateHomeNavigationVisibility($section, $visible);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
     $component = Livewire::test(HomePresentation::class)->mountAction('settings')
+        ->assertActionDataSet(['show_in_navigation' => $visible])
         ->set('mountedActions.0.data.show_gallery_link', true)
         ->assertDispatched('admin-header-notification');
 
@@ -72,16 +76,18 @@ it('does not produce duplicate notifications or audit records when the autosavin
         ->where('entity_id', (int) $settings->getAttribute('site_section_id'))
         ->count();
 
-    $component->call('callMountedAction');
+    $component->call('callMountedAction')->assertHasNoFormErrors()
+        ->assertNotDispatched('admin-header-notification');
 
     expect(app(HomeHeroConfigurationService::class)->configuration($settings->fresh())['show_gallery_link'])->toBeTrue()
+        ->and($section->fresh()->show_in_navigation)->toBe($visible)
         ->and(AdminNotification::query()->count())->toBe($beforeNotifications)
         ->and(AuditEvent::query()
             ->where('action', 'site_section.updated')
             ->where('entity_type', 'site_section')
             ->where('entity_id', (int) $settings->getAttribute('site_section_id'))
             ->count())->toBe($beforeAudits);
-});
+})->with(['visible in menu' => true, 'hidden from menu' => false]);
 
 it('defaults Gallery link off while retaining previously saved on values', function (): void {
     $service = app(HomeHeroConfigurationService::class);
@@ -91,4 +97,39 @@ it('defaults Gallery link off while retaining previously saved on values', funct
 
     expect($service->updateArtworkSettings($settings, ['show_gallery_link' => true]))->toBeTrue();
     expect($service->configuration($settings->fresh())['show_gallery_link'])->toBeTrue();
+});
+
+it('rejects a mounted Hero update after admin access is lost', function (bool $guest): void {
+    $actor = auth()->user();
+    $settings = app(HomePresentationResolver::class)->settings();
+    $editor = Livewire::test(HomePresentation::class)->mountAction('settings');
+    $before = AuditEvent::query()->count();
+    if ($guest) { \Illuminate\Support\Facades\Auth::guard('web')->logout(); }
+    else { $actor->forceFill(['is_admin' => false])->save(); }
+    $editor->set('mountedActions.0.data.show_gallery_link', true)->assertForbidden();
+    expect(app(HomeHeroConfigurationService::class)->configuration($settings->fresh())['show_gallery_link'])->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
+})->with(['guest' => true, 'revoked admin' => false]);
+
+it('rolls back Hero autosave when its audit fails and permits a successful retry', function (): void {
+    $settings = app(HomePresentationResolver::class)->settings();
+    $editor = Livewire::test(HomePresentation::class)->mountAction('settings');
+    $before = AuditEvent::query()->count();
+    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $audit = Mockery::mock($realAudit);
+    $audit->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit unavailable'));
+    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->forgetInstance(HomeHeroConfigurationService::class);
+    try {
+        expect(fn () => $editor->set('mountedActions.0.data.show_gallery_link', true))->toThrow(RuntimeException::class, 'Audit unavailable');
+        expect(app(HomeHeroConfigurationService::class)->configuration($settings->fresh())['show_gallery_link'])->toBeFalse()
+            ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
+    } finally {
+        app()->instance(\App\Domain\Admin\AdminAuditService::class, $realAudit);
+        app()->forgetInstance(HomeHeroConfigurationService::class);
+    }
+    Livewire::test(HomePresentation::class)->mountAction('settings')
+        ->set('mountedActions.0.data.show_gallery_link', true)->assertDispatched('admin-header-notification');
+    expect(app(HomeHeroConfigurationService::class)->configuration($settings->fresh())['show_gallery_link'])->toBeTrue()
+        ->and(AuditEvent::query()->count())->toBe($before + 1)->and(AdminNotification::query()->count())->toBe(1);
 });

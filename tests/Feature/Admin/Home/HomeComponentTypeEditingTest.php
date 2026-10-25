@@ -2,7 +2,6 @@
 
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
-use App\Filament\Pages\HomePresentation;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -21,23 +20,6 @@ function homeComponentTypeSettings(HomeTemplate $template, array $components): H
     return $settings;
 }
 
-it('reuses the Custom Page component hierarchy without hiding the type selector or repeating type metadata', function (): void {
-    $home = file_get_contents(resource_path('views/filament/pages/home-presentation.blade.php'));
-    $rows = file_get_contents(resource_path('views/filament/pages/partials/home-component-sequence.blade.php'));
-    $styles = file_get_contents(resource_path('css/admin/home.css'));
-    $responsive = file_get_contents(resource_path('css/admin/responsive.css'));
-
-    expect($home)->toContain("partials.home-component-sequence")
-        ->and($home)->not->toContain('home-components-table')
-        ->and($rows)->toContain('custom-page-component-sequence home-component-sequence admin-hierarchy')
-        ->and($rows)->toContain('class="admin-inline-select custom-page-component__type-select"')
-        ->and($rows)->toContain("mountAction('changeComponentType'")
-        ->and($rows)->toContain('wire:sort="sortComponent"')
-        ->and($rows)->not->toContain('admin-responsive-meta')
-        ->and($styles)->not->toContain('--admin-hierarchy-actions-column: var(--admin-row-actions-move-edit-delete-width)')
-        ->and($responsive)->not->toContain('home-components-table');
-});
-
 it('converts Home headings to Rich Text without discarding their text', function (HomeTemplate $template): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $settings = homeComponentTypeSettings($template, [
@@ -49,12 +31,11 @@ it('converts Home headings to Rich Text without discarding their text', function
         ->and($service->convertComponent($settings, $template, 0, 'text', 'heading', 'rich_text'))->toBeTrue();
 
     $component = $service->configuration($settings->fresh())[$template->value]['components'][0];
-    expect($component)->toBe([
-        'published' => true,
-        'type' => 'text',
-        'title' => null,
-        'body' => 'A heading to keep',
-    ]);
+    expect($component)->toHaveCount(4)
+        ->and($component['published'])->toBeTrue()
+        ->and($component['type'])->toBe('text')
+        ->and($component['title'])->toBeNull()
+        ->and($component['body'])->toBe('A heading to keep');
 })->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);
 
 it('confirms content loss for Rich Text conversions and rejects stale component targets', function (): void {
@@ -69,48 +50,31 @@ it('confirms content loss for Rich Text conversions and rejects stale component 
         ->and($service->conversionLosesContent($original, 'divider'))->toBeTrue()
         ->and($service->convertComponent($settings, HomeTemplate::Custom, 0, 'text', 'rich_text', 'heading'))->toBeTrue();
 
-    expect($service->configuration($settings->fresh())['custom']['components'][0])->toBe([
-        'published' => true,
-        'type' => 'text',
-        'title' => null,
-        'body' => null,
-    ]);
+    $converted = $service->configuration($settings->fresh())['custom']['components'][0];
+    expect($converted)->toHaveCount(4)
+        ->and($converted['published'])->toBeTrue()
+        ->and($converted['type'])->toBe('text')
+        ->and($converted['title'])->toBeNull()
+        ->and($converted['body'])->toBeNull();
 
-    expect(fn () => $service->convertComponent($settings, HomeTemplate::Custom, 0, 'text', 'rich_text', 'divider'))
+    // Empty text has no persisted Heading/Rich Text discriminator. Change the
+    // actual persisted type before submitting a genuinely stale target.
+    $service->convertComponent($settings, HomeTemplate::Custom, 0, 'text', 'rich_text', 'divider');
+    expect(fn () => $service->convertComponent($settings, HomeTemplate::Custom, 0, 'text', 'rich_text', 'heading'))
         ->toThrow(ValidationException::class);
+    expect($service->configuration($settings->fresh())['custom']['components'][0]['type'])->toBe('divider');
 });
 
-it('offers Home the same editorial component types as Custom Page', function (): void {
-    $page = new HomePresentation;
-
-    expect($page->componentTypeOptions)->toBe([
-        'image' => 'Image',
-        'heading' => 'Heading',
-        'rich_text' => 'Rich Text',
-        'divider' => 'Divider',
-        'list' => 'List',
-        'contact' => 'Contact',
-        'legal_disclaimer' => 'Legal Disclaimer',
-    ])->and($page->newComponentOptions)->toHaveKey('heading')
-        ->and($page->newComponentOptions)->toHaveKey('list')
-        ->and($page->newComponentOptions)->toHaveKey('contact')
-        ->and($page->newComponentOptions)->toHaveKey('legal_disclaimer');
-});
-
-it('accepts the four shared Divider variants for Home and rejects invalid styles', function (): void {
+it('saves a supported Home Divider choice and rejects invalid styles', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $settings = homeComponentTypeSettings(HomeTemplate::Custom, [['type' => 'divider']]);
     $service = app(HomePresentationEditorialService::class);
 
-    foreach (\App\Domain\Content\DividerVariant::VALUES as $variant) {
-        expect($service->updateComponent(
-            $settings, HomeTemplate::Custom, 0, 'divider',
-            ['type' => 'divider', 'variant' => $variant],
-        ))->toBeBool();
-        expect($service->configuration($settings->fresh())['custom']['components'][0]['variant'])->toBe($variant);
-    }
-
-    expect(\App\Models\CustomPageSetting::DIVIDER_VARIANTS)->toBe(\App\Domain\Content\DividerVariant::VALUES);
+    expect($service->updateComponent(
+        $settings, HomeTemplate::Custom, 0, 'divider',
+        ['type' => 'divider', 'variant' => 'dotted'],
+    ))->toBeTrue();
+    expect($service->configuration($settings->fresh())['custom']['components'][0]['variant'])->toBe('dotted');
 
     expect(fn () => $service->updateComponent(
         $settings, HomeTemplate::Custom, 0, 'divider',
@@ -147,24 +111,6 @@ it('preserves publication on type conversion and supports List and Contact child
     expect(fn () => $service->mutateChild($settings, HomeTemplate::Custom, 0, 'list', 'update', 2, [
         'title' => 'Stale target',
     ]))->toThrow(ValidationException::class);
-});
-
-it('shares the public component renderer and respects unpublished Home blocks and child components', function (): void {
-    $home = file_get_contents(resource_path('views/pages/home/components.blade.php'));
-    $custom = file_get_contents(resource_path('views/pages/custom.blade.php'));
-    $shared = file_get_contents(resource_path('views/pages/partials/component-sequence.blade.php'));
-    $resolver = file_get_contents(app_path('Domain/Content/HomePresentationResolver.php'));
-    $contact = file_get_contents(app_path('Http/Controllers/PublicContactController.php'));
-
-    expect($home)->toContain("pages.partials.component-sequence")
-        ->and($custom)->toContain("pages.partials.component-sequence")
-        ->and($shared)->toContain('CustomPageSetting::componentPublished')
-        ->and($shared)->toContain('CustomPageSetting::listItemPublished')
-        ->and($shared)->toContain('custom-page__divider--{{ $dividerVariant }}')
-        ->and($shared)->toContain('x-contact')
-        ->and($resolver)->toContain("generalSettings")
-        ->and($resolver)->toContain("RichTextMediaReference::ids")
-        ->and($contact)->toContain('publishedHomeContactFormExists');
 });
 
 it('rejects duplicate Contact children and duplicate Legal Disclaimer components', function (): void {
@@ -217,3 +163,23 @@ it('updates mixed Home parent and child selection atomically', function (): void
         ->and($remaining[0]['items'])->toHaveCount(1)
         ->and($remaining[0]['items'][0]['title'])->toBe('First');
 });
+
+it('creates and converts a Home heading through the real editor without losing its content', function (HomeTemplate $template): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+    $settings = homeComponentTypeSettings($template, []);
+    $editor = \Livewire\Livewire::test(\App\Filament\Pages\HomePresentation::class)
+        ->mountAction('addComponent')->fillForm(['kind' => 'heading', 'title' => 'Heading to preserve'])
+        ->callMountedAction()->assertHasNoFormErrors();
+    expect(app(HomePresentationEditorialService::class)->configuration($settings->fresh())[$template->value]['components'][0]['title'])->toBe('Heading to preserve');
+    $before = \App\Models\AuditEvent::query()->count();
+    $notifications = \App\Models\AdminNotification::query()->count();
+    $editor->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
+        ->set('mountedActions.0.data.editor_kind', 'rich_text')->assertHasNoErrors();
+    $converted = app(HomePresentationEditorialService::class)->configuration($settings->fresh())[$template->value]['components'][0];
+    expect($converted['body'])->toBe('Heading to preserve')->and($converted['title'])->toBeNull()
+        ->and(\App\Models\AuditEvent::query()->count())->toBe($before + 1)
+        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 1)
+        ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+})->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);

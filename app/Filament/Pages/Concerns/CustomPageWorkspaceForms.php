@@ -6,6 +6,7 @@ use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\MediaAssetSelect;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\PublicContentSetting;
 use Closure;
 use Filament\Forms\Components\Placeholder;
@@ -18,11 +19,11 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?string $editingType = null): array
+    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?string $editingType = null, ?Closure $onContactChange = null): array
     {
         $typeField = Select::make('type')
             ->label('Component')
-            ->options(self::COMPONENT_LABELS)
+            ->options(array_map('__', self::COMPONENT_LABELS))
             ->required()
             ->live()
             ->afterStateUpdated(
@@ -35,7 +36,7 @@ trait CustomPageWorkspaceForms
 
         $statusField = Select::make('publication_state')
             ->label('Status')
-            ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+            ->options(['published' => __('Published'), 'unpublished' => __('Unpublished')])
             ->default('published')
             ->required();
 
@@ -45,7 +46,7 @@ trait CustomPageWorkspaceForms
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange),
+                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange, $onContactChange),
             ])
             ->key('dynamicComponentFields')
             ->columnSpanFull();
@@ -57,6 +58,7 @@ trait CustomPageWorkspaceForms
                     $typeField,
                     $statusField,
                     ...($onTypeChange !== null && in_array($editingType, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                        && $editingType !== 'text'
                         ? [$this->componentParentField($editingType)]
                         : []),
                     $dynamicFields,
@@ -65,13 +67,13 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return list<mixed> */
-    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null): array
+    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null, ?Closure $onContactChange = null): array
     {
         return match ($type) {
             'image' => [
                 $this->imageSelectField($onImageChange),
                 TextInput::make('image_scale_percent')
-                    ->label('Image size')
+                    ->label('Media size')
                     ->numeric()
                     ->rules(['integer'])
                     ->minValue(\App\Models\CustomPageSetting::MIN_IMAGE_SCALE_PERCENT)
@@ -82,50 +84,76 @@ trait CustomPageWorkspaceForms
                     ->required(),
                 Select::make('image_alignment')
                     ->label('Image alignment')
-                    ->options(['left' => 'Left', 'right' => 'Right'])
+                    ->options(['left' => __('Left'), 'center' => __('Center'), 'right' => __('Right')])
                     ->default('left')
                     ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
+                Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
             ],
             'text' => $isNew
-                ? AdminRichText::schema('body', 'Rich Text', 20000)
+                ? AdminRichText::schema('body', 'Text Editor', 20000)
                 : [
+                    $this->componentParentField('text')->columnSpan(1),
                     TextInput::make('title')->label('Heading')->maxLength(160),
-                    ...AdminRichText::schema('body', 'Rich Text', 20000),
+                    ...AdminRichText::schema('body', 'Text Editor', 20000),
                 ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
                 MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)
-                    ->placeholder('No list image')
+                    ->placeholder(__('No list image'))
                     ->nullable(),
                 ComponentListEditor::make(),
             ],
             'divider' => [
-                Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
+                Select::make('variant')->label('Divider')->options(array_map('__', self::DIVIDER_LABELS))->default('thin')->required(),
             ],
             'contact' => [
-                TextInput::make('title')->label('Heading')->placeholder('Contact')->maxLength(160)->columnSpanFull(),
-                Toggle::make('contact_email_enabled')->label('Public Email')->default(true)->live(),
-                Toggle::make('contact_social_enabled')->label('Social Media Links')->default(true)->live(),
-                Select::make('contact_social_platforms')
-                    ->label('Social links from General')
-                    ->options($this->availableSocialPlatforms)
-                    ->multiple()
-                    ->default(array_keys($this->availableSocialPlatforms))
+                $this->contactEditorField(
+                    TextInput::make('title')->label('Heading')->placeholder(__('Contact'))->maxLength(160)->columnSpanFull(),
+                    'title', $onContactChange, blur: true,
+                ),
+                $this->contactEditorField(
+                    Toggle::make('contact_email_enabled')->label('Public Email')->default(true)->live(),
+                    'contact_email_enabled', $onContactChange,
+                ),
+                $this->contactEditorField(
+                    Toggle::make('contact_social_enabled')->label('Social Media Links')->default(true)->live(),
+                    'contact_social_enabled', $onContactChange,
+                ),
+                // Every profile reuses the same Toggle control as the rest
+                // of Contact. The old native multi-select rendered chips and
+                // obscured which configured platforms were actually enabled.
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema(collect($this->availableSocialPlatforms)
+                        ->map(fn (string $label, string $platform): Toggle =>
+                            $this->contactEditorField(
+                                Toggle::make('contact_social_selected.'.$platform)
+                                    ->label($label)->default(true),
+                                'contact_social_selected.'.$platform, $onContactChange,
+                            )
+                        )->values()->all())
                     ->visible(fn (Get $get): bool => (bool) $get('contact_social_enabled'))
                     ->columnSpanFull(),
-                Toggle::make('contact_form_enabled')->label('Contact Form')->default(true)->live(),
-                Select::make('contact_form_state')
-                    ->label('Form presentation')
-                    ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
-                    ->default('enabled')
-                    ->live()
-                    ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled')),
-                TextInput::make('contact_status_text')
-                    ->label('Status text')
-                    ->maxLength(500)
-                    ->required(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction')
-                    ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction'),
+                $this->contactEditorField(
+                    Toggle::make('contact_form_enabled')->label('Contact Form')->default(true)->live(),
+                    'contact_form_enabled', $onContactChange,
+                ),
+                $this->contactEditorField(
+                    Select::make('contact_form_state')
+                        ->label('Form presentation')
+                        ->options(['enabled' => __('Enabled'), 'under_construction' => __('Under construction')])
+                        ->default('enabled')->live()
+                        ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled')),
+                    'contact_form_state', $onContactChange,
+                ),
+                $this->contactEditorField(
+                    TextInput::make('contact_status_text')
+                        ->label('Status text')->maxLength(500)
+                        ->required(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction')
+                        ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction'),
+                    'contact_status_text', $onContactChange, blur: true,
+                ),
             ],
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')
@@ -135,6 +163,23 @@ trait CustomPageWorkspaceForms
             ],
             default => [],
         };
+    }
+
+    /**
+     * Contact controls are Filament/Livewire state, not reliable native DOM
+     * change events on the modal window. Persist their changed value through
+     * one canonical per-field callback; create dialogs keep draft form state.
+     */
+    private function contactEditorField(mixed $field, string $key, ?Closure $save, bool $blur = false): mixed
+    {
+        if ($save === null) return $field;
+        if ($blur) {
+            $field->live(onBlur: true);
+        } else {
+            $field->live();
+        }
+
+        return $field->afterStateUpdated(static fn (mixed $state) => $save($key, $state));
     }
 
     /** Visible at the top of every eligible component edit, even for List
@@ -169,7 +214,7 @@ trait CustomPageWorkspaceForms
 
     private function imageSelectField(?Closure $onImageChange): Select
     {
-        $field = MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', imagesOnly: true)
+        $field = MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
             ->required();
 
         // Searchable Filament selects update their Livewire state without a

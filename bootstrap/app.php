@@ -8,6 +8,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,11 +18,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
-        $middleware->prepend(UseCommittedPublicState::class);
         $middleware->append(RecordOperationalMetrics::class);
+
+        // Keep session persistence outside REPEATABLE READ, but resolve public
+        // route models only after entering the consistent Committed snapshot.
+        $middleware->prependToPriorityList(SubstituteBindings::class, UseCommittedPublicState::class);
 
         $middleware->web(
             append: [
+                UseCommittedPublicState::class,
                 SecurityHeaders::class,
                 AttachPublicationState::class,
             ],

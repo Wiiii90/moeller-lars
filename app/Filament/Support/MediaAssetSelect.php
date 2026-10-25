@@ -16,6 +16,10 @@ final class MediaAssetSelect
 {
     private const OPTION_LABEL_CACHE = 'admin.media_asset_select.option_labels';
 
+    private const INITIAL_PREVIEW_LIMIT = 24;
+
+    private const SEARCH_RESULT_LIMIT = 30;
+
     public static function make(
         string $name,
         string $relationship,
@@ -23,7 +27,7 @@ final class MediaAssetSelect
         bool $imagesOnly = false,
         bool $includeDimensions = true,
     ): Select {
-        return self::configure(Select::make($name), $label, $imagesOnly, $includeDimensions)
+        return self::configure(Select::make($name), $label, $imagesOnly, $includeDimensions, visual: true)
             ->relationship(
                 name: $relationship,
                 titleAttribute: 'original_filename',
@@ -38,10 +42,18 @@ final class MediaAssetSelect
                     return '';
                 }
 
-                self::primeOptionLabel($record, $includeDimensions);
+                self::primeOptionLabel($record, $includeDimensions, true);
 
-                return self::optionLabel($record, $includeDimensions);
-            });
+                return self::optionLabel($record, $includeDimensions, true);
+            })
+            ->preload()
+            ->optionsLimit(self::INITIAL_PREVIEW_LIMIT)
+            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
+                $search,
+                $imagesOnly,
+                $includeDimensions,
+                visual: true,
+            ));
     }
 
     /**
@@ -53,23 +65,25 @@ final class MediaAssetSelect
         bool $imagesOnly = false,
         ?array $allowedMimeTypes = null,
         ?Closure $modifyQueryUsing = null,
+        bool $visual = true,
     ): Select {
-        return self::configure(
+        $select = self::configure(
             Select::make($name),
             $label,
             $imagesOnly,
             true,
             $allowedMimeTypes,
             $modifyQueryUsing,
+            $visual,
         )
-            ->getOptionLabelUsing(function (mixed $value) use ($imagesOnly, $allowedMimeTypes, $modifyQueryUsing): ?string {
+            ->getOptionLabelUsing(function (mixed $value) use ($imagesOnly, $allowedMimeTypes, $modifyQueryUsing, $visual): ?string {
                 $id = filter_var($value, FILTER_VALIDATE_INT);
                 if ($id === false) {
                     return null;
                 }
 
                 if ($allowedMimeTypes === null && $modifyQueryUsing === null) {
-                    $cached = self::cachedOptionLabel((int) $id, true);
+                    $cached = self::cachedOptionLabel((int) $id, true, $visual);
                     if ($cached !== null) {
                         return $cached;
                     }
@@ -83,10 +97,23 @@ final class MediaAssetSelect
                     return null;
                 }
 
-                self::primeOptionLabel($asset, true);
+                self::primeOptionLabel($asset, true, $visual);
 
-                return self::optionLabel($asset, true);
+                return self::optionLabel($asset, true, $visual);
             });
+
+        if ($visual) {
+            $select->options(fn (): array => self::searchOptions(
+                '',
+                $imagesOnly,
+                true,
+                $allowedMimeTypes,
+                $modifyQueryUsing,
+                visual: true,
+            ));
+        }
+
+        return $select;
     }
 
     /**
@@ -99,6 +126,7 @@ final class MediaAssetSelect
         bool $includeDimensions = true,
         ?array $allowedMimeTypes = null,
         ?Closure $modifyQueryUsing = null,
+        bool $visual = false,
     ): array {
         /** @var Builder<MediaAsset> $query */
         $query = MediaAsset::query();
@@ -106,21 +134,31 @@ final class MediaAssetSelect
 
         $term = trim($search);
         if ($term !== '') {
-            $query->where('original_filename', 'ilike', '%'.$term.'%');
+            $query->where(static fn (Builder $query): Builder => $query
+                ->where('original_filename', 'ilike', '%'.$term.'%')
+                ->orWhere('alt_text', 'ilike', '%'.$term.'%'));
         }
 
         /** @var Collection<int, MediaAsset> $assets */
-        $assets = $query->with('variants')->orderBy('original_filename')->limit(30)->get();
+        if ($term === '') {
+            $query->orderByDesc('created_at')->orderByDesc('id');
+        } else {
+            $query->orderBy('original_filename')->orderBy('id');
+        }
+
+        $assets = $query->with('variants')
+            ->limit($term === '' ? self::INITIAL_PREVIEW_LIMIT : self::SEARCH_RESULT_LIMIT)
+            ->get();
         foreach ($assets as $asset) {
-            self::primeOptionLabel($asset, $includeDimensions);
+            self::primeOptionLabel($asset, $includeDimensions, $visual);
         }
 
         return $assets
-            ->mapWithKeys(fn (MediaAsset $asset): array => [(int) $asset->getKey() => self::optionLabel($asset, $includeDimensions)])
+            ->mapWithKeys(fn (MediaAsset $asset): array => [(int) $asset->getKey() => self::optionLabel($asset, $includeDimensions, $visual)])
             ->all();
     }
 
-    public static function primeOptionLabel(MediaAsset $asset, bool $includeDimensions = true): void
+    public static function primeOptionLabel(MediaAsset $asset, bool $includeDimensions = true, bool $visual = false): void
     {
         $asset->loadMissing('variants');
         $cache = request()->attributes->get(self::OPTION_LABEL_CACHE, []);
@@ -128,14 +166,14 @@ final class MediaAssetSelect
             $cache = [];
         }
 
-        $cache[self::cacheKey((int) $asset->getKey(), $includeDimensions)] = self::optionLabel($asset, $includeDimensions);
+        $cache[self::cacheKey((int) $asset->getKey(), $includeDimensions, $visual)] = self::optionLabel($asset, $includeDimensions, $visual);
         request()->attributes->set(self::OPTION_LABEL_CACHE, $cache);
     }
 
-    private static function cachedOptionLabel(int $id, bool $includeDimensions): ?string
+    private static function cachedOptionLabel(int $id, bool $includeDimensions, bool $visual = false): ?string
     {
         $cache = request()->attributes->get(self::OPTION_LABEL_CACHE, []);
-        $key = self::cacheKey($id, $includeDimensions);
+        $key = self::cacheKey($id, $includeDimensions, $visual);
 
         return is_array($cache) && array_key_exists($key, $cache) && is_string($cache[$key])
             ? $cache[$key]
@@ -152,10 +190,15 @@ final class MediaAssetSelect
         bool $includeDimensions,
         ?array $allowedMimeTypes = null,
         ?Closure $modifyQueryUsing = null,
+        bool $visual = false,
     ): Select {
+        if ($visual) {
+            $select->extraAlpineAttributes(['class' => 'admin-media-picker--visual'], merge: true);
+        }
+
         return $select
             ->label($label)
-            ->placeholder('Choose from Storage')
+            ->placeholder(__('Choose from Storage'))
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
                 $search,
@@ -163,10 +206,11 @@ final class MediaAssetSelect
                 $includeDimensions,
                 $allowedMimeTypes,
                 $modifyQueryUsing,
+                $visual,
             ))
             ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
-            ->searchPrompt('Search Storage by filename')
-            ->noSearchResultsMessage('No matching files in Storage')
+            ->searchPrompt(__('Search Storage by filename or ALT text'))
+            ->noSearchResultsMessage(__('No matching files in Storage'))
             ->allowHtml();
     }
 
@@ -193,18 +237,31 @@ final class MediaAssetSelect
         }
     }
 
-    private static function optionLabel(MediaAsset $asset, bool $includeDimensions): string
+    private static function optionLabel(MediaAsset $asset, bool $includeDimensions, bool $visual = false): string
     {
         $asset->loadMissing('variants');
         $filename = e((string) $asset->getAttribute('original_filename'));
 
         /** @var Collection<int, MediaVariant> $variants */
-        $variants = $asset->getRelation('variants');
-        $variant = $variants->first(
-            fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
-                && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                && $candidate->getAttribute('state') === 'available',
-        );
+        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
+
+        if ($visual) {
+            $preview = $variant instanceof MediaVariant
+                ? '<img src="'.e(route('admin.media.variant', $variant)).'" alt="" width="160" height="120" loading="lazy" decoding="async">'
+                : '<span class="admin-media-choice__unavailable">'.e(__('Preview unavailable')).'</span>';
+
+            $details = $includeDimensions && $asset->getAttribute('width') && $asset->getAttribute('height')
+                ? e($asset->getAttribute('width').'×'.$asset->getAttribute('height'))
+                : '';
+            $alt = trim((string) $asset->getAttribute('alt_text'));
+
+            return '<span class="admin-media-choice">'
+                .'<span class="admin-media-choice__preview">'.$preview.'</span>'
+                .'<span class="admin-media-choice__meta"><strong>'.$filename.'</strong>'
+                .($details !== '' ? '<small>'.$details.'</small>' : '')
+                .($alt !== '' ? '<small class="admin-media-choice__alt">'.e($alt).'</small>' : '')
+                .'</span></span>';
+        }
 
         $preview = $variant instanceof MediaVariant
             ? '<img src="'.e(route('admin.media.variant', $variant)).'" alt="" width="44" height="44" loading="lazy" decoding="async">'
@@ -221,8 +278,8 @@ final class MediaAssetSelect
         return $preview.' <strong>'.$filename.'</strong>'.' <small>· '.$dimensions.'</small>';
     }
 
-    private static function cacheKey(int $id, bool $includeDimensions): string
+    private static function cacheKey(int $id, bool $includeDimensions, bool $visual = false): string
     {
-        return $id.':'.($includeDimensions ? 'full' : 'compact');
+        return $id.':'.($includeDimensions ? 'full' : 'compact').($visual ? ':visual' : '');
     }
 }

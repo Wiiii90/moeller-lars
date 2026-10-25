@@ -23,7 +23,7 @@
         'admin-data-controls--six-cell-filters-'.$normalizedFilterCount => $metricGrid,
         'admin-data-controls--six-cell-search-'.$normalizedSearchSpan => $metricGrid && $normalizedSearchSpan !== null,
     ]) }}
-    @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
+    @if ($ariaLabel) aria-label="{{ __($ariaLabel) }}" @endif
 >
     @isset($search)
         {{ $search }}
@@ -96,16 +96,16 @@
                 x-on:click="open = ! open; if (open) $nextTick(() => positionPanel()); else panelStyle = ''"
                 x-bind:aria-expanded="open.toString()"
                 aria-haspopup="true"
-                aria-label="Filters"
+                aria-label="{{ __('Filters') }}"
             >
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Filter->mini()" class="admin-action__icon" />
-                <span class="admin-action__label">Filters</span>
+                <span class="admin-action__label">{{ __('Filters') }}</span>
             </button>
 
             <div
                 class="admin-data-controls__filters"
                 role="group"
-                aria-label="Filters"
+                aria-label="{{ __('Filters') }}"
                 x-ref="panel"
                 x-bind:style="panelStyle"
             >

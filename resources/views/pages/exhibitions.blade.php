@@ -16,22 +16,22 @@
                     : collect();
                 $galleryPresentation = $exhibition->galleryPresentation();
                 $displayDate = $exhibition->displayDate();
-                $vernissage = $exhibition->vernissageDisplay();
-                $address = $exhibition->streetAddress() !== null ? $exhibition->address() : null;
+                $vernissage = $exhibition->shouldShowPublicVernissage() ? $exhibition->vernissageDisplay() : null;
+                $address = $exhibition->publicAddress();
                 $map = $exhibition->shouldShowPublicMap() ? $exhibition->mapPresentation() : null;
                 $mapDialogId = 'exhibition-map-'.$exhibition->getKey();
-                $location = collect([$exhibition->venue, $exhibition->city, $exhibition->country])
-                    ->filter(fn ($value) => is_string($value) && trim($value) !== '')
-                    ->unique()
-                    ->implode(' · ');
-                $hasDescription = trim((string) ($exhibition->description ?? '')) !== '';
+                $attribution = $exhibition->summaryAttribution();
+                $physicalVenue = $exhibition->publicVenue();
+                $location = $exhibition->mapLocationLabel();
+                $hasDescription = trim((string) ($exhibition->description ?? '')) !== ''
+                    && trim((string) $exhibition->description) !== trim((string) $exhibition->location_text);
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
-                $hasFacts = $vernissage !== null || $address !== null;
-                $hasActions = $map !== null || $exhibition->external_url !== null;
+                $hasFacts = $vernissage !== null || $address !== null || $physicalVenue !== null;
+                $hasActions = $map !== null || ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null);
                 $hasDetails = $hasFacts || $hasDescription || $hasCover
                     || $gallery->isNotEmpty() || $hasActions;
             @endphp
-            <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
+            <article class="exhibition-entry" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
                     <details class="exhibition-entry__disclosure">
                         <summary class="exhibition-entry__summary">
@@ -48,9 +48,9 @@
                     </span>
                     <span class="exhibition-entry__heading">
                         <span class="exhibition-entry__title">{{ $exhibition->title }}</span>
-                        @if ($location !== '')
+                        @if ($attribution !== null)
                             <span class="exhibition-entry__byline">
-                                <span class="exhibition-entry__location">{{ $location }}</span>
+                                <span class="exhibition-entry__location">{{ $attribution }}</span>
                             </span>
                         @endif
                     </span>
@@ -62,12 +62,18 @@
                             @if ($hasCover || $hasFacts || $hasActions || $hasDescription)
                                 <div class="exhibition-entry__feature {{ $hasCover ? 'exhibition-entry__feature--with-cover' : 'exhibition-entry__feature--text' }}">
                                     @if ($hasCover)
-                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: false) !!}
+                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: true, enableViewer: (bool) $exhibition->image_viewer_enabled) !!}
                                     @endif
                                     @if ($hasFacts || $hasActions)
                                         <div class="exhibition-entry__info">
                                             @if ($hasFacts)
                                                 <dl class="exhibition-entry__facts">
+                                                    @if ($physicalVenue !== null)
+                                                        <div class="exhibition-entry__fact">
+                                                            <dt>Venue</dt>
+                                                            <dd>{{ $physicalVenue }}</dd>
+                                                        </div>
+                                                    @endif
                                                     @if ($vernissage !== null)
                                                         <div class="exhibition-entry__fact">
                                                             <dt>Vernissage</dt>
@@ -92,7 +98,7 @@
                                                             Show map
                                                         </button>
                                                     @endif
-                                                    @if ($exhibition->external_url !== null)
+                                                    @if ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null)
                                                         <a href="{{ $exhibition->external_url }}" target="_blank" rel="noopener noreferrer"
                                                             data-matomo-event-category="Journal"
                                                             data-matomo-event-action="exhibition_external_click"
@@ -103,13 +109,13 @@
                                         </div>
                                     @endif
                                     @if ($hasDescription)
-                                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $richText->render((string) $exhibition->description) !!}</div>
+                                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $exhibition->image_viewer_enabled ? $journalMedia->renderRichText((string) $exhibition->description) : $richText->render((string) $exhibition->description) !!}</div>
                                     @endif
                                 </div>
                             @endif
 
                             @if ($gallery->isNotEmpty())
-                                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Exhibition images" :journal-media="$journalMedia" />
+                                <x-journal-gallery :gallery="$gallery" :presentation="$galleryPresentation" label="Exhibition media" :journal-media="$journalMedia" :show-captions="true" :enable-viewer="(bool) $exhibition->image_viewer_enabled" />
                             @endif
 
                             @if ($map !== null)
@@ -121,7 +127,7 @@
                                             <div class="exhibition-map-dialog__identity">
                                                 <span class="exhibition-map-dialog__eyebrow">Exhibition location</span>
                                                 <h4 id="exhibition-map-heading-{{ $exhibition->getKey() }}">{{ $exhibition->title }}</h4>
-                                                @if ($location !== '')
+                                                @if ($location !== null)
                                                     <p>{{ $location }}</p>
                                                 @endif
                                             </div>

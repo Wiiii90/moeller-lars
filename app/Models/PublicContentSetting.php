@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -13,6 +14,8 @@ use InvalidArgumentException;
 use LogicException;
 
 #[Fillable([
+    'regional_format',
+    'number_format',
     'contact_recipient_email',
     'public_email',
     'show_public_email',
@@ -25,14 +28,77 @@ use LogicException;
     'legal_usage_rights',
     'favicon_media_asset_id',
     'default_media_copyright_notice',
+    'frame_style',
+    'menu_type',
     'background_mode',
     'background_color',
     'background_gradient_start',
     'background_gradient_end',
     'background_gradient_angle',
+    'menu_background_mode',
+    'menu_background_color',
+    'menu_background_gradient_start',
+    'menu_background_gradient_end',
+    'menu_background_gradient_angle',
+    'page_background_mode',
+    'page_background_color',
+    'page_background_gradient_start',
+    'page_background_gradient_end',
+    'page_background_gradient_angle',
+    'background_gradient_stops',
+    'background_gradient_repeating',
+    'background_gradient_repeat_span',
+    'background_gradient_center_x',
+    'background_gradient_center_y',
+    'background_gradient_shape',
+    'menu_background_gradient_stops',
+    'menu_background_gradient_repeating',
+    'menu_background_gradient_repeat_span',
+    'menu_background_gradient_center_x',
+    'menu_background_gradient_center_y',
+    'menu_background_gradient_shape',
+    'page_background_gradient_stops',
+    'page_background_gradient_repeating',
+    'page_background_gradient_repeat_span',
+    'page_background_gradient_center_x',
+    'page_background_gradient_center_y',
+    'page_background_gradient_shape',
+    'header_name_visible',
+    'header_name_text',
+    'header_name_alignment',
+    'header_name_mobile_alignment',
+    'header_name_position',
+    'header_name_caps',
+    'header_name_color',
+    'header_name_mode',
+    'header_name_gradient_start',
+    'header_name_gradient_end',
+    'header_name_gradient_angle',
+    'header_name_gradient_stops',
+    'header_name_gradient_repeating',
+    'header_name_gradient_repeat_span',
+    'header_name_gradient_center_x',
+    'header_name_gradient_center_y',
+    'header_name_gradient_shape',
+    'header_name_size',
+    'header_name_min_size',
+    'header_divider_mode',
+    'header_divider_color',
+    'header_divider_paint_mode',
+    'header_divider_paint_gradient_start',
+    'header_divider_paint_gradient_end',
+    'header_divider_paint_gradient_angle',
+    'header_divider_paint_gradient_stops',
+    'header_divider_paint_gradient_repeating',
+    'header_divider_paint_gradient_repeat_span',
+    'header_divider_paint_gradient_center_x',
+    'header_divider_paint_gradient_center_y',
+    'header_divider_paint_gradient_shape',
+    'header_name_auto_scale',
     'public_page_width',
     'public_content_padding',
     'navigation_nesting_enabled',
+    'navigation_hover_preview',
     'pages_auto_publish',
     'pages_delete_without_confirmation',
 ])]
@@ -56,9 +122,43 @@ class PublicContentSetting extends Model
             'show_instagram' => 'boolean',
             'social_links' => 'array',
             'background_gradient_angle' => 'integer',
+            'menu_background_gradient_angle' => 'integer',
+            'page_background_gradient_angle' => 'integer',
+            'header_name_gradient_angle' => 'integer',
+            'header_name_gradient_stops' => 'array',
+            'header_name_gradient_repeating' => 'boolean',
+            'header_name_gradient_repeat_span' => 'integer',
+            'header_name_gradient_center_x' => 'integer',
+            'header_name_gradient_center_y' => 'integer',
+            'header_divider_paint_gradient_angle' => 'integer',
+            'header_divider_paint_gradient_stops' => 'array',
+            'header_divider_paint_gradient_repeating' => 'boolean',
+            'header_divider_paint_gradient_repeat_span' => 'integer',
+            'header_divider_paint_gradient_center_x' => 'integer',
+            'header_divider_paint_gradient_center_y' => 'integer',
+            'background_gradient_stops' => 'array',
+            'background_gradient_repeating' => 'boolean',
+            'background_gradient_repeat_span' => 'integer',
+            'background_gradient_center_x' => 'integer',
+            'background_gradient_center_y' => 'integer',
+            'menu_background_gradient_stops' => 'array',
+            'menu_background_gradient_repeating' => 'boolean',
+            'menu_background_gradient_repeat_span' => 'integer',
+            'menu_background_gradient_center_x' => 'integer',
+            'menu_background_gradient_center_y' => 'integer',
+            'page_background_gradient_stops' => 'array',
+            'page_background_gradient_repeating' => 'boolean',
+            'page_background_gradient_repeat_span' => 'integer',
+            'page_background_gradient_center_x' => 'integer',
+            'page_background_gradient_center_y' => 'integer',
+            'header_name_visible' => 'boolean',
+            'header_name_size' => 'integer',
+            'header_name_min_size' => 'integer',
+            'header_name_auto_scale' => 'boolean',
             'public_page_width' => 'integer',
             'public_content_padding' => 'integer',
             'navigation_nesting_enabled' => 'boolean',
+            'navigation_hover_preview' => 'boolean',
             'pages_auto_publish' => 'boolean',
             'pages_delete_without_confirmation' => 'boolean',
         ];
@@ -144,11 +244,51 @@ class PublicContentSetting extends Model
 
     private static function validateGeneral(self $setting): void
     {
-        $setting->setAttribute('background_mode', PublicAppearance::normalizeMode($setting->getAttribute('background_mode')));
-        $setting->setAttribute('background_color', PublicAppearance::normalizeColor($setting->getAttribute('background_color'), 'background_color'));
-        $setting->setAttribute('background_gradient_start', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_start'), 'background_gradient_start'));
-        $setting->setAttribute('background_gradient_end', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_end'), 'background_gradient_end'));
-        $setting->setAttribute('background_gradient_angle', PublicAppearance::normalizeAngle($setting->getAttribute('background_gradient_angle')));
+        $region = $setting->getAttribute('regional_format');
+        if (! is_string($region) || ! array_key_exists($region, RegionalFormats::OPTIONS)) {
+            throw ValidationException::withMessages(['regional_format' => 'Choose a supported date format.']);
+        }
+        $numberFormat = $setting->getAttribute('number_format');
+        if (! is_string($numberFormat) || ! array_key_exists($numberFormat, RegionalFormats::NUMBER_OPTIONS)) {
+            throw ValidationException::withMessages(['number_format' => 'Choose a supported number format.']);
+        }
+
+        foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
+            $mode = $surface.'_mode';
+            $setting->setAttribute($mode, PublicAppearance::normalizeMode($setting->getAttribute($mode), $mode));
+            foreach (['_gradient_start', '_gradient_end'] as $suffix) {
+                $field = $surface.$suffix;
+                $setting->setAttribute($field, PublicAppearance::normalizeColor($setting->getAttribute($field), $field));
+            }
+            $colorField = PublicAppearance::solidColorField($surface);
+            $setting->setAttribute($colorField, PublicAppearance::normalizeColor($setting->getAttribute($colorField), $colorField));
+            $angle = $surface.'_gradient_angle';
+            $setting->setAttribute($angle, PublicAppearance::normalizeAngle($setting->getAttribute($angle), $angle));
+            foreach ([
+                '_gradient_stops' => 'normalizeStops',
+                '_gradient_repeating' => 'normalizeRepeating',
+                '_gradient_repeat_span' => 'normalizeRepeatSpan',
+                '_gradient_center_x' => 'normalizeCenter',
+                '_gradient_center_y' => 'normalizeCenter',
+                '_gradient_shape' => 'normalizeShape',
+            ] as $suffix => $method) {
+                $field = $surface.$suffix;
+                $setting->setAttribute($field, PublicAppearance::$method($setting->getAttribute($field), $field));
+            }
+        }
+        $setting->setAttribute('header_name_visible', $setting->getAttribute('header_name_visible') === null ? true : (bool) $setting->getAttribute('header_name_visible'));
+        $setting->setAttribute('header_name_text', PublicAppearance::headerText($setting->getAttribute('header_name_text')));
+        $setting->setAttribute('header_name_alignment', PublicAppearance::headerAlignment($setting->getAttribute('header_name_alignment')));
+        $setting->setAttribute('header_name_mobile_alignment', PublicAppearance::headerAlignment($setting->getAttribute('header_name_mobile_alignment'), 'header_name_mobile_alignment'));
+        $setting->setAttribute('header_name_position', PublicAppearance::headerPosition($setting->getAttribute('header_name_position')));
+        $setting->setAttribute('header_name_caps', PublicAppearance::headerCaps($setting->getAttribute('header_name_caps')));
+        $setting->setAttribute('header_name_color', PublicAppearance::normalizeColor($setting->getAttribute('header_name_color'), 'header_name_color'));
+        $setting->setAttribute('header_name_size', PublicAppearance::normalizeTitleSize($setting->getAttribute('header_name_size')));
+        $setting->setAttribute('header_name_min_size', PublicAppearance::normalizeTitleMinSize($setting->getAttribute('header_name_min_size')));
+        $setting->setAttribute('frame_style', PublicAppearance::frameStyle($setting->getAttribute('frame_style')));
+        $setting->setAttribute('menu_type', PublicAppearance::menuType($setting->getAttribute('menu_type')));
+        $setting->setAttribute('header_divider_mode', PublicAppearance::headerDivider($setting->getAttribute('header_divider_mode')));
+        $setting->setAttribute('header_name_auto_scale', $setting->getAttribute('header_name_auto_scale') === null ? true : (bool) $setting->getAttribute('header_name_auto_scale'));
         $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));
         $setting->setAttribute('public_content_padding', PublicAppearance::normalizeContentPadding($setting->getAttribute('public_content_padding')));
 
@@ -180,7 +320,9 @@ class PublicContentSetting extends Model
 
         $socialLinks = $setting->getAttribute('social_links');
         $legacyInstagram = $setting->getAttribute('instagram_handle');
-        if (($socialLinks === null || $socialLinks === []) && is_string($legacyInstagram) && trim($legacyInstagram) !== '') {
+        // Only absent migrated data may inherit legacy Instagram. An explicit
+        // empty list means that the admin deleted every General profile.
+        if ($socialLinks === null && is_string($legacyInstagram) && trim($legacyInstagram) !== '') {
             $socialLinks = [[
                 'platform' => 'instagram',
                 'url' => 'https://www.instagram.com/'.trim($legacyInstagram).'/',

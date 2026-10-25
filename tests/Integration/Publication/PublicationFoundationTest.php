@@ -11,12 +11,9 @@ use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-
-uses(RefreshDatabase::class);
 
 function publicationReviewContactPayload(): array
 {
@@ -45,7 +42,6 @@ it('reads Contact publication decisions in a short committed transaction and wri
         'slug' => 'committed-contact',
         'state' => 'published',
         'position' => 920,
-        'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,
     ]);

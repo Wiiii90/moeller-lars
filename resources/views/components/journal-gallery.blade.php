@@ -1,4 +1,4 @@
-@props(['gallery', 'presentation', 'label', 'journalMedia', 'includeCopyrightNotice' => true])
+@props(['gallery', 'presentation', 'label', 'journalMedia', 'includeCopyrightNotice' => true, 'showCaptions' => false, 'enableViewer' => false])
 
 @php
     $galleryGroups = $presentation === 'mosaic'
@@ -8,9 +8,9 @@
 <div class="journal-entry-gallery journal-entry-gallery--{{ $presentation }} @if ($presentation === 'mosaic' && $gallery->count() === 1) journal-entry-gallery--single @endif" aria-label="{{ $label }}" @if ($presentation === 'slideshow') data-journal-slideshow @endif>
     @if ($presentation === 'slideshow' && $gallery->count() > 1)
         <nav class="journal-entry-gallery__controls" aria-label="{{ $label }} navigation">
-            <button type="button" data-journal-slide-prev aria-label="Previous image"><x-public-icon name="arrow-left" /></button>
+            <button type="button" data-journal-slide-prev aria-label="Previous media"><x-public-icon name="arrow-left" /></button>
             <span data-journal-slide-status aria-live="polite" aria-atomic="true">1 / {{ $gallery->count() }}</span>
-            <button type="button" data-journal-slide-next aria-label="Next image"><x-public-icon name="arrow-right" /></button>
+            <button type="button" data-journal-slide-next aria-label="Next media"><x-public-icon name="arrow-right" /></button>
         </nav>
     @endif
     @foreach ($galleryGroups as $column)
@@ -18,7 +18,7 @@
             <div class="journal-entry-gallery__column">
         @endif
         @foreach ($column as $usage)
-            <div class="journal-entry-gallery__item" @if ($presentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false, includeCopyrightNotice: $includeCopyrightNotice, showCaption: false) !!}</div>
+            <div class="journal-entry-gallery__item" @if ($presentation === 'slideshow') data-journal-slide @if (! $loop->first) hidden @endif @endif>{!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery', includeInheritedCopyright: false, includeCopyrightNotice: $includeCopyrightNotice, showCaption: $showCaptions, enableViewer: $enableViewer) !!}</div>
         @endforeach
         @if ($presentation === 'mosaic')
             </div>

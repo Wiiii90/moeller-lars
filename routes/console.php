@@ -2,8 +2,11 @@
 
 use App\Domain\Admin\AdminLocalHistoryResetService;
 use App\Domain\Content\ExhibitionAddressNormalizer;
+use App\Domain\Contact\ContactMessageRetentionService;
 use App\Domain\Media\MediaCapacityService;
+use App\Domain\Media\MediaThumbnailCutoverService;
 use App\Domain\Media\MediaIntegrityService;
+use App\Domain\Media\MediaRightsWorkingPreparation;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
 use App\Domain\Migration\LegacyMigrationValidator;
 use App\Domain\Migration\LegacyPublicCvImporter;
@@ -16,8 +19,61 @@ use App\Support\PulseReport;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
+
+// Offline and opt-in pre-release consolidation. Never invoked by HTTP or deploy.
+Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails to libvips} {--rebaseline-checkpoints : Recompute pre-release checkpoint hashes while preserving their rows} {--invalidate-thumbnail-rights : Explicitly invalidate obsolete generated thumbnail rights selections}', function (MediaThumbnailCutoverService $cutover): int {
+    if (! app()->environment(['local', 'testing'])) {
+        $this->error('Thumbnail consolidation is only available on a local pre-release database.');
+        return 1;
+    }
+
+    $preview = $cutover->preview();
+    $this->info("Original images: {$preview['assets']} · Legacy thumbnails: {$preview['variants']} · Restorable checkpoints: {$preview['checkpoints']} · Rights selections: {$preview['rights_selections']}");
+
+    if (! $this->option('apply')) {
+        $this->comment('Preview only. --apply is required to convert the thumbnail registry.');
+        if ($preview['checkpoints'] > 0) {
+            $this->warn('--rebaseline-checkpoints is additionally required to preserve but rehash pre-release history.');
+        }
+        return 0;
+    }
+
+    try {
+        $result = $cutover->apply((bool) $this->option('rebaseline-checkpoints'), (bool) $this->option('invalidate-thumbnail-rights'));
+        $this->info("Converted {$result['converted']} thumbnails. Rebaselined {$result['rebased']} checkpoints; invalidated {$result['invalidated_rights']} thumbnail rights selections for offline re-preparation; reclaimed {$result['reclaimed']} unreferenced old derivative files.");
+        return 0;
+    } catch (\Throwable $exception) {
+        $this->error($exception->getMessage());
+        return 1;
+    }
+})->purpose('Preview or execute the explicit local libvips thumbnail consolidation');
+
+// Contact messages are retained in this database for 180 days. The command
+// is preview-only unless --apply is explicit. Existing mailboxes and backup
+// retention are separate policies. No independent worker or polling loop.
+Artisan::command('contact:purge {--apply : Delete contact messages older than 180 days}', function (ContactMessageRetentionService $retention): int {
+    $cutoff = $retention->cutoff();
+    $eligible = $retention->eligibleCount($cutoff);
+    $this->info($eligible.' contact messages older than 180 days are eligible for deletion.');
+
+    if (! $this->option('apply')) {
+        $this->comment('Preview only. Use --apply to execute permanent database deletion.');
+
+        return 0;
+    }
+
+    $deleted = $retention->purge($cutoff);
+    $this->info($deleted.' expired contact messages deleted from the database.');
+
+    return 0;
+})->purpose('Preview or purge database contact messages after 180 days');
+
+// Activated only where an operator runs Laravel's standard schedule:run.
+// That runtime scheduler has not been verified on the server.
+Schedule::command('contact:purge --apply')->daily()->withoutOverlapping()->onOneServer();
 
 // Legacy Exhibition addresses are normalised only by explicit local action:
 // the preview is the default; ambiguous strings and edited structured fields
@@ -175,6 +231,110 @@ Artisan::command('pulse:report {--hours=24 : Lookback window in hours (1-168)} {
 
     return 0;
 })->purpose('Export a read-only Laravel Pulse telemetry snapshot as Markdown or JSON');
+
+// Explicit, bounded local rights-file backfill. Not scheduled or reachable
+// from HTTP. Default is a read-only preview; --apply is separately gated.
+Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10 : Images per batch (1-20)} {--apply : Prepare selected Working image files}', function (MediaRightsWorkingPreparation $preparation): int {
+    if (! app()->environment(['local', 'testing'])) {
+        $this->error('Rights-file preparation is local/disposable-only.');
+        return 1;
+    }
+
+    $after = filter_var($this->option('after'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 20]]);
+    if ($after === false || $limit === false) {
+        $this->error('Use --after >= 0 and --limit from 1 to 20.');
+        return 64;
+    }
+
+    $apply = (bool) $this->option('apply');
+    if ($apply && (! config('media.rights_preparation_enabled', false) || config('media.rights_delivery_enabled', false))) {
+        $this->error('Offline preparation must be explicitly enabled while public rights delivery remains disabled.');
+        return 1;
+    }
+
+    $assets = MediaAsset::query()
+        ->where('id', '>', $after)
+        ->whereIn('mime_type', \App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES)
+        ->orderBy('id')
+        ->limit($limit)
+        ->get(['id', 'original_filename']);
+    $prepared = 0;
+    $lastId = (int) $after;
+    $candidates = $assets->pluck('id')->map(static fn ($id): int => (int) $id)->all();
+    foreach ($assets as $asset) {
+        $id = (int) $asset->getKey();
+        if ($apply) {
+            try {
+                if ($preparation->prepare($id)) {
+                    $prepared++;
+                }
+            } catch (\Throwable $exception) {
+                $this->error('Rights preparation stopped at media #'.$id.': '.$exception->getMessage());
+                $this->warn('Last completed cursor: --after='.$lastId.'. Re-run from that cursor after correcting the error.');
+
+                return 1;
+            }
+        }
+        $lastId = $id;
+        if ($apply) {
+            $this->line('Completed media #'.$id.'; resume cursor --after='.$lastId);
+        }
+    }
+    $this->line(json_encode([
+        'scanned' => $assets->count(),
+        'prepared' => $prepared,
+        'candidate_ids' => $candidates,
+        'next_after' => (int) $lastId,
+        'preview_only' => ! $apply,
+    ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+    if (! $apply) {
+        $this->comment('No rights files or Working selections changed. Apply is local/disposable only.');
+    }
+
+    return 0;
+})->purpose('Preview or stage a bounded batch of image rights artifacts offline');
+
+// Dedicated existing publication cleanup owner; no new scheduler/worker.
+// Dry run is the default and no ordinary HTTP request uses this operation.
+Artisan::command('media:rights:cleanup {--limit=10 : Maximum candidate count (1-20)} {--apply : Reclaim unreferenced generated rights files}', function (\App\Domain\Publication\PublicationMediaCleanupService $cleanup): int {
+    if (! app()->environment(['local', 'testing'])) {
+        $this->error('Rights artifact cleanup is restricted to local/disposable testing.');
+        return 1;
+    }
+
+    $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 20]]);
+    if ($limit === false) {
+        $this->error('Provide --limit between 1 and 20.');
+        return 64;
+    }
+
+    if (! config('media.rights_preparation_enabled', false)
+        || config('media.rights_delivery_enabled', false)) {
+        $this->error('Rights artifact inspection requires offline preparation ON and public delivery OFF.');
+        return 1;
+    }
+
+    try {
+        $candidates = $cleanup->rightsCleanupCandidates($limit);
+        $result = [
+            'unreferenced_registry' => count($candidates['unreferenced']),
+            'orphaned_files' => count($candidates['orphan_keys']),
+            'preview_only' => ! $this->option('apply'),
+        ];
+        if ($this->option('apply')) {
+            $result = [...$result, ...$cleanup->reclaimRightsArtifacts($limit, true)];
+        }
+        $this->line(json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+        if (! $this->option('apply')) {
+            $this->comment('Preview only: no generated files or rights selections changed.');
+        }
+        return 0;
+    } catch (\Throwable $exception) {
+        $this->error('Rights cleanup aborted: '.$exception->getMessage());
+        return 1;
+    }
+})->purpose('Preview or reclaim unreferenced rights copies without touching source media');
 
 Artisan::command('media:measure-capacity', function (MediaCapacityService $capacity) {
     $capacity->forgetCachedSnapshot();

@@ -21,6 +21,8 @@ RUN apt-get update \
         libpng-dev \
         libpq-dev \
         libwebp-dev \
+        libvips-tools \
+        ffmpeg \
         libxml2-dev \
         libzip-dev \
         unzip \
@@ -34,6 +36,9 @@ RUN apt-get update \
         pcntl \
         pdo_pgsql \
         zip \
+    && command -v vipsthumbnail \
+    && command -v ffmpeg \
+    && command -v ffprobe \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

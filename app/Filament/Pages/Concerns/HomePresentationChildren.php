@@ -100,6 +100,7 @@ trait HomePresentationChildren
         );
         $this->reloadWorkspace();
         if ($changed) {
+            $this->forceRender();
             app(AdminNotifier::class)->notification(
                 title: match ($operation) {
                     'add' => 'Home item added',
@@ -254,21 +255,72 @@ trait HomePresentationChildren
                     : Hidden::make('publication_state'),
                 Grid::make()->columns(['md' => 2])->schema(fn (Get $get): array => match ((string) $get('child_type')) {
                     'social_links' => [
-                        Select::make('social_platforms')->label('Social links from General')
-                            ->options($platformOptions)->multiple()->default($platforms)->columnSpanFull(),
+                        $this->homeContactEditField(
+                            Select::make('social_platforms')->label('Social links from General')
+                                ->options($platformOptions)->multiple()->default($platforms)->columnSpanFull(),
+                            $creating, $arguments, 'social_platforms',
+                        ),
                     ],
                     'contact_form' => [
-                        Select::make('form_state')->label('Form presentation')
-                            ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
-                            ->required()->default('enabled')->live(),
-                        TextInput::make('status_text')->label('Status text')->maxLength(500)
-                            ->required(fn (Get $get): bool => $get('form_state') === 'under_construction')
-                            ->visible(fn (Get $get): bool => $get('form_state') === 'under_construction'),
+                        $this->homeContactEditField(
+                            Select::make('form_state')->label('Form presentation')
+                                ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
+                                ->required()->default('enabled')->live(),
+                            $creating, $arguments, 'form_state',
+                        ),
+                        $this->homeContactEditField(
+                            TextInput::make('status_text')->label('Status text')->maxLength(500)
+                                ->required(fn (Get $get): bool => $get('form_state') === 'under_construction')
+                                ->visible(fn (Get $get): bool => $get('form_state') === 'under_construction'),
+                            $creating, $arguments, 'status_text', blur: true,
+                        ),
                     ],
                     default => [],
                 })->columnSpanFull(),
             ]),
         ];
+    }
+
+    /** As with Custom Pages, a native modal-window change event does not
+     * consistently capture Filament's multiple-select and conditional fields. */
+    private function homeContactEditField(mixed $field, bool $creating, array $arguments, string $key, bool $blur = false): mixed
+    {
+        if ($creating) return $field;
+
+        return $field->live(onBlur: $blur)
+            ->afterStateUpdated(fn (mixed $state) => $this->persistHomeChildEditField($arguments, $key, $state));
+    }
+
+    private function persistHomeChildEditField(array $arguments, string $key, mixed $value): void
+    {
+        [, , $child] = $this->homeActionChild($arguments);
+        if (! in_array($key, ['social_platforms', 'form_state', 'status_text'], true)) {
+            throw new \InvalidArgumentException('Unsupported Home Contact field.');
+        }
+        $data = [
+            ...$child,
+            'child_type' => (string) $child['type'],
+            'publication_state' => CustomPageSetting::contactChildPublished($child) ? 'published' : 'unpublished',
+            $key => $value,
+        ];
+        if ($key === 'form_state' || $key === 'status_text') {
+            $form = $this->getMountedActionSchema()->getRawState();
+            $data['form_state'] = $key === 'form_state'
+                ? $value : ($form['form_state'] ?? $data['form_state']);
+            $data['status_text'] = $key === 'status_text'
+                ? $value : ($form['status_text'] ?? $data['status_text']);
+            // Keep the unfinished presentation in the mounted form until
+            // status text is entered; save both values in one mutation.
+            if ($data['form_state'] === 'under_construction' && blank($data['status_text'])) return;
+        }
+        try {
+            $this->persistHomeChild($this->homeChildArgs($arguments), 'update', $this->homeContactPayload($data));
+        } catch (ValidationException $exception) {
+            $path = $this->getMountedActionSchema()->getStatePath();
+            $errors = [];
+            foreach ($exception->errors() as $field => $messages) $errors[$path.'.'.$field] = $messages;
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     /** @param array<string,mixed> $data
@@ -279,10 +331,32 @@ trait HomePresentationChildren
         return match ($data['child_type'] ?? null) {
             'public_email' => ['type' => 'public_email', 'published' => ($data['publication_state'] ?? 'published') === 'published'],
             'social_links' => ['type' => 'social_links', 'published' => ($data['publication_state'] ?? 'published') === 'published',
-                'social_platforms' => is_array($data['social_platforms'] ?? null) ? $data['social_platforms'] : []],
+                'social_platforms' => $this->validatedHomeSocialPlatforms($data['social_platforms'] ?? [])],
             'contact_form' => ['type' => 'contact_form', 'published' => ($data['publication_state'] ?? 'published') === 'published',
                 'form_state' => $data['form_state'] ?? 'enabled', 'status_text' => $data['status_text'] ?? null],
             default => throw ValidationException::withMessages(['component' => 'Choose a supported Contact item.']),
         };
+    }
+
+    /** @return list<string> */
+    private function validatedHomeSocialPlatforms(mixed $selected): array
+    {
+        if (! is_array($selected)) {
+            return [];
+        }
+
+        $configured = array_column(SocialLinks::configured(
+            PublicContentSetting::general()->getAttribute('social_links'),
+        ), 'platform');
+
+        foreach ($selected as $platform) {
+            if (! is_string($platform) || ! in_array($platform, $configured, true)) {
+                throw ValidationException::withMessages([
+                    'social_platforms' => 'Choose only social links still configured in General.',
+                ]);
+            }
+        }
+
+        return array_values(array_unique($selected));
     }
 }

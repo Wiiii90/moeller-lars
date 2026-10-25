@@ -133,12 +133,35 @@ final class MediaCapacityService
         return (int) round(self::WARNING_RATIO * 100);
     }
 
-    public function assertCanStoreOriginal(int $bytes): void
+    /**
+     * Reserve both files before a canonical ingest; previously generated
+     * derivatives already count toward measured usage and must not be
+     * subtracted a second time.
+     */
+    public function assertCanStoreOriginal(int $bytes, int $incomingPreviewBytes = 0): void
     {
-        if ($bytes <= 0) {
+        if ($bytes <= 0 || $incomingPreviewBytes < 0) {
             throw ValidationException::withMessages(['media' => 'The uploaded media has an invalid size.']);
         }
 
+        $this->assertCanStoreAdditionalBytes($bytes + $incomingPreviewBytes);
+    }
+
+    /**
+     * An offline re-derivation stages a new file but no new original.
+     * Use the exact same authoritative admission gate as ordinary uploads.
+     */
+    public function assertCanStoreGenerated(int $bytes): void
+    {
+        if ($bytes <= 0) {
+            throw ValidationException::withMessages(['media' => 'The generated media has an invalid size.']);
+        }
+
+        $this->assertCanStoreAdditionalBytes($bytes);
+    }
+
+    private function assertCanStoreAdditionalBytes(int $additionalBytes): void
+    {
         $quotaConfiguration = $this->quotaConfiguration();
         if (! $quotaConfiguration['valid']) {
             throw ValidationException::withMessages(['media' => 'Storage allowance configuration could not be verified. Try the upload again later.']);
@@ -151,7 +174,7 @@ final class MediaCapacityService
 
         try {
             [$authoritativeBytes] = $this->measurePrefix('originals');
-            [$generatedBytes] = $this->measurePrefix('variants');
+            [$storedGeneratedBytes] = $this->measurePrefix('variants');
         } catch (Throwable) {
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
@@ -162,11 +185,29 @@ final class MediaCapacityService
         }
 
         $siteUsedBytes = $authoritativeBytes
-            + $generatedBytes
+            + $storedGeneratedBytes
             + max(0, (int) ($database['logical_bytes'] ?? 0));
 
-        if ($siteUsedBytes >= $quota || $bytes > ($quota - $siteUsedBytes)) {
+        if ($siteUsedBytes >= $quota || $additionalBytes > ($quota - $siteUsedBytes)) {
             throw ValidationException::withMessages(['media' => 'The site storage allowance is full. Remove reclaimable storage or ask the operator to increase the allowance before uploading.']);
+        }
+    }
+
+    /**
+     * The generated staging file is already included in the variants/ quota
+     * measurement; validate its real size without reserving it twice.
+     */
+    public function assertWithinAllowance(): void
+    {
+        $snapshot = $this->snapshot();
+        if ($snapshot['configuration_valid'] !== true
+            || $snapshot['measurement_available'] !== true) {
+            throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified.']);
+        }
+
+        if ($snapshot['quota_bytes'] !== null
+            && $snapshot['site_used_bytes'] > $snapshot['quota_bytes']) {
+            throw ValidationException::withMessages(['media' => 'Staged media exceeds the site storage allowance.']);
         }
     }
 

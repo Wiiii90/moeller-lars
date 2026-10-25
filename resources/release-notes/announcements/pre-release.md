@@ -1,4 +1,4 @@
-A new way to manage and shape your website is taking form. The first pre-release version brings your artwork, galleries and editorial content into one connected administration workspace.
+A new way to manage and shape your website is taking form. This pre-release version brings your artwork, galleries and editorial content into one connected administration workspace.
 
 This is more than a replacement for the previous website. It gives you room to reconsider the presentation of your work and prepare a new arrangement that reflects the way you would like visitors to encounter it.
 
@@ -18,12 +18,12 @@ You can also review your contact details and broader website identity in **Gener
 
 The **Dashboard** offers an overview of the website and a place for important notices. **Activity** records editorial changes, **Storage** provides insight into managed files, and **Analytics** can show how visitors engage with the website when reporting information is available.
 
-New versions and notable improvements will be documented here. The **Changelog** contains the detailed technical changes introduced across the completed v0.1.0, v0.2.0 and v0.3.0 development milestones.
+New versions and notable improvements will be documented here. The **Changelog** contains the detailed technical changes in versions v0.1.0, v0.2.0 and v0.3.0.
 
 ## Before the official launch
 
 You are using a **pre-release version**. Core editorial functionality is available for familiarization and for shaping the future website, while improvements and final checks continue.
 
-The previous public website remains in place until the new presentation is ready and approved. Your decisions about the new site's content and arrangement are part of that preparation.
+You can explore the available tools and refine your content and its arrangement as the new version develops. The official release will follow once the new website is ready.
 
 We look forward to developing the final presentation with you.

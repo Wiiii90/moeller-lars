@@ -2,6 +2,7 @@
 
 namespace App\Domain\Admin;
 
+use App\Domain\Content\RegionalFormats;
 use App\Models\AdminNotification;
 use App\Models\ContactMessage;
 use Carbon\Carbon;
@@ -87,7 +88,35 @@ final class DashboardFeed
             }
         }
 
+        if (in_array($entry['type'] ?? null, ['announcement', 'changelog'], true)) {
+            app(DashboardFeedReleaseState::class)->markRead($key, true);
+
+            return $this->entry($key);
+        }
+
         return $entry;
+    }
+
+    public function markReleaseUnread(string $key): void
+    {
+        $entry = $this->entry($key);
+        if (is_array($entry) && in_array($entry['type'] ?? null, ['announcement', 'changelog'], true)) {
+            app(DashboardFeedReleaseState::class)->markRead($key, false);
+        }
+    }
+
+    /** @return array{announcement?:string,changelog?:string} */
+    public function latestReleaseKeys(): array
+    {
+        $latest = [];
+        foreach (['announcement', 'changelog'] as $type) {
+            $entry = $this->filteredStaticItems('', $type)->first();
+            if (is_array($entry)) {
+                $latest[$type] = (string) $entry['key'];
+            }
+        }
+
+        return $latest;
     }
 
     public function markContactUnread(int $contactMessageId): void
@@ -446,9 +475,18 @@ final class DashboardFeed
     private function staticItems(): Collection
     {
         /** @var Collection<int, array<string, mixed>> $items */
-        $items = collect(config('dashboard-feed.items', []))
+        $configured = collect(config('dashboard-feed.items', []))->filter(
+            static fn (mixed $item): bool => is_array($item),
+        );
+        $keys = $configured->pluck('id')
+            ->filter(static fn (mixed $id): bool => is_string($id) && $id !== '')
+            ->map(static fn (string $id): string => 'static:'.$id)
+            ->all();
+        $readFlags = app(DashboardFeedReleaseState::class)->readFlags($keys);
+
+        $items = $configured
             ->filter(static fn (mixed $item): bool => is_array($item))
-            ->map(function (array $item): ?array {
+            ->map(function (array $item) use ($readFlags): ?array {
                 $id = is_string($item['id'] ?? null) ? trim($item['id']) : '';
                 $type = is_string($item['type'] ?? null) ? trim($item['type']) : '';
                 $date = is_string($item['date'] ?? null) ? trim($item['date']) : '';
@@ -499,15 +537,15 @@ final class DashboardFeed
                     'sort_timestamp' => $parsedDate->getTimestamp(),
                     'sort_microsecond' => (int) $parsedDate->format('u'),
                     'date' => $parsedDate->toDateString(),
-                    'date_display' => $parsedDate->format('j M Y'),
+                    'date_display' => RegionalFormats::adminDate($parsedDate),
                     'time_display' => '—',
                     'title' => $title,
-                    'sender' => '—',
-                    'sender_name' => '',
+                    'sender' => 'System',
+                    'sender_name' => 'System',
                     'sender_email' => '',
                     'message_excerpt' => Str::limit($body, 120),
                     'body' => $body,
-                    'status' => '—',
+                    'status' => ($readFlags['static:'.$id] ?? false) ? 'Read' : 'Unread',
                     'mail_delivery_status' => null,
                     'mail_delivered_at' => null,
                     'link' => $link,
@@ -550,7 +588,7 @@ final class DashboardFeed
             'sort_timestamp' => $receivedAt->getTimestamp(),
             'sort_microsecond' => (int) $receivedAt->format('u'),
             'date' => $receivedAt->toIso8601String(),
-            'date_display' => $receivedAt->format('j M Y'),
+            'date_display' => RegionalFormats::adminDate($receivedAt),
             'time_display' => $receivedAt->format('H:i'),
             'title' => 'Contact message',
             'sender' => trim($senderName.' — '.$senderEmail),
@@ -560,7 +598,7 @@ final class DashboardFeed
             'body' => $body,
             'status' => $readAt === null ? 'Unread' : 'Read',
             'mail_delivery_status' => (string) $message->getAttribute('mail_delivery_status'),
-            'mail_delivered_at' => $deliveredAt instanceof CarbonInterface ? $deliveredAt->format('j M Y H:i') : null,
+            'mail_delivered_at' => $deliveredAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($deliveredAt) : null,
             'link' => null,
             'link_label' => null,
         ];
@@ -574,9 +612,13 @@ final class DashboardFeed
         $body = trim((string) ($notification->getAttribute('body') ?? ''));
         $status = (string) $notification->getAttribute('status');
         $readAt = $notification->getAttribute('read_at');
-        $title = (string) $notification->getAttribute('title');
+        $title = __((string) $notification->getAttribute('title'));
+        $body = $body !== '' ? __($body) : '';
         $actionUrl = trim((string) ($notification->getAttribute('action_url') ?? ''));
         $actionLabel = trim((string) ($notification->getAttribute('action_label') ?? ''));
+        if ($actionLabel !== '') {
+            $actionLabel = __($actionLabel);
+        }
 
         return [
             'key' => 'notification:'.$notification->getKey(),
@@ -595,11 +637,11 @@ final class DashboardFeed
             'sort_timestamp' => $receivedAt->getTimestamp(),
             'sort_microsecond' => (int) $receivedAt->format('u'),
             'date' => $receivedAt->toIso8601String(),
-            'date_display' => $receivedAt->format('j M Y'),
+            'date_display' => RegionalFormats::adminDate($receivedAt),
             'time_display' => $receivedAt->format('H:i'),
             'title' => $title,
-            'sender' => 'Admin',
-            'sender_name' => 'Admin',
+            'sender' => 'System',
+            'sender_name' => 'System',
             'sender_email' => '',
             'message_excerpt' => Str::limit($body !== '' ? preg_replace('/\s+/u', ' ', $body) : $title, 120),
             'body' => $body !== '' ? $body : $title,

@@ -1,8 +1,9 @@
     @php
         $isEmbedded = (bool) ($isEmbedded ?? false);
         $imageBlockPrefix = $imageBlockPrefix ?? 'page';
+        $homeImageViewerEnabled = (bool) (($isHome ?? false) && ($enableImageViewer ?? false));
     @endphp
-    <div class="custom-page{{ $isHome ? ' home-components' : '' }}{{ $isEmbedded ? ' custom-page--embedded' : '' }}" @unless($isEmbedded)aria-label="{{ $label }}"@endunless>
+    <div class="custom-page{{ $isHome ? ' home-components' : '' }}{{ $isEmbedded ? ' custom-page--embedded' : '' }}" @unless($isEmbedded)aria-label="{{ $label }}"@endunless @if ($homeImageViewerEnabled && ! $isEmbedded) data-artwork-viewer-sequence @endif>
         @foreach ($blocks as $blockIndex => $block)
             @php
                 $type = is_array($block) ? ($block['type'] ?? null) : null;
@@ -14,15 +15,21 @@
                 @php
                     $assetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
                     $asset = $assetId !== null ? $assets->get($assetId) : null;
-                    $variant = $asset !== null && $asset->getAttribute('state') === 'available' ? $media->thumbnailVariantForAsset($asset) : null;
+                    $isVideo = $asset !== null && \App\Domain\Media\MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'));
+                    $posterVariant = $isVideo && $asset->getAttribute('state') === 'available'
+                        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($asset) : null;
+                    $posterUrl = $posterVariant ? $media->variantUrl($posterVariant) : null;
+                    $variant = $asset !== null && $asset->getAttribute('state') === 'available' && ! $isVideo
+                        ? $media->thumbnailVariantForAsset($asset) : null;
                     $decorative = (bool) ($block['image_decorative'] ?? false);
                     $imageAlignment = \App\Models\CustomPageSetting::imageAlignment($block);
                     $imageAlt = $asset !== null && ! $decorative ? $media->altTextForAsset($asset) : '';
                     $loading = $blockIndex === 0 ? 'eager' : 'lazy';
-                    $imageScale = \App\Models\CustomPageSetting::imageScalePercent($block) / 100;
+                    $imageScalePercent = \App\Models\CustomPageSetting::imageScalePercent($block);
+                    $imageScale = $imageScalePercent / 100;
                 @endphp
 
-                @if ($asset !== null && $variant !== null)
+                @if ($asset !== null && ($variant !== null || $isVideo))
                     @php
                         $imageChildren = $decorative && is_array($block['children'] ?? null) && $block['children'] !== []
                             ? $block['children'] : [];
@@ -30,19 +37,31 @@
                     @if ($imageChildren !== [])
                         <div class="custom-page__image-group">
                     @endif
-                    {{-- Public CSP rejects style attributes; authorize the per-image
-                         CSS variables with the request's nonce instead. --}}
+                    {{-- Livewire retains head styles across navigation and history.
+                         Bind each nonce-authorized rule to its scale, not a page-local
+                         block index that can identify a different image after a swap. --}}
                     @if ($imageScale !== 1.0)
                         @push('public-component-styles')
                             <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
-                                #custom-page-image-{{ $blockIndex }} {
+                                .custom-page__image--scale-{{ $imageScalePercent }} {
                                     --custom-page-image-width: {{ 28 * $imageScale }}rem;
                                 }
                             </style>
                         @endpush
                     @endif
-                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image custom-page__image--align-{{ $imageAlignment }}{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
-                        <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image custom-page__image--scale-{{ $imageScalePercent }} custom-page__image--align-{{ $imageAlignment }}{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
+                        @if ($isVideo)
+                            <video src="{{ $media->originalUrlForAsset($asset) }}"
+                                @if ($posterUrl) poster="{{ $posterUrl }}" @endif
+                                @if ($posterVariant)
+                                    width="{{ $posterVariant->getAttribute('width') }}"
+                                    height="{{ $posterVariant->getAttribute('height') }}"
+                                @endif
+                                @if ($decorative) aria-hidden="true" @else aria-label="{{ $imageAlt }}" @if (\App\Models\CustomPageSetting::videoControls($block)) controls @endif @endif
+                                muted loop playsinline preload="metadata" data-public-loop-video></video>
+                        @else
+                            <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async" @if ($homeImageViewerEnabled && ! $decorative) {!! $imageViewer->attributes('home-image-'.$imageBlockPrefix.'-'.$blockIndex, $media->originalUrlForAsset($asset), $imageAlt) !!} @endif>
+                        @endif
                     </figure>
                     @if ($imageChildren !== [])
                         @include('pages.partials.component-sequence', [
@@ -63,7 +82,7 @@
                             @if ($isHome)<h2>{{ $block['title'] }}</h2>@else<h3>{{ $block['title'] }}</h3>@endif
                         @endif
                         @if (filled($block['body'] ?? null))
-                            <div class="rich-text">{!! $richText->render((string) $block['body']) !!}</div>
+                            <div class="rich-text">{!! $homeImageViewerEnabled ? $imageViewer->renderRichText((string) $block['body'], 'home-rich-'.$imageBlockPrefix.'-'.$blockIndex) : $richText->render((string) $block['body']) !!}</div>
                         @endif
                     </div>
                 </section>
@@ -84,7 +103,7 @@
                                 @if ($isHome)<h2>{{ $block['title'] }}</h2>@else<h3>{{ $block['title'] }}</h3>@endif
                             @endif
                             <div class="custom-page__list">
-                                @foreach (($block['items'] ?? []) as $item)
+                                @foreach (($block['items'] ?? []) as $itemIndex => $item)
                                     @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
@@ -94,7 +113,7 @@
                                             @endif
                                         </div>
                                         @if (filled(\App\Models\CustomPageSetting::listItemDetails($item)))
-                                            <div class="rich-text">{!! $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
+                                            <div class="rich-text">{!! $homeImageViewerEnabled ? $imageViewer->renderRichText((string) \App\Models\CustomPageSetting::listItemDetails($item), 'home-list-rich-'.$imageBlockPrefix.'-'.$blockIndex.'-'.$itemIndex) : $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
                                         @endif
                                     </article>
                                 @endforeach
@@ -107,6 +126,7 @@
                                 alt="{{ $media->altTextForAsset($listAsset) }}"
                                 loading="lazy"
                                 decoding="async"
+                                @if ($homeImageViewerEnabled) {!! $imageViewer->attributes('home-list-image-'.$imageBlockPrefix.'-'.$blockIndex, $media->originalUrlForAsset($listAsset), $media->altTextForAsset($listAsset)) !!} @endif
                             >
                         @endif
                     </div>

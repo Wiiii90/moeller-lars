@@ -8,11 +8,8 @@ use App\Models\AdminActivityOrderingProjection;
 use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-
-uses(RefreshDatabase::class);
 
 it('clears disposable admin history without deleting editorial or publication content', function (): void {
     $actor = User::factory()->admin()->create();

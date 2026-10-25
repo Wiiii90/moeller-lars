@@ -58,9 +58,10 @@ test('long pages retain their native scrollbar and frozen scroll position', () =
 test('short pages do not gain a native scrollbar or reserved gutter', () => {
     const state = modalLock({ height: 800, viewportHeight: 800 });
     state.acquire();
-    assert.equal(state.root.style.overflowY, 'hidden');
-    assert.equal(state.root.style.minHeight, '');
+    // This fixture uses plain style objects, not CSSStyleDeclaration: the
+    // overflow shorthand does not populate overflowY here as it does in a DOM.
     assert.equal(state.root.style.overflow, 'hidden');
+    assert.equal(state.root.style.minHeight, '');
     assert.equal(state.body.style.position, '');
     assert.equal(state.listeners.size, 0);
     state.release();

@@ -7,6 +7,7 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\PagesSettingsDialog;
 use Filament\Actions\Action;
+use Illuminate\Validation\ValidationException;
 
 trait ManagesSitePagesSettings
 {
@@ -15,7 +16,11 @@ trait ManagesSitePagesSettings
         $dialog = app(PagesSettingsDialog::class);
 
         $persist = function (array $data) use ($dialog): void {
-            $changed = $dialog->save($data);
+            try {
+                $changed = $dialog->save($data);
+            } catch (ValidationException $exception) {
+                $this->throwPageDialogValidation($exception);
+            }
             $this->loadSections(navigationChanged: $changed);
             if ($changed) {
                 app(AdminNotifier::class)->notification(
@@ -28,7 +33,7 @@ trait ManagesSitePagesSettings
         return AdminDialog::edit(
             Action::make('pagesSettings')
                 ->label('Settings')
-                ->modalHeading('Pages settings')
+                ->modalHeading(__('Pages settings'))
                 ->fillForm(fn (): array => $dialog->fill())
                 ->schema(fn (): array => $dialog->schema($persist))
                 ->action($persist),
