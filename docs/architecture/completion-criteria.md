@@ -2,11 +2,11 @@
 
 This is the **short entry for architectural completeness and evidence**, not a second feature specification or an unbounded task backlog. Application design is owned by [system architecture](../ARCHITECTURE.md); accepted behavior by [product contracts](../README.md#normative-ownership-and-conflict-resolution); focused traces and generated references by the [architecture index](README.md).
 
-**Evidence boundary:** The original detailed review was pinned to several October 2026 source revisions. Its 50 KB of matrices, exact test names, generator counts, negative examples and dated technical runs is preserved **without editing its claims** in the [October 2026 audit archive](source-audit-archive-2026-10.md). Do not treat that archive as evidence of the current HEAD or reclassify its authored tests as executed. When source changes, recheck a concrete invariant in the canonical owner and record only new verified evidence.
+**Evidence boundary:** This is a current **navigation and verification** guide, not an old-run inventory. Source-versioned audit drafts and detailed test inventories were removed from the working tree; their original content remains recoverable in Git history (e.g. prior documentation commit `2404b774`). An old reported defect or test cannot be assumed current or executed.
 
 ## Warum die vorhandene Menge allein nicht genügt
 
-Architecture completeness is about explaining what crosses a boundary and what protects it: entrypoints, authoritative state, publication/preview visibility, persistence, errors/no-ops, permissions, locks, recovery and consumer behavior. File counts, class-import diagrams, ORM relationship extraction and existing assertions are **different evidence types**. They do not establish real execution, PostgreSQL foreign keys, UI behavior or user acceptance. Historical A/B/C/D artifact classification and original measurements are in the [archive](source-audit-archive-2026-10.md#warum-die-vorhandene-menge-allein-nicht-genügt).
+Architecture completeness is about explaining what crosses a boundary and what protects it: entrypoints, authoritative state, publication/preview visibility, persistence, errors/no-ops, permissions, locks, recovery and consumer behavior. File counts, class-import diagrams, ORM relationship extraction and existing assertions are **different evidence types**. They do not establish real execution, PostgreSQL foreign keys, UI behavior or user acceptance. The original extraction grouped nine explanatory diagrams and 34 source-reference artifacts; they remain pinned to their generator source, not refreshed test evidence.
 
 ## Verbindliche fachliche Abdeckungsmatrix
 
@@ -25,11 +25,11 @@ The table tells an agent **where to begin and what evidence is insufficient**. I
 | PostgreSQL schema, Legacy migration and cutover | [Data model](../DATA-MODEL.md), [schema evolution](schema-evolution.md), [migration invariants](../MIGRATION-INVARIANTS.md) | Disposable migrated database, actual catalog constraints, version-specific restore and cutover rehearsal |
 | Build, deployment interface and recovery | [Application runtime](application-runtime-boundaries.md), [Release contract](../RELEASE.md), [server baseline](../SERVER-OPERATIONS-BASELINE.md) | Built image/runtime behavior and separately authorized infrastructure, backup/restore and release checks |
 
-To investigate a specific historical risk or source-based negative case, use the [complete original matrix](source-audit-archive-2026-10.md#verbindliche-fachliche-abdeckungsmatrix) and **recheck that issue at the currently relevant revision**. Do not open a fresh repair task from a historical row alone.
+For an old source-based negative case, inspect the named canonical owner and **recheck the current implementation**; original October audit drafts are in Git history, not live task documents. Do not open a fresh repair task from a historical row alone.
 
 ## Testabdeckung: eine dev-Testsuite, authored Assertions
 
-The [Testing contract](../TESTING.md) owns the actual discovery, execution and database isolation requirements. An authored or source-reviewed assertion does not prove that the test ran or that a later build still passes. User-facing browser acceptance and release qualification are independent evidence. The [historical test inventory](source-audit-archive-2026-10.md#testabdeckung-eine-dev-testsuite-authored-assertions) pins concrete test filenames and the exact original source revision; it is **not** today's live test report.
+The [Testing contract](../TESTING.md) owns the actual discovery, execution and database isolation requirements. An authored or source-reviewed assertion does not prove that the test ran or that a later build still passes. User-facing browser acceptance and release qualification are independent evidence. Historical test-inventory snapshots are in Git history, not today's test report.
 
 A new verification entry must give the checked commit, command/environment where applicable, targeted behavior, outcome and gaps. Never transplant old test totals or branch state into this table.
 
@@ -41,13 +41,13 @@ For a concrete task, record only:
 3. **Missing evidence:** the smallest still-required isolated test, browser interaction, database query, concurrency case or external runtime check.
 4. **Disposition:** accepted, still reproducible, superseded, or unverified. A suspected issue is never silently promoted to an implementation order.
 
-The dated [ten-area gap matrix](source-audit-archive-2026-10.md#endlicher-restlücken-check-quellenabschluss-gegen-runtime-produkt-backlog) remains historical source evidence, not a permanently accumulating bug tracker. Actual unfinished implementation lives in its responsible current task/issue owner.
+Older gap matrices are preserved in Git history, **not** retained as a permanent bug tracker. Actual unfinished implementation lives in its responsible current task/issue owner.
 
 ## Normative Konsolidierung, Konfliktstand und Artefaktentscheidung
 
 Keep exactly one normative owner for each durable concern. The [project documentation index](../README.md#normative-ownership-and-conflict-resolution) is the authority map; architecture traces explain **how** multiple owners compose without redefining their contracts.
 
-Historical generated inventory/diagram families were classified by their extraction boundary and retained in the [artifact decision matrix](source-audit-archive-2026-10.md#abgeleitete-artefakte-ad-nach-tatsächlicher-prüfung): nine explanatory A diagrams and 34 B reference artifacts at that historical source baseline. The [architecture index](README.md#generated-and-historical-material) is the reader entry. These are intentionally source-pinned, **not** today's regenerated diagrams. A later rerun must report its source commit and reproducibility separately.
+The original source review classified nine explanatory A diagrams and 34 source-inventory B artifacts; these counts apply only to their historical generator baseline. The [architecture index](README.md#generated-and-historical-material) is the reader entry. These are intentionally source-pinned, **not** today's regenerated diagrams. A later rerun must report its source commit and reproducibility separately.
 
 ## Abnahmekriterien für das Ende der *inhaltlichen* Arbeit
 
@@ -58,24 +58,8 @@ An architecture explanation is ready when a reader can:
 - identify the relevant schema/migration, safe verification method and release/host owner;
 - tell **source inspected** apart from **test executed**, **browser verified**, **user accepted** and **deployed**.
 
-Do not keep extending architecture diagrams or invent a new owner for an unresolved product defect. Preserve the original detailed [acceptance conditions](source-audit-archive-2026-10.md#abnahmekriterien-für-das-ende-der-inhaltlichen-arbeit) for provenance.
+Do not extend diagrams or invent a new owner for an unresolved product defect. Accepted requirements live in their single normative contracts; prior audit criteria remain in Git history.
 
 ## Bekannte bereits belegte Lücken sind keine leeren Diagrammkästen
 
-The October source review identified specific possible mismatch classes (e.g., stale editor identity, media-reference coverage, publication lock timing and viewer/media readiness). Their [original evidence and status](source-audit-archive-2026-10.md#bekannte-bereits-belegte-lücken-sind-keine-leeren-diagrammkästen) must be re-evaluated against current implementations before being called bugs. An explanatory diagram cannot itself close them.
-
-## Historische Prüfprotokolle und Quellabgleiche
-
-Full dated source checks, native generators, link-check output, environment limits and later reconciliation notes were transferred **verbatim** to the [October 2026 source audit archive](source-audit-archive-2026-10.md#historische-prüfprotokolle-und-quellabgleiche). Their historical status was not upgraded by this document restructure.
-
-### Technischer source-only Abschluss (19.10.2026)
-
-[Original technical report](source-audit-archive-2026-10.md#technischer-source-only-abschluss-19102026).
-
-### Selektiver Quellabgleich und Integrationsvorbereitung (22.10.2026)
-
-[Original revision comparison](source-audit-archive-2026-10.md#selektiver-quellabgleich-und-integrationsvorbereitung-22102026).
-
-### Neuer Quellabgleich (25.10.2026)
-
-[Original 25 October source review](source-audit-archive-2026-10.md#neuer-quellabgleich-25102026).
+The October source review identified specific possible mismatch classes (e.g., stale editor identity, media-reference coverage, publication lock timing and viewer/media readiness). Their original source notes must be re-evaluated against the current implementation before being called bugs. An explanatory diagram cannot itself close them.

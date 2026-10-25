@@ -32,7 +32,7 @@ For exact persistent domain meaning, [data model](../DATA-MODEL.md) and the rele
 
 ## Generated and historical material
 
-The [generated directory](generated/) contains machine-extracted route, class/import, model-relation, lifecycle and UI artifacts. Many were built and checked against **older `docs` source**, notably `docs@8c9bd0a0` / `docs@317d255e` during 19 October 2026. The historical numbers, reproducibility limits and dated check reports remain preserved in the [October 2026 audit archive](source-audit-archive-2026-10.md) and [source audit](php-source-audit.md); start with the [compact evidence/coverage map](completion-criteria.md) before opening them.
+The [generated directory](generated/) contains machine-extracted route, class/import, model-relation, lifecycle and UI artifacts. Many were built and checked against **older `docs` source**, notably `docs@8c9bd0a0` / `docs@317d255e` during 19 October 2026. The generator version and reproducibility limits are source-pinned in the individual [source audit](php-source-audit.md) and [compact evidence map](completion-criteria.md). Removed dated run logs remain in Git history; do not treat them as current implementation evidence.
 
 **Current source checkout:** `dev@0200407133ce4696817271d2141fceaca82f8aff` was imported into `docs` with the two-parent commit `docs@a9ac270a` on 25 October 2026. This updated the application code used by the Docs branch. It did **not** regenerate the historic inventories, validate their dynamic behavior or reconcile every contract with the new code.
 
