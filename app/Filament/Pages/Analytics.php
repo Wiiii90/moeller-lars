@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Livewire\Attributes\Session;
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
@@ -45,14 +46,17 @@ final class Analytics extends Page
     /** @var list<int> */
     private const DETAIL_PAGE_SIZES = [25, 50, 100];
 
+    #[Session]
     public string $range = '30d';
 
     public string $search = '';
 
+    #[Session]
     public string $detailReport = 'content';
 
     public int $detailPage = 1;
 
+    #[Session]
     public int $detailPageSize = 25;
 
     /** @var array<string, mixed> */

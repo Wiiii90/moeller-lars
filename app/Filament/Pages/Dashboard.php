@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Livewire\Attributes\Session;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Domain\Admin\DashboardFeedPins;
@@ -57,10 +58,12 @@ final class Dashboard extends Page
 
     public string $feedSearch = '';
 
+    #[Session]
     public string $feedType = 'all';
 
     public int $feedPage = 1;
 
+    #[Session]
     public int $feedPageSize = self::DEFAULT_PAGE_SIZE;
 
     public string $notificationFilter = 'all';

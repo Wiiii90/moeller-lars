@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Livewire\Attributes\Session;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\HomePresentationResolver;
@@ -77,8 +78,10 @@ final class SitePages extends Page
 
     public string $search = '';
 
+    #[Session]
     public string $typeFilter = '';
 
+    #[Session]
     public string $statusFilter = '';
 
     public bool $filtersActive = false;
@@ -99,6 +102,7 @@ final class SitePages extends Page
 
     public string $newPageParent = '';
 
+    #[Session]
     public int $perPage = 25;
 
     public int $pageNumber = 1;

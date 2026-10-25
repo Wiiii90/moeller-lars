@@ -47,6 +47,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Session;
 use Livewire\WithFileUploads;
 
 final class HomePresentation extends Page
@@ -138,12 +139,15 @@ final class HomePresentation extends Page
 
     public string $sourceSearch = '';
 
+    #[Session]
     public string $sourceStatusFilter = 'any';
 
+    #[Session]
     public string $sourceHomeFilter = 'any';
 
     public int $sourcePage = 1;
 
+    #[Session]
     public int $sourcePerPage = 10;
 
     /** @var list<int|string> */
@@ -179,6 +183,7 @@ final class HomePresentation extends Page
 
     public string $componentSearch = '';
 
+    #[Session]
     public string $componentType = 'any';
 
     /** @var list<string> */

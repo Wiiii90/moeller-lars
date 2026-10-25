@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Livewire\Attributes\Session;
 use App\Domain\Content\DividerVariant;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceComponentActions;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceForms;
@@ -95,6 +96,7 @@ final class CustomPageWorkspace extends Page
 
     public string $componentSearch = '';
 
+    #[Session]
     public string $componentType = 'any';
 
     /** @var list<string> */
@@ -102,6 +104,7 @@ final class CustomPageWorkspace extends Page
 
     public int $page = 1;
 
+    #[Session]
     public int $pageSize = self::DEFAULT_PAGE_SIZE;
 
     public int $total = 0;

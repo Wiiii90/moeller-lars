@@ -41,6 +41,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Session;
 use Livewire\Attributes\Locked;
 use Throwable;
 
@@ -103,6 +104,7 @@ final class JournalWorkspace extends Page
 
     public int $page = 1;
 
+    #[Session]
     public int $pageSize = self::DEFAULT_PAGE_SIZE;
 
     public int $total = 0;
