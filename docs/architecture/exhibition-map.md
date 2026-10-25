@@ -74,4 +74,4 @@ sequenceDiagram
 
 Der noch vorhandene [Journal Feature-Test](../../tests/Feature/Admin/Journal/ExhibitionMapAutosaveTest.php) formuliert Szenarien für Aktivieren/Deaktivieren ohne Dialogschluss, Aktualisierung der Koordinaten, Addressänderung ohne doppeltes Geocoding, fehlendes Country mit anschließender Aktivierung, unzureichende Adresse, Rücksetzen des abgelehnten Toggles und konkurrierende bzw. fehlgeschlagene Änderungen. Das sind **geschriebene Testfälle**, keine in diesem Dokumentationslauf bestandenen Tests.
 
-Die früher referenzierte `tests/Architecture/Admin/AdminExhibitionMapAutosaveTest.php` ist **kein aktueller Test-Owner mehr**: `tests/Architecture/Admin` existiert im überprüften `dev`-Quellbaum nicht mehr. Für neue Prüfungen gilt die [eine kuratierte Teststrategie](../operations/testing.md); keine zweite Architektur-Suite oder historische Testliste wiederherstellen.
+Die frühere **separate Architecture-Testsuite** besitzt im überprüften `dev`-Quellbaum kein eigenes Verzeichnis mehr. Für neue Prüfungen gilt die [eine kuratierte Teststrategie](../operations/testing.md); keine alte Architektur-Testdatei oder parallele Suite wiederherstellen.

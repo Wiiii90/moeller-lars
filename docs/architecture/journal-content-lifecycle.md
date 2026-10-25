@@ -59,6 +59,8 @@ Präsentation und gespeicherter Zustand bleiben getrennt. Ein aufgeklappter Exhi
 
 [`JournalMediaRenderer::render()`](../../app/Domain/Content/JournalMediaRenderer.php) behandelt Bilder und Videos über denselben Media-Zugriff, aber mit verschiedenen Ausgaben: Bilder benutzen kanonische Thumbnail-/ALT-/Viewer-Attribute, Videos ein verifiziertes Poster und das Originalvideo als Inline-Player. Ein Verbraucher entscheidet per `showCaption`, ob die sichtbare Figcaption erscheint. Eine ausgeblendete Caption entfernt **weder** ALT, Credit, Copyright-Metadaten noch öffentliche Rechteprüfungen. Blog-/Exhibition-Präsentationen können Cover-/Gallery-Captions ausblenden, andere Verbraucher können den Default behalten. Slideshow, Grid und Mosaic bleiben verschiedene Darstellungen, keine eigenen Medienmodelle.
 
+**Optionaler Journal-Viewer:** Journal-Body und Exhibition-Description nutzen den zentralen [Rich-Text-Vertrag](../content/rich-text.md). `image_viewer_enabled` ist eine **eintragsbezogene** Option für Bilder in Cover, strukturierter Gallery und Rich Text. Der gemeinsame `PublicImageViewer` darf nur die Bilder **des aktuellen Journal-Eintrags** zum Durchblättern anbieten: keine Links in Gallery-Artwork-Detailseiten und kein Sprung zu anderen Journal-Einträgen. Videos bleiben Inline-Player. Home kann denselben Viewer für aktivierte Bilder verwenden; keine zweite Viewer-Implementierung oder eigene Medienroute.
+
 ## 4. Öffentlicher Controller und Template-Eligibility
 
 [`PublicSiteSectionController::journal()`](../../app/Http/Controllers/PublicSiteSectionController.php) wählt die öffentliche Blog- oder Exhibitions-Ansicht allein nach dem aktiven JournalTemplate. Für Blog gelten `BlogEditorialService::publicQuery()` und zusätzliche Journal-/Read-Kontextfilter; für Exhibition die Published-Filterung. Die authentifizierte Preview nutzt stattdessen nicht archivierte Working-Einträge. Eine Blog-Einzelroute verlangt ausdrücklich das Blog-Template; nach Wechsel zu Exhibitions bleibt der Post gespeichert, ist aber über diese öffentliche Detailroute nicht mehr erreichbar.
@@ -77,11 +79,3 @@ Dies sind **kleine Prüfgrenzen**, keine bereits ausgeführten Tests oder ein vo
 | Browser/Public | Inaktives Template, Preview gegenüber Committed, viewer-spezifische Bildnavigation und Video-Playback über reale öffentliche Routen |
 
 Quellenprüfung ersetzt weder isolierte Domain-/Datenbanktests noch Browserabnahme. Die [Testing-Strategie](../operations/testing.md) definiert, welche Szenarien bei einer autorisierten späteren Testintegration tatsächlich ausgeführt werden.
-
-## Canonical Journal-Media-Projektion (dev@434975e1bd09)
-
-Die weiterhin maßgebliche **Media-Projektion** ist bereits in Abschnitt 3 zusammengeführt: `JournalMediaRenderer` und `PublicMedia` besitzen Varianten, ALT, Copyright und Rechteprüfung. Die frühere datierte Einzelnotiz ist **kein zweiter normativer Vertrag**.
-
-## Shared Rich Text and optional Journal image viewer (source `dev@74e629274ac2`)
-
-Journal Body und Exhibition Description nutzen den zentralen [Rich-Text-Vertrag](../content/rich-text.md) und dessen Public-Sanitizing. `image_viewer_enabled` ist eine **eintragsbezogene Option** für passende Bilder in Cover, strukturierten Galerien und Rich Text. Der gemeinsame `PublicImageViewer` erhält nur die Bilder **dieses** Journal-Eintrags; es darf weder ein Gallery-Artwork-Detail-Link eingeblendet noch zu Bildern anderer Journal-Einträge gewechselt werden. Videos bleiben Inline-Player, keine Bild-Viewer-Elemente. Auch Home kann diesen gemeinsamen Viewer für aktivierte Bilder verwenden; kein zusätzlicher Journal-Viewer und keine neue Medienroute sind nötig.
