@@ -1,107 +1,43 @@
 # Editorial Rich Text contract
 
-**Source review:** `dev@671d8214e060` (25 October 2026). This is a normative source reconciliation, not a newly executed browser or application test.
+**Source boundary:** Scoped inspection of `dev@dee05e4d7bc0ac70081a4c8f998442701bc7d630`: `AdminRichText`, `RichTextEditorPlugin`, `artist-rich-image.js`, `artist-rich-spacing.js` and the shared spacing stylesheet. This describes implemented source behavior, **not** an executed test or accepted browser review.
 
-The canonical editable text surface is `AdminRichText`, built on the installed
-Filament 5.7.6 / Tiptap implementation. It is shared by Journal, Custom Pages,
-Home and nested text content. There is no separate CV editor or second
-editor-specific file store.
+The **single editable visual editor** is `AdminRichText` built on Filament RichEditor/Tiptap. Journal, Home, Custom Pages and nested text content use it rather than separate CV editors, media stores or page-specific editor variants. [Admin controls](../admin/controls.md) own the shared field geometry, [dialogs](../admin/dialogs.md) the mounted Edit dialog and its persistence boundary, and [media](../media.md) the underlying Storage assets. This document owns editor content, tools, image layout and rendering semantics.
 
 ## Content and publication
 
-Existing Markdown values remain readable. The editor converts legacy values
-to supported visual HTML on editing, not in an unconditional backfill. Both
-formats use `SafeRichTextRenderer` with editorial validation; HTML public
-output is sanitized server-side before publication. Every save retains the
-existing owning editorial action, audit, notification and publication paths.
-The editor does not own a second auto-save timer or alternate change history.
-
-## Image media and layout
-
-Images reference canonical available `MediaAsset` IDs, including historical
-`media:` references. The image picker is a searchable Storage dropdown anchored to the Insert
-Image toolbar control *inside* the current Edit form. It does not open
-a second action modal or introduce a second media catalog. The selection
-callback holds its owning RichEditor component directly; it does not
-search the entire schema during Livewire updates.
-
-The generic `Attach Files` control and its independent upload capability are
-disabled. Uploads are performed via the existing Storage workflow. Deleting
-an image from text must not delete a shared MediaAsset. Public resolution
-honors existing media rights, visibility and ALT checks.
-
-`ArtistImageLayout` is one Tiptap extension shared between browser editor
-and PHP public rendering. It stores exactly one of: inline, left, center,
-right, float-left, float-right. The image toolbar operates on a selected
-image node, not a paragraph cursor, and retains normal Undo/Redo behavior.
-Float-left and float-right allow *subsequent paragraphs* to flow alongside
-the image while desktop width permits; narrow layouts clear the float.
-An optional 500-character Caption appears below the image; it is not
-alternative text for screen readers and does not replace ALT.
-
-Paragraph and alignment controls remain separate, icon-only toolbar buttons.
-Image placement, text wrapping and Caption appear only in the contextual
-image floating toolbar, never duplicated in the general toolbar. All image
-actions remain enabled on an image selection and use the existing Tiptap
-image node. The floating toolbar uses Filament's Floating UI boundary,
-constrained to the visible native dialog scrollport, with native flip,
-shift and size handling. Caption entry is inside the same editor dialog,
-not a nested Filament Action. The existing Edit change boundary is reused. Table creation and structural
-table operations also notify the same change boundary; ordinary typing
-retains the shared blur-to-change lifecycle.
-
-The shared `MediaAssetSelect` is the selection and query owner for all
-Storage media choices, including Gallery, Journal, Home, Custom Pages and
-the site icon. Its default visual presentation uses the accepted Storage
-contact-sheet grammar. It shows a bounded initial set (up to 24 recently
-added assets for ID-backed selects) and server-side search by filename and
-alternative text (up to 30 results). Relationship-backed site-icon choices
-use Filament's bounded relationship preload. All options retain available
-media type constraints and native Filament selection and keyboard behavior.
-
-The Rich Text insert-image control presents the same shared Select inside
-its existing toolbar-anchored panel. The panel and Select have a single
-close operation that shuts both together on Cancel/X, outside click,
-Escape and insertion. Popup-owned click-away replaces the too-wide
-editor-shell click-away listener. No alternative media model, catalog,
-upload or autosave flow is added. `MediaAsset` has no separate title field.
-Popup geometry and selection remain subject to browser acceptance.
-
-## Text color and spacing
-
-Text color is set from an inline native color input in the existing edit dialog.
-The built-in nested TextColorAction is not mounted. The single existing editor
-document stores the sanitized text-color mark; public rendering uses Filament's
-registered color extension.
-
-Paragraphs and headings support default, no spacing, compact, and relaxed
-spacing via one shared Tiptap attribute. The PHP and JavaScript extensions
-use the same fixed preset names; editorial and public styles match. The same `resources/css/rich-text-spacing.css` is imported into both the Admin and Public bundles; this is a single visual spacing implementation, not two divergent page-local rules.
-
-## Editor transport
-
-Filament edits the same structured Tiptap document for links, nested lists and
-tables. Livewire's standard maximum dot-path depth of 10 rejects legitimate
-nested editor updates. `config/livewire.php` permits 24 levels while retaining
-the vendor's request-size, call-count and component-count limits. The
-editor continues to store validated rendered content; this is not an
-independent synchronization or persistence path.
-
-## Acceptance
-
-Verify in the actual Edit component dialog: parent/heading and editor layout,
-insert image within the current dialog, image-node selection and floating
-toolbar behavior, all six positions, paragraph wrapping, caption, Undo/Redo,
-close/reopen, public preview and an ordinary publication checkpoint.
-Source review, authored tests and committed code are not browser acceptance.
+- Stored legacy Markdown remains readable. Editing converts a legacy value to supported visual HTML without a blanket data migration.
+- `RichTextDocument` validates the editorial representation and `SafeRichTextRenderer` sanitizes HTML before public rendering. Rich Text does not bypass the owning page/Journal editorial service, audit, notifications or Working-to-Committed publication.
+- Changes run through the **one existing Edit action**. Ordinary typing persists on genuine focus loss; explicit tool operations notify that same change boundary. No separate timer, parallel document state, nested Action save or independent undo history.
 
 ## Inline links
 
-The shared artist RichEditor overrides Filament's built-in `link` tool; the
-framework `LinkAction` is never mounted by the toolbar. A lightweight
-editable link panel belongs to the *existing Edit dialog* and
-operates on the original Tiptap text selection, including existing links,
-removal, new label insertion and an optional new-tab target. Only http(s)
-and mailto links are accepted; public rendering still enforces the shared
-`SafeLinkPolicy`. The canonical Edit-dialog change boundary owns persistence.
-No extra nested modal, duplicated editor, second link storage or timer.
+The shared editor overrides Filament's built-in link tool so a framework `LinkAction` modal is not mounted. Its toolbar opens an inline panel **inside the current Edit dialog** with the selected Tiptap range. The panel can edit and remove a link, insert a link label when nothing was selected and choose an optional new-tab target.
+
+Only allowed HTTP, HTTPS and mailto destinations are accepted; `SafeLinkPolicy` enforces the public policy independently. Closing the panel without a genuine edit does not create a separate domain mutation. Link tools share the editor's normal save boundary, not another dialog or timer.
+
+## Image media and layout
+
+The image picker is the existing `MediaAssetSelect`, shown as a searchable, toolbar-anchored Storage selector inside the **same Edit dialog**, not another modal or media catalog. It selects available image `MediaAsset` identifiers; historical `media:` references remain supported. A reused asset is referenced, never copied or owned by the Rich Text field. Uploads belong to Storage; the generic editor's `Attach Files` upload path is disabled. Removing an image from text does not delete its shared asset. Public delivery still checks the [media/rights eligibility contract](../media.md).
+
+`ArtistImageLayout` is the one image-node extension for the editor and the public renderer. It supports exactly these persisted placements: `inline`, `left`, `center`, `right`, `float-left` and `float-right`. Float variants permit subsequent paragraphs to wrap beside an image at sufficient width; narrow layouts clear that float. Image controls act on the **selected image node** or the image adjacent to the current cursor, including the existing selected-node fallback, rather than the floating toolbar's focus position. This matters after the image or toolbar takes focus.
+
+Image position/wrapping and the optional **500-character caption** appear only in the contextual image toolbar; ordinary paragraph/alignment tools remain separate. Caption is display text, not an alternative-text replacement. The image toolbar stays inside the visible native dialog scrollport using the existing Floating UI placement. The caption panel stays in the owning Edit dialog; its successful operation dispatches the one canonical change notification **from the editor's own connected shell**, never an orphaned popup.
+
+The same `MediaAssetSelect` handles eligible media for Gallery, Journal, Home, Custom Pages, Rich Text and the site icon. An identifier-backed select offers up to 24 recent available assets initially, and searches filename/alternative text on the server with up to 30 results; relationship-backed choices may use bounded native preload. The native Filament keyboard and selection lifecycle is retained. The insert-image picker closes its selector and panel together on insertion, Cancel/X, Escape or click-away. Clicking outside this popup does **not** close the parent Edit dialog.
+
+## Text color and spacing
+
+Text color uses a small **inline native color input** within the existing editor dialog; the framework's nested `TextColorAction` is not mounted. It changes the text-color mark in the same Tiptap document; server-side rendering applies the registered extension.
+
+Paragraphs and headings support `default`, `none`, `compact` and `relaxed` line-spacing presets. One `ArtistTextSpacing` attribute and the shared `resources/css/rich-text-spacing.css` stylesheet implement both editor and public output; neither surface creates a page-specific spacing override.
+
+Color and spacing popovers retain their Tiptap editor references outside Alpine reactive proxying. Their own native change bubbling is suppressed, so a deliberate tool application emits **exactly the existing Edit dialog's change event** rather than racing it with an accidental extra autosave. Image placement, captions and table structure commands likewise signal the shared mutation boundary; merely entering or opening a popover is not a save.
+
+## Editor transport
+
+Filament maintains a single structured Tiptap document for links, images, nested lists and tables. Deep nested editor updates exceed Livewire's former default dot-path depth of 10; `config/livewire.php` permits depth 24 while preserving the framework's other request-size, call-count and component-count limits. This extends valid transport depth, **not** editor authorization, HTML sanitization or persistence ownership.
+
+## Acceptance
+
+Review actual Journal/Home/Custom Page Edit dialogs, not source alone: native panel focus and click-away; image insertion, selected/adjacent image actions, all six layouts, float wrapping and caption; color/spacing choice, undo/redo and table persistence; links and nested content; blur versus deliberate changes, validation/no-op, close/reopen, Preview and an ordinary publication checkpoint. An authored test or source review is **not** evidence that the browser flow or public publication was executed and accepted.
