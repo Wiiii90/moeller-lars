@@ -4,7 +4,7 @@ Diese Sektion entsteht ausschließlich auf `docs`. Der Anwendungscode stammt aus
 
 **Selektiver aktueller Quellabgleich bis 25.10.2026:** Die neue Batch `dev@2ad31502` → `dev@74e629274ac2` (96 Commits, 146 geänderte Pfade) nach Fachowner aufgenommen; Rich Text, Admin-Locale/Regionalformat, Exhibition-Visibility, Journal-Bildviewer und gemeinsame Picker/Dialogs ergänzt; der native `docs@8c9bd0a0`-Inventarkatalog und `docs@317d255e`-Abschluss bleiben **historisch**. Ohne kontrollierten neuen `dev`-Import keine Aussage, dass generierte Diagramme das aktuelle `dev` vollständig darstellen.
 
-**End-to-end- und Worker-Einstieg:** [Cross-feature-Kompositionen](cross-feature-compositions.md) und [Agent-Einstieg](../agents/README.md). Der schnelle Rollenstart liest zuerst nur [Worker-Registry](../agents/WORKERS.md) und die aktuelle Zustandsdatei; Architekturgraphen sind weiter als versionierte Quellbelege gekennzeichnet.
+**End-to-end- und Worker-Einstieg:** [Cross-feature-Kompositionen](cross-feature-compositions.md) und [Agent-Einstieg](../agents/README.md). Der schnelle Rollenstart liest nur die [gemeinsame Koordination des Arbeitsbereichs](../agents/areas/docs.md) und die betreffende nummerierte Worker-Datei; Architekturgraphen bleiben versionierte Quellbelege.
 
 ## Einstieg
 

@@ -1,43 +1,46 @@
-# Agent workspaces and living project context
+# Worker identities, coordination and living knowledge
 
-This is the repository entry for any **worker role**, including implementation, documentation, testing, architecture and refactoring. Root `AGENTS.md` links here. **A role is not a Git branch, an automatic task queue, or a command to begin coding.** A chat may start with a request, a question, a review of earlier decisions or just a discussion.
+This is the **one** agent/worker operating protocol. A work-area label (Dev, Docs, Testing or proposed Refactor) names a coordination lane and its normal Git branch; a **numbered worker slot** identifies one continuing conversation/work context. Neither a greeting nor a slot is an automatic job queue. Current user instructions govern what happens.
 
-## How to start a conversation
+## Start or replace a worker
 
-A user may say `Du bist Dev Worker 1, arbeite`, `Du bist Docs Worker`, `Du bist Testing Worker`, `Wir müssen über das Refactoring sprechen`, or simply give a task. The agent must:
+1. Read root [AGENTS](../../AGENTS.md), then the relevant **shared area file**: [Dev](areas/dev.md), [Docs](areas/docs.md), [Testing](areas/testing.md) or [Refactor](areas/refactor.md). Do not load every worker or every contract.
+2. **Explicit numbered slot:** `Du bist Dev Worker 2` selects `dev-2`; similarly `Docs Worker 1`, `Testing Worker 1`. Read its numbered [worker record](workers/) and the area's current claims. If no record exists, allocate it with epoch 1 and an empty subject; do not invent an old task. If the slot is already active in another chat, selecting its name alone does not revoke the current owner.
+3. **New unspecified worker:** `Du bist ein Dev Worker` creates the next unused Dev number (from the area's `Next new worker number`), initializes a separate worker record and adds a row to that area. Generic names do not silently inherit someone else's state. A mere question about workers does not allocate a slot.
+4. **Explicit replacement:** `Ersetze Dev Worker 2 und mach da weiter, wo er aufgehört hat` retains `dev-2` and its file, increments its **epoch** in both files, and treats the old chat as superseded. Read the persisted discussion/task and resume *only because the user explicitly requested continuation*. If the earlier state was never saved, say exactly which parts are missing; don't fabricate it.
+5. **Ordinary opening or discussion:** `Du bist Docs Worker 1`, a question, or a fresh task may supersede a previous focus; do **not** automatically execute a recorded action. For a new assignment, clarify only essential missing scope, then act as requested.
+6. Check the actual target Git branch and current code/contract owners before claiming progress or writing. Do not treat an area name as permission to create a branch, deploy, run unsafe tests or merge.
 
-1. Read the current root `AGENTS.md`, this index and [workspace registry](WORKERS.md). Resolve a named workspace only when that identity is actually registered or unambiguous; do not equate a generic `worker 1` with `Dev Worker 1` without context.
-2. Read that workspace's current **living subject/state**, if one exists, and the relevant [product contracts](../README.md) and [end-to-end architecture](../architecture/cross-feature-compositions.md). Check the target branch HEAD before making code claims. Do not read all documents indiscriminately.
-3. **Respond to the user's current message first.** A new request may change the focus; an exploratory question is not an authorization to execute backlog work. Never silently start the previous "next action" solely because a worker name was mentioned. If the user explicitly asks to continue previous work and that work is recorded, continue it.
-4. If no active subject is recorded, converse normally and use the information supplied in the message. Only ask for genuinely missing information. Do not fabricate details from a previous ChatGPT chat.
-5. Before edits, resolve the **authorized working branch** for the concrete request. The words `Dev`, `Docs`, `Testing` or `Refactor` can identify an area of work but do not independently create/authorize a branch, worktree, merge, deployment or destructive test. Different workers may legitimately read the same branch; a worker can coordinate across branches without writing to all of them.
+## What is stored where
 
-## Living knowledge, not handoff files
-
-Everything useful for continuing is maintained **as normal repository documents**:
-
-- **Normative product behavior and architecture** → the one existing owning contract; accepted/rejected UX decisions and non-regression constraints belong here.
-- **Current work and discussion** → the relevant existing topic/workspace record under [workers](workers/) (small, bounded, updated **in place**). May have open questions, alternatives under consideration and unresolved decisions; it does **not** need a current executable task.
-- **Worker roles and branch scopes** → [registry](WORKERS.md); this index changes only when a role or ownership changes.
-- **Verification claims and historical source snapshots** → [architecture evidence](../architecture/completion-criteria.md) and Git history, never an ever-growing session diary.
-
-At substantive milestones, update the **relevant files directly**, replacing superseded statements and preserving facts, decisions, known failures, and unresolved questions. Do not create a "handoff", "continuation prompt", "session report" or new skill document for every chat. A discussion that has not yet reached a durable decision need not generate a commit for every message; save material facts/choices before the conversation gets long or stops, when authorized to write.
-
-No mechanism can perfectly retain uncommitted chats, invisible reasoning or another unsaved browser session. A future chat can reliably reconstruct **what was actually persisted**; do not claim otherwise. The assistant should not require the user to repeat working rules already stored in the repository.
-
-## Branches and work areas
-
-| Git branch | Current role | Boundary |
+| Owner | Stores | Does not store |
 | --- | --- | --- |
-| `dev` | Application integration and interim development tests | Direct development rules in the current `dev/AGENTS.md`; changes require an actual user task. |
-| `docs` | Normative architecture and living agent/project docs | Documentation writes only here until integration is authorized. Routine work is GitHub-only, not local Codex runs. |
-| `testing` | Active curation and restructuring of the test suite against newer `dev` code | The curated test branch is maintained separately for a later, explicitly controlled integration back into `dev`. A worker name alone does not authorize a branch write. |
-| `refactor` | **Proposed only**, not created | A separate refactoring lane is possible if explicitly authorized and given clear integration/ownership boundaries. |
+| **Area file** `areas/<lane>.md` | Number allocator, active/available/paused slots with epoch and file link, *current shared ownership/overlap* and cross-worker dependencies | Full task history, repeated global rules or every commit |
+| **Worker file** `workers/<lane>-<number>.md` | Current subject (or none), explicit decisions, verified source state, owned scope, test/browser evidence, current blockers/questions, optional next task | Long chat transcripts, copies of product contracts, unrelated team-wide status |
+| **Permanent contracts** under `docs/` | Accepted behavior, domain ownership, cross-feature architecture, long-lived verification method | Ephemeral slot IDs or every temporary attempt |
+| **Git history** | Prior revisions, retired worker notes and old evidence | The current plan or a substitute for reading live state |
 
-There must be no silent branch creation, new worktrees, CI interaction or unilateral integration. Protect artist-curated Validation and Production. Before shared commits, refresh branch HEAD and check concurrent owners and changed files. A future [Docs→dev integration](DOCUMENTATION.md#integration-boundary) should reconcile current `dev` working rules and living states, not clobber them with older snapshots.
+Each newly allocated worker receives its **own** file, even before a first concrete task. Multiple workers may share a branch; their area file is the common coordination surface. Separate areas have separate allocator/ownership files. Numbering is monotonically increasing per area; never recycle a retired slot number, because it would make old conversations ambiguous.
 
-## Cross-feature regression protection
+## Updates, parallel workers and replacement safety
 
-Before modifying a shared primitive, consult [cross-feature compositions](../architecture/cross-feature-compositions.md) and the actual owning contract. Identify its consumers, verify previously accepted behavior, scope changes, and distinguish code inspection, authored tests, executed tests, real browser review and artist acceptance. Do not rename a regression into an accepted contract. Use [Admin UI](../ADMIN-UI.md), [Rich Text](../EDITORIAL-RICH-TEXT.md), [Publication](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) and [Testing](TESTING.md) selectively.
+- Before concurrent work, register a short feature/file claim in the shared area. If a proposed change touches another claim or a shared primitive, agree on a split, serialize the change, or stop and surface the conflict. Do not claim a text table can physically lock code.
+- At meaningful changes to scope, decisions, verified results or blockers, **replace** the relevant worker paragraphs and update the area's claim in the same coordination commit on `docs`. Do not append a per-turn diary; closed decisions move into their one normative owner. Not every conversational reply requires a commit.
+- A chat adopts the slot's `epoch` when it starts. **Before each write**, reread the current slot/area epoch and both the coordination and code branch heads. If the epoch changed, this chat is superseded: do not write as that worker. An explicit takeover increments the epoch and updates the two files together. Use an expected-head, fast-forward commit to prevent lost coordination updates; independently recheck the implementation branch before its code commit. These are optimistic protections, not atomic locks across Git branches.
+- A worker that reaches the context limit may be replaced by a new chat with the *same* numbered identity; the surviving facts are exactly the ones saved in the living files and Git, not hidden reasoning or an uncommitted browser session. Do not create a separate handoff document, copied start prompt, or continuation log.
+- Keep only source-grounded decisions. A present worker can discuss alternatives without a scheduled next action, and a later chat may choose a different task.
 
-**The point of a worker name is contextual orientation, not automatic action.**
+## Cleanup and retirement
+
+Mark a completed slot **available** (no active claim) if its identity should remain reusable for a later discussion; keep only the bounded context needed for intentional resumption. **Retire** a no-longer-needed worker only after transferring durable decisions and still-relevant unresolved issues to their normative owners or the area file. Remove the slot row and **delete its temporary worker file** in the same commit. Git history retains its old version. Do not retire a slot claimed by another live chat or erase its only surviving unresolved information. The area's next-number counter never decreases. Remove completed ownership rows and stale coordination notes continuously, not merely at chat end.
+
+## Work areas, methods and rollout boundary
+
+- **Dev:** `dev` application implementation; current `dev/AGENTS.md` remains authoritative for live development. [Dev area](areas/dev.md).
+- **Docs:** `docs` documentation and this prototype. [Docs area](areas/docs.md); [documentation procedure](DOCUMENTATION.md).
+- **Testing:** active `testing` curation with future controlled reintegration into `dev`. [Testing area](areas/testing.md); [safe testing procedure](TESTING.md).
+- **Refactor:** planned area only; no Git branch, no code write until authorized. [Refactor area](areas/refactor.md).
+
+**Currently only `docs` has this new entrypoint and these living files.** Existing Dev and Testing chats do not magically follow it. A later authorized rollout must arrange for them to read and update the **same canonical coordination files on `docs`**, not create independently diverging copies on `dev` and `testing`, and must preserve their active work, existing worktrees, Codex workflows and branch-specific safety rules.
+
+Read [feature owners](../README.md) and [cross-feature compositions](../architecture/cross-feature-compositions.md) as needed. Never replace concrete user/browser acceptance with an agent's speculative simplification.

@@ -1,5 +1,7 @@
 # Rights/Privacy implementation checkpoint — source snapshot
 
+> Temporary cross-cutting topic evidence, not a numbered worker or standalone handoff. The durable contract is `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`; current `dev` source and its active rights workstream must be checked before acting.
+
 **Provenance:** copied from active `dev@671d8214` on 25 October 2026. This Docs copy is **not the authoritative active implementation state** until controlled integration; the live dev worker owns updates and unresolved acceptance. Never use this snapshot to execute a deployment.
 
 **ACTIVE · 2026-10-17 · `Wiiii90/moeller-lars` · `dev` only · slice B2.**
@@ -107,7 +109,7 @@ This is a **consolidated operational state**, not an append-only log. Durable co
 
 `TESTING_SKILL.md` documents the integrated `dev` regression: 740 tests passed, including 636 PHP, 62 JavaScript and 42 Chromium tests. ExifTool 13.55 runtime exercised six real-image cases (75 assertions) with independently verified disposable DB/filesystem. Existing original/thumbnail delivery, CSP, navigation, viewer and selected publication/concurrency flows passed in isolated environments. **These checks precede this Storage Preview/search change; no browser acceptance or test execution of that change is claimed.** New versioned public-rights artifact delivery has not been built.
 
-## 7. Acceptance and handoff
+## 7. Acceptance and open work
 
 - [ ] A and B1 migrations confirmed in the target local preview, rights-field Storage Preview/search browser reviewed, admin changed/no-op/one notification checked for the *new* fields; artist acceptance. Prior merged testing evidence covers A/B1 domain/General behaviors but does not establish this new UI acceptance.
 - [x] B2 local `moeller-lars-local-web` ExifTool **13.55** and writable `DataMining` advertised (user CLI, 2026-10-15). Build details not inspected.
