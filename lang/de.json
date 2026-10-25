@@ -518,5 +518,7 @@
     "Open in new tab": "In neuem Tab öffnen",
     "Remove link": "Link entfernen",
     "Apply": "Übernehmen",
-    "Enter a valid HTTP, HTTPS or email link.": "Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben."
+    "Enter a valid HTTP, HTTPS or email link.": "Bitte eine gültige HTTP-, HTTPS- oder E-Mail-Adresse eingeben.",
+    "Organizer": "Veranstalter",
+    "Venue": "Ausstellungsort"
 }

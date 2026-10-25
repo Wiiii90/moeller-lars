@@ -60,3 +60,41 @@ it('persists independent organizer, physical venue and vernissage visibility via
         ->and(AuditEvent::query()->count())->toBe($initialAudits + 1)
         ->and(AdminNotification::query()->count())->toBe($initialNotifications + 1);
 });
+
+it('audits field visibility through the existing exhibition action without duplicate notifications', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Visibility Journal', 'visibility-journal', JournalTemplate::Exhibitions->value,
+    );
+    $entry = app(ExhibitionEditorialService::class)->createDraft([
+        'site_section_id' => $section->getKey(),
+        'title' => 'Visibility Exhibition',
+        'slug' => 'visibility-exhibition',
+        'organizer' => 'Organizer One',
+        'venue' => 'Venue One',
+    ]);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $auditCount = AuditEvent::query()->count();
+    $notificationCount = AdminNotification::query()->count();
+
+    $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->call('setExhibitionFieldVisibility', $entry->getKey(), 'organizer', false)
+        ->assertHasNoFormErrors()
+        ->assertDispatched('admin-header-notification');
+
+    expect($entry->fresh()->publicFieldVisible('organizer'))->toBeFalse()
+        ->and($entry->fresh()->publicFieldVisible('venue'))->toBeTrue()
+        ->and(AuditEvent::query()->count())->toBe($auditCount + 1)
+        ->and(AuditEvent::query()->latest('id')->value('action'))->toBe('exhibition.updated')
+        ->and(AdminNotification::query()->count())->toBe($notificationCount + 1);
+
+    $editor->call('setExhibitionFieldVisibility', $entry->getKey(), 'organizer', false);
+    expect(AuditEvent::query()->count())->toBe($auditCount + 1)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount + 1);
+
+    $editor->call('setExhibitionFieldVisibility', $entry->getKey(), 'venue', false)
+        ->assertHasNoFormErrors();
+    expect($entry->fresh()->publicFieldVisible('venue'))->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($auditCount + 2)
+        ->and(AdminNotification::query()->count())->toBe($notificationCount + 2);
+});
