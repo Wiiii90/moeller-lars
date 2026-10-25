@@ -2,7 +2,7 @@
 
 This is the direct-`dev` implementation/browser workflow. Documentation-only verification on `docs` is a separate source-audit process; the artist's Validation data must never be reset or seeded for convenience.
 
-This document records the durable working rules that emerged from the current admin browser-reconciliation work. It complements `AGENTS.md` and `docs/ADMIN-UI.md`; it does not replace either one.
+This document records the durable working rules that emerged from the current admin browser-reconciliation work. It complements `AGENTS.md` and `docs/admin/ui.md`; it does not replace either one.
 
 ## Direct-dev browser collaboration
 
@@ -98,7 +98,7 @@ Normal browser cycle:
 
 Do not rebuild a separate runtime image before the preview build. Docker/BuildKit reuses unchanged PHP, Composer and Node layers from the single graph. The local analytics fixture is deliberately loaded after startup so browser preview data remains available without coupling that data preparation to Docker image construction.
 
-Do not use a full dependency reinstall or broad test suite merely to inspect a CSS/Blade change. The persistent local browser database is not disposable test state; follow the database safety rules in `AGENTS.md` and `docs/RELEASE.md`.
+Do not use a full dependency reinstall or broad test suite merely to inspect a CSS/Blade change. The persistent local browser database is not disposable test state; follow the database safety rules in `AGENTS.md` and `docs/operations/release.md`.
 
 The preview target must not add a second source/dependency/frontend build path. Runtime-writable paths come from the shared runtime image; the host private-media bind mount is attached only when the Compose preview container starts.
 

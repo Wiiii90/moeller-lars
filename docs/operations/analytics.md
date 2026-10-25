@@ -34,7 +34,7 @@ Reporting credentials/tokens remain server-side secrets and are never exposed to
 
 A Matomo **network outage or Reporting API failure** must not prevent public page rendering, Contact submission correctness, admin authentication, ordinary editorial work or Media/Storage/Page operations. Reporting uses bounded timeouts and caching; failures may produce unavailable/stale metrics without taking down the admin dashboard.
 
-A malformed **enabled tracking configuration** is different. At inspected `dev@11f7e101`, `SecurityHeaders` rejects an absent/invalid/non-HTTPS Matomo origin while constructing Public CSP **after** the downstream request handler. An authorized Contact POST can therefore persist or send a message before its HTTP response fails. This is a [source-only negative case](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen), not observed Production behavior or acceptable failure isolation. Configuration preflight, retry/deduplication and actual HTTP tests remain open on `dev`/`testing`; weakening the strict CSP is not a fix.
+A malformed **enabled tracking configuration** is different. At inspected `dev@11f7e101`, `SecurityHeaders` rejects an absent/invalid/non-HTTPS Matomo origin while constructing Public CSP **after** the downstream request handler. An authorized Contact POST can therefore persist or send a message before its HTTP response fails. This is a [source-only negative case](../architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen), not observed Production behavior or acceptable failure isolation. Configuration preflight, retry/deduplication and actual HTTP tests remain open on `dev`/`testing`; weakening the strict CSP is not a fix.
 
 ## Human event taxonomy
 
@@ -145,7 +145,7 @@ The authoritative deployed retention configuration belongs to the relevant platf
 
 Fresh cached Analytics navigation belongs to the normal admin performance budget. A deliberate live Reporting API cache miss is an external operation and is measured separately.
 
-Prefer bounded/bulk API retrieval over many sequential requests when supported. See [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md).
+Prefer bounded/bulk API retrieval over many sequential requests when supported. See [ADMIN-PERFORMANCE.md](../admin/performance.md).
 
 ## Official references
 

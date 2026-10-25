@@ -1,6 +1,6 @@
 # Admin UI — accepted shared presentation and interaction contract
 
-**Ownership:** This is the normative shared Admin presentation contract. [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md) and [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) own their detailed requirements. Keep accepted design here, source-specific evidence in its evidence owner, and avoid worker/task state in permanent product documents.
+**Ownership:** This is the normative shared Admin presentation contract. [Controls](controls.md), [Dialogs](dialogs.md), [Tables](tables.md) and [Responsive](responsive.md) own their detailed requirements. Keep accepted design here, source-specific evidence in its evidence owner, and avoid worker/task state in permanent product documents.
 This file is the reusable UI reference for the authenticated artist administration in `Wiiii90/moeller-lars`.
 
 It deliberately covers **admin UI only**. It does not define the public artist-site frontend.
@@ -45,7 +45,7 @@ Do not interpret this as a requirement to add fake metrics or a fake toolbar to 
 
 **Admin and public navigation are separate projections of the same site tree.** The Filament Sidebar is the editorial navigation: it includes existing draft and published pages in their persisted order. The public menu includes only published content; a published child of an unavailable editorial parent becomes a public root entry. Preview has its separate authenticated draft exception. Skip Home affects both projections, but does not remove other draft pages from the Admin Sidebar. Historical navigation-visibility columns retained for Publication restores do not define current visibility; the canonical domain services do.
 
-After a **successful persisted navigation change** (page creation/editing, publication, deletion, hierarchy/order or applicable Home/Pages settings), `SitePages::loadSections(navigationChanged: true)` emits Filament's existing `refresh-sidebar` event once. The native Sidebar re-queries `SiteNavigation`; filtering, paging, opening a modal, validation errors and no-ops must not trigger a refresh. This does not publish drafts and does not introduce a second JavaScript tree, polling, forced reload or duplicate state. The public counterpart is documented in the [Public implementation contract](PUBLIC-IMPLEMENTATION-CONTRACT.md).
+After a **successful persisted navigation change** (page creation/editing, publication, deletion, hierarchy/order or applicable Home/Pages settings), `SitePages::loadSections(navigationChanged: true)` emits Filament's existing `refresh-sidebar` event once. The native Sidebar re-queries `SiteNavigation`; filtering, paging, opening a modal, validation errors and no-ops must not trigger a refresh. This does not publish drafts and does not introduce a second JavaScript tree, polling, forced reload or duplicate state. The public counterpart is documented in the [Public implementation contract](../public/site.md).
 
 ## 3. Page/action control group
 
@@ -205,7 +205,7 @@ Rules:
 
 Prefer flat tables for list-oriented editorial work instead of cards pretending to be rows.
 
-The canonical ordinary-table role order is defined together with `docs/ADMIN-TABLE-CONTRACT.md`:
+The canonical ordinary-table role order is defined together with `docs/admin/tables.md`:
 
 ```text
 Position + Drag | primary identity | secondary data | Actions | Selection
@@ -459,7 +459,7 @@ If two relevant reference surfaces use different geometry, tokens or behavior fo
 
 Do not turn transient pixel values from a current browser pass into a durable rule merely to resolve the conflict.
 
-See [Admin browser workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review) for how to translate accepted reference geometry into task assignments and source review.
+See [Admin browser workflow](browser-review.md#visual-change-review) for how to translate accepted reference geometry into task assignments and source review.
 
 ## 14. Theme and shared-primitive enforcement
 
@@ -498,7 +498,7 @@ Feature-local CSS is allowed for genuinely feature-specific surfaces, for exampl
 
 If the theme or shared primitive cannot express a needed shared pattern, fix or extend the shared authority deliberately. Do not fork it locally first and promise to centralize later.
 
-Shared component/theme implementation must be reviewed against the [browser and source workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review). The central CSS and Blade ownership rules above remain binding.
+Shared component/theme implementation must be reviewed against the [browser and source workflow](browser-review.md#visual-change-review). The central CSS and Blade ownership rules above remain binding.
 
 ## 15. Sections, kickers and information hierarchy
 
@@ -605,7 +605,7 @@ If the empty state is caused by active filters, distinguish it from a genuinely 
 
 ## 21. Responsive behavior
 
-The shared [Admin responsive composition](ADMIN-RESPONSIVE-CONTRACT.md) owns accepted Wide/Compact/Narrow/Minimal behavior for selects, the shell, metrics, toolbars, tables, Selection and visual stages. Component pressure is distinct from the viewport and shared implementations stay centralized.
+The shared [Admin responsive composition](responsive.md) owns accepted Wide/Compact/Narrow/Minimal behavior for selects, the shell, metrics, toolbars, tables, Selection and visual stages. Component pressure is distinct from the viewport and shared implementations stay centralized.
 
 ## 22. CSS ownership
 
@@ -650,15 +650,15 @@ Important shared Blade primitives include:
 
 ## 23. Browser acceptance and presentation reset
 
-A source review, a running container or passing focused tests is not browser/product acceptance. The accepted Gallery/Storage visual grammar must be tested against the **current built candidate**. Rejected presentations are not durable requirements. The [browser review workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review) owns the review and source-cleanup process.
+A source review, a running container or passing focused tests is not browser/product acceptance. The accepted Gallery/Storage visual grammar must be tested against the **current built candidate**. Rejected presentations are not durable requirements. The [browser review workflow](browser-review.md#visual-change-review) owns the review and source-cleanup process.
 
 ## 24. Browser-review checklist
 
-Use the [cross-workspace inspection checklist](ADMIN-BROWSER-WORKFLOW.md#visual-change-review), not a second page-local checklist.
+Use the [cross-workspace inspection checklist](browser-review.md#visual-change-review), not a second page-local checklist.
 
 ## 25. Presentation cleanup gate
 
-After user acceptance, remove only **reference-proven obsolete** UI source. Browser acceptance and source-cleanup qualification are distinct steps; follow the [browser workflow](ADMIN-BROWSER-WORKFLOW.md#visual-change-review).
+After user acceptance, remove only **reference-proven obsolete** UI source. Browser acceptance and source-cleanup qualification are distinct steps; follow the [browser workflow](browser-review.md#visual-change-review).
 
 ## 26. Shared Visual Stage and semantic icon contract
 
@@ -687,11 +687,11 @@ If a browser pass shows one stage or separator at a different vertical position,
 
 Shared admin navigation/action semantics use `App\Filament\Support\AdminIcon`. Prefer semantic catalog entries over scattered Heroicon literals for meanings already represented by the catalog, and keep distinct meanings visually distinguishable rather than reusing one glyph for unrelated concepts.
 
-See [Admin browser workflow](ADMIN-BROWSER-WORKFLOW.md) for the direct/worker browser-reconciliation loop around these contracts.
+See [Admin browser workflow](browser-review.md) for the direct/worker browser-reconciliation loop around these contracts.
 
 ### Gradient tables and dynamic Appearance Stage height
 
-The [Admin control contract](ADMIN-CONTROL-CONTRACT.md#public-appearance-controls-source-to-dev2ad31502ea4e) owns the shared ColorPicker, gradient-stop validation and table adapter; the [table contract](ADMIN-TABLE-CONTRACT.md#general-appearance-color-stop-table) owns Add/Delete row presentation. [General Appearance Stage and Live Preview](ADMIN-RESPONSIVE-CONTRACT.md#general-appearance-stage-and-live-preview) owns active-tab-only More Space height and Preview sizing/lifecycle. These rules apply equally to Background, Title, Menu, Page and Divider color; no local alternate table, state or measurement system is introduced.
+The [Admin control contract](controls.md#public-appearance-controls-source-to-dev2ad31502ea4e) owns the shared ColorPicker, gradient-stop validation and table adapter; the [table contract](tables.md#general-appearance-color-stop-table) owns Add/Delete row presentation. [General Appearance Stage and Live Preview](responsive.md#general-appearance-stage-and-live-preview) owns active-tab-only More Space height and Preview sizing/lifecycle. These rules apply equally to Background, Title, Menu, Page and Divider color; no local alternate table, state or measurement system is introduced.
 
 ## 27. Administration language and regional display
 

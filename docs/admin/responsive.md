@@ -1,6 +1,6 @@
 # Admin responsive composition
 
-Single responsive contract for all Admin workspaces; [Admin UI](ADMIN-UI.md) remains the common design entrypoint.
+Single responsive contract for all Admin workspaces; [Admin UI](ui.md) remains the common design entrypoint.
 
 Admin responsiveness is driven by actual content pressure and **Wide / Compact / Narrow / Minimal** semantic states, rather than device names. Task components should respond to their own available container/workspace width; Topbar/Sidebar transitions may remain viewport-driven.
 
@@ -12,7 +12,7 @@ Use existing CSS/Alpine state for resize and presentation; do not send browser-w
 
 ## Shared implementation ownership versus accepted task-specific behavior
 
-These rules **do not create a second CSS/control implementation authority**. Shared controls, filter panels and toolbar geometry belong to [ADMIN-CONTROL-CONTRACT.md](ADMIN-CONTROL-CONTRACT.md); shared table role order, split/fold classes, action/checkbox alignment and pagination belong to [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md); modal sizing and scroll lock belong to [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md). This contract records **which semantic content stays/merges/yields on each page**, not license to duplicate the corresponding primitive in feature CSS.
+These rules **do not create a second CSS/control implementation authority**. Shared controls, filter panels and toolbar geometry belong to [ADMIN-CONTROL-CONTRACT.md](controls.md); shared table role order, split/fold classes, action/checkbox alignment and pagination belong to [ADMIN-TABLE-CONTRACT.md](tables.md); modal sizing and scroll lock belong to [ADMIN-DIALOG-CONTRACT.md](dialogs.md). This contract records **which semantic content stays/merges/yields on each page**, not license to duplicate the corresponding primitive in feature CSS.
 
 ## Native select value readability
 
@@ -76,7 +76,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 
 ## Tables and Selection
 
-- Journal's current split/fold states, action-rail compacting, single-line Date/Vernissage and identity-summary ellipsis are exclusively owned by the [canonical Journal table contract](ADMIN-TABLE-CONTRACT.md#journals-splitfold-composition). This responsive index intentionally does not duplicate its widths or implementation rules.
+- Journal's current split/fold states, action-rail compacting, single-line Date/Vernissage and identity-summary ellipsis are exclusively owned by the [canonical Journal table contract](tables.md#journals-splitfold-composition). This responsive index intentionally does not duplicate its widths or implementation rules.
 
 - Ordinary admin tables do **not** use horizontal scrolling as a responsive strategy. Do not reserve horizontal-scrollbar space and do not merely hide a scrollbar over overflowing content.
 - Fit tables by semantic column priority: essential, supportive, optional. Merge supportive information into a primary cell/second line or remove optional columns before the table would overflow.
@@ -98,7 +98,7 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 
 ## Visual Stages
 
-**Stage geometry is centrally owned by [stage.css](../resources/css/admin/stage.css):** the stage height uses `--admin-visual-stage-height` and common orbit graphics use `--admin-stage-orbit-size`. Both remain canonical across responsive states; do not redefine those tokens in a breakpoint or add page-local alternative stage-height/orbit-size tokens without an explicit accepted contract change. Change component visibility/composition, not the central stage height. This does not authorize generic narrow vertical stacking.
+**Stage geometry is centrally owned by [stage.css](../../resources/css/admin/stage.css):** the stage height uses `--admin-visual-stage-height` and common orbit graphics use `--admin-stage-orbit-size`. Both remain canonical across responsive states; do not redefine those tokens in a breakpoint or add page-local alternative stage-height/orbit-size tokens without an explicit accepted contract change. Change component visibility/composition, not the central stage height. This does not authorize generic narrow vertical stacking.
 
 Shared desktop stage geometry does not imply shared narrow composition.
 
@@ -112,7 +112,7 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - General status metrics and the Appearance Stage share the same schema-backed stage block so only the canonical stage margin separates them; Filament schema gaps must not add a second vertical offset.
 - General Appearance reuses the shared Stage switcher and has one active-tab-only expansion behavior; the fixed controls, Preview lifecycle and details are defined in [General Appearance Stage and Live Preview](#general-appearance-stage-and-live-preview).
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
-- General → Appearance → Global exposes one Frame style selector, and Menu exposes the five Menu-to-page options. Their rendered paper/contour semantics are owned by [Public navigation and frame](PUBLIC-IMPLEMENTATION-CONTRACT.md#site-navigation) and [global public appearance](PUBLIC-IMPLEMENTATION-CONTRACT.md#global-public-appearance-surfaces), not by an Admin responsive breakpoint.
+- General → Appearance → Global exposes one Frame style selector, and Menu exposes the five Menu-to-page options. Their rendered paper/contour semantics are owned by [Public navigation and frame](../public/site.md#site-navigation) and [global public appearance](../public/site.md#global-public-appearance-surfaces), not by an Admin responsive breakpoint.
 - Analytics preserves its desktop Map (2 cells) + Geography (1 cell) composition through Narrow. Only Minimal removes Geography and lets Map occupy the full shared stage.
 - Storage preserves Upload + Capacity + Distribution as three equal stage cells through Narrow. Only Minimal becomes the compact full-width Upload + Used/Remaining/Allowance + Refresh/Reclaim composition; donut and Distribution disappear there.
 - Activity preserves Calendar + Clock + Next Publication as three stage cells through Narrow. Only Minimal becomes publication-first: Next Publication owns the full shared stage while Calendar + Clock yield; Pending/Preflight/current-live context and Review/Reset/Commit remain visible/reachable.

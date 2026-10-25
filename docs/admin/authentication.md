@@ -118,7 +118,7 @@ Successful recovery replaces the password through the framework reset flow. Pass
 
 ## Transactional reset mail
 
-`AdminPasswordResetNotification` is transactional authentication mail. It is separate from the persistent `AdminNotification`/Dashboard inbox contract documented in [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
+`AdminPasswordResetNotification` is transactional authentication mail. It is separate from the persistent `AdminNotification`/Dashboard inbox contract documented in [ADMIN-NOTIFICATION-CONTRACT.md](notifications.md).
 
 The reset request's neutral Filament feedback is likewise a pre-authentication response, not a persistent admin notification and not an Activity event.
 
@@ -162,4 +162,4 @@ Do not use a real password-reset email test as an excuse to place credentials or
 
 Durable application tests should protect the security contract rather than Filament markup. Current coverage includes private `/admin` access, rejection of authenticated non-admin users, access for administrators without MFA, the user-menu Account surface instead of a standalone profile route, the app-authentication/recovery contract, shared password-policy behavior, the browser password generator, prohibition of reactive auth-field synchronization and admin-only reset mail behavior.
 
-The canonical release verification remains defined in [RELEASE.md](RELEASE.md). Mail-server/runtime verification belongs to the platform/deployment layer, not to unit tests in this repository.
+The canonical release verification remains defined in [RELEASE.md](../operations/release.md). Mail-server/runtime verification belongs to the platform/deployment layer, not to unit tests in this repository.

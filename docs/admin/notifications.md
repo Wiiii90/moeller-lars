@@ -29,7 +29,7 @@ Background jobs and other server-side processes use the same method with an expl
 
 Pre-authentication messages cannot have an admin mailbox recipient. They may use the same immediate session/header transport, but they do not fabricate an `AdminNotification` owner.
 
-**Architekturbelege und offene Runtime-Grenzen:** Der beschreibende [Notification-Transportgraph](architecture/admin-notification-transport.md) verfolgt Audit-Context, `firstOrCreate`, Livewire-/Session-Header, JS-FIFO, benutzerspezifische Dashboard-Reads sowie den aus `pruneFor()` ableitbaren Pin/Retention-Grenzfall. Diese Quellprüfung ersetzt keine ausgeführte Akzeptanz des hier normativen Vertrags.
+**Architekturbelege und offene Runtime-Grenzen:** Der beschreibende [Notification-Transportgraph](../architecture/admin-notification-transport.md) verfolgt Audit-Context, `firstOrCreate`, Livewire-/Session-Header, JS-FIFO, benutzerspezifische Dashboard-Reads sowie den aus `pruneFor()` ableitbaren Pin/Retention-Grenzfall. Diese Quellprüfung ersetzt keine ausgeführte Akzeptanz des hier normativen Vertrags.
 
 ## Source identity and idempotency
 
@@ -190,4 +190,4 @@ Coverage should prove at least:
 
 ## Per-user language is presentation, not a new stored notification
 
-At `dev@74e629274ac2`, `AdminNotifier::recordAndSurface()` keeps canonical durable English titles/bodies and source references. `translatedSurfaceMessage()` translates the **recipient-visible** header/pending message at render or dispatch time; old Activity/Audit and historical mailbox records are never rewritten into a user's temporary language. The per-user locale middleware covers authorized Filament and Livewire actions; this does not alter the single-notification-per-success-action cardinality, no-op policy, source ID or multiple `metadata.audit_event_ids` contract. [Admin language/regions](ADMIN-LOCALIZATION-CONTRACT.md) owns language preferences. No newly executed Livewire delivery test is claimed.
+At `dev@74e629274ac2`, `AdminNotifier::recordAndSurface()` keeps canonical durable English titles/bodies and source references. `translatedSurfaceMessage()` translates the **recipient-visible** header/pending message at render or dispatch time; old Activity/Audit and historical mailbox records are never rewritten into a user's temporary language. The per-user locale middleware covers authorized Filament and Livewire actions; this does not alter the single-notification-per-success-action cardinality, no-op policy, source ID or multiple `metadata.audit_event_ids` contract. [Admin language/regions](ui.md) owns language preferences. No newly executed Livewire delivery test is claimed.
